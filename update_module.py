@@ -16,13 +16,11 @@ data version.
 # Keep track of mods table; seems to keep mod versions under their keys (DONE)
 # Recursively iterate through all directories within the mod folder and modify package.path (DONE)
 # Figure out a way to load all mods without extracting them(!) (DONE)
+# Unify mod loading between base, core and all other mods (DONE)
 
-# Unify mod loading between base, core and all other mods
 # Allow mods to be either extracted or in folders (change version to the one in `info.json`)
-# Create a testing suite to test edge cases (the function `get_order` is a little sus)
+# Create a testing suite to test edge cases
 # Make it so that mods can load files from other mods
-
-# actually extract the fucking data
 
 from factoriotools.errors import (
     IncompatableMod, 
@@ -295,12 +293,17 @@ def update():
         }
     )
 
-    # Get the list of enabled mods from mod-list.json
+    # Attempt to get the list of enabled mods from mod-list.json
+    # TODO: throw an error if mods are found but no mod list or mod settings
+    # file is found
     mod_list = {}
-    with open("factorio-mods/mod-list.json") as mod_list_file:
-        mod_json = json.load(mod_list_file)
-        for mod in mod_json["mods"]:
-            mod_list[mod["name"]] = mod["enabled"]
+    try:
+        with open("factorio-mods/mod-list.json") as mod_list_file:
+            mod_json = json.load(mod_list_file)
+            for mod in mod_json["mods"]:
+                mod_list[mod["name"]] = mod["enabled"]
+    except FileNotFoundError:
+        mod_list["base"] = True
 
     # Preload all the mods and their versions
     for mod_obj in os.listdir("factorio-mods"):
@@ -459,9 +462,13 @@ def update():
     lua.execute(file_to_string("factorio-data-master/core/lualib/util.lua"))
     lua.execute(file_to_string("factorio-data-master/core/lualib/dataloader.lua"))
     
-    # Read mod settings and set in lua context
-    mod_settings = get_mod_settings()
+    # Attempt to read mod settings and set in lua context
+    try:
+        mod_settings = get_mod_settings()
+    except FileNotFoundError:
+        mod_settings = {}
     lua.globals().settings = mod_settings
+
     # Construct and send the mods table to the lua instance
     python_mods = {} # TODO
     for mod in mods:

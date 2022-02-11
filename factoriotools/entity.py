@@ -1,8 +1,7 @@
 # entity.py
 
-# TODO: handle the difference between grid and position
-# TODO: probably change the way exports works: instead of writing methods that create super() chains, store some metadata in the
-# exports dictionary that tells what condition the item has to reach in order for it to be included in the output dict
+# TODO: handle the difference between grid position and absolute position
+# TODO: create verification for the initial load of an entity by making a schema for each entity class
 
 from typing import Any, Callable
 from factoriotools.errors import InvalidEntityID, InvalidSignalID
@@ -12,16 +11,27 @@ from factoriotools.entity_data import entity_dimensions
 PULSE = 0
 HOLD = 1
 
-storage_containers = {
-    "wooden-chest", "iron-chest", "steel-chest", "storage-tank"
+# from entity_data import *
+
+containers = {
+    "wooden-chest", "iron-chest", "steel-chest", "logistic-chest-buffer", 
+    "logisitics-chest-passive-provider", "logistics-chest-active-provider"
 }
 
-logistics_storage_containers = {
-    "logistics-chest-requester", "logistics-chest-storage"
+storage_tanks = {
+    "storage-tank"
 }
 
 transport_belts = {
     "transport-belt", "fast-transport-belt", "express-transport-belt"
+}
+
+underground_belts = {
+    "underground-belt", "fast-underground-belt", "express-underground-belt"
+}
+
+splitters = {
+    "splitter", "fast-splitter", "express-splitter"
 }
 
 inserters = {
@@ -33,16 +43,146 @@ filter_inserters = {
     "filter-inserter", "stack-filter-inserter"
 }
 
+electric_poles = {
+    "small-electric-pole", "medium-electric-pole", "big-electric-pole", 
+    "substation"
+}
+
+pipes = {
+    "pipe"
+}
+
+underground_pipes = {
+    "pipe-to-ground"
+}
+
+pumps = {
+    "pump"
+}
+
+straight_rails = {
+    "straight-rail"
+}
+
+curved_rails = {
+    "curved-rail"
+}
+
+train_stops = {
+    "train-stop"
+}
+
+rail_signals = {
+    "rail-signal", "rail-chain-signal"
+}
+
+train_cars = {
+    "locomotive", "cargo-wagon", "fluid-wagon", "artillery-wagon"
+}
+
+logistic_containers = {
+    "logistics-chest-requester", "logistics-chest-storage"
+}
+
+roboports = {
+    "roboports"
+}
+
+lamps = {
+    "small-lamp"
+}
+
+arithmetic_combinators = {
+    "arithmetic-combinator"
+}
+
+decider_combinator = {
+    "decider-combinator"
+}
+
+constant_combinator = {
+    "constant-combinator"
+}
+
+programmable_speakers = {
+    "programmable-speaker"
+}
+
+boilers = {
+    "boiler", "heat-exchanger"
+}
+
+generators = {
+    "steam-engine", "steam-turbine"
+}
+
+solar_panels = {
+    "solar-panel"
+}
+
+accumulators = {
+    "accumulator"
+}
+
+reactors = {
+    "nuclear-reactor"
+}
+
+mining_drills = {
+    "burner-mining-drill", "electric-mining-drill", "pumpjack"
+}
+
+offshore_pumps = {
+    "offshore-pump"
+}
+
+furnaces = {
+    "stone-furnace", "steel-furnace", "electric-furnace"
+}
+
 assembling_machines = {
-    "assembling-machine-1", "assembling-machine-2", "assembling-machine-3"
+    "assembling-machine-1", "assembling-machine-2", "assembling-machine-3",
+    "chemical-plant", "oil-refinery", "centrifuge"
 }
 
-multiple_connection_point_entities = {
-    "decider-combinator", "arithmetic-combinator"
+labs = {
+    "lab"
 }
 
-# mixins!
-# TODO: organize alphabetically
+beacons = {
+    "beacon"
+}
+
+rocket_silos = {
+    "rocket-silo"
+}
+
+land_mines = {
+    "land-mine"
+}
+
+walls = {
+    "stone-wall"
+}
+
+gates = {
+    "gates"
+}
+
+ammo_turrets = {
+    "gun-turret"
+}
+
+electric_turrets = {
+    "laser-turret"
+}
+
+radars = {
+    "radar"
+}
+
+# Mixins!
+# TODO: organize
 class DirectionalMixin:
     """ 
     Enables entities to be rotated. 
@@ -59,15 +199,18 @@ class DirectionalMixin:
     def set_direction(self, direction: int) -> None:
         self.direction = direction
 
-# class OrientationMixin:
-#     """ Used in trains to specify their direction. """
-#     def __init__(self, **kwargs):
-#         pass # TODO
+class EightWayDirectionalMixin:
+    pass
 
-#     def set_orientation(self, orientation: float) -> None:
-#         self.orientation = orientation
+class OrientationMixin:
+    """ Used in trains to specify their direction. """
+    def __init__(self, **kwargs):
+        pass # TODO
 
-class ContainerMixin:
+    def set_orientation(self, orientation: float) -> None:
+        self.orientation = orientation
+
+class InventoryMixin:
     """
     Enables the entity to have inventory control.
     """
@@ -88,6 +231,49 @@ class InventoryFilterMixin:
     Allows inventories to set content filters
     """
     pass
+
+
+class PowerConnectableMixin:
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.neighbours = []
+        if "neighbours" in kwargs:
+            self.neighbours = kwargs["neighbours"]
+        self._add_export("neighbours", lambda x: len(x) != 0)
+
+    def add_power_connection_point(self, target_id: int):
+        pass # TODO
+
+class CircuitConnectableMixin:
+    """
+    Enables the entity to be connected to circuit networks.
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.circuit_connectable = True
+        self.connections = {}
+        if "connections" in kwargs:
+            self.connections = kwargs["connections"]
+        self._add_export("connections", lambda x: len(x) != 0)
+
+    def add_circuit_connection_point(self, source_side: int, color: str, target_name: str, target_num: int, target_side: int = 1) -> None:
+        """
+        Constructs the `connections` dictionary in proper format
+        """
+        if str(source_side) not in self.connections:
+            self.connections[str(source_side)] = dict()
+        current_side = self.connections[str(source_side)]
+
+        if color not in current_side:
+            current_side[color] = list()
+        current_color = current_side[color]
+
+        entry = {"entity_id": target_num}
+        if target_name in double_connection_combinators:
+            entry = {"entity_id": target_num, "circuit_id": target_side}
+
+        current_color.append(entry)
+        
 
 class ControlBehaviorMixin:
     """
@@ -153,54 +339,6 @@ class ControlBehaviorMixin:
                         "type": get_signal_type(name)
                     }
 
-class PowerConnectableMixin:
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.neighbours = {}
-        # TODO
-
-    def add_power_connection_point(self, target_id: int):
-        pass # TODO
-
-class CircuitConnectableMixin:
-    """
-    Enables the entity to be connected to circuit networks.
-    """
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.circuit_connectable = True
-        self.connections = {}
-        # TODO: add kwargs support
-        self._add_export("connections", lambda x: len(x) != 0)
-        # Is the entity connectable with wires? (Internal)
-
-    def add_circuit_connection_point(self, source_side: int, color: str, target_name: str, target_num: int, target_side: int = 1) -> None:
-        """
-        Constructs the `connections` dictionary in proper format
-        """
-        if str(source_side) not in self.connections:
-            self.connections[str(source_side)] = dict()
-        current_side = self.connections[str(source_side)]
-
-        if color not in current_side:
-            current_side[color] = list()
-        current_color = current_side[color]
-
-        entry = {"entity_id": target_num}
-        if target_name in multiple_connection_point_entities:
-            entry = {"entity_id": target_num, "circuit_id": target_side}
-
-        current_color.append(entry)
-
-    # def to_dict(self) -> dict:
-    #     # Call parent to_dict (Entity by default)
-    #     out = super().to_dict()
-    #     # Delete connections if there's no useful information contained
-    #     if len(out["connections"]) == 0:
-    #         del out["connections"]
-
-    #     return out
-        
 
 class RequestFiltersMixin:
     def __init__(self, **kwargs):
@@ -275,7 +413,7 @@ class ItemRequestMixin:
 
 
 class Entity:
-    def __init__(self, name: str, position: dict|list = [0, 0], **kwargs):
+    def __init__(self, name: str, position: list = [0, 0], **kwargs):
         # What do all entities have in common?
         # No id, because that's blueprint specific
         #if "id" in kwargs: 
@@ -302,8 +440,11 @@ class Entity:
             self.set_grid_position(grid_position[0], grid_position[1])
         # Width and Height (Internal)
         self.width, self.height = entity_dimensions[name]
-
+        # Tags (External)
         self.tags = {}
+        if "tags" in kwargs:
+            self.tags = kwargs["tags"]
+        self._add_export("tags", lambda x: x)
 
         # What can they have optionally?
         # direction
@@ -403,19 +544,18 @@ class Entity:
 
 
 # Wooden Chest, Iron Chest, Steel Chest, Buffer Chest, Passive Provider Chest, Active Provider Chest
-class StorageContainer(CircuitConnectableMixin, ContainerMixin, Entity):
+class Container(CircuitConnectableMixin, InventoryMixin, Entity):
     def __init__(self, **kwargs):
-        if kwargs["name"] not in storage_containers:
+        if kwargs["name"] not in containers:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(kwargs["name"]))
-        super().__init__(**kwargs)
+        super(Container, self).__init__(**kwargs)
 
 
-# Requester Chest, Logistics Chest
-class LogisticsRequestContainer(RequestFiltersMixin, CircuitConnectableMixin, ContainerMixin, Entity):
+class StorageTank(CircuitConnectableMixin, Entity):
     def __init__(self, **kwargs):
-        if kwargs["name"] not in logistics_storage_containers:
+        if kwargs["name"] not in storage_tanks:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(kwargs["name"]))
-        super().__init__(**kwargs)
+        super(StorageTank, self).__init__(**kwargs)
 
 
 class TransportBelt(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
@@ -423,6 +563,14 @@ class TransportBelt(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMi
         if kwargs["name"] not in transport_belts:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(kwargs["name"]))
         super(TransportBelt, self).__init__(**kwargs)
+
+
+class UndergroundBelt(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+    pass
+
+
+class Splitter(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+    pass
 
 
 class Inserter(StackSizeMixin, ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
@@ -439,6 +587,118 @@ class FilterInserter(FilterMixin, StackSizeMixin, ControlBehaviorMixin, CircuitC
         super(FilterInserter, self).__init__(**kwargs)
 
 
+class Loader(DirectionalMixin, Entity):
+    pass
+
+
+class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
+    pass
+
+
+class Pipe(CircuitConnectableMixin, Entity):
+    pass
+
+
+class UndergroundPipe(DirectionalMixin, Entity):
+    pass
+
+
+class Pump(DirectionalMixin, Entity):
+    pass
+
+# Do we need StraightRail and CurvedRail or can it be just Rail?
+class StraightRail(EightWayDirectionalMixin, Entity):
+    pass
+
+
+class CurvedRail(EightWayDirectionalMixin, Entity):
+    pass
+
+
+class TrainStop(EightWayDirectionalMixin, Entity):
+    pass
+
+
+class RailSignal(EightWayDirectionalMixin, Entity):
+    pass
+
+
+class TrainCar(OrientationMixin, Entity):
+    pass
+
+
+# Requester Chest, Logistics Chest
+class LogisticsRequestContainer(RequestFiltersMixin, CircuitConnectableMixin, InventoryMixin, Entity):
+    def __init__(self, **kwargs):
+        if kwargs["name"] not in logistic_containers:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(kwargs["name"]))
+        super().__init__(**kwargs)
+
+
+class Roboport(CircuitConnectableMixin, InventoryMixin, Entity):
+    pass
+
+
+class Lamp(CircuitConnectableMixin, Entity):
+    pass
+
+
+class ArithmeticCombinator(CircuitConnectableMixin, Entity):
+    pass
+
+
+class DeciderCombinator(CircuitConnectableMixin, Entity):
+    pass
+
+
+class ConstantCombinator(CircuitConnectableMixin, Entity):
+    pass
+
+
+class PowerSwitch(CircuitConnectableMixin, PowerConnectableMixin, Entity):
+    pass
+
+
+class ProgrammableSpeaker(CircuitConnectableMixin, Entity):
+    pass
+
+
+class Boiler(DirectionalMixin):
+    pass
+
+
+class Generator(Entity):
+    pass
+
+
+class SolarPanel(Entity):
+    pass
+
+
+class Accumulator(Entity):
+    pass
+
+
+class Reactor(Entity):
+    pass
+
+
+class HeatPipe(Entity):
+    pass
+
+
+class MiningDrill(DirectionalMixin, Entity):
+    pass
+
+
+class OffshorePump(DirectionalMixin, Entity):
+    pass
+
+
+class Furnace(Entity):
+    pass
+
+
 class AssemblingMachine(ItemRequestMixin, RecipeMixin, Entity):
     def __init__(self, **kwargs):
         if kwargs["name"] not in assembling_machines:
@@ -446,18 +706,81 @@ class AssemblingMachine(ItemRequestMixin, RecipeMixin, Entity):
         super(AssemblingMachine, self).__init__(**kwargs)
 
 
+class Lab(Entity):
+    pass
+
+
+class Beacon(Entity):
+    pass
+
+
+class RocketSilo(Entity):
+    pass
+
+
+class LandMine(Entity):
+    pass
+
+
+# Technically CircuitConnectable, but only when adjacent to a gate
+class Wall(CircuitConnectableMixin, Entity):
+    pass
+
+
+class Gate(CircuitConnectableMixin, Entity):
+    pass
+
+
+class Turret(DirectionalMixin, Entity):
+    pass
+
+
+class Radar(Entity):
+    pass
+
+
 def new_entity(name: str, **kwargs):
     kwargs["name"] = name # TODO: see if we can get rid of this
-    if name in storage_containers:
-        return StorageContainer(**kwargs)
-    if name in logistics_storage_containers:
-        return LogisticsRequestContainer(**kwargs)
+    if name in containers:
+        return Container(**kwargs)
+    if name in storage_tanks:
+        return StorageTank(**kwargs)
     if name in transport_belts:
         return TransportBelt(**kwargs)
+    if name in underground_belts:
+        return UndergroundBelt(**kwargs)
+    if name in splitters:
+        return Splitter(**kwargs)
     if name in inserters:
         return Inserter(**kwargs)
     if name in filter_inserters:
         return FilterInserter(**kwargs)
+    if name in electric_poles:
+        return ElectricPole(**kwargs)
+    if name in pipes:
+        return Pipe(**kwargs)
+    if name in underground_pipes:
+        return UndergroundPipe(**kwargs)
+    if name in pumps:
+        return Pump(**kwargs)
+    if name in straight_rails:
+        return StraightRail(**kwargs)
+    if name in curved_rails:
+        return CurvedRail(**kwargs)
+    if name in train_stops:
+        return TrainStop(**kwargs)
+    if name in rail_signals:
+        return RailSignal(**kwargs)
+    if name in train_cars:
+        return TrainCar(**kwargs)
+    if name in logistic_containers:
+        return LogisticsRequestContainer(**kwargs)
+    if name in roboports:
+        return Roboport(**kwargs)
+    if name in lamps:
+        return Lamp(**kwargs)
+    if name in arithmetic_combinators:
+        return ArithmeticCombinator(**kwargs)
     if name in assembling_machines:
         return AssemblingMachine(**kwargs)
     

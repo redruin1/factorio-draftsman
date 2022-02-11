@@ -65,6 +65,8 @@ local function extract_entities()
     -- circuit_wire_max_distance: determines if circuit connectable
     -- filter_count: determines if filter inserter or normal inserter
 
+    local entity_list = {}
+
     local with_filter = {}
     local with_inventory = {}
     local with_inventory_filter = {}
@@ -95,6 +97,7 @@ local function extract_entities()
         if flags["not-blueprintable"] or flags["hidden"] then
             return
         end
+        entity_list[#entity_list+1] = name
         if flags["not-rotatable"] then
             not_rotatable[#not_rotatable+1] = name
         end
@@ -208,12 +211,12 @@ local function extract_entities()
     -- Turrets
     categorize_entities(data.raw["ammo-turret"])
     categorize_entities(data.raw["electric-turret"])
+    categorize_entities(data.raw["artillery-turret"])
     -- Radars
     categorize_entities(data.raw["radar"])
 
-    print(serpent.block(entity_dimensions))
-    print_keys(data.raw["rocket-silo"])
-    print_keys(data.raw["container"])
+    print(serpent.block(entity_list))
+    --print_keys(data.raw["container"])
     --print(serpent.block(data.raw["rocket-silo"]))
 
 end
