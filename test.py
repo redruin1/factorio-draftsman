@@ -739,8 +739,93 @@ def main():
     # test_group.add_entity("transport-belt", "blah2", direction = factorio.UP)
     # test_group.add_tile("stone-path", 0, 0)
 
-    blueprint.load_from_string("""0eNqdkt1uwyAMhd/F16QqpFk3XmWapvy4naXgICDVooh3HyS7iNo1F7uzQec7B5sZmn5E64gD6BmoHdiDfp/B05XrPp+FySJooIAGBHBtcld7j6bpia+FqdsvYiwkRAHEHX6DllH8B6E2CBU/BCAHCoRrpKWZPnk0DbrksR9GgB18Eg+cEyRgcTxUAqa1SD4OW7JP5CXkB9wZqv3oD4Zq6/cHr9zjlY+86kl+64ZubAPdErwwqe5XeR63z1pvEbvfm2VueLngnUDlpeWRL0vSm28h4IbOLzHUqzyd39S5kpUsX44x/gCSor5D""")
+    wooden_chest = factoriotools.new_entity("wooden-chest")
+    wooden_chest.set_grid_position(0, 0)
+    blueprint.add_entity(wooden_chest, id = "wooden_chest")
 
+    iron_chest = factoriotools.new_entity("iron-chest")
+    iron_chest.set_grid_position(1, 0)
+    iron_chest.set_bar_index(20)
+    blueprint.add_entity(iron_chest, id = "iron_chest")
+
+    steel_chest = factoriotools.new_entity("steel-chest")
+    steel_chest.set_grid_position(2, 0)
+    steel_chest.set_bar_index(1)
+    blueprint.add_entity(steel_chest, id = "steel_chest")
+    
+    storage_tank = factoriotools.new_entity("storage-tank")
+    storage_tank.set_grid_position(0, 1)
+    blueprint.add_entity(storage_tank, id = "storage_tank")
+
+    blueprint.add_wire_connection("red", "wooden_chest", 1, "iron_chest", 1)
+    blueprint.add_wire_connection("red", "iron_chest", 1, "steel_chest", 1)
+    blueprint.add_wire_connection("red", "steel_chest", 1, "storage_tank", 1)
+
+    transport_belt = factoriotools.new_entity("transport-belt")
+    transport_belt.set_grid_position(0, 4)
+    blueprint.add_entity(transport_belt)
+    transport_belt.set_grid_position(1, 4)
+    transport_belt.set_enable_disable(False)
+    transport_belt.set_read_hand_contents(True)
+    transport_belt.set_read_mode(factoriotools.PULSE)
+    blueprint.add_entity(transport_belt, id = "yellow_belt")
+
+    #fast_belt = factoriotools.new_entity("fast-transport-belt")
+    fast_belt = factoriotools.TransportBelt(name="fast-transport-belt")
+    fast_belt.set_grid_position(2, 4)
+    fast_belt.set_enable_disable(True)
+    fast_belt.set_enabled_condition("electric-mining-drill", ">", 15)
+    blueprint.add_entity(fast_belt, id = "red_belt")
+    fast_belt.set_grid_position(3, 4)
+    fast_belt.set_direction(factoriotools.LEFT)
+    fast_belt.set_enable_disable(True)
+    fast_belt.set_read_hand_contents(True)
+    fast_belt.set_read_mode(factoriotools.HOLD)
+    fast_belt.set_enabled_condition() # Reset enabled condition
+    blueprint.add_entity(fast_belt, id = "other_red_belt")
+    #fast_belt.set_name("express-transport-belt")
+    express_belt = factoriotools.TransportBelt(
+        name="express-transport-belt", 
+        position=[4, 4],
+        direction = factoriotools.RIGHT,
+        control_behavior={
+            "circuit_enable_disable": True,
+            "circuit_read_hand_contents": True,
+            "circuit_contents_read_mode": 0,
+            "circuit_condition": {
+                "first_signal": "signal-blue",
+                "comparator": ">=",
+                "second_signal": "signal-blue"
+            }
+        })
+    blueprint.add_entity(express_belt, id = "blue_belt")
+
+    blueprint.add_wire_connection("red", "yellow_belt", 1, "red_belt", 1)
+    blueprint.add_wire_connection("green", "other_red_belt", 1, "blue_belt", 1)
+
+    underground_belt = factoriotools.new_entity("underground-belt")
+    underground_belt.set_grid_position(0, 6)
+    blueprint.add_entity(underground_belt)
+    underground_belt.set_grid_position(0, 5)
+    underground_belt.set_io_type("output")
+    blueprint.add_entity(underground_belt)
+
+    underground_belt = factoriotools.UndergroundBelt(name = "fast-underground-belt")
+    underground_belt.set_grid_position(1, 5)
+    underground_belt.set_io_type("output")
+    blueprint.add_entity(underground_belt)
+    underground_belt.set_grid_position(1, 6)
+    underground_belt.set_io_type("input")
+    blueprint.add_entity(underground_belt)
+    underground_belt = factoriotools.new_entity("express-underground-belt")
+    #blueprint.add_entity(underground_belt, "under1")
+    #blueprint.add_entity(underground_belt, "under2")
+
+    # This syntax would be nice
+    # blueprint.entities["under1"].set_grid_position(2, 5)
+    # #blueprint.entities["under1"].set_io_type("input") # input is default
+    # blueprint.entities["under2"].set_grid_position(2, 5)
+    # blueprint.entities["under2"].set_io_type("output")
 
     print(blueprint)
     print(blueprint.to_string())

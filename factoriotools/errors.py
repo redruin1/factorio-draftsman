@@ -11,6 +11,12 @@ class IncorrectBlueprintType(Exception):
 class DuplicateIDException(Exception):
     pass
 
+class EntityNotCircuitConnectable(Exception):
+    pass
+
+class EntityNotPowerConnectable(Exception):
+    pass
+
 # Tiles
 class InvalidTileID(Exception):
     pass
@@ -21,6 +27,9 @@ class InvalidSignalID(Exception):
 
 # Entities
 class InvalidEntityID(Exception):
+    pass
+
+class InvalidCircuitOperation(Exception):
     pass
 
 # Update

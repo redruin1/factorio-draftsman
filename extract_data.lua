@@ -120,7 +120,7 @@ local function extract_entities()
            entity.output_connection_points then
             dual_circuit_connectable[#dual_circuit_connectable+1] = name
         end
-        entity_dimensions[name] = get_dimensions(entity.collision_box)
+        entity_dimensions[name] = {get_dimensions(entity.collision_box)}
     end
 
     local function categorize_entities(list)
@@ -218,6 +218,19 @@ local function extract_entities()
     print(serpent.block(entity_list))
     --print_keys(data.raw["container"])
     --print(serpent.block(data.raw["rocket-silo"]))
+
+    local tiles_file = io.open("factoriotools/entity_data.py", "w")
+    tiles_file:write("# entity_data.py\n")
+    tiles_file:write("entity_dimensions = {\n")
+    for i = 1, #entity_list do
+        local entity = entity_list[i]
+        local output_string = "\t\"" .. entity .. "\": ("
+        output_string = output_string .. entity_dimensions[entity][1] .. ", "
+        output_string = output_string .. entity_dimensions[entity][1] .. "),\n"
+        tiles_file:write(output_string)
+    end
+    tiles_file:write("}")
+    tiles_file:close()
 
 end
 

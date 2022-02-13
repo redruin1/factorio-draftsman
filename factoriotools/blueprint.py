@@ -12,7 +12,9 @@ from factoriotools.signatures import (
 from factoriotools.errors import (
     IncorrectBlueprintType,
     DuplicateIDException,
-    MalformedBlueprintString
+    MalformedBlueprintString,
+    EntityNotCircuitConnectable,
+    EntityNotPowerConnectable
 )
 from factoriotools.entity import Entity, new_entity
 from factoriotools.tile import Tile
@@ -68,7 +70,10 @@ class Blueprint:
         # Create a complimentary list to store entity IDs. These allow the user
         # to specify names to each entity to aid in referencing specific 
         # entities before their final numeric values are known.
-        self.entity_metadata = dict()
+        #self.entity_metadata = dict()
+        self.entity_id_to_number = {}
+        self.entity_number_to_id = {}
+        
         self.tile_metadata = dict()
 
     def load_from_string(self, blueprint_string: str) -> None:
@@ -206,74 +211,106 @@ class Blueprint:
         entity_copy = copy.deepcopy(entity)
 
         # Add entity_number based on current entity length
-        n = len(self.entities) + 1
+        n = self._entities_length + 1
         #data_copy["entity_number"] = n
         # FIXME: this is inelegant, because entity_number should have no meaning to an entity on its own: only when in a blueprint does it make sense
         entity_copy.entity_number = n
 
         # Add the entity to entities
-        self.entities.append(entity_copy)
+        #self.entities.append(entity_copy)
+        self.entities[n] = entity_copy
         
         # Store the ID for use later, even if the blueprint doesn't use it
         if "id" in kwargs:
-            self.entity_metadata[kwargs["id"]] = n
+            self.entities[kwargs["id"]] = entity_copy
 
-        # TODO: maybe keep track of references so if the order of entities changes so do their indexes in entity_metadata?
+            self.entity_number_to_id[n] = kwargs["id"]
+            self.entity_id_to_number[kwargs["id"]] = n
+        else:
+            self.entity_number_to_id[n] = None
+
+        # Keep track of the amount of entities for later
+        self._entities_length += 1
+
+        # TODO: maybe keep track of references so if the order of entities changes so do their ids?
 
     def add_raw_entity(self, entity: dict):
         """
         """
         pass
 
-    def add_power_connection(self, id1, id2):
+    def give_entity_id(self, entity_number: int, id: str) -> None:
         """
+        Adds an id to an already added Entity.
         """
-        entity1Data = self.entities[id1 - 1]
-        entity2Data = self.entities[id2 - 1]
-        
-        if "neighbours" not in entity1Data:
-            entity1Data["neighbours"] = dict()
-        
         pass
 
-    def add_connection(self, color, id1, side1, id2, side2):
+    def remove_entity(self, entity_id: Union[str, int]) -> None:
         """
+        Removes the entity with the id `entity_id`.
+        """
+        pass
+
+    def add_power_connection(self, id1, id2):
+        """
+        Adds a copper wire power connection between two entities.
+        """
+        entity_1 = self.entities[id1]
+        entity_2 = self.entities[id2]
+        
+        if not entity_1.power_connectable:
+            raise EntityNotPowerConnectable(entity_1.name)
+        if not entity_2.power_connectable:
+            raise EntityNotPowerConnectable(entity_2.name)
+        
+        # TODO
+        pass
+
+    def add_wire_connection(self, color, id1, side1, id2, side2):
+        """
+        Adds a circuit wire connection between two entities.
         """
         # Ensure inputs are correct
-        if isinstance(id1, int):
-            entity_1 = self.entities[id1 - 1]
-        elif isinstance(id1, str):
-            try:
-                id1 = self.entity_metadata[id1]
-            except KeyError:
-                raise
-            entity_1 = self.entities[id1 - 1]
-        else:
-            raise ValueError("id1 must be either a int or a str")
+        # if isinstance(id1, int):
+        #     entity_1 = self.entities[id1]
+        # elif isinstance(id1, str):
+        #     try:
+        #         id1 = self.entity_metadata[id1]
+        #     except KeyError:
+        #         raise
+        #     entity_1 = self.entities[id1 - 1]
+        # else:
+        #     raise ValueError("id1 must be either a int or a str")
+        entity_1 = self.entities[id1]
 
-        if isinstance(id2, int):
-            entity_2 = self.entities[id2 - 1]
-        elif isinstance(id2, str):
-            try:
-                id2 = self.entity_metadata[id2]
-            except KeyError:
-                raise
-            entity_2 = self.entities[id2 - 1]
-        else:
-            raise ValueError("id2 must be either a int or a str")
+        # if isinstance(id2, int):
+        #     entity_2 = self.entities[id2 - 1]
+        # elif isinstance(id2, str):
+        #     try:
+        #         id2 = self.entity_metadata[id2]
+        #     except KeyError:
+        #         raise
+        #     entity_2 = self.entities[id2 - 1]
+        # else:
+        #     raise ValueError("id2 must be either a int or a str")
+        entity_2 = self.entities[id2]
 
         # Assert that both entities can be connected to
-        assert entity_1.circuit_connectable
-        assert entity_2.circuit_connectable
+        #assert entity_1.circuit_connectable
+        #assert entity_2.circuit_connectable
+        if not entity_1.circuit_connectable:
+            raise EntityNotCircuitConnectable(entity_1.name)
+        if not entity_2.circuit_connectable:
+            raise EntityNotCircuitConnectable(entity_1.name)
 
         # Assert that the entities are close enough to connect with wires
         # TODO
 
         # Handle entity 1
-        entity_1.add_circuit_connection_point(side1, color, entity_2.name, id2, side2)
+        entity_1.add_circuit_connection_point(color, side1, entity_2.name, id2, side2)
 
         # Handle entity 2
-        entity_2.add_circuit_connection_point(side2, color, entity_1.name, id1, side1)
+        entity_2.add_circuit_connection_point(color, side2, entity_1.name, id1, side1)
 
     def add_tile(self, tile_name: str, x: int, y: int, id: str = None) -> None:
         """
@@ -289,24 +326,30 @@ class Blueprint:
         
         self.tiles.append(Tile(tile_name, x, y))
 
-    def entity_with_id(self, id: str) -> Entity:
-        """
-        Gets a copy of an entity from the Blueprint.
+    # def entity_with_id(self, id: str) -> Entity:
+    #     """
+    #     Gets a copy of an entity from the Blueprint.
 
-        Raises:
-            TypeError: if `entity` is neither an `int` or `str`.
-        """
-        # if isinstance(entity, int):
-        #     return Entity(self.root["entities"][entity]) # this really has no use
-        #     # if we wanted to do it this way we'd just do blueprint.entities[whatever]
-        # elif isinstance(entity, str):
-        #     entity_index = self.entity_metadata[entity]
-        #     return Entity(self.root["entities"][entity_index])
-        # else:
-        #     raise TypeError("Incorrect type of entity; int or str required")
+    #     Raises:
+    #         TypeError: if `entity` is neither an `int` or `str`.
+    #     """
+    #     # if isinstance(entity, int):
+    #     #     return Entity(self.root["entities"][entity]) # this really has no use
+    #     #     # if we wanted to do it this way we'd just do blueprint.entities[whatever]
+    #     # elif isinstance(entity, str):
+    #     #     entity_index = self.entity_metadata[entity]
+    #     #     return Entity(self.root["entities"][entity_index])
+    #     # else:
+    #     #     raise TypeError("Incorrect type of entity; int or str required")
         
-        entity_index = self.entity_metadata[id]
-        return self.entities[entity_index]
+    #     entity_index = self.entity_metadata[id]
+    #     return self.entities[entity_index]
+
+    def entity_at_position(self, id: Union[int, str]) -> Entity:
+        """
+        """
+        # TODO
+        pass
 
     def tile_with_id(self, id: str) -> Tile:
         """
@@ -327,25 +370,48 @@ class Blueprint:
         Returns the version of the Blueprint in human-readable string.
         """
         version_tuple = utils.decode_version(self.blueprint["version"])
-        return '.'.join(str(i) for i in version_tuple)
+        return utils.version_tuple_2_string(version_tuple)
 
     def to_dict(self) -> dict:
         """
         Returns the blueprint as a dictionary. Intended for getting the 
-        representation of a nested blueprint in a blueprint book.
+        precursor to a Factorio blueprint string.
         """
         out_dict = copy.deepcopy(self.blueprint)
 
+        # vv Old vv
+        # for i, entity in enumerate(self.entities):
+        #     out_dict["entities"][i] = entity.to_dict()
+        #     #out_dict["entities"][i]["entity_number"] = i + 1 # FIXME
+
         # Convert all entities into dicts
-        for i, entity in enumerate(self.entities):
-            out_dict["entities"][i] = entity.to_dict()
-            #out_dict["entities"][i]["entity_number"] = i + 1 # FIXME
+        out_dict['entities'] = list()
+        for i in range(0, self._entities_length):
+            entity_dict_copy = copy.deepcopy(self.entities[i + 1].to_dict())
+            out_dict["entities"].append(entity_dict_copy)
 
         # Convert all tiles into dicts
         for i, tile in enumerate(self.tiles):
             out_dict["tiles"][i] = tile.to_dict()
 
         # Convert all schedules into dicts
+        # TODO
+
+        # Change all wire connections to use entity_number
+        for entity in out_dict["entities"]:
+            print(entity)
+            if "connections" in entity:
+                connections = entity["connections"]
+                for side in connections:
+                    #print(connections[side])
+                    for color in connections[side]:
+                        connection_points = connections[side][color]
+                        for point in connection_points:
+                            old = point["entity_id"]
+                            if isinstance(old, str):
+                                point["entity_id"] = self.entity_id_to_number[old]
+
+        # Change all power connections to use entity_number
 
         # Delete empty entries to compress as much as possible
         if len(out_dict["entities"]) == 0:
@@ -382,7 +448,7 @@ class Blueprint:
         # These values always exist in a Blueprint object, but if they are empty
         # they are deleted from the final blueprint string
         if "entities" not in self.blueprint:
-            self.blueprint["entities"] = list()
+            self.blueprint["entities"] = dict()
         if "tiles" not in self.blueprint:
             self.blueprint["tiles"] = list()
         if "schedules" not in self.blueprint:
@@ -392,16 +458,22 @@ class Blueprint:
             self.blueprint["version"] = utils.encode_version(maj, min, pat, 0)
 
         self.entities   = self.blueprint["entities"]
+        self._entities_length = 0
         self.tiles      = self.blueprint["tiles"]
+        self._tiles_length = 0
         self.schedules  = self.blueprint["schedules"]
+        self._schedules_length = 0
 
     def _load_entities_from_root(self):
-        new_entities = []
+        new_entities = dict()
         for entity_dict in self.entities:
             rest_of_the_keys = copy.deepcopy(entity_dict)
             del rest_of_the_keys["name"] # TODO: change, this is clunky
             entity = new_entity(entity_dict["name"], **rest_of_the_keys)
-            new_entities.append(entity)
+
+            new_entities[entity_dict["entity_number"]] = entity
+            self._entities_length += 1
+            self.entity_number_to_id[entity_dict["entity_number"]] = None
 
         self.entities = new_entities
 

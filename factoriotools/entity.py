@@ -2,9 +2,13 @@
 
 # TODO: handle the difference between grid position and absolute position
 # TODO: create verification for the initial load of an entity by making a schema for each entity class
+# TODO: add `set_name` function in entity, so you can change an entity's type but keep its metadata
+# TODO: value check everything
 
 from typing import Any, Callable
-from factoriotools.errors import InvalidEntityID, InvalidSignalID
+from factoriotools.errors import (
+    InvalidEntityID, InvalidSignalID, InvalidCircuitOperation
+)
 from factoriotools.signals import get_signal_type, item_signals
 from factoriotools.entity_data import entity_dimensions
 
@@ -96,12 +100,16 @@ arithmetic_combinators = {
     "arithmetic-combinator"
 }
 
-decider_combinator = {
+decider_combinators = {
     "decider-combinator"
 }
 
-constant_combinator = {
+constant_combinators = {
     "constant-combinator"
+}
+
+power_switches = {
+    "power-switch"
 }
 
 programmable_speakers = {
@@ -228,10 +236,31 @@ class InventoryMixin:
 
 class InventoryFilterMixin:
     """
-    Allows inventories to set content filters
+    Allows inventories to set content filters. Used in cargo wagons.
     """
     pass
 
+class IOTypeMixin:
+    """
+    Gives an entity a type, which can either be 'input' or 'output'. Used on
+    underground belts and loaders.
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.type = "input" # Default
+        if "type" in kwargs:
+            self.type = kwargs["type"]
+        self._add_export("type", lambda x: x is not None)
+
+    def set_io_type(self, type: str):
+        """
+        Sets whether or not this entity is configured as 'input' or 'output';
+        used on underground belts and loaders.
+        """
+        if type == "input" or type == "output":
+            self.type = type
+        else:
+            raise ValueError("'type' must be one of 'input' or 'output'")
 
 class PowerConnectableMixin:
     def __init__(self, **kwargs):
@@ -242,6 +271,9 @@ class PowerConnectableMixin:
         self._add_export("neighbours", lambda x: len(x) != 0)
 
     def add_power_connection_point(self, target_id: int):
+        """
+        Adds a power wire between this entity and another power-connectable one.
+        """
         pass # TODO
 
 class CircuitConnectableMixin:
@@ -256,9 +288,13 @@ class CircuitConnectableMixin:
             self.connections = kwargs["connections"]
         self._add_export("connections", lambda x: len(x) != 0)
 
-    def add_circuit_connection_point(self, source_side: int, color: str, target_name: str, target_num: int, target_side: int = 1) -> None:
+    def add_circuit_connection_point(self, color: str, source_side: int, target_name: str, target_num: int, target_side: int = 1) -> None:
         """
-        Constructs the `connections` dictionary in proper format
+        Constructs the `connections` dictionary in proper format for this 
+        entity.
+
+        NOTE: this function only modifies the current entity; for completeness
+        you should also connect the other entity to this one.
         """
         if str(source_side) not in self.connections:
             self.connections[str(source_side)] = dict()
@@ -268,8 +304,10 @@ class CircuitConnectableMixin:
             current_side[color] = list()
         current_color = current_side[color]
 
+        # For most entities you dont need a target_side
         entry = {"entity_id": target_num}
-        if target_name in double_connection_combinators:
+        # However, for dual connection point targets you do
+        if target_name in arithmetic_combinators or target_name in decider_combinators:
             entry = {"entity_id": target_num, "circuit_id": target_side}
 
         current_color.append(entry)
@@ -295,12 +333,42 @@ class ControlBehaviorMixin:
         # Convert signals from string do dict representation
         self._convert_signals()
 
-    def set_circuit_condition(self, **kwargs):
-        if "circuit_condition" not in self.control_behavior:
-            self.control_behavior["circuit_condition"] = {}
-        for k, v in kwargs.items():
-            self.control_behavior["circuit_condition"][k] = v
+    # def set_circuit_condition(self, **kwargs):
+    #     if "circuit_condition" not in self.control_behavior:
+    #         self.control_behavior["circuit_condition"] = {}
+    #     for k, v in kwargs.items():
+    #         self.control_behavior["circuit_condition"][k] = v
+    #     self._convert_signals()
+
+    def set_enabled_condition(self, a = None, op = "<", b = 0):
+        self.control_behavior["circuit_condition"] = {}
+        # Check the inputs
+        # A
+        if a is None:
+            pass # Keep the first signal empty
+        elif isinstance(a, str):
+            self.control_behavior["circuit_condition"]["first_signal"] = a
+        elif isinstance(a, int):
+            raise TypeError("'circuit_conditions' cannot have a constant first")
+        else:
+            raise TypeError("First param is neither 'str', 'int' or 'None'")
+        
+        # op
+        valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
+        if op not in valid_comparisons:
+            raise InvalidCircuitOperation(op)
+        self.control_behavior["circuit_condition"]["comparator"] = op
+
+        # B
+        if isinstance(b, str):
+            self.control_behavior["circuit_condition"]["second_signal"] = b
+        elif isinstance(b, int):
+            self.control_behavior["circuit_condition"]["constant"] = b
+        else:
+            raise TypeError("Second param is neither 'str' or 'int'")
+
         self._convert_signals()
+
 
     def set_enable_disable(self, value: bool) -> None:
         """
@@ -330,6 +398,14 @@ class ControlBehaviorMixin:
                         "name": name,
                         "type": get_signal_type(name)
                     }
+            if "comparator" in circuit_condition:
+                # Convert user to internal representation
+                op = circuit_condition["comparator"]
+                valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
+                actual_comparisons = [">", "<", "=", "≥",  "≤",  "≠"]
+                index = valid_comparisons.index(op)
+                op = actual_comparisons[index]
+                circuit_condition["comparator"] = op
             if "second_signal" in circuit_condition:
                 # If its a string, change it, otherwise treat it as gospel
                 if isinstance(circuit_condition["second_signal"], str):
@@ -480,7 +556,9 @@ class Entity:
         self.position = {"x": x, "y": y}
 
     def set_grid_position(self, x: int, y: int) -> None:
-        pass
+        absolute_x = x + self.width / 2.0
+        absolute_y = y + self.height / 2.0
+        self.set_absolute_position(absolute_x, absolute_y)
 
     def set_tags(self, tags: dict) -> None:
         """
@@ -543,8 +621,15 @@ class Entity:
         return "<Entity>" + str(self.to_dict())
 
 
-# Wooden Chest, Iron Chest, Steel Chest, Buffer Chest, Passive Provider Chest, Active Provider Chest
 class Container(CircuitConnectableMixin, InventoryMixin, Entity):
+    """
+    * `wooden-chest`
+    * `iron-chest`
+    * `steel-chest`
+    * `logistic-chest-buffer`
+    * `logistic-chest-active-provider`
+    * `logistic-chest-passive-provider`
+    """
     def __init__(self, **kwargs):
         if kwargs["name"] not in containers:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(kwargs["name"]))
@@ -552,6 +637,8 @@ class Container(CircuitConnectableMixin, InventoryMixin, Entity):
 
 
 class StorageTank(CircuitConnectableMixin, Entity):
+    """
+    """
     def __init__(self, **kwargs):
         if kwargs["name"] not in storage_tanks:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(kwargs["name"]))
@@ -565,8 +652,11 @@ class TransportBelt(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMi
         super(TransportBelt, self).__init__(**kwargs)
 
 
-class UndergroundBelt(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
-    pass
+class UndergroundBelt(IOTypeMixin, DirectionalMixin, Entity):
+    def __init__(self, **kwargs):
+        if kwargs["name"] not in underground_belts:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(kwargs["name"]))
+        super(UndergroundBelt, self).__init__(**kwargs)
 
 
 class Splitter(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
@@ -644,11 +734,19 @@ class Lamp(CircuitConnectableMixin, Entity):
 
 
 class ArithmeticCombinator(CircuitConnectableMixin, Entity):
-    pass
+    def __init__(self, **kwargs):
+        pass
+
+    def set_arithmetic_conditions(self, a, op, b):
+        pass
 
 
 class DeciderCombinator(CircuitConnectableMixin, Entity):
-    pass
+    def __init__(self, **kwargs):
+        pass
+    
+    def set_decider_conditions(self, a, op, b):
+        pass
 
 
 class ConstantCombinator(CircuitConnectableMixin, Entity):
@@ -781,6 +879,18 @@ def new_entity(name: str, **kwargs):
         return Lamp(**kwargs)
     if name in arithmetic_combinators:
         return ArithmeticCombinator(**kwargs)
+    if name in decider_combinators:
+        return DeciderCombinator(**kwargs)
+    if name in constant_combinators:
+        return ConstantCombinator(**kwargs)
+    if name in power_switches:
+        return PowerSwitch(**kwargs)
+    if name in programmable_speakers:
+        return ProgrammableSpeaker(**kwargs)
+    if name in boilers:
+        return Boiler(**kwargs)
+    if name in generators:
+        return Generator(**kwargs)
     if name in assembling_machines:
         return AssemblingMachine(**kwargs)
     
