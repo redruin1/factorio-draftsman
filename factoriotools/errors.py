@@ -25,6 +25,10 @@ class InvalidTileID(Exception):
 class InvalidSignalID(Exception):
     pass
 
+# Items
+class InvalidItemID(Exception):
+    pass
+
 # Entities
 class InvalidEntityID(Exception):
     pass

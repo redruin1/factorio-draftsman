@@ -1,7 +1,5 @@
 # test.py
 
-# TODO: maybe move all Errors to their own file
-
 import string
 import random
 from io import StringIO
@@ -29,8 +27,8 @@ class ValidateVersion(unittest.TestCase):
     def test_versions(self):
         self.assertEqual(factoriotools.__version__, "0.1")
         self.assertEqual(factoriotools.__version_info__, (0, 1))
-        self.assertEqual(factoriotools.__factorio_version__, "1.1.50.1")
-        self.assertEqual(factoriotools.__factorio_version_info__, (1, 1, 50, 1))
+        self.assertEqual(factoriotools.__factorio_version__, "1.1.53.1")
+        self.assertEqual(factoriotools.__factorio_version_info__, (1, 1, 53, 1))
 
 
 class ValidateSignalData(unittest.TestCase):
@@ -739,93 +737,296 @@ def main():
     # test_group.add_entity("transport-belt", "blah2", direction = factorio.UP)
     # test_group.add_tile("stone-path", 0, 0)
 
-    wooden_chest = factoriotools.new_entity("wooden-chest")
-    wooden_chest.set_grid_position(0, 0)
-    blueprint.add_entity(wooden_chest, id = "wooden_chest")
+    ##################################
 
-    iron_chest = factoriotools.new_entity("iron-chest")
-    iron_chest.set_grid_position(1, 0)
-    iron_chest.set_bar_index(20)
-    blueprint.add_entity(iron_chest, id = "iron_chest")
+    # wooden_chest = factoriotools.new_entity("wooden-chest")
+    # wooden_chest.set_grid_position(0, 0)
+    # blueprint.add_entity(wooden_chest, id = "wooden_chest")
 
-    steel_chest = factoriotools.new_entity("steel-chest")
-    steel_chest.set_grid_position(2, 0)
-    steel_chest.set_bar_index(1)
-    blueprint.add_entity(steel_chest, id = "steel_chest")
+    # iron_chest = factoriotools.new_entity("iron-chest")
+    # iron_chest.set_grid_position(1, 0)
+    # iron_chest.set_bar_index(20)
+    # blueprint.add_entity(iron_chest, id = "iron_chest")
+
+    # steel_chest = factoriotools.new_entity("steel-chest")
+    # steel_chest.set_grid_position(2, 0)
+    # steel_chest.set_bar_index(1)
+    # blueprint.add_entity(steel_chest, id = "steel_chest")
     
-    storage_tank = factoriotools.new_entity("storage-tank")
-    storage_tank.set_grid_position(0, 1)
-    blueprint.add_entity(storage_tank, id = "storage_tank")
+    # storage_tank = factoriotools.new_entity("storage-tank")
+    # storage_tank.set_grid_position(0, 1)
+    # blueprint.add_entity(storage_tank, id = "storage_tank")
 
-    blueprint.add_wire_connection("red", "wooden_chest", 1, "iron_chest", 1)
-    blueprint.add_wire_connection("red", "iron_chest", 1, "steel_chest", 1)
-    blueprint.add_wire_connection("red", "steel_chest", 1, "storage_tank", 1)
+    # blueprint.add_circuit_connection("red", "wooden_chest", "iron_chest")
+    # blueprint.add_circuit_connection("red", "iron_chest", "steel_chest")
+    # blueprint.add_circuit_connection("red", "steel_chest", "storage_tank")
 
-    transport_belt = factoriotools.new_entity("transport-belt")
-    transport_belt.set_grid_position(0, 4)
-    blueprint.add_entity(transport_belt)
-    transport_belt.set_grid_position(1, 4)
-    transport_belt.set_enable_disable(False)
-    transport_belt.set_read_hand_contents(True)
-    transport_belt.set_read_mode(factoriotools.PULSE)
-    blueprint.add_entity(transport_belt, id = "yellow_belt")
+    # transport_belt = factoriotools.new_entity("transport-belt")
+    # transport_belt.set_grid_position(0, 4)
+    # blueprint.add_entity(transport_belt)
+    # transport_belt.set_grid_position(1, 4)
+    # transport_belt.set_enable_disable(False)
+    # transport_belt.set_read_hand_contents(True)
+    # transport_belt.set_read_mode(factoriotools.ReadMode.PULSE)
+    # blueprint.add_entity(transport_belt, id = "yellow_belt")
 
-    #fast_belt = factoriotools.new_entity("fast-transport-belt")
-    fast_belt = factoriotools.TransportBelt(name="fast-transport-belt")
-    fast_belt.set_grid_position(2, 4)
-    fast_belt.set_enable_disable(True)
-    fast_belt.set_enabled_condition("electric-mining-drill", ">", 15)
-    blueprint.add_entity(fast_belt, id = "red_belt")
-    fast_belt.set_grid_position(3, 4)
-    fast_belt.set_direction(factoriotools.LEFT)
-    fast_belt.set_enable_disable(True)
-    fast_belt.set_read_hand_contents(True)
-    fast_belt.set_read_mode(factoriotools.HOLD)
-    fast_belt.set_enabled_condition() # Reset enabled condition
-    blueprint.add_entity(fast_belt, id = "other_red_belt")
-    #fast_belt.set_name("express-transport-belt")
-    express_belt = factoriotools.TransportBelt(
-        name="express-transport-belt", 
-        position=[4, 4],
-        direction = factoriotools.RIGHT,
-        control_behavior={
-            "circuit_enable_disable": True,
-            "circuit_read_hand_contents": True,
-            "circuit_contents_read_mode": 0,
-            "circuit_condition": {
-                "first_signal": "signal-blue",
-                "comparator": ">=",
-                "second_signal": "signal-blue"
-            }
-        })
-    blueprint.add_entity(express_belt, id = "blue_belt")
+    # #fast_belt = factoriotools.new_entity("fast-transport-belt")
+    # fast_belt = factoriotools.TransportBelt(name="fast-transport-belt")
+    # fast_belt.set_grid_position(2, 4)
+    # fast_belt.set_enable_disable(True)
+    # fast_belt.set_enabled_condition("electric-mining-drill", ">", 15)
+    # blueprint.add_entity(fast_belt, id = "red_belt")
+    # fast_belt.set_grid_position(3, 4)
+    # fast_belt.set_direction(factoriotools.WEST)
+    # fast_belt.set_enable_disable(True)
+    # fast_belt.set_read_hand_contents(True)
+    # fast_belt.set_read_mode(factoriotools.ReadMode.HOLD)
+    # fast_belt.set_enabled_condition() # Reset enabled condition
+    # blueprint.add_entity(fast_belt, id = "other_red_belt")
+    # #fast_belt.set_name("express-transport-belt")
+    # express_belt = factoriotools.TransportBelt(
+    #     name="express-transport-belt", 
+    #     position=[4, 4],
+    #     direction = factoriotools.EAST,
+    #     control_behavior={
+    #         "circuit_enable_disable": True,
+    #         "circuit_read_hand_contents": True,
+    #         "circuit_contents_read_mode": 0,
+    #         "circuit_condition": {
+    #             "first_signal": "signal-blue",
+    #             "comparator": ">=",
+    #             "second_signal": "signal-blue"
+    #         }
+    #     })
+    # blueprint.add_entity(express_belt, id = "blue_belt")
 
-    blueprint.add_wire_connection("red", "yellow_belt", 1, "red_belt", 1)
-    blueprint.add_wire_connection("green", "other_red_belt", 1, "blue_belt", 1)
+    # blueprint.add_circuit_connection("red", "yellow_belt", "red_belt")
+    # blueprint.add_circuit_connection("green", "other_red_belt", "blue_belt")
 
-    underground_belt = factoriotools.new_entity("underground-belt")
-    underground_belt.set_grid_position(0, 6)
-    blueprint.add_entity(underground_belt)
-    underground_belt.set_grid_position(0, 5)
-    underground_belt.set_io_type("output")
-    blueprint.add_entity(underground_belt)
+    # underground_belt = factoriotools.new_entity("underground-belt")
+    # underground_belt.set_grid_position(0, 6)
+    # blueprint.add_entity(underground_belt)
+    # underground_belt.set_grid_position(0, 5)
+    # underground_belt.set_io_type("output")
+    # blueprint.add_entity(underground_belt)
 
-    underground_belt = factoriotools.UndergroundBelt(name = "fast-underground-belt")
-    underground_belt.set_grid_position(1, 5)
-    underground_belt.set_io_type("output")
-    blueprint.add_entity(underground_belt)
-    underground_belt.set_grid_position(1, 6)
-    underground_belt.set_io_type("input")
-    blueprint.add_entity(underground_belt)
-    underground_belt = factoriotools.new_entity("express-underground-belt")
-    #blueprint.add_entity(underground_belt, "under1")
-    #blueprint.add_entity(underground_belt, "under2")
+    # underground_belt = factoriotools.UndergroundBelt(name = "fast-underground-belt")
+    # underground_belt.set_grid_position(1, 5)
+    # underground_belt.set_io_type("output")
+    # blueprint.add_entity(underground_belt)
+    # underground_belt.set_grid_position(1, 6)
+    # underground_belt.set_io_type("input")
+    # blueprint.add_entity(underground_belt)
 
-    # This syntax would be nice
-    # blueprint.entities["under1"].set_grid_position(2, 5)
+    # underground_belt = factoriotools.new_entity("express-underground-belt")
+    # underground_belt.set_direction(factoriotools.EAST)
+    # blueprint.add_entity(underground_belt, id = "under1")
+    # blueprint.add_entity(underground_belt, id = "under2")
+
+    # blueprint.find_entity_by_id("under1").set_grid_position(2, 5)
     # #blueprint.entities["under1"].set_io_type("input") # input is default
-    # blueprint.entities["under2"].set_grid_position(2, 5)
-    # blueprint.entities["under2"].set_io_type("output")
+    # blueprint.find_entity_by_id("under2").set_grid_position(3, 5)
+    # blueprint.find_entity_by_id("under2").set_io_type("output")
+
+    # splitter = factoriotools.Splitter("splitter")
+    # splitter.set_grid_position(0, 7)
+    # blueprint.add_entity(splitter)
+    # splitter.name = "fast-splitter"
+    # splitter.direction = factoriotools.SOUTH
+    # splitter.input_priority = "left"
+    # splitter.output_priority = "right"
+    # splitter.set_grid_position(2, 7)
+    # blueprint.add_entity(splitter)
+    # splitter.name = "express-splitter"
+    # splitter.set_direction(factoriotools.EAST)
+    # #splitter.set_grid_position(4, 6) # currently busted with rotated entities
+    # splitter.set_absolute_position(4.5, 7) # can do this instead
+    # splitter.set_input_priority(None)
+    # splitter.set_output_priority("left")
+    # splitter.set_filter("small-lamp")
+    # blueprint.add_entity(splitter)
+
+    # inserter = factoriotools.Inserter("burner-inserter")
+    # inserter.set_direction(factoriotools.SOUTH)
+
+    # inserter.set_grid_position(0, 8)
+    # inserter.set_mode_of_operation(factoriotools.ModeOfOperation.NONE) # this is far too close to None
+    # inserter.set_stack_size_override(2)
+    # blueprint.add_entity(inserter, id = "a")
+    
+    # inserter.name = "inserter"
+    # inserter.set_grid_position(1, 8)
+    # inserter.set_stack_size_override(None)
+    # inserter.set_mode_of_operation(None)
+    # inserter.set_enabled_condition("crude-oil", "=", "heavy-oil")
+    # blueprint.add_entity(inserter, id = "b")
+
+    # inserter.name = "long-handed-inserter"
+    # inserter.set_grid_position(2, 8)
+    # inserter.remove_enabled_condition()
+    # inserter.set_mode_of_operation(factoriotools.ModeOfOperation.NONE)
+    # inserter.set_read_hand_contents(True)
+    # inserter.set_read_mode(factoriotools.ReadMode.PULSE)
+    # blueprint.add_entity(inserter, id = "c")
+
+    # inserter.name = "fast-inserter"
+    # inserter.set_grid_position(3, 8)
+    # inserter.set_mode_of_operation(None)
+    # inserter.set_read_mode(factoriotools.ReadMode.HOLD)
+    # inserter.set_enabled_condition("signal-1", ">=", "signal-2")
+    # print(inserter.control_behavior)
+    # blueprint.add_entity(inserter, id = "d")
+
+    # inserter.name = "stack-inserter"
+    # inserter.set_grid_position(4, 8)
+    # inserter.set_enabled_condition("signal-anything", ">", 0)
+    # inserter.set_read_hand_contents(True)
+    # inserter.set_read_mode(factoriotools.ReadMode.PULSE)
+    # inserter.set_circuit_stack_size(True)
+    # inserter.set_stack_control_signal("signal-S")
+    # blueprint.add_entity(inserter, id = "e")
+
+    # blueprint.add_circuit_connection("green", "a", "b")
+    # blueprint.add_circuit_connection("green", "b", "c")
+    # blueprint.add_circuit_connection("green", "c", "d")
+    # blueprint.add_circuit_connection("green", "d", "e")
+
+    # blueprint.add_entity("filter-inserter", position = [0, 9], id = "unwired1")
+    # blueprint.add_entity("stack-filter-inserter", position = [1, 9], id = "unwired2")
+
+    # filter_inserter = blueprint.find_entity_by_id("unwired1")
+    # filter_inserter.set_item_filters([
+    #     "logistic-chest-active-provider", 
+    #     "logistic-chest-passive-provider",
+    #     "logistic-chest-storage",
+    #     "logistic-chest-buffer",
+    #     "logistic-chest-requester"
+    # ])
+    # stack_filter_inserter = blueprint.find_entity_by_id("unwired2")
+    # stack_filter_inserter.set_item_filters([
+    #     "roboport"
+    # ])
+    # stack_filter_inserter.set_filter_mode("blacklist")
+    # stack_filter_inserter.set_stack_size_override(6)
+
+    # blueprint.add_entity(
+    #     "filter-inserter", id = "wired1",
+    #     position = [2, 9], 
+    #     direction = factoriotools.SOUTH,
+    #     control_behavior = {
+    #         "circuit_mode_of_operation": factoriotools.ModeOfOperation.SET_FILTERS,
+    #         "circuit_hand_read_mode": factoriotools.ReadMode.HOLD,
+    #         "circuit_set_stack_size": True,
+    #         "stack_control_input_signal": "signal-S"
+    #     }
+    # )
+    # blueprint.add_entity(
+    #     "stack-filter-inserter", id = "wired2",
+    #     position = [3, 9],
+    #     direction = factoriotools.SOUTH,
+    #     control_behavior = {
+    #         #"circuit_condition": ["signal-anything", ">", 10],
+    #         "circuit_condition": {
+    #             "first_signal": "signal-anything",
+    #             "comparator": ">",
+    #             "constant": 10
+    #         },
+    #         "circuit_read_hand_contents": True,
+    #         "circuit_set_stack_size": True,
+    #         "stack_control_input_signal": "signal-S"
+    #     },
+    #     filters = ["raw-fish"],
+    #     filter_mode = "blacklist"
+    # )
+
+    # blueprint.add_circuit_connection("red", "wired1", "wired2")
+
+    # blueprint.add_entity(
+    #     "loader", 
+    #     position = [0, 10],
+    #     direction = factoriotools.NORTH,
+    #     type = "output"
+    # )
+    # blueprint.add_entity(
+    #     "fast-loader", 
+    #     position = [1, 10],
+    #     direction = factoriotools.SOUTH,
+    #     filters = ["wood"],
+    #     type = "input"
+    # )
+    # blueprint.add_entity(
+    #     "express-loader", 
+    #     position = [2, 10],
+    #     direction = factoriotools.SOUTH,
+    #     filters = ["coal", "stone", "iron-ore", "copper-ore", "uranium-ore"],
+    #     type = "output"
+    # )
+
+    # wood_pole = factoriotools.ElectricPole("small-electric-pole")
+    # wood_pole.set_grid_position(0, 12)
+    # blueprint.add_entity(wood_pole, id = "wood_pole")
+    # medium_pole = factoriotools.ElectricPole("medium-electric-pole")
+    # medium_pole.set_grid_position(1, 12)
+    # medium_pole.add_power_connection("wood_pole") # duplicate, but lets handle
+    # medium_pole.add_power_connection("big_pole")
+    # blueprint.add_entity(medium_pole, id = "medium_pole")
+    # blueprint.add_entity(
+    #     "big-electric-pole", id = "big_pole",
+    #     position = [2, 12],
+    #     neighbours = ["medium_pole", "substation"]
+    # )
+    # blueprint.add_entity(
+    #     "substation", id = "substation",
+    #     position = [4, 12],
+    #     neighbours = ["big_pole"]
+    # )
+
+    # blueprint.add_power_connection("wood_pole", "medium_pole")
+    # #blueprint.add_power_connection("medium_pole", "wood_pole")
+    # blueprint.add_circuit_connection("red", "big_pole", "substation")
+    # blueprint.add_circuit_connection("green", "big_pole", "substation")
+
+    # blueprint.add_entity("pipe", position = [0, 14])
+    # blueprint.add_entity("pipe-to-ground", position = [1, 14], direction = factoriotools.WEST)
+    # blueprint.add_entity("pipe-to-ground", position = [2, 14], direction = factoriotools.EAST)
+
+    # pump = factoriotools.Pump("pump")
+    # pump.set_direction(factoriotools.EAST)
+    # pump.set_grid_position(3, 14)
+    # pump.set_enabled_condition("substation", ">", 1)
+    # blueprint.add_entity(pump, id = "pump")
+
+    # blueprint.add_circuit_connection("red", "substation", "pump")
+    # blueprint.add_circuit_connection("green", "substation", "pump")
+
+    #########################################
+
+    rail = factoriotools.StraightRail("straight-rail")
+    rail.set_grid_position(0, 0)
+    for i in range(8):
+        rail.set_direction(i)
+        blueprint.add_entity(rail)
+
+    rail.set_direction(factoriotools.EAST)
+    for i in range(4):
+        rail.set_grid_position((i + 1) * 2, 0)
+        blueprint.add_entity(rail)
+
+    rail = factoriotools.CurvedRail("curved-rail")
+    rail.set_grid_position(12, -2)
+    # for i in range(0, 8, 2):
+    #     rail.set_direction(i)
+    #     blueprint.add_entity(rail)
+    rail.set_direction(factoriotools.EAST)
+    blueprint.add_entity(rail)
+    rail.set_grid_position(12, 0)
+    rail.set_direction(factoriotools.SOUTHEAST)
+    blueprint.add_entity(rail)
+
+    locomotive = factoriotools.Locomotive("locomotive")
+    locomotive.set_absolute_position(5, 1)
+    locomotive.set_orientation(0.75)
+    blueprint.add_entity(locomotive)
 
     print(blueprint)
     print(blueprint.to_string())
