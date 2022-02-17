@@ -479,7 +479,7 @@ def update():
     lua.globals().python_require = python_require
 
     # Register more compatability changes and define helper functions
-    lua.execute(file_to_string("factoriotools/compatability.lua"))
+    lua.execute(file_to_string("factoriotools/compatability/compatability.lua"))
     # Get the functions from Lua for ease of access
     ADD_PATH             = lua.globals()["ADD_PATH"]
     SET_PATH             = lua.globals()["SET_PATH"]
@@ -546,7 +546,7 @@ def update():
     print(dict(data.raw["transport-belt"]))
 
     # run the extractor
-    lua.execute(file_to_string("extract_data.lua"))
+    lua.execute(file_to_string("factoriotools/compatability/extract_data.lua"))
 
     pass
 

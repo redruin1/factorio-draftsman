@@ -58,3 +58,7 @@ def get_signal_type(signal_name: str) -> str:
         return "item"
     else:
         raise InvalidSignalID("'" + str(signal_name) + "'")
+
+
+def signal_dict(name: str) -> dict:
+    return {"name": name, "type": get_signal_type(name)}

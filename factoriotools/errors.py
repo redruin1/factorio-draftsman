@@ -33,7 +33,10 @@ class InvalidItemID(Exception):
 class InvalidEntityID(Exception):
     pass
 
-class InvalidCircuitOperation(Exception):
+class InvalidConditionOperation(Exception):
+    pass
+
+class InvalidArithmeticOperation(Exception):
     pass
 
 # Update

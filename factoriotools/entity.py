@@ -12,22 +12,19 @@
 # However, we keep the error / warning checking in the setters to make them useful
 
 # TODO: refine control_behavior, shit is unweildly and unintuitive
+# TODO: add rail grid placing, add warnings/errors for rails that are placed an odd number of tiles apart
+# in fact, a rails and rail entities have a whole lot of extra rules that need to be accounted for
 
 from factoriotools.errors import (
-    InvalidEntityID, InvalidItemID, InvalidSignalID, InvalidCircuitOperation
+    InvalidEntityID, InvalidItemID, InvalidSignalID, 
+    InvalidArithmeticOperation, InvalidConditionOperation
 )
-from factoriotools.signals import get_signal_type, item_signals
+from factoriotools.signals import Signal, item_signals, signal_dict#, get_signal_type
 from factoriotools.entity_data import entity_dimensions
 
 import copy
 from enum import IntEnum
 from typing import Any, Union, Callable
-
-# class Direction(IntEnum):
-#     UP = 0,
-#     RIGHT = 2,
-#     DOWN = 4,
-#     LEFT = 6
 
 class ReadMode(IntEnum):
     PULSE = 0
@@ -37,7 +34,6 @@ class ModeOfOperation(IntEnum):
     ENABLE_DISABLE = 0
     SET_FILTERS = 1
     NONE = 3
-
 
 # from entity_data import *
 
@@ -429,7 +425,7 @@ class OrientationMixin:
 
         self.orientation = 0.0
         if "orientation" in kwargs:
-            self.set_direction(kwargs["orientation"])
+            self.set_orientation(kwargs["orientation"])
         self._add_export("orientation", lambda x: x != 0)
 
     def set_orientation(self, orientation: float) -> None:
@@ -462,7 +458,56 @@ class InventoryFilterMixin:
     """
     Allows inventories to set content filters. Used in cargo wagons.
     """
-    pass
+    def __init__(self, name: str, **kwargs):
+        super().__init__(name, **kwargs)
+
+        self.inventory = {}
+        if "inventory" in kwargs:
+            self.set_inventory(kwargs["inventory"])
+        self._add_export("inventory", lambda x: len(x) != 0)
+
+    def set_inventory(self, configuration: dict) -> None:
+        """
+        Sets the entire inventory configuration for the cargo wagon.
+        """
+        # Validate filter schema
+        # TODO
+        self.inventory = configuration
+
+    def set_inventory_filter(self, index: int, name: str) -> None:
+        """
+        Sets the item filter at location `index` to `name`. If `name` is set to
+        `None` the item filter at that location is removed.
+        """
+        if "filters" not in self.inventory:
+            self.inventory["filters"] = []
+
+        # TODO: error checking
+        
+        # Check to see if filters already contains an entry with the same index
+        for i, filter in enumerate(self.inventory["filters"]):
+            if index == filter["index"]: # Index already exists in the list
+                if name is None: # Delete the entry
+                    del self.inventory["filters"][i]
+                else: # Set the new value
+                    self.inventory["filters"][i] = {"index": index,"name": name}
+                    
+                return
+
+        # If no entry with the same index was found
+        self.inventory["filters"].append({"index": index, "name": name})
+            
+
+    def set_bar(self, index: int) -> None:
+        """
+        Sets the bar of the train's inventory. Setting it to `None` removes the
+        parameter from the configuration.
+        """
+        if index is None:
+            self.inventory.pop("bar", None)
+        else:
+            # TODO: add error checking
+            self.inventory["bar"] = index
 
 
 class IOTypeMixin:
@@ -560,25 +605,39 @@ class ControlBehaviorMixin:
 
         self.control_behavior = {}
         if "control_behavior" in kwargs:
-            self.control_behavior = kwargs["control_behavior"]
-            # Convert signals from string do dict representation, if necessary
-            self._convert_signals()
+            self.set_control_behavior(kwargs["control_behavior"])
 
         self._add_export("control_behavior", lambda x: len(x) != 0)
 
     def set_control_behavior(self, data: dict):
         self.control_behavior = data
         # Convert signals from string do dict representation
-        self._convert_signals()
+        #self._convert_signals()
         # Validate that they match using a schema
         #CONTROL_BEHAVIOR_SCHEMA.validate(self.control_behavior)
 
-    # def set_circuit_condition(self, **kwargs):
-    #     if "circuit_condition" not in self.control_behavior:
-    #         self.control_behavior["circuit_condition"] = {}
-    #     for k, v in kwargs.items():
-    #         self.control_behavior["circuit_condition"][k] = v
-    #     self._convert_signals()
+    def _normalize_control_behavior(self) -> None:
+        """
+        Unified function for rectifying ease of use format to strict blueprint
+        format.
+        """
+        pass # TODO
+
+
+class CircuitConditionMixin: # (ControlBehaviorMixin)
+    """
+    Allows the Entity to have an circuit enable condition. Used in Pumps, 
+    Inserters, Belts, etc.
+    """
+    def __init__(self, name: str, **kwargs):
+        super().__init__(name, **kwargs)
+
+        self.control_behavior = {}
+        if "control_behavior" in kwargs:
+            self.control_behavior = kwargs["control_behavior"]
+            # Convert signals from string do dict representation, if necessary
+            self._normalize_circuit_condition()
+        self._add_export("control_behavior", lambda x: len(x) != 0)
 
     def set_enabled_condition(self, a = None, op = "<", b = 0):
         self.control_behavior["circuit_condition"] = {}
@@ -596,7 +655,7 @@ class ControlBehaviorMixin:
         # op
         valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
         if op not in valid_comparisons:
-            raise InvalidCircuitOperation(op)
+            raise InvalidConditionOperation(op)
         self.control_behavior["circuit_condition"]["comparator"] = op
 
         # B
@@ -607,15 +666,56 @@ class ControlBehaviorMixin:
         else:
             raise TypeError("Second param is neither 'str' or 'int'")
 
-        self._convert_signals()
+        self._normalize_circuit_condition()
 
-    def remove_enabled_condition(self): # maybe this is more explicit?
+    def remove_enabled_condition(self):
+        """
+        """
         self.control_behavior.pop("circuit_condition", None)
 
     def set_enable_disable(self, value: bool) -> None:
         """
         """
         self.control_behavior["circuit_enable_disable"] = value
+
+    def _normalize_circuit_condition(self) -> None:
+        """
+        """
+        if "circuit_condition" in self.control_behavior:
+            circuit_condition = self.control_behavior["circuit_condition"]
+            if "first_signal" in circuit_condition:
+                # If its a string, change it, otherwise treat it as gospel
+                if isinstance(circuit_condition["first_signal"], str):
+                    name = circuit_condition["first_signal"]
+                    # circuit_condition["first_signal"] = {
+                    #     "name": name,
+                    #     "type": get_signal_type(name)
+                    # }
+                    circuit_condition["first_signal"] = signal_dict(name)
+            if "comparator" in circuit_condition:
+                # Convert user to internal representation
+                op = circuit_condition["comparator"]
+                valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
+                actual_comparisons = [">", "<", "=", "≥",  "≤",  "≠"]
+                index = valid_comparisons.index(op)
+                op = actual_comparisons[index]
+                circuit_condition["comparator"] = op
+            if "second_signal" in circuit_condition:
+                # If its a string, change it, otherwise treat it as gospel
+                if isinstance(circuit_condition["second_signal"], str):
+                    name = circuit_condition["second_signal"]
+                    # circuit_condition["second_signal"] = {
+                    #     "name": name,
+                    #     "type": get_signal_type(name)
+                    # }
+                    circuit_condition["second_signal"] = signal_dict(name)
+
+        print(self.control_behavior)
+
+
+class CircuitReadHandMixin: # (ControlBehaviorMixin)
+    def __init__(self, name: str, **kwargs):
+        super().__init__(name, **kwargs)
 
     def set_read_hand_contents(self, value: bool) -> None:
         """
@@ -627,161 +727,8 @@ class ControlBehaviorMixin:
         """
         self.control_behavior["circuit_hand_read_mode"] = mode
 
-    def _convert_signals(self) -> None:
-        """
-        """
-        if "circuit_condition" in self.control_behavior:
-            circuit_condition = self.control_behavior["circuit_condition"]
-            if "first_signal" in circuit_condition:
-                # If its a string, change it, otherwise treat it as gospel
-                if isinstance(circuit_condition["first_signal"], str):
-                    name = circuit_condition["first_signal"]
-                    circuit_condition["first_signal"] = {
-                        "name": name,
-                        "type": get_signal_type(name)
-                    }
-            if "comparator" in circuit_condition:
-                # Convert user to internal representation
-                op = circuit_condition["comparator"]
-                valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
-                actual_comparisons = [">", "<", "=", "≥",  "≤",  "≠"]
-                index = valid_comparisons.index(op)
-                op = actual_comparisons[index]
-                circuit_condition["comparator"] = op
-            if "second_signal" in circuit_condition:
-                # If its a string, change it, otherwise treat it as gospel
-                if isinstance(circuit_condition["second_signal"], str):
-                    name = circuit_condition["second_signal"]
-                    circuit_condition["second_signal"] = {
-                        "name": name,
-                        "type": get_signal_type(name)
-                    }
 
-        if "stack_control_input_signal" in self.control_behavior:
-            name = self.control_behavior["stack_control_input_signal"]
-            self.control_behavior["stack_control_input_signal"] = {
-                "name": name,
-                "type": get_signal_type(name)
-            }
-
-
-class RequestFiltersMixin:
-    """
-    """
-    def __init__(self, name: str, **kwargs):
-        super().__init__(name, **kwargs)
-        request_filters = None
-        if "request_filters" in kwargs:
-            self.set_request_filters(kwargs["request_filters"])
-        self._add_export("request_filters", lambda x: x is not None)
-
-    def set_request_filters(self, test):
-        """
-        """
-        # TODO
-        pass
-
-
-class CircuitConditionMixin: # TODO: review?
-    """
-    Allows the Entity to have an circuit enable condition. Used in Pumps, 
-    Inserters, Belts, etc.
-    """
-    def __init__(self, name: str, **kwargs):
-        super().__init__(name, **kwargs)
-
-        # TODO: big think
-        self.control_behavior = {}
-        if "control_behavior" in kwargs:
-            self.control_behavior = kwargs["control_behavior"]
-            # Convert signals from string do dict representation, if necessary
-            self._convert_signals()
-
-        self._add_export("control_behavior", lambda x: len(x) != 0)
-
-    def set_enabled_condition(self, a = None, op = "<", b = 0):
-        self.control_behavior["circuit_condition"] = {}
-        # Check the inputs
-        # A
-        if a is None:
-            pass # Keep the first signal empty
-        elif isinstance(a, str):
-            self.control_behavior["circuit_condition"]["first_signal"] = a
-        elif isinstance(a, int):
-            raise TypeError("'circuit_conditions' cannot have a constant first")
-        else:
-            raise TypeError("First param is neither 'str', 'int' or 'None'")
-        
-        # op
-        valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
-        if op not in valid_comparisons:
-            raise InvalidCircuitOperation(op)
-        self.control_behavior["circuit_condition"]["comparator"] = op
-
-        # B
-        if isinstance(b, str):
-            self.control_behavior["circuit_condition"]["second_signal"] = b
-        elif isinstance(b, int):
-            self.control_behavior["circuit_condition"]["constant"] = b
-        else:
-            raise TypeError("Second param is neither 'str' or 'int'")
-
-        self._convert_signals()
-
-    def remove_enabled_condition(self):
-        """
-        """
-        self.control_behavior.pop("circuit_condition", None)
-
-    def _convert_signals(self) -> None:
-        """
-        """
-        if "circuit_condition" in self.control_behavior:
-            circuit_condition = self.control_behavior["circuit_condition"]
-            if "first_signal" in circuit_condition:
-                # If its a string, change it, otherwise treat it as gospel
-                if isinstance(circuit_condition["first_signal"], str):
-                    name = circuit_condition["first_signal"]
-                    circuit_condition["first_signal"] = {
-                        "name": name,
-                        "type": get_signal_type(name)
-                    }
-            if "comparator" in circuit_condition:
-                # Convert user to internal representation
-                op = circuit_condition["comparator"]
-                valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
-                actual_comparisons = [">", "<", "=", "≥",  "≤",  "≠"]
-                index = valid_comparisons.index(op)
-                op = actual_comparisons[index]
-                circuit_condition["comparator"] = op
-            if "second_signal" in circuit_condition:
-                # If its a string, change it, otherwise treat it as gospel
-                if isinstance(circuit_condition["second_signal"], str):
-                    name = circuit_condition["second_signal"]
-                    circuit_condition["second_signal"] = {
-                        "name": name,
-                        "type": get_signal_type(name)
-                    }
-
-        if "stack_control_input_signal" in self.control_behavior:
-            name = self.control_behavior["stack_control_input_signal"]
-            self.control_behavior["stack_control_input_signal"] = {
-                "name": name,
-                "type": get_signal_type(name)
-            }
-
-
-class ReadHandMixin:
-    def __init__(self, name: str, **kwargs):
-        super().__init__(name, **kwargs)
-
-    def set_read_hand(self, value: bool) -> None:
-        pass
-
-    def set_read_hand_mode(self, mode: int) -> None:
-        pass
-
-class StackSizeMixin:
+class StackSizeMixin: # (ControlBehaviorMixin)
     """
     """
     def __init__(self, name: str, **kwargs):
@@ -790,6 +737,8 @@ class StackSizeMixin:
         if "override_stack_size" in kwargs:
             self.set_stack_size_override(kwargs["override_stack_size"])
         self._add_export("override_stack_size", lambda x: x is not None)
+
+        self._normalize_stack_signal()
 
     def set_stack_size_override(self, stack_size: int):
         """
@@ -805,8 +754,8 @@ class StackSizeMixin:
         # TODO: error checking
         if enabled is None:
             self.control_behavior.pop("circuit_set_stack_size", None)
-
-        self.control_behavior["circuit_set_stack_size"] = enabled
+        else:
+            self.control_behavior["circuit_set_stack_size"] = enabled
 
     def set_stack_control_signal(self, signal: str):
         """
@@ -815,19 +764,24 @@ class StackSizeMixin:
         # TODO: error checking
         if signal is None:
             self.control_behavior.pop("stack_control_input_signal")
+        else:
+            self.control_behavior["stack_control_input_signal"] = signal
+            self._normalize_stack_signal()
 
-        self.control_behavior["stack_control_input_signal"] = {
-            "name": signal,
-            "type": get_signal_type(signal)
-        }
+    def _normalize_stack_signal(self) -> None:
+        """
+        """
+        if "stack_control_input_signal" in self.control_behavior:
+            name = self.control_behavior["stack_control_input_signal"]
+            if isinstance(name, str):
+                self.control_behavior["stack_control_input_signal"] = signal_dict(name)
 
 
-class ModeOfOperationMixin:
+class ModeOfOperationMixin: # (ControlBehaviorMixin)
     """
     """
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
-        # This is essentially a subclass of ControlBehaviorMixin, so no inits
 
     def set_mode_of_operation(self, mode: ModeOfOperation):
         """
@@ -847,7 +801,6 @@ class FiltersMixin:
             self.set_item_filters(kwargs["filters"])
         self._add_export("filters", lambda x: x is not None)
 
-
     def set_item_filters(self, filters: list):
         """
         Sets the item filters for the inserter or loader.
@@ -857,15 +810,16 @@ class FiltersMixin:
             for item in filters:
                 if item not in item_signals:
                     raise InvalidItemID(item)
-        self.filters = filters
-        self._convert_filters()
 
-    def _convert_filters(self):
-        """
-        Changes from intuitive list to list of {"name", "index"} objects.
-        """
-        for i, item in enumerate(self.filters):
-            self.filters[i] = {"name": item, "index": i+1}
+        #self._convert_filters()
+        #formatted = []
+        for i in range(len(filters)):
+            filters[i] = {"index": i + 1, "name": filters[i]}
+        self.filters = filters
+
+    def set_item_filter(self, index: int, item: str) -> None:
+        pass # TODO
+
 
 class RecipeMixin:
     def __init__(self, name: str, **kwargs):
@@ -880,7 +834,25 @@ class RecipeMixin:
         #     raise InvalidRecipeID(recipe)
         self.recipe = recipe
 
-class ItemRequestMixin:
+
+class RequestFiltersMixin:
+    """
+    """
+    def __init__(self, name: str, **kwargs):
+        super().__init__(name, **kwargs)
+        request_filters = None
+        if "request_filters" in kwargs:
+            self.set_request_filters(kwargs["request_filters"])
+        self._add_export("request_filters", lambda x: x is not None)
+
+    def set_request_filters(self, test):
+        """
+        """
+        # TODO
+        pass
+
+
+class ItemRequestMixin: # is this redundant?
     """
     NOTE: this is for module requests and stuff like that, not logistics!
 
@@ -934,7 +906,7 @@ class StorageTank(CircuitConnectableMixin, Entity):
         super(StorageTank, self).__init__(name, **kwargs)
 
 
-class TransportBelt(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+class TransportBelt(CircuitReadHandMixin, CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
     def __init__(self, name: str, **kwargs):
         if name not in transport_belts:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
@@ -1002,7 +974,7 @@ class Splitter(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, 
         self.output_priority = side
 
 
-class Inserter(ModeOfOperationMixin, ControlBehaviorMixin, CircuitConnectableMixin, StackSizeMixin, DirectionalMixin, Entity):
+class Inserter(StackSizeMixin, CircuitReadHandMixin, ModeOfOperationMixin, CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
     """
     """
     def __init__(self, name: str, **kwargs):
@@ -1011,7 +983,7 @@ class Inserter(ModeOfOperationMixin, ControlBehaviorMixin, CircuitConnectableMix
         super(Inserter, self).__init__(name, **kwargs)
 
 
-class FilterInserter(FiltersMixin, ModeOfOperationMixin, ControlBehaviorMixin, CircuitConnectableMixin, StackSizeMixin, DirectionalMixin, Entity):
+class FilterInserter(FiltersMixin, StackSizeMixin, CircuitReadHandMixin, ModeOfOperationMixin, CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
     def __init__(self, name: str, **kwargs):
         if name not in filter_inserters:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
@@ -1104,21 +1076,27 @@ class CargoWagon(InventoryFilterMixin, OrientationMixin, Entity):
 
 
 class FluidWagon(OrientationMixin, Entity):
-    pass
+    def __init__(self, name: str, **kwargs):
+        if name not in fluid_wagons:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(FluidWagon, self).__init__(name, **kwargs)
 
 
 class ArtilleryWagon(OrientationMixin, Entity):
-    pass
+    def __init__(self, name: str, **kwargs):
+        if name not in artillery_wagons:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(ArtilleryWagon, self).__init__(name, **kwargs)
 
 
 class LogisticsRequestContainer(RequestFiltersMixin, CircuitConnectableMixin, InventoryMixin, Entity):
-    def __init__(self, **kwargs):
-        if kwargs["name"] not in logistic_containers:
+    def __init__(self, name: str, **kwargs):
+        if name not in logistic_containers:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(kwargs["name"]))
-        super().__init__(**kwargs)
+        super().__init__(name, **kwargs)
 
 
-class Roboport(CircuitConnectableMixin, InventoryMixin, Entity):
+class Roboport(CircuitConnectableMixin, InventoryMixin, Entity): # FIXME InventoryMixin
     pass
 
 
@@ -1126,24 +1104,117 @@ class Lamp(CircuitConnectableMixin, Entity):
     pass
 
 
-class ArithmeticCombinator(CircuitConnectableMixin, Entity):
-    def __init__(self, **kwargs):
-        pass
+class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in arithmetic_combinators:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(kwargs["name"]))
+        super().__init__(name, **kwargs)
 
-    def set_arithmetic_conditions(self, a, op, b):
-        pass
+    def set_arithmetic_conditions(self, a: Union[str, int] = None, op: str = "*", b: Union[str, int] = 0, out: str = None):
+        self.control_behavior["arithmetic_conditions"] = {}
+        arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
+        # TODO: error checking
+        # A
+        if a is None:
+            pass # Default
+        elif isinstance(a, str):
+            arithmetic_conditions["first_signal"] = a
+        elif isinstance(a, int):
+            arithmetic_conditions["first_constant"] = a
+        else:
+            raise TypeError("First param is neither 'str', 'int' or 'None'")
+
+        # op
+        valid_operations = [
+            "*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR"
+        ]
+        if op.upper() not in valid_operations:
+            raise InvalidArithmeticOperation(op)
+        arithmetic_conditions["comparator"] = op.upper()
+
+        # B
+        if isinstance(b, str):
+            arithmetic_conditions["second_signal"] = b
+        elif isinstance(b, int):
+            arithmetic_conditions["second_constant"] = b
+        else:
+            raise TypeError("Second param is neither 'str' or 'int'")
+
+        # out
+        if out is None:
+            pass # Default
+        elif isinstance(out, str):
+            arithmetic_conditions["output_signal"] = signal_dict(out)
+        else:
+            raise TypeError("Output param is neither 'str' or 'None'")
 
 
-class DeciderCombinator(CircuitConnectableMixin, Entity):
-    def __init__(self, **kwargs):
-        pass
+    def remove_arithmetic_conditions(self):
+        self.control_behavior.pop("arithmetic_conditions", None)
+
+
+class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in decider_combinators:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(DeciderCombinator, self).__init__(name, **kwargs)
     
     def set_decider_conditions(self, a, op, b):
-        pass
+        """
+        """
+        pass # TODO
+
+    def remove_decider_conditions(self):
+        """
+        """
+        self.control_behavior.pop("decider_conditions", None)
 
 
-class ConstantCombinator(CircuitConnectableMixin, Entity):
-    pass
+class ConstantCombinator(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+    """
+    TODO: maybe keep signal filters internally as an array of Signal objects,
+    and then use Signal.to_dict() during that stage?
+    """
+    def __init__(self, name: str, **kwargs):
+        if name not in constant_combinators:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(ConstantCombinator, self).__init__(name, **kwargs)
+
+    def set_signal(self, index: int, name: str, count: int = 0) -> None:
+        """
+        """
+        if "filters" not in self.control_behavior:
+            self.control_behavior["filters"] = []
+        
+        # TODO: error checking
+        
+        # Check to see if filters already contains an entry with the same index
+        for i, filter in enumerate(self.control_behavior["filters"]):
+            if index == filter["index"]: # Index already exists in the list
+                if name is None: # Delete the entry
+                    del self.inventory["filters"][i]
+                else: # Set the new value
+                    self.inventory["filters"][i] = {
+                        "index": index + 1,"name": name, "count": count
+                    }
+
+                return
+
+        # If no entry with the same index was found
+        self.control_behavior["filters"].append({
+            "index": index + 1, "name": name, "count": count
+        })
+
+    def get_signal(self, index: int) -> Signal:
+        """
+        """
+        return None # TODO
+
+    def clear_signals(self) -> None:
+        """
+        Clears all signals in the constant combinator, if any are present.
+        """
+        self.control_behavior.pop("filters", None)
 
 
 class PowerSwitch(CircuitConnectableMixin, PowerConnectableMixin, Entity):

@@ -4,30 +4,6 @@
 -- TODO: recipies
 -- TODO: maybe order signals using their factorio ordering system? might be nice
 
-local function add_signal(signals, name, type)
-    signals[#signals+1] = {name = name, type =  type, order = order}
-end
-
-
-local function add_dict(signals, dict, type)
-    local count = 0
-    for k, v in pairs(data.raw[dict]) do
-        print(k, v.order)
-        if v.flags ~= nil then
-            for j = 1, #v.flags do
-                if v.flags[j] == "hidden" then
-                    --print(v.name .. " is hidden")
-                    goto continue
-                end
-            end
-        end
-        if k == "signal-unknown" or k == "fluid-unknown" then goto continue end
-        signals[#signals+1] = {name = k, type = type, order = v.order}
-        ::continue::
-    end
-    --print(count .. " signals in " .. dict)
-end
-
 local function scrape_tiles(tiles, dict)
     for k, v in pairs(data.raw[dict]) do
         if v.place_as_tile ~= nil then
@@ -48,7 +24,7 @@ local function compare_difference(signals, should_have)
 end
 
 local function order_sort(a, b)
-    return a.order < b.order
+    return a.order < b.order or (a.order == b.order and a.name < b.name)
 end
 
 local function print_keys(t) 
@@ -264,84 +240,158 @@ local function extract_tiles()
     tiles_file:close()
 end
 
-local function extract_recipes()
-    -- only needed for assembling machines and ordering
+local function extract_items()
+
 end
 
+local function extract_signals()
+    -- TODO: maybe include more metadata for signals and their grouping/subgrouping
+    -- Maybe make more fine control over which signals you want, like only 
+    -- transport belts? Need to find a use-case to justify the work
 
-local function main()
-    -- ENTITIES
-    extract_entities()
+    -- Item sort order: 
+    -- (https://forums.factorio.com/viewtopic.php?p=23818#p23818)
+    -- 1. item groups
+    -- 2. item subgroups
+    -- 3. item
+    -- Across the previous categories, each is sorted by:
+    -- 1. the item order string
+    -- 2. the item name (lexographic)
+    
+    local groups = {}
+    local index_dict = {}
 
-    -- TILES
-    --extract_tiles()
-
-
-    -- WRITE FILES
-    --[=[
-
-    --[[ Load Signals ]]
-
-    local signals = {}
-    local item_signals = {}
-    local fluid_signals = {}
-    local virtual_signals = {}
-    -- Load Item SignalIDs
-    add_dict(signals, "item", "item")                   -- regular items
-    add_dict(signals, "item-with-entity-data", "item")  -- cars, trains, etc.
-    add_dict(signals, "tool", "item")                   -- science packs
-    add_dict(signals, "ammo", "item")                   -- ammo types
-    add_dict(signals, "module", "item")                 -- module variants
-    add_dict(signals, "armor", "item")                  -- armor variants
-    add_dict(signals, "gun", "item")                    -- guns
-    add_dict(signals, "capsule", "item")                -- capsuloids
-    -- Blueprint items
-    add_signal(signals, "blueprint", "item")
-    add_signal(signals, "blueprint-book", "item")
-    add_signal(signals, "upgrade-planner", "item")
-    add_signal(signals, "deconstruction-planner", "item")
-    -- Extras
-    add_signal(signals, "rail", "item")                 -- general rail signal
-    add_signal(signals, "spidertron-remote", "item")    -- not a capsule somehow
-    add_signal(signals, "repair-pack", "item")          -- not an item somehow
-
-    for k, v in pairs(signals) do
-        item_signals[#item_signals+1] = v.name
+    -- Initialize item groups
+    for k, v in pairs(data.raw["item-group"]) do
+        groups[#groups+1] = {name = v.name, order = v.order, subgroups = {}}
+        index_dict[v.name] = groups[#groups]
     end
 
-    -- Load Fluid SignalIDs
-    add_dict(signals, "fluid", "fluid")
-    for k, _ in pairs(data.raw["fluid"]) do
-        fluid_signals[#fluid_signals+1] = k
+    -- Initialize Item subgroups
+    for k, v in pairs(data.raw["item-subgroup"]) do
+        local subgroups = index_dict[v.group].subgroups
+        subgroups[#subgroups+1] = {name = v.name, order = v.order, group = v.group, items = {}}
+        index_dict[v.name] = subgroups[#subgroups]
     end
-    -- Load Virtual SignalIDs
-    add_dict(signals, "virtual-signal", "virtual")
-    for k, _ in pairs(data.raw["virtual-signal"]) do
-        if k ~= "signal-unknown" then
-            virtual_signals[#virtual_signals+1] = k
+    
+    local function add_signal(category, name, type)
+        --print(name)
+        if name == "signal-unknown" or name == "fluid-unknown" or name == "item-unknown" then 
+            return
+        end
+        local v = data.raw[category][name]
+        
+        if v.flags ~= nil then
+            print_keys(v.flags)
+            for j = 1, #v.flags do
+                if v.flags[j] == "hidden" then
+                    --print(v.name .. " is hidden")
+                    return
+                end
+            end
+        end
+        local subgroup = index_dict[v.subgroup or type]
+        --print(v.subgroup)
+        subgroup.items[#subgroup.items+1] = {name = v.name, type = type, order = v.order, subgroup = v.subgroup}
+    end
+    
+    local function add_category(category, type)
+        for name, _ in pairs(data.raw[category]) do
+            add_signal(category, name, type)
         end
     end
 
-    --compare_difference(signals, should_have)
+    -- for k, v in pairs(data.raw["item"]) do
+    --     if k == "item-unknown" then goto continue end
+    --     --print(k, v.subgroup)
+    --     local subgroup = index_dict[v.subgroup]
+    --     --print(serpent.block(subgroup))
+    --     subgroup.items[#subgroup.items+1] = {name = v.name, order = v.order, subgroup = v.subgroup}
+    --     ::continue::
+    -- end
 
-    -- sort the signals
-    local function compare(a, b)
-        print(a.name, b.name)
-        print(a.order, b.order)
-        return a.order < b.order
+    -- Load Item SignalIDs
+    add_category("item", "item")                   -- regular items
+    add_category("item-with-entity-data", "item")  -- cars, trains, etc.
+    add_category("tool", "item")                   -- science packs
+    add_category("ammo", "item")                   -- ammo types
+    add_category("module", "item")                 -- module variants
+    add_category("armor", "item")                  -- armor variants
+    add_category("gun", "item")                    -- guns
+    add_category("capsule", "item")                -- capsuloids
+    -- Blueprint items
+    add_signal("blueprint", "blueprint", "item")
+    add_signal("blueprint-book", "blueprint-book", "item")
+    add_signal("upgrade-item", "upgrade-planner", "item")
+    add_signal("deconstruction-item", "deconstruction-planner", "item")
+    -- Extras
+    add_signal("spidertron-remote", "spidertron-remote", "item")
+    add_signal("repair-tool", "repair-pack", "item") -- not an item somehow
+
+    -- Rail signals are tricky
+    -- The rail signal we see is in fact straight-rail by looking at debug ids,
+    -- and curved-rail is also present if you look at the entities in the editor
+    -- However, I cant seem to figure out what the flag/parameter is to show why
+    -- straight-rail is shown in the inventory and curved-rail isnt, and where
+    -- the name "rail" is stored in straight-rail's prototype
+
+    -- For now we manually add the item signal to save the headache for later
+    item_name = "rail"
+    item_order = "a[train-system]-a[rail]"
+    item_subgroup = "train-transport"
+    local subgroup = index_dict[item_subgroup]
+    subgroup.items[#subgroup.items+1] = {name = item_name, type = "item", order = item_order, subgroup = item_subgroup}
+
+    -- Fluid Signals
+    add_category("fluid", "fluid")
+    
+    -- Virtual Signals
+    add_category("virtual-signal", "virtual")
+
+    -- Sort everything
+    for i, v in ipairs(groups) do
+        for j, v in ipairs(groups[i].subgroups) do
+            table.sort(groups[i].subgroups[j].items, order_sort)
+        end
+        table.sort(groups[i].subgroups, order_sort)
+    end
+    table.sort(groups, order_sort)
+
+    -- Flatten everything for output
+    local signals = {} -- all signals
+    local item_signals = {}
+    local fluid_signals = {}
+    local virtual_signals = {}
+
+    local function categorize_signals(source, destination, type)
+        for i, subgroup in ipairs(source.subgroups) do
+            --print(i, subgroup.name)
+            for j, item in ipairs(index_dict[subgroup.name].items) do
+                --print("\t", j, item.name)
+                signals[#signals+1] = {name = item.name, type = type}
+                destination[#destination+1] = item.name
+            end
+        end
     end
 
-    --local signal_list = {}
-    --for k, v in pairs(signals) do table.insert(signal_list, v) end
-    table.sort(signals, compare)
+    categorize_signals(index_dict["logistics"], item_signals, "item")
+    categorize_signals(index_dict["production"], item_signals, "item")
+    categorize_signals(index_dict["intermediate-products"], item_signals, "item")
+    categorize_signals(index_dict["combat"], item_signals, "item")
+
+    categorize_signals(index_dict["fluids"], fluid_signals, "fluid")
+
+    categorize_signals(index_dict["signals"], virtual_signals, "virtual")
+
+    -- if vanilla then assert #signals == 262 end
 
     --[[ Create a Python-readable data file with the signal data contents: ]]
     local signals_file = io.open("factoriotools/signal_data.py", "w")
     signals_file:write("# signal_data.py\n")
-    signals_file:write("# Autogenerated with 'update_data.lua'\n")
-    signals_file:write("from factoriotools.signalID import SignalID\n") -- this is way better
+    signals_file:write("# Autogenerated with 'update_module.py'\n")
+    signals_file:write("from factoriotools.signalID import SignalID\n")
     signals_file:write("signal_IDs = {\n")
-    for k, v in pairs(signals) do
+    for i, v in ipairs(signals) do
         local output_string = ""
         output_string = "    \"" .. v.name .. "\": SignalID(\"" .. v.name
         output_string = output_string .. "\", \"" .. v.type .. "\"),\n"
@@ -370,7 +420,23 @@ local function main()
     end
     signals_file:write("}\n")
     signals_file:close()
-    ]=]
+end
+
+local function extract_recipes()
+    -- only needed for assembling machines and ordering
+end
+
+local function main()
+    -- ENTITIES
+    --extract_entities()
+
+    -- TILES
+    --extract_tiles()
+
+
+    -- WRITE FILES
+    -- SIGNALS
+    extract_signals()
 end
 
 main()
