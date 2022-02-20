@@ -7,13 +7,13 @@ with a value of 1.
 
 # TODO: change the constant combinator bit to a Cell
 
-from ast import Constant
 from factoriotools.entity import Direction
 from factoriotools.blueprint import Blueprint
 from factoriotools.entity import (
     ConstantCombinator, ArithmeticCombinator, DeciderCombinator, ElectricPole
 )
 from factoriotools.signal_data import *
+
 
 def main():
     blueprint = Blueprint()

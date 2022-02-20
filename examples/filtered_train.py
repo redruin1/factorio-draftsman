@@ -19,6 +19,7 @@ split across multiple trains which is probably undesirable for this purpose.
 
 from factoriotools import Blueprint, CargoWagon
 
+
 def main():
     # Train contents we want to filter
     # item name: amount of wagon slots

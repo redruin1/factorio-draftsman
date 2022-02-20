@@ -1,5 +1,10 @@
 # test.py
 
+"""
+Blueprint of almost every entity with the majority of their component variations
+tested. Originally used as a big testing script, now used for illustration.
+"""
+
 import factoriotools
 from factoriotools.entity import Direction
 
@@ -574,7 +579,6 @@ def main():
     print(blueprint)
     print(blueprint.to_string())
 
-    #print(type(pumpjack))
 
 if __name__ == "__main__":
     main()

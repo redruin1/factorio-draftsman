@@ -13,7 +13,6 @@
 # TODO: add no name capability to classes, so you dont have to type the name twice if it's a singleton (like ProgrammableSpeaker)
 #   It should just select the first one from the list of entities that it's in
 
-from re import M
 from factoriotools.errors import (
     InvalidEntityID, InvalidItemID, InvalidSignalID, 
     InvalidArithmeticOperation, InvalidConditionOperation

@@ -68,9 +68,6 @@ class Blueprint:
     """
     Factorio Blueprint class. Pretty standard, although notable features include
     the ability to store ids associated to each entity for ease of access.
-
-    We should maintain a internal dict representation in the blueprint format, 
-    as well as a set of easy to manipulate lists of objects (entities, schedules, etc.)
     """
     def __init__(self, blueprint_string=None):
         """
@@ -90,9 +87,8 @@ class Blueprint:
             self._setup_defaults()
 
         # Create a complimentary list to store entity IDs. These allow the user
-        # to specify names to each entity to aid in referencing specific 
-        # entities before their final numeric values are known.
-        #self.entity_metadata = dict()
+        # to specify names to each component to aid in referencing specific 
+        # component before their final numeric values are known.
         self.entity_numbers = BiDict()
         self.tile_numbers = BiDict()
         self.schedule_numbers = BiDict()
@@ -129,21 +125,6 @@ class Blueprint:
 
         # Attempt to load entities
         self._load_entities_from_root()
-
-    # def set_metadata(self, **kwargs) -> None: # TODO: test
-    #     """
-    #     Sets any or all of the Blueprints metadata elements, where:
-    #     * `label` expects a string,
-    #     * `label_color` expects a dict with `r`, `g`, `b`, `a` components, and
-    #     * `icons` expects an array of `Icon` objects (see Factorio specs)
-
-    #     Args:
-    #         **kwargs: Can be any of "label", "label_color", or "icons"
-    #     """
-    #     valid_keywords = ["label", "label_color", "icons"]
-    #     for key, value in kwargs.items():
-    #         if key in valid_keywords:
-    #             self.blueprint[key] = value
 
     def set_label(self, label: str) -> None:
         """
@@ -514,8 +495,6 @@ class Blueprint:
                 for i, neighbour in enumerate(neighbours):
                     if isinstance(neighbour, str):
                         neighbours[i] = self.entity_numbers[neighbour]+1
-
-
 
         # Delete empty entries to compress as much as possible
         if len(out_dict["entities"]) == 0:
