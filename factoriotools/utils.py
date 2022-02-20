@@ -55,4 +55,5 @@ def version_tuple_2_string(version_tuple):
     """
     Converts a version tuple to a string.
     """
-    return ".".join(list(version_tuple))
+    #return ".".join(list(version_tuple))
+    return ".".join(str(x) for x in version_tuple)

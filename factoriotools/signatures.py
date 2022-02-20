@@ -44,6 +44,7 @@ BLUEPRINT_SCHEMA = Schema({
     "item": "blueprint",
     Optional("label"): str,
     Optional("label_color"): COLOR_SCHEMA,
+    Optional("description"): str,
     Optional("entities"): list, # specify warning if missing
     Optional("tiles"): list,
     Optional("icons"): list,
@@ -55,7 +56,7 @@ BLUEPRINT_BOOK_SCHEMA = Schema({
     "item": "blueprint_book",
     Optional("label"): str,
     Optional("label_color"): COLOR_SCHEMA,
-    Optional("blueprints"): [ # specify if warning is missing
+    Optional("blueprints"): [ # specify warning if missing
         {
             "index": int,
             "blueprint": BLUEPRINT_SCHEMA

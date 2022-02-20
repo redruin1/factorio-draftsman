@@ -1,2 +1,0 @@
--- Prototypes specific to demo
--- Do not delete this file, it's required to make the base game CRC different between demo and retail.

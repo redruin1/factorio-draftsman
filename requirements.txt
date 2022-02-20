@@ -1,2 +1,2 @@
-schema
-lupa
+schema >= 0.7.5
+lupa >= 1.10

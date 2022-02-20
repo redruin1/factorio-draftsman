@@ -38,19 +38,19 @@ def main():
 
     # Create the cargo wagons
     cargo_wagon = CargoWagon("cargo-wagon", orientation = 0.75)
-    slot_count = 1 # because inventory slot indexing starts at 1 instead of 0
+    slot_count = 0 # because inventory slot indexing starts at 1 instead of 0
     
     for item, slots in contents.items():
         # Set the filters
         for _ in range(slots):
             # Check to see if we've exceeded the current wagon's size
-            if slot_count > 40:
+            if slot_count >= 40:
                 # Add a new wagon
                 cargo_wagon.set_grid_position(7 * train_car_position, 0)
                 blueprint.add_entity(cargo_wagon)
                 # Reset
                 cargo_wagon = CargoWagon("cargo-wagon", orientation = 0.75)
-                slot_count = 1
+                slot_count = 0
                 train_car_position += 1
             
             cargo_wagon.set_inventory_filter(slot_count, item)

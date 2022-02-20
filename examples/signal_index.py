@@ -7,19 +7,25 @@ with a value of 1.
 
 # TODO: change the constant combinator bit to a Cell
 
-import factoriotools
+from ast import Constant
+from factoriotools.entity import Direction
 from factoriotools.blueprint import Blueprint
 from factoriotools.entity import (
     ConstantCombinator, ArithmeticCombinator, DeciderCombinator, ElectricPole
 )
 from factoriotools.signal_data import *
 
-
 def main():
     blueprint = Blueprint()
 
     # Specify the input signal:
     input_signal = "red-wire"
+
+    # Some metadata
+    blueprint.set_label("Signal Index ({})".format(input_signal))
+    blueprint.set_label_color(1.0, 0.0, 1.0, 1.0)
+    blueprint.set_icons("signal-I", "signal-D")
+    blueprint.set_description("Converts the value of {} into a unique unit signal.".format(input_signal))
 
     # Blacklist desired signals:
     blacklist = []
@@ -44,37 +50,83 @@ def main():
     add_signals_to_mapping(item_signals)
     add_signals_to_mapping(fluid_signals)
 
-    print(mapping)
+    #print(mapping)
 
     # Then we generate the grid of constant combinators
     signal_index = 0
-    for y in range(1):
-        for x in range(1):
-            print("signal_index", signal_index)
+    for y in range(7):
+        for x in range(2):
             combinator = ConstantCombinator("constant-combinator")
-            combinator.set_direction(factoriotools.SOUTH)
+            combinator.set_direction(Direction.SOUTH)
             combinator.set_grid_position(x, -y)
             for i in range(20):
                 # Last few signals might not exist
-                #print("i", i)
-                #print(i + signal_index)
                 try: 
-                    print(signal_index + i)
-                    print(mapping[signal_index + i])
                     signal_name = mapping[signal_index + i]
-                    combinator.set_signal(i, signal_name, signal_index + i)
+                    combinator.set_signal(i, signal_name, signal_index + i + 2)
                 except:
-                    #print("error")
                     pass
             
             blueprint.add_entity(combinator, id = str(x) + "_" + str(y))
             signal_index += 20
-        pass
 
-    # Create the combinator cell
-    #constant_combinator
+    # Connect all the combinators together
+    for y in range(7):
+        for x in range(2):
+            current = str(x) + "_" + str(y)
+            target_above = str(x) + "_" + str(y+1)
+            try:
+                blueprint.add_circuit_connection("red", current, target_above)
+            except KeyError: # TODO: maybe make a more descriptive error?
+                pass
+            target_across = str(x+1) + "_" + str(y)
+            try:
+                blueprint.add_circuit_connection("red", current, target_across)
+            except KeyError: # Maybe 'MissingEntityWithID'?
+                pass
+
+    # Decider
+    decider = DeciderCombinator("decider-combinator", position = [0, 1])
+    decider.set_direction(Direction.EAST)
+    decider.set_decider_conditions("signal-each", "=", input_signal, "signal-each")
+    decider.set_copy_count_from_input(False)
+    blueprint.add_entity(decider, id = "decider")
+
+    # Output stabilizer
+    stabilizer = ArithmeticCombinator("arithmetic-combinator", position = [0, 2])
+    stabilizer.set_direction(Direction.EAST)
+    stabilizer.set_arithmetic_conditions(-1, "%", input_signal, input_signal)
+    blueprint.add_entity(stabilizer, id = "stabilizer")
+
+    # Stabilizer offset
+    offset = ConstantCombinator("constant-combinator", position = [-1, 2])
+    offset.set_direction(Direction.EAST)
+    offset.set_signal(0, input_signal, 1)
+    blueprint.add_entity(offset, id = "offset")
+
+    # Input combinator
+    input = ConstantCombinator("constant-combinator", position = [-4, 1])
+    input.set_direction(Direction.EAST)
+    input.set_signal(0, input_signal, 15)
+    blueprint.add_entity(input, id = "input")
+
+    pole = ElectricPole("medium-electric-pole", position = [-3, 1])
+    blueprint.add_entity(pole, id = "input_pole")
+    pole.set_grid_position(4, 1)
+    blueprint.add_entity(pole, id = "output_pole")
+    blueprint.add_power_connection("input_pole", "output_pole")
+
+    # Rest of the circuit connections
+    blueprint.add_circuit_connection("red", "0_0", "decider")
+    blueprint.add_circuit_connection("red", "offset", "stabilizer")
     
-    print(blueprint)
+    blueprint.add_circuit_connection("green", "input", "input_pole")
+    blueprint.add_circuit_connection("green", "input_pole", "decider")
+
+    blueprint.add_circuit_connection("red", "stabilizer", "decider", 2, 2)
+    blueprint.add_circuit_connection("red", "decider", "output_pole", 2, 1)
+    
+    #print(blueprint)
     print(blueprint.to_string())
 
 

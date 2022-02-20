@@ -11,7 +11,7 @@ data version.
 # handle optionals and conflicts (DONE)
 # Load mod-list.json and only enable mods if they're enabled inside it (DONE)
 # Read mod-settings.dat and import it into compatability.lua so prototypes can read them (DONE)
-# Extract the version info from factorio-data-master and write it out (DONE)
+# Extract the version info from factorio-data and write it out (DONE)
 # Keep track of all loaded lua modules, and unload them on mod change so the cache doesn't get ahead of itself (DONE)
 # Keep track of mods table; seems to keep mod versions under their keys (DONE)
 # Recursively iterate through all directories within the mod folder and modify package.path (DONE)
@@ -239,24 +239,27 @@ def update():
     Updates the data in the `factoriotools` module. Emulates the load pattern of
     Factorio and loads all of its data (hopefully) in the same way. Then that
     data is extracted into the module, updating its contents. Updates and 
-    changes made to `factorio-data-master` are also reflected in this routine.
+    changes made to `factorio-data` are also reflected in this routine.
 
     NOTE: this function does NOT update mods or the factorio-data master repo!
     First you will have to run `update_data.py` to actually update the data, 
     then you can call this function to resolve the changes in the module.
     Clunky, but sometimes you don't want to do both!
     """
-    # Get the info from factorio-data-master and treat it as the "base" mod
-    with open("factorio-data-master/base/info.json") as base_info_file:
+    # Get the info from factorio-data and treat it as the "base" mod
+    with open("factorio-data/base/info.json") as base_info_file:
         base_info = json.load(base_info_file)
         factorio_version = base_info["version"]
+        # Normalize it to 4 numbers to make our versioning lives easier
+        if factorio_version.count('.') == 2:
+            factorio_version += ".0"
         factorio_version_info = version_string_2_tuple(factorio_version)
 
 
     # Write `_factorio_version.py` with the current factorio version
     with open("factoriotools/_factorio_version.py", "w") as version_file:
         version_file.write("# _factorio_version.py\n\n")
-        version_file.write("__factorio_version__ = \"" + factorio_version + "\"\n")
+        version_file.write('__factorio_version__ = "'+factorio_version+'"\n')
         version_file.write("__factorio_version_info__ = " + str(factorio_version_info))
 
     # What does a mod need to have
@@ -273,23 +276,23 @@ def update():
         name = "core",
         version = factorio_version,
         archive = False,
-        location = "./factorio-data-master/core",
+        location = "./factorio-data/core",
         info = None,
         files = None,
         data = {
-            "data.lua": file_to_string("factorio-data-master/core/data.lua")
+            "data.lua": file_to_string("factorio-data/core/data.lua")
         }
     )
     mods["base"] = Mod(
         name = "base",
         version = factorio_version,
         archive = False,
-        location = "./factorio-data-master/base",
+        location = "./factorio-data/base",
         info = None,
         files = None,
         data = {
-            "data.lua": file_to_string("factorio-data-master/base/data.lua"),
-            "data-updates.lua": file_to_string("factorio-data-master/base/data-updates.lua")
+            "data.lua": file_to_string("factorio-data/base/data.lua"),
+            "data-updates.lua": file_to_string("factorio-data/base/data-updates.lua")
         }
     )
 
@@ -459,8 +462,8 @@ def update():
     lua = lupa.LuaRuntime(unpack_returned_tuples=True)
 
     # Factorio utils
-    lua.execute(file_to_string("factorio-data-master/core/lualib/util.lua"))
-    lua.execute(file_to_string("factorio-data-master/core/lualib/dataloader.lua"))
+    lua.execute(file_to_string("factorio-data/core/lualib/util.lua"))
+    lua.execute(file_to_string("factorio-data/core/lualib/dataloader.lua"))
     
     # Attempt to read mod settings and set in lua context
     try:
@@ -488,13 +491,8 @@ def update():
     RESET_MOD_STATE      = lua.globals()["RESET_MOD_STATE"]
 
     # Setup the `core` module
-    ADD_PATH("./factorio-data-master/core/lualib/?.lua")
+    ADD_PATH("./factorio-data/core/lualib/?.lua")
     load_stage(lua, core_mod, "data.lua")
-
-    # Core seems to be loaded before everything else
-    # ADD_PATH("./factorio-data-master/core/?.lua")
-    # ADD_PATH("./factorio-data-master/core/lualib/?.lua")
-    # lua.execute(file_to_string("factorio-data-master/core/data.lua"))
 
     # we want to keep core constant, so we wipe the deletion table
     # NOTE: this might end up being a problem, to be safe we might just completely wipe the cache every mod we load

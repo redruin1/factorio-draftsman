@@ -204,6 +204,12 @@ class Blueprint:
             out = ICON_SCHEMA.validate(out)
             self.blueprint["icons"].append(out)
 
+    def set_description(self, description: str) -> None:
+        """
+        Sets the description for the blueprint.
+        """
+        self.blueprint["description"] = description
+
     def set_version(self, major: int, minor: int, 
                     patch: int = 0, dev_ver: int = 0) -> None:
         """
@@ -253,7 +259,7 @@ class Blueprint:
         """
         self.entity_numbers[id] = entity_number
 
-    def find_entity_by_id(self, id: str):
+    def find_entity_by_id(self, id: str) -> Entity:
         """
         Gets the entity with the corresponding `id` assigned to it. If you want
         to get the entity by index, use `blueprint.entities[i]` instead.
@@ -361,7 +367,7 @@ class Blueprint:
         # Return the removed entity because why not
         return self.entities.pop(entity_number - 1)
 
-    def add_power_connection(self, id1: Union[str, int], id2: Union[str, int]) -> None:
+    def add_power_connection(self, id1: Union[str, int], id2: Union[str, int], side1: int = 1, side2: int = 1) -> None:
         """
         Adds a copper wire power connection between two entities.
         """
@@ -386,9 +392,9 @@ class Blueprint:
         # TODO
 
         # Handle entity 1
-        entity_1.add_power_connection(id2)
+        entity_1._add_power_connection(entity_2, id2, side1)
         # Handle entity 2
-        entity_2.add_power_connection(id1)
+        entity_2._add_power_connection(entity_1, id1, side2)
 
     def add_circuit_connection(self, color, id1, id2, side1 = 1, side2 = 1):
         """
@@ -429,8 +435,8 @@ class Blueprint:
         Add a tile to the Blueprint.
         """
         if id is not None:
-            if id not in self.tile_metadata:
-                self.tile_metadata[id] = len(self.tiles)
+            if id not in self.tile_numbers:
+                self.tile_numbers[id] = len(self.tiles)
             else: # Same ID!
                 raise DuplicateIDException(
                     "'{}' already used in blueprint tiles".format(id)
@@ -445,11 +451,11 @@ class Blueprint:
         """
         return self.tiles[self.tile_numbers[id]]
 
-    def find_tile(self, position: tuple) -> Tile:
+    def find_tile(self, x: int, y: int) -> Tile:
         """
         """
         for tile in self.tiles:
-            if tile.x == position[0] and tile.y == position[1]:
+            if tile.x == x and tile.y == y:
                 return tile
         return None
 
@@ -484,14 +490,22 @@ class Blueprint:
         # TODO
 
         # Change all connections to use entity_number
+        # FIXME: this is really gross
         for entity in out_dict["entities"]:
             if "connections" in entity: # wire connections
                 connections = entity["connections"]
                 for side in connections:
-                    for color in connections[side]:
-                        connection_points = connections[side][color]
-                        #print(connection_points)
-                        for j, point in enumerate(connection_points):
+                    if side in {"1", "2"}:
+                        for color in connections[side]:
+                            connection_points = connections[side][color]
+                            #print(connection_points)
+                            for j, point in enumerate(connection_points):
+                                old = point["entity_id"]
+                                if isinstance(old, str):
+                                    point["entity_id"] = self.entity_numbers[old]+1
+                    elif side in {"Cu0", "Cu1"}:
+                        connection_points = connections[side]
+                        for point in connection_points:
                             old = point["entity_id"]
                             if isinstance(old, str):
                                 point["entity_id"] = self.entity_numbers[old]+1
@@ -544,8 +558,8 @@ class Blueprint:
         if "schedules" not in self.blueprint:
             self.blueprint["schedules"] = list()
         if "version" not in self.blueprint:
-            maj, min, pat = __factorio_version_info__
-            self.blueprint["version"] = utils.encode_version(maj, min, pat, 0)
+            maj, min, pat, dev = __factorio_version_info__
+            self.blueprint["version"] = utils.encode_version(maj, min, pat, dev)
 
         self.entities   = self.blueprint["entities"]
         self.tiles      = self.blueprint["tiles"]

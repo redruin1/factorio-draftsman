@@ -1,30 +1,39 @@
 # entity.py
 
-# TODO: handle the difference between grid position and absolute position
-# TODO: create verification for the initial load of an entity by making a schema for each entity class
+# TODO: create verification for the initial load of an entity by making a schema for each entity class (?)
+#   This would only be useful if the whole thing was loaded in the constructor anyway, otherwise we'd still need all
+#   the other error checking code, making it somewhat redundant.
+#   Maybe at the end, right before converting to dict? I've had this conversation with myself before...
 # TODO: add `set_name` function in entity, so you can change an entity's type but keep its metadata
 # TODO: value check everything
-# TODO: make entity positions correct when rotating entities
-
-# TODO: think about getters and setters:
-# using entity.value = whatever is more succinct than entity.set_value(whatever)
-# (except in the cases where we want more utility, like with control_behavior)
-# However, we keep the error / warning checking in the setters to make them useful
-
-# TODO: refine control_behavior, shit is unweildly and unintuitive
 # TODO: add rail grid placing, add warnings/errors for rails that are placed an odd number of tiles apart
-# in fact, a rails and rail entities have a whole lot of extra rules that need to be accounted for
+#   in fact, a rails and rail entities have a whole lot of extra rules that need to be accounted for
+# TODO: make programmable speaker work with string names for things instead of entities
+# TODO: get rid of _normalize functions, I dont like them
+# TODO: add no name capability to classes, so you dont have to type the name twice if it's a singleton (like ProgrammableSpeaker)
+#   It should just select the first one from the list of entities that it's in
 
+from re import M
 from factoriotools.errors import (
     InvalidEntityID, InvalidItemID, InvalidSignalID, 
     InvalidArithmeticOperation, InvalidConditionOperation
 )
-from factoriotools.signals import Signal, item_signals, signal_dict#, get_signal_type
+from factoriotools.signals import Signal, item_signals, signal_dict
 from factoriotools.entity_data import entity_dimensions
 
 import copy
 from enum import IntEnum
 from typing import Any, Union, Callable
+
+class Direction(IntEnum):
+    NORTH = 0
+    NORTHEAST = 1
+    EAST = 2
+    SOUTHEAST = 3
+    SOUTH = 4
+    SOUTHWEST = 5
+    WEST = 6
+    NORTHWEST = 7
 
 class ReadMode(IntEnum):
     PULSE = 0
@@ -37,9 +46,15 @@ class ModeOfOperation(IntEnum):
 
 # from entity_data import *
 
+entity_instruments = {
+    "programmable-speaker": {
+        "piano": ["blah"]
+    }
+}
+
 containers = {
-    "wooden-chest", "iron-chest", "steel-chest", "logistic-chest-buffer", 
-    "logisitics-chest-passive-provider", "logistics-chest-active-provider"
+    "wooden-chest", "iron-chest", "steel-chest", 
+    "logistic-chest-active-provider", "logistic-chest-passive-provider"
 }
 
 storage_tanks = {
@@ -101,7 +116,11 @@ train_stops = {
 }
 
 rail_signals = {
-    "rail-signal", "rail-chain-signal"
+    "rail-signal"
+}
+
+rail_chain_signals = {
+    "rail-chain-signal"
 }
 
 locomotives = {
@@ -120,12 +139,20 @@ artillery_wagons = {
     "artillery-wagon"
 }
 
-logistic_containers = {
-    "logistics-chest-requester", "logistics-chest-storage"
+logistic_storage_containers = {
+    "logistic-chest-storage"
+}
+
+logistic_buffer_containers = {
+    "logistic-chest-buffer"
+}
+
+logistic_request_containers = {
+    "logistic-chest-requester"
 }
 
 roboports = {
-    "roboports"
+    "roboport"
 }
 
 lamps = {
@@ -172,6 +199,10 @@ reactors = {
     "nuclear-reactor"
 }
 
+heat_pipes = {
+    "heat-pipe"
+}
+
 mining_drills = {
     "burner-mining-drill", "electric-mining-drill", "pumpjack"
 }
@@ -210,15 +241,11 @@ walls = {
 }
 
 gates = {
-    "gates"
+    "gate"
 }
 
-ammo_turrets = {
-    "gun-turret"
-}
-
-electric_turrets = {
-    "laser-turret"
+turrets = {
+    "gun-turret", "laser-turret", "flamethrower-turret", "artillery-turret"
 }
 
 radars = {
@@ -229,14 +256,10 @@ radars = {
 # TODO: organize
 class Entity:
     def __init__(self, name: str, position: Union[list, dict] = [0, 0], **kwargs):
-        # What do all entities have in common?
-        # No id, because that's blueprint specific
-        #if "id" in kwargs: 
-        #    self.id = kwargs["id"]    # id, potentially
-
         # Create a set of keywords that transfer in to_dict function
         # Since some things we want to keep internal without sending to to_dict
         self.exports = dict()
+
         # Name (External)
         self.name = name 
         self._add_export("name")
@@ -245,27 +268,25 @@ class Entity:
         # TODO: change this to AABB
         self.width, self.height = entity_dimensions[name]
 
-        # Power connectable? (Internal) (Overwritten by mixin if applicable)
+        # Power connectable? (Internal) (Overwritten if applicable)
         self.power_connectable = False
+        # Dual power connectable? (Internal) (Overwritten if applicable)
+        self.dual_power_connectable = False
 
-        # Circuit connectable? (Interal) (Overwritten by mixin if applicable)
+        # Circuit connectable? (Interal) (Overwritten if applicable)
         self.circuit_connectable = False
-
-        # Entity number (External) (only modified in Blueprint functions)
-        #self.entity_number = None
-        #self._add_export("entity_number", lambda x: x is not None)
+        # Dual circuit connectable? (Internal) (Overwritten if applicable)
+        self.dual_circuit_connectable = False
 
         # (Absolute) Position (External)
-        if isinstance(position, list):
-            self.set_grid_position(position[0], position[1])
-        elif isinstance(position, dict):
-            self.set_absolute_position(position["x"], position["y"])
-        self._add_export("position")
-
         # Grid Position (Internal)
-        if "grid_position" in kwargs:
-            grid_position = kwargs["grid_position"]
-            self.set_grid_position(grid_position[0], grid_position[1])
+        self.position = {"x": 0, "y": 0}
+        self.grid_position = [0, 0]
+        if isinstance(position, list):
+            Entity.set_grid_position(self, position[0], position[1])
+        elif isinstance(position, dict):
+            Entity.set_absolute_position(self, position["x"], position["y"])
+        self._add_export("position")
 
         # Tags (External)
         self.tags = {}
@@ -274,23 +295,9 @@ class Entity:
         self._add_export("tags", lambda x: x)
 
         # What can they have optionally?
-        # orientation
-        # inventory (Cargo wagon contents configuration)
-        # infinity_settings 
-        # input_priority (left or right?)
-        # output_priority (left or right?)
-        # filters (for inserters)
-        # override_stack_size
-        # drop_position (inserter)
-        # pickup_position (inserter)
-        # request_filters
-        # request_from_buffers (boolean)
-        # parameters (programmable speaker)
-        # alert_parameters (programmable speaker)
         # auto_launch (with cargo, rocket silo)
         # variation
         # color (train station most normally, maybe other things)
-        # station (name of the train station if train stop)
 
     def set_absolute_position(self, x: float, y: float) -> None:
         """
@@ -298,6 +305,9 @@ class Entity:
         most entities, the position of the object is located at the center.
         """
         self.position = {"x": x, "y": y}
+        grid_x = int(self.position["x"] - self.width / 2.0)
+        grid_y = int(self.position["y"] - self.height / 2.0)
+        self.grid_position = [grid_x, grid_y]
 
     def set_grid_position(self, x: int, y: int) -> None:
         """
@@ -306,9 +316,10 @@ class Entity:
         the entity. If a tile is multiple tiles in width or height, the grid
         coordinate is the top left-most tile of the entity.
         """
-        absolute_x = x + self.width / 2.0
-        absolute_y = y + self.height / 2.0
-        self.set_absolute_position(absolute_x, absolute_y)
+        self.grid_position = [x, y]
+        absolute_x = self.grid_position[0] + self.width / 2.0
+        absolute_y = self.grid_position[1] + self.height / 2.0
+        self.position = {"x": absolute_x, "y": absolute_y}
 
     def set_tags(self, tags: dict) -> None:
         """
@@ -381,20 +392,60 @@ class DirectionalMixin:
     """ 
     Enables entities to be rotated. 
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name: str, position: Union[list, dict] = [0, 0], **kwargs):
         super().__init__(name, **kwargs)
+
+        # Rotated width and height
+        self.rotated_width = self.width
+        self.rotated_height = self.height
 
         self.direction = 0
         if "direction" in kwargs:
             self.set_direction(kwargs["direction"])
+
+        # Now that we know the entity is rotatable, try calling the set_position
+        # equivalents to now handle the rotation
+        if isinstance(position, list):
+            self.set_grid_position(position[0], position[1])
+        elif isinstance(position, dict):
+            self.set_absolute_position(position["x"], position["y"])
         
         self._add_export("direction", lambda x: x != 0)
+
+    def set_absolute_position(self, x: float, y: float) -> None:
+        """
+        Sets the position of the object, or the position that Factorio uses. On
+        most entities, the position of the object is located at the center.
+        """
+        self.position = {"x": x, "y": y}
+        grid_x = int(self.position["x"] - self.rotated_width / 2.0)
+        grid_y = int(self.position["y"] - self.rotated_height / 2.0)
+        self.grid_position = [grid_x, grid_y]
+
+
+    def set_grid_position(self, x: int, y: int) -> None:
+        """
+        Sets the grid position of the object, or the tile coordinates of the
+        object. Calculates the absolute position based off of the dimensions of
+        the entity. If a tile is multiple tiles in width or height, the grid
+        coordinate is the top left-most tile of the entity.
+        """
+        self.grid_position = [x, y]
+        absolute_x = self.grid_position[0] + self.rotated_width / 2.0
+        absolute_y = self.grid_position[1] + self.rotated_height / 2.0
+        self.position = {"x": absolute_x, "y": absolute_y}
 
     def set_direction(self, direction: int) -> None:
         """
         """
         # TODO: add error checking
         self.direction = direction
+        if self.direction == Direction.EAST or self.direction == Direction.WEST:
+            self.rotated_width = self.height
+            self.rotated_height = self.width
+        else:
+            self.rotated_width = self.width
+            self.rotated_height = self.height
 
 
 class EightWayDirectionalMixin:
@@ -478,6 +529,8 @@ class InventoryFilterMixin:
         """
         Sets the item filter at location `index` to `name`. If `name` is set to
         `None` the item filter at that location is removed.
+
+        `index`: [0-39] (0-indexed) 
         """
         if "filters" not in self.inventory:
             self.inventory["filters"] = []
@@ -490,15 +543,14 @@ class InventoryFilterMixin:
                 if name is None: # Delete the entry
                     del self.inventory["filters"][i]
                 else: # Set the new value
-                    self.inventory["filters"][i] = {"index": index,"name": name}
+                    self.inventory["filters"][i] = {"index": index+1,"name": name}
                     
                 return
 
         # If no entry with the same index was found
-        self.inventory["filters"].append({"index": index, "name": name})
-            
+        self.inventory["filters"].append({"index": index+1, "name": name})
 
-    def set_bar(self, index: int) -> None:
+    def set_bar_index(self, index: int) -> None:
         """
         Sets the bar of the train's inventory. Setting it to `None` removes the
         parameter from the configuration.
@@ -542,15 +594,21 @@ class PowerConnectableMixin:
             self.neighbours = kwargs["neighbours"]
         self._add_export("neighbours", lambda x: len(x) != 0)
 
-    def add_power_connection(self, target_id: Union[int, str]) -> None:
+    def _add_power_connection(self, target_entity: Entity, target_id: Union[int, str], source_side: int = 1) -> None:
         """
         Adds a power wire between this entity and another power-connectable one.
         """
         # TODO: raise error if target_id is not power connectable?
-        if target_id not in self.neighbours:
-            self.neighbours.append(target_id)
+        if target_entity.dual_power_connectable:
+            # If the target entity is a power switch, then its not considered a
+            # neighbour
+            return
+        else:
+            # Otherwise add it as normal
+            if target_id not in self.neighbours:
+                self.neighbours.append(target_id)
 
-    def remove_power_connection_point(self, target_id: Union[int, str]) -> None:
+    def _remove_power_connection_point(self, target_id: Union[int, str]) -> None:
         pass # TODO
 
 
@@ -563,8 +621,14 @@ class CircuitConnectableMixin:
         self.circuit_connectable = True
         self.connections = {}
         if "connections" in kwargs:
-            self.connections = kwargs["connections"]
+            self.set_connections(kwargs["connections"])
         self._add_export("connections", lambda x: len(x) != 0)
+
+    def set_connections(self, connections: dict) -> None:
+        """
+        """
+        # TODO: error checking
+        self.connections = connections
 
     def add_circuit_connection(self, other_entity: Entity, target_num: int, color: str, source_side: int = 1, target_side: int = 1) -> None:
         """
@@ -584,8 +648,7 @@ class CircuitConnectableMixin:
         # For most entities you dont need a target_side
         entry = {"entity_id": target_num}
         # However, for dual connection point targets you do
-        if other_entity.name in arithmetic_combinators or \
-           other_entity.name in decider_combinators:
+        if other_entity.dual_circuit_connectable:
             entry = {"entity_id": target_num, "circuit_id": target_side}
 
         current_color.append(entry)
@@ -634,19 +697,28 @@ class CircuitConditionMixin: # (ControlBehaviorMixin)
 
         self.control_behavior = {}
         if "control_behavior" in kwargs:
-            self.control_behavior = kwargs["control_behavior"]
+            #self.control_behavior = kwargs["control_behavior"]
             # Convert signals from string do dict representation, if necessary
             self._normalize_circuit_condition()
-        self._add_export("control_behavior", lambda x: len(x) != 0)
+        #self._add_export("control_behavior", lambda x: len(x) != 0)
 
-    def set_enabled_condition(self, a = None, op = "<", b = 0):
+    def set_enable_disable(self, value: bool) -> None:
+        """
+        """
+        if value is None:
+            self.control_behavior.pop("circuit_enable_disable", None)
+        # TODO: error checking
+        self.control_behavior["circuit_enable_disable"] = value
+
+    def set_enabled_condition(self, a: str = None, op: str = "<", b: Union[str, int] = 0):
         self.control_behavior["circuit_condition"] = {}
+        circuit_condition = self.control_behavior["circuit_condition"]
         # Check the inputs
         # A
         if a is None:
             pass # Keep the first signal empty
         elif isinstance(a, str):
-            self.control_behavior["circuit_condition"]["first_signal"] = a
+            circuit_condition["first_signal"] = signal_dict(a)
         elif isinstance(a, int):
             raise TypeError("'circuit_conditions' cannot have a constant first")
         else:
@@ -656,27 +728,24 @@ class CircuitConditionMixin: # (ControlBehaviorMixin)
         valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
         if op not in valid_comparisons:
             raise InvalidConditionOperation(op)
-        self.control_behavior["circuit_condition"]["comparator"] = op
+        actual_comparisons = [">", "<", "=", "≥",  "≤",  "≠"]
+        index = valid_comparisons.index(op)
+        circuit_condition["comparator"] = actual_comparisons[index]
 
         # B
         if isinstance(b, str):
-            self.control_behavior["circuit_condition"]["second_signal"] = b
+            circuit_condition["second_signal"] = signal_dict(b)
         elif isinstance(b, int):
-            self.control_behavior["circuit_condition"]["constant"] = b
+            circuit_condition["constant"] = b
         else:
             raise TypeError("Second param is neither 'str' or 'int'")
 
-        self._normalize_circuit_condition()
+        #self._normalize_circuit_condition()
 
     def remove_enabled_condition(self):
         """
         """
         self.control_behavior.pop("circuit_condition", None)
-
-    def set_enable_disable(self, value: bool) -> None:
-        """
-        """
-        self.control_behavior["circuit_enable_disable"] = value
 
     def _normalize_circuit_condition(self) -> None:
         """
@@ -710,7 +779,69 @@ class CircuitConditionMixin: # (ControlBehaviorMixin)
                     # }
                     circuit_condition["second_signal"] = signal_dict(name)
 
-        print(self.control_behavior)
+
+class LogisticConditionMixin: # (ControlBehaviorMixin)
+    def __init__(self, name: str, **kwargs):
+        super().__init__(name, **kwargs)
+
+    def set_connect_to_logistic_network(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if value is None:
+            self.control_behavior.pop("connect_to_logistic_network", None)
+        else:
+            self.control_behavior["connect_to_logistic_network"] = value
+
+    def set_logistic_condition(self, a: str = None, op: str = ">", b: Union[str, int] = 0):
+        self.control_behavior["logistic_condition"] = {}
+        logistic_condition = self.control_behavior["logistic_condition"]
+        # Check the inputs
+        # A
+        if a is None:
+            pass # Keep the first signal empty
+        elif isinstance(a, str):
+            logistic_condition["first_signal"] = signal_dict(a)
+        elif isinstance(a, int):
+            raise TypeError("'logistic_conditions' cannot have a constant first")
+        else:
+            raise TypeError("First param is neither 'str', 'int' or 'None'")
+        
+        # op
+        valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
+        if op not in valid_comparisons:
+            raise InvalidConditionOperation(op)
+        actual_comparisons = [">", "<", "=", "≥",  "≤",  "≠"]
+        index = valid_comparisons.index(op)
+        logistic_condition["comparator"] = actual_comparisons[index]
+
+        # B
+        if isinstance(b, str):
+            logistic_condition["second_signal"] = signal_dict(b)
+        elif isinstance(b, int):
+            logistic_condition["constant"] = b
+        else:
+            raise TypeError("Second param is neither 'str' or 'int'")
+
+    def remove_logistic_condition(self):
+        """
+        """
+        self.control_behavior.pop("logistic_condition", None)
+
+
+class CircuitReadContentsMixin: # (ControlBehaviorMixin)
+    def __init__(self, name: str, **kwargs):
+        super().__init__(name, **kwargs)
+
+    def set_read_hand_contents(self, value: bool) -> None:
+        """
+        """
+        self.control_behavior["circuit_read_hand_contents"] = value
+
+    def set_read_mode(self, mode: ReadMode):
+        """
+        """
+        self.control_behavior["circuit_contents_read_mode"] = mode
 
 
 class CircuitReadHandMixin: # (ControlBehaviorMixin)
@@ -726,6 +857,21 @@ class CircuitReadHandMixin: # (ControlBehaviorMixin)
         """
         """
         self.control_behavior["circuit_hand_read_mode"] = mode
+
+
+class CircuitReadResourceMixin: # (ControlBehaviorMixin)
+    def __init__(self, name: str, **kwargs):
+        super().__init__(name, **kwargs)
+
+    def set_read_resources(self, value: bool) -> None:
+        """
+        """
+        self.control_behavior["circuit_read_resources"] = value
+
+    def set_read_mode(self, mode: ReadMode):
+        """
+        """
+        self.control_behavior["circuit_resource_read_mode"] = mode
 
 
 class StackSizeMixin: # (ControlBehaviorMixin)
@@ -792,20 +938,55 @@ class ModeOfOperationMixin: # (ControlBehaviorMixin)
         else:
             self.control_behavior["circuit_mode_of_operation"] = mode
 
+
+class ReadRailSignalMixin: # (ControlBehaviorMixin)
+    """
+    """
+    def __init__(self, name: str, **kwargs):
+        super().__init__(name, **kwargs)
+
+    def set_red_output_signal(self, signal: str) -> None:
+        """
+        """
+        if signal is None:
+            self.control_behavior.pop("red_output_signal", None)
+        # TODO: error_checking
+        self.control_behavior["red_output_signal"] = signal_dict(signal)
+
+    def set_yellow_output_signal(self, signal: str) -> None:
+        """
+        """
+        if signal is None:
+            self.control_behavior.pop("yellow_output_signal", None)
+        # TODO: error_checking
+        self.control_behavior["yellow_output_signal"] = signal_dict(signal)
+
+    def set_green_output_signal(self, signal: str) -> None:
+        """
+        """
+        if signal is None:
+            self.control_behavior.pop("green_output_signal", None)
+        # TODO: error_checking
+        self.control_behavior["green_output_signal"] = signal_dict(signal)
+
+
 class FiltersMixin:
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
 
-        self.filters = None # maybe [] instead? which one is clearer?
+        self.filters = None
         if "filters" in kwargs:
             self.set_item_filters(kwargs["filters"])
         self._add_export("filters", lambda x: x is not None)
+
+    def set_item_filter(self, index: int, item: str) -> None:
+        pass # TODO
 
     def set_item_filters(self, filters: list):
         """
         Sets the item filters for the inserter or loader.
         """
-        # TODO: make sure the items are item signals
+        # Make sure the items are item signals
         if filters is not None:
             for item in filters:
                 if item not in item_signals:
@@ -817,11 +998,8 @@ class FiltersMixin:
             filters[i] = {"index": i + 1, "name": filters[i]}
         self.filters = filters
 
-    def set_item_filter(self, index: int, item: str) -> None:
-        pass # TODO
 
-
-class RecipeMixin:
+class RecipeMixin: # TODO: finish
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
         self.recipe = None
@@ -837,22 +1015,57 @@ class RecipeMixin:
 
 class RequestFiltersMixin:
     """
+    Used to allow Logistics Containers to request items from the Logisitics
+    network.
     """
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
-        request_filters = None
+
+        self.request_filters = None
         if "request_filters" in kwargs:
             self.set_request_filters(kwargs["request_filters"])
         self._add_export("request_filters", lambda x: x is not None)
 
-    def set_request_filters(self, test):
+    def set_request_filter(self, index: int, name: str, count: int = 0) -> None:
         """
         """
-        # TODO
-        pass
+        if self.request_filters is None:
+            self.request_filters = []
+        
+        # TODO: error checking
+
+        # Check to see if filters already contains an entry with the same index
+        for i, filter in enumerate(self.request_filters):
+            if index == filter["index"]: # Index already exists in the list
+                if name is None: # Delete the entry
+                    del self.inventory["filters"][i]
+                else: # Set the new value
+                    self.inventory["filters"][i] = {
+                        "index": index+1, "name": name, "count": count
+                    }
+                    
+                return
+
+        # If no entry with the same index was found
+        self.request_filters.append({
+            "index": index+1, "name": name, "count": count
+        })
+
+    def set_request_filters(self, filters: list) -> None:
+        """
+        """
+        # Make sure the items are item signals
+        if filters is not None:
+            for item in filters:
+                if item[0] not in item_signals:
+                    raise InvalidItemID(item[0])
+
+        for i in range(len(filters)):
+            filters[i] = {"index": i + 1, "name": filters[i][0], "count": filters[i][1]}
+        self.request_filters = filters
 
 
-class ItemRequestMixin: # is this redundant?
+class RequestItemsMixin: # TODO: finish
     """
     NOTE: this is for module requests and stuff like that, not logistics!
 
@@ -866,16 +1079,19 @@ class ItemRequestMixin: # is this redundant?
         #self.exports.add("items")
         self._add_export("items", lambda x: len(x) != 0)
 
-    def set_item_requests(self, items: dict):
+    def set_item_requests(self, items: dict) -> None:
+        # TODO: finish
         for name, amount in items.items():
             self.set_item_request(name, amount)
 
     def set_item_request(self, item, amount):
+        # TODO: finish
         if item not in item_signals:
             raise InvalidSignalID(item)
         self.items[item] = amount
 
     def remove_item_request(self, item):
+        # TODO: finish
         del self.items[item]
 
 
@@ -887,7 +1103,6 @@ class Container(CircuitConnectableMixin, InventoryMixin, Entity):
     * `wooden-chest`
     * `iron-chest`
     * `steel-chest`
-    * `logistic-chest-buffer`
     * `logistic-chest-active-provider`
     * `logistic-chest-passive-provider`
     """
@@ -897,7 +1112,7 @@ class Container(CircuitConnectableMixin, InventoryMixin, Entity):
         super(Container, self).__init__(name, **kwargs)
 
 
-class StorageTank(CircuitConnectableMixin, Entity):
+class StorageTank(CircuitConnectableMixin, DirectionalMixin, Entity):
     """
     """
     def __init__(self, name: str, **kwargs):
@@ -906,7 +1121,11 @@ class StorageTank(CircuitConnectableMixin, Entity):
         super(StorageTank, self).__init__(name, **kwargs)
 
 
-class TransportBelt(CircuitReadHandMixin, CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+class TransportBelt(CircuitReadContentsMixin, LogisticConditionMixin, 
+                    CircuitConditionMixin, ControlBehaviorMixin, 
+                    CircuitConnectableMixin, DirectionalMixin, Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in transport_belts:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
@@ -922,7 +1141,8 @@ class UndergroundBelt(IOTypeMixin, DirectionalMixin, Entity):
         super(UndergroundBelt, self).__init__(name, **kwargs)
 
 
-class Splitter(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+class Splitter(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, 
+               Entity):
     """
     """
     def __init__(self, name: str, **kwargs):
@@ -974,7 +1194,10 @@ class Splitter(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, 
         self.output_priority = side
 
 
-class Inserter(StackSizeMixin, CircuitReadHandMixin, ModeOfOperationMixin, CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+class Inserter(StackSizeMixin, CircuitReadHandMixin, ModeOfOperationMixin, 
+               CircuitConditionMixin, LogisticConditionMixin, 
+               ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, 
+               Entity):
     """
     """
     def __init__(self, name: str, **kwargs):
@@ -983,7 +1206,12 @@ class Inserter(StackSizeMixin, CircuitReadHandMixin, ModeOfOperationMixin, Circu
         super(Inserter, self).__init__(name, **kwargs)
 
 
-class FilterInserter(FiltersMixin, StackSizeMixin, CircuitReadHandMixin, ModeOfOperationMixin, CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+class FilterInserter(FiltersMixin, StackSizeMixin, CircuitReadHandMixin, 
+                     ModeOfOperationMixin, CircuitConditionMixin, 
+                     LogisticConditionMixin, ControlBehaviorMixin, 
+                     CircuitConnectableMixin, DirectionalMixin, Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in filter_inserters:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
@@ -1005,6 +1233,8 @@ class FilterInserter(FiltersMixin, StackSizeMixin, CircuitReadHandMixin, ModeOfO
 
 
 class Loader(FiltersMixin, IOTypeMixin, DirectionalMixin, Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in loaders:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
@@ -1012,6 +1242,8 @@ class Loader(FiltersMixin, IOTypeMixin, DirectionalMixin, Entity):
 
 
 class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in electric_poles:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
@@ -1019,6 +1251,8 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
 
 
 class Pipe(Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in pipes:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
@@ -1026,13 +1260,18 @@ class Pipe(Entity):
 
 
 class UndergroundPipe(DirectionalMixin, Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in underground_pipes:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
         super(UndergroundPipe, self).__init__(name, **kwargs)
 
 
-class Pump(CircuitConditionMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+class Pump(CircuitConditionMixin, CircuitConnectableMixin, DirectionalMixin, 
+           Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in pumps:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
@@ -1040,6 +1279,8 @@ class Pump(CircuitConditionMixin, CircuitConnectableMixin, DirectionalMixin, Ent
 
 
 class StraightRail(EightWayDirectionalMixin, Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in straight_rails:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
@@ -1047,21 +1288,175 @@ class StraightRail(EightWayDirectionalMixin, Entity):
 
 
 class CurvedRail(EightWayDirectionalMixin, Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in curved_rails:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
         super(CurvedRail, self).__init__(name, **kwargs)
 
 
-class TrainStop(EightWayDirectionalMixin, Entity):
-    pass
+class TrainStop(CircuitConditionMixin, LogisticConditionMixin, 
+                ControlBehaviorMixin, CircuitConnectableMixin, 
+                EightWayDirectionalMixin, Entity):
+    """
+    """
+    def __init__(self, name: str, **kwargs):
+        if name not in train_stops:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(TrainStop, self).__init__(name, **kwargs)
+
+        self.station = None
+        if "station" in kwargs:
+            self.set_station_name(kwargs["station"])
+        self._add_export("station", lambda x: x is not None)
+
+        self.manual_trains_limit = None
+        if "manual_trains_limit" in kwargs:
+            self.set_manual_trains_limit(kwargs["manual_trains_limit"])
+        self._add_export("manual_trains_limit", lambda x: x is not None)
+
+    def set_station_name(self, name: str) -> None:
+        """
+        """
+        # TODO: error checking
+        self.station = name
+
+    def set_manual_trains_limit(self, amount: int) -> None:
+        """
+        """
+        # TODO: error checking
+        self.manual_trains_limit = amount
+
+    def set_read_from_train(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if value is None:
+            self.control_behavior.pop("read_from_train", None)
+        else:
+            self.control_behavior["read_from_train"] = value
+
+    def set_read_stopped_train(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if value is None:
+            self.control_behavior.pop("read_stopped_train", None)
+        else:
+            self.control_behavior["read_stopped_train"] = value
+        
+        # This bit might be desirable, might not be
+        # if value is True and \
+        #    "train_stopped_signal" not in self.control_behavior:
+        #     # Set default signal
+        #     self.control_behavior["train_stopped_signal"] = signal_dict("signal-T")
+
+    def set_train_stopped_signal(self, signal: str) -> None:
+        """
+        """
+        # TODO: error checking
+        if signal is None:
+            self.control_behavior.pop("train_stopped_signal", None)
+        else:
+            self.control_behavior["train_stopped_signal"] = signal_dict(signal)
+
+        # This bit might be desirable, might not be
+        # if signal is not None and \
+        #    "read_stopped_train" not in self.control_behavior:
+        #     # Enable train signal reading
+        #     self.control_behavior["read_stopped_train"] = True
+
+    def set_trains_limit(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if value is None:
+            self.control_behavior.pop("set_trains_limit", None)
+        else:
+            self.control_behavior["set_trains_limit"] = value
+
+    def set_trains_limit_signal(self, signal: str) -> None:
+        """
+        """
+        # TODO: error checking
+        if signal is None:
+            self.control_behavior.pop("trains_limit_signal", None)
+        else:
+            self.control_behavior["trains_limit_signal"] = signal_dict(signal)
+
+    def set_read_trains_count(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if value is None:
+            self.control_behavior.pop("read_trains_count", None)
+        else:
+            self.control_behavior["read_trains_count"] = value
+
+    def set_trains_count_signal(self, signal: str) -> None:
+        """
+        """
+        # TODO: error checking
+        if signal is None:
+            self.control_behavior.pop("trains_count_signal", None)
+        else:
+            self.control_behavior["trains_count_signal"] = signal_dict(signal)
+        
+
+class RailSignal(ReadRailSignalMixin, CircuitConditionMixin, 
+                 ControlBehaviorMixin, CircuitConnectableMixin, 
+                 EightWayDirectionalMixin, Entity):
+    """
+    """
+    def __init__(self, name: str, **kwargs):
+        if name not in rail_signals:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(RailSignal, self).__init__(name, **kwargs)
+
+    def set_read_signal(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if value is None:
+            self.control_behavior.pop("circuit_read_signal", None)
+        else:
+            self.control_behavior["circuit_read_signal"] = value
+
+    def set_enable_disable(self, value: bool) -> None:
+        """
+        Overwritten method
+        """
+        # TODO: error checking
+        if value is None:
+            self.control_behavior.pop("circuit_close_signal", None)
+        else:
+            self.control_behavior["circuit_close_signal"] = value
 
 
-class RailSignal(EightWayDirectionalMixin, Entity):
-    pass
+class RailChainSignal(ReadRailSignalMixin, ControlBehaviorMixin, 
+                      CircuitConnectableMixin, EightWayDirectionalMixin, 
+                      Entity):
+    """
+    """
+    def __init__(self, name: str, **kwargs):
+        if name not in rail_chain_signals:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(RailChainSignal, self).__init__(name, **kwargs)
+    
+    def set_blue_output_signal(self, signal: str) -> None:
+        """
+        """
+        # TODO: error_checking
+        if signal is None:
+            self.control_behavior.pop("blue_output_signal", None)
+        else:
+            self.control_behavior["blue_output_signal"] = signal_dict(signal)
 
 
 class Locomotive(OrientationMixin, Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in locomotives:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
@@ -1069,6 +1464,8 @@ class Locomotive(OrientationMixin, Entity):
 
 
 class CargoWagon(InventoryFilterMixin, OrientationMixin, Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in cargo_wagons:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
@@ -1076,6 +1473,8 @@ class CargoWagon(InventoryFilterMixin, OrientationMixin, Entity):
 
 
 class FluidWagon(OrientationMixin, Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in fluid_wagons:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
@@ -1083,42 +1482,164 @@ class FluidWagon(OrientationMixin, Entity):
 
 
 class ArtilleryWagon(OrientationMixin, Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in artillery_wagons:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
         super(ArtilleryWagon, self).__init__(name, **kwargs)
 
 
-class LogisticsRequestContainer(RequestFiltersMixin, CircuitConnectableMixin, InventoryMixin, Entity):
+class LogisticStorageContainer(CircuitConnectableMixin, RequestFiltersMixin, 
+                               InventoryMixin, Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
-        if name not in logistic_containers:
-            raise InvalidEntityID("'{}' is not a valid name for this type".format(kwargs["name"]))
-        super().__init__(name, **kwargs)
+        if name not in logistic_storage_containers:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(LogisticStorageContainer, self).__init__(name, **kwargs)
 
 
-class Roboport(CircuitConnectableMixin, InventoryMixin, Entity): # FIXME InventoryMixin
-    pass
+class LogisticBufferContainer(ModeOfOperationMixin, ControlBehaviorMixin, 
+                              CircuitConnectableMixin, RequestFiltersMixin, 
+                              InventoryMixin, Entity):
+    """
+    """
+    def __init__(self, name: str, **kwargs):
+        if name not in logistic_buffer_containers:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(LogisticBufferContainer, self).__init__(name, **kwargs)
 
 
-class Lamp(CircuitConnectableMixin, Entity):
-    pass
+class LogisticRequestContainer(ModeOfOperationMixin, ControlBehaviorMixin, 
+                               CircuitConnectableMixin, RequestFiltersMixin, 
+                               InventoryMixin, Entity):
+    """
+    """
+    def __init__(self, name: str, **kwargs):
+        if name not in logistic_request_containers:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(LogisticRequestContainer, self).__init__(name, **kwargs)
+
+        self.request_from_buffers = None
+        if "request_from_buffers" in kwargs:
+            self.set_request_from_buffers(kwargs["request_from_buffers"])
+        self._add_export("request_from_buffers", lambda x: x is not None)
+
+    def set_request_from_buffers(self, value: bool) -> None:
+        """
+        Sets whether or not this requester can recieve items from buffer chests.
+        """
+        self.request_from_buffers = value
 
 
-class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
+    """
+    """
+    def __init__(self, name: str, **kwargs):
+        if name not in roboports:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(Roboport, self).__init__(name, **kwargs)
+
+    def set_read_logistics(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if value is None:
+            self.control_behavior.pop("read_logistics", None)
+        else:
+            self.control_behavior["read_logistics"] = value
+
+    def set_read_robot_stats(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if value is None:
+            self.control_behavior.pop("read_robot_stats", None)
+        else:
+            self.control_behavior["read_robot_stats"] = value
+
+    def set_available_logistics_signal(self, signal: str) -> None:
+        """
+        """
+        if signal is None:
+            self.control_behavior.pop("available_logistic_output_signal", None)
+        else:
+            self.control_behavior["available_logistic_output_signal"] = signal_dict(signal)
+
+    def set_total_logistics_signal(self, signal: str) -> None:
+        """
+        """
+        if signal is None:
+            self.control_behavior.pop("total_logistic_output_signal", None)
+        else:
+            self.control_behavior["total_logistic_output_signal"] = signal_dict(signal)
+
+    def set_available_construction_signal(self, signal: str) -> None:
+        """
+        """
+        if signal is None:
+            self.control_behavior.pop("available_construction_output_signal", None)
+        else:
+            self.control_behavior["available_construction_output_signal"] = signal_dict(signal)
+
+    def set_total_construction_signal(self, signal: str) -> None:
+        """
+        """
+        if signal is None:
+            self.control_behavior.pop("total_construction_output_signal", None)
+        else:
+            self.control_behavior["total_construction_output_signal"] = signal_dict(signal)
+
+
+class Lamp(CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin,
+           Entity):
+    """
+    """
+    def __init__(self, name: str, **kwargs):
+        if name not in lamps:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(Lamp, self).__init__(name, **kwargs)
+
+    def set_enable_disable(self, value: bool) -> None:
+        # TODO: handle this a little more elegantly
+        # I dont want to change CircuitConditionMixin into two separate mixins
+        # for this ONE entity
+        raise NotImplementedError()
+
+    def set_use_colors(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if value is None:
+            self.control_behavior.pop("use_colors", None)
+        else:
+            self.control_behavior["use_colors"] = value
+
+
+class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin, 
+                           DirectionalMixin, Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in arithmetic_combinators:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(kwargs["name"]))
         super().__init__(name, **kwargs)
 
+        self.dual_circuit_connectable = True
+
     def set_arithmetic_conditions(self, a: Union[str, int] = None, op: str = "*", b: Union[str, int] = 0, out: str = None):
-        self.control_behavior["arithmetic_conditions"] = {}
+        """
+        """
+        if "arithmetic_conditions" not in self.control_behavior:
+            self.control_behavior["arithmetic_conditions"] = {}
         arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
         # TODO: error checking
         # A
         if a is None:
             pass # Default
         elif isinstance(a, str):
-            arithmetic_conditions["first_signal"] = a
+            arithmetic_conditions["first_signal"] = signal_dict(a)
         elif isinstance(a, int):
             arithmetic_conditions["first_constant"] = a
         else:
@@ -1130,11 +1651,11 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin, Direct
         ]
         if op.upper() not in valid_operations:
             raise InvalidArithmeticOperation(op)
-        arithmetic_conditions["comparator"] = op.upper()
+        arithmetic_conditions["operation"] = op.upper()
 
         # B
         if isinstance(b, str):
-            arithmetic_conditions["second_signal"] = b
+            arithmetic_conditions["second_signal"] = signal_dict(b)
         elif isinstance(b, int):
             arithmetic_conditions["second_constant"] = b
         else:
@@ -1148,21 +1669,75 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin, Direct
         else:
             raise TypeError("Output param is neither 'str' or 'None'")
 
-
     def remove_arithmetic_conditions(self):
+        """
+        """
         self.control_behavior.pop("arithmetic_conditions", None)
 
 
-class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin, 
+                        DirectionalMixin, Entity):
+    """
+    """
     def __init__(self, name: str, **kwargs):
         if name not in decider_combinators:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
         super(DeciderCombinator, self).__init__(name, **kwargs)
+
+        self.dual_circuit_connectable = True
     
-    def set_decider_conditions(self, a, op, b):
+    def set_decider_conditions(self, a, op, b, out):
         """
         """
-        pass # TODO
+        if "decider_conditions" not in self.control_behavior:
+            self.control_behavior["decider_conditions"] = {}
+        decider_conditions = self.control_behavior["decider_conditions"]
+        # TODO: error checking
+        # A
+        if a is None:
+            pass # Default
+        elif isinstance(a, str):
+            decider_conditions["first_signal"] = signal_dict(a)
+        elif isinstance(a, int):
+            decider_conditions["first_constant"] = a
+        else:
+            raise TypeError("First param is neither 'str', 'int' or 'None'")
+
+        # op
+        valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
+        if op not in valid_comparisons:
+            raise InvalidConditionOperation(op)
+        actual_comparisons = [">", "<", "=", "≥",  "≤",  "≠"]
+        index = valid_comparisons.index(op)
+        op = actual_comparisons[index]
+        decider_conditions["comparator"] = op
+
+        # B
+        if isinstance(b, str):
+            decider_conditions["second_signal"] = signal_dict(b)
+        elif isinstance(b, int):
+            decider_conditions["second_constant"] = b
+        else:
+            raise TypeError("Second param is neither 'str' or 'int'")
+
+        # out
+        if out is None:
+            pass # Default
+        elif isinstance(out, str):
+            decider_conditions["output_signal"] = signal_dict(out)
+        else:
+            raise TypeError("Output param is neither 'str' or 'None'")
+
+    def set_copy_count_from_input(self, value: bool) -> None:
+        """
+        """
+        if value is None:
+            self.control_behavior["decider_conditions"].pop("copy_count_from_input", None)
+
+        if "decider_conditions" not in self.control_behavior:
+            self.control_behavior["decider_conditions"] = {}
+
+        self.control_behavior["decider_conditions"]["copy_count_from_input"] = value
 
     def remove_decider_conditions(self):
         """
@@ -1170,7 +1745,8 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin, Direction
         self.control_behavior.pop("decider_conditions", None)
 
 
-class ConstantCombinator(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+class ConstantCombinator(ControlBehaviorMixin, CircuitConnectableMixin, 
+                         DirectionalMixin, Entity):
     """
     TODO: maybe keep signal filters internally as an array of Signal objects,
     and then use Signal.to_dict() during that stage?
@@ -1190,20 +1766,23 @@ class ConstantCombinator(ControlBehaviorMixin, CircuitConnectableMixin, Directio
         
         # Check to see if filters already contains an entry with the same index
         for i, filter in enumerate(self.control_behavior["filters"]):
-            if index == filter["index"]: # Index already exists in the list
+            if index+1 == filter["index"]: # Index already exists in the list
                 if name is None: # Delete the entry
-                    del self.inventory["filters"][i]
+                    del self.control_behavior["filters"][i]
                 else: # Set the new value
-                    self.inventory["filters"][i] = {
-                        "index": index + 1,"name": name, "count": count
+                    self.control_behavior["filters"][i] = {
+                        "index": index + 1,"signal": signal_dict(name), "count": count
                     }
 
                 return
 
         # If no entry with the same index was found
         self.control_behavior["filters"].append({
-            "index": index + 1, "name": name, "count": count
+            "index": index + 1, "signal": signal_dict(name), "count": count
         })
+
+    def set_signals(self, signals: list) -> None:
+        pass # TODO
 
     def get_signal(self, index: int) -> Signal:
         """
@@ -1217,92 +1796,405 @@ class ConstantCombinator(ControlBehaviorMixin, CircuitConnectableMixin, Directio
         self.control_behavior.pop("filters", None)
 
 
-class PowerSwitch(CircuitConnectableMixin, PowerConnectableMixin, Entity):
-    pass
+class PowerSwitch(CircuitConditionMixin, LogisticConditionMixin, 
+                  ControlBehaviorMixin, CircuitConnectableMixin, 
+                  PowerConnectableMixin, DirectionalMixin, Entity):
+    """
+    """
+    def __init__(self, name: str, **kwargs):
+        if name not in power_switches:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(PowerSwitch, self).__init__(name, **kwargs)
+
+        self.switch_state = None
+        if "switch_state" in kwargs:
+            self.set_switch_state(kwargs["switch_state"])
+        self._add_export("switch_state", lambda x: x is not None)
+
+    def set_switch_state(self, value: bool) -> None:
+        """
+        """
+        self.switch_state = value
+
+    def _add_power_connection(self, target_entity: Entity, entity_id: Union[int, str], source_side: int = 1) -> None:
+        """
+        """
+        # TODO: error checking
+        if target_entity.dual_power_connectable:
+            raise Exception("2 dual power connectable entities cannot connect")
+        
+        if source_side == 1:
+            if "Cu0" not in self.connections:
+                self.connections["Cu0"] = []
+
+            # Check to see if the entity already exists within
+            for connection in self.connections["Cu0"]:
+                if connection["entity_id"] == entity_id:
+                    return
+
+            self.connections["Cu0"].append({"entity_id": entity_id, "wire_id": 0})
+        elif source_side == 2:
+            if "Cu1" not in self.connections:
+                self.connections["Cu1"] = []
+
+            # Check to see if the entity already exists within
+            for connection in self.connections["Cu1"]:
+                if connection["entity_id"] == entity_id:
+                    return
+
+            self.connections["Cu1"].append({"entity_id": entity_id, "wire_id": 0})
+        else:
+            raise ValueError("source_side neither 1 nor 2")
 
 
-class ProgrammableSpeaker(CircuitConnectableMixin, Entity):
-    pass
+class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin, 
+                          CircuitConnectableMixin, Entity):
+    """
+    """
+    def __init__(self, name: str, **kwargs):
+        if name not in programmable_speakers:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(ProgrammableSpeaker, self).__init__(name, **kwargs)
+
+        self.parameters = {}
+        if "parameters" in kwargs:
+            self.set_parameters(kwargs["parameters"])
+        self._add_export("parameters", lambda x: len(x) != 0)
+
+        self.alert_parameters = {}
+        if "alert_parameters" in kwargs:
+            self.set_alert_parameters(kwargs["alert_parameters"])
+            self._normalize_alert_parameters()
+        self._add_export("alert_parameters", lambda x: len(x) != 0)
+
+        # Name translations for all of the instruments and their notes
+        self.instruments = entity_instruments[self.name]
+
+    def set_parameters(self, parameters: dict) -> None:
+        """
+        """
+        # TODO: error checking
+        self.parameters = parameters
+
+    def set_alert_parameters(self, alert_parameters: dict) -> None:
+        """
+        """
+        # TODO: error checking
+        self.alert_parameters = alert_parameters
+
+    def set_volume(self, volume: float) -> None:
+        """
+        """
+        # TODO: error checking
+        if volume is None:
+            self.parameters.pop("playback_volume", None)
+        else:
+            self.parameters["playback_volume"] = volume
+
+    def set_global_playback(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if value is None:
+            self.parameters.pop("playback_globally", None)
+        else:
+            self.parameters["playback_globally"] = value
+
+    def set_show_alert(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if value is None:
+            self.alert_parameters.pop("show_alert", None)
+        else:
+            self.alert_parameters["show_alert"] = value
+
+    def set_polyphony(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if value is None:
+            self.parameters.pop("allow_polyphony", None)
+        else:
+            self.parameters["allow_polyphony"] = value
+
+    def set_show_alert_on_map(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if value is None:
+            self.alert_parameters.pop("show_on_map", None)
+        else:
+            self.alert_parameters["show_on_map"] = value
+
+    def set_alert_icon(self, signal: str) -> None:
+        """
+        """
+        # TODO: error checking
+        if signal is None:
+            self.alert_parameters.pop("icon_signal_id", None)
+        else:
+            self.alert_parameters["icon_signal_id"] = signal_dict(signal)
+
+    def set_alert_message(self, message: str) -> None:
+        """
+        """
+        # TODO: error checking
+        if message is None:
+            self.alert_parameters.pop("alert_message", None)
+        else:
+            self.alert_parameters["alert_message"] = message
+
+    def set_signal_value_is_pitch(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if "circuit_parameters" not in self.control_behavior:
+            self.control_behavior["circuit_parameters"] = {}
+        circuit_params = self.control_behavior["circuit_parameters"]
+
+        if value is None:
+            circuit_params.pop("signal_value_is_pitch", None)
+        else:
+            circuit_params["signal_value_is_pitch"] = value
+
+    def set_instrument(self, instrument: Union[int, str]) -> None:
+        """
+        """
+        # TODO: error checking
+        if "circuit_parameters" not in self.control_behavior:
+            self.control_behavior["circuit_parameters"] = {}
+        circuit_params = self.control_behavior["circuit_parameters"]
+
+        if instrument is None:
+            circuit_params.pop("instrument_id", None)
+        else:
+            circuit_params["instrument_id"] = instrument
+
+        #self._normalize_circuit_parameters()
+
+    def set_note(self, note: Union[int, str]) -> None:
+        """
+        """
+        # TODO: error checking
+        if "circuit_parameters" not in self.control_behavior:
+            self.control_behavior["circuit_parameters"] = {}
+        circuit_params = self.control_behavior["circuit_parameters"]
+
+        if note is None:
+            circuit_params.pop("note_id", None)
+        else:
+            circuit_params["note_id"] = note
 
 
-class Boiler(DirectionalMixin):
-    pass
+    def _normalize_circuit_parameters(self):
+        """
+        """
+        # TODO: handle strings using self.instruments
+        if "circuit_parameters" in self.control_behavior:
+            circuit_params = self.control_behavior["circuit_parameters"]
+            if "instrument_id" in circuit_params:
+                instrument = circuit_params["instrument_id"]
+                if isinstance(instrument, str):
+                    instrument_id = self.instruments.index(instrument)
+                    circuit_params["instrument_id"] = instrument_id
+            if "note_id" in circuit_params:
+                note = circuit_params["note_id"]
+                if isinstance(note, str):
+                    note_id = self.instruments[instrument].index(note)
+                    circuit_params["note_id"] = note_id
+
+        pass
+
+    def _normalize_alert_parameters(self):
+        """
+        """
+        if "icon_signal_id" in self.alert_parameters:
+            id = self.alert_parameters["icon_signal_id"]
+            if isinstance(id, str):
+                self.alert_parameters["icon_signal_id"] = signal_dict(id)
 
 
-class Generator(Entity):
-    pass
+class Boiler(DirectionalMixin, Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in boilers:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(Boiler, self).__init__(name, **kwargs)
+
+
+class Generator(DirectionalMixin, Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in generators:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(Generator, self).__init__(name, **kwargs)
 
 
 class SolarPanel(Entity):
-    pass
+    def __init__(self, name: str, **kwargs):
+        if name not in solar_panels:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(SolarPanel, self).__init__(name, **kwargs)
 
 
-class Accumulator(Entity):
-    pass
+class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in accumulators:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(Accumulator, self).__init__(name, **kwargs)
+
+    def set_output_signal(self, signal: str) -> None:
+        """
+        """
+        # TODO: error checking
+        if signal is None:
+            self.control_behavior.pop("output_signal", None)
+        else:
+            self.control_behavior["output_signal"] = signal_dict(signal)
 
 
 class Reactor(Entity):
-    pass
+    def __init__(self, name: str, **kwargs):
+        if name not in reactors:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(Reactor, self).__init__(name, **kwargs)
 
 
 class HeatPipe(Entity):
-    pass
+    def __init__(self, name: str, **kwargs):
+        if name not in heat_pipes:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(HeatPipe, self).__init__(name, **kwargs)
 
 
-class MiningDrill(DirectionalMixin, Entity):
-    pass
+class MiningDrill(RequestItemsMixin, CircuitReadResourceMixin, CircuitConditionMixin, LogisticConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in mining_drills:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(MiningDrill, self).__init__(name, **kwargs)
 
 
-class OffshorePump(DirectionalMixin, Entity):
-    pass
+class OffshorePump(CircuitConditionMixin, LogisticConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in offshore_pumps:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(OffshorePump, self).__init__(name, **kwargs)
 
 
-class Furnace(Entity):
-    pass
+class Furnace(RequestItemsMixin, Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in furnaces:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(Furnace, self).__init__(name, **kwargs)
 
 
-class AssemblingMachine(ItemRequestMixin, RecipeMixin, Entity):
-    def __init__(self, **kwargs):
-        if kwargs["name"] not in assembling_machines:
-            raise InvalidEntityID("'{}' is not a valid name for this type".format(kwargs["name"]))
-        super(AssemblingMachine, self).__init__(**kwargs)
+class AssemblingMachine(RequestItemsMixin, RecipeMixin, Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in assembling_machines:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(AssemblingMachine, self).__init__(name, **kwargs)
 
 
 class Lab(Entity):
-    pass
+    def __init__(self, name: str, **kwargs):
+        if name not in labs:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(Lab, self).__init__(name, **kwargs)
 
 
-class Beacon(Entity):
-    pass
+class Beacon(RequestItemsMixin, Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in beacons:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(Beacon, self).__init__(name, **kwargs)
 
 
 class RocketSilo(Entity):
-    pass
+    def __init__(self, name: str, **kwargs):
+        if name not in rocket_silos:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(RocketSilo, self).__init__(name, **kwargs)
+
+        self.auto_launch = None
+        if "auto_launch" in kwargs:
+            self.set_auto_launch(kwargs["auto_launch"])
+        self._add_export("auto_launch", lambda x: x is not None)
+
+    def set_auto_launch(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        self.auto_launch = value
 
 
 class LandMine(Entity):
-    pass
+    def __init__(self, name: str, **kwargs):
+        if name not in land_mines:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(LandMine, self).__init__(name, **kwargs)
 
 
 # Technically CircuitConnectable, but only when adjacent to a gate
-class Wall(CircuitConnectableMixin, Entity):
-    pass
+class Wall(CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in walls:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(Wall, self).__init__(name, **kwargs)
+
+    def set_enable_disable(self, value: bool) -> None:
+        """
+        Overwritten
+        """
+        # TODO: check if we're adjacent to a gate
+        # TODO: error checking
+        if value is None:
+            self.control_behavior.pop("circuit_open_gate", None)
+        else:
+            self.control_behavior["circuit_open_gate"] = value
+
+    def set_read_gate(self, value: bool) -> None:
+        """
+        """
+        # TODO: check if we're adjacent to a gate
+        # TODO: error checking
+        if value is None:
+            self.control_behavior.pop("circuit_read_sensor", None)
+        else:
+            self.control_behavior["circuit_read_sensor"] = value
+
+    def set_output_signal(self, signal: bool) -> None:
+        """
+        """
+        # TODO: check if we're adjacent to a gate
+        # TODO: error checking
+        if signal is None:
+            self.control_behavior.pop("output_signal", None)
+        else:
+            self.control_behavior["output_signal"] = signal_dict(signal)
 
 
-class Gate(CircuitConnectableMixin, Entity):
-    pass
+
+class Gate(DirectionalMixin, Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in gates:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(Gate, self).__init__(name, **kwargs)
 
 
 class Turret(DirectionalMixin, Entity):
-    pass
+    def __init__(self, name: str, **kwargs):
+        if name not in turrets:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(Turret, self).__init__(name, **kwargs)
 
 
 class Radar(Entity):
-    pass
+    def __init__(self, name: str, **kwargs):
+        if name not in radars:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(Radar, self).__init__(name, **kwargs)
 
 
 def new_entity(name: str, **kwargs):
-    #kwargs["name"] = name # TODO: see if we can get rid of this
     if name in containers:
         return Container(name, **kwargs)
     if name in storage_tanks:
@@ -1335,6 +2227,8 @@ def new_entity(name: str, **kwargs):
         return TrainStop(name, **kwargs)
     if name in rail_signals:
         return RailSignal(name, **kwargs)
+    if name in rail_chain_signals:
+        return RailChainSignal(name, **kwargs)
     if name in locomotives:
         return Locomotive(name, **kwargs)
     if name in cargo_wagons:
@@ -1343,8 +2237,12 @@ def new_entity(name: str, **kwargs):
         return FluidWagon(name, **kwargs)
     if name in artillery_wagons:
         return ArtilleryWagon(name, **kwargs)
-    if name in logistic_containers:
-        return LogisticsRequestContainer(name, **kwargs)
+    if name in logistic_storage_containers:
+        return LogisticStorageContainer(name, **kwargs)
+    if name in logistic_buffer_containers:
+        return LogisticBufferContainer(name, **kwargs)
+    if name in logistic_request_containers:
+        return LogisticRequestContainer(name, **kwargs)
     if name in roboports:
         return Roboport(name, **kwargs)
     if name in lamps:
@@ -1363,7 +2261,37 @@ def new_entity(name: str, **kwargs):
         return Boiler(name, **kwargs)
     if name in generators:
         return Generator(name, **kwargs)
+    if name in solar_panels:
+        return SolarPanel(name, **kwargs)
+    if name in accumulators:
+        return Accumulator(name, **kwargs)
+    if name in reactors:
+        return Reactor(name, **kwargs)
+    if name in heat_pipes:
+        return HeatPipe(name, **kwargs)
+    if name in mining_drills:
+        return MiningDrill(name, **kwargs)
+    if name in offshore_pumps:
+        return OffshorePump(name, **kwargs)
+    if name in furnaces:
+        return Furnace(name, **kwargs)
     if name in assembling_machines:
         return AssemblingMachine(name, **kwargs)
+    if name in labs:
+        return Lab(name, **kwargs)
+    if name in beacons:
+        return Beacon(name, **kwargs)
+    if name in rocket_silos:
+        return RocketSilo(name, **kwargs)
+    if name in land_mines:
+        return LandMine(name, **kwargs)
+    if name in walls:
+        return Wall(name, **kwargs)
+    if name in gates:
+        return Gate(name, **kwargs)
+    if name in turrets:
+        return Turret(name, **kwargs)
+    if name in radars:
+        return Radar(name, **kwargs)
     
     raise InvalidEntityID(name)

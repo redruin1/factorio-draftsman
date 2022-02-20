@@ -138,7 +138,7 @@ local function normalize_module_name(modname)
     --     modname = string.gsub(modname, "__base__", "./factorio-data-master/base")
     local absolute = true
     if name == "core" or name == "base" then
-        modname = string.gsub(modname, match, "./factorio-data-master/" .. name)
+        modname = string.gsub(modname, match, "./factorio-data/" .. name)
     elseif match ~= nil then
         local correct_match = string.gsub(match, "%-", "%%-")
         modname = string.gsub(modname, correct_match, "./factorio-mods/" .. name)
@@ -190,7 +190,7 @@ end
 
 local menu_simulations_searcher = function(modname)
     -- this doesn't exist, pretend like it does
-    if modname == "./factorio-data-master/base/menu-simulations/menu-simulations" then
+    if modname == "./factorio-data/base/menu-simulations/menu-simulations" then
         return (function() return menu_simulations end)
     end
 end
