@@ -1,24 +1,24 @@
 # blueprint.py
 
-from factoriotools._factorio_version import __factorio_version_info__
+from draftsman._factorio_version import __factorio_version_info__
 
-import factoriotools.utils as utils
-from factoriotools.signatures import (
+import draftsman.utils as utils
+from draftsman.signatures import (
     COLOR_SCHEMA, 
     ICON_SCHEMA, 
     BLUEPRINT_SCHEMA, 
     BLUEPRINT_BOOK_SCHEMA
 )
-from factoriotools.errors import (
+from draftsman.errors import (
     IncorrectBlueprintType,
     DuplicateIDException,
     MalformedBlueprintString,
     EntityNotCircuitConnectable,
     EntityNotPowerConnectable
 )
-from factoriotools.entity import Entity, new_entity
-from factoriotools.tile import Tile
-from factoriotools.signals import signal_IDs, get_signal_type, InvalidSignalID
+from draftsman.entity import Entity, new_entity
+from draftsman.tile import Tile
+from draftsman.signal import signal_IDs, get_signal_type, InvalidSignalID
 
 import base64
 import copy
@@ -207,14 +207,22 @@ class Blueprint:
     def add_entity(self, entity: Union[Entity, dict], **kwargs) -> None:
         """
         """
-        if "id" in kwargs:
-            if kwargs["id"] in self.entity_numbers: # Same ID!
+        entity_id = None
+        if hasattr(entity, "id"):
+            entity_id = entity.id
+        elif "id" in kwargs:
+            entity_id = kwargs["id"]
+        
+        if entity_id is not None:
+            if entity_id in self.entity_numbers: # Same ID!
                 raise DuplicateIDException(
                 "'{}' already used in blueprint entities".format(kwargs["id"])
                 )
 
         if isinstance(entity, str):
             entity = new_entity(entity, **kwargs)
+
+        # TODO: if entity is hidden, warn the user
 
         # Create a validated copy of the data?
         #data_copy = ENTITY_SCHEMA.validate(data)
@@ -229,8 +237,8 @@ class Blueprint:
         self.entities.append(entity_copy)
         
         # Keep track of the id and the entity it points to
-        if "id" in kwargs:
-            self.entity_numbers[kwargs["id"]] = n
+        if entity_id is not None:
+            self.entity_numbers[entity_id] = n
         else:
             self.entity_numbers.inverse[n] = None
 
@@ -407,9 +415,9 @@ class Blueprint:
         # TODO
 
         # Handle entity 1
-        entity_1.add_circuit_connection(entity_2, id2, color, side1, side2)
+        entity_1.add_circuit_connection(color, entity_2,  side1, side2)
         # Handle entity 2
-        entity_2.add_circuit_connection(entity_1, id1, color, side2, side1)
+        entity_2.add_circuit_connection(color, entity_1, side2, side1)
 
     def add_tile(self, tile_name: str, x: int, y: int, id: str = None) -> None:
         """

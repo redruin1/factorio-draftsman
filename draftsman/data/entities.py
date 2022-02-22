@@ -86,5 +86,12 @@ entity_dimensions = {
 	"radar": (3, 3),
 	"loader": (1, 2),
 	"fast-loader": (1, 2),
-	"express-loader": (1, 2)
+	"express-loader": (1, 2),
+	"electric-energy-interface": (2, 2),
+	"linked-chest": (1, 1),
+	"heat-interface": (1, 1),
+	"linked-belt": (1, 1),
+	"infinity-chest": (1, 1),
+	"infinity-pipe": (1, 1),
+	"burner-generator": (3, 5)
 }

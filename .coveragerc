@@ -1,0 +1,4 @@
+# python coverage configuration file
+[run]
+branch = True
+command_line = -m unittest discover

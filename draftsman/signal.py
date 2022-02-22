@@ -2,10 +2,10 @@
 
 # TODO: automate the collection of signals based on factorio version and mods
 
-from .signatures import SIGNAL_SCHEMA
-from .errors import InvalidSignalID
-from .signalID import SignalID
-from .signal_data import (
+from draftsman.signatures import SIGNAL_SCHEMA
+from draftsman.errors import InvalidSignalID
+from draftsman.signalID import SignalID
+from draftsman.data.signals import (
     signal_IDs, item_signals, fluid_signals, virtual_signals
 )
 

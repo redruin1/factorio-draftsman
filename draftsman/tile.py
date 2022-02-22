@@ -1,7 +1,7 @@
 # tile.py
 
-from .errors import InvalidTileID
-from .tile_data import tile_names
+from draftsman.errors import InvalidTileID
+from draftsman.data.tiles import tile_names
 
 
 class Tile:

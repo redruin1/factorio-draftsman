@@ -1,7 +1,7 @@
 # tile.py
 
-from factoriotools.tile import Tile
-from factoriotools.errors import InvalidTileID
+from draftsman.tile import Tile
+from draftsman.errors import InvalidTileID
 
 from unittest import TestCase
 

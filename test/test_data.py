@@ -1,8 +1,8 @@
 # data.py
 
-import factoriotools.signal_data as signal_data
-import factoriotools.tile_data   as tile_data
-import factoriotools.entity_data as entity_data
+import draftsman.data.signals as signal_data
+import draftsman.data.tiles as tile_data
+import draftsman.data.entities as entity_data
 
 import unittest
 

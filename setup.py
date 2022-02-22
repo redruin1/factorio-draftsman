@@ -2,11 +2,11 @@
 
 from distutils.core import setup
 
-setup(name='factorio-blueprint-tools',
+setup(name='factorio-draftsman',
       version='0.1',
-      description='Factorio blueprint string manipulation',
+      description='Create and modify Factorio blueprint strings',
       author='redruin1',
       author_email='tbd',
       url='https://github.com/redruin1/factorio_blueprint_tools',
-      packages=['factoriotools'],
+      packages=['draftsman'],
      )

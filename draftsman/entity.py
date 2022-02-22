@@ -13,16 +13,21 @@
 # TODO: add no name capability to classes, so you dont have to type the name twice if it's a singleton (like ProgrammableSpeaker)
 #   It should just select the first one from the list of entities that it's in
 
-from factoriotools.errors import (
+from draftsman.errors import (
     InvalidEntityID, InvalidItemID, InvalidSignalID, 
-    InvalidArithmeticOperation, InvalidConditionOperation
+    InvalidArithmeticOperation, InvalidConditionOperation,
+    InvalidMode, InvalidWireType, InvalidConnectionSide
 )
-from factoriotools.signals import Signal, item_signals, signal_dict
-from factoriotools.entity_data import entity_dimensions
+from draftsman.signal import Signal, item_signals, signal_dict
+from draftsman.signatures import (
+    VEC_SCHEMA, IVEC_SCHEMA, INTEGER_SCHEMA, STRING_SCHEMA, POSITION_SCHEMA, BAR_SCHEMA, CONNECTIONS_SCHEMA, CONNECTION_POINT_SCHEMA
+)
 
+import abc
 import copy
 from enum import IntEnum
 from typing import Any, Union, Callable
+import warnings
 
 class Direction(IntEnum):
     NORTH = 0
@@ -45,32 +50,48 @@ class ModeOfOperation(IntEnum):
 
 # from entity_data import *
 
+def warn_user(message):
+    warnings.warn(message, stacklevel=3)
+
+from draftsman.data.entities import entity_dimensions
+
+entity_inventory_sizes = {
+    "wooden-chest": 16,
+    "iron-chest": 32,
+    "steel-chest": 48,
+    "logistic-chest-active-provider": 48,
+    "logistic-chest-passive-provider": 48,
+    "logistic-chest-storage": 48,
+    "logistic-chest-buffer": 48,
+    "logistic-chest-requester": 48,
+}
+
 entity_instruments = {
     "programmable-speaker": {
         "piano": ["blah"]
     }
 }
 
-containers = {
+containers = [
     "wooden-chest", "iron-chest", "steel-chest", 
     "logistic-chest-active-provider", "logistic-chest-passive-provider"
-}
+]
 
-storage_tanks = {
+storage_tanks = [
     "storage-tank"
-}
+]
 
-transport_belts = {
+transport_belts = [
     "transport-belt", "fast-transport-belt", "express-transport-belt"
-}
+]
 
-underground_belts = {
+underground_belts = [
     "underground-belt", "fast-underground-belt", "express-underground-belt"
-}
+]
 
-splitters = {
+splitters = [
     "splitter", "fast-splitter", "express-splitter"
-}
+]
 
 inserters = {
     "burner-inserter", "inserter", "long-handed-inserter", "fast-inserter",
@@ -251,6 +272,48 @@ radars = {
     "radar"
 }
 
+electric_energy_interfaces = {
+    "electric-energy-interface"
+}
+
+linked_containers = {
+    "linked-chest"
+}
+
+heat_interfaces = {
+    "heat-interface"
+}
+
+linked_belts = {
+    "linked-belt"
+}
+
+infinity_containers = {
+    "infinity-chest"
+}
+
+infinity_pipes = {
+    "infinity-pipe"
+}
+
+burner_generators = {
+    "burner-generator"
+}
+
+class EntityLike(metaclass=abc.ABCMeta):
+    def __init__(self, name: str, position: Union[list, dict] = [0, 0], **kwargs):
+        pass
+
+    def set_name():
+        pass
+
+    def set_id():
+        pass
+
+    @abc.abstractmethod
+    def to_dict():
+        pass
+
 # Mixins!
 # TODO: organize
 class Entity:
@@ -262,6 +325,12 @@ class Entity:
         # Name (External)
         self.name = name 
         self._add_export("name")
+
+        # ID (Internal)
+        self.id = None
+        if "id" in kwargs:
+            kwargs["id"] = STRING_SCHEMA.validate(kwargs["id"])
+            self.set_id(kwargs["id"])
 
         # Width and Height (Internal)
         # TODO: change this to AABB
@@ -279,8 +348,7 @@ class Entity:
 
         # (Absolute) Position (External)
         # Grid Position (Internal)
-        self.position = {"x": 0, "y": 0}
-        self.grid_position = [0, 0]
+        position = POSITION_SCHEMA.validate(position)
         if isinstance(position, list):
             Entity.set_grid_position(self, position[0], position[1])
         elif isinstance(position, dict):
@@ -290,13 +358,17 @@ class Entity:
         # Tags (External)
         self.tags = {}
         if "tags" in kwargs:
-            self.tags = kwargs["tags"]
+            self.set_tags(kwargs["tags"])
         self._add_export("tags", lambda x: x)
 
-        # What can they have optionally?
-        # auto_launch (with cargo, rocket silo)
-        # variation
-        # color (train station most normally, maybe other things)
+    def set_id(self, id: str) -> None:
+        """
+        Sets the `id` of the entity. 
+
+        Note: it is impossible to insert two entities into a blueprint with the
+        same `id`.
+        """
+        self.id = STRING_SCHEMA.validate(id)
 
     def set_absolute_position(self, x: float, y: float) -> None:
         """
@@ -304,8 +376,9 @@ class Entity:
         most entities, the position of the object is located at the center.
         """
         self.position = {"x": x, "y": y}
-        grid_x = int(self.position["x"] - self.width / 2.0)
-        grid_y = int(self.position["y"] - self.height / 2.0)
+        self.position = VEC_SCHEMA.validate(self.position)
+        grid_x = round(self.position["x"] - self.width / 2.0)
+        grid_y = round(self.position["y"] - self.height / 2.0)
         self.grid_position = [grid_x, grid_y]
 
     def set_grid_position(self, x: int, y: int) -> None:
@@ -316,6 +389,7 @@ class Entity:
         coordinate is the top left-most tile of the entity.
         """
         self.grid_position = [x, y]
+        self.grid_position = IVEC_SCHEMA.validate(self.grid_position)
         absolute_x = self.grid_position[0] + self.width / 2.0
         absolute_y = self.grid_position[1] + self.height / 2.0
         self.position = {"x": absolute_x, "y": absolute_y}
@@ -328,10 +402,10 @@ class Entity:
     def set_tag(self, tag: str, value: Any) -> None:
         """
         """
-        self.tags[tag] = value
-
-    def get_center(self) -> dict:
-        pass
+        if value is None:
+            self.tags.pop(tag, None)
+        else:
+            self.tags[tag] = value
 
     def to_dict(self) -> dict:
         """
@@ -343,11 +417,11 @@ class Entity:
         # Only add the keys in the exports dictionary
         out = {}
         for name, f in self.exports.items():
-            try:
-                # Try and get the element
-                value = dict_self[name]
-            except:
-                continue
+            #try:
+            # Try and get the element
+            value = dict_self[name]
+            #except:
+            #    continue
             # Does the value match the criteria to be included?
             if f is None or f(value):
                 out[name] = value
@@ -374,6 +448,9 @@ class Entity:
         self.exports[name] = f
 
     def __iter__(self):
+        """
+        Used when converting Entity to dict.
+        """
         for attr, value in self.__dict__.items():
             yield attr, value
 
@@ -417,8 +494,8 @@ class DirectionalMixin:
         most entities, the position of the object is located at the center.
         """
         self.position = {"x": x, "y": y}
-        grid_x = int(self.position["x"] - self.rotated_width / 2.0)
-        grid_y = int(self.position["y"] - self.rotated_height / 2.0)
+        grid_x = round(self.position["x"] - self.rotated_width / 2.0)
+        grid_y = round(self.position["y"] - self.rotated_height / 2.0)
         self.grid_position = [grid_x, grid_y]
 
 
@@ -492,16 +569,22 @@ class InventoryMixin:
     """
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
+
+        self.inventory_size = entity_inventory_sizes[self.name]
+
         self.bar = None
         if "bar" in kwargs:
             self.set_bar_index(kwargs["bar"])
         self._add_export("bar", lambda x: x is not None)
 
-    def set_bar_index(self, position: int) -> None:
+    def set_bar_index(self, index: int) -> None:
         """
         Sets the inventory limiting bar.
         """
-        self.bar = position
+        self.bar = BAR_SCHEMA.validate(index)
+        if self.bar >= self.inventory_size or self.bar < 0:
+            warn_user("Bar index not in range [0, {})"
+                      .format(self.inventory_size))
 
 
 class InventoryFilterMixin:
@@ -626,16 +709,31 @@ class CircuitConnectableMixin:
     def set_connections(self, connections: dict) -> None:
         """
         """
-        # TODO: error checking
-        self.connections = connections
+        self.connections = CONNECTIONS_SCHEMA.validate(connections)
 
-    def add_circuit_connection(self, other_entity: Entity, target_num: int, color: str, source_side: int = 1, target_side: int = 1) -> None:
+    def add_circuit_connection(self, color: str, target: Entity, source_side: int = 1, target_side: int = 1) -> None:
         """
         Adds a connection between this entity and `other_entity`
 
         NOTE: this function only modifies the current entity; for completeness
         you should also connect the other entity to this one.
         """
+        if color not in {"red", "green"}:
+            raise InvalidWireType(color)
+        if not isinstance(target, Entity):
+            raise TypeError("'target' is not an Entity")
+        if source_side not in {1, 2}:
+            raise InvalidConnectionSide(source_side)
+        if target_side not in {1, 2}:
+            raise InvalidConnectionSide(target_side)
+
+        if source_side == 2 and not self.dual_circuit_connectable:
+            warn_user("'source_side' was specified as 2, but entity '{}' is not"
+                      " dual circuit connectable".format(type(self)))
+        if target_side == 2 and not target.dual_circuit_connectable:
+            warn_user("'target_side' was specified as 2, but entity '{}' is not"
+                      " dual circuit connectable".format(type(target)))
+
         if str(source_side) not in self.connections:
             self.connections[str(source_side)] = dict()
         current_side = self.connections[str(source_side)]
@@ -643,12 +741,13 @@ class CircuitConnectableMixin:
         if color not in current_side:
             current_side[color] = list()
         current_color = current_side[color]
-
-        # For most entities you dont need a target_side
-        entry = {"entity_id": target_num}
+        
         # However, for dual connection point targets you do
-        if other_entity.dual_circuit_connectable:
-            entry = {"entity_id": target_num, "circuit_id": target_side}
+        if target.dual_circuit_connectable:
+            entry = {"entity_id": target.id, "circuit_id": target_side}
+        else:
+            # However, for most entities you dont need a target_side
+            entry = {"entity_id": target.id}
 
         current_color.append(entry)
 
@@ -1072,6 +1171,7 @@ class RequestItemsMixin: # TODO: finish
     """
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
+
         self.items = {}
         if "items" in kwargs:
             self.set_item_requests(kwargs["items"])
@@ -1094,6 +1194,52 @@ class RequestItemsMixin: # TODO: finish
         del self.items[item]
 
 
+class InfinitySettingsMixin:
+    def __init__(self, name: str, **kwargs):
+        super().__init__(name, **kwargs)
+
+        self.infinity_settings = {}
+        if "infinity_settings" in kwargs:
+            self.set_infinity_settings(kwargs["infinity_settings"])
+        self._add_export("infinity_settings", lambda x: len(x) != 0)
+
+    def set_infinity_settings(self, settings: dict) -> None:
+        """
+        """
+        # TODO: error checking
+        if settings is None:
+            self.infinity_settings = {}
+        else:
+            self.infinity_settings = settings
+
+
+class ColorMixin:
+    def __init__(self, name: str, **kwargs):
+        super().__init__(name, **kwargs)
+
+        self.color = None
+        if "color" in kwargs:
+            # color = COLOR_SCHEMA.validate(kwargs["color"])
+            color = kwargs["color"]
+            if isinstance(color, dict):
+                self.set_color(**color)
+            elif isinstance(color, list):
+                self.set_color(*color)
+            else:
+                raise ValueError("color")
+        self._add_export("color", lambda x: x is not None)
+
+    def set_color(self, r: float, g: float, b: float, a: float = 1.0) -> None:
+        """
+        """
+        self.color = {"r": r, "g": g, "b": b, "a": a}
+
+    def remove_color(self) -> None:
+        """
+        """
+        self.color = None
+
+
 ################################################################################
 
 
@@ -1105,7 +1251,7 @@ class Container(CircuitConnectableMixin, InventoryMixin, Entity):
     * `logistic-chest-active-provider`
     * `logistic-chest-passive-provider`
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name: str = containers[0], **kwargs):
         if name not in containers:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
         super(Container, self).__init__(name, **kwargs)
@@ -1114,7 +1260,7 @@ class Container(CircuitConnectableMixin, InventoryMixin, Entity):
 class StorageTank(CircuitConnectableMixin, DirectionalMixin, Entity):
     """
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name: str = storage_tanks[0], **kwargs):
         if name not in storage_tanks:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
         super(StorageTank, self).__init__(name, **kwargs)
@@ -1295,7 +1441,7 @@ class CurvedRail(EightWayDirectionalMixin, Entity):
         super(CurvedRail, self).__init__(name, **kwargs)
 
 
-class TrainStop(CircuitConditionMixin, LogisticConditionMixin, 
+class TrainStop(ColorMixin, CircuitConditionMixin, LogisticConditionMixin, 
                 ControlBehaviorMixin, CircuitConnectableMixin, 
                 EightWayDirectionalMixin, Entity):
     """
@@ -1453,7 +1599,7 @@ class RailChainSignal(ReadRailSignalMixin, ControlBehaviorMixin,
             self.control_behavior["blue_output_signal"] = signal_dict(signal)
 
 
-class Locomotive(OrientationMixin, Entity):
+class Locomotive(ColorMixin, OrientationMixin, Entity):
     """
     """
     def __init__(self, name: str, **kwargs):
@@ -2193,6 +2339,254 @@ class Radar(Entity):
         super(Radar, self).__init__(name, **kwargs)
 
 
+class ElectricEnergyInterface(Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in electric_energy_interfaces:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(ElectricEnergyInterface, self).__init__(name, **kwargs)
+
+        self.buffer_size = None # TODO: default
+        if "buffer_size" in kwargs:
+            self.set_buffer_size(kwargs["buffer_size"])
+        self._add_export("buffer_size", lambda x: x is not None)
+
+        self.power_production = None # TODO: default
+        if "power_production" in kwargs:
+            self.set_power_production(kwargs["power_production"])
+        self._add_export("power_production", lambda x: x is not None)
+
+        self.power_usage = None # TODO: default
+        if "power_production" in kwargs:
+            self.set_power_usage(kwargs["power_usage"])
+        self._add_export("power_usage", lambda x: x is not None)
+
+    def set_buffer_size(self, amount: int) -> None:
+        """
+        """
+        self.buffer_size = amount
+
+    def set_power_production(self, amount: int) -> None:
+        """
+        """
+        self.power_production = amount
+
+    def set_power_usage(self, amount: int) -> None:
+        """
+        """
+        self.power_usage = amount
+
+
+class LinkedContainer(Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in linked_containers:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(LinkedContainer, self).__init__(name, **kwargs)
+
+        self.link_id = 0
+        if "link_id" in kwargs:
+            self.set_link_id(kwargs["link_id"])
+        self._add_export("link_id", lambda x: x != 0)
+
+    def set_links(self, id: int) -> None:
+        """
+        """
+        # assert id in range(0, 2^32-1)
+        if id is None:
+            self.link_id = 0
+        else:
+            self.link_id = id
+
+    def set_link(self, number: int, enabled: bool) -> None:
+        """
+        """
+        assert number < 32
+        if enabled:
+            self.link_id |= (1 << number)
+        else:
+            self.link_id &= ~(1 << number)
+
+
+class HeatInterface(Entity):
+    def __init__(self, name: str, **kwargs):
+        if name not in heat_interfaces:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(HeatInterface, self).__init__(name, **kwargs)
+
+        self.temperature = 0
+        if "temperature" in kwargs:
+            self.set_temperature(kwargs["temperature"])
+        self._add_export("temperature", lambda x: x is not None and x != 0)
+
+        self.mode = "at-least"
+        if "mode" in kwargs:
+            self.set_mode(kwargs["mode"])
+        self._add_export("mode", lambda x: x is not None and x != "at-least")
+
+    def set_temperature(self, temperature: int) -> None:
+        """
+        """
+        # assert 0 <= temperature <= 1000
+        if temperature is None:
+            self.temperature = 0
+        else:
+            self.temperature = temperature
+
+    def set_mode(self, mode: str) -> None:
+        """
+        * "at-least"
+        * "at-most"
+        * "exactly"
+        * "add"
+        * "remove"
+        """
+        if mode is None:
+            self.mode = "at-least"
+        else:
+            if mode not in {"at-least", "at-most", "exactly", "add", "remove"}:
+                raise InvalidMode(mode)
+            self.mode = mode
+
+
+class LinkedBelt(DirectionalMixin, Entity):
+    """
+    Currently unimplemented. Need to analyze how mods use this entity, as I 
+    can't seem to figure out the example one in the game.
+    """
+    def __init__(self, name: str, **kwargs):
+        if name not in linked_belts:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(LinkedBelt, self).__init__(name, **kwargs)
+
+
+class InfinityContainer(InfinitySettingsMixin, Entity):
+    """
+    """
+    def __init__(self, name: str, **kwargs):
+        if name not in infinity_containers:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(InfinityContainer, self).__init__(name, **kwargs)
+
+        # TODO: Validate that self.infinity_settings matches this class' signature
+    
+    def set_remove_unfiltered_items(self, value: bool) -> None:
+        """
+        """
+        # TODO: error checking
+        if value is None:
+            self.infinity_settings.pop("remove_unfiltered_items", None)
+        else:
+            self.infinity_settings["remove_unfiltered_items"] = value
+
+    def set_infinity_filters(self, filters: list) -> None:
+        """
+        """
+        # TODO: error checking
+        if filters is None:
+            self.infinity_settings.pop("filters", None)
+        else:
+            self.infinity_settings["filters"] = filters
+
+    def set_infinity_filter(self, index: int, name: str, count: int, mode: str) -> None:
+        """
+        """
+        if "filters" not in self.infinity_settings:
+            self.infinity_settings["filters"] = []
+
+        # TODO: error checking
+        # assert mode in ["at-least", "at-most", "exactly"]
+
+        # Check to see if filters already contains an entry with the same index
+        for i, filter in enumerate(self.infinity_settings["filters"]):
+            if index == filter["index"]: # Index already exists in the list
+                if name is None: # Delete the entry
+                    del self.inventory["filters"][i]
+                else: # Set the new value
+                    self.inventory["filters"][i] = {
+                        "name": name,
+                        "count": count,
+                        "mode": mode,
+                        "index": index + 1
+                    }
+                    
+                return
+
+        # If no entry with the same index was found
+        self.inventory["filters"].append({
+            "name": name,
+            "count": count,
+            "mode": mode,
+            "index": index + 1 
+        })
+
+
+class InfinityPipe(InfinitySettingsMixin, Entity):
+    """
+    """
+    def __init__(self, name: str, **kwargs):
+        if name not in infinity_pipes:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(InfinityPipe, self).__init__(name, **kwargs)
+
+        # TODO: Validate that self.infinity_settings matches this class' signature
+
+    def set_infinite_fluid(self, name: str = None, percentage: int = 0, mode: str = "at-least", temperature: int = 0) -> None:
+        """
+        """
+        self.set_infinite_fluid_name(name)
+        self.set_infinite_fluid_percentage(percentage)
+        self.set_infinite_fluid_mode(mode)
+        self.set_infinite_fluid_temperature(temperature)
+
+    def set_infinite_fluid_name(self, name: str) -> None:
+        """
+        """
+        if name is None:
+            self.infinity_settings.pop("name", None)
+        else:
+            # TODO: error checking
+            # assert name in items
+            self.infinity_settings["name"] = name
+
+    def set_infinite_fluid_percentage(self, percent: int):
+        """
+        """
+        if percent is None:
+            self.infinity_settings.pop("percentage", None)
+        else:
+            # TODO: error checking
+            self.infinity_settings["percentage"] = percent
+
+    def set_infinite_fluid_mode(self, mode: str) -> None:
+        """
+        """
+        if mode is None:
+            self.infinity_settings.pop("mode", None)
+        else:
+            if mode not in {"at-least", "at-most", "exactly"}:
+                raise InvalidMode(mode)
+            self.infinity_settings["mode"] = mode
+
+    def set_infinite_fluid_temperature(self, temperature: int):
+        """
+        """
+        if temperature is None:
+            self.infinity_settings.pop("temperature", None)
+        else:
+            # TODO: error checking
+            self.infinity_settings["temperature"] = temperature
+        
+
+class BurnerGenerator(DirectionalMixin, Entity):
+    """
+    TODO: think about, because burner generators from mods like Space 
+    Exploration don't have orientation. Are they the same entity?
+    """
+    def __init__(self, name: str, **kwargs):
+        if name not in burner_generators:
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
+        super(BurnerGenerator, self).__init__(name, **kwargs)
+
+
 def new_entity(name: str, **kwargs):
     if name in containers:
         return Container(name, **kwargs)
@@ -2292,5 +2686,19 @@ def new_entity(name: str, **kwargs):
         return Turret(name, **kwargs)
     if name in radars:
         return Radar(name, **kwargs)
+    if name in electric_energy_interfaces:
+        return ElectricEnergyInterface(name, **kwargs)
+    if name in linked_containers:
+        return LinkedContainer(name, **kwargs)
+    if name in heat_interfaces:
+        return HeatInterface(name, **kwargs)
+    if name in linked_belts:
+        return LinkedBelt(name, **kwargs)
+    if name in infinity_containers:
+        return InfinityContainer(name, **kwargs)
+    if name in infinity_pipes:
+        return InfinityPipe(name, **kwargs)
+    if name in burner_generators:
+        return BurnerGenerator(name, **kwargs)
     
     raise InvalidEntityID(name)

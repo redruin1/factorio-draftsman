@@ -6,7 +6,7 @@ https://factorioprints.com/view/-LbygJLCDgaBJqsMPqUJ
 Can be expanded as much as you dare.
 """
 
-from factoriotools.blueprint import Blueprint
+from draftsman.blueprint import Blueprint
 
 
 def main():

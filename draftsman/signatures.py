@@ -1,6 +1,6 @@
 # signatures.py
 
-from schema import Schema, Use, Optional
+from schema import Schema, Use, Optional, Or
 
 # Note: All data is only checked right before casting to blueprint string
 
@@ -30,14 +30,56 @@ ICON_SCHEMA = Schema({
     "signal": SIGNAL_ID_SCHEMA
 })
 
+INTEGER_SCHEMA = Schema(Use(int))
+
+STRING_SCHEMA = Schema(str)
+
 VEC_SCHEMA = Schema({
     "x": Use(float),
     "y": Use(float)
 })
 
-IVEC_SCHEMA = Schema({
-    "x": Use(int),
-    "y": Use(int)
+IVEC_SCHEMA = Schema([
+    Use(int),
+    Use(int)
+])
+
+GRID_POSITION_SCHEMA = Schema([
+    Use(int), 
+    Use(int)
+])
+
+
+POSITION_SCHEMA = Schema(
+    Or(GRID_POSITION_SCHEMA, VEC_SCHEMA)
+)
+
+BAR_SCHEMA = Schema(
+    int
+)
+
+CONNECTION_POINT_SCHEMA = Schema({
+    "entity_id": Or(int, str),
+    Optional("circuit_id"): Or(1, 2)
+})
+
+CONNECTIONS_SCHEMA = Schema({
+    Optional("1"): {
+        Optional("red"): [
+            CONNECTION_POINT_SCHEMA
+        ],
+        Optional("green"): [
+            CONNECTION_POINT_SCHEMA
+        ]
+    },
+    Optional("2"): {
+        Optional("red"): [
+            CONNECTION_POINT_SCHEMA
+        ],
+        Optional("green"): [
+            CONNECTION_POINT_SCHEMA
+        ]
+    }
 })
 
 BLUEPRINT_SCHEMA = Schema({

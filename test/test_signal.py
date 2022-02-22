@@ -1,10 +1,10 @@
 # signal.py
 
 from ast import Assert
-from factoriotools.signals import (
+from draftsman.signal import (
     SignalID, Signal, signal_IDs, get_signal_type, signal_dict
 )
-from factoriotools.errors import InvalidSignalID
+from draftsman.errors import InvalidSignalID
 
 from unittest import TestCase
 

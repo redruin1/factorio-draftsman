@@ -39,6 +39,23 @@ class InvalidConditionOperation(Exception):
 class InvalidArithmeticOperation(Exception):
     pass
 
+class InvalidMode(Exception):
+    pass
+
+class InvalidWireType(Exception):
+    """
+    Raised when either a circuit wire is not either "red" or "green" or
+    when a power wire connection type is not either "Cu0" or "Cu1".
+    """
+    pass
+
+class InvalidConnectionSide(Exception):
+    """
+    Raised when a circuit connection is connected to a side other than "1" or 
+    "2".
+    """
+    pass
+
 # Update
 class IncompatableMod(Exception):
     pass

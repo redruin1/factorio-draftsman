@@ -2,15 +2,11 @@
 
 image
 
-Pypi info, coverage, etc goes here
-
 A draftsman is a kind of artist that specializes in creating technical drawings across many engineering disciplines, including architectural, mechanical, and electrical.
 Similarly, `factorio-draftsman` is a Python module for creating and editing blueprints for the game [Factorio](https://factorio.com/).
 
---------------------------------------------------------------------------------
-## Example
 ```python
-import factorio-draftsman as factorio
+import draftsman as factorio
 
 blueprint = factorio.Blueprint()
 blueprint.set_label("Example")
@@ -41,7 +37,7 @@ blueprint.add_entity(
         "decider_conditions": {
             "first_signal": "signal-red",
             "comparator": "<=",
-            "second_constant": 60
+            "second_constant": 60,
             "output_signal": "signal-red",
             "copy_count_from_input": True
         }
@@ -72,28 +68,53 @@ blueprint_book = factorio.BlueprintBook(blueprints = [blueprint])
 print(blueprint_book)               # Pretty printing using `json`
 print(blueprint_book.to_string())   # Blueprint string
 ```
+For more examples, see the [examples folder](https://github.com/redruin1/factorio-draftsman/tree/main/examples).
+
 --------------------------------------------------------------------------------
+## Table of Contents
+
+ * [Overview](#overview)
+    * [Features](#features)
+ * [Usage](#usage)
+    * [Installation](#installation)
+    * [Testing](#testing-with-unittesthttpsdocspythonorg3libraryunittesthtml)
+    * [Coverage](#coverage-with-coveragehttpscoveragereadthedocsioen632)
+
 ## Overview
 ### Features
-* Modern and up to date
-* Easy installation
+* Compatable with the latest version of Factorio (1.1.53+)
+* Well documented
 * Intuitive API
-* Verbose Errors and Warning
+* Useful constructs for ease-of-use:
+    * Give entities unique string IDs
+    * Filter entities from blueprints [just like Factorio's own API](https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_entities_filtered)
+    * Collect entities into Groups and move them all at once
+    * and more!
+* Compatable with mods
+* Verbose Errors and Warnings
 * Rigorous test suite
-* Mod support
 
-## Installation
+--------------------------------------------------------------------------------
+## Usage
+
+### Installation
 ```
 pip install factorio-draftsman
 ```
 
-## Testing
+### Testing with [unittest](https://docs.python.org/3/library/unittest.html):
 ```
-cd factorio-draftsman
 python -m unittest discover
 ```
 
+### Coverage with [coverage](https://coverage.readthedocs.io/en/6.3.2/):
+```
+coverage run
+coverage html
+```
 
+Note that testing currently is only guaranteed to work with a vanilla install
+(no mods).
 
 ## TODO
 * Finish `entity.py`

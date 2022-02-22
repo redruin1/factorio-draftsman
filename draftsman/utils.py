@@ -1,6 +1,6 @@
 # utils.py
 
-from .errors import MalformedBlueprintString
+from draftsman.errors import MalformedBlueprintString
 
 import base64
 import json

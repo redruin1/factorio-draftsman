@@ -1,18 +1,18 @@
 # blueprint.py
 
-from factoriotools._factorio_version import (
+from draftsman._factorio_version import (
     __factorio_version__, 
     __factorio_version_info__
 )
-from factoriotools.blueprint import (
+from draftsman.blueprint import (
     Blueprint, BlueprintBook, get_blueprintable_from_string
 )
-from factoriotools.errors import (
+from draftsman.errors import (
     MalformedBlueprintString, IncorrectBlueprintType, InvalidSignalID, 
     DuplicateIDException
 )
-from factoriotools.tile_data import tile_names
-from factoriotools.utils import (
+from draftsman.data.tiles import tile_names
+from draftsman.utils import (
     string_2_JSON, JSON_2_string, encode_version, decode_version, 
 )
 

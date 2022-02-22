@@ -17,7 +17,7 @@ attempt to organize the entries by train, and as a result item slots can be
 split across multiple trains which is probably undesirable for this purpose.
 """
 
-from factoriotools import Blueprint, CargoWagon
+from draftsman import Blueprint, CargoWagon
 
 
 def main():
