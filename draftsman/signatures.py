@@ -1,6 +1,6 @@
 # signatures.py
 
-from schema import Schema, Use, Optional, Or
+from schema import Schema, Use, Optional, Or, And
 
 # Note: All data is only checked right before casting to blueprint string
 
@@ -81,6 +81,36 @@ CONNECTIONS_SCHEMA = Schema({
         ]
     }
 })
+
+DIRECTION_SCHEMA = Schema(And(int, lambda x: 0 <= x <= 7))
+
+# TODO: normalization here!
+CONTROL_BEHAVIOR_SCHEMA = Schema({
+    Optional("circuit_enable_disable"): bool,
+    Optional("circuit_condition"): {
+        Optional("first_signal"): Or(str, SIGNAL_ID_SCHEMA),
+        Optional("second_signal"): Or(str, SIGNAL_ID_SCHEMA),
+        Optional("comparator"): str,
+        Optional("constant"): int
+    },
+    Optional("connect_to_logistic_network"): bool,
+    Optional("logistic_condition"): {
+        Optional("first_signal"): Or(str, SIGNAL_ID_SCHEMA),
+        Optional("second_signal"): Or(str, SIGNAL_ID_SCHEMA),
+        Optional("comparator"): str,
+        Optional("constant"): int
+    },
+    Optional("circuit_read_hand_contents"): bool,
+    Optional("circuit_read_resources"): bool,
+
+    Optional("circuit_contents_read_mode"): int,
+    Optional("circuit_hand_read_mode"): int,
+
+    Optional("circuit_set_stack_size"): bool,
+    Optional("stack_control_input_signal"): Or(str, SIGNAL_ID_SCHEMA)
+})
+
+STACK_SIZE_SCHEMA = Schema(int)
 
 BLUEPRINT_SCHEMA = Schema({
     "item": "blueprint",

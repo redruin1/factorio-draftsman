@@ -215,14 +215,13 @@ class Blueprint:
         
         if entity_id is not None:
             if entity_id in self.entity_numbers: # Same ID!
-                raise DuplicateIDException(
-                "'{}' already used in blueprint entities".format(kwargs["id"])
-                )
+                raise DuplicateIDException(entity_id)
 
         if isinstance(entity, str):
             entity = new_entity(entity, **kwargs)
 
         # TODO: if entity is hidden, warn the user
+        # TODO: if the current entity would overlap another, warn the user
 
         # Create a validated copy of the data?
         #data_copy = ENTITY_SCHEMA.validate(data)
@@ -404,6 +403,9 @@ class Blueprint:
         else:
             entity_2 = self.entities[id2]
 
+        # print(entity_1)
+        # print(entity_2)
+
         # Assert that both entities can be connected to
         # if not hasattr(entity_1, "circuit_connectable"):
         if not entity_1.circuit_connectable:
@@ -415,9 +417,33 @@ class Blueprint:
         # TODO
 
         # Handle entity 1
-        entity_1.add_circuit_connection(color, entity_2,  side1, side2)
+        entity_1.add_circuit_connection(color, entity_2, side1, side2)
+        # # Handle entity 2
+        # entity_2.add_circuit_connection(color, entity_1, side2, side1)
+
+    def remove_circuit_connection(self, color, id1, id2, side1 = 1, side2 = 1):
+        """
+        Adds a circuit wire connection between two entities.
+        """
+        if color not in {"red", "green"}:
+            raise ValueError("'{}' is an invalid circuit wire color")
+
+        if isinstance(id1, str):
+            num1 = self.entity_numbers[id1]
+            entity_1 = self.entities[num1]
+        else:
+            entity_1 = self.entities[id1]
+        
+        if isinstance(id2, str):
+            num2 = self.entity_numbers[id2]
+            entity_2 = self.entities[num2]
+        else:
+            entity_2 = self.entities[id2]
+
+        # Handle entity 1
+        entity_1.remove_circuit_connection(color, entity_2, side1, side2)
         # Handle entity 2
-        entity_2.add_circuit_connection(color, entity_1, side2, side1)
+        entity_2.remove_circuit_connection(color, entity_1, side2, side1)
 
     def add_tile(self, tile_name: str, x: int, y: int, id: str = None) -> None:
         """

@@ -1,4 +1,4 @@
-# tile_data.py
+# tiles.py
 tile_names = {
 	"stone-path",
 	"concrete",

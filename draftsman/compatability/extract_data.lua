@@ -1,10 +1,20 @@
 -- extract_data.lua
 
--- TODO: do entities
+-- TODO: fix entities
 -- TODO: recipies
+-- TODO: instruments
 
 local function order_sort(a, b)
-    return a.order < b.order or (a.order == b.order and a.name < b.name)
+    --print(a.name, b.name)
+    --print(a.order, b.order)
+    local a_order = a.order or ""
+    local b_order = b.order or ""
+    if a_order == b_order then
+        return a.name < b.name
+    else
+        return a_order < b_order
+    end
+    --return a.order < b.order or (a.order == b.order and a.name < b.name)
 end
 
 local function print_keys(t) 
@@ -19,6 +29,7 @@ local function extract_entities()
     -- circuit_wire_max_distance: determines if circuit connectable
     -- filter_count: determines if filter inserter or normal inserter
 
+    local entities = {}
     local entity_list = {}
 
     local with_filter = {}
@@ -35,8 +46,8 @@ local function extract_entities()
     local entity_dimensions = {}
     local function get_dimensions(aabb)
         --print(serpent.block(selection_box))
-        local x = math.floor(aabb[2][1] - aabb[1][1]) + 1
-        local y = math.floor(aabb[2][2] - aabb[1][2]) + 1
+        local x = math.floor((aabb[2][1] - aabb[1][1]) + 0.5)
+        local y = math.floor((aabb[2][2] - aabb[1][2]) + 0.5)
         return x, y
     end
 
@@ -48,7 +59,7 @@ local function extract_entities()
             flags[flag] = true
         end
         print_keys(flags)
-        if flags["not-blueprintable"] or flags["hidden"] then
+        if flags["not-blueprintable"] --[[or flags["hidden"]] then
             return
         end
         entity_list[#entity_list+1] = name
@@ -64,8 +75,9 @@ local function extract_entities()
         if entity.filter_count then
             with_filter[#with_filter+1] = name
         end
-        if entity.maximum_wire_distance then
+        if entity.maximum_wire_distance or entity.wire_max_distance then
             power_connectable[#power_connectable+1] = name
+            circuit_connectable[#circuit_connectable+1] = name
         end
         if entity.circuit_wire_max_distance then
             circuit_connectable[#circuit_connectable+1] = name
@@ -74,7 +86,9 @@ local function extract_entities()
            entity.output_connection_points then
             dual_circuit_connectable[#dual_circuit_connectable+1] = name
         end
-        entity_dimensions[name] = {get_dimensions(entity.collision_box)}
+        print(serpent.block(entity.selection_box))
+        entity_dimensions[name] = {get_dimensions(entity.selection_box)}
+        entities[name] = entity
     end
 
     local function categorize_entities(list)
@@ -168,24 +182,55 @@ local function extract_entities()
     categorize_entities(data.raw["artillery-turret"])
     -- Radars
     categorize_entities(data.raw["radar"])
+    -- Electric Energy Interfaces
+    categorize_entities(data.raw["electric-energy-interface"])
+    -- Linked Containers
+    categorize_entities(data.raw["linked-container"])
+    -- Heat interfaces
+    categorize_entities(data.raw["heat-interface"])
+    -- Linked belts
+    categorize_entities(data.raw["linked-belt"])
+    -- Infinity containers
+    categorize_entities(data.raw["infinity-container"])
+    -- Infinity pipes
+    categorize_entities(data.raw["infinity-pipe"])
+    -- Burner generators
+    categorize_entities(data.raw["burner-generator"])
 
-    print(serpent.block(entity_list))
+    
+
+    --print(serpent.block(entity_list))
     --print_keys(data.raw["container"])
     --print(serpent.block(data.raw["rocket-silo"]))
 
-    local tiles_file = io.open("factoriotools/entity_data.py", "w")
-    tiles_file:write("# entity_data.py\n")
-    tiles_file:write("entity_dimensions = {\n")
+    local entities_file = io.open("draftsman/data/entities.py", "w")
+    entities_file:write("# entities.py\n")
+    entities_file:write("entity_dimensions = {\n")
     for i = 1, #entity_list do
         local entity = entity_list[i]
-        local output_string = "\t\"" .. entity .. "\": ("
+        local output_string = "    \"" .. entity .. "\": ("
         output_string = output_string .. entity_dimensions[entity][1] .. ", "
-        output_string = output_string .. entity_dimensions[entity][1] .. "),\n"
-        tiles_file:write(output_string)
+        output_string = output_string .. entity_dimensions[entity][2] .. "),\n"
+        entities_file:write(output_string)
     end
-    tiles_file:write("}")
-    tiles_file:close()
-
+    entities_file:write("}\n")
+    entities_file:write("circuit_wire_distances = {\n")
+    for i = 1, #circuit_connectable do
+        local entity_name = circuit_connectable[i]
+        local entity = entities[entity_name]
+        local wire_dist = entity.circuit_wire_max_distance or entity.maximum_wire_distance or entity.wire_max_distance or 0
+        entities_file:write("    \"" .. entity_name .. "\": " .. wire_dist .. ",\n")
+    end
+    entities_file:write("}\n")
+    entities_file:write("power_wire_distances = {\n")
+    for i = 1, #power_connectable do
+        local entity_name = power_connectable[i]
+        local entity = entities[entity_name]
+        local wire_dist = entity.circuit_wire_max_distance or entity.maximum_wire_distance or entity.wire_max_distance or 0
+        entities_file:write("    \"" .. entity_name .. "\": " .. wire_dist .. ",\n")
+    end
+    entities_file:write("}")
+    entities_file:close()
 end
 
 local function extract_tiles()
@@ -211,11 +256,11 @@ local function extract_tiles()
 
     -- It might be better to write to a dict (or ordereddict) if we want to 
     -- preserve order for tiles like we do for signals.
-    local tiles_file = io.open("factoriotools/tile_data.py", "w")
-    tiles_file:write("# tile_data.py\n")
+    local tiles_file = io.open("draftsman/data/tiles.py", "w")
+    tiles_file:write("# tiles.py\n")
     tiles_file:write("tile_names = {\n")
     for i = 1, #tiles do
-        tiles_file:write("\t\"" .. tiles[i].name .. "\",\n")
+        tiles_file:write("    \"" .. tiles[i].name .. "\",\n")
     end
     tiles_file:write("}")
     tiles_file:close()
@@ -264,7 +309,7 @@ local function extract_signals()
         local v = data.raw[category][name]
         
         if v.flags ~= nil then
-            print_keys(v.flags)
+            --print_keys(v.flags)
             for j = 1, #v.flags do
                 if v.flags[j] == "hidden" then
                     --print(v.name .. " is hidden")
@@ -359,11 +404,11 @@ local function extract_signals()
     -- if vanilla then assert #signals == 262 end
 
     -- Create a Python-readable data file with the signal data contents:
-    local signals_file = io.open("factoriotools/signal_data.py", "w")
-    signals_file:write("# signal_data.py\n")
+    local signals_file = io.open("draftsman/data/signals.py", "w")
+    signals_file:write("# signals.py\n")
     signals_file:write("# Autogenerated with 'update_module.py'\n")
     --signals_file:write("from collections import OrderedDict")
-    signals_file:write("from factoriotools.signalID import SignalID\n")
+    signals_file:write("from draftsman.signalID import SignalID\n")
     signals_file:write("signal_IDs = {\n")
     for i, v in ipairs(signals) do
         local output_string = ""
@@ -404,6 +449,79 @@ end
 
 local function extract_recipes()
     -- only needed for assembling machines and ordering
+    -- similarly structured to signal groups
+
+    local categories = {}
+    local index_dict = {}
+
+    -- Initialize recipe categories
+    for k, v in pairs(data.raw["recipe-category"]) do
+        categories[#categories+1] = {name = v.name, recipies = {}}
+        index_dict[v.name] = categories[#categories]
+    end
+
+    -- Initialize recipies
+    for k, v in pairs(data.raw["recipe"]) do
+        local category = v.category or "crafting"
+        local recipies = index_dict[category].recipies
+        recipies[#recipies+1] = {name = v.name, order = v.order, subgroup = v.subgroup, category = category}
+        --index_dict[v.name] = recipies[#recipies]
+    end
+
+    -- Sort everything
+    -- TODO, this isnt quite right, we need to also sort by subgroup
+    -- for i, v in ipairs(category) do
+    --     -- for j, v in ipairs(category[i].subgroups) do
+    --     --     table.sort(groups[i].subgroups[j].items, order_sort)
+    --     -- end
+    --     table.sort(category[i].recipies, order_sort)
+    -- end
+    -- table.sort(category, order_sort)
+
+    -- Flatten
+    local machines = {}
+    for k, machine in pairs(data.raw["assembling-machine"]) do
+        machines[machine.name] = {}
+        print(machine.name)
+        local cur_machine = machines[machine.name]
+        for i in ipairs(machine.crafting_categories) do
+            local category_name = machine.crafting_categories[i]
+            print("\t", category_name)
+            local category = index_dict[category_name]
+            for j in pairs(category.recipies) do
+                local recipe = category.recipies[j]
+                print("\t\t", recipe.name)
+                cur_machine[#cur_machine+1] = recipe.name
+            end
+        end
+    end
+
+    print(serpent.block(machines))
+
+    local recipes_file = io.open("draftsman/data/recipes.py", "w")
+    recipes_file:write("# recipes.py\n")
+    recipes_file:write("# Autogenerated with 'update_module.py'\n")
+    recipes_file:write("recipes = {\n")
+
+    local indent = "    " -- 4
+    for machine, list in pairs(machines) do
+        print(machine, list)
+        recipes_file:write(indent .. "\"" .. machine .. "\": [\n")
+        indent = "        " -- 8
+        for i in ipairs(list) do
+            local recipe = list[i]
+            recipes_file:write(indent .. "\"" .. recipe .. "\",\n")
+        end
+        indent = "    " -- 4
+        recipes_file:write(indent .. "],\n")
+    end
+
+    recipes_file:write("}")
+    recipes_file:close()
+end
+
+local function extract_instruments()
+    
 end
 
 local function main()
@@ -411,10 +529,19 @@ local function main()
     --extract_entities()
 
     -- TILES
-    extract_tiles()
+    --extract_tiles()
 
     -- SIGNALS
-    extract_signals()
+    --extract_signals()
+
+    -- RECIPES
+    extract_recipes()
+
+    -- INSTRUMENTS
+    --extract_instruments()
+
+    --print_keys(data.raw["recipe"])
+    --print(serpent.block(data.raw["recipe"]["kovarex-enrichment-process"]))
 end
 
 main()

@@ -2,8 +2,8 @@
 
 import json
 
-from factoriotools import blueprint
-from factoriotools import utils
+from draftsman import utils
+
 
 if __name__ == "__main__":
     bpstring = input()

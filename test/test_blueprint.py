@@ -118,14 +118,10 @@ class BlueprintUtilsTesting(TestCase):
         )
         self.assertIsInstance(blueprintable, BlueprintBook)
         # Invalid format
-        try:
+        with self.assertRaises(MalformedBlueprintString):
             blueprintable = get_blueprintable_from_string(
                 "0lmaothisiswrong"
             )
-        except MalformedBlueprintString:
-            pass
-        else:
-            raise AssertionError("Should have raised MalformedBlueprintString") # pragma: no coverage
 
 
 class BlueprintTesting(TestCase):
@@ -157,7 +153,7 @@ class BlueprintTesting(TestCase):
         ### Complex blueprint ###
         # TODO
 
-    def test_constructor_blueprint_string(self):
+    def test_constructor(self):
         ### Simple blueprint ###
         # Valid Format
         blueprint = Blueprint(
@@ -175,21 +171,15 @@ class BlueprintTesting(TestCase):
         self.assertIs(blueprint["tiles"],     blueprint.blueprint["tiles"])
         self.assertIs(blueprint["schedules"], blueprint.blueprint["schedules"])
         # Valid format, but blueprint book string
-        try:
+        with self.assertRaises(IncorrectBlueprintType):
             blueprint = Blueprint(
                 "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
             )
-        except IncorrectBlueprintType:
-            pass
-        else:
-            raise AssertionError("Should have raised IncorrectBlueprintType") # pragma: no coverage
         # Invalid format
-        try:
-            blueprint = Blueprint("0lmaothisiswrong")
-        except MalformedBlueprintString:
-            pass
-        else:
-            raise AssertionError("Should have raised MalformedBlueprintString") # pragma: no coverage
+        with self.assertRaises(MalformedBlueprintString):
+            blueprint = get_blueprintable_from_string(
+                "0lmaothisiswrong"
+            )
         ### Complex blueprint ###
         # TODO
 
@@ -201,22 +191,16 @@ class BlueprintTesting(TestCase):
         self.assertIs(blueprint["entities"],  blueprint.blueprint["entities"])
         self.assertIs(blueprint["tiles"],     blueprint.blueprint["tiles"])
         self.assertIs(blueprint["schedules"], blueprint.blueprint["schedules"])
-        # Valid format, but blueprint book
-        try:
-            blueprint.load_from_string(
+        # Valid format, but blueprint book string
+        with self.assertRaises(IncorrectBlueprintType):
+            blueprint = Blueprint(
                 "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
             )
-        except IncorrectBlueprintType:
-            pass
-        else:
-            raise AssertionError("Should have raised IncorrectBlueprintType") # pragma: no coverage
-        # Invalid blueprint
-        try:
-            blueprint.load_from_string("0lmaothisiswrong")
-        except MalformedBlueprintString:
-            pass
-        else:
-            raise AssertionError("Should have raised MalformedBlueprintString") # pragma: no coverage
+        # Invalid format
+        with self.assertRaises(MalformedBlueprintString):
+            blueprint = get_blueprintable_from_string(
+                "0lmaothisiswrong"
+            )
 
     def test_load_from_file(self):
         # Valid format
@@ -232,27 +216,19 @@ class BlueprintTesting(TestCase):
         self.assertIs(blueprint["schedules"], blueprint.blueprint["schedules"])
         test_file.close()
         # Valid format, but blueprint book
-        try:
+        with self.assertRaises(IncorrectBlueprintType):
             test_file = StringIO()
             test_file.write(
                 "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
             )
             test_file.seek(0)
             blueprint.load_from_file(test_file)
-        except IncorrectBlueprintType:
-            test_file.close()
-        else:
-            raise AssertionError("Should have raised IncorrectBlueprintType") # pragma: no coverage
         # Invalid blueprint
-        try:
+        with self.assertRaises(MalformedBlueprintString):
             test_file = StringIO()
             test_file.write("0lmaothisiswrong")
             test_file.seek(0)
             blueprint.load_from_file(test_file)
-        except MalformedBlueprintString:
-            test_file.close()
-        else:
-            raise AssertionError("Should have raised MalformedBlueprintString") # pragma: no coverage
 
     def test_getitem(self):
         blueprint = Blueprint()
@@ -299,23 +275,12 @@ class BlueprintTesting(TestCase):
             }
         )
         # Other
-        try:
+        with self.assertRaises(ValueError):
             blueprint.set_label(100)
-        except ValueError:
-            pass
-        else:
-            raise AssertionError("Should have raised ValueError") # pragma: no coverage
 
     def test_set_label_color(self):
         blueprint = Blueprint()
         blueprint.set_version(1, 1, 54, 0)
-        # No Args
-        try:
-            blueprint.set_label_color()
-        except TypeError:
-            pass
-        else:
-            raise AssertionError("Should have raised TypeError") # pragma: no coverage
         # Valid 3 args
         # Test for floating point conversion error by using 0.1
         blueprint.set_label_color(0.5, 0.1, 0.5)
@@ -338,12 +303,8 @@ class BlueprintTesting(TestCase):
             }
         )
         # Invalid Data
-        try:
+        with self.assertRaises(SchemaError):
             blueprint.set_label_color("red", blueprint, 5)
-        except SchemaError:
-            pass
-        else:
-            raise AssertionError("Should have raised SchemaError") # pragma: no coverage
 
     def test_set_icons(self):
         blueprint = Blueprint()
@@ -390,31 +351,19 @@ class BlueprintTesting(TestCase):
             ]
         )
         # Incorrect Signal Name
-        try:
+        with self.assertRaises(InvalidSignalID):
             blueprint.set_icons("wrong!")
-        except InvalidSignalID:
-            pass
-        else:
-            raise AssertionError("Should have raised InvalidSignalID") # pragma: no coverage
 
         # Incorrect Signal Type
-        try:
+        with self.assertRaises(InvalidSignalID):
             blueprint.set_icons(123456, "uh-oh")
-        except InvalidSignalID:
-            pass
-        else:
-            raise AssertionError("Should have raised InvalidSignalID") # pragma: no coverage
 
     def test_set_version(self):
         blueprint = Blueprint()
         blueprint.set_version(1, 0, 40, 0)
         self.assertEqual(blueprint["version"], 281474979332096)
-        try:
+        with self.assertRaises(TypeError):
             blueprint.set_version("1", "0", "40", "0")
-        except TypeError:
-            pass
-        else:
-            raise AssertionError("Should have raised TypeError") # pragma: no coverage
 
     def test_read_version(self):
         blueprint = Blueprint()
@@ -498,13 +447,9 @@ class BlueprintTesting(TestCase):
             # Create a random string so there's no bias
             letters = string.ascii_letters
             randomID = ''.join(random.choice(letters) for _ in range(10))
-            try:
+            with self.assertRaises(DuplicateIDException):
                 blueprint.add_tile(tile, 0, 1, randomID)
                 blueprint.add_tile(tile, 1, 0, randomID)
-            except DuplicateIDException:
-                continue
-            else:
-                raise AssertionError("Should have raised DuplicateIDException") # pragma: no coverage
 
     def test_get_tile_at_position(self):
         blueprint = Blueprint()
@@ -519,23 +464,15 @@ class BlueprintTesting(TestCase):
             blueprint.find_tile(10, 10),
             blueprint.tiles[1]
         )
-        try:
+        with self.assertRaises(AttributeError):
             blueprint.find_tile(5, 5).set_position(15, 15)
-        except AttributeError:
-            pass
-        else:
-            raise AssertionError("Should have raised AttributeError") # pragma: no coverage
 
     def test_find_tile_with_id(self):
         blueprint = Blueprint()
         blueprint.add_tile("refined-concrete", 0, 0, "the_id")
         self.assertIs(blueprint.find_tile_by_id('the_id'), blueprint["tiles"][0])
-        try:
+        with self.assertRaises(KeyError):
             blueprint.find_tile_by_id("another_id")
-        except KeyError:
-            pass
-        else:
-            raise AssertionError("Should have raised KeyError") # pragma: no coverage
 
 
 class BlueprintBookTesting(TestCase):

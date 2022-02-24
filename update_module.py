@@ -1,7 +1,7 @@
 # update_module.py
 
 """
-Updates the `factoriotools` structures and objects to the current mods and base.
+Updates the `draftsman` structures and objects to the current mods and base.
 Use this function if you've added/altered/removed mods or updated the factorio
 data version.
 """
@@ -22,12 +22,12 @@ data version.
 # Create a testing suite to test edge cases
 # Make it so that mods can load files from other mods
 
-from factoriotools.errors import (
-    IncompatableMod, 
+from draftsman.errors import (
     MissingMod, 
+    IncompatableMod, 
     IncorrectModVersion
 )
-from factoriotools.utils import decode_version, version_string_2_tuple
+from draftsman.utils import decode_version, version_string_2_tuple
 
 import json
 import lupa
@@ -214,6 +214,7 @@ def python_require(mod, module_name, package_path):
     # otherwise
     return None, "no file '{}' found in '{}' archive".format(module_name, mod.name)
 
+
 def load_stage(lua, mod, stage):
     """
     Load a stage of the Factorio data lifecycle.
@@ -234,9 +235,10 @@ def load_stage(lua, mod, stage):
     #     lua.execute(file_to_string(current_file))
     lua.execute(mod.data[stage])
 
+
 def update():
     """
-    Updates the data in the `factoriotools` module. Emulates the load pattern of
+    Updates the data in the `draftsman` module. Emulates the load pattern of
     Factorio and loads all of its data (hopefully) in the same way. Then that
     data is extracted into the module, updating its contents. Updates and 
     changes made to `factorio-data` are also reflected in this routine.
@@ -257,7 +259,7 @@ def update():
 
 
     # Write `_factorio_version.py` with the current factorio version
-    with open("factoriotools/_factorio_version.py", "w") as version_file:
+    with open("draftsman/_factorio_version.py", "w") as version_file:
         version_file.write("# _factorio_version.py\n\n")
         version_file.write('__factorio_version__ = "'+factorio_version+'"\n')
         version_file.write("__factorio_version_info__ = " + str(factorio_version_info))
@@ -482,7 +484,7 @@ def update():
     lua.globals().python_require = python_require
 
     # Register more compatability changes and define helper functions
-    lua.execute(file_to_string("factoriotools/compatability/compatability.lua"))
+    lua.execute(file_to_string("draftsman/compatability/compatability.lua"))
     # Get the functions from Lua for ease of access
     ADD_PATH             = lua.globals()["ADD_PATH"]
     SET_PATH             = lua.globals()["SET_PATH"]
@@ -541,12 +543,10 @@ def update():
 
     data = lua.globals().data
 
-    print(dict(data.raw["transport-belt"]))
+    print(dict(data.raw["container"]["iron-chest"]))
 
     # run the extractor
-    lua.execute(file_to_string("factoriotools/compatability/extract_data.lua"))
-
-    pass
+    lua.execute(file_to_string("draftsman/compatability/extract_data.lua"))
 
 
 if __name__ == "__main__":

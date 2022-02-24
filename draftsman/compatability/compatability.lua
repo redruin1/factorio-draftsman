@@ -9,7 +9,7 @@ MOD_NAME = ""
 MOD_DIR = ""
 
 -- Not technically necessary, but lets keep it anyway, seems useful
-serpent = require("factoriotools.compatability.serpent")
+serpent = require("draftsman.compatability.serpent")
 
 -- Menu simulations: can't be empty, but cannot be nil
 local menu_simulations = {}

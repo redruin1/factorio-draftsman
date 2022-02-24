@@ -20,6 +20,7 @@ for i, c in enumerate(test_string):
     constant_combinator.set_grid_position(i, 0)
     letter_signal = "signal-{}".format(c.upper())
     constant_combinator.set_signal(0, letter_signal, 0)
+    blueprint.add_entity(constant_combinator)
 
 # Create a simple clock and blinking light
 constant = factorio.ConstantCombinator()
@@ -97,7 +98,7 @@ For more examples, see the [examples folder](https://github.com/redruin1/factori
 --------------------------------------------------------------------------------
 ## Usage
 
-### Installation
+### Installation:
 ```
 pip install factorio-draftsman
 ```
@@ -110,15 +111,22 @@ python -m unittest discover
 ### Coverage with [coverage](https://coverage.readthedocs.io/en/6.3.2/):
 ```
 coverage run
-coverage html
 ```
 
-Note that testing currently is only guaranteed to work with a vanilla install
+Note that testing currently is only *guaranteed* to work with a vanilla install
 (no mods).
+
+### How to use mods:
+
+1. Drop the mods you want into the `factorio-mods` folder
+2. Run `update_module.py` to reflect any changes made
+
+Both `mod-info.json` and `mod-settings.dat` are recognized by the script, so you
+can also just change the settings in either of those and the loading process 
+will adjust.
 
 ## TODO
 * Finish `entity.py`
-    * Fix entity dimensions being incorrect
     * Split some of the Mixins to be a little more compartmentalized
     * Make sure the Entity classes themselves don't need to be split
     * Extract Recipe data (according to the assembling machine)

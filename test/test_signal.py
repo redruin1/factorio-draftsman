@@ -45,12 +45,8 @@ class SignalUtilsTesting(TestCase):
                 signal_type
             )
         # Invalid name
-        try:
+        with self.assertRaises(InvalidSignalID):
             get_signal_type("something invalid")
-        except InvalidSignalID:
-            pass
-        else:
-            raise AssertionError("Should have raised InvalidSignalID") # pragma: no coverage
 
     def test_signal_dict(self):
         # Valid pairs
@@ -63,12 +59,8 @@ class SignalUtilsTesting(TestCase):
                 }
             )
         # Invalid name
-        try:
+        with self.assertRaises(InvalidSignalID):
             signal_dict("wrong")
-        except InvalidSignalID:
-            pass
-        else:
-            raise AssertionError("Should have raised InvalidSignalID") # pragma: no coverage
 
 
 class SignalTesting(TestCase):
@@ -84,12 +76,8 @@ class SignalTesting(TestCase):
         self.assertEqual(signal.id.type, "item")
         self.assertEqual(signal.count, 100)
         # Invalid arg
-        try:
+        with self.assertRaises(InvalidSignalID):
             signal = Signal(False, 200)
-        except InvalidSignalID:
-            pass
-        else:
-            raise AssertionError("Should have raised InvalidSignalID") # pragma: no coverage
 
     def test_change_id(self):
         # String arg
@@ -102,12 +90,8 @@ class SignalTesting(TestCase):
         self.assertEqual(signal.id.name, "express-transport-belt")
         self.assertEqual(signal.count, -25)
         # Invalid arg
-        try:
+        with self.assertRaises(InvalidSignalID):
             signal.change_id(False)
-        except InvalidSignalID:
-            pass
-        else:
-            raise AssertionError("Should have raised InvalidSignalID") # pragma: no coverage
 
     def test_to_dict(self):
         signal = Signal("transport-belt", 2000000000)
