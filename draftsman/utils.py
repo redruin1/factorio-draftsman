@@ -1,6 +1,7 @@
 # utils.py
 
-from draftsman.errors import MalformedBlueprintString
+from draftsman.errors import MalformedBlueprintString, InvalidSignalID
+from draftsman.data.signals import item_signals, fluid_signals, virtual_signals
 
 import base64
 import json
@@ -57,3 +58,21 @@ def version_tuple_2_string(version_tuple):
     """
     #return ".".join(list(version_tuple))
     return ".".join(str(x) for x in version_tuple)
+
+
+def get_signal_type(signal_name: str) -> str:
+    """
+    Returns the type of the signal based on its ID string.
+    """
+    if signal_name in virtual_signals:
+        return "virtual"
+    elif signal_name in fluid_signals:
+        return "fluid"
+    elif signal_name in item_signals:
+        return "item"
+    else:
+        raise InvalidSignalID("'" + str(signal_name) + "'")
+
+
+def signal_dict(name: str) -> dict:
+    return {"name": name, "type": get_signal_type(name)}

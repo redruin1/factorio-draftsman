@@ -1,10 +1,10 @@
 # signal.py
 
-from ast import Assert
 from draftsman.signal import (
-    SignalID, Signal, signal_IDs, get_signal_type, signal_dict
+    SignalID, Signal, signal_IDs
 )
 from draftsman.errors import InvalidSignalID
+from draftsman.utils import get_signal_type, signal_dict
 
 from unittest import TestCase
 

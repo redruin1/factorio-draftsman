@@ -2,10 +2,10 @@
 
 from draftsman.entity import *
 
-#from draftsman.errors import InvalidWireType
 from schema import SchemaError
 
 from unittest import TestCase
+
 
 class EntityTesting(TestCase):
     def test_set_tags(self):
@@ -108,6 +108,7 @@ class EntityTesting(TestCase):
                 "dual_power_connectable": False,
                 "circuit_connectable": True,
                 "dual_circuit_connectable": False,
+                "double_grid_aligned": False,
                 "position": {"x": 0.5, "y": 0.5},
                 "grid_position": [0, 0],
                 "tags": {},
@@ -128,6 +129,11 @@ class EntityTesting(TestCase):
             "<Entity>{'name': 'loader', 'position': {'x': 0.5, 'y': 1.0}}"
         )
 
+    def test_get_aabb(self):
+        # TODO: get the AABB of the entity so we can test if they overlap one
+        # another when we get to blueprint
+        pass
+
 # =============================================================================
 # Mixins (Alphabetical)
 # =============================================================================
@@ -146,7 +152,7 @@ class CircuitConditionMixinTesting(TestCase):
         transport_belt.set_enable_disable(None)
         self.assertEqual(transport_belt.control_behavior, {})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(SchemaError):
             transport_belt.set_enable_disable("True")
 
     def test_set_enabled_condition(self):
@@ -193,19 +199,53 @@ class CircuitConditionMixinTesting(TestCase):
                 }
             }
         )
+        transport_belt.set_enabled_condition("signal-A", "≤", "signal-B")
+        self.assertEqual(
+            transport_belt.control_behavior,
+            {
+                "circuit_condition": {
+                    "first_signal": {
+                        "name": "signal-A",
+                        "type": "virtual"
+                    },
+                    "comparator": "≤",
+                    "second_signal": {
+                        "name": "signal-B",
+                        "type": "virtual"
+                    }
+                }
+            }
+        )
+        transport_belt.set_enabled_condition("signal-A", "!=", "signal-B")
+        self.assertEqual(
+            transport_belt.control_behavior,
+            {
+                "circuit_condition": {
+                    "first_signal": {
+                        "name": "signal-A",
+                        "type": "virtual"
+                    },
+                    "comparator": "≠",
+                    "second_signal": {
+                        "name": "signal-B",
+                        "type": "virtual"
+                    }
+                }
+            }
+        )
 
         # Errors
         # Constant first
-        with self.assertRaises(TypeError):
+        with self.assertRaises(SchemaError):
             transport_belt.set_enabled_condition(10, ">", "signal-B")
         # Invalid A
-        with self.assertRaises(TypeError):
+        with self.assertRaises(SchemaError):
             transport_belt.set_enabled_condition(TypeError, ">", "signal-B")
         # Invalid Operation
-        with self.assertRaises(InvalidConditionOperation):
+        with self.assertRaises(SchemaError):
             transport_belt.set_enabled_condition("signal-A", "hmm", "signal-B")
         # Invalid B
-        with self.assertRaises(TypeError):
+        with self.assertRaises(SchemaError):
             transport_belt.set_enabled_condition("signal-A", ">", TypeError)
 
     def test_remove_enabled_condition(self): # TODO delete
@@ -655,10 +695,29 @@ class CircuitReadResourceMixinTesting(TestCase):
 
 class ColorMixinTesting(TestCase):
     def test_set_color(self):
-        pass
+        train_stop = TrainStop()
+        # Valid 4 args
+        train_stop.set_color(0.1, 0.1, 0.1, 0.1)
+        self.assertEqual(
+            train_stop.color,
+            {"r": 0.1, "g": 0.1, "b": 0.1, "a": 0.1}
+        )
+        # Valid 3 args
+        train_stop.set_color(0.1, 0.1, 0.1)
+        self.assertEqual(
+            train_stop.color,
+            {"r": 0.1, "g": 0.1, "b": 0.1, "a": 1.0}
+        )
+        # None
+        train_stop.remove_color()
+        self.assertEqual(
+            train_stop.color,
+            None
+        )
 
-    # def test_remove_color(self):
-    #     pass
+        with self.assertRaises(SchemaError):
+            train_stop.set_color("wrong", 1.0, 1.0)
+
 
 ################################################################################
 
@@ -711,6 +770,11 @@ class DirectionalMixinTesting(TestCase):
 
         with self.assertRaises(SchemaError):
             storage_tank.set_absolute_position(1.0, "raw-fish")
+
+################################################################################
+
+class DoubleGridAlignedMixinTesting(TestCase):
+    pass
 
 ################################################################################
 
@@ -869,14 +933,112 @@ class InventoryMixinTesting(TestCase):
 ################################################################################
 
 class InventoryFilterMixinTesting(TestCase):
-    def test_set_inventory(self):
-        pass
+    def test_set_inventory_filter(self):
+        cargo_wagon = CargoWagon()
+        cargo_wagon.set_inventory_filter(0, "transport-belt")
+        self.assertEqual(
+            cargo_wagon.inventory,
+            {
+                "filters": [
+                    {"index": 1, "name": "transport-belt"}
+                ]
+            }
+        )
+        cargo_wagon.set_inventory_filter(1, "fast-transport-belt")
+        self.assertEqual(
+            cargo_wagon.inventory,
+            {
+                "filters": [
+                    {"index": 1, "name": "transport-belt"},
+                    {"index": 2, "name": "fast-transport-belt"}
+                ]
+            }
+        )
+        cargo_wagon.set_inventory_filter(0, "express-transport-belt")
+        self.assertEqual(
+            cargo_wagon.inventory,
+            {
+                "filters": [
+                    {"index": 1, "name": "express-transport-belt"},
+                    {"index": 2, "name": "fast-transport-belt"}
+                ]
+            }
+        )
+        cargo_wagon.set_inventory_filter(0, None)
+        self.assertEqual(
+            cargo_wagon.inventory,
+            {
+                "filters": [
+                    {"index": 2, "name": "fast-transport-belt"}
+                ]
+            }
+        )
+
+        # Warnings
+        # Warn when filter index outside of wagon size
+        # with self.assertWarns(UserWarning):
+        #     cargo_wagon.set_inventory_filter(1000, "stone")
+
+        # Errors
+        with self.assertRaises(SchemaError):
+            cargo_wagon.set_inventory_filter("double", "incorrect")
+        with self.assertRaises(InvalidItemID):
+            cargo_wagon.set_inventory_filter(0, "incorrect")
 
     def test_set_inventory_filters(self):
-        pass
+        cargo_wagon = CargoWagon()
+        cargo_wagon.set_inventory_filters(["transport-belt", "fast-transport-belt"])
+        self.assertEqual(
+            cargo_wagon.inventory,
+            {
+                "filters": [
+                    {"index": 1, "name": "transport-belt"},
+                    {"index": 2, "name": "fast-transport-belt"}
+                ]
+            }
+        )
+        cargo_wagon.set_inventory_filters([
+            {"index": 1, "name": "express-transport-belt"},
+            {"index": 2, "name": "fast-transport-belt"}
+        ])
+        self.assertEqual(
+            cargo_wagon.inventory,
+            {
+                "filters": [
+                    {"index": 1, "name": "express-transport-belt"},
+                    {"index": 2, "name": "fast-transport-belt"}
+                ]
+            }
+        )
+        cargo_wagon.set_inventory_filters(None)
+        self.assertEqual(cargo_wagon.inventory, {})
+
+        # Warnings
+        # Warn if index is out of range
+        # TODO
+
+        # Errors
+        with self.assertRaises(InvalidItemID):
+            cargo_wagon.set_inventory_filters(["incorrect1", "incorrect2"])
 
     def test_set_bar_index(self):
-        pass
+        cargo_wagon = CargoWagon()
+        cargo_wagon.set_bar_index(10)
+        self.assertEqual(
+            cargo_wagon.inventory,
+            {"bar": 10}
+        )
+        cargo_wagon.set_bar_index(None)
+        self.assertEqual(cargo_wagon.inventory, {})
+
+        # Warnings
+        # Out of index range warning
+        with self.assertWarns(UserWarning):
+            cargo_wagon.set_bar_index(100)
+
+        # Errors
+        with self.assertRaises(SchemaError):
+            cargo_wagon.set_bar_index("incorrect")
 
 ################################################################################
 
@@ -950,16 +1112,16 @@ class LogisticConditionMixinTesting(TestCase):
 
         # Errors
         # Constant first
-        with self.assertRaises(TypeError):
+        with self.assertRaises(SchemaError):
             transport_belt.set_logistic_condition(10, ">", "signal-B")
         # Invalid A
-        with self.assertRaises(TypeError):
+        with self.assertRaises(SchemaError):
             transport_belt.set_logistic_condition(TypeError, ">", "signal-B")
         # Invalid Operation
-        with self.assertRaises(InvalidConditionOperation):
+        with self.assertRaises(SchemaError):
             transport_belt.set_logistic_condition("signal-A", "hmm", "signal-B")
         # Invalid B
-        with self.assertRaises(TypeError):
+        with self.assertRaises(SchemaError):
             transport_belt.set_logistic_condition("signal-A", ">", TypeError)
 
     def test_remove_logistic_condition(self): # TODO delete
@@ -969,91 +1131,6 @@ class LogisticConditionMixinTesting(TestCase):
         self.assertEqual(
             transport_belt.control_behavior,
             {}
-        )
-
-    def test_normalize_logistic_condition(self):
-        transport_belt = TransportBelt(control_behavior = {})
-        self.assertEqual(
-            transport_belt.to_dict(),
-            {
-                "name": "transport-belt",
-                "position": {"x": 0.5, "y": 0.5},
-            }
-        )
-        transport_belt = TransportBelt(
-            control_behavior = {
-                "logistic_condition": {}
-            }
-        )
-        self.assertEqual(
-            transport_belt.to_dict(),
-            {
-                "name": "transport-belt",
-                "position": {"x": 0.5, "y": 0.5},
-                "control_behavior": {
-                    "logistic_condition": {}
-                }
-            }
-        )
-        transport_belt = TransportBelt(
-            control_behavior = {
-                "logistic_condition": {
-                    "first_signal": {
-                        "name": "signal-A",
-                        "type": "virtual"
-                    },
-                    "second_signal": {
-                        "name": "signal-B",
-                        "type": "virtual"
-                    }
-                }
-            }
-        )
-        self.assertEqual(
-            transport_belt.to_dict(),
-            {
-                "name": "transport-belt",
-                "position": {"x": 0.5, "y": 0.5},
-                "control_behavior": {
-                    "logistic_condition": {
-                        "first_signal": {
-                            "name": "signal-A",
-                            "type": "virtual"
-                        },
-                        "second_signal": {
-                            "name": "signal-B",
-                            "type": "virtual"
-                        }
-                    }
-                }
-            }
-        )
-        transport_belt = TransportBelt(
-            control_behavior = {
-                "logistic_condition": {
-                    "first_signal": "signal-A",
-                    "second_signal": "signal-B"
-                }
-            }
-        )
-        self.assertEqual(
-            transport_belt.to_dict(),
-            {
-                "name": "transport-belt",
-                "position": {"x": 0.5, "y": 0.5},
-                "control_behavior": {
-                    "logistic_condition": {
-                        "first_signal": {
-                            "name": "signal-A",
-                            "type": "virtual"
-                        },
-                        "second_signal": {
-                            "name": "signal-B",
-                            "type": "virtual"
-                        }
-                    }
-                }
-            }
         )
 
 ################################################################################
@@ -1087,22 +1164,196 @@ class ModeOfOperationMixinTesting(TestCase):
 
 class OrientationMixinTesting(TestCase):
     def test_set_orientation(self):
-        pass
+        locomotive = Locomotive()
+        locomotive.set_orientation(0.25)
+        self.assertEqual(
+            locomotive.to_dict(),
+            {
+                "name": "locomotive",
+                "position": {"x": 1.0, "y": 3.0},
+                "orientation": 0.25
+            }
+        )
+        locomotive.set_orientation(None)
+        self.assertEqual(locomotive.orientation, None)
+        with self.assertRaises(SchemaError):
+            locomotive.set_orientation("incorrect")
+
 
 ################################################################################
 
 class PowerConnectableMixinTesting(TestCase):
     def test_add_power_connection(self):
-        pass
+        substation1 = ElectricPole("substation", id = "1")
+        substation2 = ElectricPole("substation", id = "2")
+        power_switch = PowerSwitch(id = "p")
 
-    def test_remove_power_connection(self):
-        pass
+        substation1.add_power_connection(substation2)
+        self.assertEqual(substation1.neighbours, ["2"])
+        self.assertEqual(substation2.neighbours, ["1"])
+        substation2.add_power_connection(substation1)
+        self.assertEqual(substation1.neighbours, ["2"])
+        self.assertEqual(substation2.neighbours, ["1"])
+
+        substation1.add_power_connection(power_switch)
+        self.assertEqual(substation1.neighbours, ["2"])
+        self.assertEqual(
+            power_switch.connections, 
+            {
+                "Cu0": [
+                    {"entity_id": "1", "wire_id": 0}
+                ]
+            }
+        )
+        power_switch.add_power_connection(substation1)
+        self.assertEqual(substation1.neighbours, ["2"])
+        self.assertEqual(
+            power_switch.connections, 
+            {
+                "Cu0": [
+                    {"entity_id": "1", "wire_id": 0}
+                ]
+            }
+        )
+        substation2.add_power_connection(power_switch)
+        substation2.add_power_connection(power_switch)
+        self.assertEqual(substation2.neighbours, ["1"])
+        self.assertEqual(
+            power_switch.connections, 
+            {
+                "Cu0": [
+                    {"entity_id": "1", "wire_id": 0},
+                    {"entity_id": "2", "wire_id": 0}
+                ]
+            }
+        )
+        power_switch.add_power_connection(substation2, side = 2)
+        self.assertEqual(
+            power_switch.connections, 
+            {
+                "Cu0": [
+                    {"entity_id": "1", "wire_id": 0},
+                    {"entity_id": "2", "wire_id": 0}
+                ],
+                "Cu1": [
+                    {"entity_id": "2", "wire_id": 0}
+                ]
+            }
+        )
+
+        # Warnings
+        with self.assertWarns(UserWarning):
+            other = ElectricPole(position = [100, 0], id = "other")
+            substation1.add_power_connection(other)
+
+        # Errors
+        with self.assertRaises(EntityNotPowerConnectable):
+            substation1.add_power_connection(TransportBelt(id = "whatever"))
+        with self.assertRaises(Exception):
+            power_switch.add_power_connection(PowerSwitch())
+
+        # Make sure correct even after errors
+        self.assertEqual(substation1.neighbours, ["2", "other"])
+        self.assertEqual(
+            power_switch.connections, 
+            {
+                "Cu0": [
+                    {"entity_id": "1", "wire_id": 0},
+                    {"entity_id": "2", "wire_id": 0}
+                ],
+                "Cu1": [
+                    {"entity_id": "2", "wire_id": 0}
+                ]
+            }
+        )
+
+        # Test removing
+        substation1.remove_power_connection(substation2)
+        substation1.remove_power_connection(substation2)
+        self.assertEqual(substation1.neighbours, ["other"])
+        self.assertEqual(substation2.neighbours, [])
+
+        substation1.remove_power_connection(power_switch)
+        substation1.remove_power_connection(power_switch)
+        self.assertEqual(substation1.neighbours, ["other"])
+        self.assertEqual(
+            power_switch.connections, 
+            {
+                "Cu0": [
+                    {"entity_id": "2", "wire_id": 0}
+                ],
+                "Cu1": [
+                    {"entity_id": "2", "wire_id": 0}
+                ]
+            }
+        )
+
+        substation1.add_power_connection(power_switch)
+        power_switch.remove_power_connection(substation2, side = 1)
+        power_switch.remove_power_connection(substation2, side = 1)
+        power_switch.remove_power_connection(substation1)
+        power_switch.remove_power_connection(substation1)
+        self.assertEqual(
+            power_switch.connections, 
+            {
+                "Cu1": [
+                    {"entity_id": "2", "wire_id": 0}
+                ]
+            }
+        )
+        substation2.remove_power_connection(power_switch, side = 2)
+        substation2.remove_power_connection(power_switch, side = 2)
+        self.assertEqual(power_switch.connections, {})
 
 ################################################################################
 
 class ReadRailSignalMixinTesting(TestCase):
     def test_set_output_signals(self):
-        pass
+        rail_signal = RailSignal()
+        rail_signal.set_red_output_signal("signal-A")
+        self.assertEqual(
+            rail_signal.control_behavior,
+            {
+                "red_output_signal": {
+                    "name": "signal-A",
+                    "type": "virtual"
+                }
+            }
+        )
+        rail_signal.set_red_output_signal(None)
+        self.assertEqual(rail_signal.control_behavior, {})
+        with self.assertRaises(InvalidSignalID):
+            rail_signal.set_red_output_signal("wrong")
+
+        rail_signal.set_yellow_output_signal("signal-A")
+        self.assertEqual(
+            rail_signal.control_behavior,
+            {
+                "yellow_output_signal": {
+                    "name": "signal-A",
+                    "type": "virtual"
+                }
+            }
+        )
+        rail_signal.set_yellow_output_signal(None)
+        self.assertEqual(rail_signal.control_behavior, {})
+        with self.assertRaises(InvalidSignalID):
+            rail_signal.set_yellow_output_signal("wrong")
+
+        rail_signal.set_green_output_signal("signal-A")
+        self.assertEqual(
+            rail_signal.control_behavior,
+            {
+                "green_output_signal": {
+                    "name": "signal-A",
+                    "type": "virtual"
+                }
+            }
+        )
+        rail_signal.set_green_output_signal(None)
+        self.assertEqual(rail_signal.control_behavior, {})
+        with self.assertRaises(InvalidSignalID):
+            rail_signal.set_green_output_signal("wrong")
 
 ################################################################################
 
@@ -1114,10 +1365,94 @@ class RecipeMixinTesting(TestCase):
 
 class RequestFiltersMixinTesting(TestCase):
     def test_set_request_filter(self):
-        pass
+        storage_chest = LogisticStorageContainer()
+        storage_chest.set_request_filter(0, "stone", 100)
+        self.assertEqual(
+            storage_chest.request_filters,
+            [
+                {"index": 1, "name": "stone", "count": 100}
+            ]
+        )
+        storage_chest.set_request_filter(1, "copper-ore", 200)
+        self.assertEqual(
+            storage_chest.request_filters,
+            [
+                {"index": 1, "name": "stone", "count": 100},
+                {"index": 2, "name": "copper-ore", "count": 200}
+            ]
+        )
+        storage_chest.set_request_filter(0, "iron-ore", 1000)
+        self.assertEqual(
+            storage_chest.request_filters,
+            [
+                {"index": 1, "name": "iron-ore", "count": 1000},
+                {"index": 2, "name": "copper-ore", "count": 200}
+            ]
+        )
+        storage_chest.set_request_filter(0, None)
+        self.assertEqual(
+            storage_chest.request_filters,
+            [
+                {"index": 2, "name": "copper-ore", "count": 200}
+            ]
+        )
+        # test default
+        storage_chest.set_request_filter(2, "fast-transport-belt")
+        self.assertEqual(
+            storage_chest.request_filters,
+            [
+                {"index": 2, "name": "copper-ore", "count": 200},
+                {"index": 3, "name": "fast-transport-belt", "count": 0}
+            ]
+        )
+
+        # Warnings
+        # TODO: warn if index out of range
+
+        # Errors
+        with self.assertRaises(SchemaError):
+            storage_chest.set_request_filter("incorrect", "iron-ore", 100)
+        with self.assertRaises(InvalidItemID):
+            storage_chest.set_request_filter(1, "incorrect", 100)
+        with self.assertRaises(SchemaError):
+            storage_chest.set_request_filter(1, "iron-ore", "incorrect")
 
     def test_set_request_filters(self):
-        pass
+        storage_chest = LogisticStorageContainer()
+        storage_chest.set_request_filters(
+            [("iron-ore", 200), ("copper-ore", 1000), ("small-lamp", 50)]
+        )
+        self.assertEqual(
+            storage_chest.request_filters,
+            [
+                {"index": 1, "name": "iron-ore", "count": 200},
+                {"index": 2, "name": "copper-ore", "count": 1000},
+                {"index": 3, "name": "small-lamp", "count": 50}
+            ]
+        )
+        storage_chest.set_request_filters(
+            [("iron-ore", 200)]
+        )
+        self.assertEqual(
+            storage_chest.request_filters,
+            [
+                {"index": 1, "name": "iron-ore", "count": 200}
+            ]
+        )
+        # Errors
+        with self.assertRaises(InvalidItemID):
+            storage_chest.set_request_filters(
+                [("iron-ore", 200), ("incorrect", 100)]
+            )
+        # Make sure that filters are unchanged if command fails
+        self.assertEqual(
+            storage_chest.request_filters,
+            [
+                {"index": 1, "name": "iron-ore", "count": 200}
+            ]
+        )
+        with self.assertRaises(SchemaError):
+            storage_chest.set_request_filters("very wrong")
 
 ################################################################################
 
@@ -1155,7 +1490,7 @@ class StackSizeMixinTesting(TestCase):
         inserter.set_circuit_stack_size_enabled(None)
         self.assertEqual(inserter.control_behavior, {})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(SchemaError):
             inserter.set_circuit_stack_size_enabled("incorrect")
 
     def test_set_stack_control_signal(self):

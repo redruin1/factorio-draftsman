@@ -57,7 +57,7 @@ class UndergroundBeltTesting(TestCase):
         with self.assertRaises(SchemaError):
             UndergroundBelt("underground-belt", direction = "incorrect")
 
-        with self.assertRaises(ValueError): # maybe schema error?
+        with self.assertRaises(SchemaError):
             UndergroundBelt("underground-belt", type = "incorrect")
 
     def test_power_and_circuit_flags(self):

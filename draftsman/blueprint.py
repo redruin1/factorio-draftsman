@@ -3,22 +3,26 @@
 from draftsman._factorio_version import __factorio_version_info__
 
 import draftsman.utils as utils
-from draftsman.signatures import (
-    COLOR_SCHEMA, 
-    ICON_SCHEMA, 
-    BLUEPRINT_SCHEMA, 
-    BLUEPRINT_BOOK_SCHEMA
-)
+# from draftsman.signatures import (
+#     COLOR, 
+#     ICON, 
+#     BLUEPRINT, 
+#     BLUEPRINT_BOOK
+# )
+from draftsman import signatures
 from draftsman.errors import (
     IncorrectBlueprintType,
     DuplicateIDException,
     MalformedBlueprintString,
     EntityNotCircuitConnectable,
-    EntityNotPowerConnectable
+    EntityNotPowerConnectable,
+    InvalidSignalID
 )
 from draftsman.entity import Entity, new_entity
 from draftsman.tile import Tile
-from draftsman.signal import signal_IDs, get_signal_type, InvalidSignalID
+from draftsman.signal import signal_IDs
+from draftsman.utils import get_signal_type
+
 
 import base64
 import copy
@@ -159,7 +163,7 @@ class Blueprint:
         Raises:
             SchemaError if any of the values cannot be resolved to floats
         """
-        data = COLOR_SCHEMA.validate({"r": r, "g": g, "b": b, "a": a})
+        data = signatures.COLOR.validate({"r": r, "g": g, "b": b, "a": a})
         self.blueprint["label_color"] = data
 
     def set_icons(self, *signals) -> None:
@@ -182,7 +186,7 @@ class Blueprint:
             except KeyError:
                 raise InvalidSignalID("'" + str(signal) + "'")
             # This is probably redundant
-            out = ICON_SCHEMA.validate(out)
+            out = signatures.ICON.validate(out)
             self.blueprint["icons"].append(out)
 
     def set_description(self, description: str) -> None:
@@ -416,6 +420,10 @@ class Blueprint:
         # Assert that the entities are close enough to connect with wires
         # TODO
 
+        # If either of the connected entities is a wall, make sure that they are
+        # both adjacent to a gate
+        # If not, raise a warning
+
         # Handle entity 1
         entity_1.add_circuit_connection(color, entity_2, side1, side2)
         # # Handle entity 2
@@ -539,7 +547,7 @@ class Blueprint:
             del out_dict["schedules"]
 
         # Make sure the final dictionary is valid
-        out_dict = BLUEPRINT_SCHEMA.validate(out_dict)
+        out_dict = signatures.BLUEPRINT.validate(out_dict)
         
         return out_dict
 

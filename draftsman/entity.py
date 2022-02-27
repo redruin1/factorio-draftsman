@@ -13,19 +13,30 @@
 # TODO: get rid of _normalize functions, I dont like them
 # TODO: documentation!
 # TODO: "succinct" mode for to_dict(), integrate with better default setting/management
+# TODO: verify that a json dict representation of an entity imported from factorio actually imports correctly into
+#   every entity's constructor
+# TODO: verify that a blueprint string made of each entity correctly imports into Factorio (how would I test that programmatically?)
+# TODO: make sure that all functions that modify the entity preserve the entity's contents when they throw an error
 
+from numpy import isin
 from draftsman.errors import (
     InvalidEntityID, InvalidItemID, InvalidSignalID, 
     InvalidArithmeticOperation, InvalidConditionOperation,
     InvalidMode, InvalidWireType, InvalidConnectionSide, 
     EntityNotCircuitConnectable, EntityNotPowerConnectable, InvalidRecipeID
 )
-from draftsman.signal import Signal, item_signals, signal_dict
-from draftsman.signatures import (
-    VEC_SCHEMA, IVEC_SCHEMA, INTEGER_SCHEMA, STRING_SCHEMA, POSITION_SCHEMA, 
-    BAR_SCHEMA, CONNECTIONS_SCHEMA, CONNECTION_POINT_SCHEMA, DIRECTION_SCHEMA, 
-    CONTROL_BEHAVIOR_SCHEMA, STACK_SIZE_SCHEMA
-)
+from draftsman.signal import Signal
+from draftsman.data.signals import item_signals
+from draftsman.utils import signal_dict
+# from draftsman.signatures import (
+#     VEC_SCHEMA, IVEC_SCHEMA, INTEGER_SCHEMA, STRING_SCHEMA, POSITION_SCHEMA, 
+#     BAR_SCHEMA, CONNECTIONS_SCHEMA, CONNECTION_POINT_SCHEMA, DIRECTION_SCHEMA, 
+#     CONTROL_BEHAVIOR_SCHEMA, STACK_SIZE_SCHEMA, BOOLEAN_SCHEMA, 
+#     USER_COLOR_SCHEMA, COLOR_SCHEMA, ORIENTATION_SCHEMA, INVENTORY_SCHEMA,
+#     REQUEST_FILTERS_SCHEMA
+# )
+from draftsman import signatures
+# from draftsman import signatures # TODO
 
 import abc
 import copy
@@ -59,7 +70,7 @@ def warn_user(message):
     warnings.warn(message, stacklevel=3)
 
 from draftsman.data.entities import entity_dimensions, circuit_wire_distances, power_wire_distances
-from draftsman.data.recipes import *
+import draftsman.data.recipes
 import draftsman.data.instruments
 
 entity_inventory_sizes = {
@@ -342,7 +353,6 @@ class Entity:
         # ID (Internal)
         self.id = None
         if "id" in kwargs:
-            kwargs["id"] = STRING_SCHEMA.validate(kwargs["id"])
             self.set_id(kwargs["id"])
             self.unused_args.pop("id")
 
@@ -360,9 +370,12 @@ class Entity:
         # Dual circuit connectable? (Internal) (Overwritten if applicable)
         self.dual_circuit_connectable = False
 
+        # Double grid aligned?
+        self.double_grid_aligned = False
+
         # (Absolute) Position (External)
         # Grid Position (Internal)
-        position = POSITION_SCHEMA.validate(position)
+        position = signatures.POSITION.validate(position)
         if isinstance(position, list):
             Entity.set_grid_position(self, position[0], position[1])
         elif isinstance(position, dict): # pragma: no branch
@@ -383,15 +396,14 @@ class Entity:
         Note: it is impossible to insert two entities into a blueprint with the
         same `id`.
         """
-        self.id = STRING_SCHEMA.validate(id)
+        self.id = signatures.STRING.validate(id)
 
     def set_absolute_position(self, x: float, y: float) -> None:
         """
         Sets the position of the object, or the position that Factorio uses. On
         most entities, the position of the object is located at the center.
         """
-        self.position = {"x": x, "y": y}
-        self.position = VEC_SCHEMA.validate(self.position)
+        self.position = signatures.ABS_POSITION.validate({"x": x, "y": y})
         grid_x = round(self.position["x"] - self.width / 2.0)
         grid_y = round(self.position["y"] - self.height / 2.0)
         self.grid_position = [grid_x, grid_y]
@@ -403,8 +415,7 @@ class Entity:
         the entity. If a tile is multiple tiles in width or height, the grid
         coordinate is the top left-most tile of the entity.
         """
-        self.grid_position = [x, y]
-        self.grid_position = IVEC_SCHEMA.validate(self.grid_position)
+        self.grid_position = signatures.GRID_POSITION.validate([x, y])
         absolute_x = self.grid_position[0] + self.width / 2.0
         absolute_y = self.grid_position[1] + self.height / 2.0
         self.position = {"x": absolute_x, "y": absolute_y}
@@ -499,7 +510,7 @@ class DirectionalMixin:
 
         # Now that we know the entity is rotatable, try calling the set_position
         # equivalents again to now handle the rotation
-        position = POSITION_SCHEMA.validate(position) # FIXME: technically redundant
+        position = signatures.POSITION.validate(position) # FIXME: technically redundant
         if isinstance(position, list):
             self.set_grid_position(position[0], position[1])
         elif isinstance(position, dict): # pragma: no branch
@@ -511,8 +522,7 @@ class DirectionalMixin:
         Sets the position of the object, or the position that Factorio uses. On
         most entities, the position of the object is located at the center.
         """
-        self.position = {"x": x, "y": y}
-        self.position = VEC_SCHEMA.validate(self.position)
+        self.position = signatures.ABS_POSITION.validate({"x": x, "y": y})
         grid_x = round(self.position["x"] - self.rotated_width / 2.0)
         grid_y = round(self.position["y"] - self.rotated_height / 2.0)
         self.grid_position = [grid_x, grid_y]
@@ -524,8 +534,7 @@ class DirectionalMixin:
         the entity. If a tile is multiple tiles in width or height, the grid
         coordinate is the top left-most tile of the entity.
         """
-        self.grid_position = [x, y]
-        self.grid_position = IVEC_SCHEMA.validate(self.grid_position)
+        self.grid_position = signatures.GRID_POSITION.validate([x, y])
         absolute_x = self.grid_position[0] + self.rotated_width / 2.0
         absolute_y = self.grid_position[1] + self.rotated_height / 2.0
         self.position = {"x": absolute_x, "y": absolute_y}
@@ -533,7 +542,7 @@ class DirectionalMixin:
     def set_direction(self, direction: int) -> None:
         """
         """
-        self.direction = DIRECTION_SCHEMA.validate(direction)
+        self.direction = signatures.DIRECTION.validate(direction)
         if self.direction not in {0, 2, 4, 6}:
             warn_user("this entity only has 4-way rotation")
         if self.direction == Direction.EAST or self.direction == Direction.WEST:
@@ -546,21 +555,54 @@ class DirectionalMixin:
 
 class EightWayDirectionalMixin:
     """
-    Enables entities to be rotated across 8 directions
+    Enables entities to be rotated across 8 directions.
     """
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
 
+        # Rotated width and height
+        self.rotated_width = self.width
+        self.rotated_height = self.height
+
         self.direction = 0
         if "direction" in kwargs:
             self.set_direction(kwargs["direction"])
+            self.unused_args.pop("direction")
         self._add_export("direction", lambda x: x != 0)
+
+    def set_absolute_position(self, x: float, y: float) -> None:
+        """
+        Sets the position of the object, or the position that Factorio uses. On
+        most entities, the position of the object is located at the center.
+        """
+        self.position = signatures.ABS_POSITION.validate({"x": x, "y": y})
+        grid_x = round(self.position["x"] - self.rotated_width / 2.0)
+        grid_y = round(self.position["y"] - self.rotated_height / 2.0)
+        self.grid_position = [grid_x, grid_y]
+
+    def set_grid_position(self, x: int, y: int) -> None:
+        """
+        Sets the grid position of the object, or the tile coordinates of the
+        object. Calculates the absolute position based off of the dimensions of
+        the entity. If a tile is multiple tiles in width or height, the grid
+        coordinate is the top left-most tile of the entity.
+        """
+        self.grid_position = signatures.GRID_POSITION.validate([x, y])
+        absolute_x = self.grid_position[0] + self.rotated_width / 2.0
+        absolute_y = self.grid_position[1] + self.rotated_height / 2.0
+        self.position = {"x": absolute_x, "y": absolute_y}
 
     def set_direction(self, direction: int) -> None:
         """
         """
-        # TODO: add error checking
-        self.direction = direction
+        # TODO: add warnings if out of [0, 7] range
+        self.direction = signatures.DIRECTION.validate(direction)
+        if self.direction in {2, 3, 6, 7}:
+            self.rotated_width = self.height
+            self.rotated_height = self.width
+        else:
+            self.rotated_width = self.width
+            self.rotated_height = self.height
 
 
 class OrientationMixin:
@@ -573,14 +615,14 @@ class OrientationMixin:
         self.orientation = 0.0
         if "orientation" in kwargs:
             self.set_orientation(kwargs["orientation"])
+            self.unused_args.pop("orientation")
         self._add_export("orientation", lambda x: x != 0)
 
     def set_orientation(self, orientation: float) -> None:
         """
         Sets the orientation of the train car. (0.0 -> 1.0)
         """
-        # TODO: error checking
-        self.orientation = orientation
+        self.orientation = signatures.ORIENTATION.validate(orientation)
 
 
 class InventoryMixin:
@@ -602,7 +644,7 @@ class InventoryMixin:
         """
         Sets the inventory limiting bar.
         """
-        self.bar = BAR_SCHEMA.validate(index)
+        self.bar = signatures.BAR.validate(index)
         if self.bar >= self.inventory_size or self.bar < 0:
             warn_user("Bar index not in range [0, {})"
                       .format(self.inventory_size))
@@ -618,6 +660,7 @@ class InventoryFilterMixin:
         self.inventory = {}
         if "inventory" in kwargs:
             self.set_inventory(kwargs["inventory"])
+            self.unused_args.pop("inventory")
         self._add_export("inventory", lambda x: len(x) != 0)
 
     def set_inventory(self, inventory: dict) -> None:
@@ -625,10 +668,9 @@ class InventoryFilterMixin:
         Sets the entire inventory configuration for the cargo wagon.
         """
         # Validate filter schema
-        # TODO
-        self.inventory = inventory
+        self.inventory = signatures.INVENTORY_FILTER.validate(inventory)
 
-    def set_inventory_filter(self, index: int, name: str) -> None:
+    def set_inventory_filter(self, index: int, item: str) -> None:
         """
         Sets the item filter at location `index` to `name`. If `name` is set to
         `None` the item filter at that location is removed.
@@ -638,20 +680,49 @@ class InventoryFilterMixin:
         if "filters" not in self.inventory:
             self.inventory["filters"] = []
 
-        # TODO: error checking
+        index = signatures.INTEGER.validate(index)
+        if item is not None and item not in item_signals: # FIXME
+            raise InvalidItemID(item)
+
+        # TODO: warn if index is ouside the range of the max filter slots
+        # (which needs to be extracted)
         
         # Check to see if filters already contains an entry with the same index
         for i, filter in enumerate(self.inventory["filters"]):
-            if index == filter["index"]: # Index already exists in the list
-                if name is None: # Delete the entry
+            if filter["index"] == index + 1: # Index already exists in the list
+                if item is None: # Delete the entry
                     del self.inventory["filters"][i]
                 else: # Set the new value
-                    self.inventory["filters"][i] = {"index": index+1,"name": name}
-                    
+                    #self.inventory["filters"][i] = {"index": index+1,"name": item}
+                    self.inventory["filters"][i]["name"] = item
                 return
 
         # If no entry with the same index was found
-        self.inventory["filters"].append({"index": index+1, "name": name})
+        self.inventory["filters"].append({"index": index + 1, "name": item})
+
+    def set_inventory_filters(self, filters: list) -> None: 
+        """
+        Sets the item filters for the inserter or loader.
+        """
+        if filters is None:
+            self.inventory.pop("filters", None)
+            return
+
+        # Make sure filters conforms
+        # TODO
+
+        # Make sure the items are item signals
+        for item in filters:
+            if isinstance(item, dict):
+                item = item["name"]
+            if item not in item_signals:
+                raise InvalidItemID(item)
+
+        for i in range(len(filters)):
+            if isinstance(filters[i], str):
+                self.set_inventory_filter(i, filters[i])
+            else: # dict
+                self.set_inventory_filter(i, filters[i]["name"])
 
     def set_bar_index(self, index: int) -> None:
         """
@@ -661,8 +732,9 @@ class InventoryFilterMixin:
         if index is None:
             self.inventory.pop("bar", None)
         else:
-            # TODO: add error checking
-            self.inventory["bar"] = index
+            self.inventory["bar"] = signatures.BAR.validate(index)
+            if index >= 40: # TODO: make this number not hardcoded
+                warn_user("Bar index is greater than 40")
 
 
 class IOTypeMixin:
@@ -682,10 +754,11 @@ class IOTypeMixin:
         """
         Sets whether or not this entity is configured as 'input' or 'output'.
         """
-        if type in {"input", "output", None}:
-            self.type = type
-        else:
-            raise ValueError("`type` must be one of 'input', 'output' or 'None'")
+        # if type in {"input", "output", None}:
+        #     self.type = type
+        # else:
+        #     raise ValueError("`type` must be one of 'input', 'output' or 'None'")
+        self.type = signatures.IO_TYPE.validate(type)
 
 
 class PowerConnectableMixin:
@@ -697,36 +770,99 @@ class PowerConnectableMixin:
 
         self.neighbours = []
         if "neighbours" in kwargs:
-            self.neighbours = kwargs["neighbours"]
+            self.set_neighbours(kwargs["neighbours"])
+            self.unused_args.pop("neighbours")
         self._add_export("neighbours", lambda x: len(x) != 0)
 
-    def _add_power_connection(self, target_entity: Entity, target_id: Union[int, str], source_side: int = 1) -> None:
+    def set_neighbours(self, neighbours: list) -> None:
+        """
+        """
+        self.neighbours = signatures.NEIGHBOURS.validate(neighbours)
+
+    def add_power_connection(self, target: Entity, side: int = 1) -> None:
         """
         Adds a power wire between this entity and another power-connectable one.
         """
-        # TODO: raise error if target_id is not power connectable?
+        if not target.power_connectable:
+            raise EntityNotPowerConnectable(target.id)
+        if self.dual_power_connectable and target.dual_power_connectable:
+            raise Exception("2 dual power connectable entities cannot connect")
 
         # Issue a warning if the entities being connected are too far apart
-        # min_dist = min(self.circuit_wire_max_distance,
-        #                target.circuit_wire_max_distance)
-        # self_pos = [self.position["x"], self.position["y"]]
-        # target_pos = [target.position["x"], target.position["y"]]
-        # real_dist = math.dist(self_pos, target_pos)
-        # if real_dist > min_dist:
-        #     warn_user("Distance between entities ({}) is greater than max ({})"
-        #               .format(real_dist, min_dist))
+        min_dist = min(self.power_wire_max_distance,
+                       target.power_wire_max_distance)
+        self_pos = [self.position["x"], self.position["y"]]
+        target_pos = [target.position["x"], target.position["y"]]
+        real_dist = math.dist(self_pos, target_pos)
+        if real_dist > min_dist:
+            warn_user("Distance between entities ({}) is greater than max ({})"
+                      .format(real_dist, min_dist))
 
-        if target_entity.dual_power_connectable:
-            # If the target entity is a power switch, then its not considered a
-            # neighbour
-            return
-        else:
-            # Otherwise add it as normal
-            if target_id not in self.neighbours:
-                self.neighbours.append(target_id)
+        # Only worried about self
+        if self.dual_power_connectable: # power switch
+            # Add copper circuit connection
+            str_side = "Cu" + str(side - 1)
+            if str_side not in self.connections:
+                self.connections[str_side] = []
 
-    def _remove_power_connection_point(self, target_id: Union[int, str]) -> None:
-        pass # TODO
+            entry = {"entity_id": target.id, "wire_id": 0}
+            if entry not in self.connections[str_side]:
+                self.connections[str_side].append(entry)
+        else: # electric pole
+            if not target.dual_power_connectable:
+                if target.id not in self.neighbours:
+                    self.neighbours.append(target.id)
+
+        # Only worried about target
+        if target.dual_power_connectable: # power switch
+            # Add copper circuit connection
+            str_side = "Cu" + str(side - 1)
+            if str_side not in target.connections:
+                target.connections[str_side] = []
+
+            entry = {"entity_id": self.id, "wire_id": 0}
+            if entry not in target.connections[str_side]:
+                target.connections[str_side].append(entry)
+        else: # electric pole
+            if not self.dual_power_connectable:
+                if self.id not in target.neighbours:
+                    target.neighbours.append(self.id)
+
+    def remove_power_connection(self, target: Entity, side: int = 1) -> None:
+        """
+        """
+
+        # Only worried about self
+        if self.dual_power_connectable: # power switch
+            str_side = "Cu" + str(side - 1)
+            entry = {"entity_id": target.id, "wire_id": 0}
+            if str_side in self.connections:
+                if entry in self.connections[str_side]:
+                    self.connections[str_side].remove(entry)
+                if len(self.connections[str_side]) == 0:
+                    del self.connections[str_side]
+        else: # electric pole
+            if not target.dual_power_connectable:
+                try:
+                    self.neighbours.remove(target.id)
+                except ValueError:
+                    pass
+
+         # Only worried about target
+        if target.dual_power_connectable: # power switch
+            str_side = "Cu" + str(side - 1)
+            entry = {"entity_id": self.id, "wire_id": 0}
+            if str_side in target.connections:
+                if entry in target.connections[str_side]:
+                    target.connections[str_side].remove(entry)
+                if len(target.connections[str_side]) == 0:
+                    del target.connections[str_side]
+        else: # electric pole
+            if not self.dual_power_connectable:
+                try:
+                    target.neighbours.remove(self.id)
+                except ValueError:
+                    pass
 
 
 class CircuitConnectableMixin:
@@ -735,6 +871,7 @@ class CircuitConnectableMixin:
     """
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
+
         self.circuit_connectable = True
 
         self.circuit_wire_max_distance = circuit_wire_distances[name]
@@ -748,10 +885,7 @@ class CircuitConnectableMixin:
     def set_connections(self, connections: dict) -> None:
         """
         """
-        if connections is None:
-            self.connections = {}
-        else:
-            self.connections = CONNECTIONS_SCHEMA.validate(connections)
+        self.connections = signatures.CONNECTIONS.validate(connections)
 
     def add_circuit_connection(self, color: str, target: Entity, source_side: int = 1, target_side: int = 1) -> None:
         """
@@ -835,7 +969,6 @@ class CircuitConnectableMixin:
         """
         Removes a connection point between this entity and `target`.
         """
-
         if color not in {"red", "green"}:
             raise InvalidWireType(color)
         if not isinstance(target, Entity):
@@ -903,21 +1036,31 @@ class ControlBehaviorMixin:
     def set_control_behavior(self, behavior: dict):
         """
         """
-        self.control_behavior = CONTROL_BEHAVIOR_SCHEMA.validate(behavior)
+        self.control_behavior = signatures.CONTROL_BEHAVIOR.validate(behavior)
 
     def _set_condition(self, condition_name: str, a: str, op: str, b: Union[str, int]):
         self.control_behavior[condition_name] = {}
         condition = self.control_behavior[condition_name]
         # Check the inputs
         # A
+        # if a is None:
+        #     pass # Keep the first signal empty
+        # elif isinstance(a, str):
+        #     condition["first_signal"] = signal_dict(a)
+        # elif isinstance(a, int):
+        #     raise TypeError("normal conditions cannot have a constant first")
+        # else:
+        #     raise TypeError("`a` is neither 'str' nor 'None'")
+
+        a = signatures.SIGNAL_ID.validate(a)
+        op = signatures.COMPARATOR.validate(op)
+        b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
+
+        # A
         if a is None:
-            pass # Keep the first signal empty
-        elif isinstance(a, str):
-            condition["first_signal"] = signal_dict(a)
-        elif isinstance(a, int):
-            raise TypeError("normal conditions cannot have a constant first")
+            pass
         else:
-            raise TypeError("`a` is neither 'str' nor 'None'")
+            condition["first_signal"] = a
         
         # TODO: handle the case where the user inputs '≥'
         # Consider the case where someone is pulling the comparator from a 
@@ -926,20 +1069,27 @@ class ControlBehaviorMixin:
         # forth
 
         # op
-        valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
-        if op not in valid_comparisons:
-            raise InvalidConditionOperation(op)
-        actual_comparisons = [">", "<", "=", "≥",  "≤",  "≠"]
-        index = valid_comparisons.index(op)
-        condition["comparator"] = actual_comparisons[index]
+        condition["comparator"] = op
 
         # B
-        if isinstance(b, str):
-            condition["second_signal"] = signal_dict(b)
-        elif isinstance(b, int):
+        if isinstance(b, dict):
+            condition["second_signal"] = b
+        else: # int
             condition["constant"] = b
+
+
+class EnableDisableMixin: # (ControlBehaviorMixin)
+    """
+    Allows the entity to control whether or not it's circuit condition affects
+    its operation. Usually used with CircuitConditionMixin
+    """
+    def set_enable_disable(self, value: bool) -> None:
+        """
+        """
+        if value is None:
+            self.control_behavior.pop("circuit_enable_disable", None)
         else:
-            raise TypeError("`b` is neither 'str' or 'int'")
+            self.control_behavior["circuit_enable_disable"] = signatures.BOOLEAN.validate(value)
 
 
 class CircuitConditionMixin: # (ControlBehaviorMixin)
@@ -950,70 +1100,20 @@ class CircuitConditionMixin: # (ControlBehaviorMixin)
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
 
-        if "control_behavior" in kwargs:
-            # Normalize circuit condition keys if necessary
-            self._normalize_circuit_condition()
-
-    def set_enable_disable(self, value: bool) -> None:
-        """
-        """
-        if value is None:
-            self.control_behavior.pop("circuit_enable_disable", None)
-        elif isinstance(value, bool):
-            self.control_behavior["circuit_enable_disable"] = value
-        else:
-            raise TypeError("`value` must be either 'bool' or 'None'")
-
     def set_enabled_condition(self, a: str = None, op: str = "<", b: Union[str, int] = 0):
         """
         """
         self._set_condition("circuit_condition", a, op, b)
 
-    def remove_enabled_condition(self):
+    def remove_enabled_condition(self): # TODO: delete
         """
         """
         self.control_behavior.pop("circuit_condition", None)
-
-    def _normalize_circuit_condition(self) -> None:
-        """
-        """
-        if "circuit_condition" in self.control_behavior:
-            circuit_condition = self.control_behavior["circuit_condition"]
-            if "first_signal" in circuit_condition:
-                # If its a string, change it, otherwise treat it as gospel
-                if isinstance(circuit_condition["first_signal"], str):
-                    name = circuit_condition["first_signal"]
-                    # circuit_condition["first_signal"] = {
-                    #     "name": name,
-                    #     "type": get_signal_type(name)
-                    # }
-                    circuit_condition["first_signal"] = signal_dict(name)
-            if "comparator" in circuit_condition:
-                # Convert user to internal representation
-                op = circuit_condition["comparator"]
-                valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
-                actual_comparisons = [">", "<", "=", "≥",  "≤",  "≠"]
-                index = valid_comparisons.index(op)
-                op = actual_comparisons[index]
-                circuit_condition["comparator"] = op
-            if "second_signal" in circuit_condition:
-                # If its a string, change it, otherwise treat it as gospel
-                if isinstance(circuit_condition["second_signal"], str):
-                    name = circuit_condition["second_signal"]
-                    # circuit_condition["second_signal"] = {
-                    #     "name": name,
-                    #     "type": get_signal_type(name)
-                    # }
-                    circuit_condition["second_signal"] = signal_dict(name)
 
 
 class LogisticConditionMixin: # (ControlBehaviorMixin)
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
-
-        if "control_behavior" in kwargs:
-            # Normalize logistic conditions if necessary
-            self._normalize_logistic_condition()
 
     def set_connect_to_logistic_network(self, value: bool) -> None:
         """
@@ -1030,35 +1130,10 @@ class LogisticConditionMixin: # (ControlBehaviorMixin)
         """
         self._set_condition("logistic_condition", a, op, b)
 
-    def remove_logistic_condition(self):
+    def remove_logistic_condition(self): # TODO: delete
         """
-        TODO: remove
         """
         self.control_behavior.pop("logistic_condition", None)
-
-    def _normalize_logistic_condition(self):
-        """
-        """
-        if "logistic_condition" in self.control_behavior:
-            logistic_condition = self.control_behavior["logistic_condition"]
-            if "first_signal" in logistic_condition:
-                # If its a string, change it, otherwise treat it as gospel
-                if isinstance(logistic_condition["first_signal"], str):
-                    name = logistic_condition["first_signal"]
-                    logistic_condition["first_signal"] = signal_dict(name)
-            if "comparator" in logistic_condition:
-                # Convert user to internal representation
-                op = logistic_condition["comparator"]
-                valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
-                actual_comparisons = [">", "<", "=", "≥",  "≤",  "≠"]
-                index = valid_comparisons.index(op)
-                op = actual_comparisons[index]
-                logistic_condition["comparator"] = op
-            if "second_signal" in logistic_condition:
-                # If its a string, change it, otherwise treat it as gospel
-                if isinstance(logistic_condition["second_signal"], str):
-                    name = logistic_condition["second_signal"]
-                    logistic_condition["second_signal"] = signal_dict(name)
 
 
 class CircuitReadContentsMixin: # (ControlBehaviorMixin)
@@ -1138,13 +1213,11 @@ class StackSizeMixin: # (ControlBehaviorMixin)
             self.unused_args.pop("override_stack_size")
         self._add_export("override_stack_size", lambda x: x is not None)
 
-        self._normalize_stack_signal()
-
     def set_stack_size_override(self, stack_size: int):
         """
         Sets an inserter's stack size override.
         """
-        self.override_stack_size = STACK_SIZE_SCHEMA.validate(stack_size)
+        self.override_stack_size = signatures.STACK_SIZE.validate(stack_size)
 
     def set_circuit_stack_size_enabled(self, enabled: bool):
         """
@@ -1152,10 +1225,8 @@ class StackSizeMixin: # (ControlBehaviorMixin)
         """
         if enabled is None:
             self.control_behavior.pop("circuit_set_stack_size", None)
-        elif isinstance(enabled, bool):
-            self.control_behavior["circuit_set_stack_size"] = enabled
         else:
-            raise TypeError("`enabled` is neither 'bool' nor 'None'")
+            self.control_behavior["circuit_set_stack_size"] = signatures.BOOLEAN.validate(enabled)
 
     def set_stack_control_signal(self, signal: str):
         """
@@ -1168,14 +1239,6 @@ class StackSizeMixin: # (ControlBehaviorMixin)
             self.control_behavior["stack_control_input_signal"] = signal_dict(signal)
         else:
             raise TypeError("`signal` is neither 'str' nor 'None'")
-
-    def _normalize_stack_signal(self) -> None:
-        """
-        """
-        if "stack_control_input_signal" in self.control_behavior:
-            name = self.control_behavior["stack_control_input_signal"]
-            if isinstance(name, str):
-                self.control_behavior["stack_control_input_signal"] = signal_dict(name)
 
 
 class ModeOfOperationMixin: # (ControlBehaviorMixin)
@@ -1206,24 +1269,24 @@ class ReadRailSignalMixin: # (ControlBehaviorMixin)
         """
         if signal is None:
             self.control_behavior.pop("red_output_signal", None)
-        # TODO: error_checking
-        self.control_behavior["red_output_signal"] = signal_dict(signal)
+        else:
+            self.control_behavior["red_output_signal"] = signal_dict(signal)
 
     def set_yellow_output_signal(self, signal: str) -> None:
         """
         """
         if signal is None:
             self.control_behavior.pop("yellow_output_signal", None)
-        # TODO: error_checking
-        self.control_behavior["yellow_output_signal"] = signal_dict(signal)
+        else:
+            self.control_behavior["yellow_output_signal"] = signal_dict(signal)
 
     def set_green_output_signal(self, signal: str) -> None:
         """
         """
         if signal is None:
             self.control_behavior.pop("green_output_signal", None)
-        # TODO: error_checking
-        self.control_behavior["green_output_signal"] = signal_dict(signal)
+        else:
+            self.control_behavior["green_output_signal"] = signal_dict(signal)
 
 
 class FiltersMixin:
@@ -1286,8 +1349,8 @@ class RecipeMixin: # TODO: finish
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
 
-        # List of all recipies that this machine can make
-        self.recipes = recipes[name]
+        # List of all recipes that this machine can make
+        self.recipes = draftsman.data.recipes.recipes[name]
 
         # Recipe that this machine is currently set to
         self.recipe = None
@@ -1311,48 +1374,66 @@ class RequestFiltersMixin:
     def __init__(self, name: str, **kwargs):
         super().__init__(name, **kwargs)
 
+        # TODO: handle internal input format for set_request_filters()
+
         self.request_filters = None
         if "request_filters" in kwargs:
             self.set_request_filters(kwargs["request_filters"])
+            self.unused_args.pop("request_filters")
         self._add_export("request_filters", lambda x: x is not None)
 
-    def set_request_filter(self, index: int, name: str, count: int = 0) -> None:
+    def set_request_filter(self, index: int, item: str, count: int = 0) -> None:
         """
         """
+
         if self.request_filters is None:
             self.request_filters = []
         
-        # TODO: error checking
+        index = signatures.INTEGER.validate(index)
+        if item is not None and item not in item_signals: # TODO: FIXME
+            raise InvalidItemID(item)
+        count = signatures.INTEGER.validate(count)
+
+        # TODO: warn if index out of range (index < 0 or index > 1000 )
 
         # Check to see if filters already contains an entry with the same index
         for i, filter in enumerate(self.request_filters):
-            if index == filter["index"]: # Index already exists in the list
-                if name is None: # Delete the entry
-                    del self.inventory["filters"][i]
-                else: # Set the new value
-                    self.inventory["filters"][i] = {
-                        "index": index+1, "name": name, "count": count
-                    }
-                    
+            if filter["index"] == index + 1: # Index already exists in the list
+                if item is None: # Delete the entry
+                    del self.request_filters[i]
+                else: # Set the new name + value
+                    # self.inventory["filters"][i] = {
+                    #     "index": index+1, "name": name, "count": count
+                    # }
+                    self.request_filters[i]["name"] = item
+                    self.request_filters[i]["count"] = count
                 return
 
         # If no entry with the same index was found
         self.request_filters.append({
-            "index": index+1, "name": name, "count": count
+            "index": index+1, "name": item, "count": count
         })
 
     def set_request_filters(self, filters: list) -> None:
         """
         """
-        # Make sure the items are item signals
-        if filters is not None:
-            for item in filters:
-                if item[0] not in item_signals:
-                    raise InvalidItemID(item[0])
 
+        # Validate filters
+        filters = signatures.REQUEST_FILTERS.validate(filters)
+
+        # Make sure the items are item signals
+        for item in filters:
+            if item[0] not in item_signals:
+                raise InvalidItemID(item[0])
+
+        # Make sure we dont wipe before throwing the error
+        self.request_filters = []
+
+        # for i in range(len(filters)):
+        #     filters[i] = {"index": i + 1, "name": filters[i][0], "count": filters[i][1]}
+        # self.request_filters = filters
         for i in range(len(filters)):
-            filters[i] = {"index": i + 1, "name": filters[i][0], "count": filters[i][1]}
-        self.request_filters = filters
+            self.set_request_filter(i, filters[i][0], filters[i][1])
 
 
 class RequestItemsMixin: # TODO: finish
@@ -1411,25 +1492,60 @@ class ColorMixin:
 
         self.color = None
         if "color" in kwargs:
-            # color = COLOR_SCHEMA.validate(kwargs["color"])
-            color = kwargs["color"]
-            if isinstance(color, dict):
-                self.set_color(**color)
-            elif isinstance(color, list):
-                self.set_color(*color)
-            else:
-                raise ValueError("color")
+            color = signatures.USER_COLOR.validate(kwargs["color"])
+            self.set_color(**color)
+            self.unused_args.pop("color")
         self._add_export("color", lambda x: x is not None)
 
     def set_color(self, r: float, g: float, b: float, a: float = 1.0) -> None:
         """
         """
-        self.color = {"r": r, "g": g, "b": b, "a": a}
+        self.color = signatures.COLOR.validate({"r": r, "g": g, "b": b, "a": a})
 
-    def remove_color(self) -> None:
+    def remove_color(self):
         """
         """
         self.color = None
+
+
+class DoubleGridAlignedMixin:
+    def __init__(self, name: str, **kwargs):
+        super().__init__(name, **kwargs)
+
+        self.double_grid_aligned = True
+
+        if "position" in kwargs:
+            position = kwargs["position"]
+            if isinstance(position, list):
+                self.set_grid_position(position[0], position[1])
+            elif isinstance(position, dict): # pragma: no branch
+                self.set_absolute_position(position["x"], position["y"])
+
+    def set_absolute_position(self, x: float, y: float) -> None:
+        """
+        Overwritten
+        """
+        super().set_absolute_position(x, y)
+
+        # if the grid alignment is off, warn the user
+        if self.grid_position[0] % 2 == 1 or self.grid_position[1] % 2 == 1:
+            cast_position = [math.floor(self.grid_position[0] / 2) * 2,
+                             math.floor(self.grid_position[1] / 2) * 2]
+            warn_user("Double grid-aligned entity is not placed along chunk "
+                      "grid; entity's position will be cast from {} to {} when "
+                      "imported".format(self.grid_position, cast_position))
+
+    def set_grid_position(self, x: int, y: int) -> None:
+        """
+        """
+        super().set_grid_position(x, y)
+
+        if self.grid_position[0] % 2 == 1 or self.grid_position[1] % 2 == 1:
+            cast_position = [math.floor(self.grid_position[0] / 2) * 2,
+                             math.floor(self.grid_position[1] / 2) * 2]
+            warn_user("Double grid-aligned entity is not placed along chunk "
+                      "grid; entity's position will be cast from {} to {} when "
+                      "imported".format(self.grid_position, cast_position))
 
 
 ################################################################################
@@ -1465,8 +1581,9 @@ class StorageTank(CircuitConnectableMixin, DirectionalMixin, Entity):
 
 
 class TransportBelt(CircuitReadContentsMixin, LogisticConditionMixin, 
-                    CircuitConditionMixin, ControlBehaviorMixin, 
-                    CircuitConnectableMixin, DirectionalMixin, Entity):
+                    CircuitConditionMixin, EnableDisableMixin, 
+                    ControlBehaviorMixin, CircuitConnectableMixin, 
+                    DirectionalMixin, Entity):
     """
     """
     def __init__(self, name: str = transport_belts[0], **kwargs):
@@ -1549,9 +1666,9 @@ class Splitter(DirectionalMixin, Entity):
 
 
 class Inserter(StackSizeMixin, CircuitReadHandMixin, ModeOfOperationMixin, 
-               CircuitConditionMixin, LogisticConditionMixin, 
-               ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, 
-               Entity):
+               CircuitConditionMixin, EnableDisableMixin, 
+               LogisticConditionMixin, ControlBehaviorMixin, 
+               CircuitConnectableMixin, DirectionalMixin, Entity):
     """
     """
     def __init__(self, name: str = inserters[0], **kwargs):
@@ -1565,8 +1682,9 @@ class Inserter(StackSizeMixin, CircuitReadHandMixin, ModeOfOperationMixin,
 
 class FilterInserter(FiltersMixin, StackSizeMixin, CircuitReadHandMixin, 
                      ModeOfOperationMixin, CircuitConditionMixin, 
-                     LogisticConditionMixin, ControlBehaviorMixin, 
-                     CircuitConnectableMixin, DirectionalMixin, Entity):
+                     EnableDisableMixin, LogisticConditionMixin, 
+                     ControlBehaviorMixin, CircuitConnectableMixin, 
+                     DirectionalMixin, Entity):
     """
     """
     def __init__(self, name: str = filter_inserters[0], **kwargs):
@@ -1612,6 +1730,9 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
         super(ElectricPole, self).__init__(name, **kwargs)
 
+        for unused_arg in self.unused_args:
+            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+
 
 class Pipe(Entity):
     """
@@ -1637,8 +1758,8 @@ class UndergroundPipe(DirectionalMixin, Entity):
             warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
 
 
-class Pump(CircuitConditionMixin, CircuitConnectableMixin, DirectionalMixin, 
-           Entity):
+class Pump(CircuitConditionMixin, CircuitConnectableMixin, 
+           DirectionalMixin, Entity):
     """
     """
     def __init__(self, name: str = pumps[0], **kwargs):
@@ -1650,7 +1771,7 @@ class Pump(CircuitConditionMixin, CircuitConnectableMixin, DirectionalMixin,
             warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
 
 
-class StraightRail(EightWayDirectionalMixin, Entity):
+class StraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     """
     """
     def __init__(self, name: str = straight_rails[0], **kwargs):
@@ -1662,7 +1783,7 @@ class StraightRail(EightWayDirectionalMixin, Entity):
             warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
 
 
-class CurvedRail(EightWayDirectionalMixin, Entity):
+class CurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     """
     """
     def __init__(self, name: str = curved_rails[0], **kwargs):
@@ -1674,9 +1795,10 @@ class CurvedRail(EightWayDirectionalMixin, Entity):
             warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
 
 
-class TrainStop(ColorMixin, CircuitConditionMixin, LogisticConditionMixin, 
-                ControlBehaviorMixin, CircuitConnectableMixin, 
-                EightWayDirectionalMixin, Entity):
+class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin, 
+                LogisticConditionMixin, ControlBehaviorMixin, 
+                CircuitConnectableMixin, DoubleGridAlignedMixin, 
+                DirectionalMixin, Entity):
     """
     """
     def __init__(self, name: str = train_stops[0], **kwargs):
@@ -1687,11 +1809,13 @@ class TrainStop(ColorMixin, CircuitConditionMixin, LogisticConditionMixin,
         self.station = None
         if "station" in kwargs:
             self.set_station_name(kwargs["station"])
+            self.unused_args.pop("station")
         self._add_export("station", lambda x: x is not None)
 
         self.manual_trains_limit = None
         if "manual_trains_limit" in kwargs:
             self.set_manual_trains_limit(kwargs["manual_trains_limit"])
+            self.unused_args.pop("manual_trains_limit")
         self._add_export("manual_trains_limit", lambda x: x is not None)
 
         for unused_arg in self.unused_args:
@@ -1700,32 +1824,28 @@ class TrainStop(ColorMixin, CircuitConditionMixin, LogisticConditionMixin,
     def set_station_name(self, name: str) -> None:
         """
         """
-        # TODO: error checking
-        self.station = name
+        self.station = signatures.STRING.validate(name)
 
     def set_manual_trains_limit(self, amount: int) -> None:
         """
         """
-        # TODO: error checking
-        self.manual_trains_limit = amount
+        self.manual_trains_limit = signatures.INTEGER.validate(amount)
 
     def set_read_from_train(self, value: bool) -> None:
         """
         """
-        # TODO: error checking
         if value is None:
             self.control_behavior.pop("read_from_train", None)
         else:
-            self.control_behavior["read_from_train"] = value
+            self.control_behavior["read_from_train"] = signatures.BOOLEAN.validate(value)
 
     def set_read_stopped_train(self, value: bool) -> None:
         """
         """
-        # TODO: error checking
         if value is None:
             self.control_behavior.pop("read_stopped_train", None)
         else:
-            self.control_behavior["read_stopped_train"] = value
+            self.control_behavior["read_stopped_train"] = signatures.BOOLEAN.validate(value)
         
         # This bit might be desirable, might not be
         # if value is True and \
@@ -1736,7 +1856,6 @@ class TrainStop(ColorMixin, CircuitConditionMixin, LogisticConditionMixin,
     def set_train_stopped_signal(self, signal: str) -> None:
         """
         """
-        # TODO: error checking
         if signal is None:
             self.control_behavior.pop("train_stopped_signal", None)
         else:
@@ -1751,16 +1870,14 @@ class TrainStop(ColorMixin, CircuitConditionMixin, LogisticConditionMixin,
     def set_trains_limit(self, value: bool) -> None:
         """
         """
-        # TODO: error checking
         if value is None:
             self.control_behavior.pop("set_trains_limit", None)
         else:
-            self.control_behavior["set_trains_limit"] = value
+            self.control_behavior["set_trains_limit"] = signatures.BOOLEAN.validate(value)
 
     def set_trains_limit_signal(self, signal: str) -> None:
         """
         """
-        # TODO: error checking
         if signal is None:
             self.control_behavior.pop("trains_limit_signal", None)
         else:
@@ -1769,23 +1886,21 @@ class TrainStop(ColorMixin, CircuitConditionMixin, LogisticConditionMixin,
     def set_read_trains_count(self, value: bool) -> None:
         """
         """
-        # TODO: error checking
         if value is None:
             self.control_behavior.pop("read_trains_count", None)
         else:
-            self.control_behavior["read_trains_count"] = value
+            self.control_behavior["read_trains_count"] = signatures.BOOLEAN.validate(value)
 
     def set_trains_count_signal(self, signal: str) -> None:
         """
         """
-        # TODO: error checking
         if signal is None:
             self.control_behavior.pop("trains_count_signal", None)
         else:
             self.control_behavior["trains_count_signal"] = signal_dict(signal)
         
 
-class RailSignal(ReadRailSignalMixin, CircuitConditionMixin, 
+class RailSignal(ReadRailSignalMixin, CircuitConditionMixin, EnableDisableMixin, 
                  ControlBehaviorMixin, CircuitConnectableMixin, 
                  EightWayDirectionalMixin, Entity):
     """
@@ -1801,21 +1916,19 @@ class RailSignal(ReadRailSignalMixin, CircuitConditionMixin,
     def set_read_signal(self, value: bool) -> None:
         """
         """
-        # TODO: error checking
         if value is None:
             self.control_behavior.pop("circuit_read_signal", None)
         else:
-            self.control_behavior["circuit_read_signal"] = value
+            self.control_behavior["circuit_read_signal"] = signatures.BOOLEAN.validate(value)
 
     def set_enable_disable(self, value: bool) -> None:
         """
-        Overwritten method
+        TODO: write (overwritten)
         """
-        # TODO: error checking
         if value is None:
             self.control_behavior.pop("circuit_close_signal", None)
         else:
-            self.control_behavior["circuit_close_signal"] = value
+            self.control_behavior["circuit_close_signal"] = signatures.BOOLEAN.validate(value)
 
 
 class RailChainSignal(ReadRailSignalMixin, ControlBehaviorMixin, 
@@ -1834,7 +1947,6 @@ class RailChainSignal(ReadRailSignalMixin, ControlBehaviorMixin,
     def set_blue_output_signal(self, signal: str) -> None:
         """
         """
-        # TODO: error_checking
         if signal is None:
             self.control_behavior.pop("blue_output_signal", None)
         else:
@@ -1929,6 +2041,7 @@ class LogisticRequestContainer(ModeOfOperationMixin, ControlBehaviorMixin,
         self.request_from_buffers = None
         if "request_from_buffers" in kwargs:
             self.set_request_from_buffers(kwargs["request_from_buffers"])
+            self.unused_args.pop("request_from_buffers")
         self._add_export("request_from_buffers", lambda x: x is not None)
 
         for unused_arg in self.unused_args:
@@ -1938,7 +2051,7 @@ class LogisticRequestContainer(ModeOfOperationMixin, ControlBehaviorMixin,
         """
         Sets whether or not this requester can recieve items from buffer chests.
         """
-        self.request_from_buffers = value
+        self.request_from_buffers = signatures.BOOLEAN.validate(value)
 
 
 class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
@@ -1955,20 +2068,18 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     def set_read_logistics(self, value: bool) -> None:
         """
         """
-        # TODO: error checking
         if value is None:
             self.control_behavior.pop("read_logistics", None)
         else:
-            self.control_behavior["read_logistics"] = value
+            self.control_behavior["read_logistics"] = signatures.BOOLEAN.validate(value)
 
     def set_read_robot_stats(self, value: bool) -> None:
         """
         """
-        # TODO: error checking
         if value is None:
             self.control_behavior.pop("read_robot_stats", None)
         else:
-            self.control_behavior["read_robot_stats"] = value
+            self.control_behavior["read_robot_stats"] = signatures.BOOLEAN.validate(value)
 
     def set_available_logistics_signal(self, signal: str) -> None:
         """
@@ -2015,20 +2126,13 @@ class Lamp(CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin,
         for unused_arg in self.unused_args:
             warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
 
-    def set_enable_disable(self, value: bool) -> None:
-        # TODO: handle this a little more elegantly
-        # I dont want to change CircuitConditionMixin into two separate mixins
-        # for this ONE entity
-        raise NotImplementedError()
-
     def set_use_colors(self, value: bool) -> None:
         """
         """
-        # TODO: error checking
         if value is None:
             self.control_behavior.pop("use_colors", None)
         else:
-            self.control_behavior["use_colors"] = value
+            self.control_behavior["use_colors"] = signatures.BOOLEAN.validate(value)
 
 
 class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin, 
@@ -2037,7 +2141,7 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
     """
     def __init__(self, name: str = arithmetic_combinators[0], **kwargs):
         if name not in arithmetic_combinators:
-            raise InvalidEntityID("'{}' is not a valid name for this type".format(kwargs["name"]))
+            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
         super().__init__(name, **kwargs)
 
         self.dual_circuit_connectable = True
@@ -2048,47 +2152,54 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
     def set_arithmetic_conditions(self, a: Union[str, int] = None, op: str = "*", b: Union[str, int] = 0, out: str = None):
         """
         """
+        # Check all the parameters before we set anything to preserve original
+        a = signatures.SIGNAL_ID_OR_CONSTANT.validate(a)
+        op = signatures.OPERATION.validate(op)
+        b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
+        out = signatures.SIGNAL_ID.validate(out)
+
         if "arithmetic_conditions" not in self.control_behavior:
             self.control_behavior["arithmetic_conditions"] = {}
         arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
-        # TODO: error checking
+        
         # A
-        if a is None:
-            pass # Default
-        elif isinstance(a, str):
-            arithmetic_conditions["first_signal"] = signal_dict(a)
-        elif isinstance(a, int):
+        if a is None: # Default
+            arithmetic_conditions.pop("first_signal", None)
+            arithmetic_conditions.pop("first_constant", None)
+        elif isinstance(a, dict): # Signal Dict
+            arithmetic_conditions["first_signal"] = a
+            arithmetic_conditions.pop("first_constant", None)
+        else: # Constant
             arithmetic_conditions["first_constant"] = a
-        else:
-            raise TypeError("First param is neither 'str', 'int' or 'None'")
+            arithmetic_conditions.pop("first_signal", None)
 
         # op
-        valid_operations = [
-            "*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR"
-        ]
-        if op.upper() not in valid_operations:
-            raise InvalidArithmeticOperation(op)
-        arithmetic_conditions["operation"] = op.upper()
+        if op is None:
+            arithmetic_conditions.pop("operation", None)
+        else:
+            arithmetic_conditions["operation"] = op
 
         # B
-        if isinstance(b, str):
-            arithmetic_conditions["second_signal"] = signal_dict(b)
-        elif isinstance(b, int):
+        if b is None: # Default
+            arithmetic_conditions.pop("second_signal", None)
+            arithmetic_conditions.pop("second_constant", None)
+        elif isinstance(b, dict): # Signal Dict
+            arithmetic_conditions["second_signal"] = b
+            arithmetic_conditions.pop("second_constant", None)
+        else: # Constant
             arithmetic_conditions["second_constant"] = b
-        else:
-            raise TypeError("Second param is neither 'str' or 'int'")
+            arithmetic_conditions.pop("second_signal", None)
 
         # out
-        if out is None:
-            pass # Default
-        elif isinstance(out, str):
-            arithmetic_conditions["output_signal"] = signal_dict(out)
-        else:
-            raise TypeError("Output param is neither 'str' or 'None'")
+        if out is None: # Default
+            arithmetic_conditions.pop("output_signal", None)
+        else: # Signal Dict
+            arithmetic_conditions["output_signal"] = out
 
     def remove_arithmetic_conditions(self):
         """
         """
+        # TODO: remove
         self.control_behavior.pop("arithmetic_conditions", None)
 
 
@@ -2106,62 +2217,89 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
         for unused_arg in self.unused_args:
             warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
     
-    def set_decider_conditions(self, a, op, b, out):
+    def set_decider_conditions(self, a: Union[str, int] = None, op: str = "<", b: Union[str, int] = 0, out: str = None):
         """
         """
+        # Check all the parameters before we set anything to preserve original
+        a = signatures.SIGNAL_ID_OR_CONSTANT.validate(a)
+        op = signatures.COMPARATOR.validate(op)
+        b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
+        out = signatures.SIGNAL_ID.validate(out)
+
         if "decider_conditions" not in self.control_behavior:
             self.control_behavior["decider_conditions"] = {}
         decider_conditions = self.control_behavior["decider_conditions"]
-        # TODO: error checking
+
         # A
-        if a is None:
-            pass # Default
-        elif isinstance(a, str):
-            decider_conditions["first_signal"] = signal_dict(a)
-        elif isinstance(a, int):
+        if a is None: # Default
+            decider_conditions.pop("first_signal", None)
+            decider_conditions.pop("first_constant", None)
+        elif isinstance(a, dict): # Signal Dict
+            decider_conditions["first_signal"] = a
+            decider_conditions.pop("first_constant", None)
+        else: # Constant
             decider_conditions["first_constant"] = a
-        else:
-            raise TypeError("First param is neither 'str', 'int' or 'None'")
+            decider_conditions.pop("first_signal", None)
 
         # op
-        valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
-        if op not in valid_comparisons:
-            raise InvalidConditionOperation(op)
-        actual_comparisons = [">", "<", "=", "≥",  "≤",  "≠"]
-        index = valid_comparisons.index(op)
-        op = actual_comparisons[index]
-        decider_conditions["comparator"] = op
+        # valid_comparisons =  [">", "<", "=", ">=", "<=", "!="]
+        # if op not in valid_comparisons:
+        #     raise InvalidConditionOperation(op)
+        # actual_comparisons = [">", "<", "=", "≥",  "≤",  "≠"]
+        # index = valid_comparisons.index(op)
+        # op = actual_comparisons[index]
+        if op is None:
+            decider_conditions.pop("comparator", None)
+        else:
+            decider_conditions["comparator"] = op
 
         # B
-        if isinstance(b, str):
-            decider_conditions["second_signal"] = signal_dict(b)
-        elif isinstance(b, int):
+        if b is None: # Default
+            decider_conditions.pop("second_signal", None)
+            decider_conditions.pop("second_constant", None)
+        elif isinstance(b, dict): # Signal Dict
+            decider_conditions["second_signal"] = b
+            decider_conditions.pop("second_constant", None)
+        else: # Constant
             decider_conditions["second_constant"] = b
-        else:
-            raise TypeError("Second param is neither 'str' or 'int'")
+            decider_conditions.pop("second_signal", None)
 
         # out
-        if out is None:
-            pass # Default
-        elif isinstance(out, str):
-            decider_conditions["output_signal"] = signal_dict(out)
-        else:
-            raise TypeError("Output param is neither 'str' or 'None'")
+        if out is None: # Default
+            decider_conditions.pop("output_signal", None)
+        else: # Signal Dict
+            decider_conditions["output_signal"] = out
+
+    # def set_first_operand(self, operand: Union[str, int]) -> None:
+    #     """
+    #     """
+    #     pass # TODO
+
+    # def set_comparator(self, comparator: str) -> None:
+    #     """
+    #     """
+    #     pass # TODO
+
+    # def set_second_operand(self, operand: Union[str, int]) -> None:
+    #     """
+    #     """
+    #     pass # TODO
 
     def set_copy_count_from_input(self, value: bool) -> None:
         """
         """
         if value is None:
             self.control_behavior["decider_conditions"].pop("copy_count_from_input", None)
+        else:
+            if "decider_conditions" not in self.control_behavior:
+                self.control_behavior["decider_conditions"] = {}
 
-        if "decider_conditions" not in self.control_behavior:
-            self.control_behavior["decider_conditions"] = {}
-
-        self.control_behavior["decider_conditions"]["copy_count_from_input"] = value
+            self.control_behavior["decider_conditions"]["copy_count_from_input"] = signatures.BOOLEAN.validate(value)
 
     def remove_decider_conditions(self):
         """
         """
+        # TODO: remove
         self.control_behavior.pop("decider_conditions", None)
 
 
@@ -2179,44 +2317,54 @@ class ConstantCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
         for unused_arg in self.unused_args:
             warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
 
-    def set_signal(self, index: int, name: str, count: int = 0) -> None:
+    def set_signal(self, index: int, signal: str, count: int = 0) -> None:
         """
         """
+        # Check validity before modifying self
+        index = signatures.INTEGER.validate(index)
+        signal = signatures.SIGNAL_ID.validate(signal)
+        count = signatures.INTEGER.validate(count)
+
         if "filters" not in self.control_behavior:
             self.control_behavior["filters"] = []
         
-        # TODO: error checking
-        
         # Check to see if filters already contains an entry with the same index
         for i, filter in enumerate(self.control_behavior["filters"]):
-            if index+1 == filter["index"]: # Index already exists in the list
-                if name is None: # Delete the entry
+            if index + 1 == filter["index"]: # Index already exists in the list
+                if signal is None: # Delete the entry
                     del self.control_behavior["filters"][i]
                 else: # Set the new value
                     self.control_behavior["filters"][i] = {
-                        "index": index + 1,"signal": signal_dict(name), "count": count
+                        "index": index + 1,"signal": signal, "count": count
                     }
 
                 return
 
         # If no entry with the same index was found
         self.control_behavior["filters"].append({
-            "index": index + 1, "signal": signal_dict(name), "count": count
+            "index": index + 1, "signal": signal, "count": count
         })
 
     def set_signals(self, signals: list) -> None:
-        pass # TODO
+        """
+        """
+        signals = signatures.SIGNAL_FILTERS.validate(signals)
 
-    def get_signal(self, index: int) -> Signal:
-        """
-        """
-        return None # TODO
+        if signals is None:
+            self.control_behavior.pop("filters", None)
+        else:
+            self.control_behavior["filters"] = signals
 
-    def clear_signals(self) -> None:
-        """
-        Clears all signals in the constant combinator, if any are present.
-        """
-        self.control_behavior.pop("filters", None)
+    # def get_signal(self, index: int) -> Signal:
+    #     """
+    #     """
+    #     return None # TODO
+
+    # def clear_signals(self) -> None:
+    #     """
+    #     Clears all signals in the constant combinator, if any are present.
+    #     """
+    #     self.control_behavior.pop("filters", None)
 
 
 class PowerSwitch(CircuitConditionMixin, LogisticConditionMixin, 
@@ -2229,9 +2377,12 @@ class PowerSwitch(CircuitConditionMixin, LogisticConditionMixin,
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
         super(PowerSwitch, self).__init__(name, **kwargs)
 
+        self.dual_power_connectable = True
+
         self.switch_state = None
         if "switch_state" in kwargs:
             self.set_switch_state(kwargs["switch_state"])
+            self.unused_args.pop("switch_state")
         self._add_export("switch_state", lambda x: x is not None)
 
         for unused_arg in self.unused_args:
@@ -2240,37 +2391,7 @@ class PowerSwitch(CircuitConditionMixin, LogisticConditionMixin,
     def set_switch_state(self, value: bool) -> None:
         """
         """
-        self.switch_state = value
-
-    def _add_power_connection(self, target_entity: Entity, entity_id: Union[int, str], source_side: int = 1) -> None:
-        """
-        """
-        # TODO: error checking
-        if target_entity.dual_power_connectable:
-            raise Exception("2 dual power connectable entities cannot connect")
-        
-        if source_side == 1:
-            if "Cu0" not in self.connections:
-                self.connections["Cu0"] = []
-
-            # Check to see if the entity already exists within
-            for connection in self.connections["Cu0"]:
-                if connection["entity_id"] == entity_id:
-                    return
-
-            self.connections["Cu0"].append({"entity_id": entity_id, "wire_id": 0})
-        elif source_side == 2:
-            if "Cu1" not in self.connections:
-                self.connections["Cu1"] = []
-
-            # Check to see if the entity already exists within
-            for connection in self.connections["Cu1"]:
-                if connection["entity_id"] == entity_id:
-                    return
-
-            self.connections["Cu1"].append({"entity_id": entity_id, "wire_id": 0})
-        else:
-            raise ValueError("source_side neither 1 nor 2")
+        self.switch_state = signatures.BOOLEAN.validate(value)
 
 
 class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin, 
@@ -2282,20 +2403,22 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
         super(ProgrammableSpeaker, self).__init__(name, **kwargs)
 
+        # Name translations for all of the instruments and their notes
+        # maybe something like this?
+        self.instruments = draftsman.data.instruments.instruments[self.name]
+
         self.parameters = {}
         if "parameters" in kwargs:
             self.set_parameters(kwargs["parameters"])
+            self.unused_args.pop("parameters")
         self._add_export("parameters", lambda x: len(x) != 0)
 
         self.alert_parameters = {}
         if "alert_parameters" in kwargs:
             self.set_alert_parameters(kwargs["alert_parameters"])
-            self._normalize_alert_parameters()
+            self.unused_args.pop("alert_parameters")
+            #self._normalize_alert_parameters()
         self._add_export("alert_parameters", lambda x: len(x) != 0)
-
-        # Name translations for all of the instruments and their notes
-        # maybe something like this?
-        self.instruments = draftsman.data.instruments.instruments[self.name]
 
         for unused_arg in self.unused_args:
             warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
@@ -2390,8 +2513,11 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
 
     def set_instrument(self, instrument: Union[int, str]) -> None:
         """
+        TODO: allow the user to use string names
         """
-        # TODO: error checking
+        # Fail if the instrument is either out of range or not in dict
+        # TODO
+
         if "circuit_parameters" not in self.control_behavior:
             self.control_behavior["circuit_parameters"] = {}
         circuit_params = self.control_behavior["circuit_parameters"]
@@ -2408,8 +2534,9 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
 
         #self._normalize_circuit_parameters()
 
-    def set_note(self, note: Union[int, str]) -> None:
+    def set_note(self, note: int) -> None:
         """
+        TODO: allow the user to use string names
         """
         # TODO: error checking
         if "circuit_parameters" not in self.control_behavior:
@@ -2428,7 +2555,6 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
             circuit_params["note_id"] = instrument_notes.index(note)
         else:
             raise TypeError("note_id is neither int nor str")
-
 
     def _normalize_circuit_parameters(self):
         """
@@ -2449,13 +2575,13 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
 
         pass
 
-    def _normalize_alert_parameters(self):
-        """
-        """
-        if "icon_signal_id" in self.alert_parameters:
-            id = self.alert_parameters["icon_signal_id"]
-            if isinstance(id, str):
-                self.alert_parameters["icon_signal_id"] = signal_dict(id)
+    # def _normalize_alert_parameters(self):
+    #     """
+    #     """
+    #     if "icon_signal_id" in self.alert_parameters:
+    #         id = self.alert_parameters["icon_signal_id"]
+    #         if isinstance(id, str):
+    #             self.alert_parameters["icon_signal_id"] = signal_dict(id)
 
 
 class Boiler(DirectionalMixin, Entity):
@@ -2528,9 +2654,9 @@ class HeatPipe(Entity):
 
 
 class MiningDrill(RequestItemsMixin, CircuitReadResourceMixin, 
-                  CircuitConditionMixin, LogisticConditionMixin, 
-                  ControlBehaviorMixin, CircuitConnectableMixin, 
-                  DirectionalMixin, Entity):
+                  CircuitConditionMixin, EnableDisableMixin, 
+                  LogisticConditionMixin, ControlBehaviorMixin, 
+                  CircuitConnectableMixin, DirectionalMixin, Entity):
     def __init__(self, name: str = mining_drills[0], **kwargs):
         if name not in mining_drills:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
@@ -2623,9 +2749,8 @@ class LandMine(Entity):
             warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
 
 
-# Technically CircuitConnectable, but only when adjacent to a gate
-class Wall(CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, 
-           Entity):
+class Wall(CircuitConditionMixin, EnableDisableMixin, ControlBehaviorMixin, 
+           CircuitConnectableMixin, Entity):
     def __init__(self, name: str = walls[0], **kwargs):
         if name not in walls:
             raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
@@ -2638,28 +2763,22 @@ class Wall(CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin,
         """
         Overwritten
         """
-        # TODO: check if we're adjacent to a gate
-        # TODO: error checking
         if value is None:
             self.control_behavior.pop("circuit_open_gate", None)
         else:
-            self.control_behavior["circuit_open_gate"] = value
+            self.control_behavior["circuit_open_gate"] = signatures.BOOLEAN.validate(value)
 
     def set_read_gate(self, value: bool) -> None:
         """
         """
-        # TODO: check if we're adjacent to a gate
-        # TODO: error checking
         if value is None:
             self.control_behavior.pop("circuit_read_sensor", None)
         else:
-            self.control_behavior["circuit_read_sensor"] = value
+            self.control_behavior["circuit_read_sensor"] = signatures.BOOLEAN.validate(value)
 
     def set_output_signal(self, signal: bool) -> None:
         """
         """
-        # TODO: check if we're adjacent to a gate
-        # TODO: error checking
         if signal is None:
             self.control_behavior.pop("output_signal", None)
         else:

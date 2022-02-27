@@ -1,6 +1,6 @@
 # signalID.py
 
-from .signatures import SIGNAL_ID_SCHEMA
+#from draftsman.signatures import SIGNAL_ID
 
 
 class SignalID():
@@ -17,8 +17,8 @@ class SignalID():
         Convert the SignalID to its dict representation. Used when creating 
         blueprint strings.
         """
-        #return {"name": self.name, "type": self.type}
-        return SIGNAL_ID_SCHEMA.validate({"name": self.name, "type": self.type})
+        return {"name": self.name, "type": self.type}
+        #return SIGNAL_ID.validate({"name": self.name, "type": self.type})
 
     def __repr__(self):
         return "SignalID" + str(self.to_dict())

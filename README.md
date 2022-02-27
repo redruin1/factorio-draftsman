@@ -127,12 +127,9 @@ will adjust.
 
 ## TODO
 * Finish `entity.py`
-    * Split some of the Mixins to be a little more compartmentalized
     * Make sure the Entity classes themselves don't need to be split
-    * Extract Recipe data (according to the assembling machine)
     * Extract Instrument data (according to the programmable speaker)
-    * Add all the hidden categories (`Loader`, `InfinityContainer`, etc.)
-    * Handle 8-way rotation placement a little better
+    * Handle 8-way rotation placement a lot better
     * Properly handle defaults to prioritize space a little better
     * Test with mods
     * Errors + Warnings

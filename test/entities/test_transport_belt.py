@@ -48,6 +48,7 @@ class TransportBeltTesting(TestCase):
                 "circuit_contents_read_mode": ModeOfOperation.NONE
             }
         )
+        self.maxDiff = None
         self.assertEqual(
             fast_belt.to_dict(),
             {

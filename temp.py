@@ -1,42 +1,22 @@
 
 import draftsman as factorio
 from draftsman.entity import *
-from draftsman.signatures import POSITION_SCHEMA
+from draftsman.errors import InvalidSignalID
+from draftsman.entity import signal_dict
+from schema import Schema, And, Use, Or, SchemaError
 import pyperclip
 
 def main():
-    # Valid
-    fast_belt = TransportBelt("fast-transport-belt", 
-        position = [0, 0], direction = Direction.EAST,
-        connections = {
-            "1": {
-                "green": [
-                    {"entity_id": 1}
-                ]
-            }
-        },
-        control_behavior = {
-            "circuit_enable_disable": True,
-            "circuit_condition": {
-                "first_signal": "signal-blue",
-                "comparator": "=",
-                "second_signal": "signal-blue"
-            },
-            "connect_to_logistic_network": True,
-            "logistic_condition": {
-                "first_signal": "fast-underground-belt",
-                "comparator": ">=",
-                "constant": 0
-            },
-            "circuit_read_hand_contents": False,
-            "circuit_contents_read_mode": ModeOfOperation.NONE
-        }
-    )
-    print(fast_belt.to_dict())
-    #fast_belt.set_control_behavior({"whatever": "lmao"})
-    print(fast_belt.control_behavior)
+    blueprint = factorio.Blueprint()
 
+    substation = ElectricPole("substation", id = "1")
+    power_switch = PowerSwitch(id = "2")
 
+    substation.add_power_connection(power_switch)
+    #power_switch.add_power_connection(substation)
+
+    print(substation)
+    print(power_switch)
 
 if __name__ == "__main__":
     main()
