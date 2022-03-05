@@ -35,6 +35,7 @@ local function extract_entities()
     local with_filter = {}
     local with_inventory = {}
     local with_inventory_filter = {}
+    local with_module_slots = {}
     local power_connectable = {}
     local circuit_connectable = {}
     local dual_circuit_connectable = {}
@@ -52,13 +53,13 @@ local function extract_entities()
     end
 
     local function categorize_entity(name, entity)
-        print("\t", name)
+        --print("\t", name)
         -- extract flags
         local flags = {}
         for _, flag in ipairs(entity.flags) do
             flags[flag] = true
         end
-        print_keys(flags)
+        --print_keys(flags)
         if flags["not-blueprintable"] --[[or flags["hidden"]] then
             return
         end
@@ -86,8 +87,11 @@ local function extract_entities()
            entity.output_connection_points then
             dual_circuit_connectable[#dual_circuit_connectable+1] = name
         end
-        print(serpent.block(entity.selection_box))
-        entity_dimensions[name] = {get_dimensions(entity.selection_box)}
+        if entity.module_specification then
+            with_module_slots[#with_module_slots+1] = name
+        end
+        --print(serpent.block(entity.selection_box))
+        entity_dimensions[name] = {get_dimensions(entity.collision_box)}
         entities[name] = entity
     end
 
@@ -229,6 +233,15 @@ local function extract_entities()
         local wire_dist = entity.circuit_wire_max_distance or entity.maximum_wire_distance or entity.wire_max_distance or 0
         entities_file:write("    \"" .. entity_name .. "\": " .. wire_dist .. ",\n")
     end
+    entities_file:write("}\n")
+    entities_file:write("module_slots = {\n")
+    for i = 1, #with_module_slots do
+        local entity_name = with_module_slots[i]
+        local entity = entities[entity_name]
+        local slots = entity.module_specification.module_slots or 0
+        -- local wire_dist = entity.circuit_wire_max_distance or entity.maximum_wire_distance or entity.wire_max_distance or 0
+        entities_file:write("    \"" .. entity_name .. "\": " .. slots .. ",\n")
+    end
     entities_file:write("}")
     entities_file:close()
 end
@@ -284,7 +297,7 @@ local function extract_signals()
     -- Across the previous categories, each is sorted by:
     -- 1. the item order string
     -- 2. the item name (lexographic)
-    
+
     local groups = {}
     local index_dict = {}
 
@@ -300,14 +313,12 @@ local function extract_signals()
         subgroups[#subgroups+1] = {name = v.name, order = v.order, group = v.group, items = {}}
         index_dict[v.name] = subgroups[#subgroups]
     end
-    
+
     local function add_signal(category, name, type)
-        --print(name)
         if name == "signal-unknown" or name == "fluid-unknown" or name == "item-unknown" then 
             return
         end
         local v = data.raw[category][name]
-        
         if v.flags ~= nil then
             --print_keys(v.flags)
             for j = 1, #v.flags do
@@ -317,11 +328,13 @@ local function extract_signals()
                 end
             end
         end
+        --print(serpent.block(v))
+        --print(v.subgroup)
         local subgroup = index_dict[v.subgroup or type]
         --print(v.subgroup)
         subgroup.items[#subgroup.items+1] = {name = v.name, type = type, order = v.order, subgroup = v.subgroup}
     end
-    
+
     local function add_category(category, type)
         for name, _ in pairs(data.raw[category]) do
             add_signal(category, name, type)
@@ -354,15 +367,19 @@ local function extract_signals()
     -- the name "rail" is stored in straight-rail's prototype.
 
     -- For now we manually add the item signal to save the headache for later
-    item_name = "rail"
-    item_order = "a[train-system]-a[rail]"
-    item_subgroup = "train-transport"
-    local subgroup = index_dict[item_subgroup]
-    subgroup.items[#subgroup.items+1] = {name = item_name, type = "item", order = item_order, subgroup = item_subgroup}
+    -- local item_name = "rail"
+    -- local item_order = "a[train-system]-a[rail]"
+    -- local item_subgroup = "train-transport"
+    -- local subgroup = index_dict[item_subgroup]
+    -- subgroup.items[#subgroup.items+1] = {name = item_name, type = "item", order = item_order, subgroup = item_subgroup}
+
+    -- RAIL PLANNER IS THE NAME
+    --print(serpent.block(data.raw["rail-planner"]["se-space-rail"]))
+    add_category("rail-planner", "item")
 
     -- Fluid Signals
     add_category("fluid", "fluid")
-    
+
     -- Virtual Signals
     add_category("virtual-signal", "virtual")
 
@@ -392,10 +409,23 @@ local function extract_signals()
         end
     end
 
-    categorize_signals(index_dict["logistics"], item_signals, "item")
-    categorize_signals(index_dict["production"], item_signals, "item")
-    categorize_signals(index_dict["intermediate-products"], item_signals, "item")
-    categorize_signals(index_dict["combat"], item_signals, "item")
+    local tabs_to_avoid = {"fluids", "signals", "enemies", "environment", "effects", "other"}
+    for i in ipairs(groups) do
+        print(i, groups[i].name)
+        local name = groups[i].name
+        for j in ipairs(tabs_to_avoid) do
+            if name == tabs_to_avoid[j] then
+                goto continue
+            end
+        end
+        categorize_signals(index_dict[name], item_signals, "item")
+        ::continue::
+    end
+
+    -- categorize_signals(index_dict["logistics"], item_signals, "item")
+    -- categorize_signals(index_dict["production"], item_signals, "item")
+    -- categorize_signals(index_dict["intermediate-products"], item_signals, "item")
+    -- categorize_signals(index_dict["combat"], item_signals, "item")
 
     categorize_signals(index_dict["fluids"], fluid_signals, "fluid")
 
@@ -525,7 +555,7 @@ local function extract_instruments()
     --     print(k, serpent.block(v))
     -- end
     local instruments = data.raw["programmable-speaker"]["programmable-speaker"].instruments
-    print(serpent.block(instruments))
+    --print(serpent.block(instruments))
 
     local instruments_file = io.open("draftsman/data/instruments.py", "w")
     instruments_file:write("# instruments.py\n")
@@ -556,10 +586,10 @@ local function main()
     --extract_entities()
 
     -- TILES
-    --extract_tiles()
+    extract_tiles()
 
     -- SIGNALS
-    --extract_signals()
+    extract_signals()
 
     -- RECIPES
     extract_recipes()

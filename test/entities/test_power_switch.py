@@ -52,5 +52,5 @@ class PowerSwitchTesting(TestCase):
     def test_dimensions(self):
         for name in power_switches:
             power_switch = PowerSwitch(name)
-            self.assertEqual(power_switch.width, 2)
-            self.assertEqual(power_switch.height, 2)
+            self.assertEqual(power_switch.tile_width, 2)
+            self.assertEqual(power_switch.tile_height, 2)

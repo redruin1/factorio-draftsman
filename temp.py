@@ -1,22 +1,21 @@
 
-import draftsman as factorio
-from draftsman.entity import *
-from draftsman.errors import InvalidSignalID
-from draftsman.entity import signal_dict
-from schema import Schema, And, Use, Or, SchemaError
+from draftsman.entity import new_entity
+from draftsman.data import entities
 import pyperclip
+import json
 
 def main():
-    blueprint = factorio.Blueprint()
+    #print(json.dumps(entities.raw["constant-combinator"], indent=2))
+    # print(entities.raw["medium-electric-pole"])
+    # for k in entities.raw["medium-electric-pole"]:
+    #     print(k)
+    entity = new_entity("offshore-pump")
 
-    substation = ElectricPole("substation", id = "1")
-    power_switch = PowerSwitch(id = "2")
+    print(entity.collision_box)
+    print(entity.tile_width)
+    print(entity.tile_height)
 
-    substation.add_power_connection(power_switch)
-    #power_switch.add_power_connection(substation)
-
-    print(substation)
-    print(power_switch)
+    print(entities.storage_tanks)
 
 if __name__ == "__main__":
     main()

@@ -25,7 +25,7 @@ for i, c in enumerate(test_string):
 # Create a simple clock and blinking light
 constant = factorio.ConstantCombinator()
 constant.set_grid_position(-1, 3)
-constant.set_direction(factorio.EAST)
+constant.set_direction(factorio.Direction.EAST)
 constant.set_signal(0, "signal-red", 1)
 blueprint.add_entity(constant, id = "constant")
 
@@ -33,12 +33,12 @@ blueprint.add_entity(constant, id = "constant")
 blueprint.add_entity(
     "decider-combinator", id = "clock",
     position = [0, 3],
-    direction = factorio.EAST,
+    direction = factorio.Direction.EAST,
     control_behavior = {
         "decider_conditions": {
             "first_signal": "signal-red",
             "comparator": "<=",
-            "second_constant": 60,
+            "constant": 60,
             "output_signal": "signal-red",
             "copy_count_from_input": True
         }
@@ -46,13 +46,13 @@ blueprint.add_entity(
 )
 
 # Use IDs to keep track of complex blueprints
-blueprint.add_entity(lamp, id = "blinker")
+blueprint.add_entity("small-lamp", id = "blinker")
 blinker = blueprint.find_entity_by_id("blinker")
 blinker.set_grid_position(2, 3)
 blinker.set_enabled_condition("signal-red", "=", 60)
 blinker.set_use_colors(True)
 
-blueprint.add_circuit_connection(color="green", id1="constant", id2="clock", side1=1, side2=1)
+blueprint.add_circuit_connection("green", "constant", "clock")
 blueprint.add_circuit_connection("red", "clock", "clock", 1, 2)
 blueprint.add_circuit_connection("green", "clock", "blinker", 2, 1)
 
@@ -61,7 +61,7 @@ for entity in blueprint.entities:
     print(entity)
 
 # Factorio API filter capabilities
-ccs = blueprint.find_entities_filtered(type = "constant-combinator")
+ccs = blueprint.find_entities_filtered(name = "constant-combinator")
 assert len(ccs) == len(test_string) + 1
 
 blueprint_book = factorio.BlueprintBook(blueprints = [blueprint])
@@ -127,12 +127,13 @@ will adjust.
 
 ## TODO
 * Finish `entity.py`
-    * Make sure the Entity classes themselves don't need to be split
-    * Extract Instrument data (according to the programmable speaker)
-    * Handle 8-way rotation placement a lot better
+    * Sort the contents of item (similar to signals)
+    * Change item to allow for item-group and item-subgroup access
+    * Come up with a concrete position on hidden entitites; are they valid for blueprints? What about signals?
+    * Issue warnings for overlapping entities
     * Properly handle defaults to prioritize space a little better
     * Test with mods
-    * Errors + Warnings
+    * Errors + Warnings (mostly done, but there are a few finishing touches)
 * Finish `blueprint.py`
     * Big cleaning/refactoring
     * Finish `BlueprintBook`

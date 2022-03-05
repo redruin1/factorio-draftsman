@@ -6,5 +6,5 @@ import unittest
 
 class ValidateVersion(unittest.TestCase):
     def test_versions(self):
-        self.assertEqual(draftsman.__version__, "0.2.0")
-        self.assertEqual(draftsman.__version_info__, (0, 2, 0))
+        self.assertEqual(draftsman.__version__, "0.2.1")
+        self.assertEqual(draftsman.__version_info__, (0, 2, 1))

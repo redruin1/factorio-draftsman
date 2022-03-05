@@ -59,6 +59,12 @@ class InvalidConnectionSide(Exception):
 class InvalidRecipeID(Exception):
     pass
 
+class InvalidModuleID(Exception):
+    pass
+
+class InvalidFluidID(Exception):
+    pass
+
 # Update
 class IncompatableMod(Exception):
     pass

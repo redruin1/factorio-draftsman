@@ -1,6 +1,7 @@
 # test_filter_inserter.py
 
-from draftsman.entity import FilterInserter, filter_inserters, Direction, ReadMode
+from draftsman.constants import Direction, ReadMode
+from draftsman.entity import FilterInserter, filter_inserters
 from draftsman.errors import InvalidEntityID
 
 from schema import SchemaError
@@ -158,8 +159,8 @@ class FilterInserterTesting(TestCase):
     def test_dimensions(self):
         for name in filter_inserters:
             inserter = FilterInserter(name)
-            self.assertEqual(inserter.width, 1)
-            self.assertEqual(inserter.height, 1)
+            self.assertEqual(inserter.tile_width, 1)
+            self.assertEqual(inserter.tile_height, 1)
 
     def test_set_filter_mode(self):
         inserter = FilterInserter()

@@ -2,17 +2,21 @@
 
 """
 Creates a blueprint to convert the numeric value from 1-256 into a unique signal
-with a value of 1.
+with a value of 1. The input signal is reserved and specified with the variable
+`input_signal`. You can also specify any number of signals to blacklist as well
+if you want those signals to be reserved, though using more than 2 (with no 
+mods) will result in fewer than 256 signals.
 """
 
+# TODO: change the code so that it works with mods
 # TODO: change the constant combinator bit to a Cell
 
-from draftsman.entity import Direction
 from draftsman.blueprint import Blueprint
+from draftsman.constants import Direction
 from draftsman.entity import (
     ConstantCombinator, ArithmeticCombinator, DeciderCombinator, ElectricPole
 )
-from draftsman.signal_data import *
+from draftsman.data.signals import virtual_signals, item_signals, fluid_signals
 
 
 def main():
@@ -35,6 +39,7 @@ def main():
     # And the input signal has to be different by nature of this blueprint
     blacklist += [input_signal]
     # Which leaves us with 2 spare signals that we can choose to avoid
+    # (unless you're using mods)
     blacklist += ["green-wire", "signal-info"]
 
     assert len(blacklist) <= 6
@@ -63,7 +68,7 @@ def main():
                 # Last few signals might not exist
                 try: 
                     signal_name = mapping[signal_index + i]
-                    combinator.set_signal(i, signal_name, signal_index + i + 2)
+                    combinator.set_signal(i, signal_name, signal_index + i + 1)
                 except:
                     pass
             
@@ -104,14 +109,16 @@ def main():
     offset.set_signal(0, input_signal, 1)
     blueprint.add_entity(offset, id = "offset")
 
-    # Input combinator
+    # (Example) Input combinator
     input = ConstantCombinator("constant-combinator", position = [-4, 1])
     input.set_direction(Direction.EAST)
     input.set_signal(0, input_signal, 15)
     blueprint.add_entity(input, id = "input")
 
+    # Input pole
     pole = ElectricPole("medium-electric-pole", position = [-3, 1])
     blueprint.add_entity(pole, id = "input_pole")
+    # Output pole
     pole.set_grid_position(4, 1)
     blueprint.add_entity(pole, id = "output_pole")
     blueprint.add_power_connection("input_pole", "output_pole")
@@ -122,11 +129,12 @@ def main():
     
     blueprint.add_circuit_connection("green", "input", "input_pole")
     blueprint.add_circuit_connection("green", "input_pole", "decider")
+    blueprint.add_circuit_connection("green", "decider", "stabilizer")
 
     blueprint.add_circuit_connection("red", "stabilizer", "decider", 2, 2)
     blueprint.add_circuit_connection("red", "decider", "output_pole", 2, 1)
     
-    #print(blueprint)
+    print(blueprint)
     print(blueprint.to_string())
 
 

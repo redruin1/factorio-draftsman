@@ -1,6 +1,7 @@
 # test_storagetank.py
 
-from draftsman.entity import StorageTank, storage_tanks, Direction
+from draftsman.constants import Direction
+from draftsman.entity import StorageTank, storage_tanks
 from draftsman.errors import (
     InvalidEntityID, InvalidWireType, InvalidConnectionSide
 )
@@ -15,8 +16,8 @@ warnings.filterwarnings("error")
 class StorageTankTesting(TestCase):
     def test_default_constructor(self):
         default_tank = StorageTank()
-        hw = default_tank.width / 2.0
-        hh = default_tank.height / 2.0
+        hw = default_tank.tile_width / 2.0
+        hh = default_tank.tile_height / 2.0
         self.assertEqual(
             default_tank.to_dict(),
             {
@@ -108,5 +109,5 @@ class StorageTankTesting(TestCase):
 
     def test_dimensions(self):
         storage_tank = StorageTank()
-        self.assertEqual(storage_tank.width, 3)
-        self.assertEqual(storage_tank.height, 3)
+        self.assertEqual(storage_tank.tile_width, 3)
+        self.assertEqual(storage_tank.tile_height, 3)

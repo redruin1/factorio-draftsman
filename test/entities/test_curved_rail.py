@@ -1,6 +1,7 @@
 # test_curved_rail.py
 
-from draftsman.entity import CurvedRail, curved_rails, Direction
+from draftsman.constants import Direction
+from draftsman.entity import CurvedRail, curved_rails
 from draftsman.errors import InvalidEntityID
 
 from unittest import TestCase
@@ -12,7 +13,7 @@ class CurvedRailTesting(TestCase):
             straight_rail.to_dict(),
             {
                 "name": "curved-rail",
-                "position": {"x": 2.0, "y": 4.0}
+                "position": {"x": 2.0, "y": 2.0}
             }
         )
 
@@ -26,7 +27,7 @@ class CurvedRailTesting(TestCase):
             curved_rail.to_dict(),
             {
                 "name": "curved-rail",
-                "position": {"x": 4.0, "y": 2.0},
+                "position": {"x": 2.0, "y": 2.0},
                 "direction": 7
             }
         )
@@ -45,5 +46,5 @@ class CurvedRailTesting(TestCase):
 
     def test_dimensions(self):
         curved_rail = CurvedRail()
-        self.assertEqual(curved_rail.width, 4)
-        self.assertEqual(curved_rail.height, 8)
+        self.assertEqual(curved_rail.tile_width, 4)
+        self.assertEqual(curved_rail.tile_height, 4) # 8?

@@ -14,7 +14,7 @@ class CargoWagonTesting(TestCase):
             cargo_wagon.to_dict(),
             {
                 "name": "cargo-wagon",
-                "position": {"x": 1.0, "y": 3.0}
+                "position": {"x": 1.0, "y": 2.5}
             }
         )
 
@@ -30,7 +30,7 @@ class CargoWagonTesting(TestCase):
             cargo_wagon.to_dict(),
             {
                 "name": "cargo-wagon",
-                "position": {"x": 1.0, "y": 3.0},
+                "position": {"x": 1.0, "y": 2.5},
                 "inventory": {
                     "bar": 0
                 }
@@ -110,5 +110,5 @@ class CargoWagonTesting(TestCase):
     def test_dimensions(self):
         for name in cargo_wagons:
             cargo_wagon = CargoWagon(name)
-            self.assertEqual(cargo_wagon.width, 2)
-            self.assertEqual(cargo_wagon.height, 6)
+            self.assertEqual(cargo_wagon.tile_width, 2)
+            self.assertEqual(cargo_wagon.tile_height, 5)

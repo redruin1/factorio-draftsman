@@ -10,8 +10,7 @@ from draftsman._factorio_version import (
     __factorio_version__, __factorio_version_info__
 )
 
-# TODO: make a defines file
-
+from draftsman.constants import *
 from draftsman.utils import *
 from draftsman.signal import *
 from draftsman.entity import *

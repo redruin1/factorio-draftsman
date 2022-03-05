@@ -113,8 +113,8 @@ class RailSignalTesting(TestCase):
     def test_dimensions(self):
         for name in rail_signals:
             rail_signal = RailSignal(name)
-            self.assertEqual(rail_signal.width, 1)
-            self.assertEqual(rail_signal.height, 1)
+            self.assertEqual(rail_signal.tile_width, 1)
+            self.assertEqual(rail_signal.tile_height, 1)
 
     def test_read_signal(self):
         rail_signal = RailSignal()

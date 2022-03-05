@@ -14,7 +14,7 @@ class FluidWagonTesting(TestCase):
             fluid_wagon.to_dict(),
             {
                 "name": "fluid-wagon",
-                "position": {"x": 1.0, "y": 3.0}
+                "position": {"x": 1.0, "y": 2.5}
             }
         )
 
@@ -48,5 +48,5 @@ class FluidWagonTesting(TestCase):
     def test_dimensions(self):
         for name in fluid_wagons:
             fluid_wagon = FluidWagon(name)
-            self.assertEqual(fluid_wagon.width, 2)
-            self.assertEqual(fluid_wagon.height, 6)
+            self.assertEqual(fluid_wagon.tile_width, 2)
+            self.assertEqual(fluid_wagon.tile_height, 5)

@@ -1,6 +1,7 @@
 # test_inserter.py
 
-from draftsman.entity import Inserter, inserters, Direction, ReadMode
+from draftsman.constants import Direction, ReadMode
+from draftsman.entity import Inserter, inserters
 from draftsman.errors import InvalidEntityID
 
 from schema import SchemaError
@@ -146,5 +147,5 @@ class InserterTesting(TestCase):
     def test_dimensions(self):
         for name in inserters:
             inserter = Inserter(name)
-            self.assertEqual(inserter.width, 1)
-            self.assertEqual(inserter.height, 1)
+            self.assertEqual(inserter.tile_width, 1)
+            self.assertEqual(inserter.tile_height, 1)

@@ -18,7 +18,8 @@ from draftsman.errors import (
     EntityNotPowerConnectable,
     InvalidSignalID
 )
-from draftsman.entity import Entity, new_entity
+from draftsman.entity import new_entity
+from draftsman.prototypes.mixins import Entity # TODO: change this
 from draftsman.tile import Tile
 from draftsman.signal import signal_IDs
 from draftsman.utils import get_signal_type
@@ -41,8 +42,8 @@ import zlib
 # TODO: complete BlueprintBook
 # TODO: GAY RIGHTS
 # TODO: Limit blueprints to 10,000 tiles x 10,000 tiles
-# TODO: move wire connection assertion checks into entity
 # "Ordered to create blueprint with unreasonable size"
+# TODO: move wire connection assertion checks into entity
 
 class BiDict(dict):
     def __init__(self, *args, **kwargs):
@@ -208,14 +209,15 @@ class Blueprint:
         """
         self.blueprint["version"] = utils.encode_version(major, minor, patch, dev_ver)
 
-    def add_entity(self, entity: Union[Entity, dict], **kwargs) -> None:
+    def add_entity(self, entity: Union[Entity, str], **kwargs) -> None:
         """
         """
         entity_id = None
-        if hasattr(entity, "id"):
-            entity_id = entity.id
-        elif "id" in kwargs:
+        if "id" in kwargs:
             entity_id = kwargs["id"]
+            #entity.id = kwargs["id"]
+        elif hasattr(entity, "id"):
+            entity_id = entity.id
         
         if entity_id is not None:
             if entity_id in self.entity_numbers: # Same ID!
@@ -232,6 +234,9 @@ class Blueprint:
 
         # DEEPCopy so we're not stupid
         entity_copy = copy.deepcopy(entity)
+
+        if "id" in kwargs:
+            entity_copy.id = kwargs["id"]
 
         # Add entity_number based on current entity length
         n = len(self.entities)
@@ -301,6 +306,9 @@ class Blueprint:
         directions will be returned
         * invert: Boolean, whether or not to invert the search selection
         """
+
+        # TODO: implement limit from LuaSurface
+
         search_region = self.entities
         if "position" in kwargs:
             if "radius" in kwargs:
@@ -313,18 +321,18 @@ class Blueprint:
             # Intersect entities with area
             pass
 
-        if isinstance(kwargs["name"], str):
-            names = {kwargs["name"]}
+        if isinstance(kwargs.get("name", None), str):
+            names = {kwargs.pop("name", None)}
         else:
-            names = kwargs["name"]
-        if isinstance(kwargs["type"], str):
-            types = {kwargs["type"]}
+            names = kwargs.pop("name", None)
+        if isinstance(kwargs.get("type", None), str):
+            types = {kwargs.pop("type", None)}
         else:
-            types = kwargs["types"]
-        if isinstance(kwargs["direction"], str):
-            directions = {kwargs["direction"]}
+            types = kwargs.pop("type", None)
+        if isinstance(kwargs.get("direction", None), str):
+            directions = {kwargs.pop("direction", None)}
         else:
-            directions = kwargs["direction"]
+            directions = kwargs.pop("direction", None)
 
         def test(entity):
             if names is not None and entity.name not in names:
@@ -336,9 +344,9 @@ class Blueprint:
             return True
 
         if "invert" in kwargs:
-            return filter(lambda entity: not test(entity), search_region)
+            return list(filter(lambda entity: not test(entity), search_region))
         else:
-            return filter(lambda entity: test(entity), search_region)
+            return list(filter(lambda entity: test(entity), search_region))
 
     def remove_entity(self, entity_id: Union[int, str]) -> Entity:
         """
@@ -384,9 +392,9 @@ class Blueprint:
         # TODO
 
         # Handle entity 1
-        entity_1._add_power_connection(entity_2, id2, side1)
+        entity_1.add_power_connection(entity_2, side1)
         # Handle entity 2
-        entity_2._add_power_connection(entity_1, id1, side2)
+        #entity_2.add_power_connection(entity_1, id1, side2)
 
     def add_circuit_connection(self, color, id1, id2, side1 = 1, side2 = 1):
         """
@@ -604,14 +612,15 @@ class BlueprintBook:
     """
     Factorio Blueprint Book.
     """
-    def __init__(self, blueprint_string:str = None):
+    def __init__(self, blueprint_string:str = None, blueprints:list = []):
         # Ensure that the blueprint loaded is actually the correct object type
 
         # add blueprints
         self.root = dict()
         self.root["blueprint_book"] = dict()
 
-        self.blueprints = list()
+        # TODO: validate that blueprints are actually blueprints
+        self.blueprints = blueprints
 
         self.blueprint_book = self.root
         pass
@@ -705,12 +714,19 @@ class BlueprintBook:
         version_tuple = utils.decode_version(self.object["version"])
         return '.'.join(str(i) for i in version_tuple)
 
+    def to_dict(self) -> dict:
+        pass # TODO
+
     def to_string(self) -> str:
         """
         """
         # Get the root dicts from each blueprint and insert them into blueprints
-        for blueprint in self.blueprints:
-            print(blueprint)
+        self.root["blueprints"] = []
+        for i, blueprint in enumerate(self.blueprints):
+            blueprint_entry = {"index": i, "blueprint": blueprint.to_dict()}
+            self.root["blueprints"].append(blueprint_entry)
+
+        print(json.dumps(self.root, indent=2))
         return utils.JSON_2_string({"blueprint_book": self.root})
 
     def __setitem__(self, key, value):

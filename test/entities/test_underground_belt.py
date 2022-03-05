@@ -1,6 +1,7 @@
 # test_underground_belt.py
 
-from draftsman.entity import UndergroundBelt, underground_belts, Direction
+from draftsman.constants import Direction
+from draftsman.entity import UndergroundBelt, underground_belts
 from draftsman.errors import InvalidEntityID
 
 from schema import SchemaError
@@ -71,5 +72,5 @@ class UndergroundBeltTesting(TestCase):
     def test_dimensions(self):
         for name in underground_belts:
             underground_belt = UndergroundBelt(name)
-            self.assertEqual(underground_belt.width, 1)
-            self.assertEqual(underground_belt.height, 1)
+            self.assertEqual(underground_belt.tile_width, 1)
+            self.assertEqual(underground_belt.tile_height, 1)

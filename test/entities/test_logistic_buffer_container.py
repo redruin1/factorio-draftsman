@@ -10,8 +10,8 @@ from unittest import TestCase
 class LogisticBufferContainerTesting(TestCase):
     def test_default_constructor(self):
         buffer_chest = LogisticBufferContainer()
-        hw = buffer_chest.width / 2.0
-        hh = buffer_chest.height / 2.0
+        hw = buffer_chest.tile_width / 2.0
+        hh = buffer_chest.tile_height / 2.0
         self.assertEqual(
             buffer_chest.to_dict(),
             {
@@ -133,5 +133,5 @@ class LogisticBufferContainerTesting(TestCase):
     def test_dimensions(self):
         for name in logistic_buffer_containers:
             container = LogisticBufferContainer(name)
-            self.assertEqual(container.width, 1)
-            self.assertEqual(container.height, 1)
+            self.assertEqual(container.tile_width, 1)
+            self.assertEqual(container.tile_height, 1)

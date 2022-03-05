@@ -1,157 +1,64 @@
 # entities.py
-entity_dimensions = {
-	"wooden-chest": (1, 1),
-	"factorio-logo-16tiles": (16, 2),
-	"big-ship-wreck-3": (4, 3),
-	"steel-chest": (1, 1),
-	"factorio-logo-22tiles": (22, 3),
-	"red-chest": (1, 1),
-	"crash-site-chest-1": (1, 1),
-	"big-ship-wreck-2": (4, 3),
-	"big-ship-wreck-1": (5, 3),
-	"factorio-logo-11tiles": (11, 2),
-	"iron-chest": (1, 1),
-	"crash-site-chest-2": (1, 1),
-	"blue-chest": (1, 1),
-	"storage-tank": (3, 3),
-	"fast-transport-belt": (1, 1),
-	"express-transport-belt": (1, 1),
-	"transport-belt": (1, 1),
-	"underground-belt": (1, 1),
-	"fast-underground-belt": (1, 1),
-	"express-underground-belt": (1, 1),
-	"fast-splitter": (2, 1),
-	"express-splitter": (2, 1),
-	"splitter": (2, 1),
-	"stack-filter-inserter": (1, 1),
-	"fast-inserter": (1, 1),
-	"burner-inserter": (1, 1),
-	"stack-inserter": (1, 1),
-	"long-handed-inserter": (1, 1),
-	"filter-inserter": (1, 1),
-	"inserter": (1, 1),
-	"express-loader": (1, 2),
-	"fast-loader": (1, 2),
-	"loader": (1, 2),
-	"medium-electric-pole": (1, 1),
-	"big-electric-pole": (2, 2),
-	"small-electric-pole": (1, 1),
-	"substation": (2, 2),
-	"pipe": (1, 1),
-	"pipe-to-ground": (1, 1),
-	"pump": (1, 2),
-	"straight-rail": (2, 2),
-	"curved-rail": (4, 8),
-	"train-stop": (2, 2),
-	"rail-signal": (1, 1),
-	"rail-chain-signal": (1, 1),
-	"locomotive": (2, 6),
-	"cargo-wagon": (2, 6),
-	"fluid-wagon": (2, 6),
-	"artillery-wagon": (2, 6),
-	"logistic-chest-passive-provider": (1, 1),
-	"logistic-chest-active-provider": (1, 1),
-	"logistic-chest-requester": (1, 1),
-	"logistic-chest-buffer": (1, 1),
-	"logistic-chest-storage": (1, 1),
-	"roboport": (4, 4),
-	"small-lamp": (1, 1),
-	"arithmetic-combinator": (1, 2),
-	"decider-combinator": (1, 2),
-	"constant-combinator": (1, 1),
-	"power-switch": (2, 2),
-	"programmable-speaker": (1, 1),
-	"boiler": (3, 2),
-	"heat-exchanger": (3, 2),
-	"steam-turbine": (3, 5),
-	"steam-engine": (3, 5),
-	"solar-panel": (3, 3),
-	"accumulator": (2, 2),
-	"nuclear-reactor": (5, 5),
-	"heat-pipe": (1, 1),
-	"burner-mining-drill": (2, 2),
-	"pumpjack": (3, 3),
-	"electric-mining-drill": (3, 3),
-	"offshore-pump": (1, 2),
-	"electric-furnace": (3, 3),
-	"stone-furnace": (2, 2),
-	"steel-furnace": (2, 2),
-	"centrifuge": (3, 3),
-	"oil-refinery": (5, 5),
-	"chemical-plant": (3, 3),
-	"assembling-machine-2": (3, 3),
-	"assembling-machine-3": (3, 3),
-	"assembling-machine-1": (3, 3),
-	"lab": (3, 3),
-	"beacon": (3, 3),
-	"rocket-silo": (9, 9),
-	"land-mine": (1, 1),
-	"stone-wall": (1, 1),
-	"gate": (1, 1),
-	"gun-turret": (2, 2),
-	"laser-turret": (2, 2),
-	"artillery-turret": (3, 3),
-	"radar": (3, 3),
-	"hidden-electric-energy-interface": (0, 0),
-	"electric-energy-interface": (2, 2),
-	"linked-chest": (1, 1),
-	"heat-interface": (1, 1),
-	"linked-belt": (1, 1),
-	"infinity-chest": (1, 1),
-	"infinity-pipe": (1, 1),
-	"burner-generator": (3, 5),
-}
-circuit_wire_distances = {
-	"wooden-chest": 9,
-	"steel-chest": 9,
-	"red-chest": 9,
-	"crash-site-chest-1": 9,
-	"iron-chest": 9,
-	"crash-site-chest-2": 9,
-	"blue-chest": 9,
-	"storage-tank": 9,
-	"fast-transport-belt": 9,
-	"express-transport-belt": 9,
-	"transport-belt": 9,
-	"stack-filter-inserter": 9,
-	"fast-inserter": 9,
-	"burner-inserter": 9,
-	"stack-inserter": 9,
-	"long-handed-inserter": 9,
-	"filter-inserter": 9,
-	"inserter": 9,
-	"medium-electric-pole": 9,
-	"big-electric-pole": 30,
-	"small-electric-pole": 7.5,
-	"substation": 18,
-	"pump": 9,
-	"train-stop": 9,
-	"rail-signal": 9,
-	"rail-chain-signal": 9,
-	"logistic-chest-passive-provider": 9,
-	"logistic-chest-active-provider": 9,
-	"logistic-chest-requester": 9,
-	"logistic-chest-buffer": 9,
-	"logistic-chest-storage": 9,
-	"roboport": 9,
-	"small-lamp": 9,
-	"arithmetic-combinator": 9,
-	"decider-combinator": 9,
-	"constant-combinator": 9,
-	"power-switch": 10,
-	"programmable-speaker": 9,
-	"accumulator": 9,
-	"burner-mining-drill": 9,
-	"pumpjack": 9,
-	"electric-mining-drill": 9,
-	"offshore-pump": 9,
-	"stone-wall": 9,
-	"infinity-chest": 9,
-}
-power_wire_distances = {
-	"medium-electric-pole": 9,
-	"big-electric-pole": 30,
-	"small-electric-pole": 7.5,
-	"substation": 18,
-	"power-switch": 10,
-}
+
+import pickle
+
+
+with open("draftsman/data/entities.pkl", "rb") as inp:
+    _data = pickle.load(inp)
+    raw = _data["data"]
+    containers = _data["containers"]
+    storage_tanks = _data["storage_tanks"]
+    transport_belts = _data["transport_belts"]
+    underground_belts = _data["underground_belts"]
+    splitters = _data["splitters"]
+    inserters = _data["inserters"]
+    filter_inserters = _data["filter_inserters"]
+    loaders = _data["loaders"]
+    electric_poles = _data["electric_poles"]
+    pipes = _data["pipes"]
+    underground_pipes = _data["underground_pipes"]
+    pumps = _data["pumps"]
+    straight_rails = _data["straight_rails"]
+    curved_rails = _data["curved_rails"]
+    train_stops = _data["train_stops"]
+    rail_signals = _data["rail_signals"]
+    rail_chain_signals = _data["rail_chain_signals"]
+    locomotives = _data["locomotives"]
+    cargo_wagons = _data["cargo_wagons"]
+    fluid_wagons = _data["fluid_wagons"]
+    artillery_wagons = _data["artillery_wagons"]
+    logistic_storage_containers = _data["logistic_storage_containers"]
+    logistic_buffer_containers = _data["logistic_buffer_containers"]
+    logistic_request_containers = _data["logistic_request_containers"]
+    roboports = _data["roboports"]
+    lamps = _data["lamps"]
+    arithmetic_combinators = _data["arithmetic_combinators"]
+    decider_combinators = _data["decider_combinators"]
+    constant_combinators = _data["constant_combinators"]
+    power_switches = _data["power_switches"]
+    programmable_speakers = _data["programmable_speakers"]
+    boilers = _data["boilers"]
+    generators = _data["generators"]
+    solar_panels = _data["solar_panels"]
+    accumulators = _data["accumulators"]
+    reactors = _data["reactors"]
+    heat_pipes = _data["heat_pipes"]
+    mining_drills = _data["mining_drills"]
+    offshore_pumps = _data["offshore_pumps"]
+    furnaces = _data["furnaces"]
+    assembling_machines = _data["assembling_machines"]
+    labs = _data["labs"]
+    beacons = _data["beacons"]
+    rocket_silos = _data["rocket_silos"]
+    land_mines = _data["land_mines"]
+    walls = _data["walls"]
+    gates = _data["gates"]
+    turrets = _data["turrets"]
+    radars = _data["radars"]
+    electric_energy_interfaces = _data["electric_energy_interfaces"]
+    linked_containers = _data["linked_containers"]
+    heat_interfaces = _data["heat_interfaces"]
+    linked_belts = _data["linked_belts"]
+    infinity_containers = _data["infinity_containers"]
+    infinity_pipes = _data["infinity_pipes"]
+    burner_generators = _data["burner_generators"]

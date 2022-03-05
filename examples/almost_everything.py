@@ -6,7 +6,7 @@ tested. Originally used as a big testing script, now used for illustration.
 """
 
 import draftsman as factorio
-from draftsman.entity import Direction
+from draftsman.constants import Direction
 
 
 def main():
@@ -44,7 +44,7 @@ def main():
     transport_belt.remove_logistic_condition()
     transport_belt.set_grid_position(1, 4)
     transport_belt.set_enable_disable(False)
-    transport_belt.set_read_hand_contents(True)
+    transport_belt.set_read_contents(True)
     transport_belt.set_read_mode(factorio.ReadMode.PULSE)
     blueprint.add_entity(transport_belt, id = "yellow_belt")
 
@@ -57,7 +57,7 @@ def main():
     fast_belt.set_grid_position(3, 4)
     fast_belt.set_direction(Direction.WEST)
     fast_belt.set_enable_disable(True)
-    fast_belt.set_read_hand_contents(True)
+    fast_belt.set_read_contents(True)
     fast_belt.set_read_mode(factorio.ReadMode.HOLD)
     fast_belt.set_enabled_condition() # Reset enabled condition
     print(fast_belt)
@@ -165,7 +165,7 @@ def main():
     inserter.set_enabled_condition("signal-anything", ">", 0)
     inserter.set_read_hand_contents(True)
     inserter.set_read_mode(factorio.ReadMode.PULSE)
-    inserter.set_circuit_stack_size(True)
+    inserter.set_circuit_stack_size_enabled(True)
     inserter.set_stack_control_signal("signal-S")
     blueprint.add_entity(inserter, id = "e")
 
@@ -529,10 +529,10 @@ def main():
     blueprint.add_entity(furnace)
     furnace.name = "electric-furnace"
     furnace.set_grid_position(4, 53)
-    furnace.set_item_request("effectivity-module-3", 2)
+    furnace.set_item_request("effectivity-module-3", 2) # issues warning
     blueprint.add_entity(furnace)
 
-    assembling_machine = factorio.AssemblingMachine("assembling-machine-1")
+    assembling_machine = factorio.AssemblingMachine("assembling-machine-3")
     assembling_machine.set_grid_position(0, 56)
     assembling_machine.set_recipe("iron-gear-wheel")
     blueprint.add_entity(assembling_machine)
@@ -576,7 +576,7 @@ def main():
     # blueprint.add_circuit_connection("red", "lp", "left_wall")
     # blueprint.add_circuit_connection("green", "rp", "right_wall")
     
-    print(blueprint)
+    #print(blueprint)
     print(blueprint.to_string())
 
 

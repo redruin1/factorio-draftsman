@@ -150,8 +150,8 @@ class ConstantCombinatorTesting(TestCase):
     def test_dimensions(self):
         for name in constant_combinators:
             combinator = ConstantCombinator(name)
-            self.assertEqual(combinator.width, 1)
-            self.assertEqual(combinator.height, 1)
+            self.assertEqual(combinator.tile_width, 1)
+            self.assertEqual(combinator.tile_height, 1)
 
     def test_set_signal(self):
         combinator = ConstantCombinator()

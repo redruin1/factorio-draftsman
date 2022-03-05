@@ -7,9 +7,10 @@ from draftsman.utils import signal_dict
 # TODO: write user-friendly error messages
 
 
-BOOLEAN = Schema(bool)
-INTEGER = Schema(int)
-STRING = Schema(str)
+BOOLEAN = Schema(Or(bool, None))
+INTEGER = Schema(Or(int, None))
+FLOAT = Schema(Or(float, None))
+STRING = Schema(Or(str, None))
 
 
 COLOR = Schema({
@@ -197,6 +198,40 @@ SIGNAL_FILTERS = Schema(
     )
 )
 
+INFINITY_FILTER = Schema({
+    "index": int,
+            "name": str,
+            "count": int,
+            "mode": Or("at-least", "at-most", "exactly"),
+})
+INFINITY_FILTERS = Schema([
+    INFINITY_FILTER
+])
+INFINITY_CONTAINER = Schema({
+    Optional("remove_unfiltered_items"): bool,
+    Optional("filters"): INFINITY_FILTERS
+})
+
+INFINITY_PIPE = Schema({
+    Optional("name"): str,
+    Optional("percentage"): int,
+    Optional("mode"): Or("at-least", "at-most", "exactly", "add", "remove"),
+    Optional("temperature"): int
+})
+
+PARAMETERS = Schema({
+    Optional("playback_volume"): float,
+    Optional("playback_globally"): bool,
+    Optional("allow_polyphony"): bool
+})
+
+ALERT_PARAMETERS = Schema({
+    Optional("show_alert"): bool,
+    Optional("show_on_map"): bool,
+    Optional("icon_signal_id"): SIGNAL_ID,
+    Optional("alert_message"): str
+})
+
 CONTROL_BEHAVIOR = Schema({
     # Circuit condition
     Optional("circuit_enable_disable"): bool,
@@ -215,14 +250,14 @@ CONTROL_BEHAVIOR = Schema({
         Optional("constant"): int
     },
     # Transport Belts
-    # Inserters
-    # Mining Drills
     Optional("circuit_read_hand_contents"): bool,
+    # Mining Drills
     Optional("circuit_read_resources"): bool,
-
+    # Inserters
     Optional("circuit_contents_read_mode"): int,
     Optional("circuit_hand_read_mode"): int,
-
+    # Filter inserters
+    Optional("circuit_mode_of_operation"): int,
     Optional("circuit_set_stack_size"): bool,
     Optional("stack_control_input_signal"): SIGNAL_ID,
     # Train Stops
@@ -249,28 +284,35 @@ CONTROL_BEHAVIOR = Schema({
     Optional("use_colors"): bool,
     # Arithmetic Combinators
     Optional("arithmetic_conditions"): {
+        Optional("constant"): int,
         Optional("first_constant"): int,
         Optional("first_signal"): SIGNAL_ID,
         Optional("operation"): OPERATION,
         Optional("second_constant"): int,
         Optional("second_signal"): SIGNAL_ID,
+        Optional("output_signal"): SIGNAL_ID
     },
     # Decider Combinators
     Optional("decider_conditions"): {
+        Optional("constant"): int,
         Optional("first_constant"): int,
         Optional("first_signal"): SIGNAL_ID,
         Optional("comparator"): COMPARATOR,
         Optional("second_constant"): int,
         Optional("second_signal"): SIGNAL_ID,
+        Optional("output_signal"): SIGNAL_ID,
+        Optional("copy_count_from_input"): bool
     },
     # Constant Combinators
     Optional("filters"): SIGNAL_FILTERS,
     # Programmable Speakers
     Optional("circuit_parameters"): {
         Optional("signal_value_is_pitch"): bool,
-        Optional("instrument_id"): int,
-        Optional("note_id"): int
-    }
+        Optional("instrument_id"): Or(int, str),
+        Optional("note_id"): Or(int, str)
+    },
+    # Accumulators
+    Optional("output_signal"): SIGNAL_ID
 })
 
 TRANSPORT_BELT_CONTROL_BEHAVIOR = Schema({})

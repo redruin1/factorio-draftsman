@@ -14,7 +14,7 @@ class ArtilleryWagonTesting(TestCase):
             artillery_wagon.to_dict(),
             {
                 "name": "artillery-wagon",
-                "position": {"x": 1.0, "y": 3.0}
+                "position": {"x": 1.0, "y": 2.5}
             }
         )
 
@@ -48,5 +48,5 @@ class ArtilleryWagonTesting(TestCase):
     def test_dimensions(self):
         for name in artillery_wagons:
             artillery_wagon = ArtilleryWagon(name)
-            self.assertEqual(artillery_wagon.width, 2)
-            self.assertEqual(artillery_wagon.height, 6)
+            self.assertEqual(artillery_wagon.tile_width, 2)
+            self.assertEqual(artillery_wagon.tile_height, 5)

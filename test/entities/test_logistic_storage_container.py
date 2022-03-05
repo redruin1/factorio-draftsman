@@ -10,8 +10,8 @@ from unittest import TestCase
 class LogisticStorageContainerTesting(TestCase):
     def test_default_constructor(self):
         storage_chest = LogisticStorageContainer()
-        hw = storage_chest.width / 2.0
-        hh = storage_chest.height / 2.0
+        hw = storage_chest.tile_width / 2.0
+        hh = storage_chest.tile_height / 2.0
         self.assertEqual(
             storage_chest.to_dict(),
             {
@@ -133,5 +133,5 @@ class LogisticStorageContainerTesting(TestCase):
     def test_dimensions(self):
         for name in logistic_storage_containers:
             container = LogisticStorageContainer(name)
-            self.assertEqual(container.width, 1)
-            self.assertEqual(container.height, 1)
+            self.assertEqual(container.tile_width, 1)
+            self.assertEqual(container.tile_height, 1)

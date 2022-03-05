@@ -52,5 +52,5 @@ class LocomotiveTesting(TestCase):
     def test_dimensions(self):
         for name in locomotives:
             locomotive = Locomotive(name)
-            self.assertEqual(locomotive.width, 2)
-            self.assertEqual(locomotive.height, 6)
+            self.assertEqual(locomotive.tile_width, 2)
+            self.assertEqual(locomotive.tile_height, 6)

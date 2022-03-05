@@ -1,6 +1,7 @@
 # test_straight_rail.py
 
-from draftsman.entity import StraightRail, straight_rails, Direction
+from draftsman.constants import Direction
+from draftsman.entity import StraightRail, straight_rails
 from draftsman.errors import InvalidEntityID
 
 from unittest import TestCase

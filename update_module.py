@@ -22,6 +22,8 @@ data version.
 # Create a testing suite to test edge cases
 # Make it so that mods can load files from other mods
 
+from email import generator
+from lib2to3.pytree import convert
 from draftsman.errors import (
     MissingMod, 
     IncompatableMod, 
@@ -32,6 +34,7 @@ from draftsman.utils import decode_version, version_string_2_tuple
 import json
 import lupa
 import os
+import pickle
 import re
 import struct
 import zipfile
@@ -525,7 +528,7 @@ def update():
                 load_stage(lua, mod, stage)
 
                 # Reset the included modules so lua reloads files with same name
-                #unload_module_cache()
+                #UNLOAD_SESSION_CACHE()
                 UNLOAD_ENTIRE_CACHE()
 
                 if verbose:
@@ -534,16 +537,403 @@ def update():
                         print("\t", entry)
 
                 # Reset the deletion table
-                # lua.execute("required_in_session = {}")
-                # lua.execute("paths_in_session = {}")
-                
                 RESET_MOD_STATE()
 
     print("hella slick")
 
     data = lua.globals().data
 
-    print(dict(data.raw["container"]["iron-chest"]))
+    def convert_table_to_dict(table):
+        out = dict(table)
+        for key in out:
+            if lupa.lua_type(out[key]) == "table":
+                out[key] = convert_table_to_dict(out[key])
+
+        return out
+
+    groups = convert_table_to_dict(data.raw["item-group"])
+    subgroups = convert_table_to_dict(data.raw["item-subgroup"])
+
+    def to_ordered_dict(elem):
+        sorted_elem = {}
+        for v in elem:
+            sorted_elem[v["name"]] = v
+        return sorted_elem
+
+    # Sort the groups and subgroups dictionaries
+    test_values = sorted(list(groups.values()), key = lambda x: x["order"])
+    # sorted_groups = {}
+    # for v in test_values:
+    #     sorted_groups[v["name"]] = v
+    sorted_groups = to_ordered_dict(test_values)
+
+    test_values = sorted(list(subgroups.values()), key = lambda x: x["order"])
+    # sorted_subgroups = {}
+    # for v in test_values:
+    #     sorted_subgroups[v["name"]] = v
+    sorted_subgroups = to_ordered_dict(test_values)
+
+    index_dict = {}
+
+    # Initialize item groups
+    group_list = list(groups.values())
+    for group in group_list:
+        group["subgroups"] = []
+        index_dict[group["name"]] = group
+
+    # Initialize item subgroups
+    subgroup_list = list(subgroups.values())
+    for subgroup in subgroup_list:
+        subgroup["items"] = []
+        parent_group = index_dict[subgroup["group"]]
+        parent_group["subgroups"].append(subgroup)
+        index_dict[subgroup["name"]] = subgroup
+
+    def add_item(category, item_name):
+        item = category[item_name]
+        # if "flags" in item:
+        #     if "hidden" in item["flags"].values():
+        #         return
+        if "subgroup" in item:
+            subgroup = index_dict[item["subgroup"]]
+        else:
+            subgroup = index_dict["other"]
+        if "order" not in item:
+            item["order"] = ""
+        subgroup["items"].append(item)
+
+
+    def add_items(category):
+        category = convert_table_to_dict(category)
+        for item_name in category:
+            add_item(category, item_name)
+            
+    # Iterate over every item
+    add_items(data.raw["item"])
+    add_items(data.raw["item-with-entity-data"])
+    add_items(data.raw["tool"])
+    add_items(data.raw["ammo"])
+    add_items(data.raw["module"])
+    add_items(data.raw["armor"])
+    add_items(data.raw["gun"])
+    add_items(data.raw["capsule"])
+    # Extras
+    add_items(data.raw["blueprint"])
+    add_items(data.raw["blueprint-book"])
+    add_items(data.raw["upgrade-item"])
+    add_items(data.raw["deconstruction-item"])
+    add_items(data.raw["spidertron-remote"])
+    add_items(data.raw["repair-tool"]) # not an item somehow
+    add_items(data.raw["rail-planner"])
+
+    # Sort everything
+    for i, _ in enumerate(group_list):
+        for j, _ in enumerate(group_list[i]["subgroups"]):
+            group_list[i]["subgroups"][j]["items"] = to_ordered_dict(sorted(group_list[i]["subgroups"][j]["items"], key = lambda x: (x["order"], x["name"])))
+        group_list[i]["subgroups"] = to_ordered_dict(sorted(group_list[i]["subgroups"], key = lambda x: (x["order"], x["name"])))
+    group_list = sorted(group_list, key = lambda x: (x["order"], x["name"]))
+
+    #print(json.dumps(group_list[0]["subgroups"], indent=2))
+
+    #print(json.dumps(sorted_groups, indent=2))
+
+    # Flatten into all_items dictionary
+    sorted_items = {}
+    for group in group_list:
+        for subgroup_name in group["subgroups"]:
+            subgroup = group["subgroups"][subgroup_name]
+            for item_name in subgroup["items"]:
+                item = subgroup["items"][item_name]
+                sorted_items[item["name"]] = item
+
+
+    #print(json.dumps(sorted_subgroups["raw-resource"], indent=2))
+
+    with open("draftsman/data/items.pkl", "wb") as out:
+        items = [sorted_items, sorted_subgroups, sorted_groups]
+        pickle.dump(items, out, pickle.HIGHEST_PROTOCOL)
+
+
+    # Entities
+    entities = {}
+    entities["data"] = {}
+
+    def categorize_entities(entity_table, target_list):
+        entity_dict = convert_table_to_dict(entity_table)
+        for entity_name, entity in entity_dict.items():
+            # extract flags
+            # if entity_name == "big-ship-wreck-1":
+            #     print("\t", entity_name)
+            #     #print(json.dumps(entity, skipkeys=True, indent=2))
+            #     print(entity.keys())
+            flags = {}
+            for _, flag in entity["flags"].items():
+                #print(flag)
+                flags[flag] = True
+            if "not-blueprintable" in flags or "not-deconstructable" in flags: # or "hidden" in flags
+                continue
+            if "order" not in entity:
+                try: 
+                    entity["order"] = sorted_items[entity_name]["order"]
+                except KeyError:
+                    entity["order"] = "zzzzzzzzzzzzzzzzzzzzzzz"
+                #continue
+            entities["data"][entity_name] = entity # TODO sort
+            target_list.append({"name": entity_name, "order": entity["order"]})
+
+    def sort_and_flatten(target_list):
+        sorted_list = sorted(target_list, key = lambda x: (x["order"], x["name"]))
+        for i, x in enumerate(sorted_list):
+            target_list[i] = x["name"]
+
+    #  Chests
+    #  TODO: narrow this category, includes a number of unplacable entities
+    #  (crashed ship parts, factorio logos, etc.)
+    entities["containers"] = []
+    categorize_entities(data.raw["container"], entities["containers"])
+    #entities["containers"] = sort_and_flatten(containers) # do this later
+    #  Storage tanks
+    entities["storage_tanks"] = []
+    categorize_entities(data.raw["storage-tank"], entities["storage_tanks"])
+    sort_and_flatten(entities["storage_tanks"])
+    #  Belts
+    entities["transport_belts"] = []
+    categorize_entities(data.raw["transport-belt"], entities["transport_belts"])
+    sort_and_flatten(entities["transport_belts"])
+    entities["underground_belts"] = []
+    categorize_entities(data.raw["underground-belt"], entities["underground_belts"])
+    sort_and_flatten(entities["underground_belts"])
+    entities["splitters"] = []
+    categorize_entities(data.raw["splitter"], entities["splitters"])
+    sort_and_flatten(entities["splitters"])
+    #  Inserters
+    entities["inserters"] = []
+    entities["filter_inserters"] = []
+    #categorize_entities(data.raw["inserter"], inserters)
+    temp_inserters = convert_table_to_dict(data.raw["inserter"])
+    for inserter_name, inserter in temp_inserters.items():
+        entities["data"][inserter_name] = inserter
+        if "order" not in inserter:
+            inserter["order"] = sorted_items[inserter_name]["order"]
+        inserter_order = inserter["order"]
+        if "filter_count" in inserter:
+            entities["filter_inserters"].append({"name": inserter_name, "order": inserter_order})
+        else:
+            entities["inserters"].append({"name": inserter_name, "order": inserter_order})
+    sort_and_flatten(entities["inserters"])
+    sort_and_flatten(entities["filter_inserters"])
+    #  Loaders
+    entities["loaders"] = []
+    categorize_entities(data.raw["loader"], entities["loaders"])
+    sort_and_flatten(entities["loaders"])
+    #  Electric poles
+    entities["electric_poles"] = []
+    categorize_entities(data.raw["electric-pole"], entities["electric_poles"])
+    sort_and_flatten(entities["electric_poles"])
+    #  Pipes
+    entities["pipes"] = []
+    categorize_entities(data.raw["pipe"], entities["pipes"])
+    sort_and_flatten(entities["pipes"])
+    entities["underground_pipes"] = []
+    categorize_entities(data.raw["pipe-to-ground"], entities["underground_pipes"])
+    sort_and_flatten(entities["underground_pipes"])
+    #  Pumps
+    entities["pumps"] = []
+    categorize_entities(data.raw["pump"], entities["pumps"])
+    sort_and_flatten(entities["pumps"])
+    #  Rails
+    entities["straight_rails"] = []
+    categorize_entities(data.raw["straight-rail"], entities["straight_rails"])
+    sort_and_flatten(entities["straight_rails"])
+    entities["curved_rails"] = []
+    categorize_entities(data.raw["curved-rail"], entities["curved_rails"])
+    sort_and_flatten(entities["curved_rails"])
+    #  Train stops
+    entities["train_stops"] = []
+    categorize_entities(data.raw["train-stop"], entities["train_stops"])
+    sort_and_flatten(entities["train_stops"])
+    #  Rail signals
+    entities["rail_signals"] = []
+    categorize_entities(data.raw["rail-signal"], entities["rail_signals"])
+    sort_and_flatten(entities["rail_signals"])
+    entities["rail_chain_signals"] = []
+    categorize_entities(data.raw["rail-chain-signal"], entities["rail_chain_signals"])
+    sort_and_flatten(entities["rail_chain_signals"])
+    #  Train cars
+    entities["locomotives"] = []
+    categorize_entities(data.raw["locomotive"], entities["locomotives"])
+    sort_and_flatten(entities["locomotives"])
+    entities["cargo_wagons"] = []
+    categorize_entities(data.raw["cargo-wagon"], entities["cargo_wagons"])
+    sort_and_flatten(entities["cargo_wagons"])
+    entities["fluid_wagons"] = []
+    categorize_entities(data.raw["fluid-wagon"], entities["fluid_wagons"])
+    sort_and_flatten(entities["fluid_wagons"])
+    entities["artillery_wagons"] = []
+    categorize_entities(data.raw["artillery-wagon"], entities["artillery_wagons"])
+    sort_and_flatten(entities["artillery_wagons"])
+    #  Logistics containers (Special)
+    #logistic_active_provider_containers = [] # TODO
+    #logisitc_passive_provider_containers = [] # TODO
+    logistic_storage_containers = []
+    logistic_buffer_containers = []
+    logistic_request_containers = []
+    logi_containers = convert_table_to_dict(data.raw["logistic-container"])
+    for container_name, container in logi_containers.items():
+        entities["data"][container_name] = container
+        container_type = container["logistic_mode"]
+        if "order" not in container:
+            container["order"] = sorted_items[container_name]["order"]
+        container_order = container["order"]
+        if container_type == "passive-provider":
+            entities["containers"].append({"name": container_name, "order": container_order})
+        elif container_type == "active-provider":
+            entities["containers"].append({"name": container_name, "order": container_order})
+        elif container_type == "storage":
+            logistic_storage_containers.append({"name": container_name, "order": container_order})
+        elif container_type == "buffer":
+            logistic_buffer_containers.append({"name": container_name, "order": container_order})
+        elif container_type == "requester":
+            logistic_request_containers.append({"name": container_name, "order": container_order})
+    sort_and_flatten(entities["containers"])
+    sort_and_flatten(logistic_storage_containers)
+    entities["logistic_storage_containers"] = logistic_storage_containers
+    sort_and_flatten(logistic_buffer_containers)
+    entities["logistic_buffer_containers"] = logistic_buffer_containers
+    sort_and_flatten(logistic_request_containers)
+    entities["logistic_request_containers"] = logistic_request_containers
+    #  Roboports
+    entities["roboports"] = []
+    categorize_entities(data.raw["roboport"], entities["roboports"])
+    sort_and_flatten(entities["roboports"])
+    #  Lamps
+    entities["lamps"] = []
+    categorize_entities(data.raw["lamp"], entities["lamps"])
+    sort_and_flatten(entities["lamps"])
+    #  Combinators
+    entities["arithmetic_combinators"] = []
+    categorize_entities(data.raw["arithmetic-combinator"], entities["arithmetic_combinators"])
+    sort_and_flatten(entities["arithmetic_combinators"])
+    entities["decider_combinators"] = []
+    categorize_entities(data.raw["decider-combinator"], entities["decider_combinators"])
+    sort_and_flatten(entities["decider_combinators"])
+    entities["constant_combinators"] = []
+    categorize_entities(data.raw["constant-combinator"], entities["constant_combinators"])
+    sort_and_flatten(entities["constant_combinators"])
+    entities["power_switches"] = []
+    categorize_entities(data.raw["power-switch"], entities["power_switches"])
+    sort_and_flatten(entities["power_switches"])
+    entities["programmable_speakers"] = []
+    categorize_entities(data.raw["programmable-speaker"], entities["programmable_speakers"])
+    sort_and_flatten(entities["programmable_speakers"])
+    #  Boilers / Heat exchangers
+    entities["boilers"] = []
+    categorize_entities(data.raw["boiler"], entities["boilers"])
+    sort_and_flatten(entities["boilers"])
+    #  Steam engines / turbines
+    entities["generators"] = []
+    categorize_entities(data.raw["generator"], entities["generators"])
+    sort_and_flatten(entities["generators"])
+    #  Solar panels
+    entities["solar_panels"] = []
+    categorize_entities(data.raw["solar-panel"], entities["solar_panels"])
+    sort_and_flatten(entities["solar_panels"])
+    #  Accumulators
+    entities["accumulators"] = []
+    categorize_entities(data.raw["accumulator"], entities["accumulators"])
+    sort_and_flatten(entities["accumulators"])
+    #  Reactors
+    entities["reactors"] = []
+    categorize_entities(data.raw["reactor"], entities["reactors"])
+    sort_and_flatten(entities["reactors"])
+    #  Heat pipes
+    entities["heat_pipes"] = []
+    categorize_entities(data.raw["heat-pipe"], entities["heat_pipes"])
+    sort_and_flatten(entities["heat_pipes"])
+    #  Mining drills (Burner, Electric, Pumpjack)
+    entities["mining_drills"] = []
+    categorize_entities(data.raw["mining-drill"], entities["mining_drills"])
+    sort_and_flatten(entities["mining_drills"])
+    #  Offshore pumps
+    entities["offshore_pumps"] = []
+    categorize_entities(data.raw["offshore-pump"], entities["offshore_pumps"])
+    sort_and_flatten(entities["offshore_pumps"])
+    #  Furnaces
+    entities["furnaces"] = []
+    categorize_entities(data.raw["furnace"], entities["furnaces"])
+    sort_and_flatten(entities["furnaces"])
+    #  Assembling machines (1-3 + chemical plant, refinery, and centrifuge)
+    entities["assembling_machines"] = []
+    categorize_entities(data.raw["assembling-machine"], entities["assembling_machines"])
+    sort_and_flatten(entities["assembling_machines"])
+    #  Labs
+    entities["labs"] = []
+    categorize_entities(data.raw["lab"], entities["labs"])
+    sort_and_flatten(entities["labs"])
+    #  Beacons
+    entities["beacons"] = []
+    categorize_entities(data.raw["beacon"], entities["beacons"])
+    sort_and_flatten(entities["beacons"])
+    #  Rocket silos
+    entities["rocket_silos"] = []
+    categorize_entities(data.raw["rocket-silo"], entities["rocket_silos"])
+    sort_and_flatten(entities["rocket_silos"])
+    #  Landmines
+    entities["land_mines"] = []
+    categorize_entities(data.raw["land-mine"], entities["land_mines"])
+    sort_and_flatten(entities["land_mines"])
+    #  Walls
+    entities["walls"] = []
+    categorize_entities(data.raw["wall"], entities["walls"])
+    sort_and_flatten(entities["walls"])
+    #  Gates
+    entities["gates"] = []
+    categorize_entities(data.raw["gate"], entities["gates"])
+    sort_and_flatten(entities["gates"])
+    #  Turrets
+    entities["turrets"] = []
+    categorize_entities(data.raw["ammo-turret"], entities["turrets"])
+    categorize_entities(data.raw["electric-turret"], entities["turrets"])
+    categorize_entities(data.raw["fluid-turret"], entities["turrets"])
+    categorize_entities(data.raw["artillery-turret"], entities["turrets"])
+    sort_and_flatten(entities["turrets"])
+    #  Radars
+    entities["radars"] = []
+    categorize_entities(data.raw["radar"], entities["radars"])
+    sort_and_flatten(entities["radars"])
+    #  Electric Energy Interfaces
+    entities["electric_energy_interfaces"] = []
+    categorize_entities(data.raw["electric-energy-interface"], entities["electric_energy_interfaces"])
+    sort_and_flatten(entities["electric_energy_interfaces"])
+    #  Linked Containers
+    entities["linked_containers"] = []
+    categorize_entities(data.raw["linked-container"], entities["linked_containers"])
+    sort_and_flatten(entities["linked_containers"])
+    #  Heat interfaces
+    entities["heat_interfaces"] = []
+    categorize_entities(data.raw["heat-interface"], entities["heat_interfaces"])
+    sort_and_flatten(entities["heat_interfaces"])
+    #  Linked belts
+    entities["linked_belts"] = []
+    categorize_entities(data.raw["linked-belt"], entities["linked_belts"])
+    sort_and_flatten(entities["linked_belts"])
+    #  Infinity containers
+    entities["infinity_containers"] = []
+    categorize_entities(data.raw["infinity-container"], entities["infinity_containers"])
+    sort_and_flatten(entities["infinity_containers"])
+    #  Infinity pipes
+    entities["infinity_pipes"] = []
+    categorize_entities(data.raw["infinity-pipe"], entities["infinity_pipes"])
+    sort_and_flatten(entities["infinity_pipes"])
+    #  Burner generators
+    entities["burner_generators"] = []
+    categorize_entities(data.raw["burner-generator"], entities["burner_generators"])
+    sort_and_flatten(entities["burner_generators"])
+
+    # TODO: sort entities["data"]?
+
+    with open("draftsman/data/entities.pkl", "wb") as out:
+        pickle.dump(entities, out, pickle.HIGHEST_PROTOCOL)
 
     # run the extractor
     lua.execute(file_to_string("draftsman/compatability/extract_data.lua"))

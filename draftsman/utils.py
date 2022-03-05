@@ -5,7 +5,13 @@ from draftsman.data.signals import item_signals, fluid_signals, virtual_signals
 
 import base64
 import json
+import warnings
 import zlib
+
+
+# def clamp(val, min_val, max_val):
+#     return max(min(val, max_val), min_val)
+
 
 def string_2_JSON(string: str) -> dict:
     """
@@ -76,3 +82,7 @@ def get_signal_type(signal_name: str) -> str:
 
 def signal_dict(name: str) -> dict:
     return {"name": name, "type": get_signal_type(name)}
+
+
+def warn_user(message):
+    warnings.warn(message, stacklevel=3)

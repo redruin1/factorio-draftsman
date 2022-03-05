@@ -23,6 +23,7 @@ from draftsman import Blueprint, CargoWagon
 def main():
     # Train contents we want to filter
     # item name: amount of wagon slots
+    # TODO: make sure that this is ordered on prior Python versions
     contents = {
         "stone": 40,
         "coal": 40,

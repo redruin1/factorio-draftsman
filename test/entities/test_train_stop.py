@@ -1,6 +1,7 @@
 # test_train_stop.py
 
-from draftsman.entity import TrainStop, train_stops, Direction
+from draftsman.constants import Direction
+from draftsman.entity import TrainStop, train_stops
 from draftsman.errors import InvalidEntityID, InvalidSignalID
 
 from schema import SchemaError
@@ -150,8 +151,8 @@ class TrainStopTesting(TestCase):
 
     def test_dimensions(self):
         train_stop = TrainStop()
-        self.assertEqual(train_stop.width, 2)
-        self.assertEqual(train_stop.height, 2)
+        self.assertEqual(train_stop.tile_width, 2)
+        self.assertEqual(train_stop.tile_height, 2)
 
     def test_set_read_from_train(self):
         train_stop = TrainStop()

@@ -1,6 +1,7 @@
 # test_splitter.py
 
-from draftsman.entity import Splitter, splitters, Direction
+from draftsman.constants import Direction
+from draftsman.entity import Splitter, splitters
 from draftsman.errors import InvalidEntityID
 
 from schema import SchemaError
@@ -81,5 +82,5 @@ class SplitterTesting(TestCase):
     def test_dimensions(self):
         for name in splitters:
             splitter = Splitter(name)
-            self.assertEqual(splitter.width, 2)
-            self.assertEqual(splitter.height, 1)
+            self.assertEqual(splitter.tile_width, 2)
+            self.assertEqual(splitter.tile_height, 1)

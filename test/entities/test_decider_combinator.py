@@ -1,6 +1,7 @@
 # test_arithmetic_combinator.py
 
-from draftsman.entity import DeciderCombinator, decider_combinators, Direction
+from draftsman.constants import Direction
+from draftsman.entity import DeciderCombinator, decider_combinators
 from draftsman.errors import InvalidEntityID, InvalidSignalID, InvalidConditionOperation
 
 from schema import SchemaError
@@ -138,8 +139,8 @@ class DeciderCombinatorTesting(TestCase):
 
     def test_dimensions(self):
         combinator = DeciderCombinator()
-        self.assertEqual(combinator.width, 1)
-        self.assertEqual(combinator.height, 2)
+        self.assertEqual(combinator.tile_width, 1)
+        self.assertEqual(combinator.tile_height, 2)
 
     def test_set_decider_conditions(self):
         combinator = DeciderCombinator()

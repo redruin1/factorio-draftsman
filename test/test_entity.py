@@ -1,6 +1,8 @@
 # entity.py
 
+from draftsman.constants import *
 from draftsman.entity import *
+from draftsman.errors import *
 
 from schema import SchemaError
 
@@ -95,6 +97,7 @@ class EntityTesting(TestCase):
 
         values["exports"] = None # Make our lives easier
 
+        self.maxDiff = None
         self.assertEqual(
             values,
             {
@@ -102,8 +105,9 @@ class EntityTesting(TestCase):
                 "name": "wooden-chest",
                 "circuit_wire_max_distance": 9,
                 "id": None,
-                "width": 1,
-                "height": 1,
+                "tile_width": 1,
+                "tile_height": 1,
+                "collision_box": {1: {1: -0.35, 2: -0.35}, 2: {1: 0.35, 2: 0.35}},
                 "power_connectable": False,
                 "dual_power_connectable": False,
                 "circuit_connectable": True,
@@ -129,10 +133,6 @@ class EntityTesting(TestCase):
             "<Entity>{'name': 'loader', 'position': {'x': 0.5, 'y': 1.0}}"
         )
 
-    def test_get_aabb(self):
-        # TODO: get the AABB of the entity so we can test if they overlap one
-        # another when we get to blueprint
-        pass
 
 # =============================================================================
 # Mixins (Alphabetical)
@@ -774,7 +774,10 @@ class DirectionalMixinTesting(TestCase):
 ################################################################################
 
 class DoubleGridAlignedMixinTesting(TestCase):
-    pass
+    def test_set_absolute_position(self):
+        rail = StraightRail()
+        with self.assertWarns(UserWarning):
+            rail.set_absolute_position(2.0, 2.0)
 
 ################################################################################
 
@@ -899,34 +902,14 @@ class InfinitySettingsMixinTesting(TestCase):
 
 class InventoryMixinTesting(TestCase):
     def test_bar_index(self):
-        wooden_chest = Container("wooden-chest")
-        with warnings.catch_warnings(record = True) as w:
-            for i in range(wooden_chest.inventory_size + 1):
-                wooden_chest.set_bar_index(i)
-            # Check to make sure 1 warning was issued
-            self.assertEqual(len(w), 1)
-            self.assertEqual(str(w[-1].message), "Bar index not in range [0, 16)")
+        container = Container()
+        with self.assertWarns(UserWarning):
+            for i in range(container.inventory_size + 1):
+                container.set_bar_index(i)
 
-        iron_chest = Container("iron-chest")
-        with warnings.catch_warnings(record = True) as w:
-            for i in range(iron_chest.inventory_size + 1):
-                iron_chest.set_bar_index(i)
-            # Check to make sure 1 warning was issued
-            self.assertEqual(len(w), 1)
-            self.assertEqual(str(w[-1].message), "Bar index not in range [0, 32)")
-
-        steel_chest = Container("steel-chest")
-        with warnings.catch_warnings(record = True) as w:
-            for i in range(steel_chest.inventory_size + 1):
-                steel_chest.set_bar_index(i)
-            # Check to make sure 1 warning was issued
-            self.assertEqual(len(w), 1)
-            self.assertEqual(str(w[-1].message), "Bar index not in range [0, 48)")
-
-        # Try self.assertRaises
         self.assertRaises(
             SchemaError, 
-            steel_chest.set_bar_index, 
+            container.set_bar_index, 
             "lmao a string! Who'd do such a dastardly thing????"
         )
 

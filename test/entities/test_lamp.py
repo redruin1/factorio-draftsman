@@ -46,8 +46,8 @@ class LampTesting(TestCase):
 
     def test_dimensions(self):
         lamp = Lamp()
-        self.assertEqual(lamp.width, 1)
-        self.assertEqual(lamp.height, 1)
+        self.assertEqual(lamp.tile_width, 1)
+        self.assertEqual(lamp.tile_height, 1)
 
     def test_set_use_colors(self):
         lamp = Lamp()

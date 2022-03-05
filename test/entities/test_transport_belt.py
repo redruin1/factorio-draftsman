@@ -1,8 +1,7 @@
 # test_transport_belt.py
 
-from draftsman.entity import (
-    TransportBelt, transport_belts, Direction, ModeOfOperation
-)
+from draftsman.constants import Direction, ModeOfOperation
+from draftsman.entity import TransportBelt, transport_belts
 from draftsman.errors import InvalidEntityID
 
 from schema import SchemaError
@@ -136,5 +135,5 @@ class TransportBeltTesting(TestCase):
     def test_dimensions(self):
         for transport_belt in transport_belts:
             belt = TransportBelt(transport_belt)
-            self.assertEqual(belt.width, 1)
-            self.assertEqual(belt.height, 1)
+            self.assertEqual(belt.tile_width, 1)
+            self.assertEqual(belt.tile_height, 1)
