@@ -1,4 +1,5 @@
 # mixins.py
+# -*- encoding: utf-8 -*-
 
 # TODO: add `set_name` function in entity, so you can change an entity's type but keep its metadata
 # TODO: value check everything + warnings
@@ -11,8 +12,14 @@
 # TODO: make sure that all functions that modify the entity preserve the entity's contents when they throw an error
 # TODO: change all instances of signal_dict to signatures.SIGNAL_ID.validate()
 
+# TODO: issue warnings for modules on recipe changed
+# TODO: issue overlap warnings (though thats gonna have to be on the blueprint side)
+# TODO: verbose warning when setting recipe not available on current machine
+
 from draftsman import signatures
-from draftsman.constants import Direction, ReadMode, ModeOfOperation
+from draftsman.constants import (
+    Direction, ReadMode, ModeOfOperation, MiningDrillReadMode
+)
 from draftsman.errors import (
     InvalidItemID, InvalidSignalID, InvalidWireType, InvalidConnectionSide, 
     EntityNotCircuitConnectable, EntityNotPowerConnectable, InvalidRecipeID,
@@ -51,7 +58,10 @@ def aabb_to_dimensions(aabb):
 
 
 class Entity:
-    def __init__(self, name:str, position:Union[list,dict] = [0, 0], **kwargs):
+    def __init__(self, name, position = [0, 0], **kwargs):
+        # type: (str, Union[list, dict], **dict) -> None
+        """
+        """
         # Create a set of keywords that transfer in to_dict function
         # Since some things we want to keep internal without sending to to_dict
         self.exports = dict()
@@ -71,8 +81,7 @@ class Entity:
             self.set_id(kwargs["id"])
             self.unused_args.pop("id")
 
-        # Populate the entity attributes from data.entities.raw
-        #self._get_entity_attributes()
+        # Collision box (Internal)
         self.collision_box = entities.raw[self.name]["collision_box"]
 
         # Width and Height (Internal)
@@ -112,7 +121,8 @@ class Entity:
             self.unused_args.pop("tags")
         self._add_export("tags", lambda x: x)
 
-    def set_id(self, id: str) -> None:
+    def set_id(self, id):
+        # type: (str) -> None
         """
         Sets the `id` of the entity. 
 
@@ -121,7 +131,8 @@ class Entity:
         """
         self.id = signatures.STRING.validate(id)
 
-    def set_absolute_position(self, x: float, y: float) -> None:
+    def set_absolute_position(self, x, y):
+        # type: (float, float) -> None
         """
         Sets the position of the object, or the position that Factorio uses. On
         most entities, the position of the object is located at the center.
@@ -131,7 +142,8 @@ class Entity:
         grid_y = round(self.position["y"] - self.tile_height / 2.0)
         self.grid_position = [grid_x, grid_y]
 
-    def set_grid_position(self, x: int, y: int) -> None:
+    def set_grid_position(self, x, y):
+        # type: (int, int) -> None
         """
         Sets the grid position of the object, or the tile coordinates of the
         object. Calculates the absolute position based off of the dimensions of
@@ -143,12 +155,14 @@ class Entity:
         absolute_y = self.grid_position[1] + self.tile_height / 2.0
         self.position = {"x": absolute_x, "y": absolute_y}
 
-    def set_tags(self, tags: dict) -> None:
+    def set_tags(self, tags):
+        # type: (dict) -> None
         """
         """
         self.tags = tags
 
-    def set_tag(self, tag: str, value: Any) -> None:
+    def set_tag(self, tag, value):
+        # type: (str, Any) -> None
         """
         """
         if value is None:
@@ -156,7 +170,8 @@ class Entity:
         else:
             self.tags[tag] = value
 
-    def to_dict(self) -> dict:
+    def to_dict(self):
+        # type: () -> dict
         """
         Converts the Entity to its JSON dict representation. The keys returned
         are determined by the contents of the `exports` dictionary and their
@@ -178,7 +193,8 @@ class Entity:
 
         return out
 
-    def _add_export(self, name: str, f: Callable = None) -> None:
+    def _add_export(self, name, f = None):
+        # type: (str, Callable) -> None
         """
         Adds an export key with a criteria function.
 
@@ -211,6 +227,7 @@ class Entity:
     #     pass
 
     def __repr__(self):
+        # type: () -> str
         return "<Entity>" + str(self.to_dict())
 
 
@@ -223,7 +240,8 @@ class DirectionalMixin:
     """ 
     Enables entities to be rotated. 
     """
-    def __init__(self, name: str, position: Union[list, dict] = [0, 0], **kwargs):
+    def __init__(self, name, position = [0, 0], **kwargs):
+        # type: (str, Union[list, dict], **dict) -> None
         super().__init__(name, **kwargs)
 
         # Rotated width and height
@@ -245,7 +263,8 @@ class DirectionalMixin:
             self.set_absolute_position(position["x"], position["y"])
 
 
-    def set_absolute_position(self, x: float, y: float) -> None:
+    def set_absolute_position(self, x, y):
+        # type: (float, float) -> None
         """
         Sets the position of the object, or the position that Factorio uses. On
         most entities, the position of the object is located at the center.
@@ -255,7 +274,8 @@ class DirectionalMixin:
         grid_y = round(self.position["y"] - self.rotated_height / 2.0)
         self.grid_position = [grid_x, grid_y]
 
-    def set_grid_position(self, x: int, y: int) -> None:
+    def set_grid_position(self, x, y):
+        # type: (int, int) -> None
         """
         Sets the grid position of the object, or the tile coordinates of the
         object. Calculates the absolute position based off of the dimensions of
@@ -267,7 +287,8 @@ class DirectionalMixin:
         absolute_y = self.grid_position[1] + self.rotated_height / 2.0
         self.position = {"x": absolute_x, "y": absolute_y}
 
-    def set_direction(self, direction: int) -> None:
+    def set_direction(self, direction):
+        # type: (Direction) -> None
         """
         """
         self.direction = signatures.DIRECTION.validate(direction)
@@ -287,7 +308,8 @@ class EightWayDirectionalMixin:
     """
     Enables entities to be rotated across 8 directions.
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
         # Rotated width and height
@@ -300,7 +322,8 @@ class EightWayDirectionalMixin:
             self.unused_args.pop("direction")
         self._add_export("direction", lambda x: x != 0)
 
-    def set_absolute_position(self, x: float, y: float) -> None:
+    def set_absolute_position(self, x, y):
+        # type: (float, float) -> None
         """
         Sets the position of the object, or the position that Factorio uses. On
         most entities, the position of the object is located at the center.
@@ -310,7 +333,8 @@ class EightWayDirectionalMixin:
         grid_y = round(self.position["y"] - self.rotated_height / 2.0)
         self.grid_position = [grid_x, grid_y]
 
-    def set_grid_position(self, x: int, y: int) -> None:
+    def set_grid_position(self, x, y):
+        # type: (int, int) -> None
         """
         Sets the grid position of the object, or the tile coordinates of the
         object. Calculates the absolute position based off of the dimensions of
@@ -322,7 +346,8 @@ class EightWayDirectionalMixin:
         absolute_y = self.grid_position[1] + self.rotated_height / 2.0
         self.position = {"x": absolute_x, "y": absolute_y}
 
-    def set_direction(self, direction: int) -> None:
+    def set_direction(self, direction):
+        # type: (Direction) -> None
         """
         """
         # TODO: add warnings if out of [0, 7] range
@@ -339,7 +364,8 @@ class OrientationMixin:
     """ 
     Used in trains and wagons to specify their direction. 
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
         self.orientation = 0.0
@@ -348,7 +374,8 @@ class OrientationMixin:
             self.unused_args.pop("orientation")
         self._add_export("orientation", lambda x: x != 0)
 
-    def set_orientation(self, orientation: float) -> None:
+    def set_orientation(self, orientation):
+        # type: (float) -> None
         """
         Sets the orientation of the train car. (0.0 -> 1.0)
         """
@@ -359,7 +386,8 @@ class InventoryMixin:
     """
     Enables the entity to have inventory control.
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
         self.inventory_size = entities.raw[self.name]["inventory_size"]
@@ -370,7 +398,8 @@ class InventoryMixin:
             self.unused_args.pop("bar")
         self._add_export("bar", lambda x: x is not None)
 
-    def set_bar_index(self, index: int) -> None:
+    def set_bar_index(self, index):
+        # type: (int) -> None
         """
         Sets the inventory limiting bar.
         """
@@ -384,7 +413,8 @@ class InventoryFilterMixin:
     """
     Allows inventories to set content filters. Used in cargo wagons.
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
         self.inventory = {}
@@ -393,14 +423,16 @@ class InventoryFilterMixin:
             self.unused_args.pop("inventory")
         self._add_export("inventory", lambda x: len(x) != 0)
 
-    def set_inventory(self, inventory: dict) -> None:
+    def set_inventory(self, inventory):
+        # type: (dict) -> None
         """
         Sets the entire inventory configuration for the cargo wagon.
         """
         # Validate filter schema
         self.inventory = signatures.INVENTORY_FILTER.validate(inventory)
 
-    def set_inventory_filter(self, index: int, item: str) -> None:
+    def set_inventory_filter(self, index, item):
+        # type: (int, str) -> None
         """
         Sets the item filter at location `index` to `name`. If `name` is set to
         `None` the item filter at that location is removed.
@@ -430,7 +462,8 @@ class InventoryFilterMixin:
         # If no entry with the same index was found
         self.inventory["filters"].append({"index": index + 1, "name": item})
 
-    def set_inventory_filters(self, filters: list) -> None: 
+    def set_inventory_filters(self, filters):
+        # type: (list) -> None
         """
         Sets the item filters for the inserter or loader.
         """
@@ -454,7 +487,8 @@ class InventoryFilterMixin:
             else: # dict
                 self.set_inventory_filter(i, filters[i]["name"])
 
-    def set_bar_index(self, index: int) -> None:
+    def set_bar_index(self, index):
+        # type: (int) -> None
         """
         Sets the bar of the train's inventory. Setting it to `None` removes the
         parameter from the configuration.
@@ -471,7 +505,8 @@ class IOTypeMixin:
     """
     Gives an entity a Input/Output type. Used on underground belts and loaders.
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
         
         self.type = "input" # Default
@@ -480,7 +515,8 @@ class IOTypeMixin:
             self.unused_args.pop("type")
         self._add_export("type", lambda x: x is not None and x != "input")
 
-    def set_io_type(self, type: str):
+    def set_io_type(self, type):
+        # type: (str) -> None
         """
         Sets whether or not this entity is configured as 'input' or 'output'.
         """
@@ -492,7 +528,8 @@ class IOTypeMixin:
 
 
 class PowerConnectableMixin:
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
         self.power_connectable = True
@@ -510,12 +547,14 @@ class PowerConnectableMixin:
             self.unused_args.pop("neighbours")
         self._add_export("neighbours", lambda x: len(x) != 0)
 
-    def set_neighbours(self, neighbours: list) -> None:
+    def set_neighbours(self, neighbours):
+        # type: (list) -> None
         """
         """
         self.neighbours = signatures.NEIGHBOURS.validate(neighbours)
 
-    def add_power_connection(self, target: Entity, side: int = 1) -> None:
+    def add_power_connection(self, target, side = 1):
+        # type: (Entity, int) -> None
         """
         Adds a power wire between this entity and another power-connectable one.
         """
@@ -564,7 +603,8 @@ class PowerConnectableMixin:
                 if self.id not in target.neighbours:
                     target.neighbours.append(self.id)
 
-    def remove_power_connection(self, target: Entity, side: int = 1) -> None:
+    def remove_power_connection(self, target, side = 1):
+        # type: (Entity, int) -> None
         """
         """
 
@@ -605,7 +645,8 @@ class CircuitConnectableMixin:
     """
     Enables the entity to be connected to circuit networks.
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
         self.circuit_connectable = True
@@ -627,12 +668,15 @@ class CircuitConnectableMixin:
             self.unused_args.pop("connections")
         self._add_export("connections", lambda x: len(x) != 0)
 
-    def set_connections(self, connections: dict) -> None:
+    def set_connections(self, connections):
+        # type: (dict) -> None
         """
         """
         self.connections = signatures.CONNECTIONS.validate(connections)
 
-    def add_circuit_connection(self, color: str, target: Entity, source_side: int = 1, target_side: int = 1) -> None:
+    def add_circuit_connection(self, color, target, source_side = 1, 
+                               target_side = 1):
+        # type: (str, Entity, int, int) -> None
         """
         Adds a connection between this entity and `other_entity`
 
@@ -710,7 +754,9 @@ class CircuitConnectableMixin:
         if entry not in current_color:
             current_color.append(entry)
 
-    def remove_circuit_connection(self, color: str, target: Entity, source_side: int = 1, target_side: int = 1) -> None:
+    def remove_circuit_connection(self, color, target, source_side = 1,
+                                  target_side = 1):
+        # type: (str, Entity, int, int) -> None
         """
         Removes a connection point between this entity and `target`.
         """
@@ -768,7 +814,8 @@ class ControlBehaviorMixin:
     """
     Enables the entity to specify control behavior.
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
         self.control_behavior = {}
@@ -778,49 +825,46 @@ class ControlBehaviorMixin:
 
         self._add_export("control_behavior", lambda x: len(x) != 0)
 
-    def set_control_behavior(self, behavior: dict):
+    def set_control_behavior(self, behavior):
+        # type: (dict) -> None
         """
         """
         self.control_behavior = signatures.CONTROL_BEHAVIOR.validate(behavior)
 
-    def _set_condition(self, condition_name: str, a: str, op: str, b: Union[str, int]):
+    def _set_condition(self, condition_name, a, op, b):
+        # type: (str, str, str, Union[str, int]) -> None
+        """
+        """
         self.control_behavior[condition_name] = {}
         condition = self.control_behavior[condition_name]
-        # Check the inputs
-        # A
-        # if a is None:
-        #     pass # Keep the first signal empty
-        # elif isinstance(a, str):
-        #     condition["first_signal"] = signal_dict(a)
-        # elif isinstance(a, int):
-        #     raise TypeError("normal conditions cannot have a constant first")
-        # else:
-        #     raise TypeError("`a` is neither 'str' nor 'None'")
 
+        # Check the inputs
         a = signatures.SIGNAL_ID.validate(a)
         op = signatures.COMPARATOR.validate(op)
         b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
 
         # A
         if a is None:
-            pass
+            condition.pop("first_signal", None)
         else:
             condition["first_signal"] = a
-        
-        # TODO: handle the case where the user inputs '≥'
-        # Consider the case where someone is pulling the comparator from a 
-        # blueprint string that already exists; it would be way easier to simply
-        # insert it into the function without having to convert it back and 
-        # forth
 
         # op
-        condition["comparator"] = op
+        if op is None:
+            condition.pop("comparator", None)
+        else:
+            condition["comparator"] = op
 
         # B
-        if isinstance(b, dict):
+        if b is None:
+            condition.pop("second_signal", None)
+            condition.pop("constant", None)
+        elif isinstance(b, dict):
             condition["second_signal"] = b
+            condition.pop("constant", None)
         else: # int
             condition["constant"] = b
+            condition.pop("second_signal", None)
 
 
 class EnableDisableMixin: # (ControlBehaviorMixin)
@@ -828,7 +872,8 @@ class EnableDisableMixin: # (ControlBehaviorMixin)
     Allows the entity to control whether or not it's circuit condition affects
     its operation. Usually used with CircuitConditionMixin
     """
-    def set_enable_disable(self, value: bool) -> None:
+    def set_enable_disable(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -842,10 +887,12 @@ class CircuitConditionMixin: # (ControlBehaviorMixin)
     Allows the Entity to have an circuit enable condition. Used in Pumps, 
     Inserters, Belts, etc.
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
-    def set_enabled_condition(self, a: str = None, op: str = "<", b: Union[str, int] = 0):
+    def set_enabled_condition(self, a = None, op = "<", b = 0):
+        # type: (str, str, Union[str, int]) -> None
         """
         """
         self._set_condition("circuit_condition", a, op, b)
@@ -857,10 +904,12 @@ class CircuitConditionMixin: # (ControlBehaviorMixin)
 
 
 class LogisticConditionMixin: # (ControlBehaviorMixin)
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
-    def set_connect_to_logistic_network(self, value: bool) -> None:
+    def set_connect_to_logistic_network(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -870,7 +919,8 @@ class LogisticConditionMixin: # (ControlBehaviorMixin)
         else:
             raise TypeError("`value` must be either 'bool' or 'None'")
 
-    def set_logistic_condition(self, a: str = None, op: str = "<", b: Union[str, int] = 0):
+    def set_logistic_condition(self, a = None, op = "<", b = 0):
+        # type: (str, str, Union[str, int]) -> None
         """
         """
         self._set_condition("logistic_condition", a, op, b)
@@ -882,10 +932,12 @@ class LogisticConditionMixin: # (ControlBehaviorMixin)
 
 
 class CircuitReadContentsMixin: # (ControlBehaviorMixin)
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
-    def set_read_contents(self, value: bool) -> None:
+    def set_read_contents(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -895,7 +947,8 @@ class CircuitReadContentsMixin: # (ControlBehaviorMixin)
         else:
             raise TypeError("`value` must be either 'bool' or 'None'")
 
-    def set_read_mode(self, mode: ReadMode) -> None:
+    def set_read_mode(self, mode):
+        # type: (ReadMode) -> None
         """
         """
         if mode is None:
@@ -907,10 +960,12 @@ class CircuitReadContentsMixin: # (ControlBehaviorMixin)
 
 
 class CircuitReadHandMixin: # (ControlBehaviorMixin)
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
-    def set_read_hand_contents(self, value: bool) -> None:
+    def set_read_hand_contents(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -920,7 +975,8 @@ class CircuitReadHandMixin: # (ControlBehaviorMixin)
         else:
             raise TypeError("`value` must be either 'bool' or 'None'")
 
-    def set_read_mode(self, mode: ReadMode) -> None:
+    def set_read_mode(self, mode):
+        # type: (ReadMode) -> None
         """
         """
         if mode is None:
@@ -932,10 +988,12 @@ class CircuitReadHandMixin: # (ControlBehaviorMixin)
 
 
 class CircuitReadResourceMixin: # (ControlBehaviorMixin)
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
-    def set_read_resources(self, value: bool) -> None:
+    def set_read_resources(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -943,7 +1001,8 @@ class CircuitReadResourceMixin: # (ControlBehaviorMixin)
         else:
             self.control_behavior["circuit_read_resources"] = signatures.BOOLEAN.validate(value)
 
-    def set_read_mode(self, mode: ReadMode):
+    def set_read_mode(self, mode):
+        # type: (MiningDrillReadMode) -> None
         """
         """
         # TODO: make ReadMode MiningDrillReadMode
@@ -956,7 +1015,8 @@ class CircuitReadResourceMixin: # (ControlBehaviorMixin)
 class StackSizeMixin: # (ControlBehaviorMixin)
     """
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
         self.override_stack_size = None
@@ -965,13 +1025,15 @@ class StackSizeMixin: # (ControlBehaviorMixin)
             self.unused_args.pop("override_stack_size")
         self._add_export("override_stack_size", lambda x: x is not None)
 
-    def set_stack_size_override(self, stack_size: int):
+    def set_stack_size_override(self, stack_size):
+        # type: (int) -> None
         """
         Sets an inserter's stack size override.
         """
         self.override_stack_size = signatures.INTEGER.validate(stack_size)
 
-    def set_circuit_stack_size_enabled(self, enabled: bool):
+    def set_circuit_stack_size_enabled(self, enabled):
+        # type: (bool) -> None
         """
         Set if the inserter's stack size is controlled by circuit signal.
         """
@@ -980,7 +1042,8 @@ class StackSizeMixin: # (ControlBehaviorMixin)
         else:
             self.control_behavior["circuit_set_stack_size"] = signatures.BOOLEAN.validate(enabled)
 
-    def set_stack_control_signal(self, signal: str):
+    def set_stack_control_signal(self, signal):
+        # type: (str) -> None
         """
         Specify the stack size input signal for the inserter if enabled.
         """
@@ -996,10 +1059,12 @@ class StackSizeMixin: # (ControlBehaviorMixin)
 class ModeOfOperationMixin: # (ControlBehaviorMixin)
     """
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
-    def set_mode_of_operation(self, mode: ModeOfOperation):
+    def set_mode_of_operation(self, mode):
+        # type: (ModeOfOperation) -> None
         """
         """
         if mode is None or mode == ModeOfOperation.ENABLE_DISABLE:
@@ -1013,10 +1078,12 @@ class ModeOfOperationMixin: # (ControlBehaviorMixin)
 class ReadRailSignalMixin: # (ControlBehaviorMixin)
     """
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
-    def set_red_output_signal(self, signal: str) -> None:
+    def set_red_output_signal(self, signal):
+        # type: (str) -> None
         """
         """
         if signal is None:
@@ -1024,7 +1091,8 @@ class ReadRailSignalMixin: # (ControlBehaviorMixin)
         else:
             self.control_behavior["red_output_signal"] = signal_dict(signal)
 
-    def set_yellow_output_signal(self, signal: str) -> None:
+    def set_yellow_output_signal(self, signal):
+        # type: (str) -> None
         """
         """
         if signal is None:
@@ -1032,7 +1100,8 @@ class ReadRailSignalMixin: # (ControlBehaviorMixin)
         else:
             self.control_behavior["yellow_output_signal"] = signal_dict(signal)
 
-    def set_green_output_signal(self, signal: str) -> None:
+    def set_green_output_signal(self, signal):
+        # type: (str) -> None
         """
         """
         if signal is None:
@@ -1042,7 +1111,8 @@ class ReadRailSignalMixin: # (ControlBehaviorMixin)
 
 
 class FiltersMixin:
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
         self.filters = None
@@ -1051,7 +1121,8 @@ class FiltersMixin:
             self.unused_args.pop("filters")
         self._add_export("filters", lambda x: x is not None)
 
-    def set_item_filter(self, index: int, item: str) -> None:
+    def set_item_filter(self, index, item):
+        # type: (int, str) -> None
         """
         """
         if self.filters is None:
@@ -1075,7 +1146,8 @@ class FiltersMixin:
         # Otherwise its unique; add to list
         self.filters.append({"index": index + 1, "name": item})
 
-    def set_item_filters(self, filters: list) -> None:
+    def set_item_filters(self, filters):
+        # type: (list) -> None
         """
         Sets the item filters for the inserter or loader.
         """
@@ -1098,7 +1170,8 @@ class FiltersMixin:
 
 
 class RecipeMixin:
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
         # List of all recipes that this machine can make
@@ -1111,7 +1184,8 @@ class RecipeMixin:
             self.unused_args.pop("recipe")
         self._add_export("recipe", lambda x: x is not None)
 
-    def set_recipe(self, recipe: str):
+    def set_recipe(self, recipe):
+        # type: (str) -> None
         """
         """
         if recipe is None:
@@ -1127,7 +1201,8 @@ class RequestFiltersMixin:
     Used to allow Logistics Containers to request items from the Logisitics
     network.
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
         # TODO: handle internal input format for set_request_filters()
@@ -1138,7 +1213,8 @@ class RequestFiltersMixin:
             self.unused_args.pop("request_filters")
         self._add_export("request_filters", lambda x: x is not None)
 
-    def set_request_filter(self, index: int, item: str, count: int = 0) -> None:
+    def set_request_filter(self, index, item, count = 0):
+        # type: (int, str, int) -> None
         """
         """
 
@@ -1170,7 +1246,8 @@ class RequestFiltersMixin:
             "index": index+1, "name": item, "count": count
         })
 
-    def set_request_filters(self, filters: list) -> None:
+    def set_request_filters(self, filters):
+        # type: (list) -> None
         """
         """
 
@@ -1198,7 +1275,8 @@ class RequestItemsMixin: # TODO: rename to RequestModulesMixin
 
     Think an assembling machine that needs speed modules inside of it
     """
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
         # Get the total number of module slots
@@ -1216,7 +1294,8 @@ class RequestItemsMixin: # TODO: rename to RequestModulesMixin
             self.unused_args.pop("items")
         self._add_export("items", lambda x: len(x) != 0)
 
-    def set_item_requests(self, items: dict) -> None:
+    def set_item_requests(self, items):
+        # type: (dict) -> None
         """
         """
         if items is None:
@@ -1227,6 +1306,7 @@ class RequestItemsMixin: # TODO: rename to RequestModulesMixin
                 self.set_item_request(name, amount)
 
     def set_item_request(self, item, amount):
+        # type: (str, int) -> None
         """
         """
         # TODO: check if entity can accept productivity modules
@@ -1234,7 +1314,7 @@ class RequestItemsMixin: # TODO: rename to RequestModulesMixin
         # machine; you have to retroactively issue a warning if the new recipe 
         # cannot use prod modules
 
-        if item not in item_signals:
+        if item not in item_signals: # TODO: maybe items.all instead?
             raise InvalidSignalID(item)
 
         if amount is None:
@@ -1275,7 +1355,8 @@ class RequestItemsMixin: # TODO: rename to RequestModulesMixin
 
 
 class ColorMixin:
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
         self.color = None
@@ -1285,19 +1366,26 @@ class ColorMixin:
             self.unused_args.pop("color")
         self._add_export("color", lambda x: x is not None)
 
-    def set_color(self, r: float, g: float, b: float, a: float = 1.0) -> None:
+    def set_color(self, r = 0.0, g = 0.0, b = 0.0, a = 1.0):
+        # type: (float, float, float, float) -> None
         """
+        TODO: add support for 0-255 range division
+        "If at least one value > 1.0, then interpret as range 0-255"
         """
-        self.color = signatures.COLOR.validate({"r": r, "g": g, "b": b, "a": a})
+        if r is None:
+            self.color = None
+        else:
+            self.color = signatures.COLOR.validate({"r":r,"g":g,"b":b,"a":a})
 
-    def remove_color(self):
+    def remove_color(self): # TODO delete
         """
         """
         self.color = None
 
 
 class DoubleGridAlignedMixin:
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name, **kwargs):
+        # type: (str, **dict) -> None
         super().__init__(name, **kwargs)
 
         self.double_grid_aligned = True
@@ -1309,7 +1397,8 @@ class DoubleGridAlignedMixin:
             elif isinstance(position, dict): # pragma: no branch
                 self.set_absolute_position(position["x"], position["y"])
 
-    def set_absolute_position(self, x: float, y: float) -> None:
+    def set_absolute_position(self, x, y):
+        # type: (float, float) -> None
         """
         Overwritten
         """
@@ -1323,7 +1412,8 @@ class DoubleGridAlignedMixin:
                       "grid; entity's position will be cast from {} to {} when "
                       "imported".format(self.grid_position, cast_position))
 
-    def set_grid_position(self, x: int, y: int) -> None:
+    def set_grid_position(self, x, y):
+        # type: (int, int) -> None
         """
         """
         super().set_grid_position(x, y)
@@ -1334,4 +1424,3 @@ class DoubleGridAlignedMixin:
             warn_user("Double grid-aligned entity is not placed along chunk "
                       "grid; entity's position will be cast from {} to {} when "
                       "imported".format(self.grid_position, cast_position))
-

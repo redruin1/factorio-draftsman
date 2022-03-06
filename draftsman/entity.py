@@ -61,7 +61,8 @@ from draftsman.prototypes.infinity_pipe import InfinityPipe, infinity_pipes
 from draftsman.prototypes.burner_generator import BurnerGenerator, burner_generators
 
 
-def new_entity(name:str, **kwargs) -> Entity:
+def new_entity(name, **kwargs):
+    # type: (str, **dict) -> Entity
     """
     Factory function for creating a new Entity. The class used will be based
     on the entity's name, so `new_entity("wooden-chest")` will return a 

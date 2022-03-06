@@ -96,6 +96,9 @@ env.bak/
 venv.bak/
 Scripts/
 pyvenv.cfg
+# Python 2.7 stuff
+libs/ 
+Include/
 
 # Spyder project settings
 .spyderproject

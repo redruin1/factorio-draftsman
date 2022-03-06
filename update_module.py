@@ -22,13 +22,18 @@ data version.
 # Create a testing suite to test edge cases
 # Make it so that mods can load files from other mods
 
-from email import generator
-from lib2to3.pytree import convert
+from __future__ import print_function
+
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
 from draftsman.errors import (
     MissingMod, 
     IncompatableMod, 
     IncorrectModVersion
 )
+from draftsman._factorio_version import __factorio_version_info__
 from draftsman.utils import decode_version, version_string_2_tuple
 
 import json
@@ -55,7 +60,7 @@ class DepNode:
         self.set_elements(*deps)
 
     def set_elements(self, *deps):
-        self.deps = [*deps]
+        self.deps = [deps]
         self.deps.sort()
 
     def __lt__(self, other):
@@ -172,14 +177,18 @@ def get_mod_settings():
     mod_settings = {}
     with open("factorio-mods/mod-settings.dat", mode="rb") as mod_settings_dat:
         # header
-        version_num = int.from_bytes(mod_settings_dat.read(8), "little")
+        #version_num = int.from_bytes(mod_settings_dat.read(8), "little")
+        version_num = struct.unpack("<q", mod_settings_dat.read(8))[0]
         #print(version_num)
         version = decode_version(version_num)
         #print(version)
-        header_flag = bool(int.from_bytes(mod_settings_dat.read(1), "little", signed=False))
+        #header_flag = bool(int.from_bytes(mod_settings_dat.read(1), "little", signed=False))
+        header_flag = bool(struct.unpack("<?", mod_settings_dat.read(1))[0])
         #print(header_flag)
         # TODO version is not quite right, seems to be backwards?
-        #assert version == __factorio_version_info__ and not header_flag
+        print(version[::-1], __factorio_version_info__)
+        assert version[::-1] == __factorio_version_info__
+        assert not header_flag
         mod_settings = get_data(mod_settings_dat)
         
         if verbose:
@@ -328,8 +337,8 @@ def update():
 
             # NOTE: we assume the filename version and the internal json version are the same
             m = mod_archive_regex.match(mod_obj)
-            mod_name = m[1]
-            external_mod_version = m[2]
+            mod_name = m.group(1)
+            external_mod_version = m.group(2)
 
             files = zipfile.ZipFile(mod_location, mode="r")
 

@@ -1,4 +1,6 @@
 # signatures.py
+# -*- encoding: utf-8 -*-
+
 
 from schema import Schema, Use, Optional, Or, And
 from draftsman.utils import signal_dict

@@ -1,2 +1,4 @@
 schema >= 0.7.5
 lupa >= 1.10
+enum34 # 2.7 only
+typing # 2.7 only

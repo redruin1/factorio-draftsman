@@ -13,12 +13,14 @@ from typing import Union
 
 
 class Signal():
-    """ Signal object. Holds a SignalID `signal` and a 32 bit int `count`."""
-    def __init__(self, id: Union[SignalID, str], count: int):
+    """ Signal object. Holds a SignalID `signal` and an int `count`."""
+    def __init__(self, id, count):
+        # type: (Union[SignalID, str], int) -> None
         self.change_id(id)
         self.count = count
 
-    def change_id(self, id: Union[SignalID, str]) -> None:
+    def change_id(self, id):
+        # type: (Union[SignalID, str]) -> None
         """
         Swaps the ID of the signal to something else and changes aliases.
         """
@@ -32,7 +34,8 @@ class Signal():
         #self.name = self.id.name
         #self.type= self.id.type
 
-    def to_dict(self) -> dict:
+    def to_dict(self):
+        # type: () -> dict
         """
         Converts Signal class into dictionary. Used in blueprint string 
         conversion.
@@ -42,4 +45,5 @@ class Signal():
         )
 
     def __repr__(self):
+        # type: () -> str
         return "Signal" + str(self.to_dict())

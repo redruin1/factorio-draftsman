@@ -13,7 +13,8 @@ import zlib
 #     return max(min(val, max_val), min_val)
 
 
-def string_2_JSON(string: str) -> dict:
+def string_2_JSON(string):
+    # type: (str) -> dict
     """
     Decodes a Factorio Blueprint string to a readable JSON Dict.
     """
@@ -23,7 +24,8 @@ def string_2_JSON(string: str) -> dict:
         raise MalformedBlueprintString
 
 
-def JSON_2_string(JSON: dict) -> str:
+def JSON_2_string(JSON):
+    # type: (dict) -> str
     """
     Encodes a JSON dict to a Factorio-readable blueprint string.
     """
@@ -32,15 +34,16 @@ def JSON_2_string(JSON: dict) -> str:
         .encode('utf-8'), level=9)).decode('utf-8')
 
 
-def encode_version(major: int, minor: int, 
-                   patch: int = 0, dev_ver: int = 0) -> int:
+def encode_version(major, minor, patch = 0, dev_ver = 0):
+    # type: (int, int, int, int) -> int
     """
     Converts version components to version number.
     """
     return (major << 48) | (minor << 32) | (patch << 16) | (dev_ver)
 
 
-def decode_version(number: int) -> tuple:
+def decode_version(number):
+    # type: (int) -> tuple(int, int, int, int)
     """
     Converts version number to version components.
     """
@@ -52,6 +55,7 @@ def decode_version(number: int) -> tuple:
 
 
 def version_string_2_tuple(version_string):
+    # type: (str) -> tuple
     """
     Converts a version string to a tuple.
     """
@@ -59,6 +63,7 @@ def version_string_2_tuple(version_string):
 
 
 def version_tuple_2_string(version_tuple):
+    # type: (tuple) -> str
     """
     Converts a version tuple to a string.
     """
@@ -66,7 +71,8 @@ def version_tuple_2_string(version_tuple):
     return ".".join(str(x) for x in version_tuple)
 
 
-def get_signal_type(signal_name: str) -> str:
+def get_signal_type(signal_name):
+    # type: (str) -> str
     """
     Returns the type of the signal based on its ID string.
     """
@@ -80,7 +86,8 @@ def get_signal_type(signal_name: str) -> str:
         raise InvalidSignalID("'" + str(signal_name) + "'")
 
 
-def signal_dict(name: str) -> dict:
+def signal_dict(name):
+    # type: (str) -> dict
     return {"name": name, "type": get_signal_type(name)}
 
 
