@@ -1,30 +1,12 @@
 # signal.py
 
-from draftsman.signal import (
-    SignalID, Signal, signal_IDs
-)
-from draftsman.errors import InvalidSignalID
+from draftsman.signal import Signal
+from draftsman.error import InvalidSignalError
 from draftsman.utils import get_signal_type, signal_dict
 
+import draftsman.data.signals as signals
+
 from unittest import TestCase
-
-class SignalIDTesting(TestCase):
-    def test_constructor(self):
-        signal_id = SignalID(name = "test-name", type = "example")
-        self.assertEqual(signal_id.name, "test-name")
-        self.assertEqual(signal_id.type, "example")
-
-    def test_to_dict(self):
-        self.assertEqual(
-            signal_IDs["signal-0"].to_dict(),
-            {"name": "signal-0", "type": "virtual"}
-        )
-
-    def test_repr(self):
-        self.assertEqual(
-            str(signal_IDs["signal-0"]),
-            "SignalID{'name': 'signal-0', 'type': 'virtual'}"
-        )
 
 
 class SignalUtilsTesting(TestCase):
@@ -45,7 +27,7 @@ class SignalUtilsTesting(TestCase):
                 signal_type
             )
         # Invalid name
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             get_signal_type("something invalid")
 
     def test_signal_dict(self):
@@ -59,7 +41,7 @@ class SignalUtilsTesting(TestCase):
                 }
             )
         # Invalid name
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             signal_dict("wrong")
 
 
@@ -67,31 +49,23 @@ class SignalTesting(TestCase):
     def test_constructor(self):
         # String arg
         signal = Signal("transport-belt", 100)
-        self.assertEqual(signal.id.name, "transport-belt")
-        self.assertEqual(signal.id.type, "item")
-        self.assertEqual(signal.count, 100)
-        # SignalID arg
-        signal = Signal(signal_IDs["transport-belt"], 100)
-        self.assertEqual(signal.id.name, "transport-belt")
-        self.assertEqual(signal.id.type, "item")
+        self.assertEqual(signal.name, "transport-belt")
+        self.assertEqual(signal.type, "item")
         self.assertEqual(signal.count, 100)
         # Invalid arg
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             signal = Signal(False, 200)
 
     def test_change_id(self):
         # String arg
         signal = Signal("transport-belt", -25)
-        signal.change_id("fast-transport-belt")
-        self.assertEqual(signal.id.name, "fast-transport-belt")
-        self.assertEqual(signal.count, -25)
-        # SignalID arg
-        signal.change_id(signal_IDs["express-transport-belt"])
-        self.assertEqual(signal.id.name, "express-transport-belt")
+        signal.set_name("fast-transport-belt")
+        self.assertEqual(signal.name, "fast-transport-belt")
+        self.assertEqual(signal.type, "item")
         self.assertEqual(signal.count, -25)
         # Invalid arg
-        with self.assertRaises(InvalidSignalID):
-            signal.change_id(False)
+        with self.assertRaises(InvalidSignalError):
+            signal.set_name(False)
 
     def test_to_dict(self):
         signal = Signal("transport-belt", 2000000000)
@@ -121,5 +95,5 @@ class SignalTesting(TestCase):
         signal = Signal("transport-belt", 100)
         self.assertEqual(
             str(signal),
-            "Signal{'count': 100, 'signal': {'name': 'transport-belt', 'type': 'item'}}"
+            "Signal{'signal': {'name': 'transport-belt', 'type': 'item'}, 'count': 100}"
         )

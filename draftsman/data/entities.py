@@ -5,7 +5,7 @@ import pickle
 
 with open("draftsman/data/entities.pkl", "rb") as inp:
     _data = pickle.load(inp)
-    raw = _data["data"]
+    raw = _data["raw"]
     containers = _data["containers"]
     storage_tanks = _data["storage_tanks"]
     transport_belts = _data["transport_belts"]
@@ -27,8 +27,10 @@ with open("draftsman/data/entities.pkl", "rb") as inp:
     cargo_wagons = _data["cargo_wagons"]
     fluid_wagons = _data["fluid_wagons"]
     artillery_wagons = _data["artillery_wagons"]
+    logistic_passive_containers = _data["logistic_passive_containers"]
+    logistic_active_containers  = _data["logistic_active_containers"]
     logistic_storage_containers = _data["logistic_storage_containers"]
-    logistic_buffer_containers = _data["logistic_buffer_containers"]
+    logistic_buffer_containers  = _data["logistic_buffer_containers"]
     logistic_request_containers = _data["logistic_request_containers"]
     roboports = _data["roboports"]
     lamps = _data["lamps"]

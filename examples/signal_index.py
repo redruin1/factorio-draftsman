@@ -9,7 +9,7 @@ mods) will result in fewer than 256 signals.
 """
 
 # TODO: change the code so that it works with mods
-# TODO: change the constant combinator bit to a Cell
+# TODO: change the constant combinator bit to a Cell(?)
 
 from draftsman.blueprint import Blueprint
 from draftsman.constants import Direction
@@ -134,7 +134,7 @@ def main():
     blueprint.add_circuit_connection("red", "stabilizer", "decider", 2, 2)
     blueprint.add_circuit_connection("red", "decider", "output_pole", 2, 1)
     
-    print(blueprint)
+    #print(blueprint)
     print(blueprint.to_string())
 
 

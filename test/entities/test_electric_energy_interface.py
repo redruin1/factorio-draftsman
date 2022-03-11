@@ -1,25 +1,17 @@
 # test_electric_energy_interface.py
 
 from draftsman.entity import ElectricEnergyInterface, electric_energy_interfaces
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class ElectricEnergyInterfaceTesting(TestCase):
-    def test_default_constructor(self):
-        interface = ElectricEnergyInterface()
-        self.assertEqual(
-            interface.to_dict(),
-            {
-                "name": "electric-energy-interface",
-                "position": {"x": 1.0, "y": 1.0}
-            }
-        )
-
     def test_contstructor_init(self):
         interface = ElectricEnergyInterface(
+            "electric-energy-interface",
             buffer_size = 10000,
             power_production = 10000,
             power_usage = 0
@@ -35,10 +27,10 @@ class ElectricEnergyInterfaceTesting(TestCase):
             }
         )
 
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             ElectricEnergyInterface(unused_keyword = "whatever")
 
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             ElectricEnergyInterface("this is not an electric energy interface")
 
     def test_set_buffer_size(self):

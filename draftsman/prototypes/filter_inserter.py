@@ -5,10 +5,11 @@ from draftsman.prototypes.mixins import (
     CircuitConditionMixin, EnableDisableMixin, LogisticConditionMixin,
     ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
 )
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import filter_inserters
+
+import warnings
 
 
 class FilterInserter(FiltersMixin, StackSizeMixin, CircuitReadHandMixin, 
@@ -18,11 +19,9 @@ class FilterInserter(FiltersMixin, StackSizeMixin, CircuitReadHandMixin,
                      DirectionalMixin, Entity):
     """
     """
-    def __init__(self, name: str = filter_inserters[0], **kwargs):
-        if name not in filter_inserters:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(FilterInserter, self).__init__(name, **kwargs)
+    def __init__(self, name = filter_inserters[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(FilterInserter, self).__init__(name, filter_inserters, **kwargs)
 
         self.filter_mode = None
         if "filter_mode" in kwargs:
@@ -30,9 +29,14 @@ class FilterInserter(FiltersMixin, StackSizeMixin, CircuitReadHandMixin,
         self._add_export("filter_mode", lambda x: x is not None)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )
 
-    def set_filter_mode(self, mode: str) -> None:
+    def set_filter_mode(self, mode):
+        # type: (str) -> None
         """
         Sets the filter mode. Can be either 'whitelist' or 'blacklist'.
         """

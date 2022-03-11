@@ -1,25 +1,14 @@
 # test_logistic_request_container.py
 
 from draftsman.entity import LogisticRequestContainer, logistic_request_containers
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class LogisticRequestContainerTesting(TestCase):
-    def test_default_constructor(self):
-        request_chest = LogisticRequestContainer()
-        hw = request_chest.tile_width / 2.0
-        hh = request_chest.tile_height / 2.0
-        self.assertEqual(
-            request_chest.to_dict(),
-            {
-                "name": logistic_request_containers[0],
-                "position": {"x": hw, "y": hh}
-            }
-        )
-
     def test_constructor_init(self):
         request_chest = LogisticRequestContainer("logistic-chest-requester", 
             position = [15, 3], bar = 5, 
@@ -90,14 +79,14 @@ class LogisticRequestContainerTesting(TestCase):
         # )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             LogisticRequestContainer("logistic-chest-requester", 
                 position = [0, 0], invalid_keyword = "100"
             )
         
         # Errors
         # Raises InvalidEntityID when not in containers
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             LogisticRequestContainer("this is not a logistics storage chest")
         
         # Raises schema errors when any of the associated data is incorrect
@@ -136,9 +125,3 @@ class LogisticRequestContainerTesting(TestCase):
             self.assertEqual(container.dual_power_connectable, False)
             self.assertEqual(container.circuit_connectable, True)
             self.assertEqual(container.dual_circuit_connectable, False)
-
-    def test_dimensions(self):
-        for name in logistic_request_containers:
-            container = LogisticRequestContainer(name)
-            self.assertEqual(container.tile_width, 1)
-            self.assertEqual(container.tile_height, 1)

@@ -1,23 +1,14 @@
 # test_rail_signal.py
 
 from draftsman.entity import RailSignal, rail_signals
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class RailSignalTesting(TestCase):
-    def test_default_constructor(self):
-        rail_signal = RailSignal()
-        self.assertEqual(
-            rail_signal.to_dict(),
-            {
-                "name": "rail-signal",
-                "position": {"x": 0.5, "y": 0.5}
-            }
-        )
-    
     def test_constructor_init(self):
         rail_signal = RailSignal(
             "rail-signal",
@@ -101,20 +92,14 @@ class RailSignalTesting(TestCase):
         )
         
         # Warnings:
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             RailSignal("rail-signal", invalid_keyword = "whatever")
         # Warn if the rail signal is not placed next to rail
         # TODO (Complex)
 
         # Errors:
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             RailSignal("this is not a rail signal")
-
-    def test_dimensions(self):
-        for name in rail_signals:
-            rail_signal = RailSignal(name)
-            self.assertEqual(rail_signal.tile_width, 1)
-            self.assertEqual(rail_signal.tile_height, 1)
 
     def test_read_signal(self):
         rail_signal = RailSignal()

@@ -5,21 +5,24 @@ from draftsman.prototypes.mixins import (
     EnableDisableMixin, LogisticConditionMixin, ControlBehaviorMixin,
     CircuitConnectableMixin, DirectionalMixin, Entity
 )
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import mining_drills
+
+import warnings
 
 
 class MiningDrill(RequestItemsMixin, CircuitReadResourceMixin, 
                   CircuitConditionMixin, EnableDisableMixin, 
                   LogisticConditionMixin, ControlBehaviorMixin, 
-                  CircuitConnectableMixin, DirectionalMixin, Entity):
-    def __init__(self, name: str = mining_drills[0], **kwargs):
-        if name not in mining_drills:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(MiningDrill, self).__init__(name, **kwargs)
+                  CircuitConnectableMixin, DirectionalMixin, Entity, object):
+    def __init__(self, name = mining_drills[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(MiningDrill, self).__init__(name, mining_drills, **kwargs)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )

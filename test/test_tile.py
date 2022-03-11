@@ -1,7 +1,7 @@
 # tile.py
 
 from draftsman.tile import Tile
-from draftsman.errors import InvalidTileID
+from draftsman.error import InvalidTileError
 
 from unittest import TestCase
 
@@ -18,21 +18,21 @@ class TileTesting(TestCase):
         self.assertEqual(tile.x, 0)
         self.assertEqual(tile.y, 0)
         # Invalid name
-        with self.assertRaises(InvalidTileID):
+        with self.assertRaises(InvalidTileError):
             tile = Tile("weeeeee")
 
-    def test_change_name(self):
+    def test_set_name(self):
         tile = Tile("hazard-concrete-left")
         self.assertEqual(tile.name, "hazard-concrete-left")
         self.assertEqual(tile.x, 0)
         self.assertEqual(tile.y, 0)
-        tile.change_name("refined-hazard-concrete-left")
+        tile.set_name("refined-hazard-concrete-left")
         self.assertEqual(tile.name, "refined-hazard-concrete-left")
         self.assertEqual(tile.x, 0)
         self.assertEqual(tile.y, 0)
         # Invalid name
-        with self.assertRaises(InvalidTileID):
-            tile.change_name("weeeeee")
+        with self.assertRaises(InvalidTileError):
+            tile.set_name("weeeeee")
 
     def test_set_position(self):
         tile = Tile("landfill", 0, 0)

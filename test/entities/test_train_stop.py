@@ -2,23 +2,17 @@
 
 from draftsman.constants import Direction
 from draftsman.entity import TrainStop, train_stops
-from draftsman.errors import InvalidEntityID, InvalidSignalID
+from draftsman.error import InvalidEntityError, InvalidSignalError
+from draftsman.warning import (
+    DraftsmanWarning, RailAlignmentWarning, DirectionWarning
+)
 
 from schema import SchemaError
 
 from unittest import TestCase
 
-class TrainStopTesting(TestCase):
-    def test_default_constructor(self):
-        train_stop = TrainStop()
-        self.assertEqual(
-            train_stop.to_dict(),
-            {
-                "name": "train-stop",
-                "position": {"x": 1.0, "y": 1.0}
-            }
-        )
 
+class TrainStopTesting(TestCase):
     def test_constructor_init(self):
         train_stop = TrainStop(
             "train-stop", 
@@ -131,28 +125,23 @@ class TrainStopTesting(TestCase):
         )
 
         # Warnings:
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             TrainStop("train-stop", invalid_keyword = "whatever")
         # if entity is not on a grid pos / 2, then warn the user of the incoming
         # shift
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(RailAlignmentWarning):
             TrainStop("train-stop", position = [1, 1])
         # Incorrect direction
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DirectionWarning):
             TrainStop("train-stop", direction = Direction.NORTHWEST)
 
         # Errors
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             TrainStop("this is not a curved rail")
         with self.assertRaises(SchemaError):
             TrainStop(station = 100)
         with self.assertRaises(SchemaError):
             TrainStop(color = "wrong")
-
-    def test_dimensions(self):
-        train_stop = TrainStop()
-        self.assertEqual(train_stop.tile_width, 2)
-        self.assertEqual(train_stop.tile_height, 2)
 
     def test_set_read_from_train(self):
         train_stop = TrainStop()
@@ -202,7 +191,7 @@ class TrainStopTesting(TestCase):
         train_stop.set_train_stopped_signal(None)
         self.assertEqual(train_stop.control_behavior, {})
 
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             train_stop.set_train_stopped_signal("wrong signal")
 
     def test_set_trains_limit(self):
@@ -237,7 +226,7 @@ class TrainStopTesting(TestCase):
         train_stop.set_trains_limit_signal(None)
         self.assertEqual(train_stop.control_behavior, {})
 
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             train_stop.set_trains_limit_signal("wrong signal")
 
     def test_set_read_trains_count(self):
@@ -272,5 +261,5 @@ class TrainStopTesting(TestCase):
         train_stop.set_trains_count_signal(None)
         self.assertEqual(train_stop.control_behavior, {})
 
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             train_stop.set_trains_count_signal("wrong signal")

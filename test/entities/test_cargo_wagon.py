@@ -1,23 +1,14 @@
 # test_cargo_wagon.py
 
 from draftsman.entity import CargoWagon, cargo_wagons
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class CargoWagonTesting(TestCase):
-    def test_default_constructor(self):
-        cargo_wagon = CargoWagon()
-        self.assertEqual(
-            cargo_wagon.to_dict(),
-            {
-                "name": "cargo-wagon",
-                "position": {"x": 1.0, "y": 2.5}
-            }
-        )
-
     def test_constructor_init(self):
         cargo_wagon = CargoWagon(
             "cargo-wagon",
@@ -94,21 +85,15 @@ class CargoWagonTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             CargoWagon("cargo-wagon", unused_keyword = "whatever")
         # Warn if the cargo wagon is not on a rail (close enough to one?)
         # TODO (Complex)
 
         # Errors
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             CargoWagon("this is not a cargo-wagon")
         with self.assertRaises(SchemaError):
             CargoWagon("cargo-wagon", orientation = "wrong")
         with self.assertRaises(SchemaError):
             CargoWagon("cargo-wagon", inventory = "incorrect")
-
-    def test_dimensions(self):
-        for name in cargo_wagons:
-            cargo_wagon = CargoWagon(name)
-            self.assertEqual(cargo_wagon.tile_width, 2)
-            self.assertEqual(cargo_wagon.tile_height, 5)

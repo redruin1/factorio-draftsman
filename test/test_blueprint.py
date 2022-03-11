@@ -7,14 +7,15 @@ from draftsman._factorio_version import (
 from draftsman.blueprint import (
     Blueprint, BlueprintBook, get_blueprintable_from_string
 )
-from draftsman.errors import (
-    MalformedBlueprintString, IncorrectBlueprintType, InvalidSignalID, 
-    DuplicateIDException
+from draftsman.error import (
+    MalformedBlueprintStringError, IncorrectBlueprintTypeError, 
+    InvalidSignalError, DuplicateIDError
 )
-from draftsman.data.tiles import tile_names
 from draftsman.utils import (
     string_2_JSON, JSON_2_string, encode_version, decode_version, 
 )
+
+import draftsman.data.tiles as tiles
 
 from schema import SchemaError
 
@@ -118,7 +119,7 @@ class BlueprintUtilsTesting(TestCase):
         )
         self.assertIsInstance(blueprintable, BlueprintBook)
         # Invalid format
-        with self.assertRaises(MalformedBlueprintString):
+        with self.assertRaises(MalformedBlueprintStringError):
             blueprintable = get_blueprintable_from_string(
                 "0lmaothisiswrong"
             )
@@ -171,12 +172,12 @@ class BlueprintTesting(TestCase):
         self.assertIs(blueprint["tiles"],     blueprint.blueprint["tiles"])
         self.assertIs(blueprint["schedules"], blueprint.blueprint["schedules"])
         # Valid format, but blueprint book string
-        with self.assertRaises(IncorrectBlueprintType):
+        with self.assertRaises(IncorrectBlueprintTypeError):
             blueprint = Blueprint(
                 "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
             )
         # Invalid format
-        with self.assertRaises(MalformedBlueprintString):
+        with self.assertRaises(MalformedBlueprintStringError):
             blueprint = get_blueprintable_from_string(
                 "0lmaothisiswrong"
             )
@@ -192,12 +193,12 @@ class BlueprintTesting(TestCase):
         self.assertIs(blueprint["tiles"],     blueprint.blueprint["tiles"])
         self.assertIs(blueprint["schedules"], blueprint.blueprint["schedules"])
         # Valid format, but blueprint book string
-        with self.assertRaises(IncorrectBlueprintType):
+        with self.assertRaises(IncorrectBlueprintTypeError):
             blueprint = Blueprint(
                 "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
             )
         # Invalid format
-        with self.assertRaises(MalformedBlueprintString):
+        with self.assertRaises(MalformedBlueprintStringError):
             blueprint = get_blueprintable_from_string(
                 "0lmaothisiswrong"
             )
@@ -216,7 +217,7 @@ class BlueprintTesting(TestCase):
         self.assertIs(blueprint["schedules"], blueprint.blueprint["schedules"])
         test_file.close()
         # Valid format, but blueprint book
-        with self.assertRaises(IncorrectBlueprintType):
+        with self.assertRaises(IncorrectBlueprintTypeError):
             test_file = StringIO()
             test_file.write(
                 "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
@@ -224,7 +225,7 @@ class BlueprintTesting(TestCase):
             test_file.seek(0)
             blueprint.load_from_file(test_file)
         # Invalid blueprint
-        with self.assertRaises(MalformedBlueprintString):
+        with self.assertRaises(MalformedBlueprintStringError):
             test_file = StringIO()
             test_file.write("0lmaothisiswrong")
             test_file.seek(0)
@@ -351,11 +352,11 @@ class BlueprintTesting(TestCase):
             ]
         )
         # Incorrect Signal Name
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             blueprint.set_icons("wrong!")
 
         # Incorrect Signal Type
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             blueprint.set_icons(123456, "uh-oh")
 
     def test_set_version(self):
@@ -442,12 +443,12 @@ class BlueprintTesting(TestCase):
 
     def test_tile_duplicate_ids(self):
         # Go through every tile
-        for tile in tile_names:
+        for tile in tiles.raw:
             blueprint = Blueprint()
             # Create a random string so there's no bias
             letters = string.ascii_letters
             randomID = ''.join(random.choice(letters) for _ in range(10))
-            with self.assertRaises(DuplicateIDException):
+            with self.assertRaises(DuplicateIDError):
                 blueprint.add_tile(tile, 0, 1, randomID)
                 blueprint.add_tile(tile, 1, 0, randomID)
 

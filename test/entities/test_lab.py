@@ -1,26 +1,17 @@
 # test_lab.py
 
 from draftsman.entity import Lab, labs
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from unittest import TestCase
 
 class LabTesting(TestCase):
-    def test_default_constructor(self):
-        lab = Lab()
-        self.assertEqual(
-            lab.to_dict(),
-            {
-                "name": "lab",
-                "position": {"x": 1.5, "y": 1.5}
-            }
-        )
-
     def test_contstructor_init(self):
         lab = Lab()
 
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             Lab(unused_keyword = "whatever")
 
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             Lab("this is not a lab")

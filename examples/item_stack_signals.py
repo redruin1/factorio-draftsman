@@ -24,15 +24,21 @@ def main():
     x = 0
     y = 0
     combinator = ConstantCombinator(direction = Direction.SOUTH)
+
     # Iterate over every item in order:
     for item in items.all:
+        #print(items.all[item])
+        if "flags" in items.all[item]:
+            if "hidden" in items.all[item]["flags"].values():
+                continue
         # Keep track of how many signals we've gone through
         count += 1
+        print(item)
         # Write the stack size signal
         stack_size = items.all[item]["stack_size"]
         combinator.set_signal(index, item, stack_size)
         index += 1
-        # Once we exceed the current combinator, place it and make another
+        # Once we exceed the current combinator, place it and reset
         if index == 20:
             blueprint.add_entity(combinator, id = str(x) + "_" + str(y))
             i += 1
@@ -61,6 +67,7 @@ def main():
                 pass
 
     print(count) # This is mostly for debugging
+    #print(blueprint)
     print(blueprint.to_string())
 
 

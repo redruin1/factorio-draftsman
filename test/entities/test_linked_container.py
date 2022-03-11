@@ -1,23 +1,14 @@
 # test_linked_container.py
 
 from draftsman.entity import LinkedContainer, linked_containers
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class LinkedContainerTesting(TestCase):
-    def test_default_constructor(self):
-        container = LinkedContainer()
-        self.assertEqual(
-            container.to_dict(),
-            {
-                "name": "linked-chest",
-                "position": {"x": 0.5, "y": 0.5}
-            }
-        )
-
     def test_contstructor_init(self):
         container = LinkedContainer(
             link_id = 1000
@@ -25,18 +16,18 @@ class LinkedContainerTesting(TestCase):
         self.assertEqual(
             container.to_dict(),
             {
-                "name": "linked-chest",
-                "position": {"x": 0.5, "y": 0.5},
+                "name": container.name,
+                "position": container.position,
                 "link_id": 1000
             }
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             LinkedContainer(unused_keyword = "whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             LinkedContainer("this is not a linked container")
         with self.assertRaises(SchemaError):
             LinkedContainer(link_id = "incorrect")

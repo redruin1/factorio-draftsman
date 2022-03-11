@@ -5,11 +5,13 @@ from draftsman.prototypes.mixins import (
     LogisticConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin,
     DoubleGridAlignedMixin, DirectionalMixin, Entity
 )
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user, signal_dict
 import draftsman.signatures as signatures
+from draftsman.utils import signal_dict
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import train_stops
+
+import warnings
 
 
 class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin, 
@@ -18,11 +20,9 @@ class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin,
                 DirectionalMixin, Entity):
     """
     """
-    def __init__(self, name: str = train_stops[0], **kwargs):
-        if name not in train_stops:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(TrainStop, self).__init__(name, **kwargs)
+    def __init__(self, name = train_stops[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(TrainStop, self).__init__(name, train_stops, **kwargs)
 
         self.station = None
         if "station" in kwargs:
@@ -37,19 +37,26 @@ class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin,
         self._add_export("manual_trains_limit", lambda x: x is not None)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )
 
-    def set_station_name(self, name: str) -> None:
+    def set_station_name(self, name):
+        # type: (str) -> None
         """
         """
         self.station = signatures.STRING.validate(name)
 
-    def set_manual_trains_limit(self, amount: int) -> None:
+    def set_manual_trains_limit(self, amount):
+        # type: (int) -> None
         """
         """
         self.manual_trains_limit = signatures.INTEGER.validate(amount)
 
-    def set_read_from_train(self, value: bool) -> None:
+    def set_read_from_train(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -58,7 +65,8 @@ class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin,
             value = signatures.BOOLEAN.validate(value)
             self.control_behavior["read_from_train"] = value
 
-    def set_read_stopped_train(self, value: bool) -> None:
+    def set_read_stopped_train(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -73,7 +81,8 @@ class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin,
         #     # Set default signal
         #     self.control_behavior["train_stopped_signal"] = signal_dict("signal-T")
 
-    def set_train_stopped_signal(self, signal: str) -> None:
+    def set_train_stopped_signal(self, signal):
+        # type: (str) -> None
         """
         """
         if signal is None:
@@ -87,7 +96,8 @@ class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin,
         #     # Enable train signal reading
         #     self.control_behavior["read_stopped_train"] = True
 
-    def set_trains_limit(self, value: bool) -> None:
+    def set_trains_limit(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -96,7 +106,8 @@ class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin,
             value =  signatures.BOOLEAN.validate(value)
             self.control_behavior["set_trains_limit"] = value
 
-    def set_trains_limit_signal(self, signal: str) -> None:
+    def set_trains_limit_signal(self, signal):
+        # type: (str) -> None
         """
         """
         if signal is None:
@@ -104,7 +115,8 @@ class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin,
         else:
             self.control_behavior["trains_limit_signal"] = signal_dict(signal)
 
-    def set_read_trains_count(self, value: bool) -> None:
+    def set_read_trains_count(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -113,7 +125,8 @@ class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin,
             value = signatures.BOOLEAN.validate(value)
             self.control_behavior["read_trains_count"] = value
 
-    def set_trains_count_signal(self, signal: str) -> None:
+    def set_trains_count_signal(self, signal):
+        # type: (str) -> None
         """
         """
         if signal is None:

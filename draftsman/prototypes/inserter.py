@@ -5,10 +5,11 @@ from draftsman.prototypes.mixins import (
     CircuitConditionMixin, EnableDisableMixin, LogisticConditionMixin,
     ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
 )
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import inserters
+
+import warnings
 
 
 class Inserter(StackSizeMixin, CircuitReadHandMixin, ModeOfOperationMixin, 
@@ -17,11 +18,13 @@ class Inserter(StackSizeMixin, CircuitReadHandMixin, ModeOfOperationMixin,
                CircuitConnectableMixin, DirectionalMixin, Entity):
     """
     """
-    def __init__(self, name: str = inserters[0], **kwargs):
-        if name not in inserters:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(Inserter, self).__init__(name, **kwargs)
+    def __init__(self, name = inserters[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(Inserter, self).__init__(name, inserters, **kwargs)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )

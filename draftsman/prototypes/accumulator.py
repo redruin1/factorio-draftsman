@@ -3,23 +3,28 @@
 from draftsman.prototypes.mixins import (
     ControlBehaviorMixin, CircuitConnectableMixin, Entity
 )
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user, signal_dict
+from draftsman.utils import signal_dict
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import accumulators
 
+import warnings
+
 
 class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
-    def __init__(self, name: str = accumulators[0], **kwargs):
-        if name not in accumulators:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(Accumulator, self).__init__(name, **kwargs)
+    def __init__(self, name = accumulators[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(Accumulator, self).__init__(name, accumulators, **kwargs)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )
 
-    def set_output_signal(self, signal: str) -> None:
+    def set_output_signal(self, signal):
+        # type: (str) -> None
         """
         """
         if signal is None:

@@ -1,7 +1,7 @@
 # entity.py
 
 from draftsman.prototypes.mixins import Entity
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
 
 from draftsman.prototypes.container import Container, containers
 from draftsman.prototypes.storage_tank import StorageTank, storage_tanks
@@ -24,6 +24,8 @@ from draftsman.prototypes.locomotive import Locomotive, locomotives
 from draftsman.prototypes.cargo_wagon import CargoWagon, cargo_wagons
 from draftsman.prototypes.fluid_wagon import FluidWagon, fluid_wagons
 from draftsman.prototypes.artillery_wagon import ArtilleryWagon, artillery_wagons
+from draftsman.prototypes.logistic_passive_container import LogisticPassiveContainer, logistic_passive_containers
+from draftsman.prototypes.logistic_active_container import LogisticActiveContainer, logistic_active_containers
 from draftsman.prototypes.logistic_storage_container import LogisticStorageContainer, logistic_storage_containers
 from draftsman.prototypes.logistic_buffer_container import LogisticBufferContainer, logistic_buffer_containers
 from draftsman.prototypes.logistic_request_container import LogisticRequestContainer, logistic_request_containers
@@ -122,6 +124,10 @@ def new_entity(name, **kwargs):
         return FluidWagon(name, **kwargs)
     if name in artillery_wagons:
         return ArtilleryWagon(name, **kwargs)
+    if name in logistic_passive_containers:
+        return LogisticPassiveContainer(name, **kwargs)
+    if name in logistic_active_containers:
+        return LogisticActiveContainer(name, **kwargs)
     if name in logistic_storage_containers:
         return LogisticStorageContainer(name, **kwargs)
     if name in logistic_buffer_containers:
@@ -193,4 +199,4 @@ def new_entity(name, **kwargs):
     if name in burner_generators:
         return BurnerGenerator(name, **kwargs)
     
-    raise InvalidEntityID(name)
+    raise InvalidEntityError(name)

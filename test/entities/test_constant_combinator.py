@@ -1,23 +1,14 @@
 # test_constant_combinator.py
 
 from draftsman.entity import ConstantCombinator, constant_combinators
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class ConstantCombinatorTesting(TestCase):
-    def test_default_constructor(self):
-        combinator = ConstantCombinator()
-        self.assertEqual(
-            combinator.to_dict(),
-            {
-                "name": "constant-combinator",
-                "position": {"x": 0.5, "y": 0.5}
-            }
-        )
-
     def test_constructor_init(self):
         combinator = ConstantCombinator(
             "constant-combinator",
@@ -132,11 +123,11 @@ class ConstantCombinatorTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             ConstantCombinator(unused_keyword = "whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             ConstantCombinator("this is not a constant combinator")
 
     def test_flags(self):
@@ -146,12 +137,6 @@ class ConstantCombinatorTesting(TestCase):
             self.assertEqual(combinator.dual_power_connectable, False)
             self.assertEqual(combinator.circuit_connectable, True)
             self.assertEqual(combinator.dual_circuit_connectable, False)
-
-    def test_dimensions(self):
-        for name in constant_combinators:
-            combinator = ConstantCombinator(name)
-            self.assertEqual(combinator.tile_width, 1)
-            self.assertEqual(combinator.tile_height, 1)
 
     def test_set_signal(self):
         combinator = ConstantCombinator()

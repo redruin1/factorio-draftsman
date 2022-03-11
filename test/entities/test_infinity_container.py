@@ -1,23 +1,14 @@
 # test_infinity_container.py
 
 from draftsman.entity import InfinityContainer, infinity_containers
-from draftsman.errors import InvalidEntityID, InvalidItemID
+from draftsman.error import InvalidEntityError, InvalidItemError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class InfinityContainerTesting(TestCase):
-    def test_default_constructor(self):
-        container = InfinityContainer()
-        self.assertEqual(
-            container.to_dict(),
-            {
-                "name": "infinity-chest",
-                "position": {"x": 0.5, "y": 0.5}
-            }
-        )
-
     def test_constructor_init(self):
         container = InfinityContainer(
             infinity_settings = {
@@ -52,11 +43,11 @@ class InfinityContainerTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             InfinityContainer(unused_keyword = "whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             InfinityContainer("this is not an infinity container")
 
     def test_set_infinity_settings(self):
@@ -214,7 +205,7 @@ class InfinityContainerTesting(TestCase):
             container.set_infinity_filter("incorrect", "iron-ore")
         with self.assertRaises(SchemaError):
             container.set_infinity_filter(0, SchemaError)
-        with self.assertRaises(InvalidItemID):
+        with self.assertRaises(InvalidItemError):
             container.set_infinity_filter(0, "signal-A")
         with self.assertRaises(SchemaError):
             container.set_infinity_filter(0, "iron-ore", SchemaError)

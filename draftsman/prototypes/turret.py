@@ -1,18 +1,21 @@
 # turret.py
 
 from draftsman.prototypes.mixins import DirectionalMixin, Entity
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import turrets
 
+import warnings
+
 
 class Turret(DirectionalMixin, Entity):
-    def __init__(self, name: str = turrets[0], **kwargs):
-        if name not in turrets:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(Turret, self).__init__(name, **kwargs)
+    def __init__(self, name = turrets[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(Turret, self).__init__(name, turrets, **kwargs)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )

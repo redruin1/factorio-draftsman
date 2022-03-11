@@ -3,31 +3,36 @@
 from draftsman.prototypes.mixins import (
     ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
 )
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
-from typing import Union
 import draftsman.signatures as signatures
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import arithmetic_combinators
+
+from typing import Union
+import warnings
 
 
 class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin, 
                            DirectionalMixin, Entity):
     """
     """
-    def __init__(self, name: str = arithmetic_combinators[0], **kwargs):
-        if name not in arithmetic_combinators:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super().__init__(name, **kwargs)
+    def __init__(self, name = arithmetic_combinators[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(ArithmeticCombinator, self).__init__(
+            name, arithmetic_combinators, **kwargs
+        )
 
         self.dual_circuit_connectable = True
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )
 
-    def set_arithmetic_conditions(self, a:Union[str,int] = None, op:str = "*", 
-                                  b:Union[str,int] = 0, out:str = None) -> None:
+    def set_arithmetic_conditions(self, a = None, op = "*", b = 0, out = None):
+        # type: (Union[str, int], str, Union[str, int], str) -> None
         """
         """
         # TODO: `first_constant`/`second_constant` is incorrect; if there's only
@@ -99,6 +104,7 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
     #     pass # TODO
 
     def remove_arithmetic_conditions(self):
+        # type: () -> None
         """
         """
         # TODO: remove

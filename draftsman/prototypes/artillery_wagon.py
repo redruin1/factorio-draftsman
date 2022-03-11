@@ -1,20 +1,23 @@
 # artillery_wagon.py
 
 from draftsman.prototypes.mixins import OrientationMixin, Entity
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import artillery_wagons
+
+import warnings
 
 
 class ArtilleryWagon(OrientationMixin, Entity):
     """
     """
-    def __init__(self, name: str = artillery_wagons[0], **kwargs):
-        if name not in artillery_wagons:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(ArtilleryWagon, self).__init__(name, **kwargs)
+    def __init__(self, name = artillery_wagons[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(ArtilleryWagon, self).__init__(name, artillery_wagons, **kwargs)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )

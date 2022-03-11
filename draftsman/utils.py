@@ -1,10 +1,14 @@
 # utils.py
 
-from draftsman.errors import MalformedBlueprintString, InvalidSignalID
-from draftsman.data.signals import item_signals, fluid_signals, virtual_signals
+# TODO: get rid of warn_user
+
+from draftsman.error import MalformedBlueprintStringError, InvalidSignalError
+
+import draftsman.data.signals as signals
 
 import base64
 import json
+import math
 import warnings
 import zlib
 
@@ -21,7 +25,7 @@ def string_2_JSON(string):
     try:
         return json.loads(zlib.decompress(base64.b64decode(string[1:])))
     except:
-        raise MalformedBlueprintString
+        raise MalformedBlueprintStringError
 
 
 def JSON_2_string(JSON):
@@ -31,7 +35,7 @@ def JSON_2_string(JSON):
     """
     return '0'+base64.b64encode(zlib.compress(
         json.dumps(JSON, separators=(',',':'))
-        .encode('utf-8'), level=9)).decode('utf-8')
+        .encode('utf-8'), 9)).decode('utf-8')
 
 
 def encode_version(major, minor, patch = 0, dev_ver = 0):
@@ -47,10 +51,10 @@ def decode_version(number):
     """
     Converts version number to version components.
     """
-    major = (number >> 48) & 0xffff
-    minor = (number >> 32) & 0xffff
-    patch = (number >> 16) & 0xffff
-    dev_ver = number & 0xffff
+    major = int((number >> 48) & 0xffff)
+    minor = int((number >> 32) & 0xffff)
+    patch = int((number >> 16) & 0xffff)
+    dev_ver = int(number & 0xffff)
     return major, minor, patch, dev_ver
 
 
@@ -76,14 +80,17 @@ def get_signal_type(signal_name):
     """
     Returns the type of the signal based on its ID string.
     """
-    if signal_name in virtual_signals:
+    if signal_name in signals.virtual:
         return "virtual"
-    elif signal_name in fluid_signals:
+    elif signal_name in signals.fluid:
         return "fluid"
-    elif signal_name in item_signals:
+    elif signal_name in signals.item:
         return "item"
     else:
-        raise InvalidSignalID("'" + str(signal_name) + "'")
+        raise InvalidSignalError("'{}'".format(str(signal_name)))
+
+    # Or
+    #return signals.raw[signal_name]["type"]
 
 
 def signal_dict(name):
@@ -91,5 +98,10 @@ def signal_dict(name):
     return {"name": name, "type": get_signal_type(name)}
 
 
-def warn_user(message):
-    warnings.warn(message, stacklevel=3)
+# TODO: remove
+# def warn_user(message):
+#     warnings.warn(message, stacklevel=3)
+
+
+def dist(point1, point2):
+    return math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)

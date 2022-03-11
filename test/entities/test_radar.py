@@ -1,26 +1,17 @@
 # test_radar.py
 
 from draftsman.entity import Radar, radars
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from unittest import TestCase
 
 class RadarTesting(TestCase):
-    def test_default_constructor(self):
-        radar = Radar()
-        self.assertEqual(
-            radar.to_dict(),
-            {
-                "name": "radar",
-                "position": {"x": 1.5, "y": 1.5}
-            }
-        )
-
     def test_contstructor_init(self):
         radar = Radar()
 
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             Radar(unused_keyword = "whatever")
 
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             Radar("this is not a radar")

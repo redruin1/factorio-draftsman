@@ -1,29 +1,33 @@
 # tile.py
 
-from draftsman.errors import InvalidTileID
-from draftsman.data.tiles import tile_names
+from draftsman.error import InvalidTileError
+
+import draftsman.data.tiles as tiles
 
 
-class Tile:
-    def __init__(self, name: str, x: int = 0, y: int = 0):
-        if name not in tile_names:
-            raise InvalidTileID("'" + str(name) + "'")
+class Tile(object):
+    def __init__(self, name, x = 0, y = 0):
+        # type: (str, int, int) -> None
+        if name not in tiles.raw:
+            raise InvalidTileError("'{}'".format(str(name)))
         # TODO: validate
         self.name = name
         # Tile positions are in grid coordinates
         self.set_position(x, y)
 
-    def change_name(self, new_name: str) -> None:
-        if new_name not in tile_names:
-            raise InvalidTileID("'" + str(new_name) + "'")
+    def set_name(self, new_name):
+        # type: (str) -> None
+        if new_name not in tiles.raw:
+            raise InvalidTileError("'{}'".format(str(new_name)))
         self.name = new_name
 
-    def set_position(self, x: int, y: int) -> None:
-        #self.position = {"x": x, "y": y}
+    def set_position(self, x, y):
+        # type: (int, int) -> None
         self.x = x
         self.y = y
 
-    def to_dict(self) -> dict:
+    def to_dict(self):
+        # type: () -> dict
         return {"name": self.name, "position": {"x": self.x, "y": self.y}}
 
     def __repr__(self):

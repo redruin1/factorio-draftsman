@@ -1,18 +1,21 @@
 # boiler.py
 
 from draftsman.prototypes.mixins import DirectionalMixin, Entity
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import boilers
 
+import warnings
+
 
 class Boiler(DirectionalMixin, Entity):
-    def __init__(self, name: str = boilers[0], **kwargs):
-        if name not in boilers:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(Boiler, self).__init__(name, **kwargs)
+    def __init__(self, name = boilers[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(Boiler, self).__init__(name, boilers, **kwargs)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )

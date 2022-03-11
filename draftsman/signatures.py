@@ -1,9 +1,16 @@
 # signatures.py
 # -*- encoding: utf-8 -*-
 
+from __future__ import unicode_literals
+from builtins import int
 
 from schema import Schema, Use, Optional, Or, And
 from draftsman.utils import signal_dict
+
+# try:
+#     string_type = (str, unicode)    # Python 2
+# except NameError: 
+#     string_type = (str)             # Python 3
 
 # TODO: separate CONTROL_BEHAVIOR into their individual signatures for each entity
 # TODO: write user-friendly error messages
@@ -13,7 +20,6 @@ BOOLEAN = Schema(Or(bool, None))
 INTEGER = Schema(Or(int, None))
 FLOAT = Schema(Or(float, None))
 STRING = Schema(Or(str, None))
-
 
 COLOR = Schema({
     "r": Use(float),
@@ -125,16 +131,16 @@ ABS_POSITION = Schema({
     "y": Use(float)
 })
 
-GRID_POSITION = Schema([
+TILE_POSITION = Schema([
     Use(int), 
     Use(int)
 ])
 
 POSITION = Schema(
-    Or(ABS_POSITION, GRID_POSITION)
+    Or(ABS_POSITION, TILE_POSITION)
 )
 
-DIRECTION = Schema(And(int, lambda x: 0 <= x <= 7))
+DIRECTION = Schema(And(int, lambda x: 0 <= x <= 7, error="Invalid direction"))
 ORIENTATION = Schema(Or(Use(float), None))
 BAR = Schema(Or(Use(int), None))
 

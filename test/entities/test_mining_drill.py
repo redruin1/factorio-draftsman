@@ -2,23 +2,18 @@
 
 from draftsman.constants import MiningDrillReadMode
 from draftsman.entity import MiningDrill, mining_drills
-from draftsman.errors import InvalidEntityID, InvalidSignalID, InvalidModuleID
+from draftsman.error import (
+    InvalidEntityError, InvalidSignalError, InvalidModuleError
+)
+from draftsman.warning import (
+    DraftsmanWarning, ModuleCapacityWarning, ModuleLimitationWarning
+)
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class MiningDrillTesting(TestCase):
-    def test_default_constructor(self):
-        mining_drill = MiningDrill()
-        self.assertEqual(
-            mining_drill.to_dict(),
-            {
-                "name": "burner-mining-drill",
-                "position": {"x": 1.0, "y": 1.0}
-            }
-        )
-
     def test_constructor_init(self):
         reactor = MiningDrill(
             "electric-mining-drill",
@@ -29,9 +24,9 @@ class MiningDrillTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             MiningDrill(unused_keyword = "whatever")
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(ModuleCapacityWarning):
             MiningDrill(
                 "electric-mining-drill",
                 items = {
@@ -40,7 +35,7 @@ class MiningDrillTesting(TestCase):
             )
 
         # Errors
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             MiningDrill("not a mining drill")
 
     def test_set_item_request(self):
@@ -56,7 +51,7 @@ class MiningDrillTesting(TestCase):
                 }
             }
         )
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(ModuleCapacityWarning):
             mining_drill.set_item_request("productivity-module-3", 3)
         self.assertEqual(
             mining_drill.to_dict(),
@@ -78,10 +73,12 @@ class MiningDrillTesting(TestCase):
         )
         mining_drill.set_item_requests(None)
         self.assertEqual(mining_drill.items, {})
-        with self.assertRaises(InvalidSignalID):
+        with self.assertWarns(ModuleLimitationWarning):
+            mining_drill.set_item_request("iron-ore", 2)
+
+        # Errors
+        with self.assertRaises(InvalidSignalError):
             mining_drill.set_item_request("incorrect", 2)
-        # with self.assertRaises(InvalidModuleID):
-        #     mining_drill.set_item_request("iron-ore", 2)
 
     def test_set_read_resources(self):
         mining_drill = MiningDrill()

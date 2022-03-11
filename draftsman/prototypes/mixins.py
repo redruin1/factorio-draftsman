@@ -1,43 +1,48 @@
 # mixins.py
-# -*- encoding: utf-8 -*-
 
-# TODO: add `set_name` function in entity, so you can change an entity's type but keep its metadata
-# TODO: value check everything + warnings
-# TODO: Add warnings for placement constraints on all entities
-# TODO: documentation!
-# TODO: "succinct" mode for to_dict(), integrate with better default setting/management
-# TODO: verify that a json dict representation of an entity imported from factorio actually imports correctly into
-#   every entity's constructor
-# TODO: verify that a blueprint string made of each entity correctly imports into Factorio (how would I test that programmatically?)
 # TODO: make sure that all functions that modify the entity preserve the entity's contents when they throw an error
-# TODO: change all instances of signal_dict to signatures.SIGNAL_ID.validate()
+# TODO: change all instances of signal_dict to signatures.SIGNAL_ID.validate() << think about this a little more than not at all
+#   Ideally I'd like to keep the contents of each entity as close to the final output dict to reduce the amount
+#   of computation that needs to take place
+#   However, consider what will be the most clear to the user:
+#   Keeping signal data in SignalID and Signal seem like a good idea, but do I do that for everything? Will that make
+#   it less or more complex?
+# TODO: documentation!
 
-# TODO: issue warnings for modules on recipe changed
-# TODO: issue overlap warnings (though thats gonna have to be on the blueprint side)
-# TODO: verbose warning when setting recipe not available on current machine
+# Long term:
+# TODO: defaults!
+# TODO: "succinct" mode for to_dict(), integrate with better default management
 
 from draftsman import signatures
 from draftsman.constants import (
     Direction, ReadMode, ModeOfOperation, MiningDrillReadMode
 )
-from draftsman.errors import (
-    InvalidItemID, InvalidSignalID, InvalidWireType, InvalidConnectionSide, 
-    EntityNotCircuitConnectable, EntityNotPowerConnectable, InvalidRecipeID,
+from draftsman.error import (
+    InvalidItemError, InvalidSignalError, InvalidWireTypeError, 
+    InvalidConnectionSideError, EntityNotCircuitConnectableError, 
+    EntityNotPowerConnectableError, InvalidRecipeError, InvalidEntityError, 
+    BarIndexError
 )
-from draftsman.utils import warn_user, signal_dict
+from draftsman.warning import (
+    DirectionWarning, BarIndexWarning, ConnectionDistanceWarning, 
+    ConnectionSideWarning, RailAlignmentWarning,
+    ModuleLimitationWarning, ModuleCapacityWarning
+)
+from draftsman.utils import signal_dict, dist
 
-#from draftsman.data.entities import entity_dimensions, circuit_wire_distances, power_wire_distances, module_slots
-from draftsman.data.signals import item_signals, fluid_signals
-import draftsman.data.recipes
 import draftsman.data.entities as entities
+import draftsman.data.modules as modules
+import draftsman.data.signals as signals
+import draftsman.data.recipes as recipes
 
 import math
 from typing import Any, Union, Callable
+import warnings
 
 
 def aabb_to_dimensions(aabb):
-    x = math.ceil(aabb[2][1] - aabb[1][1])
-    y = math.ceil(aabb[2][2] - aabb[1][2])
+    x = int(math.ceil(aabb[1][0] - aabb[0][0]))
+    y = int(math.ceil(aabb[1][1] - aabb[0][1]))
     return x, y
 
 # TODO: alphabetize
@@ -56,10 +61,23 @@ def aabb_to_dimensions(aabb):
 #     def to_dict():
 #         pass
 
+# What would I want a group to have?
+# name + similar_entities (set_name)
+# id (set_id)
+# position (set_tile_position + set_absolute_position)
+# direction
+# tags? Definitely for entities contained within, but otherwise not really
+#   do I care that I dont really need them?
+#   I could just make it so that the function is overwritten and returns NotImplementedError
 
-class Entity:
-    def __init__(self, name, position = [0, 0], **kwargs):
-        # type: (str, Union[list, dict], **dict) -> None
+# I want collision_box and tile_width/height, but they need special consideration
+# Flags should come along, but they require more nuance than a simple boolean
+
+
+
+class Entity(object):
+    def __init__(self, name, similar_entities, position = [0, 0], **kwargs):
+        # type: (str, list[str], Union[list, dict], **dict) -> None
         """
         """
         # Create a set of keywords that transfer in to_dict function
@@ -71,8 +89,11 @@ class Entity:
         # cases in and I LITERALLY already messed up
         self.unused_args = kwargs
 
+        # Entities of the same type (Internal)
+        self.similar_entities = similar_entities
+
         # Name (External)
-        self.name = name 
+        self.set_name(name)
         self._add_export("name")
 
         # ID (Internal)
@@ -84,8 +105,7 @@ class Entity:
         # Collision box (Internal)
         self.collision_box = entities.raw[self.name]["collision_box"]
 
-        # Width and Height (Internal)
-        # TODO: change this to AABB
+        # Tile Width and Height (Internal)
         self.tile_width, self.tile_height=aabb_to_dimensions(self.collision_box)
         if "tile_width" in entities.raw[self.name]:
             self.tile_width = entities.raw[self.name]["tile_width"]
@@ -109,7 +129,7 @@ class Entity:
         # Grid Position (Internal)
         position = signatures.POSITION.validate(position)
         if isinstance(position, list):
-            Entity.set_grid_position(self, position[0], position[1])
+            Entity.set_tile_position(self, position[0], position[1])
         elif isinstance(position, dict): # pragma: no branch
             Entity.set_absolute_position(self, position["x"], position["y"])
         self._add_export("position")
@@ -120,6 +140,17 @@ class Entity:
             self.set_tags(kwargs["tags"])
             self.unused_args.pop("tags")
         self._add_export("tags", lambda x: x)
+
+    def set_name(self, name):
+        # type: (str) -> None
+        """
+        Sets the `name` of the entity. The name is the factorio ID string; 
+        anything else raises an `InvalidEntityID` error.
+        """
+        if name not in self.similar_entities:
+            raise InvalidEntityError("'{}' is not a valid name for this type"
+                                     .format(name))
+        self.name = name
 
     def set_id(self, id):
         # type: (str) -> None
@@ -140,9 +171,9 @@ class Entity:
         self.position = signatures.ABS_POSITION.validate({"x": x, "y": y})
         grid_x = round(self.position["x"] - self.tile_width / 2.0)
         grid_y = round(self.position["y"] - self.tile_height / 2.0)
-        self.grid_position = [grid_x, grid_y]
+        self.tile_position = [grid_x, grid_y]
 
-    def set_grid_position(self, x, y):
+    def set_tile_position(self, x, y):
         # type: (int, int) -> None
         """
         Sets the grid position of the object, or the tile coordinates of the
@@ -150,9 +181,9 @@ class Entity:
         the entity. If a tile is multiple tiles in width or height, the grid
         coordinate is the top left-most tile of the entity.
         """
-        self.grid_position = signatures.GRID_POSITION.validate([x, y])
-        absolute_x = self.grid_position[0] + self.tile_width / 2.0
-        absolute_y = self.grid_position[1] + self.tile_height / 2.0
+        self.tile_position = signatures.TILE_POSITION.validate([x, y])
+        absolute_x = self.tile_position[0] + self.tile_width / 2.0
+        absolute_y = self.tile_position[1] + self.tile_height / 2.0
         self.position = {"x": absolute_x, "y": absolute_y}
 
     def set_tags(self, tags):
@@ -176,20 +207,17 @@ class Entity:
         Converts the Entity to its JSON dict representation. The keys returned
         are determined by the contents of the `exports` dictionary and their
         function values.
+
+        TODO: come up with a more generic method for inserting into blueprint
         """
-        dict_self = dict(self)
         # Only add the keys in the exports dictionary
         out = {}
         for name, f in self.exports.items():
-            value = dict_self[name]
+            value = self.__dict__[name]
             #print(name, value)
             # Does the value match the criteria to be included?
             if f is None or f(value):
-                #print("criteria met")
                 out[name] = value
-            else:
-                #print("criteria failed")
-                pass
 
         return out
 
@@ -236,13 +264,13 @@ class Entity:
 ################################################################################
 
 
-class DirectionalMixin:
+class DirectionalMixin(object):
     """ 
     Enables entities to be rotated. 
     """
-    def __init__(self, name, position = [0, 0], **kwargs):
-        # type: (str, Union[list, dict], **dict) -> None
-        super().__init__(name, **kwargs)
+    def __init__(self, name, similar_entities, position = [0, 0], **kwargs):
+        # type: (str, list[str], Union[list, dict], **dict) -> None
+        super(DirectionalMixin, self).__init__(name, similar_entities, **kwargs)
 
         # Rotated width and height
         self.rotated_width = self.tile_width
@@ -258,7 +286,7 @@ class DirectionalMixin:
         # equivalents again to now handle the rotation
         position = signatures.POSITION.validate(position) # FIXME: technically redundant
         if isinstance(position, list):
-            self.set_grid_position(position[0], position[1])
+            self.set_tile_position(position[0], position[1])
         elif isinstance(position, dict): # pragma: no branch
             self.set_absolute_position(position["x"], position["y"])
 
@@ -272,9 +300,9 @@ class DirectionalMixin:
         self.position = signatures.ABS_POSITION.validate({"x": x, "y": y})
         grid_x = round(self.position["x"] - self.rotated_width / 2.0)
         grid_y = round(self.position["y"] - self.rotated_height / 2.0)
-        self.grid_position = [grid_x, grid_y]
+        self.tile_position = [grid_x, grid_y]
 
-    def set_grid_position(self, x, y):
+    def set_tile_position(self, x, y):
         # type: (int, int) -> None
         """
         Sets the grid position of the object, or the tile coordinates of the
@@ -282,9 +310,9 @@ class DirectionalMixin:
         the entity. If a tile is multiple tiles in width or height, the grid
         coordinate is the top left-most tile of the entity.
         """
-        self.grid_position = signatures.GRID_POSITION.validate([x, y])
-        absolute_x = self.grid_position[0] + self.rotated_width / 2.0
-        absolute_y = self.grid_position[1] + self.rotated_height / 2.0
+        self.tile_position = signatures.TILE_POSITION.validate([x, y])
+        absolute_x = self.tile_position[0] + self.rotated_width / 2.0
+        absolute_y = self.tile_position[1] + self.rotated_height / 2.0
         self.position = {"x": absolute_x, "y": absolute_y}
 
     def set_direction(self, direction):
@@ -293,7 +321,11 @@ class DirectionalMixin:
         """
         self.direction = signatures.DIRECTION.validate(direction)
         if self.direction not in {0, 2, 4, 6}:
-            warn_user("this entity only has 4-way rotation")
+            warnings.warn(
+                "'{}' only has 4-way rotation".format(type(self).__name__),
+                DirectionWarning,
+                stacklevel = 2
+            )
         if self.direction == Direction.EAST or self.direction == Direction.WEST:
             self.rotated_width = self.tile_height
             self.rotated_height = self.tile_width
@@ -301,16 +333,18 @@ class DirectionalMixin:
             self.rotated_width = self.tile_width
             self.rotated_height = self.tile_height
         # Reset the grid/absolute positions in case the direction changed
-        self.set_grid_position(self.grid_position[0], self.grid_position[1])
+        self.set_tile_position(self.tile_position[0], self.tile_position[1])
 
 
-class EightWayDirectionalMixin:
+class EightWayDirectionalMixin(object):
     """
     Enables entities to be rotated across 8 directions.
     """
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(EightWayDirectionalMixin, self).__init__(
+            name, similar_entities, **kwargs
+        )
 
         # Rotated width and height
         self.rotated_width = self.tile_width
@@ -331,9 +365,9 @@ class EightWayDirectionalMixin:
         self.position = signatures.ABS_POSITION.validate({"x": x, "y": y})
         grid_x = round(self.position["x"] - self.rotated_width / 2.0)
         grid_y = round(self.position["y"] - self.rotated_height / 2.0)
-        self.grid_position = [grid_x, grid_y]
+        self.tile_position = [grid_x, grid_y]
 
-    def set_grid_position(self, x, y):
+    def set_tile_position(self, x, y):
         # type: (int, int) -> None
         """
         Sets the grid position of the object, or the tile coordinates of the
@@ -341,9 +375,9 @@ class EightWayDirectionalMixin:
         the entity. If a tile is multiple tiles in width or height, the grid
         coordinate is the top left-most tile of the entity.
         """
-        self.grid_position = signatures.GRID_POSITION.validate([x, y])
-        absolute_x = self.grid_position[0] + self.rotated_width / 2.0
-        absolute_y = self.grid_position[1] + self.rotated_height / 2.0
+        self.tile_position = signatures.TILE_POSITION.validate([x, y])
+        absolute_x = self.tile_position[0] + self.rotated_width / 2.0
+        absolute_y = self.tile_position[1] + self.rotated_height / 2.0
         self.position = {"x": absolute_x, "y": absolute_y}
 
     def set_direction(self, direction):
@@ -360,13 +394,13 @@ class EightWayDirectionalMixin:
             self.rotated_height = self.tile_height
 
 
-class OrientationMixin:
+class OrientationMixin(object):
     """ 
     Used in trains and wagons to specify their direction. 
     """
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(OrientationMixin, self).__init__(name, similar_entities, **kwargs)
 
         self.orientation = 0.0
         if "orientation" in kwargs:
@@ -382,13 +416,13 @@ class OrientationMixin:
         self.orientation = signatures.ORIENTATION.validate(orientation)
 
 
-class InventoryMixin:
+class InventoryMixin(object):
     """
     Enables the entity to have inventory control.
     """
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(InventoryMixin, self).__init__(name, similar_entities, **kwargs)
 
         self.inventory_size = entities.raw[self.name]["inventory_size"]
 
@@ -402,20 +436,38 @@ class InventoryMixin:
         # type: (int) -> None
         """
         Sets the inventory limiting bar.
+
+        Raises:
+            `BarIndexError` if the input value is < 0
+
+        Warns:
+            `BarIndexWarning` if the input value is > 
         """
         self.bar = signatures.BAR.validate(index)
-        if self.bar >= self.inventory_size or self.bar < 0:
-            warn_user("Bar index not in range [0, {})"
-                      .format(self.inventory_size))
+        if not 0 <= self.bar < 65536:
+            raise BarIndexError(
+                "Bar index ({}) not in range [0, 65536)".format(index)
+            )
+        elif self.bar >= self.inventory_size:
+            warnings.warn(
+                "Bar index ({}) not in range [0, {})"
+                .format(index, self.inventory_size),
+                BarIndexWarning,
+                stacklevel = 2
+            )
 
 
-class InventoryFilterMixin:
+class InventoryFilterMixin(object):
     """
     Allows inventories to set content filters. Used in cargo wagons.
     """
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(InventoryFilterMixin, self).__init__(
+            name, similar_entities, **kwargs
+        )
+
+        self.inventory_size = entities.raw[self.name]["inventory_size"]
 
         self.inventory = {}
         if "inventory" in kwargs:
@@ -443,8 +495,8 @@ class InventoryFilterMixin:
             self.inventory["filters"] = []
 
         index = signatures.INTEGER.validate(index)
-        if item is not None and item not in item_signals: # FIXME
-            raise InvalidItemID(item)
+        if item is not None and item not in signals.item: # FIXME: maybe items.raw?
+            raise InvalidItemError(item)
 
         # TODO: warn if index is ouside the range of the max filter slots
         # (which needs to be extracted)
@@ -478,8 +530,8 @@ class InventoryFilterMixin:
         for item in filters:
             if isinstance(item, dict):
                 item = item["name"]
-            if item not in item_signals:
-                raise InvalidItemID(item)
+            if item not in signals.item:
+                raise InvalidItemError(item)
 
         for i in range(len(filters)):
             if isinstance(filters[i], str):
@@ -492,22 +544,37 @@ class InventoryFilterMixin:
         """
         Sets the bar of the train's inventory. Setting it to `None` removes the
         parameter from the configuration.
+
+        Raises:
+            `BarIndexError` if `index` not in [0, 65536)
+
+        Warns:
+            `BarIndexWarning` if `index` > `self.inventory_size`
         """
         if index is None:
             self.inventory.pop("bar", None)
         else:
             self.inventory["bar"] = signatures.BAR.validate(index)
-            if index >= 40: # TODO: make this number not hardcoded
-                warn_user("Bar index is greater than 40")
+            if not 0 <= index < 65536:
+                raise BarIndexError(
+                    "Bar index ({}) not in range [0, 65536)".format(index)
+                )
+            elif index >= self.inventory_size:
+                warnings.warn(
+                    "Bar index ({}) not in range [0, {})"
+                    .format(index, self.inventory_size),
+                    BarIndexWarning,
+                    stacklevel = 2
+                )
 
 
-class IOTypeMixin:
+class IOTypeMixin(object):
     """
     Gives an entity a Input/Output type. Used on underground belts and loaders.
     """
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(IOTypeMixin, self).__init__(name, similar_entities, **kwargs)
         
         self.type = "input" # Default
         if "type" in kwargs:
@@ -527,10 +594,12 @@ class IOTypeMixin:
         self.type = signatures.IO_TYPE.validate(type)
 
 
-class PowerConnectableMixin:
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+class PowerConnectableMixin(object):
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(PowerConnectableMixin, self).__init__(
+            name, similar_entities, **kwargs
+        )
 
         self.power_connectable = True
 
@@ -559,7 +628,7 @@ class PowerConnectableMixin:
         Adds a power wire between this entity and another power-connectable one.
         """
         if not target.power_connectable:
-            raise EntityNotPowerConnectable(target.id)
+            raise EntityNotPowerConnectableError(target.id)
         if self.dual_power_connectable and target.dual_power_connectable:
             raise Exception("2 dual power connectable entities cannot connect")
 
@@ -568,10 +637,14 @@ class PowerConnectableMixin:
                        target.maximum_wire_distance)
         self_pos = [self.position["x"], self.position["y"]]
         target_pos = [target.position["x"], target.position["y"]]
-        real_dist = math.dist(self_pos, target_pos)
+        real_dist = dist(self_pos, target_pos)
         if real_dist > min_dist:
-            warn_user("Distance between entities ({}) is greater than max ({})"
-                      .format(real_dist, min_dist))
+            warnings.warn(
+                "Distance between entities ({}) is greater than max ({})"
+                .format(real_dist, min_dist),
+                ConnectionDistanceWarning,
+                stacklevel = 2
+            )
 
         # Only worried about self
         if self.dual_power_connectable: # power switch
@@ -641,13 +714,15 @@ class PowerConnectableMixin:
                     pass
 
 
-class CircuitConnectableMixin:
+class CircuitConnectableMixin(object):
     """
     Enables the entity to be connected to circuit networks.
     """
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(CircuitConnectableMixin, self).__init__(
+            name, similar_entities, **kwargs
+        )
 
         self.circuit_connectable = True
 
@@ -684,35 +759,47 @@ class CircuitConnectableMixin:
         you should also connect the other entity to this one.
         """
         if color not in {"red", "green"}:
-            raise InvalidWireType(color)
+            raise InvalidWireTypeError(color)
         if not isinstance(target, Entity):
             raise TypeError("'target' is not an Entity")
         if self.id is None or target.id is None:
             raise ValueError("both entities must have a valid id to connect")
         if source_side not in {1, 2}:
-            raise InvalidConnectionSide(source_side)
+            raise InvalidConnectionSideError(source_side)
         if target_side not in {1, 2}:
-            raise InvalidConnectionSide(target_side)
+            raise InvalidConnectionSideError(target_side)
 
         if not target.circuit_connectable:
-            raise EntityNotCircuitConnectable(target.name)
+            raise EntityNotCircuitConnectableError(target.name)
 
         if source_side == 2 and not self.dual_circuit_connectable:
-            warn_user("'source_side' was specified as 2, but entity '{}' is not"
-                      " dual circuit connectable".format(type(self)))
+            warnings.warn(
+                "'source_side' was specified as 2, but entity '{}' is not"
+                " dual circuit connectable".format(type(self).__name__),
+                ConnectionSideWarning,
+                stacklevel = 2
+            )
         if target_side == 2 and not target.dual_circuit_connectable:
-            warn_user("'target_side' was specified as 2, but entity '{}' is not"
-                      " dual circuit connectable".format(type(target)))
+            warnings.warn(
+                "'target_side' was specified as 2, but entity '{}' is not"
+                " dual circuit connectable".format(type(target).__name__),
+                ConnectionSideWarning,
+                stacklevel = 2
+            )
 
         # Issue a warning if the entities being connected are too far apart
         min_dist = min(self.circuit_wire_max_distance,
                        target.circuit_wire_max_distance)
         self_pos = [self.position["x"], self.position["y"]]
         target_pos = [target.position["x"], target.position["y"]]
-        real_dist = math.dist(self_pos, target_pos)
+        real_dist = dist(self_pos, target_pos)
         if real_dist > min_dist:
-            warn_user("Distance between entities ({}) is greater than max ({})"
-                      .format(real_dist, min_dist))
+            warnings.warn(
+                "Distance between entities ({}) is greater than max ({})"
+                .format(real_dist, min_dist),
+                ConnectionDistanceWarning,
+                stacklevel = 2
+            )
 
         # Add target to self.connections
         
@@ -761,15 +848,15 @@ class CircuitConnectableMixin:
         Removes a connection point between this entity and `target`.
         """
         if color not in {"red", "green"}:
-            raise InvalidWireType(color)
+            raise InvalidWireTypeError(color)
         if not isinstance(target, Entity):
             raise TypeError("'target' is not an Entity")
         if self.id is None or target.id is None:
             raise ValueError("both entities must have a valid id to connect")
         if source_side not in {1, 2}:
-            raise InvalidConnectionSide(source_side)
+            raise InvalidConnectionSideError(source_side)
         if target_side not in {1, 2}:
-            raise InvalidConnectionSide(target_side)
+            raise InvalidConnectionSideError(target_side)
 
         # Remove from source
         if target.dual_circuit_connectable:
@@ -810,13 +897,15 @@ class CircuitConnectableMixin:
             pass
         
 
-class ControlBehaviorMixin:
+class ControlBehaviorMixin(object):
     """
     Enables the entity to specify control behavior.
     """
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(ControlBehaviorMixin, self).__init__(
+            name, similar_entities, **kwargs
+        )
 
         self.control_behavior = {}
         if "control_behavior" in kwargs:
@@ -867,7 +956,7 @@ class ControlBehaviorMixin:
             condition.pop("second_signal", None)
 
 
-class EnableDisableMixin: # (ControlBehaviorMixin)
+class EnableDisableMixin(object): # (ControlBehaviorMixin)
     """
     Allows the entity to control whether or not it's circuit condition affects
     its operation. Usually used with CircuitConditionMixin
@@ -882,15 +971,11 @@ class EnableDisableMixin: # (ControlBehaviorMixin)
             self.control_behavior["circuit_enable_disable"] = signatures.BOOLEAN.validate(value)
 
 
-class CircuitConditionMixin: # (ControlBehaviorMixin)
+class CircuitConditionMixin(object): # (ControlBehaviorMixin)
     """
     Allows the Entity to have an circuit enable condition. Used in Pumps, 
     Inserters, Belts, etc.
     """
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
-
     def set_enabled_condition(self, a = None, op = "<", b = 0):
         # type: (str, str, Union[str, int]) -> None
         """
@@ -903,11 +988,10 @@ class CircuitConditionMixin: # (ControlBehaviorMixin)
         self.control_behavior.pop("circuit_condition", None)
 
 
-class LogisticConditionMixin: # (ControlBehaviorMixin)
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
-
+class LogisticConditionMixin(object): # (ControlBehaviorMixin)
+    """
+    Gives the Entity the capablility to be logistic network controlled.
+    """
     def set_connect_to_logistic_network(self, value):
         # type: (bool) -> None
         """
@@ -931,11 +1015,9 @@ class LogisticConditionMixin: # (ControlBehaviorMixin)
         self.control_behavior.pop("logistic_condition", None)
 
 
-class CircuitReadContentsMixin: # (ControlBehaviorMixin)
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
-
+class CircuitReadContentsMixin(object): # (ControlBehaviorMixin)
+    """
+    """
     def set_read_contents(self, value):
         # type: (bool) -> None
         """
@@ -959,11 +1041,9 @@ class CircuitReadContentsMixin: # (ControlBehaviorMixin)
             raise TypeError("`mode` must be either 'int' or 'None'")
 
 
-class CircuitReadHandMixin: # (ControlBehaviorMixin)
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
-
+class CircuitReadHandMixin(object): # (ControlBehaviorMixin)
+    """
+    """
     def set_read_hand_contents(self, value):
         # type: (bool) -> None
         """
@@ -987,11 +1067,9 @@ class CircuitReadHandMixin: # (ControlBehaviorMixin)
             raise TypeError("`mode` must be either 'int' or 'None'")
 
 
-class CircuitReadResourceMixin: # (ControlBehaviorMixin)
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
-
+class CircuitReadResourceMixin(object): # (ControlBehaviorMixin)
+    """
+    """
     def set_read_resources(self, value):
         # type: (bool) -> None
         """
@@ -1012,12 +1090,12 @@ class CircuitReadResourceMixin: # (ControlBehaviorMixin)
             self.control_behavior["circuit_resource_read_mode"] = mode
 
 
-class StackSizeMixin: # (ControlBehaviorMixin)
+class StackSizeMixin(object): # (ControlBehaviorMixin)
     """
     """
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(StackSizeMixin, self).__init__(name, similar_entities, **kwargs)
 
         self.override_stack_size = None
         if "override_stack_size" in kwargs:
@@ -1047,7 +1125,6 @@ class StackSizeMixin: # (ControlBehaviorMixin)
         """
         Specify the stack size input signal for the inserter if enabled.
         """
-        # TODO: error checking
         if signal is None:
             self.control_behavior.pop("stack_control_input_signal")
         elif isinstance(signal, str):
@@ -1056,13 +1133,9 @@ class StackSizeMixin: # (ControlBehaviorMixin)
             raise TypeError("`signal` is neither 'str' nor 'None'")
 
 
-class ModeOfOperationMixin: # (ControlBehaviorMixin)
+class ModeOfOperationMixin(object): # (ControlBehaviorMixin)
     """
     """
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
-
     def set_mode_of_operation(self, mode):
         # type: (ModeOfOperation) -> None
         """
@@ -1075,13 +1148,9 @@ class ModeOfOperationMixin: # (ControlBehaviorMixin)
             raise TypeError("`mode` should either be 'int' or 'None'")
 
 
-class ReadRailSignalMixin: # (ControlBehaviorMixin)
+class ReadRailSignalMixin(object): # (ControlBehaviorMixin)
     """
     """
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
-
     def set_red_output_signal(self, signal):
         # type: (str) -> None
         """
@@ -1110,10 +1179,12 @@ class ReadRailSignalMixin: # (ControlBehaviorMixin)
             self.control_behavior["green_output_signal"] = signal_dict(signal)
 
 
-class FiltersMixin:
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+class FiltersMixin(object):
+    """
+    """
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(FiltersMixin, self).__init__(name, similar_entities, **kwargs)
 
         self.filters = None
         if "filters" in kwargs:
@@ -1131,8 +1202,8 @@ class FiltersMixin:
         # TODO: check if index is ouside the range of the max filter slots
         # (which needs to be extracted)
 
-        if item is not None and item not in item_signals:
-            raise InvalidItemID(item)
+        if item is not None and item not in signals.item:
+            raise InvalidItemError(item)
 
         for i in range(len(self.filters)):
             filter = self.filters[i]
@@ -1159,8 +1230,8 @@ class FiltersMixin:
         for item in filters:
             if isinstance(item, dict):
                 item = item["name"]
-            if item not in item_signals:
-                raise InvalidItemID(item)
+            if item not in signals.item: # TODO: FIXME?
+                raise InvalidItemError(item)
 
         for i in range(len(filters)):
             if isinstance(filters[i], str):
@@ -1169,13 +1240,13 @@ class FiltersMixin:
                 self.set_item_filter(i, filters[i]["name"])
 
 
-class RecipeMixin:
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+class RecipeMixin(object):
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(RecipeMixin, self).__init__(name, similar_entities, **kwargs)
 
         # List of all recipes that this machine can make
-        self.recipes = draftsman.data.recipes.recipes[name]
+        self.recipes = recipes.for_machine[self.name]
 
         # Recipe that this machine is currently set to
         self.recipe = None
@@ -1192,18 +1263,43 @@ class RecipeMixin:
             self.recipe = None
         else:
             if recipe not in self.recipes:
-                raise InvalidRecipeID(recipe)
+                raise InvalidRecipeError("'{}'".format(recipe))
             self.recipe = signatures.STRING.validate(recipe)
 
+            # I'm gonna put this here, this technically only applies to
+            # AssemblingMachine but technically this whole mixin only applies to
+            # AssemblingMachine
+            # Later on there might be a reason to split this out but this is
+            # good enough for now
+            # We also operate under the assumption that the only items that can
+            # be in an entity are modules
+            
+            # Check to make sure the recipe matches the module specification
+            if self.items:
+                for module_name in self.items:
+                    module = modules.raw[module_name]
+                    print(module_name)
+                    if "limitation" in module:
+                        if self.recipe not in module["limitation"]:
+                            warnings.warn(
+                                "Cannot use module '{}' with new recipe '{}'"
+                                .format(module_name, self.recipe),
+                                ModuleLimitationWarning,
+                                stacklevel = 2
+                            )
+                            
 
-class RequestFiltersMixin:
+
+class RequestFiltersMixin(object):
     """
     Used to allow Logistics Containers to request items from the Logisitics
     network.
     """
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(RequestFiltersMixin, self).__init__(
+            name, similar_entities, **kwargs
+        )
 
         # TODO: handle internal input format for set_request_filters()
 
@@ -1222,8 +1318,8 @@ class RequestFiltersMixin:
             self.request_filters = []
         
         index = signatures.INTEGER.validate(index)
-        if item is not None and item not in item_signals: # TODO: FIXME
-            raise InvalidItemID(item)
+        if item is not None and item not in signals.item: # TODO: FIXME
+            raise InvalidItemError(item)
         count = signatures.INTEGER.validate(count)
 
         # TODO: warn if index out of range (index < 0 or index > 1000 )
@@ -1256,8 +1352,8 @@ class RequestFiltersMixin:
 
         # Make sure the items are item signals
         for item in filters:
-            if item[0] not in item_signals:
-                raise InvalidItemID(item[0])
+            if item[0] not in signals.item:
+                raise InvalidItemError(item[0])
 
         # Make sure we dont wipe before throwing the error
         self.request_filters = []
@@ -1269,15 +1365,17 @@ class RequestFiltersMixin:
             self.set_request_filter(i, filters[i][0], filters[i][1])
 
 
-class RequestItemsMixin: # TODO: rename to RequestModulesMixin
+class RequestItemsMixin(object): # TODO: rename to RequestModulesMixin
     """
     NOTE: this is for module requests and stuff like that, not logistics!
 
     Think an assembling machine that needs speed modules inside of it
     """
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(RequestItemsMixin, self).__init__(
+            name, similar_entities, **kwargs
+        )
 
         # Get the total number of module slots
         try:
@@ -1309,13 +1407,17 @@ class RequestItemsMixin: # TODO: rename to RequestModulesMixin
         # type: (str, int) -> None
         """
         """
-        # TODO: check if entity can accept productivity modules
-        # Also consider the case where the recipe changes on a assembling
-        # machine; you have to retroactively issue a warning if the new recipe 
-        # cannot use prod modules
-
-        if item not in item_signals: # TODO: maybe items.all instead?
-            raise InvalidSignalID(item)
+        # Make sure the item exists
+        if item not in signals.item: # TODO: maybe items.all instead?
+            raise InvalidSignalError(item)
+        
+        # Assembling machines can only accept modules (as far as I can tell)
+        if item not in modules.raw:
+            warnings.warn(
+                "cannot insert '{}' into Entity; not a module".format(item),
+                ModuleLimitationWarning,
+                stacklevel = 3
+            )
 
         if amount is None:
             self.module_slots_occupied -= self.items.pop(item, None)
@@ -1326,13 +1428,13 @@ class RequestItemsMixin: # TODO: rename to RequestModulesMixin
         self.items[item] = amount
         self.module_slots_occupied += amount
         if self.module_slots_occupied > self.total_module_slots:
-            warn_user("Current number of module slots used ({}) greater than "
-                      "max module capacity ({})"
-                      .format(
-                            self.module_slots_occupied,
-                            self.total_module_slots
-                        )
-                      )
+            warnings.warn(
+                "Current number of module slots used ({}) greater than max "
+                "module capacity ({})"
+                .format(self.module_slots_occupied, self.total_module_slots),
+                ModuleCapacityWarning,
+                stacklevel = 3
+            )
 
 
 # class InfinitySettingsMixin:
@@ -1354,10 +1456,13 @@ class RequestItemsMixin: # TODO: rename to RequestModulesMixin
 #             self.infinity_settings = settings
 
 
-class ColorMixin:
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+class ColorMixin(object):
+    """
+    Gives the entity an editable color. Used on Locomotives and Train Stops.
+    """
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(ColorMixin, self).__init__(name, similar_entities, **kwargs)
 
         self.color = None
         if "color" in kwargs:
@@ -1383,17 +1488,21 @@ class ColorMixin:
         self.color = None
 
 
-class DoubleGridAlignedMixin:
-    def __init__(self, name, **kwargs):
-        # type: (str, **dict) -> None
-        super().__init__(name, **kwargs)
+class DoubleGridAlignedMixin(object):
+    """
+    """
+    def __init__(self, name, similar_entities, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(DoubleGridAlignedMixin, self).__init__(
+            name, similar_entities, **kwargs
+        )
 
         self.double_grid_aligned = True
 
         if "position" in kwargs:
             position = kwargs["position"]
             if isinstance(position, list):
-                self.set_grid_position(position[0], position[1])
+                self.set_tile_position(position[0], position[1])
             elif isinstance(position, dict): # pragma: no branch
                 self.set_absolute_position(position["x"], position["y"])
 
@@ -1402,25 +1511,33 @@ class DoubleGridAlignedMixin:
         """
         Overwritten
         """
-        super().set_absolute_position(x, y)
+        super(DoubleGridAlignedMixin, self).set_absolute_position(x, y)
 
         # if the grid alignment is off, warn the user
-        if self.grid_position[0] % 2 == 1 or self.grid_position[1] % 2 == 1:
-            cast_position = [math.floor(self.grid_position[0] / 2) * 2,
-                             math.floor(self.grid_position[1] / 2) * 2]
-            warn_user("Double grid-aligned entity is not placed along chunk "
-                      "grid; entity's position will be cast from {} to {} when "
-                      "imported".format(self.grid_position, cast_position))
+        if self.tile_position[0] % 2 == 1 or self.tile_position[1] % 2 == 1:
+            cast_position = [math.floor(self.tile_position[0] / 2) * 2,
+                             math.floor(self.tile_position[1] / 2) * 2]
+            warnings.warn(
+                "Double-grid aligned entity is not placed along chunk grid; "
+                "entity's position will be cast from {} to {} when imported"
+                .format(self.tile_position, cast_position),
+                RailAlignmentWarning,
+                stacklevel = 2
+            )
 
-    def set_grid_position(self, x, y):
+    def set_tile_position(self, x, y):
         # type: (int, int) -> None
         """
         """
-        super().set_grid_position(x, y)
+        super(DoubleGridAlignedMixin, self).set_tile_position(x, y)
 
-        if self.grid_position[0] % 2 == 1 or self.grid_position[1] % 2 == 1:
-            cast_position = [math.floor(self.grid_position[0] / 2) * 2,
-                             math.floor(self.grid_position[1] / 2) * 2]
-            warn_user("Double grid-aligned entity is not placed along chunk "
-                      "grid; entity's position will be cast from {} to {} when "
-                      "imported".format(self.grid_position, cast_position))
+        if self.tile_position[0] % 2 == 1 or self.tile_position[1] % 2 == 1:
+            cast_position = [math.floor(self.tile_position[0] / 2) * 2,
+                             math.floor(self.tile_position[1] / 2) * 2]
+            warnings.warn(
+                "Double-grid aligned entity is not placed along chunk grid; "
+                "entity's position will be cast from {} to {} when imported"
+                .format(self.tile_position, cast_position),
+                RailAlignmentWarning,
+                stacklevel = 2
+            )

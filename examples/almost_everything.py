@@ -73,7 +73,7 @@ def main():
             "circuit_contents_read_mode": 0,
             "circuit_condition": {
                 "first_signal": "signal-blue",
-                "comparator": ">=",
+                "comparator": "<=",
                 "second_signal": "signal-blue"
             }
         })
@@ -576,7 +576,7 @@ def main():
     # blueprint.add_circuit_connection("red", "lp", "left_wall")
     # blueprint.add_circuit_connection("green", "rp", "right_wall")
     
-    #print(blueprint)
+    print(blueprint)
     print(blueprint.to_string())
 
 

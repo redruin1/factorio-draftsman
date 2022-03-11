@@ -3,20 +3,23 @@
 from draftsman.prototypes.mixins import (
     CircuitConnectableMixin, PowerConnectableMixin, Entity
 )
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import electric_poles
+
+import warnings
 
 
 class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
     """
     """
-    def __init__(self, name: str = electric_poles[0], **kwargs):
-        if name not in electric_poles:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(ElectricPole, self).__init__(name, **kwargs)
+    def __init__(self, name = electric_poles[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(ElectricPole, self).__init__(name, electric_poles, **kwargs)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )

@@ -3,19 +3,23 @@
 from draftsman.prototypes.mixins import (
     DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity
 )
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import curved_rails
+
+import warnings
 
 
 class CurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     """
     """
-    def __init__(self, name: str = curved_rails[0], **kwargs):
-        if name not in curved_rails:
-            raise InvalidEntityID("'{}' is not a valid name for this type".format(name))
-        super(CurvedRail, self).__init__(name, **kwargs)
+    def __init__(self, name = curved_rails[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(CurvedRail, self).__init__(name, curved_rails, **kwargs)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )

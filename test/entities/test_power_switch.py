@@ -1,23 +1,14 @@
 # test_power_switch.py
 
 from draftsman.entity import PowerSwitch, power_switches
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class PowerSwitchTesting(TestCase):
-    def test_default_constructor(self):
-        switch = PowerSwitch()
-        self.assertEqual(
-            switch.to_dict(),
-            {
-                "name": "power-switch",
-                "position": {"x": 1.0, "y": 1.0}
-            }
-        )
-
     def test_constructor_init(self):
         switch = PowerSwitch(
             "power-switch", 
@@ -34,11 +25,11 @@ class PowerSwitchTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             PowerSwitch(unused_keyword = "whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             PowerSwitch("this is not a power switch")
 
     def test_flags(self):
@@ -48,9 +39,3 @@ class PowerSwitchTesting(TestCase):
             self.assertEqual(power_switch.dual_power_connectable, True)
             self.assertEqual(power_switch.circuit_connectable, True)
             self.assertEqual(power_switch.dual_circuit_connectable, False)
-
-    def test_dimensions(self):
-        for name in power_switches:
-            power_switch = PowerSwitch(name)
-            self.assertEqual(power_switch.tile_width, 2)
-            self.assertEqual(power_switch.tile_height, 2)

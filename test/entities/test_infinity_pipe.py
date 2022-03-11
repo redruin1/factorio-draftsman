@@ -1,23 +1,16 @@
 # test_infinity_pipe.py
 
 from draftsman.entity import InfinityPipe, infinity_pipes
-from draftsman.errors import InvalidEntityID, InvalidFluidID, InvalidMode
+from draftsman.error import (
+    InvalidEntityError, InvalidFluidError, InvalidModeError
+)
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class InfinityPipeTesting(TestCase):
-    def test_default_constructor(self):
-        pipe = InfinityPipe()
-        self.assertEqual(
-            pipe.to_dict(),
-            {
-                "name": "infinity-pipe",
-                "position": {"x": 0.5, "y": 0.5}
-            }
-        )
-
     def test_constructor_init(self):
         pipe = InfinityPipe(
             infinity_settings = {
@@ -42,11 +35,11 @@ class InfinityPipeTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             InfinityPipe(unused_keyword = "whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             InfinityPipe("this is not an infinity pipe")
         with self.assertRaises(SchemaError):
             InfinityPipe(
@@ -95,13 +88,13 @@ class InfinityPipeTesting(TestCase):
         )
         with self.assertRaises(SchemaError):
             pipe.set_infinite_fluid(SchemaError)
-        with self.assertRaises(InvalidFluidID):
+        with self.assertRaises(InvalidFluidError):
             pipe.set_infinite_fluid("incorrect")
         with self.assertRaises(SchemaError):
             pipe.set_infinite_fluid("steam", "incorrect")
         with self.assertRaises(SchemaError):
             pipe.set_infinite_fluid("steam", 100, SchemaError)
-        with self.assertRaises(InvalidMode):
+        with self.assertRaises(InvalidModeError):
             pipe.set_infinite_fluid("steam", 100, "incorrect")
         with self.assertRaises(SchemaError):
             pipe.set_infinite_fluid("steam", 100, "at-least", "incorrect")
@@ -119,7 +112,7 @@ class InfinityPipeTesting(TestCase):
         self.assertEqual(pipe.infinity_settings, {})
         with self.assertRaises(SchemaError):
             pipe.set_infinite_fluid_name(SchemaError)
-        with self.assertRaises(InvalidFluidID):
+        with self.assertRaises(InvalidFluidError):
             pipe.set_infinite_fluid_name("incorrect")
 
     def test_set_infinite_fluid_percentage(self):
@@ -149,7 +142,7 @@ class InfinityPipeTesting(TestCase):
         self.assertEqual(pipe.infinity_settings, {})
         with self.assertRaises(SchemaError):
             pipe.set_infinite_fluid_mode(SchemaError)
-        with self.assertRaises(InvalidMode):
+        with self.assertRaises(InvalidModeError):
             pipe.set_infinite_fluid_mode("incorrect")
 
     def test_set_infinite_fluid_temperature(self):

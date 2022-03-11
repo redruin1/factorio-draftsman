@@ -2,23 +2,14 @@
 
 from draftsman.constants import Direction, ModeOfOperation
 from draftsman.entity import TransportBelt, transport_belts
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class TransportBeltTesting(TestCase):
-    def test_default_constructor(self):
-        belt = TransportBelt()
-        self.assertEqual(
-            belt.to_dict(),
-            {
-                "name": transport_belts[0],
-                "position": {"x": 0.5, "y": 0.5}
-            }
-        )
-
     def test_constructor_init(self):
         # Valid
         fast_belt = TransportBelt("fast-transport-belt", 
@@ -90,12 +81,12 @@ class TransportBeltTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             temp = TransportBelt("fast-transport-belt", invalid_param = 100)
 
         # Errors
         # Raises InvalidEntityID when not in transport_belts
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             TransportBelt("this is not a storage tank")
 
         # Raises schema errors when any of the associated data is incorrect
@@ -131,9 +122,3 @@ class TransportBeltTesting(TestCase):
             self.assertEqual(belt.dual_power_connectable, False)
             self.assertEqual(belt.circuit_connectable, True)
             self.assertEqual(belt.dual_circuit_connectable, False)
-
-    def test_dimensions(self):
-        for transport_belt in transport_belts:
-            belt = TransportBelt(transport_belt)
-            self.assertEqual(belt.tile_width, 1)
-            self.assertEqual(belt.tile_height, 1)

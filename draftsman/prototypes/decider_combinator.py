@@ -3,31 +3,36 @@
 from draftsman.prototypes.mixins import (
     ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
 )
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
-from typing import Union
 import draftsman.signatures as signatures
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import decider_combinators
+
+from typing import Union
+import warnings
 
 
 class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin, 
                         DirectionalMixin, Entity):
     """
     """
-    def __init__(self, name: str = decider_combinators[0], **kwargs):
-        if name not in decider_combinators:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(DeciderCombinator, self).__init__(name, **kwargs)
+    def __init__(self, name = decider_combinators[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(DeciderCombinator, self).__init__(
+            name, decider_combinators, **kwargs
+        )
 
         self.dual_circuit_connectable = True
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )
     
-    def set_decider_conditions(self, a:Union[str,int] = None, op:str = "<", 
-                               b:Union[str,int] = 0, out:str = None) -> None:
+    def set_decider_conditions(self, a = None, op = "<", b = 0, out = None):
+        # type: (Union[str, int], str, Union[str, int], str) -> None
         """
         """
         # TODO: `first_constant`/`second_constant` is incorrect; if there's only
@@ -98,7 +103,8 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
     #     """
     #     pass # TODO
 
-    def set_copy_count_from_input(self, value: bool) -> None:
+    def set_copy_count_from_input(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -113,6 +119,7 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
             decider_conditions["copy_count_from_input"] = value
 
     def remove_decider_conditions(self):
+        # type: () -> None
         """
         """
         # TODO: delete this function

@@ -1,25 +1,14 @@
 # test_logistic_buffer_container.py
 
 from draftsman.entity import LogisticBufferContainer, logistic_buffer_containers
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class LogisticBufferContainerTesting(TestCase):
-    def test_default_constructor(self):
-        buffer_chest = LogisticBufferContainer()
-        hw = buffer_chest.tile_width / 2.0
-        hh = buffer_chest.tile_height / 2.0
-        self.assertEqual(
-            buffer_chest.to_dict(),
-            {
-                "name": logistic_buffer_containers[0],
-                "position": {"x": hw, "y": hh}
-            }
-        )
-
     def test_constructor_init(self):
         buffer_chest = LogisticBufferContainer("logistic-chest-buffer", 
             position = [15, 3], bar = 5, 
@@ -88,14 +77,14 @@ class LogisticBufferContainerTesting(TestCase):
         # )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             LogisticBufferContainer("logistic-chest-buffer", 
                 position = [0, 0], invalid_keyword = "100"
             )
         
         # Errors
         # Raises InvalidEntityID when not in containers
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             LogisticBufferContainer("this is not a logistics storage chest")
         
         # Raises schema errors when any of the associated data is incorrect
@@ -129,9 +118,3 @@ class LogisticBufferContainerTesting(TestCase):
             self.assertEqual(container.dual_power_connectable, False)
             self.assertEqual(container.circuit_connectable, True)
             self.assertEqual(container.dual_circuit_connectable, False)
-
-    def test_dimensions(self):
-        for name in logistic_buffer_containers:
-            container = LogisticBufferContainer(name)
-            self.assertEqual(container.tile_width, 1)
-            self.assertEqual(container.tile_height, 1)

@@ -1,5 +1,19 @@
 # blueprint.py
 
+# TODO: Add error checking
+# Checking if the signals passed into setIcons are actual signals, etc.
+# TODO: Make sure entities cannot be placed on top of one another
+# TODO: Add warnings for placement constraints on all entities
+# TODO: Issue warning when placing hidden entity
+# TODO: Add groups (back)
+# TODO: Add more Blueprint member functions
+# TODO: Complete BlueprintBook
+# TODO: GAY RIGHTS
+# TODO: Limit blueprints to 10,000 tiles x 10,000 tiles
+# "Ordered to create blueprint with unreasonable size"
+# TODO: figure out a way to make sure warnings from this class point to the correct calling function
+#   (https://stackoverflow.com/questions/54399469/how-do-i-assign-a-stacklevel-to-a-warning-depending-on-the-caller)
+
 from draftsman._factorio_version import __factorio_version_info__
 
 import draftsman.utils as utils
@@ -10,20 +24,17 @@ import draftsman.utils as utils
 #     BLUEPRINT_BOOK
 # )
 from draftsman import signatures
-from draftsman.errors import (
-    IncorrectBlueprintType,
-    DuplicateIDException,
-    MalformedBlueprintString,
-    EntityNotCircuitConnectable,
-    EntityNotPowerConnectable,
-    InvalidSignalID
+from draftsman.error import (
+    IncorrectBlueprintTypeError, DuplicateIDError, 
+    MalformedBlueprintStringError, EntityNotCircuitConnectableError, 
+    EntityNotPowerConnectableError, InvalidSignalError
 )
 from draftsman.entity import new_entity
 from draftsman.prototypes.mixins import Entity # TODO: change this
 from draftsman.tile import Tile
-from draftsman.signal import signal_IDs
-from draftsman.utils import get_signal_type
+from draftsman.utils import get_signal_type, signal_dict
 
+import draftsman.data.signals as signals
 
 import base64
 import copy
@@ -33,17 +44,6 @@ from logging import FileHandler
 from typing import Any, Union
 import zlib
 
-# TODO: maybe add error checking?
-# Checking if the signals passed into setIcons are actual signals, etc.
-# TODO: figure out a way to specify all the regular entities
-# TODO: make sure entities cannot be placed on top of one another
-# TODO: add groups (back)
-# TODO: add more Blueprint member functions
-# TODO: complete BlueprintBook
-# TODO: GAY RIGHTS
-# TODO: Limit blueprints to 10,000 tiles x 10,000 tiles
-# "Ordered to create blueprint with unreasonable size"
-# TODO: move wire connection assertion checks into entity
 
 class BiDict(dict):
     def __init__(self, *args, **kwargs):
@@ -54,7 +54,7 @@ class BiDict(dict):
             # If we want multiple key -> value pairs:
             #self.inverse.setdefault(value, []).append(key)
 
-    def __setitem__(self, key: Any, value: Any) -> None:
+    def __setitem__(self, key, value):
         if key in self:
             del self.inverse[self[key]]
         #    self.inverse[self[key]].remove(key)
@@ -64,7 +64,7 @@ class BiDict(dict):
     # def __getitem__(self, key: Any) -> Any:
     #     pass
 
-    def __delitem__(self, key: Any) -> None:
+    def __delitem__(self, key):
         if self[key] in self.inverse and not self.inverse[self[key]]:
             del self.inverse[self[key]]
         super(BiDict, self).__delitem__(key)
@@ -75,6 +75,7 @@ class Blueprint:
     the ability to store ids associated to each entity for ease of access.
     """
     def __init__(self, blueprint_string=None):
+        # type: (str) -> None
         """
         Creates a Blueprint class. Will load the data from `blueprint_string`
         if provided, otherwise initializes with defaults.
@@ -98,7 +99,8 @@ class Blueprint:
         self.tile_numbers = BiDict()
         self.schedule_numbers = BiDict()
 
-    def load_from_string(self, blueprint_string: str) -> None:
+    def load_from_string(self, blueprint_string):
+        # type: (str) -> None
         """
         Load the Blueprint with the contents of `blueprint_string`.
 
@@ -108,14 +110,15 @@ class Blueprint:
         root = utils.string_2_JSON(blueprint_string)
         # Ensure that the blueprint string actually points to a blueprint
         if "blueprint" not in root:
-            raise IncorrectBlueprintType
+            raise IncorrectBlueprintTypeError
         self.blueprint  = root["blueprint"]
         self._setup_defaults()
 
         # Attempt to load entities
         self._load_entities_from_root()
 
-    def load_from_file(self, blueprint_file: FileIO) -> None:
+    def load_from_file(self, blueprint_file):
+        # type: (FileIO) -> None
         """
         Load the Blueprint with the contents file handle `blueprint_file`.
 
@@ -124,14 +127,15 @@ class Blueprint:
         """
         root = utils.string_2_JSON(blueprint_file.read())
         if "blueprint" not in root:
-            raise IncorrectBlueprintType
+            raise IncorrectBlueprintTypeError
         self.blueprint = root["blueprint"]
         self._setup_defaults()
 
         # Attempt to load entities
         self._load_entities_from_root()
 
-    def set_label(self, label: str) -> None:
+    def set_label(self, label):
+        # type: (str) -> None
         """
         Sets the Blueprint's label (title). Setting label to `None` deletes the
         parameter from the Blueprint.
@@ -150,8 +154,8 @@ class Blueprint:
         else:
             raise ValueError("`label` must be a string!")
 
-    def set_label_color(self, r: float, g: float, 
-                        b: float, a: float = 1.0) -> None:
+    def set_label_color(self, r = 1.0, g = 1.0, b = 1.0, a = 1.0):
+        # type: (float, float, float, float) -> None
         """
         Sets the color of the Blueprint's label (title).
 
@@ -167,7 +171,8 @@ class Blueprint:
         data = signatures.COLOR.validate({"r": r, "g": g, "b": b, "a": a})
         self.blueprint["label_color"] = data
 
-    def set_icons(self, *signals) -> None:
+    def set_icons(self, *signals):
+        # type: (list[str]) -> None
         """
         Sets the icon or icons associated with the blueprint.
         
@@ -183,21 +188,22 @@ class Blueprint:
         for i, signal in enumerate(signals):
             out = {"index": i + 1 }
             try: 
-                out["signal"] = signal_IDs[signal].to_dict()
+                out["signal"] = signal_dict(signal)
             except KeyError:
-                raise InvalidSignalID("'" + str(signal) + "'")
+                raise InvalidSignalError(signal)
             # This is probably redundant
             out = signatures.ICON.validate(out)
             self.blueprint["icons"].append(out)
 
-    def set_description(self, description: str) -> None:
+    def set_description(self, description):
+        # type: (str) -> None
         """
         Sets the description for the blueprint.
         """
         self.blueprint["description"] = description
 
-    def set_version(self, major: int, minor: int, 
-                    patch: int = 0, dev_ver: int = 0) -> None:
+    def set_version(self, major, minor, patch = 0, dev_ver = 0):
+        # type: (int, int, int, int) -> None
         """
         Sets the intended version of the Blueprint.
 
@@ -209,7 +215,8 @@ class Blueprint:
         """
         self.blueprint["version"] = utils.encode_version(major, minor, patch, dev_ver)
 
-    def add_entity(self, entity: Union[Entity, str], **kwargs) -> None:
+    def add_entity(self, entity, **kwargs):
+        # type: (Union[Entity, str], **dict) -> None
         """
         """
         entity_id = None
@@ -221,7 +228,7 @@ class Blueprint:
         
         if entity_id is not None:
             if entity_id in self.entity_numbers: # Same ID!
-                raise DuplicateIDException(entity_id)
+                raise DuplicateIDError(entity_id)
 
         if isinstance(entity, str):
             entity = new_entity(entity, **kwargs)
@@ -250,20 +257,25 @@ class Blueprint:
         else:
             self.entity_numbers.inverse[n] = None
 
-    def set_entity_id(self, entity_number: int, id: str) -> None:
+    def set_entity_id(self, entity_number, id):
+        # type: (int, str) -> None
         """
         Adds an `id` to an already added Entity.
+        TODO: investigate if this is necessary, why not just do
+        `blueprint.entities[number].set_id("whatever")`?
         """
         self.entity_numbers[id] = entity_number
 
-    def find_entity_by_id(self, id: str) -> Entity:
+    def find_entity_by_id(self, id):
+        # type: (str) -> Entity
         """
         Gets the entity with the corresponding `id` assigned to it. If you want
         to get the entity by index, use `blueprint.entities[i]` instead.
         """
         return self.entities[self.entity_numbers[id]]
 
-    def find_entity(self, name: str, position: tuple) -> Entity:
+    def find_entity(self, name, position):
+        # type: (str, tuple) -> Entity
         """
         Finds an entity with `name` at a grid position `position`.
         """
@@ -273,7 +285,8 @@ class Blueprint:
             # if so, return that entity
             pass
 
-    def find_entities(self, aabb: list = None) -> list[Entity]:
+    def find_entities(self, aabb = None):
+        # type: (list) -> list[Entity]
         """
         Returns a list of all entities within the area `aabb`. Works similiarly
         to `LuaSurface.find_entities`. If no `aabb` is provided then the 
@@ -289,7 +302,8 @@ class Blueprint:
             pass
         return out
 
-    def find_entities_filtered(self, **kwargs) -> list[Entity]:
+    def find_entities_filtered(self, **kwargs):
+        # type: (**dict) -> list[Entity]
         """
         Returns a filtered list of entities within the blueprint. Works 
         similarly to `LuaSurface.find_entities_filtered`. 
@@ -348,7 +362,8 @@ class Blueprint:
         else:
             return list(filter(lambda entity: test(entity), search_region))
 
-    def remove_entity(self, entity_id: Union[int, str]) -> Entity:
+    def remove_entity(self, entity_id):
+        # type: (Union[int, str]) -> Entity
         """
         Removes the entity with the id `entity_id`.
         """
@@ -367,7 +382,8 @@ class Blueprint:
         # Return the removed entity because why not
         return self.entities.pop(entity_number - 1)
 
-    def add_power_connection(self, id1: Union[str, int], id2: Union[str, int], side1: int = 1, side2: int = 1) -> None:
+    def add_power_connection(self, id1, id2, side1 = 1, side2 = 1):
+        # type: (Union[str, int], Union[str, int], int, int) -> None
         """
         Adds a copper wire power connection between two entities.
         """
@@ -384,9 +400,9 @@ class Blueprint:
             entity_2 = self.entities[id2]
         
         if not entity_1.power_connectable:
-            raise EntityNotPowerConnectable(entity_1.name)
+            raise EntityNotPowerConnectableError(entity_1.name)
         if not entity_2.power_connectable:
-            raise EntityNotPowerConnectable(entity_2.name)
+            raise EntityNotPowerConnectableError(entity_2.name)
         
         # Assert that entities are close enough to connect with wires
         # TODO
@@ -397,6 +413,7 @@ class Blueprint:
         #entity_2.add_power_connection(entity_1, id1, side2)
 
     def add_circuit_connection(self, color, id1, id2, side1 = 1, side2 = 1):
+        # type: (str, Union[str, int], Union[str, int], int, int) -> None
         """
         Adds a circuit wire connection between two entities.
         """
@@ -421,9 +438,9 @@ class Blueprint:
         # Assert that both entities can be connected to
         # if not hasattr(entity_1, "circuit_connectable"):
         if not entity_1.circuit_connectable:
-            raise EntityNotCircuitConnectable(entity_1.name)
+            raise EntityNotCircuitConnectableError(entity_1.name)
         if not entity_2.circuit_connectable:
-            raise EntityNotCircuitConnectable(entity_2.name)
+            raise EntityNotCircuitConnectableError(entity_2.name)
 
         # Assert that the entities are close enough to connect with wires
         # TODO
@@ -438,6 +455,7 @@ class Blueprint:
         # entity_2.add_circuit_connection(color, entity_1, side2, side1)
 
     def remove_circuit_connection(self, color, id1, id2, side1 = 1, side2 = 1):
+        # type: (str, Union[str, int], Union[str, int], int, int) -> None
         """
         Adds a circuit wire connection between two entities.
         """
@@ -461,7 +479,8 @@ class Blueprint:
         # Handle entity 2
         entity_2.remove_circuit_connection(color, entity_1, side2, side1)
 
-    def add_tile(self, tile_name: str, x: int, y: int, id: str = None) -> None:
+    def add_tile(self, tile_name, x, y, id = None):
+        # type: (str, int, int, str) -> None
         """
         Add a tile to the Blueprint.
         """
@@ -469,20 +488,22 @@ class Blueprint:
             if id not in self.tile_numbers:
                 self.tile_numbers[id] = len(self.tiles)
             else: # Same ID!
-                raise DuplicateIDException(
+                raise DuplicateIDError(
                     "'{}' already used in blueprint tiles".format(id)
                 )
         
         self.tiles.append(Tile(tile_name, x, y))
 
-    def find_tile_by_id(self, id: str) -> Tile:
+    def find_tile_by_id(self, id):
+        # type: (str) -> Tile
         """
         Gets the tile with the corresponding `id` assigned to it. If you want to
         get the tile by index, use `blueprint.tiles[i]` instead.
         """
         return self.tiles[self.tile_numbers[id]]
 
-    def find_tile(self, x: int, y: int) -> Tile:
+    def find_tile(self, x, y):
+        # type: (int, int) -> Tile
         """
         """
         for tile in self.tiles:
@@ -490,18 +511,21 @@ class Blueprint:
                 return tile
         return None
 
-    def find_tiles_filtered(self, **kwargs) -> list[Tile]:
+    def find_tiles_filtered(self, **kwargs):
+        # type: (**dict) -> list[Tile]
         # TODO
         pass
 
-    def read_version(self) -> str:
+    def read_version(self):
+        # type: () -> str
         """
         Returns the version of the Blueprint in human-readable string.
         """
         version_tuple = utils.decode_version(self.blueprint["version"])
         return utils.version_tuple_2_string(version_tuple)
 
-    def to_dict(self) -> dict:
+    def to_dict(self):
+        # type: () -> dict
         """
         Returns the blueprint as a dictionary. Intended for getting the 
         precursor to a Factorio blueprint string.
@@ -559,7 +583,8 @@ class Blueprint:
         
         return out_dict
 
-    def to_string(self) -> str:
+    def to_string(self):
+        # type: () -> str
         """
         Returns the Blueprint as a Factorio blueprint string.
         """
@@ -571,7 +596,7 @@ class Blueprint:
     def __getitem__(self, key):
         return self.blueprint[key]
 
-    def __repr__(self) -> str:
+    def __str__(self):
         return "<Blueprint>\n" + json.dumps(self.to_dict(), indent=2)
 
     def _setup_defaults(self):
@@ -612,7 +637,12 @@ class BlueprintBook:
     """
     Factorio Blueprint Book.
     """
-    def __init__(self, blueprint_string:str = None, blueprints:list = []):
+    def __init__(self, **kwargs):
+        # type: (**dict) -> None
+        # blueprint_string = None
+        # blueprints = []
+        # Maybe just have one positional argument blueprints that can either be
+        # blueprint string or list of blueprint objects?
         # Ensure that the blueprint loaded is actually the correct object type
 
         # add blueprints
@@ -620,18 +650,20 @@ class BlueprintBook:
         self.root["blueprint_book"] = dict()
 
         # TODO: validate that blueprints are actually blueprints
-        self.blueprints = blueprints
+        self.blueprints = kwargs.pop("blueprints", [])
 
         self.blueprint_book = self.root
-        pass
 
-    def load_from_string(self, blueprint_string:str) -> None:
-        pass
+    def load_from_string(self, blueprint_string):
+        # type: (str) -> None
+        pass # TODO
 
-    def load_from_file(self, blueprint_file:str) -> None:
-        pass
+    def load_from_file(self, blueprint_file):
+        # type: (FileIO) -> None
+        pass # TODO
 
-    def set_metadata(self, **kwargs) -> None: # TODO: test
+    def set_metadata(self, **kwargs): # TODO: test
+        # type: (**dict) -> None
         """
         Sets any or all of the Blueprints metadata elements, where:
         * `label` expects a string,
@@ -646,7 +678,8 @@ class BlueprintBook:
             if key in valid_keywords:
                 self.object[key] = value
 
-    def set_label(self, label:str) -> None:
+    def set_label(self, label):
+        # type: (str) -> None
         """
         Sets the Blueprint's label (title).
 
@@ -655,7 +688,8 @@ class BlueprintBook:
         """
         self.object["label"] = label
 
-    def set_label_color(self, r:float, g:float, b:float, a:float = 1.0) -> None:
+    def set_label_color(self, r = 1.0, g = 1.0, b = 1.0, a = 1.0):
+        # type: (float, float, float, float) -> None
         """
         Sets the color of the Blueprint's label (title).
 
@@ -667,7 +701,8 @@ class BlueprintBook:
         """
         self.object["label_color"] = {"r": r, "g": g, "b": b, "a": a}
 
-    def set_icons(self, signal_list:list) -> None:
+    def set_icons(self, signal_list):
+        # type: (list) -> None
         """
         Sets the icon or icons associated with the blueprint. `signal_list` is
         an array of strings; each signal corresponds to their index in the 
@@ -686,7 +721,8 @@ class BlueprintBook:
             out["signal"] = {"name": signal, "type": get_signal_type(signal)}
             self.object["icons"].append(out)
 
-    def set_version(self, major:int, minor:int, patch:int = 0, dev_ver:int = 0) -> None:
+    def set_version(self, major, minor, patch = 0, dev_ver = 0):
+        # type: (int, int, int, int) -> None
         """
         Sets the intended version of the Blueprint.
 
@@ -698,26 +734,40 @@ class BlueprintBook:
         """
         self.object["version"] = utils.encode_version(major, minor, patch, dev_ver)
 
-    def add_blueprint(self, blueprint:Blueprint) -> None:
+    def add_blueprint(self, blueprint):
+        # type: (Blueprint) -> None
+        """
+        """
         self.blueprints.append(blueprint)
 
-    def set_blueprint(self, index:int, blueprint:Blueprint) -> None:
+    def set_blueprint(self, index, blueprint):
+        # type: (int, Blueprint) -> None
+        """
+        """
         self.blueprints[index] = blueprint
 
-    def get_blueprint(self, index:int) -> Blueprint:
+    def get_blueprint(self, index):
+        # type: (int) -> Blueprint
+        """
+        TODO: keep this function? why not just 
+        `blueprintbook.blueprints[number]`?
+        """
         return self.blueprints[index]
 
-    def read_version(self) -> str:
+    def read_version(self):
+        # type: () -> str
         """
         Returns the version of the Blueprint in human-readable string.
         """
         version_tuple = utils.decode_version(self.object["version"])
         return '.'.join(str(i) for i in version_tuple)
 
-    def to_dict(self) -> dict:
+    def to_dict(self):
+        # type: () -> dict
         pass # TODO
 
-    def to_string(self) -> str:
+    def to_string(self):
+        # type: () -> str
         """
         """
         # Get the root dicts from each blueprint and insert them into blueprints
@@ -739,10 +789,14 @@ class BlueprintBook:
         return "< BlueprintBook >\n" + json.dumps(self.root, indent=2)
 
 
-def get_blueprintable_from_string(blueprint_string:str) \
-        -> Union[Blueprint, BlueprintBook]:
+def get_blueprintable_from_string(blueprint_string):
+    # type: (str) -> Union[Blueprint, BlueprintBook]
     """
-    Gets a Blueprintable object based off of the `blueprint_string`.
+    Gets a Blueprintable object based off of the `blueprint_string`. A 
+    'Blueprintable object' in this context either a Blueprint or a 
+    BlueprintBook, depending on the particular string you passed in. This 
+    function allows you generically accept either Blueprint strings or 
+    BlueprintBook strings.
 
     Returns:
         Either a Blueprint or a BlueprintBook, depending on the input string.
@@ -755,44 +809,6 @@ def get_blueprintable_from_string(blueprint_string:str) \
     if "blueprint" in temp:
         return Blueprint(blueprint_string)
     elif "blueprint_book" in temp:
-        return BlueprintBook(blueprint_string)
+        return BlueprintBook(blueprint_string=blueprint_string)
     else:
-        raise MalformedBlueprintString
-
-if __name__ == "__main__":
-    # test_dict = NestedDict()
-
-    # test_dict["really"]["long"]["dict"]["chain"] = list()
-
-    # test_dict["really"]["long"]["dict"]["chain"].append(NestedDict({"testing": 123}))
-
-    # test_dict["really"]["long"]["dict"]["chain"][0]["brotha"]["other"] = 123
-
-    # print(test_dict)
-
-    # bp = Blueprint()
-
-    # bp.set_version(1, 1, 50, 0)
-
-    # print(bp["version"])
-
-    # bp["version"] = encode_version(1, 1, 40, 0)
-
-    # print(bp["version"])
-    # print(bp.read_version())
-
-    dict_with_some_stuff = {"hello": 100, "yes": "this is phone"}
-
-    print(dict_with_some_stuff)
-
-    other_dict = {"blueprint": dict_with_some_stuff}
-
-    print(other_dict)
-
-    #test_list = NestedList()
-
-    #test_list[0][0][0]["testing"] = 100
-
-    #print(test_list)
-
-    pass
+        raise MalformedBlueprintStringError

@@ -1,30 +1,21 @@
 # test_wall.py
 
 from draftsman.entity import Wall, walls
-from draftsman.errors import InvalidEntityID, InvalidSignalID
+from draftsman.error import InvalidEntityError, InvalidSignalError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class WallTesting(TestCase):
-    def test_default_constructor(self):
-        wall = Wall()
-        self.assertEqual(
-            wall.to_dict(),
-            {
-                "name": "stone-wall",
-                "position": {"x": 0.5, "y": 0.5}
-            }
-        )
-
     def test_contstructor_init(self):
         wall = Wall()
 
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             Wall(unused_keyword = "whatever")
 
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             Wall("this is not a wall")
 
     def test_set_enable_disable(self):
@@ -69,5 +60,5 @@ class WallTesting(TestCase):
         )
         wall.set_output_signal(None)
         self.assertEqual(wall.control_behavior, {})
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             wall.set_output_signal("incorrect")

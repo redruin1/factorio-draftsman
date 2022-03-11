@@ -1,23 +1,14 @@
 # test_roboport.py
 
 from draftsman.entity import Roboport, roboports
-from draftsman.errors import InvalidEntityID, InvalidSignalID
+from draftsman.error import InvalidEntityError, InvalidSignalError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class RoboportTesting(TestCase):
-    def test_default_constructor(self):
-        roboport = Roboport()
-        self.assertEqual(
-            roboport.to_dict(),
-            {
-                "name": "roboport",
-                "position": {"x": 2.0, "y": 2.0}
-            }
-        )
-
     def test_constructor_init(self):
         roboport = Roboport(
             "roboport", position = [1, 1],
@@ -129,17 +120,14 @@ class RoboportTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             Roboport("roboport", unused_keyword = "whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             Roboport("this is not a roboport")
 
     def test_flags(self):
-        pass # TODO
-
-    def test_dimensions(self):
         pass # TODO
 
     def test_set_read_logistics(self):
@@ -184,7 +172,7 @@ class RoboportTesting(TestCase):
         )
         roboport.set_available_logistics_signal(None)
         self.assertEqual(roboport.control_behavior, {})
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             roboport.set_available_logistics_signal("incorrect")
 
     def test_set_total_logistics_signal(self):
@@ -201,7 +189,7 @@ class RoboportTesting(TestCase):
         )
         roboport.set_total_logistics_signal(None)
         self.assertEqual(roboport.control_behavior, {})
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             roboport.set_total_logistics_signal("incorrect")
 
     def test_set_available_construction_signal(self):
@@ -218,7 +206,7 @@ class RoboportTesting(TestCase):
         )
         roboport.set_available_construction_signal(None)
         self.assertEqual(roboport.control_behavior, {})
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             roboport.set_available_construction_signal("incorrect")
 
     def test_set_total_construction_signal(self):
@@ -235,5 +223,5 @@ class RoboportTesting(TestCase):
         )
         roboport.set_total_construction_signal(None)
         self.assertEqual(roboport.control_behavior, {})
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             roboport.set_total_construction_signal("incorrect")

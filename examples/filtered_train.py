@@ -66,6 +66,7 @@ def main():
     blueprint.set_label("1-{} Filtered Train".format(train_car_position))
     blueprint.set_label_color(1.0, 0.0, 0.0) # because why not
 
+    #print(blueprint)
     print(blueprint.to_string())
     
 

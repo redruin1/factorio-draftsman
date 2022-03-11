@@ -14,9 +14,15 @@ dithering to reduce banding. Much improvement could be made here:
         placement restriction
 
 Unfortunately, it doesn't seem like the `map_color`s for most entities are 
-available, which means that dynamically updating the palette with mods seems out
-of the question. :(
+available, (possibly hardcoded?) which means that dynamically updating the 
+palette with mods seems out of the question. :(
+
 Let me know if I've missed them somewhere though.
+
+Requirements:
+    pillow
+    numpy
+    pyperclip (or you can just output the contents to a file)
 """
 
 import math
@@ -27,6 +33,7 @@ from draftsman.entity import new_entity
 import pyperclip
 
 def main():
+    # Manually specify the color, whether its a tile or entity, and its name
     colors = [
         [(189, 203, 189), "entity", "stone-wall"],
         #[(140, 138, 140), "entity", "straight-rail"],

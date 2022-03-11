@@ -2,23 +2,14 @@
 
 from draftsman.constants import Direction, ReadMode
 from draftsman.entity import FilterInserter, filter_inserters
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class FilterInserterTesting(TestCase):
-    def test_default_constructor(self):
-        inserter = FilterInserter()
-        self.assertEqual(
-            inserter.to_dict(),
-            {
-                "name": "filter-inserter",
-                "position": {"x": 0.5, "y": 0.5},
-            }
-        )
-
     def test_constructor_init(self):
         # Valid
         inserter = FilterInserter(
@@ -103,14 +94,14 @@ class FilterInserterTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             FilterInserter(
                 position = [0, 0], direction = Direction.WEST, invalid_keyword = 5
             )
 
         # Errors
         # Raises InvalidEntityID when not in containers
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             FilterInserter("this is not a filter inserter")
 
         # Raises schema errors when any of the associated data is incorrect
@@ -155,12 +146,6 @@ class FilterInserterTesting(TestCase):
             self.assertEqual(inserter.dual_power_connectable, False)
             self.assertEqual(inserter.circuit_connectable, True)
             self.assertEqual(inserter.dual_circuit_connectable, False)
-    
-    def test_dimensions(self):
-        for name in filter_inserters:
-            inserter = FilterInserter(name)
-            self.assertEqual(inserter.tile_width, 1)
-            self.assertEqual(inserter.tile_height, 1)
 
     def test_set_filter_mode(self):
         inserter = FilterInserter()

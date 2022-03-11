@@ -1,19 +1,19 @@
 # heat_interface.py
 
 from draftsman.prototypes.mixins import Entity
-from draftsman.errors import InvalidEntityID, InvalidMode
-from draftsman.utils import warn_user
+from draftsman.error import InvalidModeError
 import draftsman.signatures as signatures
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import heat_interfaces
 
+import warnings
+
 
 class HeatInterface(Entity):
-    def __init__(self, name: str = heat_interfaces[0], **kwargs):
-        if name not in heat_interfaces:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(HeatInterface, self).__init__(name, **kwargs)
+    def __init__(self, name = heat_interfaces[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(HeatInterface, self).__init__(name, heat_interfaces, **kwargs)
 
         self.temperature = 0
         if "temperature" in kwargs:
@@ -28,9 +28,14 @@ class HeatInterface(Entity):
         self._add_export("mode", lambda x: x is not None and x != "at-least")
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )
 
-    def set_temperature(self, temperature: int) -> None:
+    def set_temperature(self, temperature):
+        # type: (int) -> None
         """
         """
         if temperature is None:
@@ -40,7 +45,8 @@ class HeatInterface(Entity):
             assert 0 <= temperature and temperature <= 1000
             self.temperature = temperature
 
-    def set_mode(self, mode: str) -> None:
+    def set_mode(self, mode):
+        # type: (str) -> None
         """
         * "at-least"
         * "at-most"
@@ -52,5 +58,5 @@ class HeatInterface(Entity):
             self.mode = "at-least"
         else:
             if mode not in {"at-least", "at-most", "exactly", "add", "remove"}:
-                raise InvalidMode(mode)
+                raise InvalidModeError(mode)
             self.mode = mode

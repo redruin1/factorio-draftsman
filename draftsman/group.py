@@ -1,6 +1,9 @@
 # group.py
 
+# TODO: documentation!
+
 from draftsman.entity import EntityLike
+
 
 class Group(EntityLike):
     """

@@ -1,19 +1,20 @@
 # electric_energy_interface.py
 
 from draftsman.prototypes.mixins import Entity
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
 import draftsman.signatures as signatures
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import electric_energy_interfaces
 
+import warnings
+
 
 class ElectricEnergyInterface(Entity):
-    def __init__(self, name: str = electric_energy_interfaces[0], **kwargs):
-        if name not in electric_energy_interfaces:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(ElectricEnergyInterface, self).__init__(name, **kwargs)
+    def __init__(self, name = electric_energy_interfaces[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(ElectricEnergyInterface, self).__init__(
+            name, electric_energy_interfaces, **kwargs
+        )
 
         self.buffer_size = None # TODO: default
         if "buffer_size" in kwargs:
@@ -34,19 +35,26 @@ class ElectricEnergyInterface(Entity):
         self._add_export("power_usage", lambda x: x is not None)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )
 
-    def set_buffer_size(self, amount: int) -> None:
+    def set_buffer_size(self, amount):
+        # type: (int) -> None
         """
         """
         self.buffer_size = signatures.INTEGER.validate(amount)
 
-    def set_power_production(self, amount: int) -> None:
+    def set_power_production(self, amount):
+        # type: (int) -> None
         """
         """
         self.power_production = signatures.INTEGER.validate(amount)
 
-    def set_power_usage(self, amount: int) -> None:
+    def set_power_usage(self, amount):
+        # type: (int) -> None
         """
         """
         self.power_usage = signatures.INTEGER.validate(amount)

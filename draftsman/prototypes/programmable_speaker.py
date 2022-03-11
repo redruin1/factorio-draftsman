@@ -3,31 +3,34 @@
 from draftsman.prototypes.mixins import (
     CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, Entity
 )
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user, signal_dict
-from typing import Union
 import draftsman.signatures as signatures
-
-import draftsman.data.instruments
+from draftsman.utils import signal_dict
+from draftsman.warning import DraftsmanWarning, VolumeWarning
 
 from draftsman.data.entities import programmable_speakers
+import draftsman.data.entities as entities
+import draftsman.data.instruments as instruments
+
+from typing import Union
+import warnings
 
 
 class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin, 
                           CircuitConnectableMixin, Entity):
     """
     """
-    def __init__(self, name: str = programmable_speakers[0], **kwargs):
-        if name not in programmable_speakers:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(ProgrammableSpeaker, self).__init__(name, **kwargs)
+    def __init__(self, name = programmable_speakers[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(ProgrammableSpeaker, self).__init__(
+            name, programmable_speakers, **kwargs
+        )
 
         # Name translations for all of the instruments and their notes
-        self.instruments = draftsman.data.instruments.instruments[self.name]
+        self.instruments = instruments.instruments[self.name]
+        #self.instruments = entities.raw[self.name]["instruments"]
         # Default instrument and note names
-        self.instrument_name = list(self.instruments)[0]
-        self.note_name = self.instruments[self.instrument_name][0]
+        self.instrument_id = 0
+        self.note_id = 0
 
         self.parameters = {}
         if "parameters" in kwargs:
@@ -45,21 +48,28 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
             self._normalize_circuit_parameters()
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )
 
-    def set_parameters(self, parameters: dict) -> None:
+    def set_parameters(self, parameters):
+        # type: (dict) -> None
         """
         """
         self.parameters = signatures.PARAMETERS.validate(parameters)
 
-    def set_alert_parameters(self, alert_parameters: dict) -> None:
+    def set_alert_parameters(self, alert_parameters):
+        # type: (dict) -> None
         """
         """
         self.alert_parameters = signatures.ALERT_PARAMETERS.validate(
             alert_parameters
         )
 
-    def set_volume(self, volume: float) -> None:
+    def set_volume(self, volume):
+        # type: (float) -> None
         """
         """
         if volume is None:
@@ -67,11 +77,16 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
         else:
             volume = signatures.FLOAT.validate(volume)
             if volume < 0.0 or volume > 1.0:
-                warn_user("volume not in range of [0.0, 1.0], will be clamped "
-                          "to this range on import")
+                warnings.warn(
+                    "volume not in range of [0.0, 1.0], will be clamped "
+                    "to this range on import",
+                    VolumeWarning,
+                    stacklevel=2
+                )
             self.parameters["playback_volume"] = volume
 
-    def set_global_playback(self, value: bool) -> None:
+    def set_global_playback(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -80,7 +95,8 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
             value = signatures.BOOLEAN.validate(value)
             self.parameters["playback_globally"] = value
 
-    def set_show_alert(self, value: bool) -> None:
+    def set_show_alert(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -89,7 +105,8 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
             value = signatures.BOOLEAN.validate(value)
             self.alert_parameters["show_alert"] = value
 
-    def set_polyphony(self, value: bool) -> None:
+    def set_polyphony(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -98,7 +115,8 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
             value = signatures.BOOLEAN.validate(value)
             self.parameters["allow_polyphony"] = value
 
-    def set_show_alert_on_map(self, value: bool) -> None:
+    def set_show_alert_on_map(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -107,7 +125,8 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
             value = signatures.BOOLEAN.validate(value)
             self.alert_parameters["show_on_map"] = value
 
-    def set_alert_icon(self, signal: str) -> None:
+    def set_alert_icon(self, signal):
+        # type: (str) -> None
         """
         """
         if signal is None:
@@ -115,7 +134,8 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
         else:
             self.alert_parameters["icon_signal_id"] = signal_dict(signal)
 
-    def set_alert_message(self, message: str) -> None:
+    def set_alert_message(self, message):
+        # type: (str) -> None
         """
         """
         if message is None:
@@ -124,7 +144,8 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
             message = signatures.STRING.validate(message)
             self.alert_parameters["alert_message"] = message
 
-    def set_signal_value_is_pitch(self, value: bool) -> None:
+    def set_signal_value_is_pitch(self, value):
+        # type: (bool) -> None
         """
         """
         # TODO: handle this with defaults
@@ -140,7 +161,8 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
             value = signatures.BOOLEAN.validate(value)
             circuit_params["signal_value_is_pitch"] = value
 
-    def set_instrument(self, instrument: Union[int, str]) -> None:
+    def set_instrument(self, instrument):
+        # type: (Union[int, str]) -> None
         """
         TODO: fix this function up, its an eyesore
         """
@@ -154,7 +176,7 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
             if len(circuit_params) == 0:
                 self.control_behavior.pop("circuit_parameters", None)
         elif isinstance(instrument, int):
-            # TODO: If index is out of range, warn or error?
+            # TODO: If index is out of range, issue Warning
             circuit_params["instrument_id"] = instrument
         elif isinstance(instrument, str):
             instrument = list(self.instruments).index(instrument)
@@ -162,9 +184,19 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
         else:
             raise TypeError("instrument_id is neither int nor str")
 
-        #self._normalize_circuit_parameters()
 
-    def set_note(self, note: int) -> None:
+        # How I would like this function to be written:
+        # if instrument is None:
+        #     circuit_params.pop("instrument_id", None)
+        #     self.instrument = 0
+        # else:
+        #     instrument = instruments.index[self.name][instrument]["self"]
+        #     self.instrument = instrument
+        #     circuit_params["instrument_id"] = instrument
+        #     # raises keyerror if need be
+
+    def set_note(self, note):
+        # type: (int) -> None
         """
         TODO: fix this function up, its an eyesore
         """
@@ -189,6 +221,14 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
             circuit_params["note_id"] = instrument_notes.index(note)
         else:
             raise TypeError("note_id is neither int nor str")
+
+        # How I would like this function to be written:
+        # if note is None:
+        #     circuit_params.pop("note_id", None)
+        # else:
+        #     note = instruments.index[self.name][self.instrument][note]
+        #     circuit_params["note_id"] = note
+        #     # raises keyerror if need be
 
     def _normalize_circuit_parameters(self):
         """

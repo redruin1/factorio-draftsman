@@ -2,23 +2,14 @@
 
 from draftsman.constants import Direction, ReadMode
 from draftsman.entity import Inserter, inserters
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class InserterTesting(TestCase):
-    def test_default_constructor(self):
-        inserter = Inserter()
-        self.assertEqual(
-            inserter.to_dict(),
-            {
-                "name": "burner-inserter",
-                "position": {"x": 0.5, "y": 0.5},
-            }
-        )
-
     def test_constructor_init(self):
         # Valid
         inserter = Inserter(
@@ -97,14 +88,14 @@ class InserterTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             Inserter(
                 position = [0, 0], direction = Direction.WEST, invalid_keyword = 5
             )
 
         # Errors
         # Raises InvalidEntityID when not in containers
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             Inserter("this is not an inserter")
 
         # Raises schema errors when any of the associated data is incorrect
@@ -143,9 +134,3 @@ class InserterTesting(TestCase):
             self.assertEqual(inserter.dual_power_connectable, False)
             self.assertEqual(inserter.circuit_connectable, True)
             self.assertEqual(inserter.dual_circuit_connectable, False)
-    
-    def test_dimensions(self):
-        for name in inserters:
-            inserter = Inserter(name)
-            self.assertEqual(inserter.tile_width, 1)
-            self.assertEqual(inserter.tile_height, 1)

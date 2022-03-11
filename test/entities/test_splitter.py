@@ -2,23 +2,14 @@
 
 from draftsman.constants import Direction
 from draftsman.entity import Splitter, splitters
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class SplitterTesting(TestCase):
-    def test_default_constructor(self):
-        splitter = Splitter()
-        self.assertEqual(
-            splitter.to_dict(),
-            {
-                "name": "splitter",
-                "position": {"x": 1.0, "y": 0.5},
-            }
-        )
-
     def test_constructor_init(self):
         # Valid
         splitter = Splitter(
@@ -42,14 +33,14 @@ class SplitterTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             Splitter(
                 position = [0, 0], direction = Direction.WEST, invalid_keyword = 5
             )
 
         # Errors
         # Raises InvalidEntityID when not in containers
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             Splitter("this is not a splitter")
 
         # Raises schema errors when any of the associated data is incorrect
@@ -78,9 +69,3 @@ class SplitterTesting(TestCase):
             self.assertEqual(splitter.dual_power_connectable, False)
             self.assertEqual(splitter.circuit_connectable, False)
             self.assertEqual(splitter.dual_circuit_connectable, False)
-    
-    def test_dimensions(self):
-        for name in splitters:
-            splitter = Splitter(name)
-            self.assertEqual(splitter.tile_width, 2)
-            self.assertEqual(splitter.tile_height, 1)

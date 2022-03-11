@@ -2,23 +2,14 @@
 
 from draftsman.constants import Direction
 from draftsman.entity import UndergroundBelt, underground_belts
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class UndergroundBeltTesting(TestCase):
-    def test_default_constructor(self):
-        underground_belt = UndergroundBelt()
-        self.assertEqual(
-            underground_belt.to_dict(),
-            {
-                "name": "underground-belt",
-                "position": {"x": 0.5, "y": 0.5},
-            }
-        )
-
     def test_constructor_init(self):
         # Valid
         underground_belt = UndergroundBelt(
@@ -38,14 +29,14 @@ class UndergroundBeltTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             UndergroundBelt(
                 position = [0, 0], direction = Direction.WEST, invalid_keyword = 5
             )
 
         # Errors
         # Raises InvalidEntityID when not in containers
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             UndergroundBelt("this is not an underground belt")
 
         # Raises schema errors when any of the associated data is incorrect
@@ -68,9 +59,3 @@ class UndergroundBeltTesting(TestCase):
             self.assertEqual(underground_belt.dual_power_connectable, False)
             self.assertEqual(underground_belt.circuit_connectable, False)
             self.assertEqual(underground_belt.dual_circuit_connectable, False)
-
-    def test_dimensions(self):
-        for name in underground_belts:
-            underground_belt = UndergroundBelt(name)
-            self.assertEqual(underground_belt.tile_width, 1)
-            self.assertEqual(underground_belt.tile_height, 1)

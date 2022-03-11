@@ -2,7 +2,7 @@
 
 """
 Example program used in the readme. Used to make sure the example provided 
-actually *works*.
+actually works.
 """
 
 import draftsman as factorio
@@ -16,14 +16,14 @@ blueprint.set_version(1, 0) # 1.0
 test_string = "testing"
 for i, c in enumerate(test_string):
     constant_combinator = factorio.ConstantCombinator()
-    constant_combinator.set_grid_position(i, 0)
+    constant_combinator.set_tile_position(i, 0)
     letter_signal = "signal-{}".format(c.upper())
     constant_combinator.set_signal(0, letter_signal, 0)
     blueprint.add_entity(constant_combinator)
 
 # Create a simple clock and blinking light
 constant = factorio.ConstantCombinator()
-constant.set_grid_position(-1, 3)
+constant.set_tile_position(-1, 3)
 constant.set_direction(factorio.Direction.EAST)
 constant.set_signal(0, "signal-red", 1)
 blueprint.add_entity(constant, id = "constant")
@@ -47,7 +47,7 @@ blueprint.add_entity(
 # Use IDs to keep track of complex blueprints
 blueprint.add_entity("small-lamp", id = "blinker")
 blinker = blueprint.find_entity_by_id("blinker")
-blinker.set_grid_position(2, 3)
+blinker.set_tile_position(2, 3)
 blinker.set_enabled_condition("signal-red", "=", 60)
 blinker.set_use_colors(True)
 
@@ -65,5 +65,5 @@ assert len(ccs) == len(test_string) + 1
 
 blueprint_book = factorio.BlueprintBook(blueprints = [blueprint])
 
-print(blueprint_book)               # Pretty printing using `json`
+print(blueprint_book)               # Pretty printing using json
 print(blueprint_book.to_string())   # Blueprint string

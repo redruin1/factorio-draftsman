@@ -1,4 +1,18 @@
 # Changelog
+## **0.3.0**
+* Unified all of the data into pickles instead of generating source files
+    - (Still need to figure out module init)
+* Updated `.gitignore` to avoid committing previously mentioned pickle files
+* Added `warning.py` for warning specification
+* Added lots of warnings and their messages
+* Renamed `errors.py` to `error.py` to match the new `warning.py`
+* Renamed all Errors to have the 'Error' suffix, renamed a few
+* Added `DraftsmanError` and `DraftsmanWarning` so you can catch any specific error or warning with them
+* Made the testing suite compatable (or, at least *more* compatable) with mods
+* Added LogisticActiveContainer and LogisticPassiveContainer to complete the logistic suite
+(I think its clearer this way rather than treating them as containers)
+* Hundreds of other small changes
+
 ## **0.2.1:**
 * Finally finished entity testing (for now, reworks are coming)
 * Split all of the entity definitions into their own file (much clearer)

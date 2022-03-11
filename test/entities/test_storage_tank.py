@@ -2,9 +2,8 @@
 
 from draftsman.constants import Direction
 from draftsman.entity import StorageTank, storage_tanks
-from draftsman.errors import (
-    InvalidEntityID, InvalidWireType, InvalidConnectionSide
-)
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
@@ -14,18 +13,6 @@ import warnings
 warnings.filterwarnings("error")
 
 class StorageTankTesting(TestCase):
-    def test_default_constructor(self):
-        default_tank = StorageTank()
-        hw = default_tank.tile_width / 2.0
-        hh = default_tank.tile_height / 2.0
-        self.assertEqual(
-            default_tank.to_dict(),
-            {
-                "name": storage_tanks[0],
-                "position": {"x": hw, "y": hh}
-            }
-        )
-
     def test_constructor_init(self):
         storage_tank = StorageTank("storage-tank", 
             position = [15, 3], direction = Direction.NORTH,
@@ -71,14 +58,14 @@ class StorageTankTesting(TestCase):
             }
         )
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             StorageTank(
                 position = [0, 0], direction = Direction.WEST, invalid_keyword = 5
             )
 
         # Errors
         # Raises InvalidEntityID when not in containers
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             StorageTank("this is not a storage tank")
 
         # Raises schema errors when any of the associated data is incorrect
@@ -106,8 +93,3 @@ class StorageTankTesting(TestCase):
             self.assertEqual(container.dual_power_connectable, False)
             self.assertEqual(container.circuit_connectable, True)
             self.assertEqual(container.dual_circuit_connectable, False)
-
-    def test_dimensions(self):
-        storage_tank = StorageTank()
-        self.assertEqual(storage_tank.tile_width, 3)
-        self.assertEqual(storage_tank.tile_height, 3)

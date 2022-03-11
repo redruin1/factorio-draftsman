@@ -3,11 +3,12 @@
 from draftsman.prototypes.mixins import (
     ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
 )
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
 import draftsman.signatures as signatures
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import constant_combinators
+
+import warnings
 
 
 class ConstantCombinator(ControlBehaviorMixin, CircuitConnectableMixin, 
@@ -16,16 +17,21 @@ class ConstantCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
     TODO: maybe keep signal filters internally as an array of Signal objects,
     and then use Signal.to_dict() during that stage?
     """
-    def __init__(self, name: str = constant_combinators[0], **kwargs):
-        if name not in constant_combinators:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(ConstantCombinator, self).__init__(name, **kwargs)
+    def __init__(self, name = constant_combinators[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(ConstantCombinator, self).__init__(
+            name, constant_combinators, **kwargs
+        )
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )
 
-    def set_signal(self, index: int, signal: str, count: int = 0) -> None:
+    def set_signal(self, index, signal, count = 0):
+        # type: (int, str, int) -> None
         """
         """
         # Check validity before modifying self
@@ -52,7 +58,8 @@ class ConstantCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
             "index": index + 1, "signal": signal, "count": count
         })
 
-    def set_signals(self, signals: list) -> None:
+    def set_signals(self, signals):
+        # type: (list) -> None
         """
         """
         signals = signatures.SIGNAL_FILTERS.validate(signals)

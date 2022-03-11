@@ -4,25 +4,30 @@ from draftsman.prototypes.mixins import (
     CircuitConditionMixin, EnableDisableMixin, ControlBehaviorMixin, 
     CircuitConnectableMixin, Entity
 )
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user, signal_dict
 import draftsman.signatures as signatures
+from draftsman.utils import signal_dict
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import walls
+
+import warnings
 
 
 class Wall(CircuitConditionMixin, EnableDisableMixin, ControlBehaviorMixin, 
            CircuitConnectableMixin, Entity):
-    def __init__(self, name: str = walls[0], **kwargs):
-        if name not in walls:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(Wall, self).__init__(name, **kwargs)
+    def __init__(self, name = walls[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(Wall, self).__init__(name, walls, **kwargs)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )
 
-    def set_enable_disable(self, value: bool) -> None:
+    def set_enable_disable(self, value):
+        # type: (bool) -> None
         """
         Overwritten
         """
@@ -32,7 +37,8 @@ class Wall(CircuitConditionMixin, EnableDisableMixin, ControlBehaviorMixin,
             value = signatures.BOOLEAN.validate(value)
             self.control_behavior["circuit_open_gate"] = value
 
-    def set_read_gate(self, value: bool) -> None:
+    def set_read_gate(self, value):
+        # type: (bool) -> None
         """
         """
         if value is None:
@@ -41,7 +47,8 @@ class Wall(CircuitConditionMixin, EnableDisableMixin, ControlBehaviorMixin,
             value = signatures.BOOLEAN.validate(value)
             self.control_behavior["circuit_read_sensor"] = value
 
-    def set_output_signal(self, signal: bool) -> None:
+    def set_output_signal(self, signal):
+        # type: (str) -> None
         """
         """
         if signal is None:

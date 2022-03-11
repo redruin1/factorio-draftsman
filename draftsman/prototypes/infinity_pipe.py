@@ -1,22 +1,22 @@
 # infinity_pipe.py
 
 from draftsman.prototypes.mixins import Entity
-from draftsman.errors import InvalidEntityID, InvalidFluidID, InvalidMode
-from draftsman.utils import warn_user
+from draftsman.error import InvalidFluidError, InvalidModeError
 import draftsman.signatures as signatures
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import infinity_pipes
-from draftsman.data.signals import fluid_signals
+import draftsman.data.signals as signals
+
+import warnings
 
 
 class InfinityPipe(Entity):
     """
     """
-    def __init__(self, name: str = infinity_pipes[0], **kwargs):
-        if name not in infinity_pipes:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(InfinityPipe, self).__init__(name, **kwargs)
+    def __init__(self, name = infinity_pipes[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(InfinityPipe, self).__init__(name, infinity_pipes, **kwargs)
 
         self.infinity_settings = {}
         if "infinity_settings" in kwargs:
@@ -25,9 +25,14 @@ class InfinityPipe(Entity):
         self._add_export("infinity_settings", lambda x: len(x) != 0)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )
 
-    def set_infinity_settings(self, settings: dict) -> None:
+    def set_infinity_settings(self, settings):
+        # type: (dict) -> None
         """
         """
         if settings is None:
@@ -35,8 +40,9 @@ class InfinityPipe(Entity):
         else:
             self.infinity_settings = signatures.INFINITY_PIPE.validate(settings)
 
-    def set_infinite_fluid(self, name:str = None, percentage:int = 0, 
-                           mode:str = "at-least", temperature:int = 0) -> None:
+    def set_infinite_fluid(self, name = None, percentage = 0, mode = "at-least",
+                           temperature = 0):
+        # type: (str, int, str, int) -> None
         """
         """
         # Check before setting to make sure that we dont partially complete
@@ -45,10 +51,10 @@ class InfinityPipe(Entity):
         mode = signatures.STRING.validate(mode)
         temperature = signatures.INTEGER.validate(temperature)
 
-        if name not in fluid_signals:
-            raise InvalidFluidID(name)
+        if name not in signals.fluid:
+            raise InvalidFluidError(name)
         if mode not in {"at-least", "at-most", "exactly", "add", "remove"}:
-            raise InvalidMode(mode)
+            raise InvalidModeError(mode)
         # Warn if percentage < 0 or > 100
         # TODO
         # Warn if temperature is less than 0 or greater than 1000
@@ -59,18 +65,20 @@ class InfinityPipe(Entity):
         self.set_infinite_fluid_mode(mode)
         self.set_infinite_fluid_temperature(temperature)
 
-    def set_infinite_fluid_name(self, name: str) -> None:
+    def set_infinite_fluid_name(self, name):
+        # type: (str) -> None
         """
         """
         if name is None:
             self.infinity_settings.pop("name", None)
         else:
             name = signatures.STRING.validate(name)
-            if name not in fluid_signals:
-                raise InvalidFluidID(name)
+            if name not in signals.fluid:
+                raise InvalidFluidError(name)
             self.infinity_settings["name"] = name
 
-    def set_infinite_fluid_percentage(self, percent: int):
+    def set_infinite_fluid_percentage(self, percent):
+        # type: (int) -> None
         """
         """
         if percent is None:
@@ -79,7 +87,8 @@ class InfinityPipe(Entity):
             percent = signatures.INTEGER.validate(percent)
             self.infinity_settings["percentage"] = percent
 
-    def set_infinite_fluid_mode(self, mode: str) -> None:
+    def set_infinite_fluid_mode(self, mode):
+        # type: (str) -> None
         """
         """
         if mode is None:
@@ -87,10 +96,11 @@ class InfinityPipe(Entity):
         else:
             mode = signatures.STRING.validate(mode)
             if mode not in {"at-least", "at-most", "exactly", "add", "remove"}:
-                raise InvalidMode(mode)
+                raise InvalidModeError(mode)
             self.infinity_settings["mode"] = mode
 
-    def set_infinite_fluid_temperature(self, temperature: int) -> None:
+    def set_infinite_fluid_temperature(self, temperature):
+        # type: (int) -> None
         """
         """
         if temperature is None:

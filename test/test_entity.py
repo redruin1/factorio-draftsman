@@ -1,8 +1,11 @@
 # entity.py
 
+# TODO: change all warnings to their specific ones
+
 from draftsman.constants import *
 from draftsman.entity import *
-from draftsman.errors import *
+from draftsman.error import *
+from draftsman.warning import *
 
 from schema import SchemaError
 
@@ -77,55 +80,23 @@ class EntityTesting(TestCase):
         iron_chest = Container("iron-chest")
         iron_chest.set_absolute_position(1.23, 1.34)
         self.assertAlmostEqual(iron_chest.position, {"x": 1.23, "y": 1.34})
-        self.assertEqual(iron_chest.grid_position, [1, 1])
+        self.assertEqual(iron_chest.tile_position, [1, 1])
 
         with self.assertRaises(SchemaError):
             iron_chest.set_absolute_position("fish", 10)
 
-        iron_chest.set_grid_position(10, 10.1) # should cast float to int
-        self.assertEqual(iron_chest.grid_position, [10, 10])
+        iron_chest.set_tile_position(10, 10.1) # should cast float to int
+        self.assertEqual(iron_chest.tile_position, [10, 10])
         self.assertAlmostEqual(iron_chest.position, {"x": 10.5, "y": 10.5})
 
         with self.assertRaises(SchemaError):
             iron_chest.set_absolute_position(1.0, "raw-fish")
 
-    def test_iter(self):
-        container = Container("wooden-chest")
-        values = dict()
-        for key, value in container:
-            values[key] = value
-
-        values["exports"] = None # Make our lives easier
-
-        self.maxDiff = None
-        self.assertEqual(
-            values,
-            {
-                "exports": None,
-                "name": "wooden-chest",
-                "circuit_wire_max_distance": 9,
-                "id": None,
-                "tile_width": 1,
-                "tile_height": 1,
-                "collision_box": {1: {1: -0.35, 2: -0.35}, 2: {1: 0.35, 2: 0.35}},
-                "power_connectable": False,
-                "dual_power_connectable": False,
-                "circuit_connectable": True,
-                "dual_circuit_connectable": False,
-                "double_grid_aligned": False,
-                "position": {"x": 0.5, "y": 0.5},
-                "grid_position": [0, 0],
-                "tags": {},
-                "inventory_size": 16,
-                "bar": None,
-                "unused_args": {},
-                "connections": {}
-            }
-        )
-
     def test_repr(self):
         class TestEntity(Entity):
-            pass
+            def __init__(self, name, **kwargs):
+                examples = ["loader", "other-loader"]
+                super(TestEntity, self).__init__(name, examples, **kwargs)
 
         test = TestEntity("loader")
         self.assertEqual(
@@ -458,17 +429,17 @@ class CircuitConnectableMixinTesting(TestCase):
         # Warnings
         # Warn if source or target side is not 1 on entity that is not dual 
         # connectable
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(ConnectionSideWarning):
             container1.add_circuit_connection("green", container2, 1, 2)
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(ConnectionSideWarning):
             container2.add_circuit_connection("green", container1, 2, 1)
         # Warn if connection being made is over too long a distance
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(ConnectionDistanceWarning):
             container4 = Container(position = [100, 100], id = "no error pls")
             container2.add_circuit_connection("green", container4)
 
         # Errors
-        with self.assertRaises(InvalidWireType):
+        with self.assertRaises(InvalidWireTypeError):
             container1.add_circuit_connection("wrong", container2)
 
         with self.assertRaises(TypeError):
@@ -478,12 +449,12 @@ class CircuitConnectableMixinTesting(TestCase):
             container_with_no_id = Container()
             container1.add_circuit_connection("red", container_with_no_id)
 
-        with self.assertRaises(InvalidConnectionSide):
+        with self.assertRaises(InvalidConnectionSideError):
             container1.add_circuit_connection("red", container2, "fish", 2)
-        with self.assertRaises(InvalidConnectionSide):
+        with self.assertRaises(InvalidConnectionSideError):
             container2.add_circuit_connection("red", container2, 2, "fish")
 
-        with self.assertRaises(EntityNotCircuitConnectable):
+        with self.assertRaises(EntityNotCircuitConnectableError):
             not_circuit_connectable = Splitter("fast-splitter", id = "no error pls")
             container1.add_circuit_connection("red", not_circuit_connectable)
 
@@ -601,7 +572,7 @@ class CircuitConnectableMixinTesting(TestCase):
         )
 
         # Errors
-        with self.assertRaises(InvalidWireType):
+        with self.assertRaises(InvalidWireTypeError):
             container1.remove_circuit_connection("wrong", container2)
 
         with self.assertRaises(TypeError):
@@ -611,9 +582,9 @@ class CircuitConnectableMixinTesting(TestCase):
             container_with_no_id = Container()
             container1.remove_circuit_connection("red", container_with_no_id)
 
-        with self.assertRaises(InvalidConnectionSide):
+        with self.assertRaises(InvalidConnectionSideError):
             container1.remove_circuit_connection("red", container2, "fish", 2)
-        with self.assertRaises(InvalidConnectionSide):
+        with self.assertRaises(InvalidConnectionSideError):
             container2.remove_circuit_connection("red", container2, 2, "fish")
 
 ################################################################################
@@ -731,25 +702,19 @@ class DirectionalMixinTesting(TestCase):
     def test_set_direction(self):
         storage_tank = StorageTank()
         storage_tank.set_direction(Direction.SOUTH)
-        self.assertEqual(
-            storage_tank.to_dict(),
-            {
-                "name": "storage-tank",
-                "position": {"x": 1.5, "y": 1.5},
-                "direction": 4
-            }
-        )
+        self.assertEqual(storage_tank.direction, Direction.SOUTH)
         # Default testing
         storage_tank.set_direction(Direction.NORTH)
+        self.assertEqual(storage_tank.direction, Direction.NORTH)
         self.assertEqual(
             storage_tank.to_dict(),
             {
-                "name": "storage-tank",
-                "position": {"x": 1.5, "y": 1.5},
+                "name": storage_tank.name,
+                "position": storage_tank.position
             }
         )
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DirectionWarning):
             storage_tank.set_direction(Direction.NORTHEAST)
         # Errors
         with self.assertRaises(SchemaError):
@@ -759,14 +724,22 @@ class DirectionalMixinTesting(TestCase):
         storage_tank = StorageTank()
         storage_tank.set_absolute_position(1.23, 1.34)
         self.assertEqual(storage_tank.position, {"x": 1.23, "y": 1.34})
-        self.assertEqual(storage_tank.grid_position, [0, 0])
+        target_pos = [
+            round(storage_tank.position["x"] - storage_tank.tile_width / 2),
+            round(storage_tank.position["y"] - storage_tank.tile_height / 2)
+        ]
+        self.assertEqual(storage_tank.tile_position, target_pos)
 
         with self.assertRaises(SchemaError):
             storage_tank.set_absolute_position("fish", 10)
 
-        storage_tank.set_grid_position(10, 10.1) # should cast float to int
-        self.assertEqual(storage_tank.grid_position, [10, 10])
-        self.assertEqual(storage_tank.position, {"x": 11.5, "y": 11.5})
+        storage_tank.set_tile_position(10, 10.1) # should cast float to int
+        self.assertEqual(storage_tank.tile_position, [10, 10])
+        target_pos = {
+            "x": storage_tank.tile_position[0] + storage_tank.tile_width / 2,
+            "y": storage_tank.tile_position[1] + storage_tank.tile_height / 2
+        }
+        self.assertEqual(storage_tank.position, target_pos)
 
         with self.assertRaises(SchemaError):
             storage_tank.set_absolute_position(1.0, "raw-fish")
@@ -776,7 +749,7 @@ class DirectionalMixinTesting(TestCase):
 class DoubleGridAlignedMixinTesting(TestCase):
     def test_set_absolute_position(self):
         rail = StraightRail()
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(RailAlignmentWarning):
             rail.set_absolute_position(2.0, 2.0)
 
 ################################################################################
@@ -829,7 +802,7 @@ class FiltersMixinTesting(TestCase):
         #     inserter.set_item_filter(100, "small-lamp")
 
         # Errors
-        with self.assertRaises(InvalidItemID):
+        with self.assertRaises(InvalidItemError):
             inserter.set_item_filter(0, "incorrect")
 
     def test_set_item_filters(self):
@@ -876,12 +849,12 @@ class FiltersMixinTesting(TestCase):
         #     )
 
         # Errors
-        with self.assertRaises(InvalidItemID):
+        with self.assertRaises(InvalidItemError):
             inserter.set_item_filters(
                 ["transport-belt", "incorrect", "express-transport-belt"]
             )
         
-        with self.assertRaises(InvalidItemID):
+        with self.assertRaises(InvalidItemError):
             inserter.set_item_filters(
                 [
                     {"index": 1, "name": "transport-belt"},
@@ -903,7 +876,7 @@ class InfinitySettingsMixinTesting(TestCase):
 class InventoryMixinTesting(TestCase):
     def test_bar_index(self):
         container = Container()
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(BarIndexWarning):
             for i in range(container.inventory_size + 1):
                 container.set_bar_index(i)
 
@@ -965,7 +938,7 @@ class InventoryFilterMixinTesting(TestCase):
         # Errors
         with self.assertRaises(SchemaError):
             cargo_wagon.set_inventory_filter("double", "incorrect")
-        with self.assertRaises(InvalidItemID):
+        with self.assertRaises(InvalidItemError):
             cargo_wagon.set_inventory_filter(0, "incorrect")
 
     def test_set_inventory_filters(self):
@@ -1001,7 +974,7 @@ class InventoryFilterMixinTesting(TestCase):
         # TODO
 
         # Errors
-        with self.assertRaises(InvalidItemID):
+        with self.assertRaises(InvalidItemError):
             cargo_wagon.set_inventory_filters(["incorrect1", "incorrect2"])
 
     def test_set_bar_index(self):
@@ -1016,7 +989,7 @@ class InventoryFilterMixinTesting(TestCase):
 
         # Warnings
         # Out of index range warning
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(BarIndexWarning):
             cargo_wagon.set_bar_index(100)
 
         # Errors
@@ -1225,12 +1198,12 @@ class PowerConnectableMixinTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(ConnectionDistanceWarning):
             other = ElectricPole(position = [100, 0], id = "other")
             substation1.add_power_connection(other)
 
         # Errors
-        with self.assertRaises(EntityNotPowerConnectable):
+        with self.assertRaises(EntityNotPowerConnectableError):
             substation1.add_power_connection(TransportBelt(id = "whatever"))
         with self.assertRaises(Exception):
             power_switch.add_power_connection(PowerSwitch())
@@ -1305,7 +1278,7 @@ class ReadRailSignalMixinTesting(TestCase):
         )
         rail_signal.set_red_output_signal(None)
         self.assertEqual(rail_signal.control_behavior, {})
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             rail_signal.set_red_output_signal("wrong")
 
         rail_signal.set_yellow_output_signal("signal-A")
@@ -1320,7 +1293,7 @@ class ReadRailSignalMixinTesting(TestCase):
         )
         rail_signal.set_yellow_output_signal(None)
         self.assertEqual(rail_signal.control_behavior, {})
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             rail_signal.set_yellow_output_signal("wrong")
 
         rail_signal.set_green_output_signal("signal-A")
@@ -1335,7 +1308,7 @@ class ReadRailSignalMixinTesting(TestCase):
         )
         rail_signal.set_green_output_signal(None)
         self.assertEqual(rail_signal.control_behavior, {})
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             rail_signal.set_green_output_signal("wrong")
 
 ################################################################################
@@ -1395,7 +1368,7 @@ class RequestFiltersMixinTesting(TestCase):
         # Errors
         with self.assertRaises(SchemaError):
             storage_chest.set_request_filter("incorrect", "iron-ore", 100)
-        with self.assertRaises(InvalidItemID):
+        with self.assertRaises(InvalidItemError):
             storage_chest.set_request_filter(1, "incorrect", 100)
         with self.assertRaises(SchemaError):
             storage_chest.set_request_filter(1, "iron-ore", "incorrect")
@@ -1423,7 +1396,7 @@ class RequestFiltersMixinTesting(TestCase):
             ]
         )
         # Errors
-        with self.assertRaises(InvalidItemID):
+        with self.assertRaises(InvalidItemError):
             storage_chest.set_request_filters(
                 [("iron-ore", 200), ("incorrect", 100)]
             )
@@ -1492,7 +1465,7 @@ class StackSizeMixinTesting(TestCase):
         inserter.set_stack_control_signal(None)
         self.assertEqual(inserter.control_behavior, {})
 
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             inserter.set_stack_control_signal("wrong_name_lol")
 
         with self.assertRaises(TypeError):
@@ -1730,7 +1703,7 @@ class EntityFactoryTesting(TestCase):
         )
 
         self.assertRaises(
-            InvalidEntityID,
+            InvalidEntityError,
             new_entity,
             "I have a lot of entities that I need to test..."
         )

@@ -3,20 +3,22 @@
 from draftsman.prototypes.mixins import (
     CircuitConnectableMixin, DirectionalMixin, Entity
 )
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import storage_tanks
 
+import warnings
 
 class StorageTank(CircuitConnectableMixin, DirectionalMixin, Entity):
     """
     """
-    def __init__(self, name: str = storage_tanks[0], **kwargs):
-        if name not in storage_tanks:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(StorageTank, self).__init__(name, **kwargs)
+    def __init__(self, name = storage_tanks[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(StorageTank, self).__init__(name, storage_tanks, **kwargs)
         
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )

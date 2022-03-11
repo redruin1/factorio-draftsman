@@ -1,38 +1,41 @@
 # signals.py
 
-# TODO: automate the collection of signals based on factorio version and mods
-
+from draftsman.error import InvalidSignalError
 from draftsman.signatures import SIGNAL
-from draftsman.errors import InvalidSignalID
-from draftsman.signalID import SignalID
-from draftsman.data.signals import signal_IDs
 
+import draftsman.data.signals as signals
 
 from os import path
 from typing import Union
 
 
 class Signal():
-    """ Signal object. Holds a SignalID `signal` and an int `count`."""
-    def __init__(self, id, count):
-        # type: (Union[SignalID, str], int) -> None
-        self.change_id(id)
+    """ 
+    Signal object. Holds a str `name`, str `type` and an int `count`.
+    """
+    def __init__(self, name, count):
+        # type: (str, int) -> None
+        self.set_name(name)
         self.count = count
 
-    def change_id(self, id):
-        # type: (Union[SignalID, str]) -> None
+    def set_name(self, name):
+        # type: (str) -> None
         """
-        Swaps the ID of the signal to something else and changes aliases.
+        TODO
         """
-        if isinstance(id, str):
-            self.id = signal_IDs[id]
-        elif isinstance(id, SignalID):
-            self.id = id
-        else:
-            raise InvalidSignalID("'" + str(id) + "'")
+        if not isinstance(name, str): 
+            raise InvalidSignalError(name)
         
-        #self.name = self.id.name
-        #self.type= self.id.type
+        self.name = name
+        self.type = signals.raw[name]
+
+    def set_count(self, count):
+        """
+        """
+        if not isinstance(count, int): 
+            raise ValueError("'count' is not int")
+        # TODO: warn if count cannot fit in 32bit signed integer
+        self.count = count
 
     def to_dict(self):
         # type: () -> dict
@@ -40,10 +43,11 @@ class Signal():
         Converts Signal class into dictionary. Used in blueprint string 
         conversion.
         """
-        return SIGNAL.validate(
-            {"signal": self.id.to_dict(), "count": self.count}
-        )
+        return {
+            "signal": {"name": self.name, "type": self.type}, 
+            "count": self.count
+        }
 
-    def __repr__(self):
+    def __str__(self):
         # type: () -> str
         return "Signal" + str(self.to_dict())

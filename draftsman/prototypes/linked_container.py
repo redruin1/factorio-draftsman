@@ -1,19 +1,18 @@
 # linked_container.py
 
 from draftsman.prototypes.mixins import InventoryMixin, Entity
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
 import draftsman.signatures as signatures
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import linked_containers
 
+import warnings
+
 
 class LinkedContainer(InventoryMixin, Entity):
-    def __init__(self, name: str = linked_containers[0], **kwargs):
-        if name not in linked_containers:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(LinkedContainer, self).__init__(name, **kwargs)
+    def __init__(self, name = linked_containers[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(LinkedContainer, self).__init__(name, linked_containers, **kwargs)
 
         self.link_id = 0
         if "link_id" in kwargs:
@@ -22,9 +21,14 @@ class LinkedContainer(InventoryMixin, Entity):
         self._add_export("link_id", lambda x: x != 0)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )
 
-    def set_links(self, id: int) -> None:
+    def set_links(self, id):
+        # type: (int) -> None
         """
         """
         # TODO: assert id in range(0, 2^32-1)
@@ -33,7 +37,8 @@ class LinkedContainer(InventoryMixin, Entity):
         else:
             self.link_id = signatures.INTEGER.validate(id)
 
-    def set_link(self, number: int, enabled: bool) -> None:
+    def set_link(self, number, enabled):
+        # type: (int, bool) -> None
         """
         """
         assert number < 32

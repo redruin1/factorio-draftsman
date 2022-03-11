@@ -1,18 +1,21 @@
 # gate.py
 
 from draftsman.prototypes.mixins import DirectionalMixin, Entity
-from draftsman.errors import InvalidEntityID
-from draftsman.utils import warn_user
+from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import gates
 
+import warnings
+
 
 class Gate(DirectionalMixin, Entity):
-    def __init__(self, name: str = gates[0], **kwargs):
-        if name not in gates:
-            raise InvalidEntityID("'{}' is not a valid name for this type"
-                                  .format(name))
-        super(Gate, self).__init__(name, **kwargs)
+    def __init__(self, name = gates[0], **kwargs):
+        # type: (str, **dict) -> None
+        super(Gate, self).__init__(name, gates, **kwargs)
 
         for unused_arg in self.unused_args:
-            warn_user("{} has no attribute '{}'".format(type(self), unused_arg))
+            warnings.warn(
+                "{} has no attribute '{}'".format(type(self), unused_arg),
+                DraftsmanWarning,
+                stacklevel = 2
+            )

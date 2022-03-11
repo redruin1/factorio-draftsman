@@ -1,28 +1,19 @@
 # test_loader.py
 
 from draftsman.entity import Loader, loaders
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from unittest import TestCase
 
 class LoaderTesting(TestCase):
-    def test_default_constructor(self):
-        loader = Loader()
-        self.assertEqual(
-            loader.to_dict(),
-            {
-                "name": "loader",
-                "position": {"x": 0.5, "y": 1.0}
-            }
-        )
-
     def test_constructor_init(self):
         #loader = Loader()
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             Loader("loader", unused_keyword = 10)
 
         # Errors
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             Loader("this is not a loader")

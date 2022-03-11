@@ -2,23 +2,16 @@
 
 from draftsman.constants import Direction
 from draftsman.entity import DeciderCombinator, decider_combinators
-from draftsman.errors import InvalidEntityID, InvalidSignalID, InvalidConditionOperation
+from draftsman.error import (
+    InvalidEntityError, InvalidSignalError, InvalidOperationError
+)
+from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class DeciderCombinatorTesting(TestCase):
-    def test_default_constructor(self):
-        combinator = DeciderCombinator()
-        self.assertEqual(
-            combinator.to_dict(),
-            {
-                "name": "decider-combinator",
-                "position": {"x": 0.5, "y": 1.0}
-            }
-        )
-
     def test_constructor_init(self):
         combinator = DeciderCombinator(
             "decider-combinator",
@@ -122,11 +115,11 @@ class DeciderCombinatorTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             DeciderCombinator(unused_keyword = "whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             DeciderCombinator("this is not an arithmetic combinator")
 
     def test_flags(self):
@@ -136,11 +129,6 @@ class DeciderCombinatorTesting(TestCase):
             self.assertEqual(combinator.dual_power_connectable, False)
             self.assertEqual(combinator.circuit_connectable, True)
             self.assertEqual(combinator.dual_circuit_connectable, True)
-
-    def test_dimensions(self):
-        combinator = DeciderCombinator()
-        self.assertEqual(combinator.tile_width, 1)
-        self.assertEqual(combinator.tile_height, 2)
 
     def test_set_decider_conditions(self):
         combinator = DeciderCombinator()

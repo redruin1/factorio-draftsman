@@ -1,21 +1,12 @@
 # test_assembling_machine.py
 
 from draftsman.entity import AssemblingMachine, assembling_machines
-from draftsman.errors import InvalidEntityID, InvalidRecipeID
+from draftsman.error import InvalidEntityError, InvalidRecipeError
+from draftsman.warning import DraftsmanWarning
 
 from unittest import TestCase
 
 class AssemblingMachineTesting(TestCase):
-    def test_default_constructor(self):
-        assembler = AssemblingMachine()
-        self.assertEqual(
-            assembler.to_dict(),
-            {
-                "name": "assembling-machine-1",
-                "position": {"x": 1.5, "y": 1.5}
-            }
-        )
-
     def test_constructor_init(self):
         assembler = AssemblingMachine(
             "assembling-machine-1",
@@ -39,13 +30,13 @@ class AssemblingMachineTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             AssemblingMachine(unused_keyword = "whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             AssemblingMachine("not an assembling machine")
-        with self.assertRaises(InvalidRecipeID):
+        with self.assertRaises(InvalidRecipeError):
             AssemblingMachine(recipe = "invalid")
 
     def test_set_recipe(self):

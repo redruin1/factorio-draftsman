@@ -127,21 +127,25 @@ will adjust.
 
 ## TODO
 * Finish `entity.py`
-    * Sort the contents of item (similar to signals)
-    * Change item to allow for item-group and item-subgroup access
+    * Figure out defaults
+    * Figure out the data format for instruments
+    * Figure out how I want Signals to work
+    * Sort all the data
     * Come up with a concrete position on hidden entitites; are they valid for blueprints? What about signals?
+        - Hidden entities are valid for placing in blueprints, though they should raise a warning
+        - Hidden signals are NOT valid
+        - Hidden items are accessable but NOT blueprintable as signals
     * Issue warnings for overlapping entities
     * Properly handle defaults to prioritize space a little better
     * Test with mods
     * Errors + Warnings (mostly done, but there are a few finishing touches)
+    * Assert each error message in the testing suite alongside the errors themselves
 * Finish `blueprint.py`
     * Big cleaning/refactoring
     * Finish `BlueprintBook`
     * Test with mods
     * Errors + Warnings
 * Add extra features
-    * **COMPLETE TESTING SUITE**
-    * Think about the best way to handle generated data 
     * (Re)Add entity groups and their functionality (EntityLike class)
     * Specify Rails via nodes/beziers instead of manually placing *every* rail
     * Maybe add a `CombinatorCell` EntityLike?

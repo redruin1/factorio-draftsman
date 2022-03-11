@@ -1,26 +1,17 @@
 # test_gate.py
 
 from draftsman.entity import Gate, gates
-from draftsman.errors import InvalidEntityID
+from draftsman.error import InvalidEntityError
+from draftsman.warning import DraftsmanWarning
 
 from unittest import TestCase
 
 class GateTesting(TestCase):
-    def test_default_constructor(self):
-        gate = Gate()
-        self.assertEqual(
-            gate.to_dict(),
-            {
-                "name": "gate",
-                "position": {"x": 0.5, "y": 0.5}
-            }
-        )
-
     def test_contstructor_init(self):
         gate = Gate()
 
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             Gate(unused_keyword = "whatever")
 
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             Gate("this is not a gate")

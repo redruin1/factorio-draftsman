@@ -1,23 +1,14 @@
 # test_programmable_speaker.py
 
 from draftsman.entity import ProgrammableSpeaker, programmable_speakers
-from draftsman.errors import InvalidEntityID, InvalidSignalID
+from draftsman.error import InvalidEntityError, InvalidSignalError
+from draftsman.warning import DraftsmanWarning, VolumeWarning
 
 from schema import SchemaError
 
 from unittest import TestCase
 
 class ProgrammableSpeakerTesting(TestCase):
-    def test_default_constructor(self):
-        speaker = ProgrammableSpeaker()
-        self.assertEqual(
-            speaker.to_dict(),
-            {
-                "name": "programmable-speaker",
-                "position": {"x": 0.5, "y": 0.5}
-            }
-        )
-
     def test_constructor_init(self):
         speaker = ProgrammableSpeaker(
             "programmable-speaker",
@@ -160,11 +151,11 @@ class ProgrammableSpeakerTesting(TestCase):
         )
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(DraftsmanWarning):
             ProgrammableSpeaker(unused_keyword = "whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityID):
+        with self.assertRaises(InvalidEntityError):
             ProgrammableSpeaker("not a programmable speaker")
 
     def test_flags(self):
@@ -174,12 +165,6 @@ class ProgrammableSpeakerTesting(TestCase):
             self.assertEqual(speaker.dual_power_connectable, False)
             self.assertEqual(speaker.circuit_connectable, True)
             self.assertEqual(speaker.dual_circuit_connectable, False)
-
-    def test_dimensions(self):
-        for name in programmable_speakers:
-            speaker = ProgrammableSpeaker(name)
-            self.assertEqual(speaker.tile_width, 1)
-            self.assertEqual(speaker.tile_width, 1)
 
     def test_set_volume(self):
         speaker = ProgrammableSpeaker()
@@ -195,7 +180,7 @@ class ProgrammableSpeakerTesting(TestCase):
         self.assertEqual(speaker.parameters, {})
 
         # Warnings
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(VolumeWarning):
             speaker.set_volume(10.0)
 
         self.assertEqual(
@@ -286,7 +271,7 @@ class ProgrammableSpeakerTesting(TestCase):
         )
         speaker.set_alert_icon(None)
         self.assertEqual(speaker.alert_parameters, {})
-        with self.assertRaises(InvalidSignalID):
+        with self.assertRaises(InvalidSignalError):
             speaker.set_alert_icon("incorrect")
 
     def test_set_alert_message(self):
