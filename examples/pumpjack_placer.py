@@ -10,6 +10,7 @@ Can be expanded as much as you dare.
 
 import warnings
 from draftsman.blueprint import Blueprint
+from draftsman.warning import OverlappingEntitiesWarning
 
 
 def main():
@@ -17,9 +18,8 @@ def main():
     blueprint.set_label("Huge Pumpjacks")
     blueprint.set_icons("pumpjack")
 
-    # TODO
-    # with warnings.catch_warnings():
-    #     warnings.simplefilter("ignore")
+    # Do this unless you want your stdout flooded with warnings
+    warnings.simplefilter("ignore", OverlappingEntitiesWarning)
 
     dim = 64
     for y in range(dim):

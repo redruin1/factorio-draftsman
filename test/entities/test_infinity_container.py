@@ -1,7 +1,9 @@
 # test_infinity_container.py
 
 from draftsman.entity import InfinityContainer, infinity_containers
-from draftsman.error import InvalidEntityError, InvalidItemError
+from draftsman.error import (
+    InvalidEntityError, InvalidItemError, InvalidModeError, FilterIndexError
+)
 from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
@@ -52,19 +54,17 @@ class InfinityContainerTesting(TestCase):
 
     def test_set_infinity_settings(self):
         container = InfinityContainer()
-        container.set_infinity_settings(
-            {
-                "remove_unfiltered_items": True,
-                "filters": [
-                    {
-                        "index": 1,
-                        "name": "iron-ore",
-                        "count": 100,
-                        "mode": "at-least"
-                    }
-                ]
-            }
-        )
+        container.infinity_settings = {
+            "remove_unfiltered_items": True,
+            "filters": [
+                {
+                    "index": 1,
+                    "name": "iron-ore",
+                    "count": 100,
+                    "mode": "at-least"
+                }
+            ]
+        }
         self.assertEqual(
             container.infinity_settings,
             {
@@ -79,28 +79,27 @@ class InfinityContainerTesting(TestCase):
                 ]
             }
         )
-        container.set_infinity_settings(None)
+        container.infinity_settings = None
         self.assertEqual(container.infinity_settings, {})
-        with self.assertRaises(SchemaError):
-            container.set_infinity_settings(
-                {
-                    "this is": ["incorrect", "for", "sure"]
-                }
-            )
+        with self.assertRaises(TypeError):
+            container.infinity_settings = {
+                "this is": ["incorrect", "for", "sure"]
+            }
 
     def test_set_remove_unfiltered_items(self):
         container = InfinityContainer()
-        container.set_remove_unfiltered_items(True)
+        container.remove_unfiltered_items = True
+        self.assertEqual(container.remove_unfiltered_items, True)
         self.assertEqual(
             container.infinity_settings,
             {
                 "remove_unfiltered_items": True
             }
         )
-        container.set_remove_unfiltered_items(None)
+        container.remove_unfiltered_items = None
         self.assertEqual(container.infinity_settings, {})
-        with self.assertRaises(SchemaError):
-            container.set_remove_unfiltered_items("incorrect")
+        with self.assertRaises(TypeError):
+            container.remove_unfiltered_items = "incorrect"
 
     def test_set_infinity_filters(self):
         container = InfinityContainer()
@@ -209,7 +208,11 @@ class InfinityContainerTesting(TestCase):
             container.set_infinity_filter(0, "signal-A")
         with self.assertRaises(SchemaError):
             container.set_infinity_filter(0, "iron-ore", SchemaError)
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(InvalidModeError):
             container.set_infinity_filter(0, "iron-ore", "incorrect")
         with self.assertRaises(SchemaError):
             container.set_infinity_filter(0, "iron-ore", "exactly", "incorrect")
+        with self.assertRaises(FilterIndexError):
+            container.set_infinity_filter(-1, "iron-ore", "exactly", 200)
+        with self.assertRaises(FilterIndexError):
+            container.set_infinity_filter(1000, "iron-ore", "exactly", 200)

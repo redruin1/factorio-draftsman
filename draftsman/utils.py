@@ -4,17 +4,14 @@
 
 from draftsman.error import MalformedBlueprintStringError, InvalidSignalError
 
-import draftsman.data.signals as signals
+from draftsman.data import recipes
+from draftsman.data import signals
 
 import base64
 import json
 import math
 import warnings
 import zlib
-
-
-# def clamp(val, min_val, max_val):
-#     return max(min(val, max_val), min_val)
 
 
 def string_2_JSON(string):
@@ -98,10 +95,93 @@ def signal_dict(name):
     return {"name": name, "type": get_signal_type(name)}
 
 
-# TODO: remove
-# def warn_user(message):
-#     warnings.warn(message, stacklevel=3)
-
-
 def dist(point1, point2):
+    """
+    Gets the Euclidean distance between two points.
+    This is mostly just for python 2 compatability.
+    """
     return math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
+
+
+def point_in_aabb(p, a):
+    """
+    """
+    return ((p[0] >= a[0][0] and p[0] <= a[1][0]) and 
+            (p[1] >= a[0][1] and p[1] <= a[1][1]))
+
+
+def aabb_overlaps_aabb(a, b):
+    """
+    """
+    return ((a[0][0] <= b[1][0] and a[1][0] >= b[0][0]) and
+            (a[0][1] <= b[1][1] and a[1][1] >= b[0][1]))
+
+
+def point_in_radius(p, r, c=(0,0)):
+    """
+    """
+    dx = p[0] - c[0]
+    dy = p[1] - c[1]
+    return dx * dx + dy * dy <= r * r
+
+
+def aabb_overlaps_circle(a, p, r):
+    """
+    Algorithm pulled from https://stackoverflow.com/a/402010/8167625
+    """
+    aabb_width = a[1][0] - a[0][0]
+    aabb_height = a[1][1] - a[0][1]
+    aabb_center = (a[0][0] + aabb_width / 2, a[0][1] + aabb_height / 2)
+    circle_distance = (abs(p[0] - aabb_center[0]), abs(p[1] - aabb_center[1]))
+
+    if circle_distance[0] > (aabb_width  / 2 + r): 
+        return False
+    if circle_distance[1] > (aabb_height / 2 + r): 
+        return False
+    
+    if circle_distance[0] <= (aabb_width / 2): 
+        return True
+    if circle_distance[1] <= (aabb_height / 2): 
+        return True
+
+    corner_distance_sq = ((circle_distance[0] - aabb_width  / 2) ** 2 + 
+                          (circle_distance[1] - aabb_height / 2) ** 2)
+
+    return corner_distance_sq <= r ** 2
+
+
+def extend_aabb(a, b):
+    """
+    Gets the minimum AABB that encompasses two other bounding boxes. Used to
+    'grow' the size of a bounding box when adding entities to Group or 
+    Blueprint.
+    """
+    return [[min(a[0][0], b[0][0]),
+             min(a[0][1], b[0][1])],
+            [max(a[1][0], b[1][0]),
+             max(a[1][1], b[1][1])]]
+
+
+def aabb_to_dimensions(aabb):
+    """
+    Gets the tile-dimensions of an AABB.
+    """
+    x = int(math.ceil(aabb[1][0] - aabb[0][0]))
+    y = int(math.ceil(aabb[1][1] - aabb[0][1]))
+    return x, y
+
+
+def get_recipe_ingredients(recipe_name):
+    """
+    Returns a set of all item types that `recipe_name` requires. Discards 
+    quantities.
+    NOTE: Assumes that the items required for 'normal' mode are the same as
+    'expensive' mode. This is unlikely true under all circumstances, but how 
+    will we issue warnings for invalid item requests if we dont know what mode
+    the world save is in?
+    """
+    try:
+        return {x[0] for x in recipes.raw[recipe_name]["ingredients"]}
+    except KeyError:
+        return {x[0] for x in recipes.raw[recipe_name]["normal"]["ingredients"]}
+    

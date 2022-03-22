@@ -27,11 +27,9 @@ class ArtilleryWagonTesting(TestCase):
         # Warnings
         with self.assertWarns(DraftsmanWarning):
             ArtilleryWagon("artillery-wagon", unused_keyword = "whatever")
-        # Warn if the locomotive is not on a rail (close enough to one?)
-        # TODO (Complex)
 
         # Errors
         with self.assertRaises(InvalidEntityError):
             ArtilleryWagon("this is not an artillery wagon")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             ArtilleryWagon("artillery-wagon", orientation = "wrong")

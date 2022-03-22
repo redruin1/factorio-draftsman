@@ -22,14 +22,21 @@ FLOAT = Schema(Or(float, None))
 STRING = Schema(Or(str, None))
 
 COLOR = Schema({
-    "r": Use(float),
-    "g": Use(float),
-    "b": Use(float),
-    "a": Use(float)
+    "r": And(Use(float), lambda x: 0 <= x <= 255, error = "'r' not in range [0, 255]"),
+    "g": And(Use(float), lambda x: 0 <= x <= 255, error = "'g' not in range [0, 255]"),
+    "b": And(Use(float), lambda x: 0 <= x <= 255, error = "'b' not in range [0, 255]"),
+    "a": And(Use(float), lambda x: 0 <= x <= 255, error = "'a' not in range [0, 255]")
 })
 
+AABB = Schema(
+Or(
+    [[Use(int), Use(int)], [Use(int), Use(int)]],
+    None
+))
+
+
 def normalize_color(color):
-    if isinstance(color, list):
+    if isinstance(color, (list, tuple)):
         new_color = {}
         new_color["r"] = color[0]
         new_color["g"] = color[1]
@@ -39,17 +46,26 @@ def normalize_color(color):
         except IndexError:
             new_color["a"] = 1.0
         return new_color
+    elif isinstance(color, dict):
+        try:
+            color["a"]
+        except KeyError:
+            color["a"] = 1.0
+        return color
     else:
         return color
 USER_COLOR = Schema(
     And(
         Use(normalize_color),
-        {
-            "r": Use(float),
-            "g": Use(float),
-            "b": Use(float),
-            Optional("a"): Use(float)
-        },
+        Or(
+            {
+                "r": Use(float),
+                "g": Use(float),
+                "b": Use(float),
+                Optional("a"): Use(float)
+            },
+            None
+        )
     )
 )
 

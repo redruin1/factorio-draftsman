@@ -25,3 +25,5 @@ class RocketSiloTesting(TestCase):
 
         with self.assertRaises(InvalidEntityError):
             RocketSilo("this is not a rocket silo")
+        with self.assertRaises(TypeError):
+            RocketSilo(auto_launch = "incorrect")

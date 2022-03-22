@@ -1,8 +1,7 @@
 # storage_tank.py
 
-from draftsman.prototypes.mixins import (
-    CircuitConnectableMixin, DirectionalMixin, Entity
-)
+from draftsman.classes import Entity
+from draftsman.classes.mixins import CircuitConnectableMixin, DirectionalMixin
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import storage_tanks

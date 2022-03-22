@@ -2,8 +2,16 @@
 
 import pickle
 
+try:
+    import importlib.resources as pkg_resources # type: ignore
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`.
+    import importlib_resources as pkg_resources # type: ignore
 
-with open("draftsman/data/entities.pkl", "rb") as inp:
+from draftsman import data
+
+
+with pkg_resources.open_binary(data, 'entities.pkl') as inp:
     _data = pickle.load(inp)
     raw = _data["raw"]
     containers = _data["containers"]

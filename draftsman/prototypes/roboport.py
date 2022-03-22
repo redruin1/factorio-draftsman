@@ -1,14 +1,17 @@
 # roboport.py
 
-from draftsman.prototypes.mixins import (
-    ControlBehaviorMixin, CircuitConnectableMixin, Entity
+from draftsman import signatures
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
+    ControlBehaviorMixin, CircuitConnectableMixin
 )
-import draftsman.signatures as signatures
 from draftsman.utils import signal_dict
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import roboports
 
+from schema import SchemaError
+from typing import Union
 import warnings
 
 
@@ -26,63 +29,142 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
                 stacklevel = 2
             )
 
-    def set_read_logistics(self, value):
+    # =========================================================================
+
+    @property
+    def read_logistics(self):
+        # type: () -> bool
+        """
+        TODO
+        """
+        return self.control_behavior.get("read_logistics", None)
+
+    @read_logistics.setter
+    def read_logistics(self, value):
         # type: (bool) -> None
-        """
-        """
         if value is None:
             self.control_behavior.pop("read_logistics", None)
-        else:
-            value = signatures.BOOLEAN.validate(value)
+        elif isinstance(value, bool):
             self.control_behavior["read_logistics"] = value
+        else:
+            raise TypeError("'read_logistics' must be a bool or None")
 
-    def set_read_robot_stats(self, value):
+    # =========================================================================
+
+    @property
+    def read_robot_stats(self):
+        # type: () -> bool
+        """
+        TODO
+        """
+        return self.control_behavior.get("read_robot_stats", None)
+
+    @read_robot_stats.setter
+    def read_robot_stats(self, value):
         # type: (bool) -> None
-        """
-        """
         if value is None:
             self.control_behavior.pop("read_robot_stats", None)
-        else:
-            signatures.BOOLEAN.validate(value)
+        elif isinstance(value, bool):
             self.control_behavior["read_robot_stats"] = value
+        else:
+            raise TypeError("'read_robot_stats' must be a bool or None")
 
-    def set_available_logistics_signal(self, signal):
-        # type: (str) -> None
+    # =========================================================================
+
+    @property
+    def available_logistic_signal(self):
+        # type: () -> dict
         """
+        TODO
         """
-        if signal is None:
+        return self.control_behavior.get("available_logistic_output_signal", None)
+
+    @available_logistic_signal.setter
+    def available_logistic_signal(self, value):
+        # type: (Union[str, dict]) -> None
+        if value is None:
             self.control_behavior.pop("available_logistic_output_signal", None)
-        else:
-            signal = signal_dict(signal)
-            self.control_behavior["available_logistic_output_signal"] = signal
+        elif isinstance(value, str):
+            value = signal_dict(value)
+            self.control_behavior["available_logistic_output_signal"] = value
+        else: # dict or other
+            try:
+                value = signatures.SIGNAL_ID.validate(value)
+                self.control_behavior["available_logistic_output_signal"]=value
+            except SchemaError:
+                raise TypeError("Incorrectly formatted SignalID")
 
-    def set_total_logistics_signal(self, signal):
-        # type: (str) -> None
+    # =========================================================================
+
+    @property
+    def total_logistic_signal(self):
+        # type: () -> dict
         """
+        TODO
         """
-        if signal is None:
+        return self.control_behavior.get("total_logistic_output_signal", None)
+
+    @total_logistic_signal.setter
+    def total_logistic_signal(self, value):
+        # type: (Union[str, dict]) -> None
+        if value is None:
             self.control_behavior.pop("total_logistic_output_signal", None)
-        else:
-            signal = signal_dict(signal)
-            self.control_behavior["total_logistic_output_signal"] = signal
+        elif isinstance(value, str):
+            value = signal_dict(value)
+            self.control_behavior["total_logistic_output_signal"] = value
+        else: # dict or other
+            try:
+                value = signatures.SIGNAL_ID.validate(value)
+                self.control_behavior["total_logistic_output_signal"]=value
+            except SchemaError:
+                raise TypeError("Incorrectly formatted SignalID")
 
-    def set_available_construction_signal(self, signal):
-        # type: (str) -> None
-        """
-        """
-        if signal is None:
-            self.control_behavior.pop("available_construction_output_signal", 
-                                      None)
-        else:
-            signal = signal_dict(signal)
-            self.control_behavior["available_construction_output_signal"]=signal
+    # =========================================================================
 
-    def set_total_construction_signal(self, signal):
-        # type: (str) -> None
+    @property
+    def available_construction_signal(self):
+        # type: () -> dict
         """
+        TODO
         """
-        if signal is None:
+        return self.control_behavior.get("available_construction_output_signal", None)
+
+    @available_construction_signal.setter
+    def available_construction_signal(self, value):
+        # type: (Union[str, dict]) -> None
+        if value is None:
+            self.control_behavior.pop("available_construction_output_signal", None)
+        elif isinstance(value, str):
+            value = signal_dict(value)
+            self.control_behavior["available_construction_output_signal"] = value
+        else: # dict or other
+            try:
+                value = signatures.SIGNAL_ID.validate(value)
+                self.control_behavior["available_construction_output_signal"]=value
+            except SchemaError:
+                raise TypeError("Incorrectly formatted SignalID")
+
+    # =========================================================================
+
+    @property
+    def total_construction_signal(self):
+        # type: () -> dict
+        """
+        TODO
+        """
+        return self.control_behavior.get("total_construction_output_signal", None)
+
+    @total_construction_signal.setter
+    def total_construction_signal(self, value):
+        # type: (Union[str, dict]) -> None
+        if value is None:
             self.control_behavior.pop("total_construction_output_signal", None)
-        else:
-            signal = signal_dict(signal)
-            self.control_behavior["total_construction_output_signal"] = signal
+        elif isinstance(value, str):
+            value = signal_dict(value)
+            self.control_behavior["total_construction_output_signal"] = value
+        else: # dict or other
+            try:
+                value = signatures.SIGNAL_ID.validate(value)
+                self.control_behavior["total_construction_output_signal"]=value
+            except SchemaError:
+                raise TypeError("Incorrectly formatted SignalID")

@@ -1,10 +1,16 @@
 # assembling_machine.py
 
-from draftsman.prototypes.mixins import RequestItemsMixin, RecipeMixin, Entity
-from draftsman.warning import DraftsmanWarning, ModuleLimitationWarning
+from draftsman.classes import Entity
+from draftsman.classes.mixins import RequestItemsMixin, RecipeMixin
+from draftsman.error import InvalidItemError
+from draftsman.utils import get_recipe_ingredients
+from draftsman.warning import (
+    DraftsmanWarning, ModuleLimitationWarning, ItemLimitationWarning
+)
 
 from draftsman.data.entities import assembling_machines
 from draftsman.data import modules
+from draftsman.data import signals
 
 import warnings
 
@@ -28,20 +34,39 @@ class AssemblingMachine(RecipeMixin, RequestItemsMixin, Entity):
         """
         Overwritten
         """
+        # Make sure the item exists
+        if item not in signals.item: # TODO: maybe items.all instead?
+            raise InvalidItemError(item)
+
         # If the item is a module
         if item in modules.raw:
-            # Check to make sure the recipe within the entity's limitations
+            # Check to make sure the recipe within the module's limitations
             # (If it has any)
             module = modules.raw[item]
             if "limitation" in module:
                 if self.recipe is not None and \
                    self.recipe not in module["limitation"]:
-                    tooltip = module.get("limitation_message_key", None)
+                    tooltip = module.get(
+                        "limitation_message_key", 
+                        "no message key"
+                    )
                     warnings.warn(
-                        "cannot use module '{}' with recipe '{}' ({})"
+                        "Cannot use module '{}' with recipe '{}' ({})"
                         .format(item, self.recipe, tooltip),
                         ModuleLimitationWarning,
                         stacklevel = 2
                     )
+
+        # Make sure the item is one of the input ingredients for the recipe
+        elif self.recipe is not None:
+            ingredients = get_recipe_ingredients(self.recipe)
+
+            if item not in ingredients:
+                warnings.warn(
+                    "Cannot request items that the recipe '{}' doesn't use ({})"
+                    .format(self.recipe, item),
+                    ItemLimitationWarning,
+                    stacklevel = 2
+                )
         
         super(AssemblingMachine, self).set_item_request(item, amount)

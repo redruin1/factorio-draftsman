@@ -1,6 +1,7 @@
 # fluid_wagon.py
 
-from draftsman.prototypes.mixins import OrientationMixin, Entity
+from draftsman.classes import Entity
+from draftsman.classes.mixins import OrientationMixin
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import fluid_wagons

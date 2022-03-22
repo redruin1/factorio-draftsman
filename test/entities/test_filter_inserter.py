@@ -17,6 +17,7 @@ class FilterInserterTesting(TestCase):
             direction = Direction.EAST,
             position = [1, 1],
             override_stack_size = 1,
+            filter_mode = "blacklist",
             control_behavior = {
                 "circuit_set_stack_size": True,
                 "stack_control_input_signal": "signal-A",
@@ -43,6 +44,7 @@ class FilterInserterTesting(TestCase):
                 "position": {"x": 1.5, "y": 1.5},
                 "direction": 2,
                 "override_stack_size": 1,
+                "filter_mode": "blacklist",
                 "control_behavior": {
                     "circuit_set_stack_size": True,
                     "stack_control_input_signal": {
@@ -105,19 +107,19 @@ class FilterInserterTesting(TestCase):
             FilterInserter("this is not a filter inserter")
 
         # Raises schema errors when any of the associated data is incorrect
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             FilterInserter("filter-inserter", id = 25)
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             FilterInserter("filter-inserter", position = "invalid")
         
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             FilterInserter("filter-inserter", direction = "incorrect")
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             FilterInserter("filter-inserter", override_stack_size = "incorrect")
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             FilterInserter(
                 "filter-inserter",
                 connections = {
@@ -125,7 +127,7 @@ class FilterInserterTesting(TestCase):
                 }
             )
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             FilterInserter(
                 "filter-inserter",
                 control_behavior = {
@@ -133,6 +135,8 @@ class FilterInserterTesting(TestCase):
                 }
             )
 
+        with self.assertRaises(TypeError):
+            FilterInserter(filter_mode = TypeError)
         with self.assertRaises(ValueError):
             FilterInserter(
                 "filter-inserter",
@@ -149,10 +153,9 @@ class FilterInserterTesting(TestCase):
 
     def test_set_filter_mode(self):
         inserter = FilterInserter()
-        inserter.set_filter_mode("blacklist")
+        inserter.filter_mode = "blacklist"
         self.assertEqual(inserter.filter_mode, "blacklist")
-        inserter.set_filter_mode(None)
+        inserter.filter_mode = None
         self.assertEqual(inserter.filter_mode, None)
-
         with self.assertRaises(ValueError):
-            inserter.set_filter_mode("incorrect")
+            inserter.filter_mode = "incorrect"

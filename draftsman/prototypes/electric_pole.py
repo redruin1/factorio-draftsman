@@ -1,7 +1,8 @@
 # electric_pole.py
 
-from draftsman.prototypes.mixins import (
-    CircuitConnectableMixin, PowerConnectableMixin, Entity
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
+    CircuitConnectableMixin, PowerConnectableMixin
 )
 from draftsman.warning import DraftsmanWarning
 

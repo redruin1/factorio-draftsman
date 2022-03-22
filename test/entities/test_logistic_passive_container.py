@@ -72,25 +72,25 @@ class LogisticPassiveContainerTesting(TestCase):
             LogisticPassiveContainer("this is not a logistics passive chest")
         
         # Raises schema errors when any of the associated data is incorrect
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider", 
                 id = 25
             )
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider", 
                 position = "invalid"
             )
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider", 
                 bar = "not even trying"
             )
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider", 
                 connections = {

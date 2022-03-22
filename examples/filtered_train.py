@@ -17,7 +17,8 @@ attempt to organize the entries by train, and as a result item slots can be
 split across multiple trains which is probably undesirable for this purpose.
 """
 
-from draftsman import Blueprint, CargoWagon
+from draftsman.blueprint import Blueprint
+from draftsman.entity import CargoWagon
 
 
 def main():
@@ -48,7 +49,7 @@ def main():
             # Check to see if we've exceeded the current wagon's size
             if slot_count >= 40:
                 # Add a new wagon
-                cargo_wagon.set_grid_position(7 * train_car_position, 0)
+                cargo_wagon.set_tile_position(7 * train_car_position, 0)
                 blueprint.add_entity(cargo_wagon)
                 # Reset
                 cargo_wagon = CargoWagon("cargo-wagon", orientation = 0.75)
@@ -59,7 +60,7 @@ def main():
             slot_count += 1
     
     # Add the last wagon if we didn't exceed the inventory
-    cargo_wagon.set_grid_position(7 * train_car_position, 0)
+    cargo_wagon.set_tile_position(7 * train_car_position, 0)
     blueprint.add_entity(cargo_wagon)
 
     # Add a fancy title

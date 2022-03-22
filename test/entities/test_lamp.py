@@ -37,14 +37,15 @@ class LampTesting(TestCase):
 
     def test_set_use_colors(self):
         lamp = Lamp()
-        lamp.set_use_colors(True)
+        lamp.use_colors = True
         self.assertEqual(
             lamp.control_behavior,
             {
                 "use_colors": True
             }
         )
-        lamp.set_use_colors(None)
+        lamp.use_colors = None
+        self.assertEqual(lamp.use_colors, None)
         self.assertEqual(lamp.control_behavior, {})
-        with self.assertRaises(SchemaError):
-            lamp.set_use_colors("incorrect")
+        with self.assertRaises(TypeError):
+            lamp.use_colors = "incorrect"

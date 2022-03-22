@@ -50,8 +50,6 @@ import re
 import struct
 import zipfile
 
-from functools import cmp_to_key
-
 
 verbose = True
 

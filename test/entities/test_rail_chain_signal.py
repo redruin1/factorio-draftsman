@@ -116,7 +116,11 @@ class RailChainSignalTesting(TestCase):
 
     def test_set_blue_output_signal(self):
         rail_signal = RailChainSignal()
-        rail_signal.set_blue_output_signal("signal-A")
+        rail_signal.blue_output_signal = "signal-A"
+        self.assertEqual(
+            rail_signal.blue_output_signal, 
+            {"name": "signal-A", "type": "virtual"}
+        )
         self.assertEqual(
             rail_signal.control_behavior,
             {
@@ -126,7 +130,19 @@ class RailChainSignalTesting(TestCase):
                 }
             }
         )
-        rail_signal.set_blue_output_signal(None)
+        rail_signal.blue_output_signal = {"name": "signal-A", "type": "virtual"}
+        self.assertEqual(
+            rail_signal.control_behavior,
+            {
+                "blue_output_signal": {
+                    "name": "signal-A",
+                    "type": "virtual"
+                }
+            }
+        )
+        rail_signal.blue_output_signal = None
         self.assertEqual(rail_signal.control_behavior, {})
+        with self.assertRaises(TypeError):
+            rail_signal.blue_output_signal = TypeError
         with self.assertRaises(InvalidSignalError):
-            rail_signal.set_blue_output_signal("incorrect")
+            rail_signal.blue_output_signal = "incorrect"

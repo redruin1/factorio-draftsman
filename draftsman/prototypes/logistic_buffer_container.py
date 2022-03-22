@@ -1,8 +1,9 @@
 # logistic_buffer_container.py
 
-from draftsman.prototypes.mixins import (
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
     ModeOfOperationMixin, ControlBehaviorMixin, CircuitConnectableMixin,
-    RequestFiltersMixin, InventoryMixin, Entity
+    RequestFiltersMixin, InventoryMixin
 )
 from draftsman.warning import DraftsmanWarning
 

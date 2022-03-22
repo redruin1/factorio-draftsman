@@ -1,9 +1,12 @@
 # test_beacon.py
 
 from draftsman.entity import Beacon, beacons
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import InvalidEntityError, InvalidItemError
+from draftsman.warning import (
+    DraftsmanWarning, ModuleLimitationWarning, ItemLimitationWarning
+)
 
+from schema import SchemaError
 from unittest import TestCase
 
 class BeaconTesting(TestCase):
@@ -15,3 +18,25 @@ class BeaconTesting(TestCase):
 
         with self.assertRaises(InvalidEntityError):
             Beacon("this is not a beacon")
+
+    def test_set_item_request(self):
+        beacon = Beacon()
+        beacon.set_item_request("speed-module-3", 1)
+        self.assertEqual(
+            beacon.items,
+            {
+                "speed-module-3": 1
+            }
+        )
+        with self.assertWarns(ModuleLimitationWarning):
+            beacon.set_item_request("productivity-module-3", 1)
+        
+        beacon.set_item_requests(None)
+        with self.assertWarns(ItemLimitationWarning):
+            beacon.set_item_request("steel-plate", 2)
+
+        # Errors
+        with self.assertRaises(InvalidItemError):
+            beacon.set_item_request("incorrect", "nonsense")
+        with self.assertRaises(SchemaError):
+            beacon.set_item_request("speed-module-2", "nonsense")

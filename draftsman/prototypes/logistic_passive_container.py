@@ -1,8 +1,7 @@
 # logistic_passive_container.py
 
-from draftsman.prototypes.mixins import (
-    CircuitConnectableMixin, InventoryMixin, Entity
-)
+from draftsman.classes import Entity
+from draftsman.classes.mixins import CircuitConnectableMixin, InventoryMixin
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import logistic_passive_containers

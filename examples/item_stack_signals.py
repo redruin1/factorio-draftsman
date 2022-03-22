@@ -26,16 +26,15 @@ def main():
     combinator = ConstantCombinator(direction = Direction.SOUTH)
 
     # Iterate over every item in order:
-    for item in items.all:
-        #print(items.all[item])
-        if "flags" in items.all[item]:
-            if "hidden" in items.all[item]["flags"].values():
+    for item in items.raw:
+        # Ignore hidden items/entities
+        if "flags" in items.raw[item]:
+            if "hidden" in items.raw[item]["flags"]:
                 continue
         # Keep track of how many signals we've gone through
         count += 1
-        print(item)
         # Write the stack size signal
-        stack_size = items.all[item]["stack_size"]
+        stack_size = items.raw[item]["stack_size"]
         combinator.set_signal(index, item, stack_size)
         index += 1
         # Once we exceed the current combinator, place it and reset
@@ -45,7 +44,7 @@ def main():
             y = i % 5
             x = int(i / 5)
             combinator.set_signals(None) # Clear signals
-            combinator.set_grid_position(x, y)
+            combinator.set_tile_position(x, y)
             index = 0
 
     # Add the last combinator if partially full

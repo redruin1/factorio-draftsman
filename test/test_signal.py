@@ -9,42 +9,6 @@ import draftsman.data.signals as signals
 from unittest import TestCase
 
 
-class SignalUtilsTesting(TestCase):
-    pairs = {
-        "transport-belt": "item",
-        "offshore-pump": "item",
-        "signal-anything": "virtual",
-        "signal-red": "virtual",
-        "crude-oil": "fluid",
-        "steam": "fluid"
-    }
-
-    def test_get_signal_type(self):
-        # Valid pairs
-        for signal_name, signal_type in self.pairs.items():
-            self.assertEqual(
-                get_signal_type(signal_name),
-                signal_type
-            )
-        # Invalid name
-        with self.assertRaises(InvalidSignalError):
-            get_signal_type("something invalid")
-
-    def test_signal_dict(self):
-        # Valid pairs
-        for signal_name, signal_type in self.pairs.items():
-            self.assertEqual(
-                signal_dict(signal_name),
-                {
-                    "name": signal_name,
-                    "type": signal_type
-                }
-            )
-        # Invalid name
-        with self.assertRaises(InvalidSignalError):
-            signal_dict("wrong")
-
-
 class SignalTesting(TestCase):
     def test_constructor(self):
         # String arg
@@ -66,6 +30,13 @@ class SignalTesting(TestCase):
         # Invalid arg
         with self.assertRaises(InvalidSignalError):
             signal.set_name(False)
+
+    def test_set_count(self):
+        signal = Signal("transport-belt", -25)
+        signal.set_count(100000)
+        self.assertEqual(signal.count, 100000)
+        with self.assertRaises(ValueError):
+            signal.set_count("incorrect")
 
     def test_to_dict(self):
         signal = Signal("transport-belt", 2000000000)

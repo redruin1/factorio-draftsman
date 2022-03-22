@@ -1,7 +1,8 @@
 # logistic_storage_container.py
 
-from draftsman.prototypes.mixins import (
-    CircuitConnectableMixin, RequestFiltersMixin, InventoryMixin, Entity
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
+    CircuitConnectableMixin, RequestFiltersMixin, InventoryMixin
 )
 from draftsman.warning import DraftsmanWarning
 

@@ -93,7 +93,7 @@ class CargoWagonTesting(TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             CargoWagon("this is not a cargo-wagon")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             CargoWagon("cargo-wagon", orientation = "wrong")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             CargoWagon("cargo-wagon", inventory = "incorrect")

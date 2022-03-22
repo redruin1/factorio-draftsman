@@ -1,7 +1,8 @@
 # loader.py
 
-from draftsman.prototypes.mixins import (
-    FiltersMixin, IOTypeMixin, DirectionalMixin, Entity
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
+    FiltersMixin, IOTypeMixin, DirectionalMixin
 )
 from draftsman.warning import DraftsmanWarning
 

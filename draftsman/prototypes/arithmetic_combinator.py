@@ -1,13 +1,15 @@
 # arithmetic_combinator.py
 
-from draftsman.prototypes.mixins import (
-    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
+from draftsman import signatures
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
+    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin
 )
-import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import arithmetic_combinators
 
+from schema import SchemaError
 from typing import Union
 import warnings
 
@@ -22,7 +24,7 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
             name, arithmetic_combinators, **kwargs
         )
 
-        self.dual_circuit_connectable = True
+        self._dual_circuit_connectable = True
 
         for unused_arg in self.unused_args:
             warnings.warn(
@@ -31,13 +33,194 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
                 stacklevel = 2
             )
 
+    # =========================================================================
+
+    # @property
+    # def first_operand(self):
+    #     # type: () -> Union[str, int]
+    #     """
+    #     TODO
+    #     """
+    #     arithmetic_conditions = self.control_behavior.get("arithmetic_conditions", None)
+    #     if not arithmetic_conditions:
+    #         return None
+        
+    #     if "first_signal" in arithmetic_conditions:
+    #         return arithmetic_conditions["first_signal"]
+    #     elif "first_constant" in arithmetic_conditions:
+    #         return arithmetic_conditions["first_constant"]
+    #     elif ("second_signal" in arithmetic_conditions or
+    #           "second_signal" not in arithmetic_conditions and 
+    #           "second_constant" not in arithmetic_conditions): # Check constant 
+    #         return arithmetic_conditions.get("constant", None)
+        
+    #     return None
+
+    # @first_operand.setter
+    # def first_operand(self, value):
+    #     # type: (Union[dict, int]) -> None
+    #     try:
+    #         value = signatures.SIGNAL_ID_OR_CONSTANT.validate(value)
+    #     except SchemaError:
+    #         # TODO: more verbose
+    #         raise TypeError("Invalid first_operand format")
+
+    #     if "arithmetic_conditions" not in self.control_behavior:
+    #         self.control_behavior["arithmetic_conditions"] = {}
+    #     arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
+
+    #     if value is None: # Default
+    #         arithmetic_conditions.pop("first_signal", None)
+    #         arithmetic_conditions.pop("first_constant", None)
+    #         if ("constant" in arithmetic_conditions and
+    #             "second_signal" in arithmetic_conditions):
+    #             arithmetic_conditions.pop("constant", None)
+    #     elif isinstance(value, dict): # Signal Dict
+    #         arithmetic_conditions["first_signal"] = value
+    #         arithmetic_conditions.pop("first_constant", None)
+    #         if ("constant" in arithmetic_conditions and
+    #             "second_signal" in arithmetic_conditions):
+    #             arithmetic_conditions.pop("constant", None)
+    #         # if going from double constant to single constant, change second
+    #         if "second_constant" in arithmetic_conditions:
+    #             old_constant = arithmetic_conditions.pop("second_constant")
+    #             arithmetic_conditions["constant"] = old_constant
+    #     else: # Constant
+    #         arithmetic_conditions.pop("first_signal", None)
+    #         if ("constant" in arithmetic_conditions and
+    #             "second_signal" not in arithmetic_conditions):
+    #             old_constant = arithmetic_conditions.pop("constant")
+    #             arithmetic_conditions["second_constant"] = old_constant
+    #             arithmetic_conditions["first_constant"] = value
+    #         else:
+    #             arithmetic_conditions["constant"] = value
+        
+    # =========================================================================
+
+    # @property
+    # def operation(self):
+    #     # type: () -> str
+    #     """
+    #     TODO
+    #     """
+    #     arithmetic_conditions = self.control_behavior.get("arithmetic_conditions", None)
+    #     if not arithmetic_conditions:
+    #         return None
+        
+    #     return arithmetic_conditions.get("operation", None)
+
+    # @operation.setter
+    # def operation(self, value):
+    #     # type: (str) -> None
+    #     try:
+    #         value = signatures.OPERATION.validate(value)
+    #     except SchemaError:
+    #         # TODO: more verbose
+    #         raise TypeError("Invalid first_operand format")
+
+    #     if "arithmetic_conditions" not in self.control_behavior:
+    #         self.control_behavior["arithmetic_conditions"] = {}
+    #     arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
+
+    #     if value is None:
+    #         arithmetic_conditions.pop("operation", None)
+    #     else:
+    #         arithmetic_conditions["operation"] = value
+
+    # =========================================================================
+
+    # @property
+    # def second_operand(self):
+    #     # type: () -> Union[dict, int]
+    #     """
+    #     TODO
+    #     """
+    #     arithmetic_conditions = self.control_behavior.get("arithmetic_conditions", None)
+    #     if not arithmetic_conditions:
+    #         return None
+        
+    #     if "second_signal" in arithmetic_conditions:
+    #         return arithmetic_conditions["second_signal"]
+    #     elif "second_constant" in arithmetic_conditions:
+    #         return arithmetic_conditions["second_constant"]
+    #     elif "first_signal" in arithmetic_conditions: # Check constant 
+    #         return arithmetic_conditions.get("constant", None)
+        
+    #     return None
+
+    # @second_operand.setter
+    # def second_operand(self, value):
+    #     # type: (Union[str, int]) -> None
+    #     try:
+    #         value = signatures.SIGNAL_ID_OR_CONSTANT.validate(value)
+    #     except SchemaError:
+    #         # TODO: more verbose
+    #         raise TypeError("Invalid first_operand format")
+
+    #     if "arithmetic_conditions" not in self.control_behavior:
+    #         self.control_behavior["arithmetic_conditions"] = {}
+    #     arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
+
+    #     if value is None: # Default
+    #         arithmetic_conditions.pop("second_signal", None)
+    #         arithmetic_conditions.pop("second_constant", None)
+    #         if ("constant" in arithmetic_conditions and
+    #             "first_signal" in arithmetic_conditions):
+    #             arithmetic_conditions.pop("constant", None)
+    #     elif isinstance(value, dict): # Signal Dict
+    #         arithmetic_conditions["second_signal"] = value
+    #         arithmetic_conditions.pop("second_constant", None)
+    #         if ("constant" in arithmetic_conditions and
+    #             "first_signal" in arithmetic_conditions):
+    #             arithmetic_conditions.pop("constant", None)
+    #     else: # Constant
+    #         arithmetic_conditions.pop("second_signal", None)
+    #         if ("constant" in arithmetic_conditions and
+    #             "first_signal" not in arithmetic_conditions):
+    #             old_constant = arithmetic_conditions.pop("constant")
+    #             arithmetic_conditions["first_constant"] = old_constant
+    #             arithmetic_conditions["second_constant"] = value
+    #         else:
+    #             arithmetic_conditions["constant"] = value
+
+    # =========================================================================
+
+    # @property
+    # def output_signal(self):
+    #     # type: () -> dict
+    #     """
+    #     TODO
+    #     """
+    #     arithmetic_conditions = self.control_behavior.get("arithmetic_conditions", None)
+    #     if not arithmetic_conditions:
+    #         return None
+
+    #     return arithmetic_conditions.get("output_signal", None)
+
+    # @output_signal.setter
+    # def output_signal(self, value):
+    #     # type: (str) -> None
+    #     try:
+    #         out = signatures.SIGNAL_ID.validate(out)
+    #     except SchemaError:
+    #         # TODO: more verbose
+    #         raise TypeError("Invalid output_signal format")
+
+    #     if "arithmetic_conditions" not in self.control_behavior:
+    #         self.control_behavior["arithmetic_conditions"] = {}
+    #     arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
+
+    #     if out is None: # Default
+    #         arithmetic_conditions.pop("output_signal", None)
+    #     else: # Signal Dict
+    #         arithmetic_conditions["output_signal"] = out
+
+    # =========================================================================
+
     def set_arithmetic_conditions(self, a = None, op = "*", b = 0, out = None):
         # type: (Union[str, int], str, Union[str, int], str) -> None
         """
         """
-        # TODO: `first_constant`/`second_constant` is incorrect; if there's only
-        # one constant it should be just `constant` (because factorio cant make
-        # up its damn mind)
 
         # Check all the parameters before we set anything to preserve original
         a = signatures.SIGNAL_ID_OR_CONSTANT.validate(a)
@@ -48,17 +231,28 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
         if "arithmetic_conditions" not in self.control_behavior:
             self.control_behavior["arithmetic_conditions"] = {}
         arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
+
+        double_constant = isinstance(a, int) and isinstance(b, int)
+        a_not_const = not isinstance(a, int)
+        b_not_const = not isinstance(b, int)
         
         # A
         if a is None: # Default
             arithmetic_conditions.pop("first_signal", None)
             arithmetic_conditions.pop("first_constant", None)
+            if (not double_constant and b_not_const):
+                arithmetic_conditions.pop("constant", None)
         elif isinstance(a, dict): # Signal Dict
             arithmetic_conditions["first_signal"] = a
             arithmetic_conditions.pop("first_constant", None)
         else: # Constant
-            arithmetic_conditions["first_constant"] = a
             arithmetic_conditions.pop("first_signal", None)
+            if double_constant:
+                arithmetic_conditions["first_constant"] = a
+                arithmetic_conditions.pop("constant", None)
+            else:
+                arithmetic_conditions["constant"] = a
+                arithmetic_conditions.pop("first_constant", None)
 
         # op
         if op is None:
@@ -70,12 +264,19 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
         if b is None: # Default
             arithmetic_conditions.pop("second_signal", None)
             arithmetic_conditions.pop("second_constant", None)
+            if (not double_constant and a_not_const):
+                arithmetic_conditions.pop("constant", None)
         elif isinstance(b, dict): # Signal Dict
             arithmetic_conditions["second_signal"] = b
             arithmetic_conditions.pop("second_constant", None)
         else: # Constant
-            arithmetic_conditions["second_constant"] = b
             arithmetic_conditions.pop("second_signal", None)
+            if double_constant:
+                arithmetic_conditions["second_constant"] = b
+                arithmetic_conditions.pop("constant", None)
+            else:
+                arithmetic_conditions["constant"] = b
+                arithmetic_conditions.pop("second_constant", None)
 
         # out
         if out is None: # Default
@@ -83,29 +284,8 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
         else: # Signal Dict
             arithmetic_conditions["output_signal"] = out
 
-    # def set_first_operand(self, operand: Union[str, int]) -> None:
-    #     """
-    #     """
-    #     pass # TODO
-
-    # def set_operation(self, operation: str) -> None:
-    #     """
-    #     """
-    #     pass # TODO
-
-    # def set_second_operand(self, operand: Union[str, int]) -> None:
-    #     """
-    #     """
-    #     pass # TODO
-
-    # def set_output_signal(self, out:str) -> None:
-    #     """
-    #     """
-    #     pass # TODO
-
-    def remove_arithmetic_conditions(self):
+    def remove_arithmetic_conditions(self): # TODO: remove
         # type: () -> None
         """
         """
-        # TODO: remove
         self.control_behavior.pop("arithmetic_conditions", None)

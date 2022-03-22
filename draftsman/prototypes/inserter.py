@@ -1,9 +1,10 @@
 # inserter.py
 
-from draftsman.prototypes.mixins import (
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
     StackSizeMixin, CircuitReadHandMixin, ModeOfOperationMixin, 
     CircuitConditionMixin, EnableDisableMixin, LogisticConditionMixin,
-    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
+    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin
 )
 from draftsman.warning import DraftsmanWarning
 

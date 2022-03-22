@@ -25,105 +25,6 @@ import random
 
 from unittest import TestCase
 
-class BlueprintUtilsTesting(TestCase):
-    def test_string_2_JSON(self):
-        # Blueprints
-        resulting_dict = string_2_JSON("0eNqN0N0KwjAMBeB3yXU33E/d7KuISKdRCltW2mxsjL67ncIEvdDLHnK+lCzQtANaZ4hBLWAuPXlQxwW8uZNu14xni6BgNI6HmAgg3a3BayLZQRBg6IoTqCycBCCxYYMv5vmYzzR0Dbo4sLVv2nPCTpO3veOkwZYjbXsfuz2te6Mnd1UqBcygkqyuUxmC+CLzjfyt7X9qxabhZB16/8cf6w813sAwdtF431bAiM4/W3mdldUhr8qDLCtZhPAAeZl+cQ==")
-        self.assertEqual(
-            resulting_dict,
-            {
-                "blueprint": {
-                    "item": "blueprint",
-                    "version": 281479274954753,
-                    "icons": [
-                        {
-                            "signal": {
-                                "type": "virtual",
-                                "name": "signal-0"
-                            },
-                            "index": 1
-                        }
-                    ],
-                    "entities": [
-                        {
-                            "entity_number": 1,
-                            "name": "fast-transport-belt",
-                            "position": {
-                                "x": 507.5,
-                                "y": -188.5
-                            }
-                        },
-                        {
-                            "entity_number": 2,
-                            "name": "transport-belt",
-                            "position": {
-                                "x": 506.5,
-                                "y": -188.5
-                            }
-                        },
-                        {
-                            "entity_number": 3,
-                            "name": "express-transport-belt",
-                            "position": {
-                                "x": 508.5,
-                                "y": -188.5
-                            }
-                        }
-                    ]
-                }
-            }
-        )
-        # Blueprint Books
-        # TODO
-
-    def test_JSON_2_string(self):
-        # Blueprints
-        test_dict = {
-            "arbitrary_data_1": 1,
-            "arbitrary_data_2": 2.0,
-            "arbitrary_data_3": [
-                "stringy", "strigger", "others"
-            ],
-            "finally": {
-                "key": "value"
-            }
-        }
-        self.assertEqual(
-            JSON_2_string(test_dict),
-            "0eNplyEEKgCAURdG9vLFE2sytRMiPzCQx+Fog0t6ThjW6h1tBPPvMxMUslMlIaCm+U0Grrv/tAXpEyuyjKxCvnLPceOTNcsIksPpIIRToit224KJwWtz3AzZ8Kjs="
-        )
-        # Blueprint Books
-        # TODO
-
-    def test_encode_version(self):
-        self.assertEqual(
-            encode_version(1, 1, 50, 1),
-            281479274954753
-        )
-
-    def test_decode_version(self):
-        self.assertEqual(
-            decode_version(281479274954753),
-            (1, 1, 50, 1)
-        )
-
-    def test_get_blueprintable_from_string(self):
-        # Valid Format
-        blueprintable = get_blueprintable_from_string(
-            "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3sTQ1MTc1rq0FAHmyE1c="
-        )
-        self.assertIsInstance(blueprintable, Blueprint)
-        # Valid format, but blueprint book string
-        blueprintable = get_blueprintable_from_string(
-            "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
-        )
-        self.assertIsInstance(blueprintable, BlueprintBook)
-        # Invalid format
-        with self.assertRaises(MalformedBlueprintStringError):
-            blueprintable = get_blueprintable_from_string(
-                "0lmaothisiswrong"
-            )
-
 
 class BlueprintTesting(TestCase):
     def test_to_dict(self):
@@ -134,9 +35,9 @@ class BlueprintTesting(TestCase):
             {"item": "blueprint", 
             "version": encode_version(*__factorio_version_info__)}
         )
-        self.assertIs(blueprint["entities"],  blueprint.blueprint["entities"])
-        self.assertIs(blueprint["tiles"],     blueprint.blueprint["tiles"])
-        self.assertIs(blueprint["schedules"], blueprint.blueprint["schedules"])
+        self.assertIs(blueprint["entities"],  blueprint.root["entities"])
+        self.assertIs(blueprint["tiles"],     blueprint.root["tiles"])
+        self.assertIs(blueprint["schedules"], blueprint.root["schedules"])
         ### Complex blueprint ###
         # TODO
 
@@ -148,9 +49,9 @@ class BlueprintTesting(TestCase):
             blueprint.to_string(),
             "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTI0s7A0q60FAHmRE1c="
         )
-        self.assertIs(blueprint["entities"],  blueprint.blueprint["entities"])
-        self.assertIs(blueprint["tiles"],     blueprint.blueprint["tiles"])
-        self.assertIs(blueprint["schedules"], blueprint.blueprint["schedules"])
+        self.assertIs(blueprint["entities"],  blueprint.root["entities"])
+        self.assertIs(blueprint["tiles"],     blueprint.root["tiles"])
+        self.assertIs(blueprint["schedules"], blueprint.root["schedules"])
         ### Complex blueprint ###
         # TODO
 
@@ -246,8 +147,7 @@ class BlueprintTesting(TestCase):
         blueprint.set_version(1, 1, 54, 0)
         self.assertEqual(
             str(blueprint),
-"""<Blueprint>
-{
+"""Blueprint{
   "item": "blueprint",
   "version": 281479275216896
 }"""
@@ -359,6 +259,12 @@ class BlueprintTesting(TestCase):
         with self.assertRaises(InvalidSignalError):
             blueprint.set_icons(123456, "uh-oh")
 
+    def test_set_description(self):
+        blueprint = Blueprint()
+        blueprint.set_description("An example description.")
+        self.assertEqual(blueprint["description"], "An example description.")
+        # TODO: error checking
+
     def test_set_version(self):
         blueprint = Blueprint()
         blueprint.set_version(1, 0, 40, 0)
@@ -366,17 +272,28 @@ class BlueprintTesting(TestCase):
         with self.assertRaises(TypeError):
             blueprint.set_version("1", "0", "40", "0")
 
-    def test_read_version(self):
+    def test_set_snapping_grid_size(self):
         blueprint = Blueprint()
-        self.assertEqual(
-            blueprint.read_version(), 
-            __factorio_version__
-        )
-        blueprint.set_version(0, 0, 0, 0)
-        self.assertEqual(
-            blueprint.read_version(),
-            "0.0.0.0"
-        )
+        pass
+    
+    def test_set_snapping_grid_position(self):
+        pass
+
+    def test_set_absolute_snapping(self):
+        pass
+
+    def test_set_position_relative_to_grid(self):
+        pass
+
+    def test_rotate(self):
+        blueprint = Blueprint()
+        with self.assertRaises(NotImplementedError):
+            blueprint.rotate(1)
+
+    def test_flip(self):
+        blueprint = Blueprint()
+        with self.assertRaises(NotImplementedError):
+            blueprint.flip()
 
     def test_add_entity(self):
         pass
@@ -471,10 +388,53 @@ class BlueprintTesting(TestCase):
     def test_find_tile_with_id(self):
         blueprint = Blueprint()
         blueprint.add_tile("refined-concrete", 0, 0, "the_id")
-        self.assertIs(blueprint.find_tile_by_id('the_id'), blueprint["tiles"][0])
+        self.assertIs(blueprint.tiles["the_id"], blueprint["tiles"][0])
         with self.assertRaises(KeyError):
-            blueprint.find_tile_by_id("another_id")
+            blueprint.tiles["another_id"]
+
+    def test_version_tuple(self):
+        blueprint = Blueprint()
+        self.assertEqual(
+            blueprint.version_tuple(), 
+            __factorio_version_info__
+        )
+        blueprint.set_version(0, 0, 0, 0)
+        self.assertEqual(
+            blueprint.version_tuple(),
+            (0, 0, 0, 0)
+        )
+
+    def test_version_string(self):
+        blueprint = Blueprint()
+        self.assertEqual(
+            blueprint.version_string(), 
+            __factorio_version__
+        )
+        blueprint.set_version(0, 0, 0, 0)
+        self.assertEqual(
+            blueprint.version_string(),
+            "0.0.0.0"
+        )
 
 
 class BlueprintBookTesting(TestCase):
     pass
+
+
+class BlueprintUtilsTesting(TestCase):
+    def test_get_blueprintable_from_string(self):
+        # Valid Format
+        blueprintable = get_blueprintable_from_string(
+            "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3sTQ1MTc1rq0FAHmyE1c="
+        )
+        self.assertIsInstance(blueprintable, Blueprint)
+        # Valid format, but blueprint book string
+        blueprintable = get_blueprintable_from_string(
+            "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
+        )
+        self.assertIsInstance(blueprintable, BlueprintBook)
+        # Invalid format
+        with self.assertRaises(MalformedBlueprintStringError):
+            blueprintable = get_blueprintable_from_string(
+                "0lmaothisiswrong"
+            )

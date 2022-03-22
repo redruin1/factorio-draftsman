@@ -1,8 +1,9 @@
 # offshore_pump.py
 
-from draftsman.prototypes.mixins import (
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
     CircuitConditionMixin, LogisticConditionMixin, ControlBehaviorMixin,
-    CircuitConnectableMixin, DirectionalMixin, Entity
+    CircuitConnectableMixin, DirectionalMixin
 )
 from draftsman.warning import DraftsmanWarning
 

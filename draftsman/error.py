@@ -28,6 +28,9 @@ class EntityNotPowerConnectableError(DraftsmanError):
 class EntityNotCircuitConnectableError(DraftsmanError):
     pass
 
+class UnreasonablySizedBlueprintError(DraftsmanError):
+    pass
+
 # Tiles
 class InvalidTileError(DraftsmanError):
     pass
@@ -70,10 +73,20 @@ class InvalidRecipeError(DraftsmanError):
 class InvalidModuleError(DraftsmanError):
     pass
 
+class InvalidSideError(DraftsmanError):
+    """
+    Raised when a Splitter's input or output priority is set to something other
+    than 'left' or 'right'.
+    """
+    pass
+
 class InvalidFluidError(DraftsmanError):
     pass
 
 class BarIndexError(DraftsmanError):
+    pass
+
+class FilterIndexError(DraftsmanError):
     pass
 
 # Update

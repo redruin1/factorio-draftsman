@@ -88,16 +88,16 @@ class LogisticBufferContainerTesting(TestCase):
             LogisticBufferContainer("this is not a logistics storage chest")
         
         # Raises schema errors when any of the associated data is incorrect
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             LogisticBufferContainer("logistic-chest-buffer", id = 25)
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             LogisticBufferContainer("logistic-chest-buffer", position = "invalid")
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             LogisticBufferContainer("logistic-chest-buffer", bar = "not even trying")
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             LogisticBufferContainer("logistic-chest-buffer", 
                 connections = {
                     "this is": ["very", "wrong"]

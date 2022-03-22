@@ -1,16 +1,18 @@
 # programmable_speaker.py
 
-from draftsman.prototypes.mixins import (
-    CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, Entity
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
+    CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin
 )
 import draftsman.signatures as signatures
 from draftsman.utils import signal_dict
-from draftsman.warning import DraftsmanWarning, VolumeWarning
+from draftsman.warning import DraftsmanWarning, VolumeRangeWarning
 
 from draftsman.data.entities import programmable_speakers
 import draftsman.data.entities as entities
 import draftsman.data.instruments as instruments
 
+from schema import SchemaError
 from typing import Union
 import warnings
 
@@ -26,7 +28,7 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
         )
 
         # Name translations for all of the instruments and their notes
-        self.instruments = instruments.instruments[self.name]
+        self._instruments = instruments.instruments[self.name]
         #self.instruments = entities.raw[self.name]["instruments"]
         # Default instrument and note names
         self.instrument_id = 0
@@ -34,13 +36,13 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
 
         self.parameters = {}
         if "parameters" in kwargs:
-            self.set_parameters(kwargs["parameters"])
+            self.parameters = kwargs["parameters"]
             self.unused_args.pop("parameters")
         self._add_export("parameters", lambda x: len(x) != 0)
 
         self.alert_parameters = {}
         if "alert_parameters" in kwargs:
-            self.set_alert_parameters(kwargs["alert_parameters"])
+            self.alert_parameters = kwargs["alert_parameters"]
             self.unused_args.pop("alert_parameters")
         self._add_export("alert_parameters", lambda x: len(x) != 0)
 
@@ -54,112 +56,279 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
                 stacklevel = 2
             )
 
-    def set_parameters(self, parameters):
-        # type: (dict) -> None
-        """
-        """
-        self.parameters = signatures.PARAMETERS.validate(parameters)
+    # =========================================================================
 
-    def set_alert_parameters(self, alert_parameters):
-        # type: (dict) -> None
+    @property
+    def instruments(self):
+        # type: () -> dict
         """
+        Read only
+        TODO
         """
-        self.alert_parameters = signatures.ALERT_PARAMETERS.validate(
-            alert_parameters
-        )
+        return self._instruments
 
-    def set_volume(self, volume):
-        # type: (float) -> None
+    # =========================================================================
+
+    @property
+    def parameters(self):
+        # type: () -> dict
         """
+        TODO
         """
-        if volume is None:
-            self.parameters.pop("playback_volume", None)
+        return self._parameters
+
+    @parameters.setter
+    def parameters(self, value):
+        # type: (dict) -> None
+        if value is None:
+            self._parameters = {}
         else:
-            volume = signatures.FLOAT.validate(volume)
-            if volume < 0.0 or volume > 1.0:
+            try:
+                self._parameters = signatures.PARAMETERS.validate(value)
+            except SchemaError:
+                # TODO: more verbose
+                raise TypeError("Invalid parameters format")
+
+    # =========================================================================
+
+    @property
+    def alert_parameters(self):
+        # type: () -> dict
+        """
+        TODO
+        """
+        return self._alert_parameters
+
+    @alert_parameters.setter
+    def alert_parameters(self, value):
+        # type: (dict) -> None
+        if value is None:
+            self._alert_parameters = {}
+        else:
+            try:
+                self._alert_parameters = signatures.ALERT_PARAMETERS.validate(value)
+            except SchemaError:
+                # TODO: more verbose
+                raise TypeError("Invalid alert_parameters format")
+
+    # =========================================================================
+
+    @property
+    def volume(self):
+        # type: () -> float
+        """
+        TODO
+        """
+        return self.parameters.get("playback_volume", None)
+
+    @volume.setter
+    def volume(self, value):
+        # type: (float) -> None
+        if value is None:
+            self.parameters.pop("playback_volume", None)
+        elif isinstance(value, float):
+            if not 0.0 <= value <= 1.0:
                 warnings.warn(
-                    "volume not in range of [0.0, 1.0], will be clamped "
-                    "to this range on import",
-                    VolumeWarning,
+                    "volume ({}) not in range of [0.0, 1.0], will be clamped "
+                    "on import".format(value),
+                    VolumeRangeWarning,
                     stacklevel=2
                 )
-            self.parameters["playback_volume"] = volume
+            self.parameters["playback_volume"] = value
+        else:
+            raise TypeError("'volume' must be a float or None")
 
-    def set_global_playback(self, value):
+    # =========================================================================
+
+    @property
+    def global_playback(self):
+        # type: () -> bool
+        """
+        TODO
+        """
+        return self.parameters.get("playback_globally", None)
+
+    @global_playback.setter
+    def global_playback(self, value):
         # type: (bool) -> None
-        """
-        """
         if value is None:
             self.parameters.pop("playback_globally", None)
-        else:
-            value = signatures.BOOLEAN.validate(value)
+        elif isinstance(value, bool):
             self.parameters["playback_globally"] = value
+        else:
+            raise TypeError("'global_playback' must be a bool or None")
 
-    def set_show_alert(self, value):
+    # =========================================================================
+
+    @property
+    def show_alert(self):
+        # type: () -> bool
+        """
+        TODO
+        """
+        return self.alert_parameters.get("show_alert", None)
+
+    @show_alert.setter
+    def show_alert(self, value):
         # type: (bool) -> None
-        """
-        """
         if value is None:
             self.alert_parameters.pop("show_alert", None)
-        else:
-            value = signatures.BOOLEAN.validate(value)
+        elif isinstance(value, bool):
             self.alert_parameters["show_alert"] = value
+        else:
+            raise TypeError("'show_alert' must be a bool or None")
 
-    def set_polyphony(self, value):
+    # =========================================================================
+
+    @property
+    def allow_polyphony(self):
+        # type: () -> bool
+        """
+        TODO
+        """
+        return self.parameters.get("allow_polyphony", None)
+
+    @allow_polyphony.setter
+    def allow_polyphony(self, value):
         # type: (bool) -> None
-        """
-        """
         if value is None:
             self.parameters.pop("allow_polyphony", None)
-        else:
-            value = signatures.BOOLEAN.validate(value)
+        elif isinstance(value, bool):
             self.parameters["allow_polyphony"] = value
+        else:
+            raise TypeError("'allow_polyphony' must be a bool or None")
 
-    def set_show_alert_on_map(self, value):
+    # =========================================================================
+
+    @property
+    def show_alert_on_map(self):
+        # type: () -> bool
+        """
+        TODO
+        """
+        return self.alert_parameters.get("show_on_map", None)
+
+    @show_alert_on_map.setter
+    def show_alert_on_map(self, value):
         # type: (bool) -> None
-        """
-        """
         if value is None:
             self.alert_parameters.pop("show_on_map", None)
-        else:
-            value = signatures.BOOLEAN.validate(value)
+        elif isinstance(value, bool):
             self.alert_parameters["show_on_map"] = value
+        else:
+            raise TypeError("'show_on_map' must be a bool or None")
 
-    def set_alert_icon(self, signal):
-        # type: (str) -> None
+    # =========================================================================
+
+    @property
+    def alert_icon(self):
+        # type: () -> dict
         """
+        TODO
         """
-        if signal is None:
+        return self.alert_parameters.get("icon_signal_id", None)
+
+    @alert_icon.setter
+    def alert_icon(self, value):
+        # type: (Union[str, dict]) -> None
+        if value is None:
             self.alert_parameters.pop("icon_signal_id", None)
-        else:
-            self.alert_parameters["icon_signal_id"] = signal_dict(signal)
+        elif isinstance(value, str):
+            self.alert_parameters["icon_signal_id"] = signal_dict(value)
+        else: # dict or other
+            try:
+                value = signatures.SIGNAL_ID.validate(value)
+                self.alert_parameters["icon_signal_id"] = value
+            except SchemaError:
+                raise TypeError("Incorrectly formatted SignalID")
 
-    def set_alert_message(self, message):
+    # =========================================================================
+
+    @property
+    def alert_message(self):
+        # type: () -> str
+        """
+        TODO
+        """
+        return self.alert_parameters.get("alert_message", None)
+
+    @alert_message.setter
+    def alert_message(self, value):
         # type: (str) -> None
-        """
-        """
-        if message is None:
+        if value is None:
             self.alert_parameters.pop("alert_message", None)
+        elif isinstance(value, str):
+            self.alert_parameters["alert_message"] = value
         else:
-            message = signatures.STRING.validate(message)
-            self.alert_parameters["alert_message"] = message
+            raise TypeError("'alert_message' must be a str or None")
 
-    def set_signal_value_is_pitch(self, value):
+    # =========================================================================
+
+    @property
+    def signal_value_is_pitch(self):
+        # type: () -> bool
+        if "circuit_parameters" not in self.control_behavior:
+            return None
+        circuit_parameters = self.control_behavior["circuit_parameters"]
+
+        return circuit_parameters.get("signal_value_is_pitch", None)
+
+    @signal_value_is_pitch.setter
+    def signal_value_is_pitch(self, value):
         # type: (bool) -> None
-        """
-        """
         # TODO: handle this with defaults
         if "circuit_parameters" not in self.control_behavior:
             self.control_behavior["circuit_parameters"] = {}
-        circuit_params = self.control_behavior["circuit_parameters"]
+        circuit_parameters = self.control_behavior["circuit_parameters"]
 
         if value is None:
-            circuit_params.pop("signal_value_is_pitch", None)
-            if len(circuit_params) == 0:
+            circuit_parameters.pop("signal_value_is_pitch", None)
+            if len(circuit_parameters) == 0:
                 self.control_behavior.pop("circuit_parameters", None)
+        elif isinstance(value, bool):
+            circuit_parameters["signal_value_is_pitch"] = value
         else:
-            value = signatures.BOOLEAN.validate(value)
-            circuit_params["signal_value_is_pitch"] = value
+            raise TypeError("'signal_value_is_pitch' must be a bool or None")
+
+    # =========================================================================
+
+    # TODO: use these
+    # @property
+    # def instrument_id(self):
+    #     pass
+
+    # @instrument_id.setter
+    # def instrument_id(self, value):
+    #     pass
+
+    # # Maybe have another one for setting the name?
+    # @property
+    # def instrument_name(self):
+    #     pass
+
+    # @instrument_name.setter
+    # def instrument_name(self, value):
+    #     pass
+
+    # =========================================================================
+
+    # TODO: use these
+    # @property
+    # def note_id(self):
+    #     pass
+
+    # @note_id.setter
+    # def note_id(self, value):
+    #     pass
+
+    # # Maybe have another one for setting the name?
+    # @property
+    # def note_name(self):
+    #     pass
+
+    # @instrument_name.setter
+    # def note_name(self, value):
+    #     pass
 
     def set_instrument(self, instrument):
         # type: (Union[int, str]) -> None
@@ -229,6 +398,8 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
         #     note = instruments.index[self.name][self.instrument][note]
         #     circuit_params["note_id"] = note
         #     # raises keyerror if need be
+
+    # =========================================================================
 
     def _normalize_circuit_parameters(self):
         """

@@ -1,7 +1,8 @@
 # lamp.py
 
-from draftsman.prototypes.mixins import (
-    CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, Entity
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
+    CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin
 )
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
@@ -26,12 +27,32 @@ class Lamp(CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin,
                 stacklevel = 2
             )
 
-    def set_use_colors(self, value):
+    # =========================================================================
+
+    @property
+    def use_colors(self):
+        # type: () -> bool
+        """
+        TODO
+        """
+        return self.control_behavior.get("use_colors", None)
+
+    @use_colors.setter
+    def use_colors(self, value):
         # type: (bool) -> None
-        """
-        """
         if value is None:
             self.control_behavior.pop("use_colors", None)
-        else:
-            value = signatures.BOOLEAN.validate(value)
+        elif isinstance(value, bool):
             self.control_behavior["use_colors"] = value
+        else:
+            raise TypeError("'use_colors' must be a bool or None")
+
+    # def set_use_colors(self, value):
+    #     # type: (bool) -> None
+    #     """
+    #     """
+    #     if value is None:
+    #         self.control_behavior.pop("use_colors", None)
+    #     else:
+    #         value = signatures.BOOLEAN.validate(value)
+    #         self.control_behavior["use_colors"] = value

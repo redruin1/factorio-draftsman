@@ -1,6 +1,7 @@
 # linked_belt.py
 
-from draftsman.prototypes.mixins import DirectionalMixin, Entity
+from draftsman.classes import Entity
+from draftsman.classes.mixins import DirectionalMixin
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import linked_belts

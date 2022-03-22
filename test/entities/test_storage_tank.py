@@ -69,16 +69,16 @@ class StorageTankTesting(TestCase):
             StorageTank("this is not a storage tank")
 
         # Raises schema errors when any of the associated data is incorrect
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             StorageTank("storage-tank", id = 25)
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             StorageTank("storage-tank", position = "invalid")
         
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             StorageTank("storage-tank", direction = "incorrect")
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             StorageTank(
                 "storage-tank",
                 connections = {

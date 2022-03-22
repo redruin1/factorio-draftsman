@@ -1,8 +1,9 @@
 # power_switch.py
 
-from draftsman.prototypes.mixins import (
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
     CircuitConditionMixin, LogisticConditionMixin, ControlBehaviorMixin,
-    CircuitConnectableMixin, PowerConnectableMixin, DirectionalMixin, Entity
+    CircuitConnectableMixin, PowerConnectableMixin, DirectionalMixin
 )
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
@@ -21,11 +22,11 @@ class PowerSwitch(CircuitConditionMixin, LogisticConditionMixin,
         # type: (str, **dict) -> None
         super(PowerSwitch, self).__init__(name, power_switches, **kwargs)
 
-        self.dual_power_connectable = True
+        self._dual_power_connectable = True
 
         self.switch_state = None
         if "switch_state" in kwargs:
-            self.set_switch_state(kwargs["switch_state"])
+            self.switch_state = kwargs["switch_state"]
             self.unused_args.pop("switch_state")
         self._add_export("switch_state", lambda x: x is not None)
 
@@ -36,8 +37,20 @@ class PowerSwitch(CircuitConditionMixin, LogisticConditionMixin,
                 stacklevel = 2
             )
 
-    def set_switch_state(self, value):
+    # =========================================================================
+
+    @property
+    def switch_state(self):
+        # type: () -> bool
+        """
+        TODO
+        """
+        return self._switch_state
+
+    @switch_state.setter
+    def switch_state(self, value):
         # type: (bool) -> None
-        """
-        """
-        self.switch_state = signatures.BOOLEAN.validate(value)
+        if value is None or isinstance(value, bool):
+            self._switch_state = value
+        else:
+            raise TypeError("'switch_state' must be a bool or None")

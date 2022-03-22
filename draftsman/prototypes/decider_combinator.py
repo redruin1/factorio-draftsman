@@ -1,13 +1,15 @@
 # decider_combinator.py
 
-from draftsman.prototypes.mixins import (
-    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
+    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin
 )
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import decider_combinators
 
+from schema import SchemaError
 from typing import Union
 import warnings
 
@@ -22,7 +24,7 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
             name, decider_combinators, **kwargs
         )
 
-        self.dual_circuit_connectable = True
+        self._dual_circuit_connectable = True
 
         for unused_arg in self.unused_args:
             warnings.warn(
@@ -30,15 +32,214 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
                 DraftsmanWarning,
                 stacklevel = 2
             )
+
+    # =========================================================================
+
+    # @property
+    # def first_operand(self):
+    #     # type: () -> Union[str, int]
+    #     """
+    #     TODO
+    #     """
+    #     decider_conditions = self.control_behavior.get("decider_conditions", None)
+    #     if not decider_conditions:
+    #         return None
+        
+    #     if "first_signal" in decider_conditions:
+    #         return decider_conditions["first_signal"]
+    #     elif "first_constant" in decider_conditions:
+    #         return decider_conditions["first_constant"]
+    #     elif "second_signal" in decider_conditions: # Check constant 
+    #         return decider_conditions.get("constant", None)
+        
+    #     return None
+
+    # @first_operand.setter
+    # def first_operand(self, value):
+    #     # type: (Union[dict, int]) -> None
+    #     try:
+    #         value = signatures.SIGNAL_ID_OR_CONSTANT.validate(value)
+    #     except SchemaError:
+    #         # TODO: more verbose
+    #         raise TypeError("Invalid first_operand format")
+
+    #     if "decider_conditions" not in self.control_behavior:
+    #         self.control_behavior["decider_conditions"] = {}
+    #     decider_conditions = self.control_behavior["decider_conditions"]
+
+    #     if value is None: # Default
+    #         decider_conditions.pop("first_signal", None)
+    #         decider_conditions.pop("first_constant", None)
+    #         if ("constant" in decider_conditions and
+    #             "second_signal" in decider_conditions):
+    #             decider_conditions.pop("constant", None)
+    #     elif isinstance(value, dict): # Signal Dict
+    #         decider_conditions["first_signal"] = value
+    #         decider_conditions.pop("first_constant", None)
+    #         if ("constant" in decider_conditions and
+    #             "second_signal" in decider_conditions):
+    #             decider_conditions.pop("constant", None)
+    #     else: # Constant
+    #         decider_conditions.pop("first_signal", None)
+    #         if ("constant" in decider_conditions and
+    #             "second_signal" not in decider_conditions):
+    #             old_constant = decider_conditions.pop("constant")
+    #             decider_conditions["second_constant"] = old_constant
+    #             decider_conditions["first_constant"] = value
+    #         else:
+    #             decider_conditions["constant"] = value
+        
+    # =========================================================================
+
+    # @property
+    # def operation(self):
+    #     # type: () -> str
+    #     """
+    #     TODO
+    #     """
+    #     decider_conditions = self.control_behavior.get("decider_conditions", None)
+    #     if not decider_conditions:
+    #         return None
+        
+    #     return decider_conditions.get("operation", None)
+
+    # @operation.setter
+    # def operation(self, value):
+    #     # type: (str) -> None
+    #     try:
+    #         value = signatures.OPERATION.validate(value)
+    #     except SchemaError:
+    #         # TODO: more verbose
+    #         raise TypeError("Invalid first_operand format")
+
+    #     if "decider_conditions" not in self.control_behavior:
+    #         self.control_behavior["decider_conditions"] = {}
+    #     decider_conditions = self.control_behavior["decider_conditions"]
+
+    #     if value is None:
+    #         decider_conditions.pop("operation", None)
+    #     else:
+    #         decider_conditions["operation"] = value
+
+    # =========================================================================
+
+    # @property
+    # def second_operand(self):
+    #     # type: () -> Union[dict, int]
+    #     """
+    #     TODO
+    #     """
+    #     decider_conditions = self.control_behavior.get("decider_conditions", None)
+    #     if not decider_conditions:
+    #         return None
+        
+    #     if "second_signal" in decider_conditions:
+    #         return decider_conditions["second_signal"]
+    #     elif "second_constant" in decider_conditions:
+    #         return decider_conditions["second_constant"]
+    #     elif "first_signal" in decider_conditions: # Check constant 
+    #         return decider_conditions.get("constant", None)
+        
+    #     return None
+
+    # @second_operand.setter
+    # def second_operand(self, value):
+    #     # type: (Union[str, int]) -> None
+    #     try:
+    #         value = signatures.SIGNAL_ID_OR_CONSTANT.validate(value)
+    #     except SchemaError:
+    #         # TODO: more verbose
+    #         raise TypeError("Invalid first_operand format")
+
+    #     if "decider_conditions" not in self.control_behavior:
+    #         self.control_behavior["decider_conditions"] = {}
+    #     decider_conditions = self.control_behavior["decider_conditions"]
+
+    #     if value is None: # Default
+    #         decider_conditions.pop("second_signal", None)
+    #         decider_conditions.pop("second_constant", None)
+    #         if ("constant" in decider_conditions and
+    #             "first_signal" in decider_conditions):
+    #             decider_conditions.pop("constant", None)
+    #     elif isinstance(value, dict): # Signal Dict
+    #         decider_conditions["second_signal"] = value
+    #         decider_conditions.pop("second_constant", None)
+    #         if ("constant" in decider_conditions and
+    #             "first_signal" in decider_conditions):
+    #             decider_conditions.pop("constant", None)
+    #     else: # Constant
+    #         decider_conditions.pop("second_signal", None)
+    #         if ("constant" in decider_conditions and
+    #             "first_signal" not in decider_conditions):
+    #             old_constant = decider_conditions.pop("constant")
+    #             decider_conditions["first_constant"] = old_constant
+    #             decider_conditions["second_constant"] = value
+    #         else:
+    #             decider_conditions["constant"] = value
+
+    # =========================================================================
+
+    # @property
+    # def output_signal(self):
+    #     # type: () -> dict
+    #     """
+    #     TODO
+    #     """
+    #     decider_conditions = self.control_behavior.get("decider_conditions", None)
+    #     if not decider_conditions:
+    #         return None
+
+    #     return decider_conditions.get("output_signal", None)
+
+    # @output_signal.setter
+    # def output_signal(self, value):
+    #     # type: (str) -> None
+    #     try:
+    #         out = signatures.SIGNAL_ID.validate(out)
+    #     except SchemaError:
+    #         # TODO: more verbose
+    #         raise TypeError("Invalid output_signal format")
+
+    #     if "decider_conditions" not in self.control_behavior:
+    #         self.control_behavior["decider_conditions"] = {}
+    #     decider_conditions = self.control_behavior["decider_conditions"]
+
+    #     if out is None: # Default
+    #         decider_conditions.pop("output_signal", None)
+    #     else: # Signal Dict
+    #         decider_conditions["output_signal"] = out
+
+    # =========================================================================
+
+    @property
+    def copy_count_from_input(self):
+        # type: () -> bool
+        decider_conditions = self.control_behavior.get("decider_conditions", None)
+        if not decider_conditions:
+            return None
+
+        return decider_conditions.get("copy_count_from_input", None)
+
+    @copy_count_from_input.setter
+    def copy_count_from_input(self, value):
+        # type: (bool) -> None
+        if "decider_conditions" not in self.control_behavior:
+            self.control_behavior["decider_conditions"] = {}
+        decider_conditions = self.control_behavior["decider_conditions"]
+
+        if value is None:
+            decider_conditions.pop("copy_count_from_input", None)
+        elif isinstance(value, bool):
+            decider_conditions["copy_count_from_input"] = value
+        else:
+            raise TypeError("'copy_count_from_input' must be a bool or None")
+
+    # =========================================================================
     
     def set_decider_conditions(self, a = None, op = "<", b = 0, out = None):
         # type: (Union[str, int], str, Union[str, int], str) -> None
         """
         """
-        # TODO: `first_constant`/`second_constant` is incorrect; if there's only
-        # one constant it should be just `constant` (because factorio cant make
-        # up its damn mind)
-
         # Check all the parameters before we set anything to preserve original
         a = signatures.SIGNAL_ID_OR_CONSTANT.validate(a)
         op = signatures.COMPARATOR.validate(op)
@@ -49,16 +250,27 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
             self.control_behavior["decider_conditions"] = {}
         decider_conditions = self.control_behavior["decider_conditions"]
 
+        double_constant = isinstance(a, int) and isinstance(b, int)
+        a_not_const = not isinstance(a, int)
+        b_not_const = isinstance(b, int)
+
         # A
         if a is None: # Default
             decider_conditions.pop("first_signal", None)
             decider_conditions.pop("first_constant", None)
+            if (not double_constant and b_not_const):
+                decider_conditions.pop("constant", None)
         elif isinstance(a, dict): # Signal Dict
             decider_conditions["first_signal"] = a
             decider_conditions.pop("first_constant", None)
         else: # Constant
-            decider_conditions["first_constant"] = a
             decider_conditions.pop("first_signal", None)
+            if double_constant:
+                decider_conditions["first_constant"] = a
+                decider_conditions.pop("constant", None)
+            else:
+                decider_conditions["constant"] = a
+                decider_conditions.pop("first_constant", None)
 
         # op
         if op is None:
@@ -70,53 +282,25 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
         if b is None: # Default
             decider_conditions.pop("second_signal", None)
             decider_conditions.pop("second_constant", None)
+            if (not double_constant and a_not_const):
+                decider_conditions.pop("constant", None)
         elif isinstance(b, dict): # Signal Dict
             decider_conditions["second_signal"] = b
             decider_conditions.pop("second_constant", None)
         else: # Constant
-            decider_conditions["second_constant"] = b
             decider_conditions.pop("second_signal", None)
+            if double_constant:
+                decider_conditions["second_constant"] = b
+                decider_conditions.pop("constant", None)
+            else:
+                decider_conditions["constant"] = b
+                decider_conditions.pop("second_constant", None)
 
         # out
         if out is None: # Default
             decider_conditions.pop("output_signal", None)
         else: # Signal Dict
             decider_conditions["output_signal"] = out
-
-    # def set_first_operand(self, operand: Union[str, int]) -> None:
-    #     """
-    #     """
-    #     pass # TODO
-
-    # def set_comparator(self, comparator: str) -> None:
-    #     """
-    #     """
-    #     pass # TODO
-
-    # def set_second_operand(self, operand: Union[str, int]) -> None:
-    #     """
-    #     """
-    #     pass # TODO
-
-    # def set_output_signal(self, out:str) -> None:
-    #     """
-    #     """
-    #     pass # TODO
-
-    def set_copy_count_from_input(self, value):
-        # type: (bool) -> None
-        """
-        """
-        if value is None:
-            self.control_behavior["decider_conditions"].pop(
-                "copy_count_from_input", None
-            )
-        else:
-            if "decider_conditions" not in self.control_behavior:
-                self.control_behavior["decider_conditions"] = {}
-            decider_conditions = self.control_behavior["decider_conditions"]
-            value = signatures.BOOLEAN.validate(value)
-            decider_conditions["copy_count_from_input"] = value
 
     def remove_decider_conditions(self):
         # type: () -> None

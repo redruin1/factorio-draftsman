@@ -4,9 +4,8 @@ from draftsman.entity import ConstantCombinator, constant_combinators
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 from unittest import TestCase
+
 
 class ConstantCombinatorTesting(TestCase):
     def test_constructor_init(self):
@@ -322,4 +321,21 @@ class ConstantCombinatorTesting(TestCase):
         self.assertEqual(combinator.control_behavior, {})
 
     def test_get_signal(self):
-        pass # TODO
+        combinator = ConstantCombinator()
+        signal = combinator.get_signal(0)
+        self.assertEqual(signal, None)
+        combinator.set_signals([("signal-A", 100), ("signal-Z", 200), ("iron-ore", 1000)])
+        signal = combinator.get_signal(0)
+        self.assertEqual(
+            signal, 
+            {
+                "index": 1,
+                "signal": {
+                    "name": "signal-A",
+                    "type": "virtual"
+                },
+                "count": 100
+            }
+        )
+        signal = combinator.get_signal(50)
+        self.assertEqual(signal, None)

@@ -99,19 +99,19 @@ class InserterTesting(TestCase):
             Inserter("this is not an inserter")
 
         # Raises schema errors when any of the associated data is incorrect
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             Inserter("inserter", id = 25)
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             Inserter("inserter", position = "invalid")
         
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             Inserter("inserter", direction = "incorrect")
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             Inserter("inserter", override_stack_size = "incorrect")
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             Inserter(
                 "inserter",
                 connections = {
@@ -119,7 +119,7 @@ class InserterTesting(TestCase):
                 }
             )
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             Inserter(
                 "inserter",
                 control_behavior = {

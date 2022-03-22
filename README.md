@@ -1,6 +1,6 @@
 # factorio-draftsman
 
-image
+![A logo generated with 'examples/draftsman_logo.py'](doc/img/logo.png)
 
 A draftsman is a kind of artist that specializes in creating technical drawings across many engineering disciplines, including architectural, mechanical, and electrical.
 Similarly, `factorio-draftsman` is a Python module for creating and editing blueprints for the game [Factorio](https://factorio.com/).
@@ -118,8 +118,9 @@ Note that testing currently is only *guaranteed* to work with a vanilla install
 
 ### How to use mods:
 
-1. Drop the mods you want into the `factorio-mods` folder
-2. Run `update_module.py` to reflect any changes made
+1. Navigate to the package's installation location
+2. Drop the mods you want into the `factorio-mods` folder
+3. Run `update_module.py` to reflect any changes made
 
 Both `mod-info.json` and `mod-settings.dat` are recognized by the script, so you
 can also just change the settings in either of those and the loading process 
@@ -127,27 +128,24 @@ will adjust.
 
 ## TODO
 * Finish `entity.py`
-    * Figure out defaults
     * Figure out the data format for instruments
-    * Figure out how I want Signals to work
+    * Implement Signals into Entities
     * Sort all the data
     * Come up with a concrete position on hidden entitites; are they valid for blueprints? What about signals?
         - Hidden entities are valid for placing in blueprints, though they should raise a warning
         - Hidden signals are NOT valid
         - Hidden items are accessable but NOT blueprintable as signals
-    * Issue warnings for overlapping entities
-    * Properly handle defaults to prioritize space a little better
-    * Test with mods
     * Errors + Warnings (mostly done, but there are a few finishing touches)
-    * Assert each error message in the testing suite alongside the errors themselves
 * Finish `blueprint.py`
     * Big cleaning/refactoring
+    * Issue warnings for overlapping entities
     * Finish `BlueprintBook`
     * Test with mods
     * Errors + Warnings
 * Add extra features
     * (Re)Add entity groups and their functionality (EntityLike class)
     * Specify Rails via nodes/beziers instead of manually placing *every* rail
+    * Figure out defaults for more succinct blueprint strings
     * Maybe add a `CombinatorCell` EntityLike?
     * Backport / make sure it works with python 2.7 and previous versions of Python 3
 * Look into lua binding

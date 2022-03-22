@@ -1,7 +1,7 @@
 # rocket_silo.py
 
-from draftsman.prototypes.mixins import Entity
-import draftsman.signatures as signatures
+from draftsman import signatures
+from draftsman.classes import Entity
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import rocket_silos
@@ -16,7 +16,7 @@ class RocketSilo(Entity):
 
         self.auto_launch = None
         if "auto_launch" in kwargs:
-            self.set_auto_launch(kwargs["auto_launch"])
+            self.auto_launch = kwargs["auto_launch"]
             self.unused_args.pop("auto_launch")
         self._add_export("auto_launch", lambda x: x is not None)
 
@@ -27,8 +27,20 @@ class RocketSilo(Entity):
                 stacklevel = 2
             )
 
-    def set_auto_launch(self, value):
+    # =========================================================================
+
+    @property
+    def auto_launch(self):
+        # type: () -> bool
+        """
+        TODO
+        """
+        return self._auto_launch
+
+    @auto_launch.setter
+    def auto_launch(self, value):
         # type: (bool) -> None
-        """
-        """
-        self.auto_launch = signatures.BOOLEAN.validate(value)
+        if value is None or isinstance(value, bool):
+            self._auto_launch = value
+        else:
+            raise TypeError("'auto_launch' must be a bool or None")

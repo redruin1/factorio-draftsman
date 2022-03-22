@@ -33,5 +33,5 @@ class FluidWagonTesting(TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             FluidWagon("this is not a fluid wagon")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             FluidWagon("fluid-wagon", orientation = "wrong")

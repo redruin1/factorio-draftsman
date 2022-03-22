@@ -132,6 +132,71 @@ class ArithmeticCombinatorTesting(TestCase):
             self.assertEqual(combinator.circuit_connectable, True)
             self.assertEqual(combinator.dual_circuit_connectable, True)
 
+    # def test_set_first_operand(self):
+    #     combinator = ArithmeticCombinator()
+    #     self.assertEqual(combinator.first_operand, None)
+    #     combinator.first_operand = 100
+    #     self.assertEqual(combinator.first_operand, 100)
+    #     self.assertEqual(
+    #         combinator.control_behavior,
+    #         {
+    #             "arithmetic_conditions": {
+    #                 "constant": 100
+    #             }
+    #         }
+    #     )
+    #     combinator.second_operand = 200
+    #     self.assertEqual(combinator.first_operand, 100)
+    #     self.assertEqual(combinator.second_operand, 200)
+    #     self.assertEqual(
+    #         combinator.control_behavior,
+    #         {
+    #             "arithmetic_conditions": {
+    #                 "first_constant": 100,
+    #                 "second_constant": 200
+    #             }
+    #         }
+    #     )
+    #     combinator.first_operand = "signal-A"
+    #     self.assertEqual(combinator.first_operand, {"name": "signal-A", "type": "virtual"})
+    #     self.assertEqual(combinator.second_operand, 200)
+    #     self.assertEqual(
+    #         combinator.control_behavior,
+    #         {
+    #             "arithmetic_conditions": {
+    #                 "first_signal": {"name": "signal-A", "type": "virtual"},
+    #                 "constant": 200
+    #             }
+    #         }
+    #     )
+
+    #     combinator.first_operand = None
+    #     self.assertEqual(combinator.first_operand, None)
+    #     self.assertEqual(
+    #         combinator.control_behavior,
+    #         {
+    #             "arithmetic_conditions": {
+    #                 "constant": 200
+    #             }
+    #         }
+    #     )
+
+    #     with self.assertRaises(TypeError):
+    #         combinator.first_operand = TypeError
+
+    # def test_set_operation(self):
+    #     combinator = ArithmeticCombinator()
+    #     combinator.operation = "xor"
+    #     self.assertEqual(combinator.operation, "XOR")
+    #     self.assertEqual(
+    #         combinator.control_behavior,
+    #         {
+    #             "arithmetic_conditions": {
+    #                 "operation": "XOR"
+    #             }
+    #         }
+    #     )
+
     def test_set_arithmetic_conditions(self):
         combinator = ArithmeticCombinator()
         combinator.set_arithmetic_conditions("signal-A", "+", "iron-ore")
@@ -188,6 +253,36 @@ class ArithmeticCombinatorTesting(TestCase):
             }
         )
 
+        combinator.set_arithmetic_conditions(10, "or", "signal-D", "signal-E")
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "arithmetic_conditions": {
+                    "constant": 10,
+                    "operation": "OR",
+                    "second_signal": {
+                        "name": "signal-D",
+                        "type": "virtual"
+                    },
+                    "output_signal": {
+                        "name": "signal-E",
+                        "type": "virtual"
+                    }
+                }
+            }
+        )
+
+        combinator.set_arithmetic_conditions(10, "or", None)
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "arithmetic_conditions": {
+                    "constant": 10,
+                    "operation": "OR"
+                }
+            }
+        )
+
         combinator.set_arithmetic_conditions(None, None, None, None)
         self.assertEqual(
             combinator.control_behavior,
@@ -202,11 +297,12 @@ class ArithmeticCombinatorTesting(TestCase):
             {
                 "arithmetic_conditions": {
                     "operation": "*",
-                    "second_constant": 0
+                    "constant": 0
                 }
             }
         )
 
+        # TODO: change these from SchemaErrors
         with self.assertRaises(SchemaError):
             combinator.set_arithmetic_conditions(TypeError)
         with self.assertRaises(SchemaError):
@@ -222,13 +318,12 @@ class ArithmeticCombinatorTesting(TestCase):
         with self.assertRaises(SchemaError):
             combinator.set_arithmetic_conditions("signal-A", "+", "signal-D", "incorrect")
 
-        # TODO:
         self.assertEqual(
             combinator.control_behavior,
             {
                 "arithmetic_conditions": {
                     "operation": "*",
-                    "second_constant": 0
+                    "constant": 0
                 }
             }
         )

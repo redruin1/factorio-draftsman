@@ -1,6 +1,6 @@
 # entity.py
 
-from draftsman.prototypes.mixins import Entity
+from draftsman.classes import Entity
 from draftsman.error import InvalidEntityError
 
 from draftsman.prototypes.container import Container, containers

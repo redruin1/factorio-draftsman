@@ -1,6 +1,6 @@
 # pipe.py
 
-from draftsman.prototypes.mixins import Entity
+from draftsman.classes import Entity
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import pipes

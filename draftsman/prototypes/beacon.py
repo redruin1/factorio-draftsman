@@ -1,10 +1,15 @@
 # beacon.py
 
-from draftsman.prototypes.mixins import RequestItemsMixin, Entity
-from draftsman.warning import DraftsmanWarning, ModuleLimitationWarning
+from draftsman.classes import Entity
+from draftsman.classes.mixins import RequestItemsMixin
+from draftsman.error import InvalidItemError
+from draftsman.warning import (
+    DraftsmanWarning, ModuleLimitationWarning, ItemLimitationWarning
+)
 
 from draftsman.data.entities import beacons
-import draftsman.data.modules as modules
+from draftsman.data import modules
+from draftsman.data import signals
 
 import warnings
 
@@ -26,9 +31,21 @@ class Beacon(RequestItemsMixin, Entity):
         """
         Overwritten
         """
+        # Make sure the item exists
+        if item not in signals.item: # TODO: maybe items.all instead?
+            raise InvalidItemError(item)
+
+        if item not in modules.raw:
+            warnings.warn(
+                "Item '{}' cannot be placed in Beacon"
+                .format(item),
+                ItemLimitationWarning,
+                stacklevel = 2
+            )
+
         if item in modules.categories["productivity"]:
             warnings.warn(
-                "cannot use '{}' in Beacon".format(item),
+                "Cannot use '{}' in Beacon".format(item),
                 ModuleLimitationWarning,
                 stacklevel = 2
             )

@@ -103,28 +103,30 @@ class RailSignalTesting(TestCase):
 
     def test_read_signal(self):
         rail_signal = RailSignal()
-        rail_signal.set_read_signal(True)
+        rail_signal.read_signal = True
+        self.assertEqual(rail_signal.read_signal, True)
         self.assertEqual(
             rail_signal.control_behavior,
             {
                 "circuit_read_signal": True
             }
         )
-        rail_signal.set_read_signal(None)
+        rail_signal.read_signal = None
         self.assertEqual(rail_signal.control_behavior, {})
-        with self.assertRaises(SchemaError):
-            rail_signal.set_read_signal("incorrect")
+        with self.assertRaises(TypeError):
+            rail_signal.read_signal = "incorrect"
 
     def test_enable_disable(self):
         rail_signal = RailSignal()
-        rail_signal.set_enable_disable(True)
+        rail_signal.enable_disable = True
+        self.assertEqual(rail_signal.enable_disable, True)
         self.assertEqual(
             rail_signal.control_behavior,
             {
                 "circuit_close_signal": True
             }
         )
-        rail_signal.set_enable_disable(None)
+        rail_signal.enable_disable = None
         self.assertEqual(rail_signal.control_behavior, {})
-        with self.assertRaises(SchemaError):
-            rail_signal.set_enable_disable("incorrect")
+        with self.assertRaises(TypeError):
+            rail_signal.enable_disable = "incorrect"

@@ -39,3 +39,12 @@ class PowerSwitchTesting(TestCase):
             self.assertEqual(power_switch.dual_power_connectable, True)
             self.assertEqual(power_switch.circuit_connectable, True)
             self.assertEqual(power_switch.dual_circuit_connectable, False)
+
+    def test_switch_state(self):
+        power_switch = PowerSwitch()
+        power_switch.switch_state = False
+        self.assertEqual(power_switch.switch_state, False)
+        power_switch.switch_state = None
+        self.assertEqual(power_switch.switch_state, None)
+        with self.assertRaises(TypeError):
+            power_switch.switch_state = TypeError

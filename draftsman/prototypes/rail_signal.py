@@ -1,9 +1,9 @@
 # rail_signal.py
 
-from draftsman.prototypes.mixins import (
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
     ReadRailSignalMixin, CircuitConditionMixin, EnableDisableMixin,
     ControlBehaviorMixin, CircuitConnectableMixin, EightWayDirectionalMixin,
-    Entity
 )
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
@@ -29,23 +29,64 @@ class RailSignal(ReadRailSignalMixin, CircuitConditionMixin, EnableDisableMixin,
                 stacklevel = 2
             )
 
-    def set_read_signal(self, value):
+    # =========================================================================
+
+    @property
+    def read_signal(self):
+        # type: () -> bool
+        """
+        TODO
+        """
+        return self.control_behavior.get("circuit_read_signal", None)
+
+
+    @read_signal.setter
+    def read_signal(self, value):
         # type: (bool) -> None
-        """
-        """
         if value is None:
             self.control_behavior.pop("circuit_read_signal", None)
-        else:
-            value = signatures.BOOLEAN.validate(value)
+        elif isinstance(value, bool):
             self.control_behavior["circuit_read_signal"] = value
+        else:
+            raise TypeError("'read_signal' must be a bool or None")
 
-    def set_enable_disable(self, value):
-        # type: (bool) -> None
+    # =========================================================================
+
+    @property
+    def enable_disable(self):
+        # type: () -> bool
         """
         TODO: write (overwritten)
         """
+        return self.control_behavior.get("circuit_close_signal", None)
+
+    @enable_disable.setter
+    def enable_disable(self, value):
+        # type: (bool) -> None
         if value is None:
             self.control_behavior.pop("circuit_close_signal", None)
-        else:
-            value = signatures.BOOLEAN.validate(value)
+        elif isinstance(value, bool):
             self.control_behavior["circuit_close_signal"] = value
+        else:
+            raise TypeError("'enable_disable' must be a bool or None")
+
+    # def set_read_signal(self, value):
+    #     # type: (bool) -> None
+    #     """
+    #     """
+    #     if value is None:
+    #         self.control_behavior.pop("circuit_read_signal", None)
+    #     else:
+    #         value = signatures.BOOLEAN.validate(value)
+    #         self.control_behavior["circuit_read_signal"] = value
+
+    # def set_enable_disable(self, value):
+    #     # type: (bool) -> None
+    #     """
+    #     TODO: write (overwritten)
+    #     """
+    #     if value is None:
+    #         self.control_behavior.pop("circuit_close_signal", None)
+    #     else:
+    #         value = signatures.BOOLEAN.validate(value)
+    #         self.control_behavior["circuit_close_signal"] = value

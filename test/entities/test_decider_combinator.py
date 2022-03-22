@@ -56,7 +56,7 @@ class DeciderCombinatorTesting(TestCase):
             {
                 "name": "decider-combinator",
                 "position": {"x": 4.0, "y": 3.5},
-                "direction": 2,
+                "direction": Direction.EAST,
                 "control_behavior": {
                     "decider_conditions": {
                         "first_signal": {
@@ -187,6 +187,36 @@ class DeciderCombinatorTesting(TestCase):
             }
         )
 
+        combinator.set_decider_conditions(10, ">", "signal-D", "signal-E")
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "decider_conditions": {
+                    "constant": 10,
+                    "comparator": ">",
+                    "second_signal": {
+                        "name": "signal-D",
+                        "type": "virtual"
+                    },
+                    "output_signal": {
+                        "name": "signal-E",
+                        "type": "virtual"
+                    }
+                }
+            }
+        )
+
+        combinator.set_decider_conditions(10, ">", None)
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "decider_conditions": {
+                    "constant": 10,
+                    "comparator": ">"
+                }
+            }
+        )
+
         combinator.set_decider_conditions(None, None, None, None)
         self.assertEqual(
             combinator.control_behavior, 
@@ -201,7 +231,7 @@ class DeciderCombinatorTesting(TestCase):
             {
                 "decider_conditions": {
                     "comparator": "<",
-                    "second_constant": 0
+                    "constant": 0
                 }
             }
         )
@@ -227,7 +257,7 @@ class DeciderCombinatorTesting(TestCase):
             {
                 "decider_conditions": {
                     "comparator": "<",
-                    "second_constant": 0
+                    "constant": 0
                 }
             }
         )
@@ -237,7 +267,9 @@ class DeciderCombinatorTesting(TestCase):
         self.assertEqual(combinator.control_behavior, {})
 
         # Test set_copy_count
-        combinator.set_copy_count_from_input(True)
+        self.assertEqual(combinator.copy_count_from_input, None)
+        combinator.copy_count_from_input = True
+        self.assertEqual(combinator.copy_count_from_input, True)
         self.assertEqual(
             combinator.control_behavior,
             {
@@ -246,7 +278,7 @@ class DeciderCombinatorTesting(TestCase):
                 }
             }
         )
-        combinator.set_copy_count_from_input(False)
+        combinator.copy_count_from_input = False
         self.assertEqual(
             combinator.control_behavior,
             {
@@ -255,10 +287,14 @@ class DeciderCombinatorTesting(TestCase):
                 }
             }
         )
-        combinator.set_copy_count_from_input(None)
+        combinator.copy_count_from_input = None
         self.assertEqual( # maybe should be == {}?
             combinator.control_behavior,
             {
                 "decider_conditions": {}
             }
         )
+
+        # Error
+        with self.assertRaises(TypeError):
+            combinator.copy_count_from_input = "incorrect"

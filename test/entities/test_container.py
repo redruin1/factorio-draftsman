@@ -7,10 +7,9 @@ from draftsman.error import (
 )
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 from unittest import TestCase
 import warnings
+
 
 class ContainerTesting(TestCase):
     def test_constructor_init(self):
@@ -68,16 +67,16 @@ class ContainerTesting(TestCase):
             Container("this is not a container")
         
         # Raises schema errors when any of the associated data is incorrect
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             Container("wooden-chest", id = 25)
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             Container("wooden-chest", position = "invalid")
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             Container("wooden-chest", bar = "not even trying")
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             Container("wooden-chest", 
                 connections = {
                     "this is": ["very", "wrong"]

@@ -1,6 +1,7 @@
 # lab.py
 
-from draftsman.prototypes.mixins import RequestItemsMixin, Entity
+from draftsman.classes import Entity
+from draftsman.classes.mixins import RequestItemsMixin
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import labs

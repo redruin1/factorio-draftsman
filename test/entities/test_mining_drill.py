@@ -2,11 +2,9 @@
 
 from draftsman.constants import MiningDrillReadMode
 from draftsman.entity import MiningDrill, mining_drills
-from draftsman.error import (
-    InvalidEntityError, InvalidSignalError, InvalidModuleError
-)
+from draftsman.error import InvalidEntityError, InvalidItemError
 from draftsman.warning import (
-    DraftsmanWarning, ModuleCapacityWarning, ModuleLimitationWarning
+    DraftsmanWarning, ModuleCapacityWarning, ItemLimitationWarning
 )
 
 from schema import SchemaError
@@ -15,7 +13,7 @@ from unittest import TestCase
 
 class MiningDrillTesting(TestCase):
     def test_constructor_init(self):
-        reactor = MiningDrill(
+        drill = MiningDrill(
             "electric-mining-drill",
             items = {
                 "productivity-module": 1,
@@ -73,37 +71,40 @@ class MiningDrillTesting(TestCase):
         )
         mining_drill.set_item_requests(None)
         self.assertEqual(mining_drill.items, {})
-        with self.assertWarns(ModuleLimitationWarning):
+        with self.assertWarns(ItemLimitationWarning):
             mining_drill.set_item_request("iron-ore", 2)
 
         # Errors
-        with self.assertRaises(InvalidSignalError):
+        with self.assertRaises(InvalidItemError):
             mining_drill.set_item_request("incorrect", 2)
 
     def test_set_read_resources(self):
         mining_drill = MiningDrill()
-        mining_drill.set_read_resources(True)
+        mining_drill.read_resources = True
+        self.assertEqual(mining_drill.read_resources, True)
         self.assertEqual(
             mining_drill.control_behavior,
             {
                 "circuit_read_resources": True
             }
         )
-        mining_drill.set_read_resources(None)
+        mining_drill.read_resources = None
         self.assertEqual(mining_drill.control_behavior, {})
-        with self.assertRaises(SchemaError):
-            mining_drill.set_read_resources("incorrect")
+        with self.assertRaises(TypeError):
+            mining_drill.read_resources = "incorrect"
 
     def test_set_read_mode(self):
         mining_drill = MiningDrill()
-        mining_drill.set_read_mode(MiningDrillReadMode.UNDER_DRILL)
+        mining_drill.read_mode = MiningDrillReadMode.UNDER_DRILL
+        self.assertEqual(mining_drill.read_mode, MiningDrillReadMode.UNDER_DRILL)
         self.assertEqual(
             mining_drill.control_behavior,
             {
                 "circuit_resource_read_mode": MiningDrillReadMode.UNDER_DRILL
             }
         )
-        mining_drill.set_read_mode(None)
+        mining_drill.read_mode = None
         self.assertEqual(mining_drill.control_behavior, {})
-        # with self.assertRaises(SchemaError):
-        #     mining_drill.set_read_mode("incorrect")
+        
+        with self.assertRaises(TypeError):
+            mining_drill.read_mode = "incorrect"

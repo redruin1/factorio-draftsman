@@ -90,16 +90,16 @@ class TransportBeltTesting(TestCase):
             TransportBelt("this is not a storage tank")
 
         # Raises schema errors when any of the associated data is incorrect
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             TransportBelt("transport-belt", id = 25)
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             TransportBelt("transport-belt", position = "invalid")
         
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             TransportBelt("transport-belt", direction = "incorrect")
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             TransportBelt(
                 "transport-belt",
                 connections = {
@@ -107,7 +107,7 @@ class TransportBeltTesting(TestCase):
                 }
             )
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             TransportBelt(
                 "transport-belt",
                 control_behavior = {

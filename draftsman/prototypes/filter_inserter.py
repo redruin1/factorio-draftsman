@@ -1,9 +1,10 @@
 # filter_inserter.py
 
-from draftsman.prototypes.mixins import (
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
     FiltersMixin, StackSizeMixin, CircuitReadHandMixin, ModeOfOperationMixin,
     CircuitConditionMixin, EnableDisableMixin, LogisticConditionMixin,
-    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
+    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin
 )
 from draftsman.warning import DraftsmanWarning
 
@@ -18,6 +19,7 @@ class FilterInserter(FiltersMixin, StackSizeMixin, CircuitReadHandMixin,
                      ControlBehaviorMixin, CircuitConnectableMixin, 
                      DirectionalMixin, Entity):
     """
+    TODO
     """
     def __init__(self, name = filter_inserters[0], **kwargs):
         # type: (str, **dict) -> None
@@ -25,7 +27,8 @@ class FilterInserter(FiltersMixin, StackSizeMixin, CircuitReadHandMixin,
 
         self.filter_mode = None
         if "filter_mode" in kwargs:
-            self.set_filter_mode(kwargs["filter_mode"])
+            self.filter_mode = kwargs["filter_mode"]
+            self.unused_args.pop("filter_mode")
         self._add_export("filter_mode", lambda x: x is not None)
 
         for unused_arg in self.unused_args:
@@ -35,12 +38,27 @@ class FilterInserter(FiltersMixin, StackSizeMixin, CircuitReadHandMixin,
                 stacklevel = 2
             )
 
-    def set_filter_mode(self, mode):
+    # =========================================================================
+
+    @property
+    def filter_mode(self):
+        # type: () -> str
+        """
+        TODO
+        """
+        return self._filter_mode
+
+    @filter_mode.setter
+    def filter_mode(self, value):
         # type: (str) -> None
-        """
-        Sets the filter mode. Can be either 'whitelist' or 'blacklist'.
-        """
-        if mode in {"whitelist", "blacklist", None}:
-            self.filter_mode = mode
+        if value is None:
+            self._filter_mode = value
+        elif isinstance(value, str):
+            valid_modes = {"whitelist", "blacklist"}
+            if value not in valid_modes:
+                raise ValueError(
+                    "'filter_mode' must be one of {}".format(valid_modes)
+                )
+            self._filter_mode = value
         else:
-            raise ValueError("'{}' is not a valid filter mode".format(mode))
+            raise TypeError("'filter_mode' must be a str or None")

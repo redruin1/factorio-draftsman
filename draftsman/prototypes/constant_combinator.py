@@ -1,7 +1,8 @@
 # constant_combinator.py
 
-from draftsman.prototypes.mixins import (
-    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
+    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin
 )
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
@@ -58,6 +59,16 @@ class ConstantCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
             "index": index + 1, "signal": signal, "count": count
         })
 
+    def get_signal(self, index):
+        # type: (int) -> dict
+        """
+        """
+        filters = self.control_behavior.get("filters", None)
+        if not filters:
+            return None
+        
+        return next((item for item in filters if item["index"]==index+1), None)
+
     def set_signals(self, signals):
         # type: (list) -> None
         """
@@ -68,8 +79,3 @@ class ConstantCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
             self.control_behavior.pop("filters", None)
         else:
             self.control_behavior["filters"] = signals
-
-    # def get_signal(self, index: int) -> Signal:
-    #     """
-    #     """
-    #     return None # TODO

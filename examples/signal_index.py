@@ -16,7 +16,7 @@ from draftsman.constants import Direction
 from draftsman.entity import (
     ConstantCombinator, ArithmeticCombinator, DeciderCombinator, ElectricPole
 )
-from draftsman.data.signals import virtual_signals, item_signals, fluid_signals
+from draftsman.data import signals
 
 
 def main():
@@ -51,9 +51,9 @@ def main():
             if signal not in blacklist:
                 mapping.append(signal)
 
-    add_signals_to_mapping(virtual_signals) # This maps nicely to the lower nums
-    add_signals_to_mapping(item_signals)
-    add_signals_to_mapping(fluid_signals)
+    add_signals_to_mapping(signals.virtual) # This maps nicely to the lower nums
+    add_signals_to_mapping(signals.item)
+    add_signals_to_mapping(signals.fluid)
 
     #print(mapping)
 
@@ -62,8 +62,8 @@ def main():
     for y in range(7):
         for x in range(2):
             combinator = ConstantCombinator("constant-combinator")
-            combinator.set_direction(Direction.SOUTH)
-            combinator.set_grid_position(x, -y)
+            combinator.direction = Direction.SOUTH
+            combinator.set_tile_position(x, -y)
             for i in range(20):
                 # Last few signals might not exist
                 try: 
@@ -92,26 +92,26 @@ def main():
 
     # Decider
     decider = DeciderCombinator("decider-combinator", position = [0, 1])
-    decider.set_direction(Direction.EAST)
+    decider.direction = Direction.EAST
     decider.set_decider_conditions("signal-each", "=", input_signal, "signal-each")
     decider.set_copy_count_from_input(False)
     blueprint.add_entity(decider, id = "decider")
 
     # Output stabilizer
     stabilizer = ArithmeticCombinator("arithmetic-combinator", position = [0, 2])
-    stabilizer.set_direction(Direction.EAST)
+    stabilizer.direction = Direction.EAST
     stabilizer.set_arithmetic_conditions(-1, "%", input_signal, input_signal)
     blueprint.add_entity(stabilizer, id = "stabilizer")
 
     # Stabilizer offset
     offset = ConstantCombinator("constant-combinator", position = [-1, 2])
-    offset.set_direction(Direction.EAST)
+    offset.direction = Direction.EAST
     offset.set_signal(0, input_signal, 1)
     blueprint.add_entity(offset, id = "offset")
 
     # (Example) Input combinator
     input = ConstantCombinator("constant-combinator", position = [-4, 1])
-    input.set_direction(Direction.EAST)
+    input.direction = Direction.EAST
     input.set_signal(0, input_signal, 15)
     blueprint.add_entity(input, id = "input")
 
@@ -119,7 +119,7 @@ def main():
     pole = ElectricPole("medium-electric-pole", position = [-3, 1])
     blueprint.add_entity(pole, id = "input_pole")
     # Output pole
-    pole.set_grid_position(4, 1)
+    pole.set_tile_position(4, 1)
     blueprint.add_entity(pole, id = "output_pole")
     blueprint.add_power_connection("input_pole", "output_pole")
 

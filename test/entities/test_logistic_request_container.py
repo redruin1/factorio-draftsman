@@ -90,16 +90,16 @@ class LogisticRequestContainerTesting(TestCase):
             LogisticRequestContainer("this is not a logistics storage chest")
         
         # Raises schema errors when any of the associated data is incorrect
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             LogisticRequestContainer("logistic-chest-requester", id = 25)
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             LogisticRequestContainer("logistic-chest-requester", position = "invalid")
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             LogisticRequestContainer("logistic-chest-requester", bar = "not even trying")
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             LogisticRequestContainer("logistic-chest-requester", 
                 connections = {
                     "this is": ["very", "wrong"]
@@ -113,7 +113,7 @@ class LogisticRequestContainerTesting(TestCase):
                 }
             )
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             LogisticRequestContainer("logistic-chest-requester", 
                 request_from_buffers = "invalid"
             )

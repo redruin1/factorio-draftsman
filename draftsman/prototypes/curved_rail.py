@@ -1,7 +1,8 @@
 # curved_rail.py
 
-from draftsman.prototypes.mixins import (
-    DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
+    DoubleGridAlignedMixin, EightWayDirectionalMixin
 )
 from draftsman.warning import DraftsmanWarning
 

@@ -57,12 +57,17 @@ class AccumulatorTesting(TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             Accumulator("not an accumulator")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             Accumulator(control_behavior = {"output_signal": "incorrect"})
 
     def test_output_signal(self):
         accumulator = Accumulator()
-        accumulator.set_output_signal("signal-D")
+        # String case
+        accumulator.output_signal ="signal-D"
+        self.assertEqual(
+            accumulator.output_signal, 
+            {"name": "signal-D", "type": "virtual"}
+        )
         self.assertEqual(
             accumulator.control_behavior,
             {
@@ -72,7 +77,27 @@ class AccumulatorTesting(TestCase):
                 }
             }
         )
-        accumulator.set_output_signal(None)
+        # Dict case
+        accumulator2 = Accumulator()
+        accumulator2.output_signal = accumulator.output_signal
+        self.assertEqual(
+            accumulator2.output_signal,
+            accumulator.output_signal
+        )
+        self.assertEqual(
+            accumulator2.control_behavior,
+            {
+                "output_signal": {
+                    "name": "signal-D",
+                    "type": "virtual"
+                }
+            }
+        )
+
+        # None case
+        accumulator.output_signal = None
         self.assertEqual(accumulator.control_behavior, {})
         with self.assertRaises(InvalidSignalError):
-            accumulator.set_output_signal("incorrect")
+            accumulator.output_signal = "incorrect"
+        with self.assertRaises(TypeError):
+            accumulator.output_signal = {"incorrectly": "formatted"}

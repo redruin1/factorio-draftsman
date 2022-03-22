@@ -1,9 +1,16 @@
 # furnace.py
 
-from draftsman.prototypes.mixins import RequestItemsMixin, Entity
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes import Entity
+from draftsman.classes.mixins import RequestItemsMixin
+from draftsman.error import InvalidItemError
+from draftsman.utils import get_recipe_ingredients
+from draftsman.warning import DraftsmanWarning, ItemLimitationWarning
 
 from draftsman.data.entities import furnaces
+from draftsman.data import entities
+from draftsman.data import modules
+from draftsman.data import recipes
+from draftsman.data import signals
 
 import warnings
 
@@ -13,9 +20,51 @@ class Furnace(RequestItemsMixin, Entity):
         # type: (str, **dict) -> None
         super(Furnace, self).__init__(name, furnaces, **kwargs)
 
+        # Create a set of valid ingredients for this entity
+        crafting_categories = entities.raw[self.name]["crafting_categories"]
+        total_recipes = []
+        for crafting_category in crafting_categories:
+            total_recipes.extend(recipes.categories[crafting_category])
+
+        self._valid_input_ingredients = set()
+        for name in total_recipes:
+            self._valid_input_ingredients.update(get_recipe_ingredients(name))
+
         for unused_arg in self.unused_args:
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
                 stacklevel = 2
             )
+
+    # =========================================================================
+
+    @property
+    def valid_input_ingredients(self):
+        # type: () -> set
+        """
+        Read only
+        TODO
+        """
+        return self._valid_input_ingredients
+
+    # =========================================================================
+
+    def set_item_request(self, item, amount):
+        # type: (str, int) -> None
+        """
+        Overwritten
+        """
+        # Make sure the item exists
+        if item not in signals.item: # TODO: maybe items.all instead?
+            raise InvalidItemError(item)
+
+        if item not in modules.raw and item not in self.valid_input_ingredients:
+            warnings.warn(
+                "Cannot request items that this Furnace doesn't use ({})"
+                .format(item),
+                ItemLimitationWarning,
+                stacklevel = 2
+            )
+        
+        return super(Furnace, self).set_item_request(item, amount)

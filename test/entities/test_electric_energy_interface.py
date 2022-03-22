@@ -35,27 +35,27 @@ class ElectricEnergyInterfaceTesting(TestCase):
 
     def test_set_buffer_size(self):
         interface = ElectricEnergyInterface()
-        interface.set_buffer_size(100)
+        interface.buffer_size = 100
         self.assertEqual(interface.buffer_size, 100)
-        interface.set_buffer_size(None)
+        interface.buffer_size = None
         self.assertEqual(interface.buffer_size, None)
-        with self.assertRaises(SchemaError):
-            interface.set_buffer_size("incorrect")
+        with self.assertRaises(TypeError):
+            interface.buffer_size = "incorrect"
 
     def test_set_power_production(self):
         interface = ElectricEnergyInterface()
-        interface.set_power_production(100)
+        interface.power_production = 100
         self.assertEqual(interface.power_production, 100)
-        interface.set_power_production(None)
+        interface.power_production = None
         self.assertEqual(interface.power_production, None)
-        with self.assertRaises(SchemaError):
-            interface.set_power_production("incorrect")
+        with self.assertRaises(TypeError):
+            interface.power_production = "incorrect"
 
     def test_set_power_usage(self):
         interface = ElectricEnergyInterface()
-        interface.set_power_usage(100)
+        interface.power_usage = 100
         self.assertEqual(interface.power_usage, 100)
-        interface.set_power_usage(None)
+        interface.power_usage = None
         self.assertEqual(interface.power_usage, None)
-        with self.assertRaises(SchemaError):
-            interface.set_power_usage("incorrect")
+        with self.assertRaises(TypeError):
+            interface.power_usage = "incorrect"

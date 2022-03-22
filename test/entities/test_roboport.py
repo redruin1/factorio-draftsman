@@ -127,40 +127,43 @@ class RoboportTesting(TestCase):
         with self.assertRaises(InvalidEntityError):
             Roboport("this is not a roboport")
 
-    def test_flags(self):
-        pass # TODO
-
     def test_set_read_logistics(self):
         roboport = Roboport()
-        roboport.set_read_logistics(True)
+        roboport.read_logistics = True
+        self.assertEqual(roboport.read_logistics, True)
         self.assertEqual(
             roboport.control_behavior,
             {
                 "read_logistics": True
             }
         )
-        roboport.set_read_logistics(None)
+        roboport.read_logistics = None
         self.assertEqual(roboport.control_behavior, {})
-        with self.assertRaises(SchemaError):
-            roboport.set_read_logistics("incorrect")
+        with self.assertRaises(TypeError):
+            roboport.read_logistics = "incorrect"
 
     def test_set_read_robot_stats(self):
         roboport = Roboport()
-        roboport.set_read_robot_stats(True)
+        roboport.read_robot_stats = True
+        self.assertEqual(roboport.read_robot_stats, True)
         self.assertEqual(
             roboport.control_behavior,
             {
                 "read_robot_stats": True
             }
         )
-        roboport.set_read_robot_stats(None)
+        roboport.read_robot_stats = None
         self.assertEqual(roboport.control_behavior, {})
-        with self.assertRaises(SchemaError):
-            roboport.set_read_robot_stats("incorrect")
+        with self.assertRaises(TypeError):
+            roboport.read_robot_stats = "incorrect"
 
     def test_set_available_logistics_signal(self):
         roboport = Roboport()
-        roboport.set_available_logistics_signal("signal-A")
+        roboport.available_logistic_signal = "signal-A"
+        self.assertEqual(
+            roboport.available_logistic_signal,
+            {"name": "signal-A", "type": "virtual"}
+        )
         self.assertEqual(
             roboport.control_behavior,
             {
@@ -170,14 +173,30 @@ class RoboportTesting(TestCase):
                 }
             }
         )
-        roboport.set_available_logistics_signal(None)
+        roboport.available_logistic_signal = {"name": "signal-A", "type": "virtual"}
+        self.assertEqual(
+            roboport.control_behavior,
+            {
+                "available_logistic_output_signal": {
+                    "name": "signal-A",
+                    "type": "virtual"
+                }
+            }
+        )
+        roboport.available_logistic_signal = None
         self.assertEqual(roboport.control_behavior, {})
+        with self.assertRaises(TypeError):
+            roboport.available_logistic_signal = TypeError
         with self.assertRaises(InvalidSignalError):
-            roboport.set_available_logistics_signal("incorrect")
+            roboport.available_logistic_signal = "incorrect"
 
     def test_set_total_logistics_signal(self):
         roboport = Roboport()
-        roboport.set_total_logistics_signal("signal-B")
+        roboport.total_logistic_signal = "signal-B"
+        self.assertEqual(
+            roboport.total_logistic_signal,
+            {"name": "signal-B", "type": "virtual"}
+        )
         self.assertEqual(
             roboport.control_behavior,
             {
@@ -187,14 +206,30 @@ class RoboportTesting(TestCase):
                 }
             }
         )
-        roboport.set_total_logistics_signal(None)
+        roboport.total_logistic_signal = {"name": "signal-B", "type": "virtual"}
+        self.assertEqual(
+            roboport.control_behavior,
+            {
+                "total_logistic_output_signal": {
+                    "name": "signal-B",
+                    "type": "virtual"
+                }
+            }
+        )
+        roboport.total_logistic_signal = None
         self.assertEqual(roboport.control_behavior, {})
+        with self.assertRaises(TypeError):
+            roboport.total_logistic_signal = TypeError
         with self.assertRaises(InvalidSignalError):
-            roboport.set_total_logistics_signal("incorrect")
+            roboport.total_logistic_signal = "incorrect"
 
     def test_set_available_construction_signal(self):
         roboport = Roboport()
-        roboport.set_available_construction_signal("signal-C")
+        roboport.available_construction_signal = "signal-C"
+        self.assertEqual(
+            roboport.available_construction_signal,
+            {"name": "signal-C", "type": "virtual"}
+        )
         self.assertEqual(
             roboport.control_behavior,
             {
@@ -204,14 +239,30 @@ class RoboportTesting(TestCase):
                 }
             }
         )
-        roboport.set_available_construction_signal(None)
+        roboport.available_construction_signal = {"name": "signal-C", "type": "virtual"}
+        self.assertEqual(
+            roboport.control_behavior,
+            {
+                "available_construction_output_signal": {
+                    "name": "signal-C",
+                    "type": "virtual"
+                }
+            }
+        )
+        roboport.available_construction_signal = None
         self.assertEqual(roboport.control_behavior, {})
+        with self.assertRaises(TypeError):
+            roboport.available_construction_signal = TypeError
         with self.assertRaises(InvalidSignalError):
-            roboport.set_available_construction_signal("incorrect")
+            roboport.available_construction_signal = "incorrect"
 
     def test_set_total_construction_signal(self):
         roboport = Roboport()
-        roboport.set_total_construction_signal("signal-D")
+        roboport.total_construction_signal = "signal-D"
+        self.assertEqual(
+            roboport.total_construction_signal,
+            {"name": "signal-D", "type": "virtual"}
+        )
         self.assertEqual(
             roboport.control_behavior,
             {
@@ -221,7 +272,19 @@ class RoboportTesting(TestCase):
                 }
             }
         )
-        roboport.set_total_construction_signal(None)
+        roboport.total_construction_signal = {"name": "signal-D", "type": "virtual"}
+        self.assertEqual(
+            roboport.control_behavior,
+            {
+                "total_construction_output_signal": {
+                    "name": "signal-D",
+                    "type": "virtual"
+                }
+            }
+        )
+        roboport.total_construction_signal = None
         self.assertEqual(roboport.control_behavior, {})
+        with self.assertRaises(TypeError):
+            roboport.total_construction_signal = TypeError
         with self.assertRaises(InvalidSignalError):
-            roboport.set_total_construction_signal("incorrect")
+            roboport.total_construction_signal = "incorrect"

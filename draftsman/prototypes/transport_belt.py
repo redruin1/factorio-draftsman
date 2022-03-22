@@ -1,15 +1,17 @@
 # transport_belt.py
 
-from draftsman.prototypes.mixins import (
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
     CircuitReadContentsMixin, LogisticConditionMixin, CircuitConditionMixin,
     EnableDisableMixin, ControlBehaviorMixin, CircuitConnectableMixin,
-    DirectionalMixin, Entity
+    DirectionalMixin
 )
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import transport_belts
 
 import warnings
+
 
 class TransportBelt(CircuitReadContentsMixin, LogisticConditionMixin, 
                     CircuitConditionMixin, EnableDisableMixin, 

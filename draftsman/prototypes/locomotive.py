@@ -1,6 +1,7 @@
 # locomotive.py
 
-from draftsman.prototypes.mixins import ColorMixin, OrientationMixin, Entity
+from draftsman.classes import Entity
+from draftsman.classes.mixins import ColorMixin, OrientationMixin
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import locomotives

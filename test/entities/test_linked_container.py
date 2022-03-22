@@ -29,17 +29,17 @@ class LinkedContainerTesting(TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             LinkedContainer("this is not a linked container")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             LinkedContainer(link_id = "incorrect")
 
     def test_set_links(self):
         container = LinkedContainer()
-        container.set_links(0xFFFF)
+        container.link_id = 0xFFFF
         self.assertEqual(container.link_id, 0xFFFF)
-        container.set_links(None)
+        container.link_id = None
         self.assertEqual(container.link_id, 0)
-        with self.assertRaises(SchemaError):
-            container.set_links("incorrect")
+        with self.assertRaises(TypeError):
+            container.link_id = "incorrect"
 
     def test_set_link(self):
         container = LinkedContainer()

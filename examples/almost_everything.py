@@ -14,21 +14,21 @@ def main():
     blueprint = factorio.Blueprint()
 
     wooden_chest = factorio.new_entity("wooden-chest")
-    wooden_chest.set_grid_position(0, 0)
+    wooden_chest.set_tile_position(0, 0)
     blueprint.add_entity(wooden_chest, id = "wooden_chest")
 
     iron_chest = factorio.new_entity("iron-chest")
-    iron_chest.set_grid_position(1, 0)
+    iron_chest.set_tile_position(1, 0)
     iron_chest.set_bar_index(20)
     blueprint.add_entity(iron_chest, id = "iron_chest")
 
     steel_chest = factorio.new_entity("steel-chest")
-    steel_chest.set_grid_position(2, 0)
+    steel_chest.set_tile_position(2, 0)
     steel_chest.set_bar_index(1)
     blueprint.add_entity(steel_chest, id = "steel_chest")
     
     storage_tank = factorio.new_entity("storage-tank")
-    storage_tank.set_grid_position(0, 1)
+    storage_tank.set_tile_position(0, 1)
     blueprint.add_entity(storage_tank, id = "storage_tank")
 
     blueprint.add_circuit_connection("red", "wooden_chest", "iron_chest")
@@ -36,13 +36,13 @@ def main():
     blueprint.add_circuit_connection("red", "steel_chest", "storage_tank")
 
     transport_belt = factorio.new_entity("transport-belt")
-    transport_belt.set_grid_position(0, 4)
+    transport_belt.set_tile_position(0, 4)
     transport_belt.set_connect_to_logistic_network(True)
     transport_belt.set_logistic_condition("uranium-235", ">", 100)
     blueprint.add_entity(transport_belt)
     transport_belt.set_connect_to_logistic_network(False)
     transport_belt.remove_logistic_condition()
-    transport_belt.set_grid_position(1, 4)
+    transport_belt.set_tile_position(1, 4)
     transport_belt.set_enable_disable(False)
     transport_belt.set_read_contents(True)
     transport_belt.set_read_mode(factorio.ReadMode.PULSE)
@@ -50,11 +50,11 @@ def main():
 
     #fast_belt = factorio.new_entity("fast-transport-belt")
     fast_belt = factorio.TransportBelt(name="fast-transport-belt")
-    fast_belt.set_grid_position(2, 4)
+    fast_belt.set_tile_position(2, 4)
     fast_belt.set_enable_disable(True)
     fast_belt.set_enabled_condition("electric-mining-drill", ">", 15)
     blueprint.add_entity(fast_belt, id = "red_belt")
-    fast_belt.set_grid_position(3, 4)
+    fast_belt.set_tile_position(3, 4)
     fast_belt.set_direction(Direction.WEST)
     fast_belt.set_enable_disable(True)
     fast_belt.set_read_contents(True)
@@ -83,17 +83,17 @@ def main():
     blueprint.add_circuit_connection("green", "other_red_belt", "blue_belt")
 
     underground_belt = factorio.new_entity("underground-belt")
-    underground_belt.set_grid_position(0, 6)
+    underground_belt.set_tile_position(0, 6)
     blueprint.add_entity(underground_belt)
-    underground_belt.set_grid_position(0, 5)
+    underground_belt.set_tile_position(0, 5)
     underground_belt.set_io_type("output")
     blueprint.add_entity(underground_belt)
 
     underground_belt = factorio.UndergroundBelt(name = "fast-underground-belt")
-    underground_belt.set_grid_position(1, 5)
+    underground_belt.set_tile_position(1, 5)
     underground_belt.set_io_type("output")
     blueprint.add_entity(underground_belt)
-    underground_belt.set_grid_position(1, 6)
+    underground_belt.set_tile_position(1, 6)
     underground_belt.set_io_type("input")
     blueprint.add_entity(underground_belt)
 
@@ -102,23 +102,23 @@ def main():
     blueprint.add_entity(underground_belt, id = "under1")
     blueprint.add_entity(underground_belt, id = "under2")
 
-    blueprint.find_entity_by_id("under1").set_grid_position(2, 5)
+    blueprint.find_entity_by_id("under1").set_tile_position(2, 5)
     #blueprint.entities["under1"].set_io_type("input") # input is default
-    blueprint.find_entity_by_id("under2").set_grid_position(3, 5)
+    blueprint.find_entity_by_id("under2").set_tile_position(3, 5)
     blueprint.find_entity_by_id("under2").set_io_type("output")
 
     splitter = factorio.Splitter("splitter")
-    splitter.set_grid_position(0, 7)
+    splitter.set_tile_position(0, 7)
     blueprint.add_entity(splitter)
     splitter.name = "fast-splitter"
     splitter.direction = Direction.SOUTH
     splitter.input_priority = "left"
     splitter.output_priority = "right"
-    splitter.set_grid_position(2, 7)
+    splitter.set_tile_position(2, 7)
     blueprint.add_entity(splitter)
     splitter.name = "express-splitter"
     splitter.set_direction(Direction.EAST)
-    splitter.set_grid_position(4, 6) # currently busted with rotated entities
+    splitter.set_tile_position(4, 6) # currently busted with rotated entities
     #splitter.set_absolute_position(4.5, 7) # can do this instead
     splitter.set_input_priority(None)
     splitter.set_output_priority("left")
@@ -129,7 +129,7 @@ def main():
     inserter = factorio.Inserter("burner-inserter")
     inserter.set_direction(Direction.SOUTH)
 
-    inserter.set_grid_position(0, 8)
+    inserter.set_tile_position(0, 8)
     inserter.set_mode_of_operation(factorio.ModeOfOperation.NONE) # this is far too close to None
     inserter.set_stack_size_override(2)
     inserter.set_connect_to_logistic_network(True)
@@ -137,7 +137,7 @@ def main():
     blueprint.add_entity(inserter, id = "a")
     
     inserter.name = "inserter"
-    inserter.set_grid_position(1, 8)
+    inserter.set_tile_position(1, 8)
     inserter.set_connect_to_logistic_network(False)
     inserter.remove_logistic_condition()
     inserter.set_stack_size_override(None)
@@ -146,7 +146,7 @@ def main():
     blueprint.add_entity(inserter, id = "b")
 
     inserter.name = "long-handed-inserter"
-    inserter.set_grid_position(2, 8)
+    inserter.set_tile_position(2, 8)
     inserter.remove_enabled_condition()
     inserter.set_mode_of_operation(factorio.ModeOfOperation.NONE)
     inserter.set_read_hand_contents(True)
@@ -154,14 +154,14 @@ def main():
     blueprint.add_entity(inserter, id = "c")
 
     inserter.name = "fast-inserter"
-    inserter.set_grid_position(3, 8)
+    inserter.set_tile_position(3, 8)
     inserter.set_mode_of_operation(None)
     inserter.set_read_mode(factorio.ReadMode.HOLD)
     inserter.set_enabled_condition("signal-1", ">=", "signal-2")
     blueprint.add_entity(inserter, id = "d")
 
     inserter.name = "stack-inserter"
-    inserter.set_grid_position(4, 8)
+    inserter.set_tile_position(4, 8)
     inserter.set_enabled_condition("signal-anything", ">", 0)
     inserter.set_read_hand_contents(True)
     inserter.set_read_mode(factorio.ReadMode.PULSE)
@@ -247,10 +247,10 @@ def main():
     )
 
     wood_pole = factorio.ElectricPole("small-electric-pole")
-    wood_pole.set_grid_position(0, 12)
+    wood_pole.set_tile_position(0, 12)
     blueprint.add_entity(wood_pole, id = "wood_pole")
     medium_pole = factorio.ElectricPole("medium-electric-pole")
-    medium_pole.set_grid_position(1, 12)
+    medium_pole.set_tile_position(1, 12)
     #medium_pole.add_power_connection(wood_pole, "wood_pole") # duplicate, but lets handle
     #medium_pole.add_power_connection("big_pole")
     blueprint.add_entity(medium_pole, id = "medium_pole")
@@ -276,7 +276,7 @@ def main():
 
     pump = factorio.Pump("pump")
     pump.set_direction(Direction.EAST)
-    pump.set_grid_position(3, 14)
+    pump.set_tile_position(3, 14)
     pump.set_enabled_condition("substation", ">", 1)
     blueprint.add_entity(pump, id = "pump")
 
@@ -288,7 +288,7 @@ def main():
     sx, sy = 0, 16
     for y in range(4):
         for x in range(3):
-            rail.set_grid_position(sx + x * 2, sy + y * 2)
+            rail.set_tile_position(sx + x * 2, sy + y * 2)
             blueprint.add_entity(rail)
 
     train_stop = factorio.TrainStop("train-stop", position = [4, 24])
@@ -316,7 +316,7 @@ def main():
     rail_signal.set_enabled_condition("signal-check", "=", 0)
     rail_signal.set_read_signal(True)
     blueprint.add_entity(rail_signal, id = "circuit_rail")
-    rail_signal.set_grid_position(2, 24)
+    rail_signal.set_tile_position(2, 24)
     rail_signal.set_direction(Direction.WEST)
     rail_signal.set_enable_disable(None)
     rail_signal.remove_enabled_condition()
@@ -326,11 +326,11 @@ def main():
     blueprint.add_circuit_connection("red", "circuit_rail", "pump")
 
     chain_signal = factorio.RailChainSignal("rail-chain-signal")
-    chain_signal.set_grid_position(0, 15)
+    chain_signal.set_tile_position(0, 15)
     chain_signal.set_direction(Direction.EAST)
     chain_signal.set_blue_output_signal("signal-B")
     blueprint.add_entity(chain_signal, id = "circuit_chain")
-    chain_signal.set_grid_position(0, 24)
+    chain_signal.set_tile_position(0, 24)
     chain_signal.set_direction(Direction.WEST)
     chain_signal.set_blue_output_signal(None) # Reset to default
     blueprint.add_entity(chain_signal)
@@ -353,15 +353,15 @@ def main():
     blueprint.add_entity("logistic-chest-passive-provider", position = [1, 25])
 
     storage = factorio.LogisticStorageContainer("logistic-chest-storage")
-    storage.set_grid_position(2, 25)
+    storage.set_tile_position(2, 25)
     storage.set_request_filter(0, "light-oil-barrel")
     blueprint.add_entity(storage)
     buffer = factorio.LogisticBufferContainer("logistic-chest-buffer")
-    buffer.set_grid_position(3, 25)
+    buffer.set_tile_position(3, 25)
     buffer.set_request_filters([("electronic-circuit", 200), ("advanced-circuit", 200)])
     blueprint.add_entity(buffer)
     requester = factorio.LogisticRequestContainer("logistic-chest-requester")
-    requester.set_grid_position(4, 26)
+    requester.set_tile_position(4, 26)
     requester.set_mode_of_operation(factorio.ModeOfOperation.SET_FILTERS)
     requester.set_request_from_buffers(True)
     blueprint.add_entity(requester, id = "requester")
@@ -382,19 +382,19 @@ def main():
     blueprint.add_entity(lamp, id = "lamp")
 
     arithmetic = factorio.ArithmeticCombinator("arithmetic-combinator")
-    arithmetic.set_grid_position(4, 27)
+    arithmetic.set_tile_position(4, 27)
     arithmetic.set_arithmetic_conditions("signal-A", "+", 10, "signal-A")
     blueprint.add_entity(arithmetic, id = "arithmetic")
     print(arithmetic)
 
     decider = factorio.DeciderCombinator("decider-combinator")
-    decider.set_grid_position(5, 27)
+    decider.set_tile_position(5, 27)
     decider.set_decider_conditions("signal-A", ">", 0, "signal-red")
     decider.set_copy_count_from_input(False)
     blueprint.add_entity(decider, id = "decider")
 
     constant = factorio.ConstantCombinator("constant-combinator")
-    constant.set_grid_position(5, 29)
+    constant.set_tile_position(5, 29)
     constant.set_signal(0, "signal-A", 1)
     blueprint.add_entity(constant, id = "constant")
 
@@ -407,12 +407,12 @@ def main():
     blueprint.add_circuit_connection("green", "decider", "lamp", 2, 1)
 
     power_switch = factorio.PowerSwitch("power-switch")
-    power_switch.set_grid_position(0, 30)
+    power_switch.set_tile_position(0, 30)
     power_switch.set_enabled_condition("iron-ore", ">", 0)
     power_switch.set_connect_to_logistic_network(True)
     power_switch.set_logistic_condition("wood", ">", 100)
     blueprint.add_entity(power_switch, id = "ps1")
-    power_switch.set_grid_position(2, 30)
+    power_switch.set_tile_position(2, 30)
     power_switch.remove_enabled_condition()
     power_switch.set_connect_to_logistic_network(None)
     power_switch.remove_logistic_condition()
@@ -429,7 +429,7 @@ def main():
     blueprint.add_power_connection("ps2", "lower_substation", 2, 1)
 
     speaker = factorio.ProgrammableSpeaker("programmable-speaker")
-    speaker.set_grid_position(0, 32)
+    speaker.set_tile_position(0, 32)
     speaker.set_global_playback(True)
     speaker.set_show_alert(True)
     speaker.set_polyphony(True)
@@ -439,7 +439,7 @@ def main():
     blueprint.add_entity(speaker)
     
     speaker = factorio.ProgrammableSpeaker("programmable-speaker")
-    speaker.set_grid_position(1, 32)
+    speaker.set_tile_position(1, 32)
     speaker.set_polyphony(True)
     speaker.set_enabled_condition("signal-red", ">", 0)
     speaker.set_instrument(1)
@@ -448,7 +448,7 @@ def main():
     blueprint.add_circuit_connection("red", "speaker2", "lower_substation")
 
     speaker = factorio.ProgrammableSpeaker("programmable-speaker")
-    speaker.set_grid_position(2, 32)
+    speaker.set_tile_position(2, 32)
     speaker.set_volume(0.5)
     speaker.set_instrument(3)
     speaker.set_enabled_condition("signal-P")
@@ -484,12 +484,12 @@ def main():
     blueprint.add_entity("heat-pipe", position = [4, 42])
 
     burner_miner = factorio.MiningDrill("burner-mining-drill")
-    burner_miner.set_grid_position(0, 48)
+    burner_miner.set_tile_position(0, 48)
     burner_miner.set_direction(Direction.SOUTH)
     burner_miner.set_enable_disable(True)
     burner_miner.set_enabled_condition("crude-oil", ">", 0)
     blueprint.add_entity(burner_miner, id = "burner_miner_1")
-    burner_miner.set_grid_position(2, 48)
+    burner_miner.set_tile_position(2, 48)
     burner_miner.set_enable_disable(False)
     burner_miner.remove_enabled_condition()
     burner_miner.set_read_resources(True)
@@ -497,7 +497,7 @@ def main():
     blueprint.add_entity(burner_miner, id = "burner_miner_2")
 
     electric_miner = factorio.MiningDrill("electric-mining-drill")
-    electric_miner.set_grid_position(0, 50)
+    electric_miner.set_tile_position(0, 50)
     #electric_miner.set_direction(Direction.NORTH) # default
     electric_miner.set_enable_disable(False)
     electric_miner.set_read_resources(True)
@@ -508,7 +508,7 @@ def main():
     blueprint.add_entity(electric_miner, id = "electric_miner")
 
     pumpjack = factorio.MiningDrill("pumpjack")
-    pumpjack.set_grid_position(3, 50)
+    pumpjack.set_tile_position(3, 50)
     pumpjack.set_direction(Direction.EAST)
     pumpjack.set_enable_disable(False)
     pumpjack.set_read_resources(True)
@@ -522,22 +522,22 @@ def main():
     blueprint.add_circuit_connection("red", "electric_miner", "pumpjack")
 
     furnace = factorio.Furnace("stone-furnace")
-    furnace.set_grid_position(0, 53)
+    furnace.set_tile_position(0, 53)
     blueprint.add_entity(furnace)
     furnace.name = "steel-furnace"
-    furnace.set_grid_position(2, 53)
+    furnace.set_tile_position(2, 53)
     blueprint.add_entity(furnace)
     furnace.name = "electric-furnace"
-    furnace.set_grid_position(4, 53)
+    furnace.set_tile_position(4, 53)
     furnace.set_item_request("effectivity-module-3", 2) # issues warning
     blueprint.add_entity(furnace)
 
     assembling_machine = factorio.AssemblingMachine("assembling-machine-3")
-    assembling_machine.set_grid_position(0, 56)
+    assembling_machine.set_tile_position(0, 56)
     assembling_machine.set_recipe("iron-gear-wheel")
     blueprint.add_entity(assembling_machine)
     assembling_machine.name = "assembling-machine-3"
-    assembling_machine.set_grid_position(3, 56)
+    assembling_machine.set_tile_position(3, 56)
     assembling_machine.set_recipe("utility-science-pack")
     assembling_machine.set_item_requests({
         "speed-module": 1, 

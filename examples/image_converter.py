@@ -19,6 +19,9 @@ palette with mods seems out of the question. :(
 
 Let me know if I've missed them somewhere though.
 
+Actually, I might have found it: 
+https://github.com/wube/factorio-data/blob/master/core/prototypes/utility-constants.lua
+
 Requirements:
     pillow
     numpy
@@ -30,6 +33,8 @@ from PIL import Image
 import numpy as np
 from draftsman.blueprint import Blueprint
 from draftsman.entity import new_entity
+from draftsman.data import entities
+from draftsman.utils import aabb_to_dimensions
 import pyperclip
 
 def main():
@@ -64,10 +69,30 @@ def main():
 
     img_data = np.array(img)[:,:,:3]
 
-    def find_closest_color(target_color):
+    # Keep track of occupied pixels
+    occupied_pixels = np.empty(shape=(target_size, target_size))
+    occupied_pixels.fill(False)
+
+    def assert_entity_fits(color, x, y):
+        if color[1] == "tile": return True # dont worry about tiles
+        # Get the entity width and height
+        # TODO: find a cleaner way to do this
+        w, h = aabb_to_dimensions(entities.raw[color[2]]["collision_box"])
+        # Check every pixel in the grid to see if there's room for this entity
+        for j in range(y, y + h):
+            for i in range(x, x + w):
+                try:
+                    if occupied_pixels[j][i]:
+                        return False
+                except IndexError:
+                    pass
+        return True
+
+    def find_closest_color(target_color, x, y):
         r, g, b = target_color
         color_diffs = []
-        for color in colors:
+        available_colors = filter(lambda c: assert_entity_fits(c, x, y), colors)
+        for color in available_colors:
             cr, cg, cb = color[0]
             color_diff = math.sqrt((r - cr)**2 + (g - cg)**2 + (b - cb)**2)
             color_diffs.append((color_diff, color))
@@ -93,9 +118,6 @@ def main():
         except IndexError:
             pass
 
-    # Keep track of occupied pixels
-    occupied_pixels = np.empty(shape=(target_size, target_size))
-    occupied_pixels.fill(False)
     for y in range(target_size):
         for x in range(target_size):
             #print(x, y)
@@ -103,7 +125,7 @@ def main():
                 continue
             # try to find the best color for the current_pixel
             current_color = img_data[y][x]
-            closest_color = find_closest_color(current_color)
+            closest_color = find_closest_color(current_color, x, y)
             #print(closest_color)
             if closest_color[1] == "entity":
                 # We make a entity instance so we can query the width and height

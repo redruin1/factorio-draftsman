@@ -1,8 +1,7 @@
 # cargo_wagon.py
 
-from draftsman.prototypes.mixins import (
-    InventoryFilterMixin, OrientationMixin, Entity
-)
+from draftsman.classes import Entity
+from draftsman.classes.mixins import InventoryFilterMixin, OrientationMixin
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import cargo_wagons

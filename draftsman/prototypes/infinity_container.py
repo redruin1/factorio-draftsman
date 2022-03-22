@@ -1,13 +1,14 @@
 # infinity_container.py
 
-from draftsman.prototypes.mixins import Entity
-from draftsman.error import InvalidItemError
+from draftsman.classes import Entity
+from draftsman.error import InvalidItemError, FilterIndexError, InvalidModeError
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import infinity_containers
 from draftsman.data import items
 
+from schema import SchemaError
 import warnings
 
 
@@ -22,7 +23,7 @@ class InfinityContainer(Entity):
 
         self.infinity_settings = {}
         if "infinity_settings" in kwargs:
-            self.set_infinity_settings(kwargs["infinity_settings"])
+            self.infinity_settings = kwargs["infinity_settings"]
             self.unused_args.pop("infinity_settings")
         self._add_export("infinity_settings", lambda x: len(x) != 0)
 
@@ -32,34 +33,51 @@ class InfinityContainer(Entity):
                 DraftsmanWarning,
                 stacklevel = 2
             )
-    
-    def set_infinity_settings(self, settings):
-        # type: (dict) -> None
-        """
-        """
-        if settings is None:
-            self.infinity_settings = {}
-        else:
-            self.infinity_settings = signatures.INFINITY_CONTAINER.validate(settings)
 
-    def set_remove_unfiltered_items(self, value):
+    # =========================================================================
+
+    @property
+    def infinity_settings(self):
+        # type: () -> dict
+        """
+        TODO
+        """
+        return self._infinity_settings
+
+    @infinity_settings.setter
+    def infinity_settings(self, value):
+        # type: (dict) -> None
+        if value is None:
+            self._infinity_settings = {}
+        else:
+            try:
+                value = signatures.INFINITY_CONTAINER.validate(value)
+                self._infinity_settings = value
+            except SchemaError:
+                # TODO: more verbose
+                raise TypeError("Invalid infinity_settings format")
+
+    # =========================================================================
+
+    @property
+    def remove_unfiltered_items(self):
+        # type: () -> bool
+        """
+        TODO
+        """
+        return self.infinity_settings.get("remove_unfiltered_items", None)
+
+    @remove_unfiltered_items.setter
+    def remove_unfiltered_items(self, value):
         # type: (bool) -> None
-        """
-        """
         if value is None:
             self.infinity_settings.pop("remove_unfiltered_items", None)
+        elif isinstance(value, bool):
+            self.infinity_settings["remove_unfiltered_items"] = value
         else:
-            self.infinity_settings["remove_unfiltered_items"] = signatures.BOOLEAN.validate(value)
+            raise TypeError("'remove_unfiltered_items' must be a bool or None")
 
-    def set_infinity_filters(self, filters):
-        # type: (list) -> None
-        """
-        """
-        # TODO: error checking
-        if filters is None:
-            self.infinity_settings.pop("filters", None)
-        else:
-            self.infinity_settings["filters"] = signatures.INFINITY_FILTERS.validate(filters)
+    # =========================================================================
 
     def set_infinity_filter(self, index, name, mode = "at-least", count = 0):
         # type: (int, str, str, int) -> None
@@ -70,9 +88,14 @@ class InfinityContainer(Entity):
         mode = signatures.STRING.validate(mode)
         count = signatures.INTEGER.validate(count)
 
+        if not 0 <= index < 1000:
+            raise FilterIndexError(
+                "Filter index {} not in range [0, 1000)"
+            )
         if name is not None and name not in items.raw:
             raise InvalidItemError(name)
-        assert mode in {"at-least", "at-most", "exactly"}
+        if mode not in {"at-least", "at-most", "exactly"}:
+            raise InvalidModeError(mode)
 
         if "filters" not in self.infinity_settings:
             self.infinity_settings["filters"] = []
@@ -99,6 +122,12 @@ class InfinityContainer(Entity):
             "index": index + 1 
         })
 
-        # Warn the user if the total number of filters exceeds 1000
-        # if len(self.infinity_settings["filters"]) > 1000:
-        #     warn_user()
+    def set_infinity_filters(self, filters):
+        # type: (list) -> None
+        """
+        """
+        # TODO: error checking
+        if filters is None:
+            self.infinity_settings.pop("filters", None)
+        else:
+            self.infinity_settings["filters"] = signatures.INFINITY_FILTERS.validate(filters)

@@ -35,7 +35,7 @@ class LocomotiveTesting(TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             Locomotive("this is not a locomotive")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             Locomotive("locomotive", orientation = "wrong")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             Locomotive("locomotive", color = "also wrong")

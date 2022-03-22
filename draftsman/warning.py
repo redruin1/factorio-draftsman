@@ -61,6 +61,14 @@ class RailAlignmentWarning(DraftsmanWarning):
     pass
 
 
+class ItemLimitationWarning(DraftsmanWarning):
+    """
+    Raised when an Item request does not match the AssemblingMachine's recipe
+    inputs.
+    """
+    pass
+
+
 class ModuleLimitationWarning(DraftsmanWarning):
     """
     Raised when the modules inside of an Entity conflict, either with the entity
@@ -77,8 +85,18 @@ class ModuleCapacityWarning(DraftsmanWarning):
     pass
 
 
-class VolumeWarning(DraftsmanWarning):
+class TemperatureRangeWarning(DraftsmanWarning):
     """
+    Raised when the temperature of a heat interface is outside of the range
+    [0, 1000].
+    """
+    pass
+
+
+class VolumeRangeWarning(DraftsmanWarning):
+    """
+    Raised when the volume of a programmable speaker is outside of the range
+    [0.0, 1.0]
     """
     pass
 
@@ -94,5 +112,18 @@ class OverlappingEntitiesWarning(DraftsmanWarning):
     """
     Raised when the collision_box for an entity overlaps another inside a 
     Blueprint.
+    """
+    pass
+
+class OverlappingTilesWarning(DraftsmanWarning):
+    """
+    Raised when two tiles in a blueprint occupy the same coordinate.
+    """
+    pass
+
+class UselessConnectionWarning(DraftsmanWarning):
+    """
+    Raised when a circuit connection is functionally useless, such as when a
+    wall is connected with a wire without an adjacent gate.
     """
     pass

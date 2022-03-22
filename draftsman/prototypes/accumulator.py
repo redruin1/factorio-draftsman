@@ -1,13 +1,16 @@
 # accumulator.py
 
-from draftsman.prototypes.mixins import (
-    ControlBehaviorMixin, CircuitConnectableMixin, Entity
+from draftsman import signatures
+from draftsman.classes import Entity
+from draftsman.classes.mixins import (
+    ControlBehaviorMixin, CircuitConnectableMixin
 )
 from draftsman.utils import signal_dict
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import accumulators
 
+from schema import SchemaError
 import warnings
 
 
@@ -23,11 +26,26 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
                 stacklevel = 2
             )
 
-    def set_output_signal(self, signal):
+    # =========================================================================
+
+    @property
+    def output_signal(self):
+        # type: () -> dict
+        """
+        TODO
+        """
+        return self.control_behavior.get("output_signal", None)
+
+    @output_signal.setter
+    def output_signal(self, value):
         # type: (str) -> None
-        """
-        """
-        if signal is None:
+        if value is None:
             self.control_behavior.pop("output_signal", None)
-        else:
-            self.control_behavior["output_signal"] = signal_dict(signal)
+        elif isinstance(value, str):
+            self.control_behavior["output_signal"] = signal_dict(value)
+        else: # dict or other
+            try:
+                value = signatures.SIGNAL_ID.validate(value)
+                self.control_behavior["output_signal"] = value
+            except SchemaError:
+                raise TypeError("Incorrectly formatted SignalID")

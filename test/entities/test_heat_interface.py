@@ -2,7 +2,7 @@
 
 from draftsman.entity import HeatInterface, heat_interfaces
 from draftsman.error import InvalidEntityError, InvalidModeError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import DraftsmanWarning, TemperatureRangeWarning
 
 from schema import SchemaError
 
@@ -27,31 +27,33 @@ class HeatInterfaceTesting(TestCase):
         # Warnings
         with self.assertWarns(DraftsmanWarning):
             HeatInterface(unused_keyword = "whatever")
+        with self.assertWarns(TemperatureRangeWarning):
+            HeatInterface(temperature = 100_000)
 
         # Errors
         with self.assertRaises(InvalidEntityError):
             HeatInterface("this is not a heat interface")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             HeatInterface(temperature = "incorrect")
-        with self.assertRaises(AssertionError):
-            HeatInterface(temperature = 100000)
 
     def test_set_temperature(self):
         interface = HeatInterface()
-        interface.set_temperature(100)
+        interface.temperature = 100
         self.assertEqual(interface.temperature, 100)
-        interface.set_temperature(None)
-        self.assertEqual(interface.temperature, 0)
-        with self.assertRaises(SchemaError):
-            interface.set_temperature("incorrect")
-        with self.assertRaises(AssertionError):
-            interface.set_temperature(-1000)
+        interface.temperature = None
+        self.assertEqual(interface.temperature, None)
+        # Warnings
+        with self.assertWarns(TemperatureRangeWarning):
+            interface.temperature = -1000
+        # Errors
+        with self.assertRaises(TypeError):
+            interface.temperature = "incorrect"
 
     def test_set_mode(self):
         interface = HeatInterface()
-        interface.set_mode("exactly")
+        interface.mode = "exactly"
         self.assertEqual(interface.mode, "exactly")
-        interface.set_mode(None)
-        self.assertEqual(interface.mode, "at-least")
+        interface.mode = None
+        self.assertEqual(interface.mode, None)
         with self.assertRaises(InvalidModeError):
-            interface.set_mode("incorrect")
+            interface.mode = "incorrect"

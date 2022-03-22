@@ -16,7 +16,7 @@ class UndergroundBeltTesting(TestCase):
             "underground-belt", 
             direction = Direction.EAST,
             position = [1, 1],
-            type = "output"
+            io_type = "output"
         )
         self.assertEqual(
             underground_belt.to_dict(),
@@ -40,17 +40,17 @@ class UndergroundBeltTesting(TestCase):
             UndergroundBelt("this is not an underground belt")
 
         # Raises schema errors when any of the associated data is incorrect
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             UndergroundBelt("underground-belt", id = 25)
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             UndergroundBelt("underground-belt", position = "invalid")
         
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             UndergroundBelt("underground-belt", direction = "incorrect")
 
-        with self.assertRaises(SchemaError):
-            UndergroundBelt("underground-belt", type = "incorrect")
+        with self.assertRaises(TypeError):
+            UndergroundBelt("underground-belt", io_type = "incorrect")
 
     def test_power_and_circuit_flags(self):
         for name in underground_belts:

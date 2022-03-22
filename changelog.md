@@ -1,4 +1,15 @@
 # Changelog
+## **0.3.5**
+* Split all of the mixins into their own files, as well as Entity, EntityLike, Group, etc.
+* Added the `SpatialHashMap` structure for Blueprints to speed up `find_entities` and `find_tiles`
+* Added lots of utility functions related to `SpatialHashMap`
+* Changed Blueprint `entities` and `tiles` to `KeyList` instead of `list`
+* Added Blueprint warnings
+
+## **0.3.5**
+* Changed ALL of the setters to use properties because I didn't know Python properties _existed_
+* Revised test cases to match this revalation
+
 ## **0.3.0**
 * Unified all of the data into pickles instead of generating source files
     - (Still need to figure out module init)

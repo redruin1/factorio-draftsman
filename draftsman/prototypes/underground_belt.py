@@ -1,6 +1,7 @@
 # underground_belt.py
 
-from draftsman.prototypes.mixins import IOTypeMixin, DirectionalMixin, Entity
+from draftsman.classes import Entity
+from draftsman.classes.mixins import IOTypeMixin, DirectionalMixin
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import underground_belts

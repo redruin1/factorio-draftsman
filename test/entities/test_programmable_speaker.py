@@ -2,7 +2,7 @@
 
 from draftsman.entity import ProgrammableSpeaker, programmable_speakers
 from draftsman.error import InvalidEntityError, InvalidSignalError
-from draftsman.warning import DraftsmanWarning, VolumeWarning
+from draftsman.warning import DraftsmanWarning, VolumeRangeWarning
 
 from schema import SchemaError
 
@@ -166,22 +166,38 @@ class ProgrammableSpeakerTesting(TestCase):
             self.assertEqual(speaker.circuit_connectable, True)
             self.assertEqual(speaker.dual_circuit_connectable, False)
 
+    def test_set_parameters(self):
+        speaker = ProgrammableSpeaker()
+        speaker.parameters = None
+        self.assertEqual(speaker.parameters, {})
+
+        with self.assertRaises(TypeError):
+            speaker.parameters = "false"
+
+    def test_set_alert_parameters(self):
+        speaker = ProgrammableSpeaker()
+        speaker.alert_parameters = None
+        self.assertEqual(speaker.alert_parameters, {})
+
+        with self.assertRaises(TypeError):
+            speaker.alert_parameters = "false"
+
     def test_set_volume(self):
         speaker = ProgrammableSpeaker()
-        speaker.set_volume(0.5)
+        speaker.volume = 0.5
+        self.assertEqual(speaker.volume, 0.5)
         self.assertEqual(
             speaker.parameters,
             {
                 "playback_volume": 0.5
             }
         )
-
-        speaker.set_volume(None)
+        speaker.volume = None
         self.assertEqual(speaker.parameters, {})
 
         # Warnings
-        with self.assertWarns(VolumeWarning):
-            speaker.set_volume(10.0)
+        with self.assertWarns(VolumeRangeWarning):
+            speaker.volume = 10.0
 
         self.assertEqual(
             speaker.parameters,
@@ -191,8 +207,8 @@ class ProgrammableSpeakerTesting(TestCase):
         )
 
         # Errors
-        with self.assertRaises(SchemaError):
-            speaker.set_volume("incorrect")
+        with self.assertRaises(TypeError):
+            speaker.volume = "incorrect"
 
         self.assertEqual(
             speaker.parameters,
@@ -203,63 +219,71 @@ class ProgrammableSpeakerTesting(TestCase):
 
     def test_set_global_playback(self):
         speaker = ProgrammableSpeaker()
-        speaker.set_global_playback(True)
+        speaker.global_playback = True
+        self.assertEqual(speaker.global_playback, True)
         self.assertEqual(
             speaker.parameters,
             {
                 "playback_globally": True
             }
         )
-        speaker.set_global_playback(None)
+        speaker.global_playback = None
         self.assertEqual(speaker.parameters, {})
-        with self.assertRaises(SchemaError):
-            speaker.set_global_playback("incorrect")
+        with self.assertRaises(TypeError):
+            speaker.global_playback = "incorrect"
 
     def test_set_show_alert(self):
         speaker = ProgrammableSpeaker()
-        speaker.set_show_alert(True)
+        speaker.show_alert = True
+        self.assertEqual(speaker.show_alert, True)
         self.assertEqual(
             speaker.alert_parameters,
             {
                 "show_alert": True
             }
         )
-        speaker.set_show_alert(None)
+        speaker.show_alert = None
         self.assertEqual(speaker.alert_parameters, {})
-        with self.assertRaises(SchemaError):
-            speaker.set_show_alert("incorrect")
+        with self.assertRaises(TypeError):
+            speaker.show_alert = "incorrect"
 
     def test_set_polyphony(self):
         speaker = ProgrammableSpeaker()
-        speaker.set_polyphony(True)
+        speaker.allow_polyphony = True
+        self.assertEqual(speaker.allow_polyphony, True)
         self.assertEqual(
             speaker.parameters,
             {
                 "allow_polyphony": True
             }
         )
-        speaker.set_polyphony(None)
+        speaker.allow_polyphony = None
         self.assertEqual(speaker.parameters, {})
-        with self.assertRaises(SchemaError):
-            speaker.set_polyphony("incorrect")
+        with self.assertRaises(TypeError):
+            speaker.allow_polyphony = "incorrect"
 
     def test_set_show_alert_on_map(self):
         speaker = ProgrammableSpeaker()
-        speaker.set_show_alert_on_map(True)
+        speaker.show_alert_on_map = True
+        self.assertEqual(speaker.show_alert_on_map, True)
         self.assertEqual(
             speaker.alert_parameters,
             {
                 "show_on_map": True
             }
         )
-        speaker.set_show_alert_on_map(None)
+        speaker.show_alert_on_map = None
         self.assertEqual(speaker.alert_parameters, {})
-        with self.assertRaises(SchemaError):
-            speaker.set_show_alert_on_map("incorrect")
+        with self.assertRaises(TypeError):
+            speaker.show_alert_on_map = "incorrect"
 
     def test_set_alert_icon(self):
         speaker = ProgrammableSpeaker()
-        speaker.set_alert_icon("signal-check")
+        speaker.alert_icon = "signal-check"
+        self.assertEqual(
+            speaker.alert_icon,
+            {"name": "signal-check", "type": "virtual"}
+        )
         self.assertEqual(
             speaker.alert_parameters,
             {
@@ -269,28 +293,43 @@ class ProgrammableSpeakerTesting(TestCase):
                 }
             }
         )
-        speaker.set_alert_icon(None)
+        speaker.alert_icon = {"name": "signal-check", "type": "virtual"}
+        self.assertEqual(
+            speaker.alert_parameters,
+            {
+                "icon_signal_id": {
+                    "name": "signal-check",
+                    "type": "virtual"
+                }
+            }
+        )
+        speaker.alert_icon = None
         self.assertEqual(speaker.alert_parameters, {})
+        with self.assertRaises(TypeError):
+            speaker.alert_icon = TypeError
         with self.assertRaises(InvalidSignalError):
-            speaker.set_alert_icon("incorrect")
+            speaker.alert_icon = "incorrect"
 
     def test_set_alert_message(self):
         speaker = ProgrammableSpeaker()
-        speaker.set_alert_message("some string")
+        speaker.alert_message = "some string"
+        self.assertEqual(speaker.alert_message, "some string")
         self.assertEqual(
             speaker.alert_parameters,
             {
                 "alert_message": "some string"
             }
         )
-        speaker.set_alert_message(None)
+        speaker.alert_message = None
         self.assertEqual(speaker.alert_parameters, {})
-        with self.assertRaises(SchemaError):
-            speaker.set_alert_message(False)
+        with self.assertRaises(TypeError):
+            speaker.alert_message = False
 
     def test_set_signal_value_is_pitch(self):
         speaker = ProgrammableSpeaker()
-        speaker.set_signal_value_is_pitch(True)
+        self.assertEqual(speaker.signal_value_is_pitch, None)
+        speaker.signal_value_is_pitch = True
+        self.assertEqual(speaker.signal_value_is_pitch, True)
         self.assertEqual(
             speaker.control_behavior,
             {
@@ -299,25 +338,25 @@ class ProgrammableSpeakerTesting(TestCase):
                 }
             }
         )
-        speaker.set_signal_value_is_pitch(None)
+        speaker.signal_value_is_pitch = None
         self.assertEqual(speaker.control_behavior, {})
         speaker.control_behavior = {
             "circuit_parameters": {
-                "something": "else",
+                "instrument_id": 0,
                 "signal_value_is_pitch": False
             }
         }
-        speaker.set_signal_value_is_pitch(None)
+        speaker.signal_value_is_pitch = None
         self.assertEqual(
             speaker.control_behavior, 
             {
                 "circuit_parameters": {
-                    "something": "else"
+                    "instrument_id": 0
                 }
             }
         )
-        with self.assertRaises(SchemaError):
-            speaker.set_signal_value_is_pitch("incorrect")
+        with self.assertRaises(TypeError):
+            speaker.signal_value_is_pitch = "incorrect"
 
     def test_set_instrument(self):
         speaker = ProgrammableSpeaker()
@@ -341,7 +380,7 @@ class ProgrammableSpeakerTesting(TestCase):
         )
         speaker.set_instrument(None)
         self.assertEqual(speaker.control_behavior, {})
-        speaker.set_signal_value_is_pitch(True)
+        speaker.signal_value_is_pitch = True
         speaker.set_instrument(None)
         self.assertEqual(
             speaker.control_behavior,
@@ -379,7 +418,7 @@ class ProgrammableSpeakerTesting(TestCase):
         )
         speaker.set_note(None)
         self.assertEqual(speaker.control_behavior, {})
-        speaker.set_signal_value_is_pitch(True)
+        speaker.signal_value_is_pitch = True
         speaker.set_note(None)
         self.assertEqual(
             speaker.control_behavior,
