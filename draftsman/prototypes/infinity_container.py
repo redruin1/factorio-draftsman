@@ -1,4 +1,7 @@
 # infinity_container.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.error import InvalidItemError, FilterIndexError, InvalidModeError
@@ -9,17 +12,16 @@ from draftsman.data.entities import infinity_containers
 from draftsman.data import items
 
 from schema import SchemaError
+import six
 import warnings
 
 
 class InfinityContainer(Entity):
-    """
-    """
-    def __init__(self, name = infinity_containers[0], **kwargs):
+    """ """
+
+    def __init__(self, name=infinity_containers[0], **kwargs):
         # type: (str, **dict) -> None
-        super(InfinityContainer, self).__init__(
-            name, infinity_containers, **kwargs
-        )
+        super(InfinityContainer, self).__init__(name, infinity_containers, **kwargs)
 
         self.infinity_settings = {}
         if "infinity_settings" in kwargs:
@@ -31,7 +33,7 @@ class InfinityContainer(Entity):
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -79,19 +81,16 @@ class InfinityContainer(Entity):
 
     # =========================================================================
 
-    def set_infinity_filter(self, index, name, mode = "at-least", count = 0):
+    def set_infinity_filter(self, index, name, mode="at-least", count=0):
         # type: (int, str, str, int) -> None
-        """
-        """
+        """ """
         index = signatures.INTEGER.validate(index)
         name = signatures.STRING.validate(name)
         mode = signatures.STRING.validate(mode)
         count = signatures.INTEGER.validate(count)
 
         if not 0 <= index < 1000:
-            raise FilterIndexError(
-                "Filter index {} not in range [0, 1000)"
-            )
+            raise FilterIndexError("Filter index {} not in range [0, 1000)")
         if name is not None and name not in items.raw:
             raise InvalidItemError(name)
         if mode not in {"at-least", "at-most", "exactly"}:
@@ -102,10 +101,10 @@ class InfinityContainer(Entity):
 
         # Check to see if filters already contains an entry with the same index
         for i, filter in enumerate(self.infinity_settings["filters"]):
-            if index + 1 == filter["index"]: # Index already exists in the list
-                if name is None: # Delete the entry
+            if index + 1 == filter["index"]:  # Index already exists in the list
+                if name is None:  # Delete the entry
                     del self.infinity_settings["filters"][i]
-                else: # Set the new value
+                else:  # Set the new value
                     self.infinity_settings["filters"][i] = {
                         "index": index + 1,
                         "name": name,
@@ -115,19 +114,17 @@ class InfinityContainer(Entity):
                 return
 
         # If no entry with the same index was found
-        self.infinity_settings["filters"].append({
-            "name": name,
-            "count": count,
-            "mode": mode,
-            "index": index + 1 
-        })
+        self.infinity_settings["filters"].append(
+            {"name": name, "count": count, "mode": mode, "index": index + 1}
+        )
 
     def set_infinity_filters(self, filters):
         # type: (list) -> None
-        """
-        """
+        """ """
         # TODO: error checking
         if filters is None:
             self.infinity_settings.pop("filters", None)
         else:
-            self.infinity_settings["filters"] = signatures.INFINITY_FILTERS.validate(filters)
+            self.infinity_settings["filters"] = signatures.INFINITY_FILTERS.validate(
+                filters
+            )

@@ -1,4 +1,7 @@
 # control_behavior.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import signatures
 
@@ -11,20 +14,16 @@ class ControlBehaviorMixin(object):
     Enables the entity to specify control behavior.
     TODO: expand
     """
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
-        super(ControlBehaviorMixin, self).__init__(
-            name, similar_entities, **kwargs
-        )
+        super(ControlBehaviorMixin, self).__init__(name, similar_entities, **kwargs)
 
         self.control_behavior = {}
         if "control_behavior" in kwargs:
             self.control_behavior = kwargs["control_behavior"]
             self.unused_args.pop("control_behavior")
-        self._add_export(
-            "control_behavior", 
-            lambda x: x is not None and len(x) != 0
-        )
+        self._add_export("control_behavior", lambda x: x is not None and len(x) != 0)
 
     # =========================================================================
 
@@ -53,8 +52,7 @@ class ControlBehaviorMixin(object):
 
     def _set_condition(self, condition_name, a, op, b):
         # type: (str, str, str, Union[str, int]) -> None
-        """
-        """
+        """ """
         self.control_behavior[condition_name] = {}
         condition = self.control_behavior[condition_name]
 
@@ -76,6 +74,6 @@ class ControlBehaviorMixin(object):
         if isinstance(b, dict):
             condition["second_signal"] = b
             condition.pop("constant", None)
-        else: # int
+        else:  # int
             condition["constant"] = b
             condition.pop("second_signal", None)

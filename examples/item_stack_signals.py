@@ -9,7 +9,7 @@ simple via script, and because of the dynamic nature of draftsman, this works
 with any set of mods as well as vanilla.
 """
 
-from draftsman.blueprint import Blueprint
+from draftsman.blueprintable import Blueprint
 from draftsman.constants import Direction
 from draftsman.data import items
 from draftsman.entity import ConstantCombinator
@@ -39,16 +39,18 @@ def main():
         index += 1
         # Once we exceed the current combinator, place it and reset
         if index == 20:
-            blueprint.add_entity(combinator, id = str(x) + "_" + str(y))
+            combinator.id = str(x) + "_" + str(y)
+            blueprint.entities.append(combinator)
             i += 1
             y = i % 5
             x = int(i / 5)
             combinator.set_signals(None) # Clear signals
-            combinator.set_tile_position(x, y)
+            combinator.tile_position = (x, y)
             index = 0
 
     # Add the last combinator if partially full
-    blueprint.add_entity(combinator, id = str(x) + "_" + str(y))
+    combinator.id = str(x) + "_" + str(y)
+    blueprint.entities.append(combinator)
 
     # Add connections
     for cx in range(x):

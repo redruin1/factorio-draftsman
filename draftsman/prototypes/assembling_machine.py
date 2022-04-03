@@ -1,11 +1,16 @@
 # assembling_machine.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import RequestItemsMixin, RecipeMixin
 from draftsman.error import InvalidItemError
 from draftsman.utils import get_recipe_ingredients
 from draftsman.warning import (
-    DraftsmanWarning, ModuleLimitationWarning, ItemLimitationWarning
+    DraftsmanWarning,
+    ModuleLimitationWarning,
+    ItemLimitationWarning,
 )
 
 from draftsman.data.entities import assembling_machines
@@ -16,17 +21,15 @@ import warnings
 
 
 class AssemblingMachine(RecipeMixin, RequestItemsMixin, Entity):
-    def __init__(self, name = assembling_machines[0], **kwargs):
+    def __init__(self, name=assembling_machines[0], **kwargs):
         # type: (str, **dict) -> None
-        super(AssemblingMachine, self).__init__(
-            name, assembling_machines, **kwargs
-        )
+        super(AssemblingMachine, self).__init__(name, assembling_machines, **kwargs)
 
         for unused_arg in self.unused_args:
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     def set_item_request(self, item, amount):
@@ -35,7 +38,7 @@ class AssemblingMachine(RecipeMixin, RequestItemsMixin, Entity):
         Overwritten
         """
         # Make sure the item exists
-        if item not in signals.item: # TODO: maybe items.all instead?
+        if item not in signals.item:  # TODO: maybe items.all instead?
             raise InvalidItemError(item)
 
         # If the item is a module
@@ -44,17 +47,14 @@ class AssemblingMachine(RecipeMixin, RequestItemsMixin, Entity):
             # (If it has any)
             module = modules.raw[item]
             if "limitation" in module:
-                if self.recipe is not None and \
-                   self.recipe not in module["limitation"]:
-                    tooltip = module.get(
-                        "limitation_message_key", 
-                        "no message key"
-                    )
+                if self.recipe is not None and self.recipe not in module["limitation"]:
+                    tooltip = module.get("limitation_message_key", "no message key")
                     warnings.warn(
-                        "Cannot use module '{}' with recipe '{}' ({})"
-                        .format(item, self.recipe, tooltip),
+                        "Cannot use module '{}' with recipe '{}' ({})".format(
+                            item, self.recipe, tooltip
+                        ),
                         ModuleLimitationWarning,
-                        stacklevel = 2
+                        stacklevel=2,
                     )
 
         # Make sure the item is one of the input ingredients for the recipe
@@ -63,10 +63,11 @@ class AssemblingMachine(RecipeMixin, RequestItemsMixin, Entity):
 
             if item not in ingredients:
                 warnings.warn(
-                    "Cannot request items that the recipe '{}' doesn't use ({})"
-                    .format(self.recipe, item),
+                    "Cannot request items that the recipe '{}' doesn't use ({})".format(
+                        self.recipe, item
+                    ),
                     ItemLimitationWarning,
-                    stacklevel = 2
+                    stacklevel=2,
                 )
-        
+
         super(AssemblingMachine, self).set_item_request(item, amount)

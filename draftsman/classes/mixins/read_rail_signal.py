@@ -1,15 +1,20 @@
 # read_rail_signal.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import signatures
 from draftsman.utils import signal_dict
 
 from schema import SchemaError
+import six
 
 
-class ReadRailSignalMixin(object): # (ControlBehaviorMixin)
+class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
     """
     TODO
     """
+
     @property
     def red_output_signal(self):
         # type: () -> dict
@@ -23,9 +28,13 @@ class ReadRailSignalMixin(object): # (ControlBehaviorMixin)
         # type: (str) -> None
         if value is None:
             self.control_behavior.pop("red_output_signal", None)
-        elif isinstance(value, str):
+            return
+
+        if isinstance(value, six.string_types):
+            # Make sure this is a unicode string
+            value = six.text_type(value)
             self.control_behavior["red_output_signal"] = signal_dict(value)
-        else: # dict or other
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.control_behavior["red_output_signal"] = value
@@ -47,9 +56,13 @@ class ReadRailSignalMixin(object): # (ControlBehaviorMixin)
         # type: (str) -> None
         if value is None:
             self.control_behavior.pop("yellow_output_signal", None)
-        elif isinstance(value, str):
+            return
+
+        if isinstance(value, six.string_types):
+            # Make sure this is a unicode string
+            value = six.text_type(value)
             self.control_behavior["yellow_output_signal"] = signal_dict(value)
-        else: # dict or other
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.control_behavior["yellow_output_signal"] = value
@@ -71,9 +84,13 @@ class ReadRailSignalMixin(object): # (ControlBehaviorMixin)
         # type: (str) -> None
         if value is None:
             self.control_behavior.pop("green_output_signal", None)
-        elif isinstance(value, str):
+            return
+
+        if isinstance(value, six.string_types):
+            # Make sure this is a unicode string
+            value = six.text_type(value)
             self.control_behavior["green_output_signal"] = signal_dict(value)
-        else: # dict or other
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.control_behavior["green_output_signal"] = value

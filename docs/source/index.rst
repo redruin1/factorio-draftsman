@@ -6,18 +6,52 @@
 factorio-draftsman
 ==============================================
 
-**factorio-draftsman** is a pure-python module for creating Blueprint strings
-for the game `Factorio <https://factorio.com/>`_. `draftsman` can load, modify,
-and export blueprints, as well as entity.
+**factorio-draftsman** is a python module for creating Blueprint strings for the game `Factorio <https://factorio.com/>`_.
+
+.. image:: ../img/logo.png
+   :alt: The Draftsman logo created by an example script.
+
+.. image:: https://readthedocs.org/projects/pillow/badge/?version=latest
+   :target: https://factorio-draftsman.readthedocs.io/?badge=latest
+   :alt: Documentation Status
+
+.. image:: https://codecov.io/gh/python-factorio-draftsman/draftsman/branch/main/graph/badge.svg
+   :target: https://codecov.io/gh/python-factorio-draftsman/draftsman
+   :alt: Code coverage
+
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/psf/black
+
+Overview:
+---------
+
+Draftsman aims to provide a 'one-stop shop' solution to the problem of manipulating blueprint strings. 
+It allows the user to import, modify, create, add, remove, and export blueprints and their contents in dynamic and flexible ways. 
+It's API is designed to be clear and self-documenting, from its imports to its errors. 
+
+In addition to the standard features you would expect, Draftsman also has a number of quality-of-life features, including:
+
+* Unique entity ID's to make identification easier.
+* Group instances to collect entities and operate on them as a unit.
+* Querying blueprint contents by area, name, type, as well as other criteria.
+* Verbose warnings for modifications on import normally ignored by Factorio.
+
+Draftsman is also unique in that it emulates the `Factorio data lifecycle <https://lua-api.factorio.com/latest/Data-Lifecycle.html>`_ directly, extracting all data that the modules uses directly from `Wube's public repository <https://github.com/wube/factorio-data>`_. 
+This ensures a direct continuity between Factorio's data and Draftsman, which makes the module much easier to maintain over specific Factorio versions, as well as over time.
+By emulating the data-lifecycle in this manner, Draftsman is also the first package of this type to allow mod support *built-in*.
+
+Draftsman is cross-platform, and guaranteed to work on versions of Python >= 2.7.
+Draftsman is also guaranteed to work with versions of Factorio 1.0 and up. 
+Prior to that most functionality *should* still work, but your mileage may vary.
 
 Contents
 --------
 .. toctree::
-   api
-
-.. toctree::
    :maxdepth: 2
-   :caption: Contents:
+
+   quickstart.rst
+   handbook/index.rst
+   reference/index.rst
 
 Indices and tables
 ==================

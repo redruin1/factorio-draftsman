@@ -1,8 +1,13 @@
 # logistic_storage_container.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import (
-    CircuitConnectableMixin, RequestFiltersMixin, InventoryMixin
+    CircuitConnectableMixin,
+    RequestFiltersMixin,
+    InventoryMixin,
 )
 from draftsman.warning import DraftsmanWarning
 
@@ -11,11 +16,12 @@ from draftsman.data.entities import logistic_storage_containers
 import warnings
 
 
-class LogisticStorageContainer(CircuitConnectableMixin, RequestFiltersMixin, 
-                               InventoryMixin, Entity):
-    """
-    """
-    def __init__(self, name = logistic_storage_containers[0], **kwargs):
+class LogisticStorageContainer(
+    CircuitConnectableMixin, RequestFiltersMixin, InventoryMixin, Entity
+):
+    """ """
+
+    def __init__(self, name=logistic_storage_containers[0], **kwargs):
         # type: (str, **dict) -> None
         super(LogisticStorageContainer, self).__init__(
             name, logistic_storage_containers, **kwargs
@@ -25,5 +31,5 @@ class LogisticStorageContainer(CircuitConnectableMixin, RequestFiltersMixin,
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )

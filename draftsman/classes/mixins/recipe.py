@@ -1,4 +1,7 @@
 # recipe.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import signatures
 from draftsman.data import recipes, modules
@@ -12,6 +15,7 @@ class RecipeMixin(object):
     """
     TODO
     """
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(RecipeMixin, self).__init__(name, similar_entities, **kwargs)
@@ -55,8 +59,7 @@ class RecipeMixin(object):
             return
         if value not in self.recipes:
             raise InvalidRecipeError(
-                "'{}' not in this entity's valid recipes"
-                .format(value)
+                "'{}' not in this entity's valid recipes".format(value)
             )
         self._recipe = signatures.STRING.validate(value)
 
@@ -65,7 +68,7 @@ class RecipeMixin(object):
         # AssemblingMachine
         # Later on there might be a reason to split this out but this is
         # good enough for now
-        
+
         # Check to make sure the recipe matches the module specification
         if self.items:
             for item in self.items:
@@ -75,10 +78,11 @@ class RecipeMixin(object):
                 if "limitation" in module:
                     if self.recipe not in module["limitation"]:
                         warnings.warn(
-                            "Cannot use module '{}' with new recipe '{}'"
-                            .format(item, self.recipe),
+                            "Cannot use module '{}' with new recipe '{}'".format(
+                                item, self.recipe
+                            ),
                             ModuleLimitationWarning,
-                            stacklevel = 2
+                            stacklevel=2,
                         )
 
                 # TODO:

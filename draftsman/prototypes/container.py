@@ -1,4 +1,7 @@
 # container.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import CircuitConnectableMixin, InventoryMixin
@@ -17,7 +20,8 @@ class Container(CircuitConnectableMixin, InventoryMixin, Entity):
     * `logistic-chest-active-provider`
     * `logistic-chest-passive-provider`
     """
-    def __init__(self, name = containers[0], **kwargs):
+
+    def __init__(self, name=containers[0], **kwargs):
         # type: (str, **dict) -> None
         super(Container, self).__init__(name, containers, **kwargs)
 
@@ -25,5 +29,5 @@ class Container(CircuitConnectableMixin, InventoryMixin, Entity):
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )

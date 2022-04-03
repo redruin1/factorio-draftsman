@@ -1,8 +1,13 @@
 # decider_combinator.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import (
-    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    DirectionalMixin,
 )
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
@@ -14,15 +19,14 @@ from typing import Union
 import warnings
 
 
-class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin, 
-                        DirectionalMixin, Entity):
-    """
-    """
-    def __init__(self, name = decider_combinators[0], **kwargs):
+class DeciderCombinator(
+    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
+):
+    """ """
+
+    def __init__(self, name=decider_combinators[0], **kwargs):
         # type: (str, **dict) -> None
-        super(DeciderCombinator, self).__init__(
-            name, decider_combinators, **kwargs
-        )
+        super(DeciderCombinator, self).__init__(name, decider_combinators, **kwargs)
 
         self._dual_circuit_connectable = True
 
@@ -30,7 +34,7 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -44,14 +48,14 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
     #     decider_conditions = self.control_behavior.get("decider_conditions", None)
     #     if not decider_conditions:
     #         return None
-        
+
     #     if "first_signal" in decider_conditions:
     #         return decider_conditions["first_signal"]
     #     elif "first_constant" in decider_conditions:
     #         return decider_conditions["first_constant"]
-    #     elif "second_signal" in decider_conditions: # Check constant 
+    #     elif "second_signal" in decider_conditions: # Check constant
     #         return decider_conditions.get("constant", None)
-        
+
     #     return None
 
     # @first_operand.setter
@@ -88,7 +92,7 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
     #             decider_conditions["first_constant"] = value
     #         else:
     #             decider_conditions["constant"] = value
-        
+
     # =========================================================================
 
     # @property
@@ -100,7 +104,7 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
     #     decider_conditions = self.control_behavior.get("decider_conditions", None)
     #     if not decider_conditions:
     #         return None
-        
+
     #     return decider_conditions.get("operation", None)
 
     # @operation.setter
@@ -132,14 +136,14 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
     #     decider_conditions = self.control_behavior.get("decider_conditions", None)
     #     if not decider_conditions:
     #         return None
-        
+
     #     if "second_signal" in decider_conditions:
     #         return decider_conditions["second_signal"]
     #     elif "second_constant" in decider_conditions:
     #         return decider_conditions["second_constant"]
-    #     elif "first_signal" in decider_conditions: # Check constant 
+    #     elif "first_signal" in decider_conditions: # Check constant
     #         return decider_conditions.get("constant", None)
-        
+
     #     return None
 
     # @second_operand.setter
@@ -235,11 +239,10 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
             raise TypeError("'copy_count_from_input' must be a bool or None")
 
     # =========================================================================
-    
-    def set_decider_conditions(self, a = None, op = "<", b = 0, out = None):
+
+    def set_decider_conditions(self, a=None, op="<", b=0, out=None):
         # type: (Union[str, int], str, Union[str, int], str) -> None
-        """
-        """
+        """ """
         # Check all the parameters before we set anything to preserve original
         a = signatures.SIGNAL_ID_OR_CONSTANT.validate(a)
         op = signatures.COMPARATOR.validate(op)
@@ -255,15 +258,15 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
         b_not_const = isinstance(b, int)
 
         # A
-        if a is None: # Default
+        if a is None:  # Default
             decider_conditions.pop("first_signal", None)
             decider_conditions.pop("first_constant", None)
-            if (not double_constant and b_not_const):
+            if not double_constant and b_not_const:
                 decider_conditions.pop("constant", None)
-        elif isinstance(a, dict): # Signal Dict
+        elif isinstance(a, dict):  # Signal Dict
             decider_conditions["first_signal"] = a
             decider_conditions.pop("first_constant", None)
-        else: # Constant
+        else:  # Constant
             decider_conditions.pop("first_signal", None)
             if double_constant:
                 decider_conditions["first_constant"] = a
@@ -279,15 +282,15 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
             decider_conditions["comparator"] = op
 
         # B
-        if b is None: # Default
+        if b is None:  # Default
             decider_conditions.pop("second_signal", None)
             decider_conditions.pop("second_constant", None)
-            if (not double_constant and a_not_const):
+            if not double_constant and a_not_const:
                 decider_conditions.pop("constant", None)
-        elif isinstance(b, dict): # Signal Dict
+        elif isinstance(b, dict):  # Signal Dict
             decider_conditions["second_signal"] = b
             decider_conditions.pop("second_constant", None)
-        else: # Constant
+        else:  # Constant
             decider_conditions.pop("second_signal", None)
             if double_constant:
                 decider_conditions["second_constant"] = b
@@ -297,14 +300,13 @@ class DeciderCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
                 decider_conditions.pop("second_constant", None)
 
         # out
-        if out is None: # Default
+        if out is None:  # Default
             decider_conditions.pop("output_signal", None)
-        else: # Signal Dict
+        else:  # Signal Dict
             decider_conditions["output_signal"] = out
 
     def remove_decider_conditions(self):
         # type: () -> None
-        """
-        """
+        """ """
         # TODO: delete this function
         self.control_behavior.pop("decider_conditions", None)

@@ -1,13 +1,17 @@
 # orientation.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import signatures
 
 
 class OrientationMixin(object):
-    """ 
-    Used in trains and wagons to specify their direction. 
+    """
+    Used in trains and wagons to specify their direction.
     TODO expand
     """
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(OrientationMixin, self).__init__(name, similar_entities, **kwargs)
@@ -35,4 +39,3 @@ class OrientationMixin(object):
             self._orientation = value
         else:
             raise TypeError("'orientation' must be a float or None")
-        

@@ -4,7 +4,7 @@
 Script to generate the draftsman logo.
 """
 
-from draftsman.blueprint import Blueprint
+from draftsman.blueprintable import Blueprint
 
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
@@ -112,17 +112,17 @@ def main():
     # Gear
     draw_gear(draw, (img_size[0]/2 - 39, img_size[1]/2), 15, Color.R_H_CONC, Color.R_CONC, Color.H_CONC)
 
-    im.show()
+    #im.show()
 
     # Get image data
     img_data = np.array(im)
-    print(img_data)
+    #print(img_data)
 
     # Convert the image into a blueprint
     blueprint = Blueprint()
     # Set the snapping grid so that it binds to the chunk grid
-    blueprint.set_snapping_grid_size(32, 32)
-    blueprint.set_absolute_snapping(True)
+    blueprint.snapping_grid_size = [32, 32]
+    blueprint.absolute_snapping = True
 
     for j in range(img_size[1]):
         for i in range(img_size[0]):
@@ -132,9 +132,9 @@ def main():
                     tile_name = "hazard-concrete-left"
                 else:
                     tile_name = "hazard-concrete-right"
-                blueprint.add_tile(tile_name, i, j)
+                blueprint.tiles.append(tile_name, position = (i, j))
             elif val in conversions:
-                blueprint.add_tile(conversions[val], i, j)
+                blueprint.tiles.append(conversions[val], position = (i, j))
 
     print(blueprint.to_string())
 

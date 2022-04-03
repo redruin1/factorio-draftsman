@@ -1,7 +1,8 @@
 # 1KiB_sector_ROM.py
 
 """
-Stores data in the format for use in my new computer.
+Stores Read only memory signals.
+TODO
 """
 
 def main():

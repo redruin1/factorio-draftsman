@@ -1,4 +1,7 @@
 # rocket_silo.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import signatures
 from draftsman.classes import Entity
@@ -10,7 +13,7 @@ import warnings
 
 
 class RocketSilo(Entity):
-    def __init__(self, name = rocket_silos[0], **kwargs):
+    def __init__(self, name=rocket_silos[0], **kwargs):
         # type: (str, **dict) -> None
         super(RocketSilo, self).__init__(name, rocket_silos, **kwargs)
 
@@ -24,7 +27,7 @@ class RocketSilo(Entity):
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================

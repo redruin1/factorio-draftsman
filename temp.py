@@ -1,146 +1,77 @@
-
-from draftsman.entity import *
-from draftsman.data import entities
-from draftsman.constants import *
-from draftsman.blueprint import Blueprint, IDList
-from draftsman.tile import Tile
-from draftsman.warning import OverlappingTilesWarning, DraftsmanWarning
-from draftsman import utils
-import draftsman.data.tiles as tiles
-import draftsman.data.recipes as recipes
-from draftsman.data import items
+from opcode import hasconst
+from draftsman import Blueprint, Container, new_entity, BlueprintBook
 from draftsman.classes import Group
+from draftsman.data import signals
+# from draftsman.classes.blueprint import KeyList
+from draftsman import utils
+from draftsman.data import entities
 
-#import pyperclip
 import json
-import enum
-import warnings
 
-def main():
-    #print(json.dumps(entities.raw["constant-combinator"], indent=2))
-    # print(entities.raw["medium-electric-pole"])
-    # for k in entities.raw["medium-electric-pole"]:
-    #     print(k)
-    
-    blueprint = Blueprint()
+# bp_string = "0eNqd0ttqwzAMBuB30bVTloOT1q9SxshBHYJECbYyFoLffU4GYWPuNnop+/dn2WiFpp9xssQCZgVqR3Zgris4euW639ZkmRAMkOAACrgetgp7bMVSm9xmy3WL4BUQd/gOJvXPCpCFhPDT2ovlheehQRsChyK2ZjeNVpIGewn6NLpwbOTt3o2q8pNWsIBJLsVJe69+YNn9liJceXB5nMsPbsCO5iE51Gns/yB1nCweeu6d/vRDWBbHygO71U4SYodWwkbEKr41pqAjG/5lT5QRufq/fP5NDpO0z535MqYK3tC6PZCd06K6ZJVOdZqXT95/AMv66Tw="
 
-    # machine = AssemblingMachine("assembling-machine-3")
-    # machine.set_recipe("accumulator")
-    # machine.set_item_request("productivity-module-3", 1)
+# blueprint = Blueprint(bp_string)
+# blueprint.label = "Hello, draftsman!"
 
-    # blueprint.add_entity(machine)
+# # Determine where the electric furnace is
+# furnace = blueprint.find_entities_filtered(type = "furnace")[0]
+# pos = [furnace.tile_position["x"] + 1, furnace.tile_position["y"] + 1]
+# print(furnace)
+# blueprint.translate(-pos[0], -pos[1])
+# print(furnace.tile_position)
 
-    # print(machine)
-    # print(blueprint.to_string())
+# container = Container("steel-chest")
+# # Set the inventory bar
+# container.bar = int(container.inventory_size / 2)
+# # Lets change the position of our entity in tile coordinates as well
+# container.tile_position = (3, 0)
+# blueprint.add_entity(container)
 
-    # for tile in tiles.raw:
-    #     print()
-    #     for key in tiles.raw[tile]:
-    #         print(key)
+# print(blueprint)
+# print(blueprint.to_string())
 
-    # speaker = ProgrammableSpeaker()
-    # speaker.set_instrument("alarms")
+# blueprint.entities[0].id = "something"
 
-    # speaker.set_note("siren")
+# blueprint.add_entity("wooden-chest", id = "something")
 
-    # blueprint.add_entity(speaker)
+# blueprint.entities["something"].id = "something else"
+# blueprint.entities["something"] -> KeyError
+# blueprint.entities["something else"] -> {...}
 
-    # test_dict = {
-    #     "position": [1, 1],
-    #     "name": "wooden-chest",
-    # }
+# test_list = KeyList()
 
-    # entity = new_entity(**test_dict)
+# test_list.append("wooden-chest", position = (1, 2), id = "something")
 
-    # print(entity)
-    # print(type(entity))
+# print(test_list.data)
+# print(test_list.key_map)
+# print(test_list.key_to_idx)
+# print(test_list.idx_to_key)
 
-    # blueprint.add_entity(entity)
+# test_list.clear()
 
-    # print(blueprint.to_string())
+# print(test_list.data)
+# print(test_list.key_map)
+# print(test_list.key_to_idx)
+# print(test_list.idx_to_key)
 
-    # print(entities.programmable_speakers)
+# source = utils.string_to_JSON("0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTI0s7A0q60FAHmRE1c=")
+# print(utils.decode_version(source["blueprint"]["version"]))
 
-    #warnings.simplefilter("ignore", DraftsmanWarning)
-    #print(warning_not_filtered(OverlappingTilesWarning))
+# blueprint = Blueprint("0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTI0s7A0q60FAHmRE1c=")
+# print(blueprint.version_tuple())
+# assert blueprint.to_dict() == utils.string_to_JSON("0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTI0s7A0q60FAHmRE1c=")
 
-    # size = 128
-    # for j in range(size):
-    #     for i in range(size):
-    #         blueprint.add_tile("refined-concrete", i, j)
-    #         blueprint.add_tile("landfill", i, j)
+#print(json.dumps(entities.raw["pumpjack"]["output_fluid_box"], indent = 2))
+#print(json.dumps(entities.raw["oil-refinery"]["fluid_boxes"], indent = 2))
+#print(json.dumps(entities.raw["chemical-plant"]["fluid_boxes"], indent = 2))
 
-    # blueprint.add_tile("refined-concrete", 0, 0)
-    # blueprint.add_tile("landfill", 0, 0)
+blueprint = Blueprint()
+blueprint.entities.append(Container())
 
-    # blueprint.add_tile("refined-concrete", 0, 0)
-    # blueprint.add_tile("landfill", -1, -1)
-    # #blueprint.remove_tile("refined-concrete", 0, 0)
-    # #blueprint.add_tile("landfill", 100, 100)
-    # print(blueprint.tile_hashmap.map)
-    # print(blueprint.tile_hashmap.get_on_point((-0.5, -0.5)))
+group = Group(id = "chests")
+group.entities.append(Container("iron-chest"))
 
-    # blueprint.add_entity("decider-combinator", position = [-1, 0], direction = Direction.EAST)
-    # results = blueprint.find_entities_filtered(name = "decider-combinator",
-    #     area = [[-8, -8], [8, 8]])
-    # print(results)
+blueprint.entities.append(group)
 
-    # aabb1 = [[-1, -1], [1, 1]]
-    # aabb2 = [[-0.5, -0.5], [0.5, 0.5]]
-    # print(utils.aabb_overlaps_aabb(aabb1, aabb2))
-
-    id_list = IDList()
-
-    id_list.append(Furnace("stone-furnace", position = [1, 1], id = "test"))
-
-    print(id_list[0].id)
-    print(id_list["test"])
-    id_list[0].id = "something_else"
-    print(id_list[0].id)
-    print(id_list["something_else"])
-
-    # Checkerboard grid
-    
-    # furnace = Furnace("electric-furnace")
-    # furnace.set_item_request("iron-ore", 100)
-    # blueprint.add_entity(furnace)
-
-    # machine = AssemblingMachine("assembling-machine-3")
-    # machine.set_recipe("copper-cable")
-    # machine.set_item_request("iron-plate", 100)
-    # blueprint.add_entity(machine)
-
-    # beacon = Beacon()
-    # beacon.set_item_request("steel-plate", 2)
-    # blueprint.add_entity(beacon)
-
-    # print(entities.raw["electric-furnace"]["crafting_categories"])
-    # print(recipes.categories["smelting"])
-    # print(recipes.raw["iron-plate"])
-    # for k in entities.raw["electric-furnace"]:
-    #     print(k)
-
-    # group = Group(name = "groupname1", position = [10, 10])
-    # group.add_entity(Furnace())
-    # print(group)
-    # print(Furnace())
-
-    # combinator = ArithmeticCombinator()
-    # combinator.set_arithmetic_conditions(10, "or")
-    # combinator.control_behavior = {
-    #     "arithmetic_conditions": {
-    #         "first_constant": 10,
-    #         "operation": "OR",
-    #         "second_constant": 0
-    #     }
-    # }
-    # blueprint.add_entity(combinator)
-
-    print(blueprint)
-    print(blueprint.to_string())
-
-    pass
-
-
-if __name__ == "__main__":
-    main()
+print(blueprint)
+print(blueprint.to_string())

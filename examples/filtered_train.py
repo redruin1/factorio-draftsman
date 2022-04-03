@@ -17,7 +17,7 @@ attempt to organize the entries by train, and as a result item slots can be
 split across multiple trains which is probably undesirable for this purpose.
 """
 
-from draftsman.blueprint import Blueprint
+from draftsman.blueprintable import Blueprint
 from draftsman.entity import CargoWagon
 
 
@@ -35,7 +35,7 @@ def main():
 
     blueprint = Blueprint()
     # Locomotive
-    blueprint.add_entity("locomotive", position = [0, 0], orientation = 0.75)
+    blueprint.entities.append("locomotive", position = [0, 0], orientation = 0.75)
     # Offset the position to account for the Locomotive
     train_car_position = 1
 
@@ -49,8 +49,8 @@ def main():
             # Check to see if we've exceeded the current wagon's size
             if slot_count >= 40:
                 # Add a new wagon
-                cargo_wagon.set_tile_position(7 * train_car_position, 0)
-                blueprint.add_entity(cargo_wagon)
+                cargo_wagon.tile_position = (7 * train_car_position, 0)
+                blueprint.entities.append(cargo_wagon)
                 # Reset
                 cargo_wagon = CargoWagon("cargo-wagon", orientation = 0.75)
                 slot_count = 0
@@ -60,12 +60,12 @@ def main():
             slot_count += 1
     
     # Add the last wagon if we didn't exceed the inventory
-    cargo_wagon.set_tile_position(7 * train_car_position, 0)
-    blueprint.add_entity(cargo_wagon)
+    cargo_wagon.tile_position = (7 * train_car_position, 0)
+    blueprint.entities.append(cargo_wagon)
 
     # Add a fancy title
-    blueprint.set_label("1-{} Filtered Train".format(train_car_position))
-    blueprint.set_label_color(1.0, 0.0, 0.0) # because why not
+    blueprint.label = "1-{} Filtered Train".format(train_car_position)
+    blueprint.label_color = (1.0, 0.0, 0.0) # because why not
 
     #print(blueprint)
     print(blueprint.to_string())

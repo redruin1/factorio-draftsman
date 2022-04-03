@@ -1,12 +1,16 @@
 # logistic_condition.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from typing import Union
 
 
-class LogisticConditionMixin(object): # (ControlBehaviorMixin)
+class LogisticConditionMixin(object):  # (ControlBehaviorMixin)
     """
     Gives the Entity the capablility to be logistic network controlled.
     """
+
     @property
     def connect_to_logistic_network(self):
         # type: () -> str
@@ -22,19 +26,15 @@ class LogisticConditionMixin(object): # (ControlBehaviorMixin)
         elif isinstance(value, bool):
             self.control_behavior["connect_to_logistic_network"] = value
         else:
-            raise TypeError(
-                "'connect_to_logistic_network' must be a bool or None"
-            )
+            raise TypeError("'connect_to_logistic_network' must be a bool or None")
 
     # =========================================================================
 
-    def set_logistic_condition(self, a = None, op = "<", b = 0):
+    def set_logistic_condition(self, a=None, op="<", b=0):
         # type: (str, str, Union[str, int]) -> None
-        """
-        """
+        """ """
         self._set_condition("logistic_condition", a, op, b)
 
-    def remove_logistic_condition(self): # TODO: delete
-        """
-        """
+    def remove_logistic_condition(self):  # TODO: delete
+        """ """
         self.control_behavior.pop("logistic_condition", None)

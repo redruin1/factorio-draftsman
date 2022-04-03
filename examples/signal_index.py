@@ -11,7 +11,7 @@ mods) will result in fewer than 256 signals.
 # TODO: change the code so that it works with mods
 # TODO: change the constant combinator bit to a Cell(?)
 
-from draftsman.blueprint import Blueprint
+from draftsman.blueprintable import Blueprint
 from draftsman.constants import Direction
 from draftsman.entity import (
     ConstantCombinator, ArithmeticCombinator, DeciderCombinator, ElectricPole
@@ -26,10 +26,10 @@ def main():
     input_signal = "red-wire"
 
     # Some metadata
-    blueprint.set_label("Signal Index ({})".format(input_signal))
-    blueprint.set_label_color(1.0, 0.0, 1.0, 1.0)
-    blueprint.set_icons("signal-I", "signal-D")
-    blueprint.set_description("Converts the value of {} into a unique unit signal.".format(input_signal))
+    blueprint.label = "Signal Index ({})".format(input_signal)
+    blueprint.label_color = (1.0, 0.0, 1.0, 1.0)
+    blueprint.icons = ["signal-I", "signal-D"]
+    blueprint.description = "Converts the value of {} into a unique unit signal.".format(input_signal)
 
     # Blacklist desired signals:
     blacklist = []
@@ -63,7 +63,7 @@ def main():
         for x in range(2):
             combinator = ConstantCombinator("constant-combinator")
             combinator.direction = Direction.SOUTH
-            combinator.set_tile_position(x, -y)
+            combinator.tile_position = (x, -y)
             for i in range(20):
                 # Last few signals might not exist
                 try: 
@@ -71,8 +71,8 @@ def main():
                     combinator.set_signal(i, signal_name, signal_index + i + 1)
                 except:
                     pass
-            
-            blueprint.add_entity(combinator, id = str(x) + "_" + str(y))
+            combinator.id = str(x) + "_" + str(y)
+            blueprint.entities.append(combinator)
             signal_index += 20
 
     # Connect all the combinators together
@@ -94,33 +94,39 @@ def main():
     decider = DeciderCombinator("decider-combinator", position = [0, 1])
     decider.direction = Direction.EAST
     decider.set_decider_conditions("signal-each", "=", input_signal, "signal-each")
-    decider.set_copy_count_from_input(False)
-    blueprint.add_entity(decider, id = "decider")
+    decider.copy_count_from_input = False
+    decider.id = "decider"
+    blueprint.entities.append(decider)
 
     # Output stabilizer
     stabilizer = ArithmeticCombinator("arithmetic-combinator", position = [0, 2])
     stabilizer.direction = Direction.EAST
     stabilizer.set_arithmetic_conditions(-1, "%", input_signal, input_signal)
-    blueprint.add_entity(stabilizer, id = "stabilizer")
+    stabilizer.id = "stabilizer"
+    blueprint.entities.append(stabilizer)
 
     # Stabilizer offset
     offset = ConstantCombinator("constant-combinator", position = [-1, 2])
     offset.direction = Direction.EAST
     offset.set_signal(0, input_signal, 1)
-    blueprint.add_entity(offset, id = "offset")
+    offset.id = "offset"
+    blueprint.entities.append(offset)
 
     # (Example) Input combinator
     input = ConstantCombinator("constant-combinator", position = [-4, 1])
     input.direction = Direction.EAST
     input.set_signal(0, input_signal, 15)
-    blueprint.add_entity(input, id = "input")
+    input.id = "input"
+    blueprint.entities.append(input)
 
     # Input pole
     pole = ElectricPole("medium-electric-pole", position = [-3, 1])
-    blueprint.add_entity(pole, id = "input_pole")
+    pole.id = "input_pole"
+    blueprint.entities.append(pole)
     # Output pole
-    pole.set_tile_position(4, 1)
-    blueprint.add_entity(pole, id = "output_pole")
+    pole.tile_position = (4, 1)
+    pole.id = "output_pole"
+    blueprint.entities.append(pole)
     blueprint.add_power_connection("input_pole", "output_pole")
 
     # Rest of the circuit connections

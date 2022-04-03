@@ -1,4 +1,7 @@
 # furnace.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import RequestItemsMixin
@@ -16,7 +19,7 @@ import warnings
 
 
 class Furnace(RequestItemsMixin, Entity):
-    def __init__(self, name = furnaces[0], **kwargs):
+    def __init__(self, name=furnaces[0], **kwargs):
         # type: (str, **dict) -> None
         super(Furnace, self).__init__(name, furnaces, **kwargs)
 
@@ -34,7 +37,7 @@ class Furnace(RequestItemsMixin, Entity):
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -56,15 +59,14 @@ class Furnace(RequestItemsMixin, Entity):
         Overwritten
         """
         # Make sure the item exists
-        if item not in signals.item: # TODO: maybe items.all instead?
+        if item not in signals.item:  # TODO: maybe items.all instead?
             raise InvalidItemError(item)
 
         if item not in modules.raw and item not in self.valid_input_ingredients:
             warnings.warn(
-                "Cannot request items that this Furnace doesn't use ({})"
-                .format(item),
+                "Cannot request items that this Furnace doesn't use ({})".format(item),
                 ItemLimitationWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
-        
+
         return super(Furnace, self).set_item_request(item, amount)

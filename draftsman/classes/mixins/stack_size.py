@@ -1,22 +1,27 @@
 # stack_size.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import signatures
 from draftsman.utils import signal_dict
 
 from schema import SchemaError
+import six
 
 
-class StackSizeMixin(object): # (ControlBehaviorMixin)
+class StackSizeMixin(object):  # (ControlBehaviorMixin)
     """
     TODO
     """
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(StackSizeMixin, self).__init__(name, similar_entities, **kwargs)
 
         self.override_stack_size = None
         if "override_stack_size" in kwargs:
-            #self.set_stack_size_override(kwargs["override_stack_size"])
+            # self.set_stack_size_override(kwargs["override_stack_size"])
             self.override_stack_size = kwargs["override_stack_size"]
             self.unused_args.pop("override_stack_size")
         self._add_export("override_stack_size", lambda x: x is not None)
@@ -60,7 +65,7 @@ class StackSizeMixin(object): # (ControlBehaviorMixin)
             self.control_behavior["circuit_set_stack_size"] = value
         else:
             raise TypeError("'circuit_set_stack_size' must be a bool or None")
-        
+
     # =========================================================================
 
     @property
@@ -77,11 +82,16 @@ class StackSizeMixin(object): # (ControlBehaviorMixin)
         # type: (str) -> None
         if value is None:
             self.control_behavior.pop("stack_control_input_signal", None)
-        elif isinstance(value, str):
+            return
+
+        if isinstance(value, six.string_types):
+            # Make sure this is a unicode string
+            value = six.text_type(value)
             self.control_behavior["stack_control_input_signal"] = signal_dict(value)
-        else: # dict or other
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.control_behavior["stack_control_input_signal"] = value
             except SchemaError:
+                # TODO: more verbose
                 raise TypeError("Incorrectly formatted SignalID")

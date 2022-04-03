@@ -1,8 +1,13 @@
 # lamp.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import (
-    CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin
+    CircuitConditionMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
 )
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
@@ -12,11 +17,12 @@ from draftsman.data.entities import lamps
 import warnings
 
 
-class Lamp(CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin,
-           Entity):
-    """
-    """
-    def __init__(self, name = lamps[0], **kwargs):
+class Lamp(
+    CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, Entity
+):
+    """ """
+
+    def __init__(self, name=lamps[0], **kwargs):
         # type: (str, **dict) -> None
         super(Lamp, self).__init__(name, lamps, **kwargs)
 
@@ -24,7 +30,7 @@ class Lamp(CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin,
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================

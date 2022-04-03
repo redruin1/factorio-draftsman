@@ -1,12 +1,16 @@
 # mode_of_operation.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.constants import ModeOfOperation
 
 
-class ModeOfOperationMixin(object): # (ControlBehaviorMixin)
+class ModeOfOperationMixin(object):  # (ControlBehaviorMixin)
     """
     TODO
     """
+
     @property
     def mode_of_operation(self):
         # type: () -> ModeOfOperation

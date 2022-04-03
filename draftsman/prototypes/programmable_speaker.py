@@ -1,59 +1,85 @@
 # programmable_speaker.py
+# -*- encoding: utf-8 -*-
 
+from __future__ import unicode_literals
+
+from draftsman import signatures
 from draftsman.classes import Entity
 from draftsman.classes.mixins import (
-    CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin
+    CircuitConditionMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
 )
-import draftsman.signatures as signatures
+from draftsman.error import DraftsmanError, InvalidInstrumentID, InvalidNoteID
 from draftsman.utils import signal_dict
 from draftsman.warning import DraftsmanWarning, VolumeRangeWarning
 
 from draftsman.data.entities import programmable_speakers
-import draftsman.data.entities as entities
-import draftsman.data.instruments as instruments
+import draftsman.data.instruments as instruments_data
 
 from schema import SchemaError
+import six
 from typing import Union
 import warnings
 
 
-class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin, 
-                          CircuitConnectableMixin, Entity):
-    """
-    """
-    def __init__(self, name = programmable_speakers[0], **kwargs):
+class ProgrammableSpeaker(
+    CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, Entity
+):
+    """ """
+
+    def __init__(self, name=programmable_speakers[0], **kwargs):
         # type: (str, **dict) -> None
-        super(ProgrammableSpeaker, self).__init__(
-            name, programmable_speakers, **kwargs
-        )
+        super(ProgrammableSpeaker, self).__init__(name, programmable_speakers, **kwargs)
 
         # Name translations for all of the instruments and their notes
-        self._instruments = instruments.instruments[self.name]
-        #self.instruments = entities.raw[self.name]["instruments"]
+        self._instrument_ids = instruments_data.index[self.name]
+        self._instrument_names = instruments_data.names[self.name]
+        # self.instruments = entities.raw[self.name]["instruments"]
+        self._instruments = {}
+        # print(instruments_data.raw[self.name][0])
+        for instrument in instruments_data.raw[self.name]:
+            notes = set()
+            for note in instrument["notes"]:
+                notes.add(note["name"])
+            self._instruments[instrument["name"]] = notes
+
         # Default instrument and note names
-        self.instrument_id = 0
-        self.note_id = 0
+        # self.instrument_id = None
+        # self.note_id = None
+
+        # Set instrument_id (and instrument_name by association)
+        try:
+            self.instrument_id = self.control_behavior["circuit_parameters"][
+                "instrument_id"
+            ]
+        except KeyError:
+            self.instrument_id = None
+        try:
+            self.note_id = self.control_behavior["circuit_parameters"]["note_id"]
+        except KeyError:
+            self.note_id = None
 
         self.parameters = {}
         if "parameters" in kwargs:
             self.parameters = kwargs["parameters"]
             self.unused_args.pop("parameters")
-        self._add_export("parameters", lambda x: len(x) != 0)
+        self._add_export("parameters", lambda x: x is not None and len(x) != 0)
 
         self.alert_parameters = {}
         if "alert_parameters" in kwargs:
             self.alert_parameters = kwargs["alert_parameters"]
             self.unused_args.pop("alert_parameters")
-        self._add_export("alert_parameters", lambda x: len(x) != 0)
+        self._add_export("alert_parameters", lambda x: x is not None and len(x) != 0)
 
-        if "control_behavior" in kwargs:
-            self._normalize_circuit_parameters()
+        # if "control_behavior" in kwargs:
+        #     self._normalize_circuit_parameters()
 
         for unused_arg in self.unused_args:
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -132,7 +158,7 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
                     "volume ({}) not in range of [0.0, 1.0], will be clamped "
                     "on import".format(value),
                     VolumeRangeWarning,
-                    stacklevel=2
+                    stacklevel=2,
                 )
             self.parameters["playback_volume"] = value
         else:
@@ -233,9 +259,10 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
         # type: (Union[str, dict]) -> None
         if value is None:
             self.alert_parameters.pop("icon_signal_id", None)
-        elif isinstance(value, str):
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
             self.alert_parameters["icon_signal_id"] = signal_dict(value)
-        else: # dict or other
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.alert_parameters["icon_signal_id"] = value
@@ -257,8 +284,8 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
         # type: (str) -> None
         if value is None:
             self.alert_parameters.pop("alert_message", None)
-        elif isinstance(value, str):
-            self.alert_parameters["alert_message"] = value
+        elif isinstance(value, six.string_types):
+            self.alert_parameters["alert_message"] = six.text_type(value)
         else:
             raise TypeError("'alert_message' must be a str or None")
 
@@ -293,132 +320,248 @@ class ProgrammableSpeaker(CircuitConditionMixin, ControlBehaviorMixin,
     # =========================================================================
 
     # TODO: use these
-    # @property
-    # def instrument_id(self):
-    #     pass
+    @property
+    def instrument_id(self):
+        # type: () -> int
+        """
+        Numeiric index of the instrument.
+        """
+        if "circuit_parameters" not in self.control_behavior:
+            return None
+        circuit_parameters = self.control_behavior["circuit_parameters"]
 
-    # @instrument_id.setter
-    # def instrument_id(self, value):
-    #     pass
+        return circuit_parameters.get("instrument_id", None)
 
-    # # Maybe have another one for setting the name?
-    # @property
-    # def instrument_name(self):
-    #     pass
+    @instrument_id.setter
+    def instrument_id(self, value):
+        # type: (int) -> None
+        if "circuit_parameters" not in self.control_behavior:
+            self.control_behavior["circuit_parameters"] = {}
+        circuit_parameters = self.control_behavior["circuit_parameters"]
 
-    # @instrument_name.setter
-    # def instrument_name(self, value):
-    #     pass
+        if value is None:
+            circuit_parameters.pop("instrument_id", None)
+            self._instrument_name = None
+            circuit_parameters.pop("note_id", None)
+            self._note_name = None
+            if len(circuit_parameters) == 0:
+                self.control_behavior.pop("circuit_parameters", None)
+        elif isinstance(value, int):
+            if value not in self._instrument_names:
+                raise InvalidInstrumentID("'{}'".format(value))
+
+            # Remove the note if the instrument changed
+            if circuit_parameters.get("instrument_id", None) != value:
+                circuit_parameters.pop("note_id", None)
+                self._note_name = None
+
+            circuit_parameters["instrument_id"] = value
+            self._instrument_name = self._instrument_names[value]["self"]
+        else:
+            raise TypeError("'instrument_id' must be an int or None")
+
+    # =========================================================================
+
+    @property
+    def instrument_name(self):
+        # type: () -> str
+        """
+        Name of the instrument.
+        """
+        return self._instrument_name
+
+    @instrument_name.setter
+    def instrument_name(self, value):
+        # type: (str) -> None
+        if "circuit_parameters" not in self.control_behavior:
+            self.control_behavior["circuit_parameters"] = {}
+        circuit_parameters = self.control_behavior["circuit_parameters"]
+
+        if value is None:
+            circuit_parameters.pop("instrument_id", None)
+            self._instrument_name = None
+            circuit_parameters.pop("note_id", None)
+            self._note_name = None
+            if len(circuit_parameters) == 0:
+                self.control_behavior.pop("circuit_parameters", None)
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
+            if value not in self._instrument_ids:
+                raise InvalidInstrumentID("'{}'".format(value))
+
+            # Remove the note if the instrument changed
+            if hasattr(self, "_instrument_name") and self._instrument_name != value:
+                circuit_parameters.pop("note_id", None)
+                self._note_name = None
+
+            self._instrument_name = value
+            circuit_parameters["instrument_id"] = self._instrument_ids[value]["self"]
+        else:
+            raise TypeError("'instrument_name' must be a str or None")
 
     # =========================================================================
 
     # TODO: use these
-    # @property
-    # def note_id(self):
-    #     pass
-
-    # @note_id.setter
-    # def note_id(self, value):
-    #     pass
-
-    # # Maybe have another one for setting the name?
-    # @property
-    # def note_name(self):
-    #     pass
-
-    # @instrument_name.setter
-    # def note_name(self, value):
-    #     pass
-
-    def set_instrument(self, instrument):
-        # type: (Union[int, str]) -> None
+    @property
+    def note_id(self):
+        # type: () -> int
         """
-        TODO: fix this function up, its an eyesore
+        Numeric index of the note.
         """
-
         if "circuit_parameters" not in self.control_behavior:
-            self.control_behavior["circuit_parameters"] = {}
-        circuit_params = self.control_behavior["circuit_parameters"]
+            return None
+        circuit_parameters = self.control_behavior["circuit_parameters"]
 
-        if instrument is None:
-            circuit_params.pop("instrument_id", None)
-            if len(circuit_params) == 0:
-                self.control_behavior.pop("circuit_parameters", None)
-        elif isinstance(instrument, int):
-            # TODO: If index is out of range, issue Warning
-            circuit_params["instrument_id"] = instrument
-        elif isinstance(instrument, str):
-            instrument = list(self.instruments).index(instrument)
-            circuit_params["instrument_id"] = instrument
-        else:
-            raise TypeError("instrument_id is neither int nor str")
+        return circuit_parameters.get("note_id", None)
 
-
-        # How I would like this function to be written:
-        # if instrument is None:
-        #     circuit_params.pop("instrument_id", None)
-        #     self.instrument = 0
-        # else:
-        #     instrument = instruments.index[self.name][instrument]["self"]
-        #     self.instrument = instrument
-        #     circuit_params["instrument_id"] = instrument
-        #     # raises keyerror if need be
-
-    def set_note(self, note):
+    @note_id.setter
+    def note_id(self, value):
         # type: (int) -> None
-        """
-        TODO: fix this function up, its an eyesore
-        """
         if "circuit_parameters" not in self.control_behavior:
             self.control_behavior["circuit_parameters"] = {}
-        circuit_params = self.control_behavior["circuit_parameters"]
+        circuit_parameters = self.control_behavior["circuit_parameters"]
 
-        if note is None:
-            circuit_params.pop("note_id", None)
-            if len(circuit_params) == 0:
+        if value is None:
+            circuit_parameters.pop("note_id", None)
+            self._note_name = None
+            if len(circuit_parameters) == 0:
                 self.control_behavior.pop("circuit_parameters", None)
-        elif isinstance(note, int):
-            # TODO: If index is out of range, warn or error?
-            circuit_params["note_id"] = note
-        elif isinstance(note, str):
-            # Look for instrument
-            instrument_num = circuit_params.pop("instrument_id", None) or 0
-            instrument_name = list(self.instruments)[instrument_num]
-            # Get notes from that instrument
-            instrument_notes = self.instruments[instrument_name]
-            #print(instrument_notes)
-            circuit_params["note_id"] = instrument_notes.index(note)
-        else:
-            raise TypeError("note_id is neither int nor str")
+        elif isinstance(value, int):
+            if "instrument_id" not in circuit_parameters:
+                raise DraftsmanError("Cannot set note before setting instrument")
+            instrument_id = circuit_parameters["instrument_id"]
 
-        # How I would like this function to be written:
-        # if note is None:
-        #     circuit_params.pop("note_id", None)
-        # else:
-        #     note = instruments.index[self.name][self.instrument][note]
-        #     circuit_params["note_id"] = note
-        #     # raises keyerror if need be
+            if value not in self._instrument_names[instrument_id]:
+                raise InvalidNoteID("'{}'".format(value))
+
+            circuit_parameters["note_id"] = value
+            self._note_name = self._instrument_names[instrument_id][value]
+        else:
+            raise TypeError("'note_id' must be an int or None")
+
+    # =========================================================================
+
+    @property
+    def note_name(self):
+        # type: () -> str
+        """
+        Name of the note
+        """
+        return self._note_name
+
+    @note_name.setter
+    def note_name(self, value):
+        # type: (str) -> None
+        if "circuit_parameters" not in self.control_behavior:
+            self.control_behavior["circuit_parameters"] = {}
+        circuit_parameters = self.control_behavior["circuit_parameters"]
+
+        if value is None:
+            circuit_parameters.pop("note_id", None)
+            self._note_name = None
+            if len(circuit_parameters) == 0:
+                self.control_behavior.pop("circuit_parameters", None)
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
+            if "instrument_id" not in circuit_parameters:
+                raise DraftsmanError("Cannot set note before setting instrument")
+            instrument_name = self._instrument_name
+
+            if value not in self._instrument_ids[instrument_name]:
+                raise InvalidNoteID("'{}'".format(value))
+
+            self._note_name = value
+            circuit_parameters["note_id"] = self._instrument_ids[instrument_name][value]
+        else:
+            raise TypeError("'note_name' must be a str or None")
+
+    # def set_instrument(self, instrument):
+    #     # type: (Union[int, str]) -> None
+    #     """
+    #     TODO: fix this function up, its an eyesore
+    #     """
+
+    #     if "circuit_parameters" not in self.control_behavior:
+    #         self.control_behavior["circuit_parameters"] = {}
+    #     circuit_params = self.control_behavior["circuit_parameters"]
+
+    #     # if instrument is None:
+    #     #     circuit_params.pop("instrument_id", None)
+    #     #     if len(circuit_params) == 0:
+    #     #         self.control_behavior.pop("circuit_parameters", None)
+    #     # elif isinstance(instrument, int):
+    #     #     # TODO: If index is out of range, issue Warning
+    #     #     circuit_params["instrument_id"] = instrument
+    #     # elif isinstance(instrument, str):
+    #     #     instrument = list(self.instruments).index(instrument)
+    #     #     circuit_params["instrument_id"] = instrument
+    #     # else:
+    #     #     raise TypeError("instrument_id is neither int nor str")
+
+    #     # How I would like this function to be written:
+    #     if instrument is None:
+    #         circuit_params.pop("instrument_id", None)
+    #         self.instrument = 0
+    #     else:
+    #         instrument = instruments.index[self.name][instrument]["self"]
+    #         self.instrument = instrument
+    #         circuit_params["instrument_id"] = instrument
+    #         # raises keyerror if need be
+
+    # def set_note(self, note):
+    #     # type: (int) -> None
+    #     """
+    #     TODO: fix this function up, its an eyesore
+    #     """
+    #     if "circuit_parameters" not in self.control_behavior:
+    #         self.control_behavior["circuit_parameters"] = {}
+    #     circuit_params = self.control_behavior["circuit_parameters"]
+
+    #     if note is None:
+    #         circuit_params.pop("note_id", None)
+    #         if len(circuit_params) == 0:
+    #             self.control_behavior.pop("circuit_parameters", None)
+    #     elif isinstance(note, int):
+    #         # TODO: If index is out of range, warn or error?
+    #         circuit_params["note_id"] = note
+    #     elif isinstance(note, str):
+    #         # Look for instrument
+    #         instrument_num = circuit_params.pop("instrument_id", None) or 0
+    #         instrument_name = list(self.instruments)[instrument_num]
+    #         # Get notes from that instrument
+    #         instrument_notes = self.instruments[instrument_name]
+    #         #print(instrument_notes)
+    #         circuit_params["note_id"] = instrument_notes.index(note)
+    #     else:
+    #         raise TypeError("note_id is neither int nor str")
+
+    #     # How I would like this function to be written:
+    #     # if note is None:
+    #     #     circuit_params.pop("note_id", None)
+    #     # else:
+    #     #     note = instruments.index[self.name][self.instrument][note]
+    #     #     circuit_params["note_id"] = note
+    #     #     # raises keyerror if need be
 
     # =========================================================================
 
     def _normalize_circuit_parameters(self):
         """
-        Ideally I would get rid of this function, but having access to the 
+        Ideally I would get rid of this function, but having access to the
         entity's instrument seems necessary and I dont have access to that in
         draftsman.signatures
         """
-        # TODO: handle strings using self.instruments
-        if "circuit_parameters" in self.control_behavior:
-            circuit_params = self.control_behavior["circuit_parameters"]
-            # Set the instruments
-            if "instrument_id" in circuit_params:
-                instrument = circuit_params["instrument_id"]
-                if isinstance(instrument, str):
-                    instrument_id = list(self.instruments).index(instrument)
-                    circuit_params["instrument_id"] = instrument_id
-            
-            if "note_id" in circuit_params:
-                note = circuit_params["note_id"]
-                if isinstance(note, str):
-                    note_id = self.instruments[instrument].index(note)
-                    circuit_params["note_id"] = note_id
+        # if "circuit_parameters" in self.control_behavior:
+        #     circuit_params = self.control_behavior["circuit_parameters"]
+        #     # Set the instruments
+        #     if "instrument_id" in circuit_params:
+        #         instrument = circuit_params["instrument_id"]
+        #         if isinstance(instrument, str):
+        #             instrument_id = list(self.instruments).index(instrument)
+        #             circuit_params["instrument_id"] = instrument_id
+
+        #     if "note_id" in circuit_params:
+        #         note = circuit_params["note_id"]
+        #         if isinstance(note, str):
+        #             note_id = self.instruments[instrument].index(note)
+        #             circuit_params["note_id"] = note_id

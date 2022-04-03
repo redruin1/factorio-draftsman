@@ -1,13 +1,17 @@
 # enable_disable.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import signatures
 
 
-class EnableDisableMixin(object): # (ControlBehaviorMixin)
+class EnableDisableMixin(object):  # (ControlBehaviorMixin)
     """
     Allows the entity to control whether or not it's circuit condition affects
     its operation. Usually used with CircuitConditionMixin.
     """
+
     @property
     def enable_disable(self):
         # type: () -> bool
@@ -25,4 +29,3 @@ class EnableDisableMixin(object): # (ControlBehaviorMixin)
             self.control_behavior["circuit_enable_disable"] = value
         else:
             raise TypeError("'enable_disable' must be a bool or None")
-        

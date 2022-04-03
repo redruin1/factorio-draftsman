@@ -1,4 +1,7 @@
 # heat_interface.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.error import InvalidModeError
@@ -11,7 +14,7 @@ import warnings
 
 
 class HeatInterface(Entity):
-    def __init__(self, name = heat_interfaces[0], **kwargs):
+    def __init__(self, name=heat_interfaces[0], **kwargs):
         # type: (str, **dict) -> None
         super(HeatInterface, self).__init__(name, heat_interfaces, **kwargs)
 
@@ -31,7 +34,7 @@ class HeatInterface(Entity):
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -55,7 +58,7 @@ class HeatInterface(Entity):
                     "'temperature' ({}) not in range [0, 1000]; will be clamped"
                     " on import".format(value),
                     TemperatureRangeWarning,
-                    stacklevel = 2
+                    stacklevel=2,
                 )
             self._temperature = value
         else:

@@ -1,4 +1,7 @@
 # linked_container.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import InventoryMixin
@@ -11,7 +14,7 @@ import warnings
 
 
 class LinkedContainer(InventoryMixin, Entity):
-    def __init__(self, name = linked_containers[0], **kwargs):
+    def __init__(self, name=linked_containers[0], **kwargs):
         # type: (str, **dict) -> None
         super(LinkedContainer, self).__init__(name, linked_containers, **kwargs)
 
@@ -25,7 +28,7 @@ class LinkedContainer(InventoryMixin, Entity):
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -63,10 +66,9 @@ class LinkedContainer(InventoryMixin, Entity):
 
     def set_link(self, number, enabled):
         # type: (int, bool) -> None
-        """
-        """
+        """ """
         assert number < 32
         if enabled:
-            self.link_id |= (1 << number)
+            self.link_id |= 1 << number
         else:
             self.link_id &= ~(1 << number)

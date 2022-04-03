@@ -13,5 +13,5 @@ if __name__ == "__main__":
     # Or
     #blueprintable = blueprint.get_blueprintable_from_string(bpstring)
     #print(blueprintable)
-    blueprint_dict = utils.string_2_JSON(bpstring)
+    blueprint_dict = utils.string_to_JSON(bpstring)
     print(json.dumps(blueprint_dict, indent=2))

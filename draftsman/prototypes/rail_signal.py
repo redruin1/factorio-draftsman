@@ -1,32 +1,51 @@
 # rail_signal.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import (
-    ReadRailSignalMixin, CircuitConditionMixin, EnableDisableMixin,
-    ControlBehaviorMixin, CircuitConnectableMixin, EightWayDirectionalMixin,
+    ReadRailSignalMixin,
+    CircuitConditionMixin,
+    EnableDisableMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    EightWayDirectionalMixin,
 )
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import rail_signals
+from draftsman.data import entities
 
 import warnings
 
 
-class RailSignal(ReadRailSignalMixin, CircuitConditionMixin, EnableDisableMixin, 
-                 ControlBehaviorMixin, CircuitConnectableMixin, 
-                 EightWayDirectionalMixin, Entity):
-    """
-    """
-    def __init__(self, name = rail_signals[0], **kwargs):
+class RailSignal(
+    ReadRailSignalMixin,
+    CircuitConditionMixin,
+    EnableDisableMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    EightWayDirectionalMixin,
+    Entity,
+):
+    """ """
+
+    def __init__(self, name=rail_signals[0], **kwargs):
         # type: (str, **dict) -> None
         super(RailSignal, self).__init__(name, rail_signals, **kwargs)
+
+        if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
+            self._collision_mask = entities.raw[self.name]["collision_mask"]
+        else:  # pragma: no coverage
+            self._collision_mask = {"floor-layer", "rail-layer", "item-layer"}
 
         for unused_arg in self.unused_args:
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -38,7 +57,6 @@ class RailSignal(ReadRailSignalMixin, CircuitConditionMixin, EnableDisableMixin,
         TODO
         """
         return self.control_behavior.get("circuit_read_signal", None)
-
 
     @read_signal.setter
     def read_signal(self, value):

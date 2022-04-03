@@ -1,21 +1,23 @@
 # accumulator.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import signatures
 from draftsman.classes import Entity
-from draftsman.classes.mixins import (
-    ControlBehaviorMixin, CircuitConnectableMixin
-)
+from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMixin
 from draftsman.utils import signal_dict
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import accumulators
 
 from schema import SchemaError
+import six
 import warnings
 
 
 class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
-    def __init__(self, name = accumulators[0], **kwargs):
+    def __init__(self, name=accumulators[0], **kwargs):
         # type: (str, **dict) -> None
         super(Accumulator, self).__init__(name, accumulators, **kwargs)
 
@@ -23,7 +25,7 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -41,9 +43,10 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         # type: (str) -> None
         if value is None:
             self.control_behavior.pop("output_signal", None)
-        elif isinstance(value, str):
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
             self.control_behavior["output_signal"] = signal_dict(value)
-        else: # dict or other
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.control_behavior["output_signal"] = value

@@ -1,10 +1,18 @@
 # train_stop.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import (
-    ColorMixin, CircuitConditionMixin, EnableDisableMixin, 
-    LogisticConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin,
-    DoubleGridAlignedMixin, DirectionalMixin
+    ColorMixin,
+    CircuitConditionMixin,
+    EnableDisableMixin,
+    LogisticConditionMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    DoubleGridAlignedMixin,
+    DirectionalMixin,
 )
 import draftsman.signatures as signatures
 from draftsman.utils import signal_dict
@@ -13,17 +21,25 @@ from draftsman.warning import DraftsmanWarning
 from draftsman.data.entities import train_stops
 
 from schema import SchemaError
+import six
 from typing import Union
 import warnings
 
 
-class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin, 
-                LogisticConditionMixin, ControlBehaviorMixin, 
-                CircuitConnectableMixin, DoubleGridAlignedMixin, 
-                DirectionalMixin, Entity):
-    """
-    """
-    def __init__(self, name = train_stops[0], **kwargs):
+class TrainStop(
+    ColorMixin,
+    CircuitConditionMixin,
+    EnableDisableMixin,
+    LogisticConditionMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    DoubleGridAlignedMixin,
+    DirectionalMixin,
+    Entity,
+):
+    """ """
+
+    def __init__(self, name=train_stops[0], **kwargs):
         # type: (str, **dict) -> None
         super(TrainStop, self).__init__(name, train_stops, **kwargs)
 
@@ -43,7 +59,7 @@ class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin,
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -59,8 +75,10 @@ class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin,
     @station.setter
     def station(self, value):
         # type: (str) -> None
-        if value is None or isinstance(value, str):
+        if value is None:
             self._station = value
+        elif isinstance(value, six.string_types):
+            self._station = six.text_type(value)
         else:
             raise TypeError("'station' must be a str or None")
 
@@ -137,13 +155,13 @@ class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin,
         # type: (Union[str, dict]) -> None
         if value is None:
             self.control_behavior.pop("train_stopped_signal", None)
-        elif isinstance(value, str):
-            value = signal_dict(value)
-            self.control_behavior["train_stopped_signal"] = value
-        else: # dict or other
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
+            self.control_behavior["train_stopped_signal"] = signal_dict(value)
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["train_stopped_signal"]=value
+                self.control_behavior["train_stopped_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")
 
@@ -182,10 +200,10 @@ class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin,
         # type: (Union[str, dict]) -> None
         if value is None:
             self.control_behavior.pop("trains_limit_signal", None)
-        elif isinstance(value, str):
-            value = signal_dict(value)
-            self.control_behavior["trains_limit_signal"] = value
-        else: # dict or other
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
+            self.control_behavior["trains_limit_signal"] = signal_dict(value)
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.control_behavior["trains_limit_signal"] = value
@@ -227,10 +245,10 @@ class TrainStop(ColorMixin, CircuitConditionMixin, EnableDisableMixin,
         # type: (Union[str, dict]) -> None
         if value is None:
             self.control_behavior.pop("trains_count_signal", None)
-        elif isinstance(value, str):
-            value = signal_dict(value)
-            self.control_behavior["trains_count_signal"] = value
-        else: # dict or other
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
+            self.control_behavior["trains_count_signal"] = signal_dict(value)
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.control_behavior["trains_count_signal"] = value

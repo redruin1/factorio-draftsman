@@ -1,4 +1,7 @@
 # inventory_filter.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import signatures
 from draftsman.data import entities
@@ -7,6 +10,7 @@ from draftsman.error import InvalidItemError, BarIndexError, FilterIndexError
 from draftsman.warning import BarIndexWarning
 
 from schema import SchemaError
+import six
 import warnings
 
 
@@ -14,11 +18,10 @@ class InventoryFilterMixin(object):
     """
     Allows inventories to set content filters. Used in cargo wagons.
     """
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
-        super(InventoryFilterMixin, self).__init__(
-            name, similar_entities, **kwargs
-        )
+        super(InventoryFilterMixin, self).__init__(name, similar_entities, **kwargs)
 
         self._inventory_size = entities.raw[self.name]["inventory_size"]
 
@@ -82,15 +85,14 @@ class InventoryFilterMixin(object):
             raise TypeError("'bar' must be an int")
 
         if not 0 <= value < 65536:
-            raise BarIndexError(
-                "Bar index ({}) not in range [0, 65536)".format(value)
-            )
+            raise BarIndexError("Bar index ({}) not in range [0, 65536)".format(value))
         elif value >= self.inventory_size:
             warnings.warn(
-                "Bar index ({}) not in range [0, {})"
-                .format(value, self.inventory_size),
+                "Bar index ({}) not in range [0, {})".format(
+                    value, self.inventory_size
+                ),
                 BarIndexWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
         self._inventory["bar"] = value
@@ -113,22 +115,26 @@ class InventoryFilterMixin(object):
         except SchemaError:
             # TODO: more verbose
             raise TypeError("Invalid index format")
-        if item is not None and item not in signals.item: # FIXME: maybe items.raw?
-            raise InvalidItemError(item)
+        if item is not None:
+            # Make sure item string is unicode
+            item = six.text_type(item)
+            if item not in signals.item:  # FIXME: maybe items.raw?
+                raise InvalidItemError(item)
 
         if not 0 <= index < self.inventory_size:
             raise FilterIndexError(
-                "Filter index ({}) not in range [0, {})"
-                .format(index, self.inventory_size)
+                "Filter index ({}) not in range [0, {})".format(
+                    index, self.inventory_size
+                )
             )
-        
+
         # Check to see if filters already contains an entry with the same index
         for i, filter in enumerate(self.inventory["filters"]):
-            if filter["index"] == index + 1: # Index already exists in the list
-                if item is None: # Delete the entry
+            if filter["index"] == index + 1:  # Index already exists in the list
+                if item is None:  # Delete the entry
                     del self.inventory["filters"][i]
-                else: # Set the new value
-                    #self.inventory["filters"][i] = {"index": index+1,"name": item}
+                else:  # Set the new value
+                    # self.inventory["filters"][i] = {"index": index+1,"name": item}
                     self.inventory["filters"][i]["name"] = item
                 return
 
@@ -156,7 +162,7 @@ class InventoryFilterMixin(object):
                 raise InvalidItemError(item)
 
         for i in range(len(filters)):
-            if isinstance(filters[i], str):
+            if isinstance(filters[i], six.string_types):
                 self.set_inventory_filter(i, filters[i])
-            else: # dict
+            else:  # dict
                 self.set_inventory_filter(i, filters[i]["name"])

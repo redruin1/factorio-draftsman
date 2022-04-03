@@ -1,4 +1,7 @@
 # infinity_pipe.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.error import InvalidFluidError, InvalidModeError
@@ -9,13 +12,14 @@ from draftsman.data.entities import infinity_pipes
 import draftsman.data.signals as signals
 
 from schema import SchemaError
+import six
 import warnings
 
 
 class InfinityPipe(Entity):
-    """
-    """
-    def __init__(self, name = infinity_pipes[0], **kwargs):
+    """ """
+
+    def __init__(self, name=infinity_pipes[0], **kwargs):
         # type: (str, **dict) -> None
         super(InfinityPipe, self).__init__(name, infinity_pipes, **kwargs)
 
@@ -29,7 +33,7 @@ class InfinityPipe(Entity):
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -70,7 +74,8 @@ class InfinityPipe(Entity):
         # type: (str) -> None
         if value is None:
             self.infinity_settings.pop("name", None)
-        elif isinstance(value, str):
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
             if value not in signals.fluid:
                 raise InvalidFluidError(value)
             self.infinity_settings["name"] = value
@@ -97,9 +102,7 @@ class InfinityPipe(Entity):
                 raise ValueError("'percentage' cannot be negative")
             self.infinity_settings["percentage"] = value
         else:
-            raise TypeError(
-                "'infinite_fluid_percentage' must be a number or None"
-            )
+            raise TypeError("'infinite_fluid_percentage' must be a number or None")
 
     # =========================================================================
 
@@ -116,14 +119,16 @@ class InfinityPipe(Entity):
         # type: (str) -> None
         if value is None:
             self.infinity_settings.pop("mode", None)
-        elif isinstance(value, str):
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
             valid_modes = {"at-least", "at-most", "exactly", "add", "remove"}
             if value in valid_modes:
                 self.infinity_settings["mode"] = value
             else:
                 raise InvalidModeError(
-                    "'infinite_fluid_mode' ({}) must be one of {}"
-                    .format(value, valid_modes)
+                    "'infinite_fluid_mode' ({}) must be one of {}".format(
+                        value, valid_modes
+                    )
                 )
         else:
             raise TypeError("'infinite_fluid_mode' must be a str or None")
@@ -149,7 +154,7 @@ class InfinityPipe(Entity):
                     "'infinite_fluid_temperature' ({}) not in range [0, 1000]; "
                     "will be clamped on import".format(value),
                     TemperatureRangeWarning,
-                    stacklevel = 2
+                    stacklevel=2,
                 )
             self.infinity_settings["temperature"] = value
         else:
@@ -157,11 +162,11 @@ class InfinityPipe(Entity):
 
     # =========================================================================
 
-    def set_infinite_fluid(self, name = None, percentage = 0, mode = "at-least",
-                           temperature = 0):
+    def set_infinite_fluid(
+        self, name=None, percentage=0, mode="at-least", temperature=0
+    ):
         # type: (str, int, str, int) -> None
-        """
-        """
+        """ """
         # Check before setting to make sure that we dont partially complete
         name = signatures.STRING.validate(name)
         percentage = signatures.INTEGER.validate(percentage)
@@ -182,7 +187,7 @@ class InfinityPipe(Entity):
                 "'infinite_fluid_temperature' ({}) not in range [0, 1000]; "
                 "will be clamped on import".format(percentage),
                 TemperatureRangeWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
         self.infinity_settings["name"] = name

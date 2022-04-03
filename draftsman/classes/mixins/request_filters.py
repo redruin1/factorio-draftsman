@@ -1,4 +1,7 @@
 # request_filters.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import signatures
 from draftsman.data import signals
@@ -12,11 +15,10 @@ class RequestFiltersMixin(object):
     Used to allow Logistics Containers to request items from the Logisitics
     network.
     """
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
-        super(RequestFiltersMixin, self).__init__(
-            name, similar_entities, **kwargs
-        )
+        super(RequestFiltersMixin, self).__init__(name, similar_entities, **kwargs)
 
         # TODO: handle internal input format for set_request_filters()
 
@@ -28,19 +30,18 @@ class RequestFiltersMixin(object):
 
     # =========================================================================
 
-    def set_request_filter(self, index, item, count = 0):
+    def set_request_filter(self, index, item, count=0):
         # type: (int, str, int) -> None
-        """
-        """
+        """ """
 
         if self.request_filters is None:
             self.request_filters = []
-        
+
         try:
             index = signatures.INTEGER.validate(index)
         except SchemaError:
             raise TypeError("Invalid index format")
-        if item is not None and item not in signals.item: # TODO: FIXME
+        if item is not None and item not in signals.item:  # TODO: FIXME
             raise InvalidItemError(item)
         count = signatures.INTEGER.validate(count)
 
@@ -51,23 +52,20 @@ class RequestFiltersMixin(object):
 
         # Check to see if filters already contains an entry with the same index
         for i, filter in enumerate(self.request_filters):
-            if filter["index"] == index + 1: # Index already exists in the list
-                if item is None: # Delete the entry
+            if filter["index"] == index + 1:  # Index already exists in the list
+                if item is None:  # Delete the entry
                     del self.request_filters[i]
-                else: # Set the new name + value
+                else:  # Set the new name + value
                     self.request_filters[i]["name"] = item
                     self.request_filters[i]["count"] = count
                 return
 
         # If no entry with the same index was found
-        self.request_filters.append({
-            "index": index+1, "name": item, "count": count
-        })
+        self.request_filters.append({"index": index + 1, "name": item, "count": count})
 
     def set_request_filters(self, filters):
         # type: (list) -> None
-        """
-        """
+        """ """
 
         # Validate filters
         # TODO: fix this signature

@@ -1,4 +1,7 @@
 # lab.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import RequestItemsMixin
@@ -10,7 +13,7 @@ import warnings
 
 
 class Lab(RequestItemsMixin, Entity):
-    def __init__(self, name = labs[0], **kwargs):
+    def __init__(self, name=labs[0], **kwargs):
         # type: (str, **dict) -> None
         super(Lab, self).__init__(name, labs, **kwargs)
 
@@ -18,5 +21,5 @@ class Lab(RequestItemsMixin, Entity):
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )

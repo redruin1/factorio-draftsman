@@ -1,12 +1,25 @@
 # Changelog
-## **0.3.5**
+## **0.5.0**
+* Backported to Python 2.7; tested via `tox` that it works with latest version of Python 2 and 3
+    * (Should work with every version between, but I'm too lazy to test right now)
+* Got everything prepared (I think) for building and ultimately distribution
+* Fixed `setup.py` so that it should work with all versions greater than 2.7 (as well as requirements.txt)
+* Added entry-point `draftsman-update` that must be called after installation to initialize the module
+* Lots of general folder restructuring (mainly moving everything needed into the module folder)
+* Renamed `blueprint.py` to `blueprintable.py`
+* Formatted everything using `black`
+* Updated readme
+* Updated examples
+* Removed some redundant files
+
+## **0.3.5.2**
 * Split all of the mixins into their own files, as well as Entity, EntityLike, Group, etc.
 * Added the `SpatialHashMap` structure for Blueprints to speed up `find_entities` and `find_tiles`
 * Added lots of utility functions related to `SpatialHashMap`
 * Changed Blueprint `entities` and `tiles` to `KeyList` instead of `list`
 * Added Blueprint warnings
 
-## **0.3.5**
+## **0.3.5.1**
 * Changed ALL of the setters to use properties because I didn't know Python properties _existed_
 * Revised test cases to match this revalation
 

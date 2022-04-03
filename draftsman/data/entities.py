@@ -2,16 +2,16 @@
 
 import pickle
 
-try:
-    import importlib.resources as pkg_resources # type: ignore
-except ImportError:
+try:  # pragma: no coverage
+    import importlib.resources as pkg_resources  # type: ignore
+except ImportError:  # pragma: no coverage
     # Try backported to PY<37 `importlib_resources`.
-    import importlib_resources as pkg_resources # type: ignore
+    import importlib_resources as pkg_resources  # type: ignore
 
 from draftsman import data
 
 
-with pkg_resources.open_binary(data, 'entities.pkl') as inp:
+with pkg_resources.open_binary(data, "entities.pkl") as inp:
     _data = pickle.load(inp)
     raw = _data["raw"]
     containers = _data["containers"]
@@ -36,9 +36,9 @@ with pkg_resources.open_binary(data, 'entities.pkl') as inp:
     fluid_wagons = _data["fluid_wagons"]
     artillery_wagons = _data["artillery_wagons"]
     logistic_passive_containers = _data["logistic_passive_containers"]
-    logistic_active_containers  = _data["logistic_active_containers"]
+    logistic_active_containers = _data["logistic_active_containers"]
     logistic_storage_containers = _data["logistic_storage_containers"]
-    logistic_buffer_containers  = _data["logistic_buffer_containers"]
+    logistic_buffer_containers = _data["logistic_buffer_containers"]
     logistic_request_containers = _data["logistic_request_containers"]
     roboports = _data["roboports"]
     lamps = _data["lamps"]

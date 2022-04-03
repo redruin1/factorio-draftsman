@@ -1,12 +1,16 @@
 # circuit_read_hand.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.constants import ReadMode
 
 
-class CircuitReadHandMixin(object): # (ControlBehaviorMixin)
+class CircuitReadHandMixin(object):  # (ControlBehaviorMixin)
     """
     TODO
     """
+
     @property
     def read_hand_contents(self):
         # type: () -> bool
@@ -43,6 +47,4 @@ class CircuitReadHandMixin(object): # (ControlBehaviorMixin)
         elif isinstance(value, int):
             self.control_behavior["circuit_hand_read_mode"] = value
         else:
-            raise TypeError(
-                "'read_mode' must be an instance of int or None"
-            )
+            raise TypeError("'read_mode' must be an instance of int or None")

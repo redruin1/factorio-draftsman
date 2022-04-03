@@ -1,4 +1,7 @@
 # splitter.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import DirectionalMixin
@@ -8,17 +11,29 @@ from draftsman.warning import DraftsmanWarning
 from draftsman.data import items
 
 from draftsman.data.entities import splitters
+from draftsman.data import entities
 
+import six
 from typing import Literal
 import warnings
 
 
 class Splitter(DirectionalMixin, Entity):
-    """
-    """
-    def __init__(self, name = splitters[0], **kwargs):
+    """ """
+
+    def __init__(self, name=splitters[0], **kwargs):
         # type: (str, **dict) -> None
         super(Splitter, self).__init__(name, splitters, **kwargs)
+
+        if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
+            self._collision_mask = entities.raw[self.name]["collision_mask"]
+        else:  # pragma: no coverage
+            self._collision_mask = {
+                "object-layer",
+                "item-layer",
+                "transport-belt-layer",
+                "water-tile",
+            }
 
         self.input_priority = None
         if "input_priority" in kwargs:
@@ -42,7 +57,7 @@ class Splitter(DirectionalMixin, Entity):
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -60,7 +75,8 @@ class Splitter(DirectionalMixin, Entity):
         # type: (Literal["left", "right", None]) -> None
         if value is None:
             self._input_priority = value
-        elif isinstance(value, str):
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
             valid_sides = {"left", "right"}
             if value not in valid_sides:
                 raise InvalidSideError("'{}'".format(value))
@@ -83,7 +99,8 @@ class Splitter(DirectionalMixin, Entity):
         # type: (Literal["left", "right", None]) -> None
         if value is None:
             self._output_priority = value
-        elif isinstance(value, str):
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
             valid_sides = {"left", "right"}
             if value not in valid_sides:
                 raise InvalidSideError("'{}'".format(value))
@@ -106,7 +123,8 @@ class Splitter(DirectionalMixin, Entity):
         # type: (str) -> None
         if value is None:
             self._filter = value
-        elif isinstance(value, str):
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
             if value not in items.raw:
                 raise InvalidItemError("'{}'".format(value))
             self._filter = value

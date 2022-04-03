@@ -31,7 +31,7 @@ Requirements:
 import math
 from PIL import Image
 import numpy as np
-from draftsman.blueprint import Blueprint
+from draftsman.blueprintable import Blueprint
 from draftsman.entity import new_entity
 from draftsman.data import entities
 from draftsman.utils import aabb_to_dimensions
@@ -129,8 +129,8 @@ def main():
             #print(closest_color)
             if closest_color[1] == "entity":
                 # We make a entity instance so we can query the width and height
-                entity = new_entity(closest_color[2], position = [x, y])
-                blueprint.add_entity(entity)
+                entity = new_entity(closest_color[2], tile_position = [x, y])
+                blueprint.entities.append(entity)
                 #print(entity.tile_width, entity.tile_height)
                 for j in range(entity.tile_height):
                     for i in range(entity.tile_width):
@@ -142,7 +142,7 @@ def main():
                 #push_error_to_neighbours(x, y, current_color, closest_color[0])
 
             elif closest_color[1] == "tile":
-                blueprint.add_tile(closest_color[2], x, y)
+                blueprint.tiles.append(closest_color[2], position = (x, y))
                 #print("set {} {}".format(x, y))
                 occupied_pixels[y][x] = True
                 push_error_to_neighbours(x, y, current_color, closest_color[0])

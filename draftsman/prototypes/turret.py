@@ -1,4 +1,7 @@
 # turret.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import DirectionalMixin
@@ -10,7 +13,7 @@ import warnings
 
 
 class Turret(DirectionalMixin, Entity):
-    def __init__(self, name = turrets[0], **kwargs):
+    def __init__(self, name=turrets[0], **kwargs):
         # type: (str, **dict) -> None
         super(Turret, self).__init__(name, turrets, **kwargs)
 
@@ -18,5 +21,5 @@ class Turret(DirectionalMixin, Entity):
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )

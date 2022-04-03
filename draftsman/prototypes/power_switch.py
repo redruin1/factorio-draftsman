@@ -1,9 +1,16 @@
 # power_switch.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import (
-    CircuitConditionMixin, LogisticConditionMixin, ControlBehaviorMixin,
-    CircuitConnectableMixin, PowerConnectableMixin, DirectionalMixin
+    CircuitConditionMixin,
+    LogisticConditionMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    PowerConnectableMixin,
+    DirectionalMixin,
 )
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
@@ -13,12 +20,18 @@ from draftsman.data.entities import power_switches
 import warnings
 
 
-class PowerSwitch(CircuitConditionMixin, LogisticConditionMixin, 
-                  ControlBehaviorMixin, CircuitConnectableMixin, 
-                  PowerConnectableMixin, DirectionalMixin, Entity):
-    """
-    """
-    def __init__(self, name = power_switches[0], **kwargs):
+class PowerSwitch(
+    CircuitConditionMixin,
+    LogisticConditionMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    PowerConnectableMixin,
+    DirectionalMixin,
+    Entity,
+):
+    """ """
+
+    def __init__(self, name=power_switches[0], **kwargs):
         # type: (str, **dict) -> None
         super(PowerSwitch, self).__init__(name, power_switches, **kwargs)
 
@@ -34,7 +47,7 @@ class PowerSwitch(CircuitConditionMixin, LogisticConditionMixin,
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================

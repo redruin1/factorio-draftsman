@@ -1,37 +1,51 @@
 # rail_chain_signal.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import (
-    ReadRailSignalMixin, ControlBehaviorMixin, CircuitConnectableMixin, 
-    EightWayDirectionalMixin
+    ReadRailSignalMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    EightWayDirectionalMixin,
 )
 from draftsman import signatures
 from draftsman.utils import signal_dict
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import rail_chain_signals
+from draftsman.data import entities
 
 from schema import SchemaError
+import six
 from typing import Union
 import warnings
 
 
-class RailChainSignal(ReadRailSignalMixin, ControlBehaviorMixin, 
-                      CircuitConnectableMixin, EightWayDirectionalMixin, 
-                      Entity):
-    """
-    """
-    def __init__(self, name = rail_chain_signals[0], **kwargs):
+class RailChainSignal(
+    ReadRailSignalMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    EightWayDirectionalMixin,
+    Entity,
+):
+    """ """
+
+    def __init__(self, name=rail_chain_signals[0], **kwargs):
         # type: (str, **dict) -> None
-        super(RailChainSignal, self).__init__(
-            name, rail_chain_signals, **kwargs
-        )
+        super(RailChainSignal, self).__init__(name, rail_chain_signals, **kwargs)
+
+        if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
+            self._collision_mask = entities.raw[self.name]["collision_mask"]
+        else:  # pragma: no coverage
+            self._collision_mask = {"floor-layer", "rail-layer", "item-layer"}
 
         for unused_arg in self.unused_args:
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -49,9 +63,10 @@ class RailChainSignal(ReadRailSignalMixin, ControlBehaviorMixin,
         # type: (Union[str, dict]) -> None
         if value is None:
             self.control_behavior.pop("blue_output_signal", None)
-        elif isinstance(value, str):
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
             self.control_behavior["blue_output_signal"] = signal_dict(value)
-        else: # dict or other
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.control_behavior["blue_output_signal"] = value

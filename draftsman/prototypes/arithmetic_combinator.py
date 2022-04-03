@@ -1,9 +1,14 @@
 # arithmetic_combinator.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import signatures
 from draftsman.classes import Entity
 from draftsman.classes.mixins import (
-    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    DirectionalMixin,
 )
 from draftsman.warning import DraftsmanWarning
 
@@ -14,11 +19,12 @@ from typing import Union
 import warnings
 
 
-class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin, 
-                           DirectionalMixin, Entity):
-    """
-    """
-    def __init__(self, name = arithmetic_combinators[0], **kwargs):
+class ArithmeticCombinator(
+    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
+):
+    """ """
+
+    def __init__(self, name=arithmetic_combinators[0], **kwargs):
         # type: (str, **dict) -> None
         super(ArithmeticCombinator, self).__init__(
             name, arithmetic_combinators, **kwargs
@@ -30,7 +36,7 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -44,16 +50,16 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
     #     arithmetic_conditions = self.control_behavior.get("arithmetic_conditions", None)
     #     if not arithmetic_conditions:
     #         return None
-        
+
     #     if "first_signal" in arithmetic_conditions:
     #         return arithmetic_conditions["first_signal"]
     #     elif "first_constant" in arithmetic_conditions:
     #         return arithmetic_conditions["first_constant"]
     #     elif ("second_signal" in arithmetic_conditions or
-    #           "second_signal" not in arithmetic_conditions and 
-    #           "second_constant" not in arithmetic_conditions): # Check constant 
+    #           "second_signal" not in arithmetic_conditions and
+    #           "second_constant" not in arithmetic_conditions): # Check constant
     #         return arithmetic_conditions.get("constant", None)
-        
+
     #     return None
 
     # @first_operand.setter
@@ -94,7 +100,7 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
     #             arithmetic_conditions["first_constant"] = value
     #         else:
     #             arithmetic_conditions["constant"] = value
-        
+
     # =========================================================================
 
     # @property
@@ -106,7 +112,7 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
     #     arithmetic_conditions = self.control_behavior.get("arithmetic_conditions", None)
     #     if not arithmetic_conditions:
     #         return None
-        
+
     #     return arithmetic_conditions.get("operation", None)
 
     # @operation.setter
@@ -138,14 +144,14 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
     #     arithmetic_conditions = self.control_behavior.get("arithmetic_conditions", None)
     #     if not arithmetic_conditions:
     #         return None
-        
+
     #     if "second_signal" in arithmetic_conditions:
     #         return arithmetic_conditions["second_signal"]
     #     elif "second_constant" in arithmetic_conditions:
     #         return arithmetic_conditions["second_constant"]
-    #     elif "first_signal" in arithmetic_conditions: # Check constant 
+    #     elif "first_signal" in arithmetic_conditions: # Check constant
     #         return arithmetic_conditions.get("constant", None)
-        
+
     #     return None
 
     # @second_operand.setter
@@ -217,10 +223,9 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
 
     # =========================================================================
 
-    def set_arithmetic_conditions(self, a = None, op = "*", b = 0, out = None):
+    def set_arithmetic_conditions(self, a=None, op="*", b=0, out=None):
         # type: (Union[str, int], str, Union[str, int], str) -> None
-        """
-        """
+        """ """
 
         # Check all the parameters before we set anything to preserve original
         a = signatures.SIGNAL_ID_OR_CONSTANT.validate(a)
@@ -235,17 +240,17 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
         double_constant = isinstance(a, int) and isinstance(b, int)
         a_not_const = not isinstance(a, int)
         b_not_const = not isinstance(b, int)
-        
+
         # A
-        if a is None: # Default
+        if a is None:  # Default
             arithmetic_conditions.pop("first_signal", None)
             arithmetic_conditions.pop("first_constant", None)
-            if (not double_constant and b_not_const):
+            if not double_constant and b_not_const:
                 arithmetic_conditions.pop("constant", None)
-        elif isinstance(a, dict): # Signal Dict
+        elif isinstance(a, dict):  # Signal Dict
             arithmetic_conditions["first_signal"] = a
             arithmetic_conditions.pop("first_constant", None)
-        else: # Constant
+        else:  # Constant
             arithmetic_conditions.pop("first_signal", None)
             if double_constant:
                 arithmetic_conditions["first_constant"] = a
@@ -261,15 +266,15 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
             arithmetic_conditions["operation"] = op
 
         # B
-        if b is None: # Default
+        if b is None:  # Default
             arithmetic_conditions.pop("second_signal", None)
             arithmetic_conditions.pop("second_constant", None)
-            if (not double_constant and a_not_const):
+            if not double_constant and a_not_const:
                 arithmetic_conditions.pop("constant", None)
-        elif isinstance(b, dict): # Signal Dict
+        elif isinstance(b, dict):  # Signal Dict
             arithmetic_conditions["second_signal"] = b
             arithmetic_conditions.pop("second_constant", None)
-        else: # Constant
+        else:  # Constant
             arithmetic_conditions.pop("second_signal", None)
             if double_constant:
                 arithmetic_conditions["second_constant"] = b
@@ -279,13 +284,12 @@ class ArithmeticCombinator(ControlBehaviorMixin, CircuitConnectableMixin,
                 arithmetic_conditions.pop("second_constant", None)
 
         # out
-        if out is None: # Default
+        if out is None:  # Default
             arithmetic_conditions.pop("output_signal", None)
-        else: # Signal Dict
+        else:  # Signal Dict
             arithmetic_conditions["output_signal"] = out
 
-    def remove_arithmetic_conditions(self): # TODO: remove
+    def remove_arithmetic_conditions(self):  # TODO: remove
         # type: () -> None
-        """
-        """
+        """ """
         self.control_behavior.pop("arithmetic_conditions", None)

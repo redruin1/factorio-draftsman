@@ -1,13 +1,18 @@
 # constants.py
 
+"""
+TODO
+"""
+
 from enum import IntEnum
 
 
 class Direction(IntEnum):
     """
     Factorio direction enum. Encompasses all 8 cardinal directions and diagonals
-    where north is 0.
+    where north is 0 and increments clockwise.
     """
+
     NORTH = 0
     NORTHEAST = 1
     EAST = 2
@@ -22,13 +27,14 @@ class Direction(IntEnum):
 
     # def __str__(self):
     #     return str(self.value)
-        
+
 
 class ReadMode(IntEnum):
     """
-    Used on belts and inserters to indicate whether to pulse or hold their 
-    contents.
+    Used on belts and inserters to indicate whether to pulse or hold their
+    content signal.
     """
+
     PULSE = 0
     HOLD = 1
 
@@ -38,11 +44,13 @@ class ReadMode(IntEnum):
     # def __str__(self):
     #     return str(self.value)
 
+
 class MiningDrillReadMode(IntEnum):
     """
     Used to specify whether the mining drill will read the contents beneath it
     or the entire resource patch.
     """
+
     UNDER_DRILL = 0
     TOTAL_PATCH = 1
 
@@ -52,10 +60,12 @@ class MiningDrillReadMode(IntEnum):
     # def __str__(self):
     #     return str(self.value)
 
+
 class ModeOfOperation(IntEnum):
     """
     TODO
     """
+
     ENABLE_DISABLE = 0
     SET_FILTERS = 1
     NONE = 3

@@ -1,10 +1,15 @@
 # logistic_request_container.py
+# -*- encoding: utf-8 -*-
 
-from urllib import request
+from __future__ import unicode_literals
+
 from draftsman.classes import Entity
 from draftsman.classes.mixins import (
-    ModeOfOperationMixin, ControlBehaviorMixin, CircuitConnectableMixin,
-    RequestFiltersMixin, InventoryMixin
+    ModeOfOperationMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    RequestFiltersMixin,
+    InventoryMixin,
 )
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
@@ -14,12 +19,17 @@ from draftsman.data.entities import logistic_request_containers
 import warnings
 
 
-class LogisticRequestContainer(ModeOfOperationMixin, ControlBehaviorMixin, 
-                               CircuitConnectableMixin, RequestFiltersMixin, 
-                               InventoryMixin, Entity):
-    """
-    """
-    def __init__(self, name = logistic_request_containers[0], **kwargs):
+class LogisticRequestContainer(
+    ModeOfOperationMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    RequestFiltersMixin,
+    InventoryMixin,
+    Entity,
+):
+    """ """
+
+    def __init__(self, name=logistic_request_containers[0], **kwargs):
         # type: (str, **dict) -> None
         super(LogisticRequestContainer, self).__init__(
             name, logistic_request_containers, **kwargs
@@ -35,7 +45,7 @@ class LogisticRequestContainer(ModeOfOperationMixin, ControlBehaviorMixin,
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================

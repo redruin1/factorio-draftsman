@@ -1,4 +1,7 @@
 # inventory.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import signatures
 from draftsman.data import entities
@@ -12,6 +15,7 @@ class InventoryMixin(object):
     """
     Enables the entity to have inventory control.
     """
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(InventoryMixin, self).__init__(name, similar_entities, **kwargs)
@@ -58,13 +62,12 @@ class InventoryMixin(object):
         self._bar = value
 
         if not 0 <= value < 65536:
-            raise BarIndexError(
-                "Bar index ({}) not in range [0, 65536)".format(value)
-            )
+            raise BarIndexError("Bar index ({}) not in range [0, 65536)".format(value))
         elif value >= self.inventory_size:
             warnings.warn(
-                "Bar index ({}) not in range [0, {})"
-                .format(value, self.inventory_size),
+                "Bar index ({}) not in range [0, {})".format(
+                    value, self.inventory_size
+                ),
                 BarIndexWarning,
-                stacklevel = 2
+                stacklevel=2,
             )

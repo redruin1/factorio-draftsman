@@ -1,9 +1,15 @@
 # logistic_buffer_container.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import (
-    ModeOfOperationMixin, ControlBehaviorMixin, CircuitConnectableMixin,
-    RequestFiltersMixin, InventoryMixin
+    ModeOfOperationMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    RequestFiltersMixin,
+    InventoryMixin,
 )
 from draftsman.warning import DraftsmanWarning
 
@@ -12,12 +18,17 @@ from draftsman.data.entities import logistic_buffer_containers
 import warnings
 
 
-class LogisticBufferContainer(ModeOfOperationMixin, ControlBehaviorMixin, 
-                              CircuitConnectableMixin, RequestFiltersMixin, 
-                              InventoryMixin, Entity):
-    """
-    """
-    def __init__(self, name = logistic_buffer_containers[0], **kwargs):
+class LogisticBufferContainer(
+    ModeOfOperationMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    RequestFiltersMixin,
+    InventoryMixin,
+    Entity,
+):
+    """ """
+
+    def __init__(self, name=logistic_buffer_containers[0], **kwargs):
         # type: (str, **dict) -> None
         super(LogisticBufferContainer, self).__init__(
             name, logistic_buffer_containers, **kwargs
@@ -27,5 +38,5 @@ class LogisticBufferContainer(ModeOfOperationMixin, ControlBehaviorMixin,
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )

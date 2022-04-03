@@ -1,4 +1,12 @@
+# Requirements
 schema >= 0.7.5
 lupa >= 1.10
-enum34 # 2.7 only
-typing # 2.7 only
+six >= 1.16.0
+# Development
+unittest2
+black
+# Compatiblity
+importlib-resources; python_version < '3.7'
+typing; python_version < '3.5'
+enum34; python_version < '3.4'
+future; python_version < '3.0'

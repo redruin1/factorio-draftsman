@@ -1,13 +1,17 @@
 # circuit_read_resource.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import signatures
 from draftsman.constants import MiningDrillReadMode
 
 
-class CircuitReadResourceMixin(object): # (ControlBehaviorMixin)
+class CircuitReadResourceMixin(object):  # (ControlBehaviorMixin)
     """
     TODO
     """
+
     @property
     def read_resources(self):
         # type: () -> bool
@@ -44,6 +48,4 @@ class CircuitReadResourceMixin(object): # (ControlBehaviorMixin)
         elif isinstance(value, int):
             self.control_behavior["circuit_resource_read_mode"] = value
         else:
-            raise TypeError(
-                "'read_mode' must be an instance of int or None"
-            )
+            raise TypeError("'read_mode' must be an instance of int or None")

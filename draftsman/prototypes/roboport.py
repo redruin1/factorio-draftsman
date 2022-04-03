@@ -1,24 +1,26 @@
 # roboport.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import signatures
 from draftsman.classes import Entity
-from draftsman.classes.mixins import (
-    ControlBehaviorMixin, CircuitConnectableMixin
-)
+from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMixin
 from draftsman.utils import signal_dict
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import roboports
 
 from schema import SchemaError
+import six
 from typing import Union
 import warnings
 
 
 class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
-    """
-    """
-    def __init__(self, name = roboports[0], **kwargs):
+    """ """
+
+    def __init__(self, name=roboports[0], **kwargs):
         # type: (str, **dict) -> None
         super(Roboport, self).__init__(name, roboports, **kwargs)
 
@@ -26,7 +28,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -84,13 +86,15 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         # type: (Union[str, dict]) -> None
         if value is None:
             self.control_behavior.pop("available_logistic_output_signal", None)
-        elif isinstance(value, str):
-            value = signal_dict(value)
-            self.control_behavior["available_logistic_output_signal"] = value
-        else: # dict or other
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
+            self.control_behavior["available_logistic_output_signal"] = signal_dict(
+                value
+            )
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["available_logistic_output_signal"]=value
+                self.control_behavior["available_logistic_output_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")
 
@@ -109,13 +113,13 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         # type: (Union[str, dict]) -> None
         if value is None:
             self.control_behavior.pop("total_logistic_output_signal", None)
-        elif isinstance(value, str):
-            value = signal_dict(value)
-            self.control_behavior["total_logistic_output_signal"] = value
-        else: # dict or other
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
+            self.control_behavior["total_logistic_output_signal"] = signal_dict(value)
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["total_logistic_output_signal"]=value
+                self.control_behavior["total_logistic_output_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")
 
@@ -134,13 +138,15 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         # type: (Union[str, dict]) -> None
         if value is None:
             self.control_behavior.pop("available_construction_output_signal", None)
-        elif isinstance(value, str):
-            value = signal_dict(value)
-            self.control_behavior["available_construction_output_signal"] = value
-        else: # dict or other
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
+            self.control_behavior["available_construction_output_signal"] = signal_dict(
+                value
+            )
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["available_construction_output_signal"]=value
+                self.control_behavior["available_construction_output_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")
 
@@ -159,12 +165,14 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         # type: (Union[str, dict]) -> None
         if value is None:
             self.control_behavior.pop("total_construction_output_signal", None)
-        elif isinstance(value, str):
-            value = signal_dict(value)
-            self.control_behavior["total_construction_output_signal"] = value
-        else: # dict or other
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
+            self.control_behavior["total_construction_output_signal"] = signal_dict(
+                value
+            )
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["total_construction_output_signal"]=value
+                self.control_behavior["total_construction_output_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")

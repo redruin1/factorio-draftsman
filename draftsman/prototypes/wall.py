@@ -1,9 +1,14 @@
 # wall.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman.classes import Entity
 from draftsman.classes.mixins import (
-    CircuitConditionMixin, EnableDisableMixin, ControlBehaviorMixin, 
-    CircuitConnectableMixin
+    CircuitConditionMixin,
+    EnableDisableMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
 )
 import draftsman.signatures as signatures
 from draftsman.utils import signal_dict
@@ -12,13 +17,19 @@ from draftsman.warning import DraftsmanWarning
 from draftsman.data.entities import walls
 
 from schema import SchemaError
+import six
 from typing import Union
 import warnings
 
 
-class Wall(CircuitConditionMixin, EnableDisableMixin, ControlBehaviorMixin, 
-           CircuitConnectableMixin, Entity):
-    def __init__(self, name = walls[0], **kwargs):
+class Wall(
+    CircuitConditionMixin,
+    EnableDisableMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    Entity,
+):
+    def __init__(self, name=walls[0], **kwargs):
         # type: (str, **dict) -> None
         super(Wall, self).__init__(name, walls, **kwargs)
 
@@ -26,7 +37,7 @@ class Wall(CircuitConditionMixin, EnableDisableMixin, ControlBehaviorMixin,
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),
                 DraftsmanWarning,
-                stacklevel = 2
+                stacklevel=2,
             )
 
     # =========================================================================
@@ -84,12 +95,12 @@ class Wall(CircuitConditionMixin, EnableDisableMixin, ControlBehaviorMixin,
         # type: (Union[str, dict]) -> None
         if value is None:
             self.control_behavior.pop("output_signal", None)
-        elif isinstance(value, str):
-            value = signal_dict(value)
-            self.control_behavior["output_signal"] = value
-        else: # dict or other
+        elif isinstance(value, six.string_types):
+            value = six.text_type(value)
+            self.control_behavior["output_signal"] = signal_dict(value)
+        else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["output_signal"]=value
+                self.control_behavior["output_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")
