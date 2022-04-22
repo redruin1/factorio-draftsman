@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from draftsman.constants import Direction, ReadMode
 from draftsman.entity import FilterInserter, filter_inserters
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
@@ -116,12 +116,12 @@ class FilterInserterTesting(TestCase):
         with self.assertRaises(TypeError):
             FilterInserter("filter-inserter", override_stack_size="incorrect")
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             FilterInserter(
                 "filter-inserter", connections={"this is": ["very", "wrong"]}
             )
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             FilterInserter(
                 "filter-inserter",
                 control_behavior={"this is": ["also", "very", "wrong"]},

@@ -1,4 +1,14 @@
 # Changelog
+## **0.6.0**
+* First public release!
+* Added `Groups`(!)
+* Added the `1KiB_sector_ROM.py` example to illustrate `Group`s and `rail_planner_usage.py` for `RailPlanner` (`RailPlanner` is not implemented yet)
+* Added `ltn_train_stop.py` example
+* Lots of cleaning and formatting, though there's still many cases to analyze
+* Added support for command line arguments with `draftsman-update` (currently only `--verbose`)
+* updated `requirements.txt`
+* Build system appears to be working as desired
+
 ## **0.5.0**
 * Backported to Python 2.7; tested via `tox` that it works with latest version of Python 2 and 3
     * (Should work with every version between, but I'm too lazy to test right now)
@@ -13,7 +23,7 @@
 * Removed some redundant files
 
 ## **0.3.5.2**
-* Split all of the mixins into their own files, as well as Entity, EntityLike, Group, etc.
+* Split all of the Mixins into their own files, as well as Entity, EntityLike, Group, etc.
 * Added the `SpatialHashMap` structure for Blueprints to speed up `find_entities` and `find_tiles`
 * Added lots of utility functions related to `SpatialHashMap`
 * Changed Blueprint `entities` and `tiles` to `KeyList` instead of `list`
@@ -21,7 +31,7 @@
 
 ## **0.3.5.1**
 * Changed ALL of the setters to use properties because I didn't know Python properties _existed_
-* Revised test cases to match this revalation
+* Revised test cases to match this revelation
 
 ## **0.3.0**
 * Unified all of the data into pickles instead of generating source files
@@ -32,7 +42,7 @@
 * Renamed `errors.py` to `error.py` to match the new `warning.py`
 * Renamed all Errors to have the 'Error' suffix, renamed a few
 * Added `DraftsmanError` and `DraftsmanWarning` so you can catch any specific error or warning with them
-* Made the testing suite compatable (or, at least *more* compatable) with mods
+* Made the testing suite compatible (or, at least *more* compatible) with mods
 * Added LogisticActiveContainer and LogisticPassiveContainer to complete the logistic suite
 (I think its clearer this way rather than treating them as containers)
 * Hundreds of other small changes

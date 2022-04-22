@@ -19,7 +19,8 @@ class DoubleGridAlignedMixin(object):
 
         self._double_grid_aligned = True
 
-        # Technically redundant, but we
+        # Technically redundant, but we do this to ensure any warnings are met
+        # TODO: maybe remove? Analyze the heirarchy here
         if "position" in kwargs:
             self.position = kwargs["position"]
         elif "tile_position" in kwargs:
@@ -108,39 +109,3 @@ class DoubleGridAlignedMixin(object):
                 RailAlignmentWarning,
                 stacklevel=2,
             )
-
-    # def set_absolute_position(self, x, y):
-    #     # type: (float, float) -> None
-    #     """
-    #     Overwritten
-    #     """
-    #     super(DoubleGridAlignedMixin, self).set_absolute_position(x, y)
-
-    #     # if the grid alignment is off, warn the user
-    #     if self.tile_position[0] % 2 == 1 or self.tile_position[1] % 2 == 1:
-    #         cast_position = [math.floor(self.tile_position[0] / 2) * 2,
-    #                          math.floor(self.tile_position[1] / 2) * 2]
-    #         warnings.warn(
-    #             "Double-grid aligned entity is not placed along chunk grid; "
-    #             "entity's position will be cast from {} to {} when imported"
-    #             .format(self.tile_position, cast_position),
-    #             RailAlignmentWarning,
-    #             stacklevel = 2
-    #         )
-
-    # def set_tile_position(self, x, y):
-    #     # type: (int, int) -> None
-    #     """
-    #     """
-    #     super(DoubleGridAlignedMixin, self).set_tile_position(x, y)
-
-    #     if self.tile_position[0] % 2 == 1 or self.tile_position[1] % 2 == 1:
-    #         cast_position = [math.floor(self.tile_position[0] / 2) * 2,
-    #                          math.floor(self.tile_position[1] / 2) * 2]
-    #         warnings.warn(
-    #             "Double-grid aligned entity is not placed along chunk grid; "
-    #             "entity's position will be cast from {} to {} when imported"
-    #             .format(self.tile_position, cast_position),
-    #             RailAlignmentWarning,
-    #             stacklevel = 2
-    #         )

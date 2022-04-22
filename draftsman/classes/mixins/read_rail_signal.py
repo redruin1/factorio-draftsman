@@ -3,8 +3,9 @@
 
 from __future__ import unicode_literals
 
+from draftsman.error import DataFormatError
 from draftsman import signatures
-from draftsman.utils import signal_dict
+from draftsman.data.signals import signal_dict
 
 from schema import SchemaError
 import six
@@ -28,9 +29,7 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
         # type: (str) -> None
         if value is None:
             self.control_behavior.pop("red_output_signal", None)
-            return
-
-        if isinstance(value, six.string_types):
+        elif isinstance(value, six.string_types):
             # Make sure this is a unicode string
             value = six.text_type(value)
             self.control_behavior["red_output_signal"] = signal_dict(value)
@@ -38,8 +37,8 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.control_behavior["red_output_signal"] = value
-            except SchemaError:
-                raise TypeError("Incorrectly formatted SignalID")
+            except SchemaError as e:
+                six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -56,9 +55,7 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
         # type: (str) -> None
         if value is None:
             self.control_behavior.pop("yellow_output_signal", None)
-            return
-
-        if isinstance(value, six.string_types):
+        elif isinstance(value, six.string_types):
             # Make sure this is a unicode string
             value = six.text_type(value)
             self.control_behavior["yellow_output_signal"] = signal_dict(value)
@@ -66,8 +63,8 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.control_behavior["yellow_output_signal"] = value
-            except SchemaError:
-                raise TypeError("Incorrectly formatted SignalID")
+            except SchemaError as e:
+                six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -84,9 +81,7 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
         # type: (str) -> None
         if value is None:
             self.control_behavior.pop("green_output_signal", None)
-            return
-
-        if isinstance(value, six.string_types):
+        elif isinstance(value, six.string_types):
             # Make sure this is a unicode string
             value = six.text_type(value)
             self.control_behavior["green_output_signal"] = signal_dict(value)
@@ -94,5 +89,5 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.control_behavior["green_output_signal"] = value
-            except SchemaError:
-                raise TypeError("Incorrectly formatted SignalID")
+            except SchemaError as e:
+                six.raise_from(DataFormatError(e), None)

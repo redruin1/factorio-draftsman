@@ -3,10 +3,12 @@
 
 from __future__ import unicode_literals
 
+from draftsman.error import DataFormatError
 from draftsman import signatures
 
 from typing import Union
 from schema import SchemaError
+import six
 
 
 class ColorMixin(object):
@@ -35,9 +37,7 @@ class ColorMixin(object):
     @color.setter
     def color(self, value):
         # type: (Union[list, dict]) -> None
-        # TODO: issue a range error if not in range [0, 255]
         try:
             self._color = signatures.COLOR.validate(value)
-        except SchemaError:
-            # TODO: more verbose
-            raise TypeError("Invalid color format")
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)

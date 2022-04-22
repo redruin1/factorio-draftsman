@@ -8,6 +8,7 @@ from draftsman.data import entities, modules, signals
 from draftsman.error import InvalidItemError
 from draftsman.warning import ModuleCapacityWarning
 
+import six
 import warnings
 
 
@@ -69,11 +70,13 @@ class RequestItemsMixin(object):
         Base method for setting a single item request.
         TODO
         """
-        if amount is None:
+        if amount is None or 0:
             self._module_slots_occupied -= self.items.pop(item, None)
             return
 
-        amount = signatures.INTEGER.validate(amount)
+        if not isinstance(amount, six.integer_types):
+            raise TypeError("'amount' must be an int")
+
         self.items[item] = amount
 
         # Only increment module slots if the item is a module

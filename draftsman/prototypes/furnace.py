@@ -3,17 +3,16 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import RequestItemsMixin
 from draftsman.error import InvalidItemError
-from draftsman.utils import get_recipe_ingredients
 from draftsman.warning import DraftsmanWarning, ItemLimitationWarning
 
 from draftsman.data.entities import furnaces
 from draftsman.data import entities
 from draftsman.data import modules
 from draftsman.data import recipes
-from draftsman.data import signals
+from draftsman.data import items
 
 import warnings
 
@@ -31,7 +30,7 @@ class Furnace(RequestItemsMixin, Entity):
 
         self._valid_input_ingredients = set()
         for name in total_recipes:
-            self._valid_input_ingredients.update(get_recipe_ingredients(name))
+            self._valid_input_ingredients.update(recipes.get_recipe_ingredients(name))
 
         for unused_arg in self.unused_args:
             warnings.warn(
@@ -59,7 +58,7 @@ class Furnace(RequestItemsMixin, Entity):
         Overwritten
         """
         # Make sure the item exists
-        if item not in signals.item:  # TODO: maybe items.all instead?
+        if item not in items.raw:
             raise InvalidItemError(item)
 
         if item not in modules.raw and item not in self.valid_input_ingredients:

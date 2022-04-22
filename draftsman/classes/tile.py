@@ -7,6 +7,7 @@ Tile module. Contains the ``Tile`` class.
 
 from __future__ import unicode_literals
 
+from draftsman.classes.spatiallike import SpatialLike
 from draftsman.error import InvalidTileError, DraftsmanError
 
 import draftsman.data.tiles as tiles
@@ -17,14 +18,14 @@ if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.blueprint import Blueprint
 
 
-class Tile(object):
+class Tile(SpatialLike):
     """ """
 
     def __init__(self, name, position=[0, 0]):
         # type: (str, int, int) -> None
         """ """
         # Reference to parent blueprint
-        self._blueprint = None
+        self._parent = None
 
         # Tile name
         if name not in tiles.raw:
@@ -35,14 +36,17 @@ class Tile(object):
         self.position = position
 
         # Tile aabb for SpatialHashMap
-        self.collision_box = [[0, 0], [1, 1]]
+        self._collision_box = [[0, 0], [1, 1]]
+
+        # Tile mask for SpatialHashMap
+        self._collision_mask = set(tiles.raw[self.name]["collision_mask"])
 
     # =========================================================================
 
     @property
-    def blueprint(self):
+    def parent(self):
         # type: () -> Blueprint
-        return self._blueprint
+        return self._parent
 
     # =========================================================================
 
@@ -84,7 +88,7 @@ class Tile(object):
     def position(self, value):
         # type: (Union[dict, list, tuple]) -> None
 
-        if self.blueprint:
+        if self.parent:
             raise DraftsmanError("Cannot move tile while it's inside a Blueprint")
 
         try:
@@ -94,21 +98,17 @@ class Tile(object):
 
     # =========================================================================
 
-    def get_area(self):
-        # type: () -> list
-        """
-        Gets the world-space coordinate AABB of the tile.
-        """
-        return [
-            [
-                self.collision_box[0][0] + self.position["x"],
-                self.collision_box[0][1] + self.position["y"],
-            ],
-            [
-                self.collision_box[1][0] + self.position["x"],
-                self.collision_box[1][1] + self.position["y"],
-            ],
-        ]
+    @property
+    def collision_box(self):
+        return self._collision_box
+
+    # =========================================================================
+
+    @property
+    def collision_mask(self):
+        return self._collision_mask
+
+    # =========================================================================
 
     def to_dict(self):
         # type: () -> dict

@@ -4,17 +4,19 @@
 from __future__ import unicode_literals
 
 from draftsman import signatures
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
 )
+from draftsman.error import DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import arithmetic_combinators
 
 from schema import SchemaError
+import six
 from typing import Union
 import warnings
 
@@ -228,36 +230,28 @@ class ArithmeticCombinator(
         """ """
 
         # Check all the parameters before we set anything to preserve original
-        a = signatures.SIGNAL_ID_OR_CONSTANT.validate(a)
-        op = signatures.OPERATION.validate(op)
-        b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
-        out = signatures.SIGNAL_ID.validate(out)
+        try:
+            a = signatures.SIGNAL_ID_OR_CONSTANT.validate(a)
+            op = signatures.OPERATION.validate(op)
+            b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
+            out = signatures.SIGNAL_ID_OR_NONE.validate(out)
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
         if "arithmetic_conditions" not in self.control_behavior:
             self.control_behavior["arithmetic_conditions"] = {}
         arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
 
-        double_constant = isinstance(a, int) and isinstance(b, int)
-        a_not_const = not isinstance(a, int)
-        b_not_const = not isinstance(b, int)
-
         # A
         if a is None:  # Default
             arithmetic_conditions.pop("first_signal", None)
             arithmetic_conditions.pop("first_constant", None)
-            if not double_constant and b_not_const:
-                arithmetic_conditions.pop("constant", None)
         elif isinstance(a, dict):  # Signal Dict
             arithmetic_conditions["first_signal"] = a
             arithmetic_conditions.pop("first_constant", None)
         else:  # Constant
+            arithmetic_conditions["first_constant"] = a
             arithmetic_conditions.pop("first_signal", None)
-            if double_constant:
-                arithmetic_conditions["first_constant"] = a
-                arithmetic_conditions.pop("constant", None)
-            else:
-                arithmetic_conditions["constant"] = a
-                arithmetic_conditions.pop("first_constant", None)
 
         # op
         if op is None:
@@ -269,19 +263,12 @@ class ArithmeticCombinator(
         if b is None:  # Default
             arithmetic_conditions.pop("second_signal", None)
             arithmetic_conditions.pop("second_constant", None)
-            if not double_constant and a_not_const:
-                arithmetic_conditions.pop("constant", None)
         elif isinstance(b, dict):  # Signal Dict
             arithmetic_conditions["second_signal"] = b
             arithmetic_conditions.pop("second_constant", None)
         else:  # Constant
+            arithmetic_conditions["second_constant"] = b
             arithmetic_conditions.pop("second_signal", None)
-            if double_constant:
-                arithmetic_conditions["second_constant"] = b
-                arithmetic_conditions.pop("constant", None)
-            else:
-                arithmetic_conditions["constant"] = b
-                arithmetic_conditions.pop("second_constant", None)
 
         # out
         if out is None:  # Default

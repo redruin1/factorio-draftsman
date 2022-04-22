@@ -3,7 +3,11 @@
 
 from __future__ import unicode_literals
 
+from draftsman.error import DataFormatError
 from draftsman import signatures
+
+from schema import SchemaError
+import six
 
 
 class IOTypeMixin(object):
@@ -40,6 +44,12 @@ class IOTypeMixin(object):
     @io_type.setter
     def io_type(self, value):
         # type: (str) -> None
-        if value not in {"input", "output", None}:
-            raise TypeError("'io_type' must be 'input', 'output' or None")
-        self._io_type = value
+        try:
+            value = signatures.STRING.validate(value)
+        except SchemaError as e:
+            six.raise_from(TypeError(e), None)
+
+        if value in {"input", "output", None}:
+            self._io_type = value
+        else:
+            raise ValueError("'io_type' must be 'input', 'output' or None")

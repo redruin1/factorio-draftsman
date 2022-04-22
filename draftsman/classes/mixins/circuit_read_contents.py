@@ -44,7 +44,5 @@ class CircuitReadContentsMixin(object):  # (ControlBehaviorMixin)
         # type: (ReadMode) -> None
         if value is None:
             self.control_behavior.pop("circuit_contents_read_mode", None)
-        elif isinstance(value, int):
-            self.control_behavior["circuit_contents_read_mode"] = value
         else:
-            raise TypeError("'read_mode' must be an instance of int or None")
+            self.control_behavior["circuit_contents_read_mode"] = ReadMode(value)

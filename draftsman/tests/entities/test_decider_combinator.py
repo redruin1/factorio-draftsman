@@ -9,6 +9,7 @@ from draftsman.error import (
     InvalidEntityError,
     InvalidSignalError,
     InvalidOperationError,
+    DataFormatError,
 )
 from draftsman.warning import DraftsmanWarning
 
@@ -184,19 +185,19 @@ class DeciderCombinatorTesting(TestCase):
             {"decider_conditions": {"comparator": "<", "constant": 0}},
         )
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             combinator.set_decider_conditions(TypeError)
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             combinator.set_decider_conditions("incorrect")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             combinator.set_decider_conditions("signal-A", "incorrect", "signal-D")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             combinator.set_decider_conditions("signal-A", "<", TypeError)
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             combinator.set_decider_conditions("signal-A", "<", "incorrect")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             combinator.set_decider_conditions("signal-A", "<", "signal-D", TypeError)
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             combinator.set_decider_conditions("signal-A", "<", "signal-D", "incorrect")
 
         # TODO:

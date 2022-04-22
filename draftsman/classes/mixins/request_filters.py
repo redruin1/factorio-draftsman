@@ -4,10 +4,11 @@
 from __future__ import unicode_literals
 
 from draftsman import signatures
-from draftsman.data import signals
-from draftsman.error import InvalidItemError, FilterIndexError
+from draftsman.data import items
+from draftsman.error import InvalidItemError, FilterIndexError, DataFormatError
 
 from schema import SchemaError
+import six
 
 
 class RequestFiltersMixin(object):
@@ -20,9 +21,8 @@ class RequestFiltersMixin(object):
         # type: (str, list[str], **dict) -> None
         super(RequestFiltersMixin, self).__init__(name, similar_entities, **kwargs)
 
-        # TODO: handle internal input format for set_request_filters()
-
         self.request_filters = None
+
         if "request_filters" in kwargs:
             self.set_request_filters(kwargs["request_filters"])
             self.unused_args.pop("request_filters")
@@ -37,13 +37,12 @@ class RequestFiltersMixin(object):
         if self.request_filters is None:
             self.request_filters = []
 
-        try:
-            index = signatures.INTEGER.validate(index)
-        except SchemaError:
-            raise TypeError("Invalid index format")
-        if item is not None and item not in signals.item:  # TODO: FIXME
+        if not isinstance(index, six.integer_types):
+            raise TypeError("'index' must be an int")
+        if item is not None and item not in items.raw:
             raise InvalidItemError(item)
-        count = signatures.INTEGER.validate(count)
+        if not isinstance(count, six.integer_types):
+            raise TypeError("'count' must be an int")
 
         if not 0 <= index < 1000:
             raise FilterIndexError(
@@ -68,16 +67,16 @@ class RequestFiltersMixin(object):
         """ """
 
         # Validate filters
-        # TODO: fix this signature
-        filters = signatures.REQUEST_FILTERS.validate(filters)
+        try:
+            filters = signatures.REQUEST_FILTERS.validate(filters)
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
-        # Make sure the items are item signals
+        # Make sure the items are items
         for item in filters:
-            if item[0] not in signals.item:
+            if item[0] not in items.raw:
                 raise InvalidItemError(item[0])
 
-        # Make sure we dont wipe before throwing the error
         self.request_filters = []
-
         for i in range(len(filters)):
             self.set_request_filter(i, filters[i][0], filters[i][1])

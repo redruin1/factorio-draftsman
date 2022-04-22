@@ -5,9 +5,8 @@ Manages the Factorio environment.
 """
 
 # TODO:
-# Make it so that mods can load files from other mods
-# Make sorting consistent
-# Make sure everything uses OrderedDict for backwards compatability
+# Make sure everythin is sorted
+# Make sure everything uses OrderedDict for backwards compatability(?)
 
 from __future__ import print_function
 
@@ -22,10 +21,10 @@ from draftsman.error import (
     IncompatableModError,
     IncorrectModVersionError,
 )
-
-# from draftsman.utils import decode_version, version_string_to_tuple
+from draftsman.utils import decode_version, version_string_to_tuple
 from draftsman._factorio_version import __factorio_version_info__
 
+import argparse
 from collections import OrderedDict
 import json
 import lupa
@@ -36,8 +35,6 @@ import struct
 import zipfile
 
 
-verbose = True
-
 mod_archive_pattern = "([\\w\\D]+)_([\\d\\.]+)\\."
 mod_archive_regex = re.compile(mod_archive_pattern)
 
@@ -46,51 +43,16 @@ dependency_string_pattern = (
 )
 dependency_regex = re.compile(dependency_string_pattern)
 
-
-# We keep our own copies of these functions to keep ourselves separate before
-# first instatiation of the pickle data
-def decode_version(version_number):
-    # type: (int) -> tuple[int, int, int, int]
-    """
-    Converts version number to version components.
-    Decodes a 64 bit unsigned integer into 4 unsigned shorts and returns them
-    as a 4-length tuple, which is usually more readable than the combined
-    format.
-    For the inverse operation, see :py:func:`encode_version`.
-
-    :param version_number: The version number to decode.
-    :returns: a 4 length tuple in the format ``(major, minor, patch, dev_ver)``.
-    """
-    major = int((version_number >> 48) & 0xFFFF)
-    minor = int((version_number >> 32) & 0xFFFF)
-    patch = int((version_number >> 16) & 0xFFFF)
-    dev_ver = int(version_number & 0xFFFF)
-    return major, minor, patch, dev_ver
-
-
-def version_string_to_tuple(version_string):
-    # type: (str) -> tuple
-    """
-    Converts a version string to a tuple.
-
-    Used extensively when parsing mod versions when updating the package's data,
-    provided to the user for convinience. Splits a string by the dot character
-    and converts each component to an ``int``.
-    For the inverse operation, see :py:func:`version_tuple_to_string`.
-
-    :param version_string: The version string to separate.
-
-    :returns: A n-length tuple of the format ``(a, b, c)`` from ``"a.b.c"``
-    """
-    return tuple([int(elem) for elem in version_string.split(".")])
-
-
-# =============================================================================
+lua_module_pattern = "\\.\\/factorio-mods\\/(.+)\\/.*"
+lua_module_regex = re.compile(lua_module_pattern)
 
 
 class Mod(object):
-    def __init__(self, name, version, archive, location, info, files, data):
+    def __init__(
+        self, name, internal_folder, version, archive, location, info, files, data
+    ):
         self.name = name
+        self.internal_folder = internal_folder
         self.version = version
         self.archive = archive
         self.location = location
@@ -122,6 +84,9 @@ class Mod(object):
 
     def __repr__(self):
         return str(self.to_dict())
+
+
+# =============================================================================
 
 
 def file_to_string(filepath):
@@ -211,21 +176,27 @@ def get_mod_settings(location):
         # header_flag = bool(int.from_bytes(mod_settings_dat.read(1), "little", signed=False))
         header_flag = bool(struct.unpack("<?", mod_settings_dat.read(1))[0])
         # print(header_flag)
-        assert version[::-1] == __factorio_version_info__ and not header_flag
+        assert version[::-1] >= __factorio_version_info__ and not header_flag
         mod_settings = get_data(mod_settings_dat)
-
-        if verbose:
-            print("mod-settings.dat:")
-            print(json.dumps(mod_settings, indent=4))
 
     return mod_settings
 
 
-def python_require(mod, module_name, package_path):
+def python_require(mod_list, current_mod, module_name, package_path):
     """
     Function called from lua that attempts to get the .
     """
-    # print("PYTHON: ", module_name)
+
+    # Determine the mod we need
+    try:
+        mod_name = lua_module_regex.match(module_name)[1]
+    except TypeError:
+        mod_name = None
+
+    if mod_name:
+        mod = mod_list[mod_name]
+    else:
+        mod = current_mod
 
     if not mod.archive:
         return
@@ -237,7 +208,7 @@ def python_require(mod, module_name, package_path):
         # Replace the question mark with the module_name
         filepath = filepath.replace("?", module_name)
         # Make it local to the archive
-        filepath = filepath.replace("./factorio-mods/" + mod.name, mod.name)
+        filepath = filepath.replace("./factorio-mods/" + mod.name, mod.internal_folder)
         # Normalize for Zipfile
         filepath = filepath.replace("\\", "/")
         try:
@@ -249,16 +220,16 @@ def python_require(mod, module_name, package_path):
     return None, "no file '{}' found in '{}' archive".format(module_name, mod.name)
 
 
-def load_stage(lua, mod, stage):
+def load_stage(lua, mod_list, mod, stage):
     """
     Load a stage of the Factorio data lifecycle.
     """
     # Set meta stuff
-    current_file = os.path.join(mod.location, stage)
+    lua.globals().MOD_LIST = mod_list
     lua.globals().MOD = mod
     lua.globals().MOD_NAME = mod.name
     lua.globals().MOD_DIR = mod.location
-    lua.globals().CURRENT_FILE = current_file
+    lua.globals().CURRENT_FILE = os.path.join(mod.location, stage)
 
     lua.globals().ADD_PATH(os.path.join(mod.location, "?.lua"))
 
@@ -332,7 +303,10 @@ def get_order(data, objects_to_sort):
             sort_name = sort_object["name"]
             # Replace only the order and its subgroup
             object_to_sort["order"] = sort_object["order"]
-            object_to_sort["subgroup"] = sort_object["subgroup"]
+            try:
+                object_to_sort["subgroup"] = sort_object["subgroup"]
+            except KeyError:
+                pass
         else:
             # Set the sort name to be identical to the actual object name
             sort_name = object_to_sort["name"]
@@ -373,7 +347,23 @@ def get_order(data, objects_to_sort):
 # =============================================================================
 
 
-def extract_entities(lua, data_location):
+def extract_mods(loaded_mods, data_location, verbose):
+    """
+    Extract all the mods in the folder, whether or not they're enabled and their
+    version.
+    """
+    out_mods = {}
+    for mod in loaded_mods:
+        out_mods[mod] = loaded_mods[mod].version
+
+    with open(os.path.join(data_location, "mods.pkl"), "wb") as out:
+        pickle.dump(out_mods, out, pickle.HIGHEST_PROTOCOL)
+
+    if verbose:
+        print("Extracted mods...")
+
+
+def extract_entities(lua, data_location, verbose):
     """Extracts the entity data needed and writes it to a pickle file."""
 
     data = lua.globals().data
@@ -662,7 +652,7 @@ def extract_entities(lua, data_location):
 # =============================================================================
 
 
-def extract_instruments(lua, data_location):
+def extract_instruments(lua, data_location, verbose):
     """ """
     data = lua.globals().data
 
@@ -704,7 +694,7 @@ def extract_instruments(lua, data_location):
 # =============================================================================
 
 
-def extract_items(lua, data_location):
+def extract_items(lua, data_location, verbose):
     data = lua.globals().data
 
     groups = convert_table_to_dict(data.raw["item-group"])
@@ -819,7 +809,7 @@ def extract_items(lua, data_location):
 # =============================================================================
 
 
-def extract_modules(lua, data_location):
+def extract_modules(lua, data_location, verbose):
     """ """
     data = lua.globals().data
 
@@ -851,7 +841,7 @@ def extract_modules(lua, data_location):
 # =============================================================================
 
 
-def extract_recipes(lua, data_location):
+def extract_recipes(lua, data_location, verbose):
     """ """
     data = lua.globals().data
 
@@ -897,7 +887,7 @@ def extract_recipes(lua, data_location):
 # =============================================================================
 
 
-def extract_signals(lua, data_location):
+def extract_signals(lua, data_location, verbose):
     """ """
     data = lua.globals().data
 
@@ -940,6 +930,8 @@ def extract_signals(lua, data_location):
     add_signals("virtual-signal", virtual_signals, "virtual")
 
     item_signals = get_order(data, item_signals)
+    # for signal in fluid_signals:
+    #     print(signal)
     fluid_signals = get_order(data, fluid_signals)
     virtual_signals = get_order(data, virtual_signals)
 
@@ -954,7 +946,7 @@ def extract_signals(lua, data_location):
 # =============================================================================
 
 
-def extract_tiles(lua, data_location):
+def extract_tiles(lua, data_location, verbose):
     """ """
     data = lua.globals().data
 
@@ -985,7 +977,7 @@ def extract_tiles(lua, data_location):
 # =============================================================================
 
 
-def update():
+def update(verbose=False):
     """
     Updates the data in the `draftsman.data` modules.
 
@@ -1026,6 +1018,7 @@ def update():
     # Instead, it is loaded first thing and its functions are reused throughout
     core_mod = Mod(
         name="core",
+        internal_folder=None,
         version=factorio_version,
         archive=False,
         location=os.path.join(
@@ -1041,6 +1034,7 @@ def update():
     )
     mods["base"] = Mod(
         name="base",
+        internal_folder=None,
         version=factorio_version,
         archive=False,
         location=os.path.join(
@@ -1092,7 +1086,12 @@ def update():
             external_mod_version = m.group(2)
             files = zipfile.ZipFile(mod_location, mode="r")
             # (Zipfiles don't like backslashes even on Windows)
-            mod_info = json.loads(files.read(mod_name + "/info.json"))
+            try:
+                internal_folder = mod_name
+                mod_info = json.loads(files.read(internal_folder + "/info.json"))
+            except KeyError:
+                internal_folder = "{}_{}".format(mod_name, external_mod_version)
+                mod_info = json.loads(files.read(internal_folder + "/info.json"))
             mod_version = mod_info["version"]
             archive = True
 
@@ -1135,39 +1134,40 @@ def update():
         mod_data = {}
         # Attempt to load setting files
         try:
-            settings = files.read(mod_name + "/settings.lua")
+            settings = files.read(internal_folder + "/settings.lua")
             mod_data["settings.lua"] = settings
         except KeyError:
             pass
         try:
-            settings = files.read(mod_name + "/settings-updates.lua")
+            settings = files.read(internal_folder + "/settings-updates.lua")
             mod_data["settings-updates.lua"] = settings
         except KeyError:
             pass
         try:
-            settings = files.read(mod_name + "/settings-final-fixes.lua")
+            settings = files.read(internal_folder + "/settings-final-fixes.lua")
             mod_data["settings-final-fixes.lua"] = settings
         except KeyError:
             pass
         # Attempt to load data files
         try:
-            data = files.read(mod_name + "/data.lua")
+            data = files.read(internal_folder + "/data.lua")
             mod_data["data.lua"] = data
         except KeyError:
             pass
         try:
-            data_updates = files.read(mod_name + "/data-updates.lua")
+            data_updates = files.read(internal_folder + "/data-updates.lua")
             mod_data["data-updates.lua"] = data_updates
         except KeyError:
             pass
         try:
-            data_final_fixes = files.read(mod_name + "/data-final-fixes.lua")
+            data_final_fixes = files.read(internal_folder + "/data-final-fixes.lua")
             mod_data["data-final-fixes.lua"] = data_final_fixes
         except KeyError:
             pass
 
         mods[mod_name] = Mod(
             name=mod_name,
+            internal_folder=internal_folder,
             version=mod_version,
             archive=archive,
             location="./factorio-mods/" + mod_name,  # maybe absolute?
@@ -1271,7 +1271,7 @@ def update():
     # Setup the `core` module
     lualib_path = os.path.join(factorio_data, "core", "lualib", "?.lua")
     ADD_PATH(lualib_path)
-    load_stage(lua, core_mod, "data.lua")
+    load_stage(lua, mods, core_mod, "data.lua")
 
     # We want to keep core constant, so we wipe the deletion table
     # NOTE: this might end up being a problem, to be safe we might just
@@ -1300,7 +1300,7 @@ def update():
                     print("\tmod:", mod_name)
 
                 # lua.execute(mod["data"]["data.lua"])
-                load_stage(lua, mod, stage)
+                load_stage(lua, mods, mod, stage)
 
                 # Reset the included modules
                 UNLOAD_ENTIRE_CACHE()
@@ -1318,7 +1318,8 @@ def update():
         for setting_type, setting_dict in user_settings.items():
             lua_settings = lua.globals().settings[setting_type]
             for name in setting_dict:
-                lua_settings[name].value = setting_dict[name]["value"]
+                if lua_settings[name] is not None:
+                    lua_settings[name].value = setting_dict[name]["value"]
     except FileNotFoundError:
         pass
 
@@ -1340,7 +1341,7 @@ def update():
                     print("\tmod:", mod_name)
 
                 # lua.execute(mod["data"]["data.lua"])
-                load_stage(lua, mod, stage)
+                load_stage(lua, mods, mod, stage)
 
                 # Reset the included modules
                 UNLOAD_ENTIRE_CACHE()
@@ -1350,14 +1351,26 @@ def update():
 
     print("hella slick; nothing broke!")
 
-    extract_entities(lua, data_location)
-    extract_instruments(lua, data_location)
-    extract_items(lua, data_location)
-    extract_modules(lua, data_location)
-    extract_recipes(lua, data_location)
-    extract_signals(lua, data_location)
-    extract_tiles(lua, data_location)
+    extract_mods(mods, data_location, verbose)
 
+    extract_entities(lua, data_location, verbose)
+    extract_instruments(lua, data_location, verbose)
+    extract_items(lua, data_location, verbose)
+    extract_modules(lua, data_location, verbose)
+    extract_recipes(lua, data_location, verbose)
+    extract_signals(lua, data_location, verbose)
+    extract_tiles(lua, data_location, verbose)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-v", "--verbose", 
+        action="store_true", 
+        help="Show extra information during the update"
+    )
+    args = parser.parse_args()
+    update(verbose = args.verbose)
 
 if __name__ == "__main__":
-    update()
+    main()

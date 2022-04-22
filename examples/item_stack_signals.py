@@ -18,12 +18,12 @@ from draftsman.entity import ConstantCombinator
 def main():
     blueprint = Blueprint()
 
-    count = 0   # Total number of signals
-    index = 0   # Signal index in the current combinator
-    i = 0       # How many combinators we've added
+    count = 0  # Total number of signals
+    index = 0  # Signal index in the current combinator
+    i = 0  # How many combinators we've added
     x = 0
     y = 0
-    combinator = ConstantCombinator(direction = Direction.SOUTH)
+    combinator = ConstantCombinator(direction=Direction.SOUTH)
 
     # Iterate over every item in order:
     for item in items.raw:
@@ -44,7 +44,7 @@ def main():
             i += 1
             y = i % 5
             x = int(i / 5)
-            combinator.set_signals(None) # Clear signals
+            combinator.set_signals(None)  # Clear signals
             combinator.tile_position = (x, y)
             index = 0
 
@@ -56,8 +56,8 @@ def main():
     for cx in range(x):
         for cy in range(5):
             here = str(cx) + "_" + str(cy)
-            right = str(cx+1) + "_" + str(cy)
-            below = str(cx) + "_" + str(cy+1)
+            right = str(cx + 1) + "_" + str(cy)
+            below = str(cx) + "_" + str(cy + 1)
             try:
                 blueprint.add_circuit_connection("red", here, right)
             except KeyError:
@@ -67,8 +67,8 @@ def main():
             except KeyError:
                 pass
 
-    print(count) # This is mostly for debugging
-    #print(blueprint)
+    print(count)  # This is mostly for debugging
+    # print(blueprint)
     print(blueprint.to_string())
 
 

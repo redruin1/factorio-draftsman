@@ -155,17 +155,17 @@ class InfinityContainerTesting(TestCase):
             },
         )
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             container.set_infinity_filter("incorrect", "iron-ore")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             container.set_infinity_filter(0, SchemaError)
         with self.assertRaises(InvalidItemError):
             container.set_infinity_filter(0, "signal-A")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             container.set_infinity_filter(0, "iron-ore", SchemaError)
         with self.assertRaises(InvalidModeError):
             container.set_infinity_filter(0, "iron-ore", "incorrect")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             container.set_infinity_filter(0, "iron-ore", "exactly", "incorrect")
         with self.assertRaises(FilterIndexError):
             container.set_infinity_filter(-1, "iron-ore", "exactly", 200)

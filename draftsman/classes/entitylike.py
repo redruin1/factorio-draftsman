@@ -8,12 +8,14 @@ import six
 
 from typing import TYPE_CHECKING
 
+from draftsman.classes.spatiallike import SpatialLike
+
 if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.blueprint import Blueprint
+    from draftsman.classes.collection import Collection
 
 
 @six.add_metaclass(abc.ABCMeta)
-class EntityLike(object):
+class EntityLike(SpatialLike):
     """
     Abstract base class for a blueprintable entity. Allows the user to specify
     custom entity analogues that can be passed into Blueprint instances. `Group`
@@ -33,9 +35,9 @@ class EntityLike(object):
     """
 
     def __init__(self):
-        # Blueprint reference (Internal)
-        # Overwritten if the EntityLike is placed inside a Blueprint
-        self._blueprint = None
+        # Parent reference (Internal)
+        # Overwritten if the EntityLike is placed inside a Blueprint or Group
+        self._parent = None
 
         # Power connectable? (Internal) (Overwritten if applicable)
         self._power_connectable = False
@@ -55,13 +57,14 @@ class EntityLike(object):
     # =========================================================================
 
     @property
-    def blueprint(self):
-        # type: () -> Blueprint
+    def parent(self):
+        # type: () -> Collection
+        # TODO: change output type to something generic
         """
         Read only
         TODO
         """
-        return self._blueprint
+        return self._parent
 
     # =========================================================================
 
@@ -131,14 +134,14 @@ class EntityLike(object):
 
     # =========================================================================
 
-    # @property
-    # def flippable(self):
-    #     # type: () -> bool
-    #     """
-    #     Read only
-    #     TODO
-    #     """
-    #     return self._flippable
+    @property
+    def flippable(self):
+        # type: () -> bool
+        """
+        Read only
+        TODO
+        """
+        return self._flippable
 
     # =========================================================================
     # Abstract Properties
@@ -157,29 +160,45 @@ class EntityLike(object):
         pass
 
     @abc.abstractproperty
-    def position(self):  # pragma: no coverage
+    def tile_width(self):  # pragma: no coverage
         pass
 
     @abc.abstractproperty
-    def collision_box(self):  # pragma: no coverage
+    def tile_height(self):  # pragma: no coverage
         pass
 
-    @abc.abstractproperty
-    def collision_mask(self):  # pragma: no coverage
+    # @abc.abstractmethod
+    # def get_area(self):  # pragma: no coverage
+    #     pass
+
+    def on_insert(self):  # pragma: no coverage
+        """
+        Default function. Called when an this EntityLike is inserted into an
+        EntityList. Allows the user to perform extra checks, validation, or
+        operations when the EntityLike is added to the `Collection`. For
+        example, if we are placing a rail signal in a blueprint, we might want
+        to check the surrounding area to see if we are adjacent to a rail, and
+        issue a warning if we are not.
+
+        Note that this is only intended to perform checks in relation to THIS
+        specific entity; the `Collection` class has it's own custom functions
+        for managing the parent's state.
+        """
         pass
 
-    @abc.abstractproperty
-    def tile_width(self):  # pragma: no cover
+    def on_remove(self):  # pragma: no coverage
+        """
+        Default function. Same functionality as `on_insert`, but for cleanup
+        operations when removed instead of when inserted.
+        """
         pass
 
-    @abc.abstractproperty
-    def tile_height(self):  # pragma: no cover
-        pass
-
-    @abc.abstractmethod
-    def get_area(self):  # pragma: no cover
-        pass
-
-    @abc.abstractmethod
-    def to_dict(self):  # pragma: no cover
-        pass
+    def get(self):
+        # type: () -> EntityLike
+        """
+        Called during `blueprint.to_dict()`. Returns the entity or list of
+        entities that make up this EntityLike. On `Entity`s this is redundant,
+        but it allows the user to specify exactly what entities they want to
+        return.
+        """
+        return self

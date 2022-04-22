@@ -1,8 +1,6 @@
 # entity.py
 # -*- encoding: utf-8 -*-
 
-# TODO: change all warnings to their specific ones
-
 from draftsman.blueprintable import *
 from draftsman.constants import *
 from draftsman.entity import *
@@ -66,6 +64,14 @@ class EntityTesting(TestCase):
         combinator = DeciderCombinator(tile_position=[3, 3], direction=Direction.EAST)
         self.assertEqual(combinator.get_area(), [[3.35, 3.15], [4.65, 3.85]])
 
+    # def test_set_name(self):
+    #     iron_chest = Container("iron-chest")
+    #     iron_chest.name = "steel-chest"
+    #     self.assertEqual(iron_chest.name, "steel-chest")
+
+    #     with self.assertRaises(InvalidEntityError):
+    #         iron_chest.name = "incorrect"
+
     def test_set_position(self):
         iron_chest = Container("iron-chest")
         iron_chest.position = (1.23, 1.34)
@@ -94,14 +100,28 @@ class EntityTesting(TestCase):
     #         "<TestEntity>{'name': 'loader', 'position': {'x': 0.5, 'y': 1.0}}"
     #     )
 
+    # def test_change_name_in_blueprint(self):
+    #     blueprint = Blueprint()
+    #     example = Container("wooden-chest", id="whatever")
+    #     blueprint.entities.append(example)
+    #     self.assertEqual(blueprint.entities["whatever"].name, example.name)
+
+    #     with self.assertRaises(DraftsmanError):
+    #         blueprint.entities["whatever"].name = "steel-chest"
+
     def test_change_id_in_blueprint(self):
         blueprint = Blueprint()
         example = Container("wooden-chest", id="whatever")
         blueprint.entities.append(example)
         self.assertEqual(blueprint.entities["whatever"].name, example.name)
 
-        blueprint.entities["whatever"].id = "new_id"
-        self.assertIs(blueprint.entities["new_id"].name, example.name)
+        with self.assertRaises(DraftsmanError):
+            blueprint.entities["whatever"].id = "new_id"
+        # self.assertIs(blueprint.entities["new_id"].name, example.name)
+
+    def test_flippable(self):
+        belt = TransportBelt()
+        self.assertEqual(belt.flippable, True)
 
 
 # =============================================================================

@@ -235,4 +235,4 @@ def new_entity(name, **kwargs):
     if name in burner_generators:
         return BurnerGenerator(name, **kwargs)
 
-    raise InvalidEntityError(name)
+    raise InvalidEntityError("'{}'".format(name))

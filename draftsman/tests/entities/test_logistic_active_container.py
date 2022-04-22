@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import LogisticActiveContainer, logistic_active_containers
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
@@ -87,7 +87,7 @@ class ContainerTesting(TestCase):
                 "logistic-chest-active-provider", bar="not even trying"
             )
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             LogisticActiveContainer(
                 "logistic-chest-active-provider",
                 connections={"this is": ["very", "wrong"]},

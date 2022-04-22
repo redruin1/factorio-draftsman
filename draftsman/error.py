@@ -25,6 +25,15 @@ class MalformedBlueprintStringError(DraftsmanError):
     pass
 
 
+class DataFormatError(DraftsmanError):
+    """
+    Usually a thin wrapper around SchemaError; issued when a value passed in
+    to a method or attributes violates the required structure for that data.
+    """
+
+    pass
+
+
 # Blueprints
 class IncorrectBlueprintTypeError(DraftsmanError):
     """
@@ -39,8 +48,8 @@ class IncorrectBlueprintTypeError(DraftsmanError):
 
 class DuplicateIDError(DraftsmanError):
     """
-    Raised when two EntityLike's are added to a ``Blueprint`` with the same
-    name, which is disallowed.
+    Raised when two EntityLike's are added to a ``Blueprint`` with the same id
+    in the same Collection, which is disallowed.
     """
 
     pass
@@ -56,19 +65,19 @@ class UnreasonablySizedBlueprintError(DraftsmanError):
     pass
 
 
-class BlueprintRotationError(DraftsmanError):
+class RotationError(DraftsmanError):
     """
-    Raised when a Blueprint rotation angle has been chosen that does not align
-    with the possible rotations that the Blueprint can have, such as rotations
-    by 45 degrees.
+    Raised when a rotation angle has been chosen that does not align with the
+    possible rotations that the Collection can have, such as rotations by 45
+    degrees.
     """
 
     pass
 
 
-class BlueprintFlippingError(DraftsmanError):
+class FlippingError(DraftsmanError):
     """
-    Raised when attempting to flip a Blueprint that contains entities that
+    Raised when attempting to flip a Collection that contains entities that
     cannot be flipped.
     """
 
@@ -109,7 +118,7 @@ class InvalidItemError(DraftsmanError):
 class InvalidEntityError(DraftsmanError):
     """
     Raised when an Entity's name is not one of the similar_entities for it's
-    child type.
+    child type, or when it is not any valid entity name.
     """
 
     pass
@@ -131,7 +140,8 @@ class InvalidOperationError(DraftsmanError):
 
 class InvalidModeError(DraftsmanError):
     """
-    Raised when a string mode doesn't match any valid value.
+    Raised when a string mode doesn't match any valid value for that particular
+    method.
     """
 
     pass

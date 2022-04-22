@@ -6,9 +6,10 @@
 ---@diagnostic disable:lowercase-global
 
 -- Meta globals:
-MOD = {}
-MOD_NAME = ""
-MOD_DIR = ""
+MOD_LIST = nil
+MOD = nil
+MOD_NAME = nil
+MOD_DIR = nil
 
 -- Menu simulations: can't be empty, but cannot be nil
 local menu_simulations = {}
@@ -161,7 +162,7 @@ local archive_searcher = function(modname)
 
     --print("Attempting to find " .. modname .. " in python:")
 
-    local contents, err = python_require(MOD, modname, package.path)
+    local contents, err = python_require(MOD_LIST, MOD, modname, package.path)
     if contents then
         return assert(load(contents, modname))
     else

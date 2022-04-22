@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import LogisticStorageContainer, logistic_storage_containers
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
@@ -98,12 +98,12 @@ class LogisticStorageContainerTesting(TestCase):
         with self.assertRaises(TypeError):
             LogisticStorageContainer("logistic-chest-storage", bar="not even trying")
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             LogisticStorageContainer(
                 "logistic-chest-storage", connections={"this is": ["very", "wrong"]}
             )
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             LogisticStorageContainer(
                 "logistic-chest-storage", request_filters={"this is": ["very", "wrong"]}
             )

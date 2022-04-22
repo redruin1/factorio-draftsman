@@ -3,13 +3,8 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Container, containers, Splitter
-from draftsman.error import (
-    InvalidEntityError,
-    InvalidWireTypeError,
-    InvalidConnectionSideError,
-    EntityNotCircuitConnectableError,
-)
+from draftsman.entity import Container, containers
+from draftsman.error import InvalidEntityError, BarIndexError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 import sys
@@ -82,7 +77,7 @@ class ContainerTesting(TestCase):
         with self.assertRaises(TypeError):
             Container("wooden-chest", bar="not even trying")
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             Container("wooden-chest", connections={"this is": ["very", "wrong"]})
 
     def test_power_and_circuit_flags(self):
@@ -92,3 +87,8 @@ class ContainerTesting(TestCase):
             self.assertEqual(container.dual_power_connectable, False)
             self.assertEqual(container.circuit_connectable, True)
             self.assertEqual(container.dual_circuit_connectable, False)
+
+    def test_bar_with_disabled_containers(self):
+        container = Container("big-ship-wreck-1")
+        with self.assertRaises(BarIndexError):
+            container.bar = 2

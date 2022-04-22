@@ -3,8 +3,9 @@
 
 from __future__ import unicode_literals
 
+from draftsman.error import DataFormatError
 from draftsman import signatures
-from draftsman.utils import signal_dict
+from draftsman.data.signals import signal_dict
 
 from schema import SchemaError
 import six
@@ -40,7 +41,7 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
     @override_stack_size.setter
     def override_stack_size(self, value):
         # type: (int) -> None
-        if value is None or isinstance(value, int):
+        if value is None or isinstance(value, six.integer_types):
             self._override_stack_size = value
         else:
             raise TypeError("'value' must be an int or None")
@@ -92,6 +93,5 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.control_behavior["stack_control_input_signal"] = value
-            except SchemaError:
-                # TODO: more verbose
-                raise TypeError("Incorrectly formatted SignalID")
+            except SchemaError as e:
+                six.raise_from(DataFormatError(e), None)

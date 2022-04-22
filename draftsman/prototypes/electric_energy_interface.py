@@ -3,12 +3,12 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes import Entity
-import draftsman.signatures as signatures
+from draftsman.classes.entity import Entity
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import electric_energy_interfaces
 
+import six
 import warnings
 
 
@@ -57,7 +57,7 @@ class ElectricEnergyInterface(Entity):
     @buffer_size.setter
     def buffer_size(self, value):
         # type: (int) -> None
-        if value is None or isinstance(value, int):
+        if value is None or isinstance(value, six.integer_types):
             self._buffer_size = value
         else:
             raise TypeError("'buffer_size' must be an int or None")
@@ -75,7 +75,7 @@ class ElectricEnergyInterface(Entity):
     @power_production.setter
     def power_production(self, value):
         # type: (int) -> None
-        if value is None or isinstance(value, int):
+        if value is None or isinstance(value, six.integer_types):
             self._power_production = value
         else:
             raise TypeError("'power_production' must be an int or None")
@@ -93,7 +93,7 @@ class ElectricEnergyInterface(Entity):
     @power_usage.setter
     def power_usage(self, value):
         # type: (int) -> None
-        if value is None or isinstance(value, int):
+        if value is None or isinstance(value, six.integer_types):
             self._power_usage = value
         else:
             raise TypeError("'power_usage' must be an int or None")

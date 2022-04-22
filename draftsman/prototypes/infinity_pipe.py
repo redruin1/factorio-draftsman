@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.error import InvalidFluidError, InvalidModeError
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning, TemperatureRangeWarning
@@ -167,11 +167,13 @@ class InfinityPipe(Entity):
     ):
         # type: (str, int, str, int) -> None
         """ """
-        # Check before setting to make sure that we dont partially complete
-        name = signatures.STRING.validate(name)
-        percentage = signatures.INTEGER.validate(percentage)
-        mode = signatures.STRING.validate(mode)
-        temperature = signatures.INTEGER.validate(temperature)
+        try:
+            name = signatures.STRING.validate(name)
+            percentage = signatures.INTEGER.validate(percentage)
+            mode = signatures.STRING.validate(mode)
+            temperature = signatures.INTEGER.validate(temperature)
+        except SchemaError as e:
+            six.raise_from(TypeError(e), None)
 
         if name not in signals.fluid:
             raise InvalidFluidError(name)

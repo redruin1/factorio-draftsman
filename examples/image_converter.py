@@ -28,24 +28,26 @@ Requirements:
     pyperclip (or you can just output the contents to a file)
 """
 
+from draftsman.blueprintable import Blueprint
+from draftsman.data import entities
+from draftsman.entity import new_entity
+from draftsman.utils import aabb_to_dimensions
+
 import math
 from PIL import Image
 import numpy as np
-from draftsman.blueprintable import Blueprint
-from draftsman.entity import new_entity
-from draftsman.data import entities
-from draftsman.utils import aabb_to_dimensions
 import pyperclip
+
 
 def main():
     # Manually specify the color, whether its a tile or entity, and its name
     colors = [
         [(189, 203, 189), "entity", "stone-wall"],
-        #[(140, 138, 140), "entity", "straight-rail"],
-        #[(107, 105, 107), "entity", "accumulator"],
+        # [(140, 138, 140), "entity", "straight-rail"],
+        # [(107, 105, 107), "entity", "accumulator"],
         [(99, 101, 99), "tile", "refined-concrete"],
         [(49, 48, 49), "tile", "stone-path"],
-        #[(24, 32, 33), "entity", "solar-panel"],
+        # [(24, 32, 33), "entity", "solar-panel"],
         [(255, 211, 0), "entity", "splitter"],
         [(206, 166, 16), "entity", "gun-turret"],
         [(140, 117, 0), "entity", "underground-belt"],
@@ -53,7 +55,7 @@ def main():
         [(206, 158, 66), "entity", "transport-belt"],
         [(239, 117, 24), "entity", "flamethrower-turret"],
         [(214, 44, 41), "entity", "laser-turret"],
-        [(0, 93, 148), "entity", "small-lamp"]
+        [(0, 93, 148), "entity", "small-lamp"],
     ]
 
     # Create a blueprint to hold everything
@@ -64,17 +66,18 @@ def main():
     target_size = 200
 
     # open an image
-    img = Image.open('examples/example.png')
+    img = Image.open("examples/example.png")
     img = img.resize((target_size, target_size))
 
-    img_data = np.array(img)[:,:,:3]
+    img_data = np.array(img)[:, :, :3]
 
     # Keep track of occupied pixels
     occupied_pixels = np.empty(shape=(target_size, target_size))
     occupied_pixels.fill(False)
 
     def assert_entity_fits(color, x, y):
-        if color[1] == "tile": return True # dont worry about tiles
+        if color[1] == "tile":
+            return True  # dont worry about tiles
         # Get the entity width and height
         # TODO: find a cleaner way to do this
         w, h = aabb_to_dimensions(entities.raw[color[2]]["collision_box"])
@@ -94,66 +97,66 @@ def main():
         available_colors = filter(lambda c: assert_entity_fits(c, x, y), colors)
         for color in available_colors:
             cr, cg, cb = color[0]
-            color_diff = math.sqrt((r - cr)**2 + (g - cg)**2 + (b - cb)**2)
+            color_diff = math.sqrt((r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2)
             color_diffs.append((color_diff, color))
         return min(color_diffs)[1]
 
     def push_error_to_neighbours(x, y, current_color, closest_color):
         error = current_color - closest_color
-        #print(error)
+        # print(error)
         try:
-            img_data[y    ][x + 1] += (error * (7/16)).astype("uint8")
+            img_data[y][x + 1] += (error * (7 / 16)).astype("uint8")
         except IndexError:
             pass
         try:
-            img_data[y + 1][x - 1] += (error * (3/16)).astype("uint8")
+            img_data[y + 1][x - 1] += (error * (3 / 16)).astype("uint8")
         except IndexError:
             pass
         try:
-            img_data[y + 1][x    ] += (error * (5/16)).astype("uint8")
+            img_data[y + 1][x] += (error * (5 / 16)).astype("uint8")
         except IndexError:
             pass
         try:
-            img_data[y + 1][x + 1] += (error * (1/16)).astype("uint8")
+            img_data[y + 1][x + 1] += (error * (1 / 16)).astype("uint8")
         except IndexError:
             pass
 
     for y in range(target_size):
         for x in range(target_size):
-            #print(x, y)
+            # print(x, y)
             if occupied_pixels[y][x]:
                 continue
             # try to find the best color for the current_pixel
             current_color = img_data[y][x]
             closest_color = find_closest_color(current_color, x, y)
-            #print(closest_color)
+            # print(closest_color)
             if closest_color[1] == "entity":
                 # We make a entity instance so we can query the width and height
-                entity = new_entity(closest_color[2], tile_position = [x, y])
+                entity = new_entity(closest_color[2], tile_position=[x, y])
                 blueprint.entities.append(entity)
-                #print(entity.tile_width, entity.tile_height)
+                # print(entity.tile_width, entity.tile_height)
                 for j in range(entity.tile_height):
                     for i in range(entity.tile_width):
                         try:
-                            occupied_pixels[y+j][x+i] = True
+                            occupied_pixels[y + j][x + i] = True
                         except IndexError:
                             pass
 
-                #push_error_to_neighbours(x, y, current_color, closest_color[0])
+                # push_error_to_neighbours(x, y, current_color, closest_color[0])
 
             elif closest_color[1] == "tile":
-                blueprint.tiles.append(closest_color[2], position = (x, y))
-                #print("set {} {}".format(x, y))
+                blueprint.tiles.append(closest_color[2], position=(x, y))
+                # print("set {} {}".format(x, y))
                 occupied_pixels[y][x] = True
                 push_error_to_neighbours(x, y, current_color, closest_color[0])
 
-    # Output the blueprint to a string    
-    #print(blueprint.to_string())
+    # Output the blueprint to a string
+    # print(blueprint.to_string())
 
     # Sometimes with such large blueprints the regular console might run out of
-    # lines before displaying the entire blueprint. If that's the case, you can 
+    # lines before displaying the entire blueprint. If that's the case, you can
     # also output to a file:
-    #with open("examples/image_blueprint.txt", "w") as file:
+    # with open("examples/image_blueprint.txt", "w") as file:
     #    file.write(blueprint.to_string())
 
     # Or, you can use a tool to output the contents directly into the user's

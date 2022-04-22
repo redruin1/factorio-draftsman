@@ -39,8 +39,3 @@ it really should be as simple as dropping the files into the folder.
 
 from draftsman._version import __version__, __version_info__
 from draftsman._factorio_version import __factorio_version__, __factorio_version_info__
-
-from draftsman.blueprintable import *
-from draftsman.constants import *
-from draftsman.entity import *
-from draftsman.utils import *

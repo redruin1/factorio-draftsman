@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from draftsman.constants import Direction, ReadMode
 from draftsman.entity import Inserter, inserters
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
@@ -108,10 +108,10 @@ class InserterTesting(TestCase):
         with self.assertRaises(TypeError):
             Inserter("inserter", override_stack_size="incorrect")
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             Inserter("inserter", connections={"this is": ["very", "wrong"]})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             Inserter(
                 "inserter", control_behavior={"this is": ["also", "very", "wrong"]}
             )

@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     ReadRailSignalMixin,
     CircuitConditionMixin,
@@ -37,7 +37,7 @@ class RailSignal(
         super(RailSignal, self).__init__(name, rail_signals, **kwargs)
 
         if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
-            self._collision_mask = entities.raw[self.name]["collision_mask"]
+            self._collision_mask = set(entities.raw[self.name]["collision_mask"])
         else:  # pragma: no coverage
             self._collision_mask = {"floor-layer", "rail-layer", "item-layer"}
 
@@ -88,23 +88,12 @@ class RailSignal(
         else:
             raise TypeError("'enable_disable' must be a bool or None")
 
-    # def set_read_signal(self, value):
-    #     # type: (bool) -> None
-    #     """
-    #     """
-    #     if value is None:
-    #         self.control_behavior.pop("circuit_read_signal", None)
-    #     else:
-    #         value = signatures.BOOLEAN.validate(value)
-    #         self.control_behavior["circuit_read_signal"] = value
+    # =========================================================================
 
-    # def set_enable_disable(self, value):
-    #     # type: (bool) -> None
-    #     """
-    #     TODO: write (overwritten)
-    #     """
-    #     if value is None:
-    #         self.control_behavior.pop("circuit_close_signal", None)
-    #     else:
-    #         value = signatures.BOOLEAN.validate(value)
-    #         self.control_behavior["circuit_close_signal"] = value
+    # def on_insert(self, parent):
+    #     # Check if the rail_signal is adjacent to a rail
+    #     # This test has to be more sophisticated than just testing for adjacent
+    #     # entities; we also must consider the orientation of signal to ensure
+    #     # it is facing the correct direction (must be on the right side of the
+    #     # track, unless there exists another signal on the opposite side)
+    #     pass

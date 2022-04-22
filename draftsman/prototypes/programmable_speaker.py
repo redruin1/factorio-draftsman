@@ -4,18 +4,18 @@
 from __future__ import unicode_literals
 
 from draftsman import signatures
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
 )
 from draftsman.error import DraftsmanError, InvalidInstrumentID, InvalidNoteID
-from draftsman.utils import signal_dict
 from draftsman.warning import DraftsmanWarning, VolumeRangeWarning
 
 from draftsman.data.entities import programmable_speakers
 import draftsman.data.instruments as instruments_data
+from draftsman.data.signals import signal_dict
 
 from schema import SchemaError
 import six

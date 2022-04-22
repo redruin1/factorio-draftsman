@@ -24,9 +24,5 @@ class ModeOfOperationMixin(object):  # (ControlBehaviorMixin)
         # type: (ModeOfOperation) -> None
         if value is None:
             self.control_behavior.pop("circuit_mode_of_operation", None)
-        elif isinstance(value, int):
-            self.control_behavior["circuit_mode_of_operation"] = value
         else:
-            raise TypeError(
-                "'mode_of_operation' must be either a ModeOfOperation or int"
-            )
+            self.control_behavior["circuit_mode_of_operation"] = ModeOfOperation(value)

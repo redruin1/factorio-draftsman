@@ -4,14 +4,15 @@ Quickstart
 Installation
 ------------
 
-Like many Python modules, Draftsman is easy to install. 
+Like many Python modules, Draftsman is fairly easy to install. 
 If you simply want to install the latest version of Draftsman for the latest version of Factorio:
 
 .. code-block:: console
 
     (.venv) $ pip install factorio-draftsman
+    (.venc) $ draftsman-update
 
-.. NOTE::
+.. Note::
     Draftsman's versioning system is based around the version of factorio first, followed by the version of the package in the format::
 
         F.F.F.D.D.D
@@ -174,7 +175,7 @@ items are containers by checking ``draftsman.data``:
     # On a vanilla install (with no mods) should be akin to:
     # ['wooden-chest', 'iron-chest', 'steel-chest', ...]
 
-.. NOTE::
+.. Note::
     ``entities.containers`` and all other "entity lists" include *hidden* items, 
     as well as items that exist internally that are not craftable or otherwise 
     available, such as (in the case of Container) the Factorio logo entities. 
@@ -206,7 +207,7 @@ This feature also works for all other entities as well, not just singletons:
     container = Container()
     assert container.name == "wooden-chest"
 
-.. NOTE::
+.. Note::
     The order of each entity list is determined by the `Factorio sort order <https://forums.factorio.com/viewtopic.php?p=23818#p23818>`_.
     Simply put, items are sorted first by their group, subgroup, and then item order strings. 
     If the entity has no item order string, it is sorted by entity order string, and, failing that, entity name.
@@ -279,7 +280,7 @@ You can specify these parameters in the constructor to immediately set the Entit
     container1 = Container("steel-chest", tile_position = (-5, 10))
     container2 = Container("iron-chest", position = {"x": 10.5, "y": 15.5})
 
-.. NOTE::
+.. Note::
 
     All attributes of an Entity can be set as a keyword in its constructor.
     This is done so you can take existing entity dictionaries and directly pass them into an Entity constructor as keyword arguments:
@@ -300,8 +301,8 @@ You can specify these parameters in the constructor to immediately set the Entit
         assert any_entity.name == "iron-chest"
         assert any_entity.type == "container"
 
-        # and blueprint.add_entity() as well:
-        blueprint.add_entity(**example)
+        # and blueprint.entities.append() as well:
+        blueprint.entities.append(**example)
         assert blueprint.entities[-1].name == "iron-chest"
 
 We want to position the container such that the output inserter feeds into it.
@@ -326,7 +327,7 @@ Since we now know that the center of the furnace is at (176.5, -93.5), we can si
     pos = furnace.position
     container.position = (pos["x"] + 3, pos["y"])
 
-    blueprint.add_entity(container)
+    blueprint.entities.append(container)
 
 And presto!
 
@@ -351,9 +352,13 @@ Lets use ``translate()`` to do just that:
 
     # Now we can specify the container at location (3, 0) and get the same result as before.
     container.tile_position = (3, 0)
-    blueprint.add_entity(container)
+    blueprint.entities.append(container)
 
     print(blueprint.to_string())
+    
+.. Note::
+
+    Draftsman follows Factorio's coordinate system, in which positive X is right and positive Y is down.
 
 Lets change one more of the Container's attributes to illustrate one more concept about Draftsman.
 Suppose we want to set the limiting bar to limit half the inventory:
@@ -365,7 +370,7 @@ Suppose we want to set the limiting bar to limit half the inventory:
     # We can set it using the bar attribute:
     container.bar = 24 # (48 / 2)
 
-.. NOTE::
+.. Note::
     
     All methods and attributes in Draftsman use **0-indexed notation unless 
     otherwise specified.**
@@ -442,7 +447,7 @@ Here's a full working example:
     container = Container("steel-chest", tile_position = (3, 0))
     container.bar = int(container.inventory_size / 2)
     
-    blueprint.add_entity(container)
+    blueprint.entities.append(container)
 
     print(blueprint.to_string())
 

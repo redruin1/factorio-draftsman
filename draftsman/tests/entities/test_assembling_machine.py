@@ -80,9 +80,9 @@ class AssemblingMachineTesting(TestCase):
         machine.set_item_request("iron-plate", 100)
         self.assertEqual(machine.items, {"iron-plate": 100})
         machine.recipe = "iron-gear-wheel"
-        # TODO: raise warning when setting recipe that conflicts with requests
-        # with self.assertWarns(ItemLimitationWarning):
-        #     machine.set_recipe("wooden-chest")
+        # Raise warning when setting recipe that conficts with request
+        with self.assertWarns(ItemLimitationWarning):
+            machine.recipe = "wooden-chest"
 
         with self.assertWarns(ItemLimitationWarning):
             machine.set_item_request("copper-cable", 100)
@@ -92,5 +92,5 @@ class AssemblingMachineTesting(TestCase):
         # Errors
         with self.assertRaises(InvalidItemError):
             machine.set_item_request("incorrect", "nonsense")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             machine.set_item_request("speed-module-2", "nonsense")

@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import LogisticBufferContainer, logistic_buffer_containers
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
@@ -101,12 +101,12 @@ class LogisticBufferContainerTesting(TestCase):
         with self.assertRaises(TypeError):
             LogisticBufferContainer("logistic-chest-buffer", bar="not even trying")
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             LogisticBufferContainer(
                 "logistic-chest-buffer", connections={"this is": ["very", "wrong"]}
             )
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             LogisticBufferContainer(
                 "logistic-chest-buffer", request_filters={"this is": ["very", "wrong"]}
             )

@@ -9,6 +9,7 @@ from draftsman.error import (
     InvalidEntityError,
     InvalidSignalError,
     InvalidOperationError,
+    DataFormatError,
 )
 from draftsman.warning import DraftsmanWarning
 
@@ -233,7 +234,7 @@ class ArithmeticCombinatorTesting(TestCase):
             combinator.control_behavior,
             {
                 "arithmetic_conditions": {
-                    "constant": 10,
+                    "first_constant": 10,
                     "operation": "OR",
                     "second_signal": {"name": "signal-D", "type": "virtual"},
                     "output_signal": {"name": "signal-E", "type": "virtual"},
@@ -244,7 +245,7 @@ class ArithmeticCombinatorTesting(TestCase):
         combinator.set_arithmetic_conditions(10, "or", None)
         self.assertEqual(
             combinator.control_behavior,
-            {"arithmetic_conditions": {"constant": 10, "operation": "OR"}},
+            {"arithmetic_conditions": {"first_constant": 10, "operation": "OR"}},
         )
 
         combinator.set_arithmetic_conditions(None, None, None, None)
@@ -253,30 +254,30 @@ class ArithmeticCombinatorTesting(TestCase):
         combinator.set_arithmetic_conditions(None)
         self.assertEqual(
             combinator.control_behavior,
-            {"arithmetic_conditions": {"operation": "*", "constant": 0}},
+            {"arithmetic_conditions": {"operation": "*", "second_constant": 0}},
         )
 
         # TODO: change these from SchemaErrors
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             combinator.set_arithmetic_conditions(TypeError)
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             combinator.set_arithmetic_conditions("incorrect")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             combinator.set_arithmetic_conditions("signal-A", "incorrect", "signal-D")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             combinator.set_arithmetic_conditions("signal-A", "+", TypeError)
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             combinator.set_arithmetic_conditions("signal-A", "+", "incorrect")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             combinator.set_arithmetic_conditions("signal-A", "+", "signal-D", TypeError)
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             combinator.set_arithmetic_conditions(
                 "signal-A", "+", "signal-D", "incorrect"
             )
 
         self.assertEqual(
             combinator.control_behavior,
-            {"arithmetic_conditions": {"operation": "*", "constant": 0}},
+            {"arithmetic_conditions": {"operation": "*", "second_constant": 0}},
         )
 
         # Test Remove conditions

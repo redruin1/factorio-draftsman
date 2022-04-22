@@ -89,17 +89,17 @@ class InfinityPipeTesting(TestCase):
         with self.assertWarns(TemperatureRangeWarning):
             pipe.set_infinite_fluid("steam", 1, "at-least", -100)
 
-        with self.assertRaises(SchemaError):
-            pipe.set_infinite_fluid(SchemaError)
+        with self.assertRaises(TypeError):
+            pipe.set_infinite_fluid(TypeError)
         with self.assertRaises(InvalidFluidError):
             pipe.set_infinite_fluid("incorrect")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             pipe.set_infinite_fluid("steam", "incorrect")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             pipe.set_infinite_fluid("steam", 1, SchemaError)
         with self.assertRaises(InvalidModeError):
             pipe.set_infinite_fluid("steam", 1, "incorrect")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             pipe.set_infinite_fluid("steam", 1, "at-least", "incorrect")
         with self.assertRaises(ValueError):
             pipe.set_infinite_fluid("steam", -1, "at-least")

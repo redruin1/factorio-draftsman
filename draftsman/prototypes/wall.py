@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     CircuitConditionMixin,
     EnableDisableMixin,
@@ -11,10 +11,10 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
 )
 import draftsman.signatures as signatures
-from draftsman.utils import signal_dict
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import walls
+from draftsman.data.signals import signal_dict
 
 from schema import SchemaError
 import six

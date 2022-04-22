@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from draftsman.constants import Direction
 from draftsman.entity import StorageTank, storage_tanks
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
@@ -83,7 +83,7 @@ class StorageTankTesting(TestCase):
         with self.assertRaises(ValueError):
             StorageTank("storage-tank", direction="incorrect")
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             StorageTank("storage-tank", connections={"this is": ["very", "wrong"]})
 
     def test_power_and_circuit_flags(self):

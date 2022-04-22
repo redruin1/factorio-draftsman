@@ -4,8 +4,10 @@ lupa >= 1.10
 six >= 1.16.0
 # Development
 unittest2
+coverage
+tox
 black
-# Compatiblity
+# Compatibility
 importlib-resources; python_version < '3.7'
 typing; python_version < '3.5'
 enum34; python_version < '3.4'

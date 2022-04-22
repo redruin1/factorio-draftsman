@@ -45,5 +45,5 @@ class BeaconTesting(TestCase):
         # Errors
         with self.assertRaises(InvalidItemError):
             beacon.set_item_request("incorrect", "nonsense")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             beacon.set_item_request("speed-module-2", "nonsense")

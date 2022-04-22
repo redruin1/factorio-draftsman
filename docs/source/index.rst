@@ -32,7 +32,6 @@ It's API is designed to be clear and self-documenting, from its imports to its e
 In addition to the standard features you would expect, Draftsman also has a number of quality-of-life features, including:
 
 * Unique entity ID's to make identification easier.
-* Group instances to collect entities and operate on them as a unit.
 * Querying blueprint contents by area, name, type, as well as other criteria.
 * Verbose warnings for modifications on import normally ignored by Factorio.
 

@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     CircuitReadContentsMixin,
     LogisticConditionMixin,
@@ -38,7 +38,7 @@ class TransportBelt(
         super(TransportBelt, self).__init__(name, transport_belts, **kwargs)
 
         if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
-            self._collision_mask = entities.raw[self.name]["collision_mask"]
+            self._collision_mask = set(entities.raw[self.name]["collision_mask"])
         else:  # pragma: no coverage
             self._collision_mask = {
                 "object-layer",

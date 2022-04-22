@@ -94,5 +94,5 @@ class MiningDrillTesting(TestCase):
         mining_drill.read_mode = None
         self.assertEqual(mining_drill.control_behavior, {})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             mining_drill.read_mode = "incorrect"

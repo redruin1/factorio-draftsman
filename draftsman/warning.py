@@ -59,6 +59,15 @@ class ConnectionSideWarning(DraftsmanWarning):
     pass
 
 
+class TooManyConnectionsWarning(DraftsmanWarning):
+    """
+    Raised when a power connection is attempted between an entity that already
+    has 5 or more connections.
+    """
+
+    pass
+
+
 class RailAlignmentWarning(DraftsmanWarning):
     """
     Raised when an Entity is placed on odd coordinates when it's type restricts
@@ -121,18 +130,11 @@ class HiddenEntityWarning(DraftsmanWarning):
     pass
 
 
-class OverlappingEntitiesWarning(DraftsmanWarning):
+class OverlappingObjectsWarning(DraftsmanWarning):
     """
-    Raised when the collision_box for an entity overlaps another inside a
-    Blueprint.
-    """
-
-    pass
-
-
-class OverlappingTilesWarning(DraftsmanWarning):
-    """
-    Raised when two tiles in a blueprint occupy the same coordinate.
+    Raised when the area returned by get_area() for an object overlaps another
+    object or objects already placed inside a SpatialHashMap. This warning is
+    raised for both entities and tiles.
     """
 
     pass

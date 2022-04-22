@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.error import InvalidModeError
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning, TemperatureRangeWarning

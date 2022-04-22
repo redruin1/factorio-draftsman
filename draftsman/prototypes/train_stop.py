@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     ColorMixin,
     CircuitConditionMixin,
@@ -15,10 +15,10 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 import draftsman.signatures as signatures
-from draftsman.utils import signal_dict
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import train_stops
+from draftsman.data.signals import signal_dict
 
 from schema import SchemaError
 import six
@@ -39,9 +39,9 @@ class TrainStop(
 ):
     """ """
 
-    def __init__(self, name=train_stops[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(TrainStop, self).__init__(name, train_stops, **kwargs)
+    def __init__(self, name=train_stops[0], similar_entities=train_stops, **kwargs):
+        # type: (str, list[str], **dict) -> None
+        super(TrainStop, self).__init__(name, similar_entities, **kwargs)
 
         self.station = None
         if "station" in kwargs:

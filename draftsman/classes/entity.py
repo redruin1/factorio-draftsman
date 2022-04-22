@@ -20,10 +20,12 @@ from draftsman.data import entities
 from draftsman.error import InvalidEntityError, DraftsmanError
 from draftsman.utils import aabb_to_dimensions
 
+import copy
 import math
 from schema import SchemaError
 from typing import Any, Union, Callable
 import six
+import weakref
 
 
 class Entity(EntityLike):
@@ -119,11 +121,12 @@ class Entity(EntityLike):
     # @name.setter
     # def name(self, value):
     #     # type: (str) -> None
+    #     if self.parent:
+    #         raise DraftsmanError(
+    #             "Cannot change name of entity while in another collection"
+    #         )
+
     #     if value in self.similar_entities:
-    #         if self.blueprint:
-    #             raise DraftsmanError(
-    #                 "Cannot change name of entity while in a Blueprint"
-    #             )
     #         self._name = value
     #     else:
     #         raise InvalidEntityError("'{}' is not a valid name for this type"
@@ -150,13 +153,13 @@ class Entity(EntityLike):
     @id.setter
     def id(self, value):
         # type: (str) -> None
-        if value is None or isinstance(value, six.string_types):
-            value = value if value is None else six.text_type(value)
-            old_id = getattr(self, "_id", None)
+        if self.parent:
+            raise DraftsmanError("Cannot modify inside a collection")
+
+        if value is None:
             self._id = value
-            if self.blueprint:
-                self.blueprint.entities.remove_key(old_id)
-                self.blueprint.entities.set_key(value, self)
+        elif isinstance(value, six.string_types):
+            self._id = six.text_type(value)
         else:
             raise TypeError("'id' must be a str or None")
 
@@ -177,9 +180,9 @@ class Entity(EntityLike):
     @position.setter
     def position(self, value):
         # type: (Union[dict, list, tuple]) -> None
-        if self.blueprint:
+        if self.parent:
             raise DraftsmanError(
-                "Cannot change position of entity while it's inside a Blueprint"
+                "Cannot change position of entity while it's inside another object"
             )
 
         try:
@@ -207,9 +210,9 @@ class Entity(EntityLike):
     @tile_position.setter
     def tile_position(self, value):
         # type: (Union[dict, list, tuple]) -> None
-        if self.blueprint:
+        if self.parent:
             raise DraftsmanError(
-                "Cannot change position of entity while it's inside a Blueprint"
+                "Cannot change position of entity while it's inside another object"
             )
 
         try:
@@ -223,9 +226,6 @@ class Entity(EntityLike):
         absolute_x = self._tile_position["x"] + self._tile_width / 2.0
         absolute_y = self._tile_position["y"] + self._tile_height / 2.0
         self._position = {"x": absolute_x, "y": absolute_y}
-
-        # if self.blueprint:
-        #     self.blueprint.recalculate_area()
 
     # =========================================================================
 
@@ -294,25 +294,9 @@ class Entity(EntityLike):
         elif isinstance(tags, dict):
             self._tags = tags
         else:
-            raise TypeError("Attribute 'tags' must be a dict")
+            raise TypeError("'tags' must be a dict or None")
 
     # =========================================================================
-
-    def get_area(self):
-        # type: () -> list
-        """
-        Gets the world-space coordinate AABB of the entity.
-        """
-        return [
-            [
-                self.collision_box[0][0] + self.position["x"],
-                self.collision_box[0][1] + self.position["y"],
-            ],
-            [
-                self.collision_box[1][0] + self.position["x"],
-                self.collision_box[1][1] + self.position["y"],
-            ],
-        ]
 
     def to_dict(self):
         # type: () -> dict
@@ -320,8 +304,6 @@ class Entity(EntityLike):
         Converts the Entity to its JSON dict representation. The keys returned
         are determined by the contents of the `exports` dictionary and their
         function values.
-
-        TODO: come up with a more generic method for inserting into blueprint
         """
         # Only add the keys in the exports dictionary
         out = {}
@@ -379,6 +361,29 @@ class Entity(EntityLike):
         `True`, then the key and its value are added to the output dict.
         """
         self.exports[name] = [criterion, formatter]
+
+    # TODO: figure out a way to deepcopy weakrefs
+    # def __deepcopy__(self, memo):
+    #     # Create a new class
+    #     new = object.__new__(type(self))
+    #     memo[id(self)] = new   # add the new class to the memo
+    #     # Insert a deepcopy of all instance attributes
+    #     new.__dict__.update(copy.deepcopy(self.__dict__, memo))
+    #     # Manually update the weakref to be correct
+    #     print(self.connections)
+    #     if hasattr(self, "connections"):
+    #         for side in self.connections:
+    #             current_side = self.connections[side]
+    #             for color in current_side:
+    #                 current_color = current_side[color]
+    #                 for i, entry in enumerate(current_color):
+    #                     old = entry["entity_id"]
+    #                     new.connections[side][color][i]["entity_id"] = weakref.ref(old())
+
+    #     print(new.connections)
+
+    #     #new.container.parent = weakref.ref(new)
+    #     return new
 
     def __repr__(self):  # pragma: no coverage
         # type: () -> str

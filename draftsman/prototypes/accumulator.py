@@ -4,12 +4,13 @@
 from __future__ import unicode_literals
 
 from draftsman import signatures
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMixin
-from draftsman.utils import signal_dict
+from draftsman.error import DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import accumulators
+from draftsman.data.signals import signal_dict
 
 from schema import SchemaError
 import six
@@ -50,5 +51,5 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.control_behavior["output_signal"] = value
-            except SchemaError:
-                raise TypeError("Incorrectly formatted SignalID")
+            except SchemaError as e:
+                six.raise_from(DataFormatError(e), None)

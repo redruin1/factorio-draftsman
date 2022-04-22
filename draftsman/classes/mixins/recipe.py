@@ -6,8 +6,10 @@ from __future__ import unicode_literals
 from draftsman import signatures
 from draftsman.data import recipes, modules
 from draftsman.error import InvalidRecipeError
-from draftsman.warning import ModuleLimitationWarning
+from draftsman.warning import ModuleLimitationWarning, ItemLimitationWarning
 
+from schema import SchemaError
+import six
 import warnings
 
 
@@ -57,11 +59,18 @@ class RecipeMixin(object):
         if value is None:
             self._recipe = None
             return
-        if value not in self.recipes:
+
+        try:
+            value = signatures.STRING.validate(value)
+        except SchemaError as e:
+            six.raise_from(TypeError(e), None)
+
+        if value in self.recipes:
+            self._recipe = value
+        else:
             raise InvalidRecipeError(
                 "'{}' not in this entity's valid recipes".format(value)
             )
-        self._recipe = signatures.STRING.validate(value)
 
         # I'm gonna put this here, this technically only applies to
         # AssemblingMachine but technically this whole mixin only applies to
@@ -72,19 +81,24 @@ class RecipeMixin(object):
         # Check to make sure the recipe matches the module specification
         if self.items:
             for item in self.items:
-                if item not in modules.raw:
-                    continue
-                module = modules.raw[item]
-                if "limitation" in module:
-                    if self.recipe not in module["limitation"]:
-                        warnings.warn(
-                            "Cannot use module '{}' with new recipe '{}'".format(
-                                item, self.recipe
-                            ),
-                            ModuleLimitationWarning,
-                            stacklevel=2,
-                        )
-
-                # TODO:
-                # elif not item in recipes.raw[self.recipe]["ingredients"]:
-                # warn the user
+                # If the item is a module
+                if item in modules.raw:
+                    module = modules.raw[item]
+                    # Check to see if the module is allowed with this recipe
+                    if "limitation" in module:
+                        if self.recipe not in module["limitation"]:
+                            warnings.warn(
+                                "Cannot use module '{}' with new recipe '{}'".format(
+                                    item, self.recipe
+                                ),
+                                ModuleLimitationWarning,
+                                stacklevel=2,
+                            )
+                elif item not in recipes.get_recipe_ingredients(self.recipe):
+                    warnings.warn(
+                        "Item '{}' is not used in the current recipe ({})".format(
+                            item, self.recipe
+                        ),
+                        ItemLimitationWarning,
+                        stacklevel=2,
+                    )

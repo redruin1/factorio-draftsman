@@ -43,5 +43,5 @@ class FurnaceTesting(TestCase):
         # Errors
         with self.assertRaises(InvalidItemError):
             furnace.set_item_request("incorrect", "nonsense")
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             furnace.set_item_request("speed-module-2", "nonsense")

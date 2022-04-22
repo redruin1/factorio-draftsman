@@ -3,10 +3,12 @@
 
 from __future__ import unicode_literals
 
+from draftsman.error import DataFormatError
 from draftsman import signatures
 
 from typing import Union
 from schema import SchemaError
+import six
 
 
 class ControlBehaviorMixin(object):
@@ -39,14 +41,10 @@ class ControlBehaviorMixin(object):
     def control_behavior(self, value):
         # type: (dict) -> None
         # TODO specific control_behavior signatures depending on the child entity
-        if value is None:
-            value = {}
-
         try:
             self._control_behavior = signatures.CONTROL_BEHAVIOR.validate(value)
-        except SchemaError:
-            # TODO: more verbose
-            raise TypeError("Invalid control_behavior format")
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -57,9 +55,12 @@ class ControlBehaviorMixin(object):
         condition = self.control_behavior[condition_name]
 
         # Check the inputs
-        a = signatures.SIGNAL_ID.validate(a)
-        op = signatures.COMPARATOR.validate(op)
-        b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
+        try:
+            a = signatures.SIGNAL_ID_OR_NONE.validate(a)
+            op = signatures.COMPARATOR.validate(op)
+            b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
         # A
         if a is None:

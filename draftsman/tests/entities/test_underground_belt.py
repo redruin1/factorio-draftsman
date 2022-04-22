@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from draftsman.constants import Direction
 from draftsman.entity import UndergroundBelt, underground_belts
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
@@ -58,7 +58,7 @@ class UndergroundBeltTesting(TestCase):
         with self.assertRaises(ValueError):
             UndergroundBelt("underground-belt", direction="incorrect")
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             UndergroundBelt("underground-belt", io_type="incorrect")
 
     def test_power_and_circuit_flags(self):

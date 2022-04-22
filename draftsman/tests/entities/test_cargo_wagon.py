@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import CargoWagon, cargo_wagons
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
@@ -98,5 +98,5 @@ class CargoWagonTesting(TestCase):
             CargoWagon("this is not a cargo-wagon")
         with self.assertRaises(TypeError):
             CargoWagon("cargo-wagon", orientation="wrong")
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             CargoWagon("cargo-wagon", inventory="incorrect")

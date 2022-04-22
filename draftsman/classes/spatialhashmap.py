@@ -3,10 +3,14 @@
 
 from __future__ import unicode_literals
 
+from draftsman.classes.spatiallike import SpatialLike
 from draftsman import signatures
 from draftsman import utils
+from draftsman.warning import OverlappingObjectsWarning
 
 import math
+from typing import Sequence
+import warnings
 
 
 class SpatialHashMap(object):
@@ -21,16 +25,46 @@ class SpatialHashMap(object):
         self.map = {}
 
     def add(self, item):
+        # type: (SpatialLike) -> None
         """ """
-        # get cells based off of collision_box
+        # Get cells based off of collision_box
         cell_coords = self._cell_coords_from_aabb(item.get_area())
+
+        # Check to see if any entries currently in the hashmap overlap with the new
+        overlapping = self.get_in_area(item.get_area())
+        for overlapping_item in overlapping:
+            item_layers = item.collision_mask
+            other_layers = overlapping_item.collision_mask
+            if len(other_layers.intersection(item_layers)) > 0:
+                warnings.warn(
+                    "Added object '{}' ({}) at {} intersects '{}' ({}) at {}".format(
+                        item.name,
+                        type(item).__name__,
+                        item.position,
+                        overlapping_item.name,
+                        type(overlapping_item).__name__,
+                        overlapping_item.position,
+                    ),
+                    OverlappingObjectsWarning,
+                    stacklevel=2,
+                )
+
         for cell_coord in cell_coords:
             try:
                 self.map[cell_coord].append(item)
             except KeyError:
                 self.map[cell_coord] = [item]
 
+    def recursively_add(self, item):
+        # type: (SpatialLike) -> None
+        if hasattr(item, "entities"):
+            for sub_item in item.entities:
+                self.recursively_add(sub_item)
+        else:
+            self.add(item)
+
     def remove(self, item):
+        # type: (SpatialLike) -> None
         """ """
         cell_coords = self._cell_coords_from_aabb(item.get_area())
         for cell_coord in cell_coords:
@@ -42,7 +76,20 @@ class SpatialHashMap(object):
             except:
                 pass
 
+    def recursively_remove(self, item):
+        # type: (SpatialLike) -> None
+        if hasattr(item, "entities"):
+            for sub_item in item.entities:
+                self.recursively_remove(sub_item)
+        else:
+            self.remove(item)
+
+    def clear(self):
+        # type: () -> None
+        self.map.clear()
+
     def get_in_radius(self, radius, pos, limit=None):
+        # type: (float, Sequence[float], int) -> list[SpatialLike]
         """ """
         # TODO: change this
         try:
@@ -69,6 +116,7 @@ class SpatialHashMap(object):
         return items
 
     def get_on_point(self, pos, limit=None):
+        # type: (Sequence[float], int) -> list[SpatialLike]
         """ """
         cell_coord = self.map_coords(pos[0], pos[1])
         items = []
@@ -82,6 +130,7 @@ class SpatialHashMap(object):
         return items
 
     def get_in_area(self, area, limit=None):
+        # type (list[list[float]], int) -> list[SpatialLike]
         """ """
         cell_coords = self._cell_coords_from_aabb(area)
         items = []
@@ -101,6 +150,7 @@ class SpatialHashMap(object):
         return items
 
     def map_coords(self, x, y):
+        # type: (float, float) -> tuple[int, int]
         """ """
         return (
             int(math.floor(x / self.cell_size)),
@@ -108,6 +158,7 @@ class SpatialHashMap(object):
         )
 
     def _cell_coords_from_aabb(self, aabb):
+        # type: (list[list[float]]) -> list[tuple[int, int]]
         """ """
         # Add a small error to under-round if aabb lands on cell boundary
         eps = 0.001
@@ -125,6 +176,7 @@ class SpatialHashMap(object):
         return cells
 
     def _cell_coords_from_radius(self, radius, pos):
+        # type: (float, Sequence[float]) -> list[tuple[int, int]]
         """ """
         # TODO: change this
         try:

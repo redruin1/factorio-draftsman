@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import Locomotive, locomotives
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
@@ -46,5 +46,5 @@ class LocomotiveTesting(TestCase):
             Locomotive("this is not a locomotive")
         with self.assertRaises(TypeError):
             Locomotive("locomotive", orientation="wrong")
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             Locomotive("locomotive", color="also wrong")

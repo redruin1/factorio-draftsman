@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import Accumulator, accumulators
-from draftsman.error import InvalidEntityError, InvalidSignalError
+from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
@@ -51,7 +51,7 @@ class AccumulatorTesting(TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             Accumulator("not an accumulator")
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             Accumulator(control_behavior={"output_signal": "incorrect"})
 
     def test_output_signal(self):
@@ -79,5 +79,5 @@ class AccumulatorTesting(TestCase):
         self.assertEqual(accumulator.control_behavior, {})
         with self.assertRaises(InvalidSignalError):
             accumulator.output_signal = "incorrect"
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             accumulator.output_signal = {"incorrectly": "formatted"}

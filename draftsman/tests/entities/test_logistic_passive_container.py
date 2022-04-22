@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import LogisticPassiveContainer, logistic_passive_containers
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
@@ -91,7 +91,7 @@ class LogisticPassiveContainerTesting(TestCase):
                 "logistic-chest-passive-provider", bar="not even trying"
             )
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider",
                 connections={"this is": ["very", "wrong"]},

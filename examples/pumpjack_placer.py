@@ -6,11 +6,9 @@ https://factorioprints.com/view/-LbygJLCDgaBJqsMPqUJ
 Can be expanded as much as you dare.
 """
 
-# TODO: investigate slowdown (deepcopy? hmm)
-
 import warnings
 from draftsman.blueprintable import Blueprint
-from draftsman.warning import OverlappingEntitiesWarning
+from draftsman.warning import OverlappingObjectsWarning
 
 
 def main():
@@ -19,12 +17,12 @@ def main():
     blueprint.icons = ["pumpjack"]
 
     # Do this unless you want your stdout flooded with warnings
-    warnings.simplefilter("ignore", OverlappingEntitiesWarning)
+    warnings.simplefilter("ignore", OverlappingObjectsWarning)
 
     dim = 64
     for y in range(dim):
         for x in range(dim):
-            blueprint.entities.append("pumpjack", position = [x, y])
+            blueprint.entities.append("pumpjack", position=[x, y])
 
     print(blueprint.to_string())
 

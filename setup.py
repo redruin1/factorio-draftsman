@@ -51,10 +51,15 @@ def package_files(*directories):
 #             self.execute(_setup_factorio_environment, (),
 #                          msg = "Setting up the Factorio Envrionment...")
 
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
 setup(name='factorio-draftsman',
       version = get_version("draftsman/_version.py"),
-      description='Create and modify Factorio blueprint strings.',
       author='redruin1',
+      description='Create and modify Factorio blueprint strings.',
+      long_description=long_description,
+      long_description_content_type="text/markdown",
       url='https://github.com/redruin1/factorio_blueprint_tools',
       packages=[
             'draftsman', 
@@ -84,7 +89,16 @@ setup(name='factorio-draftsman',
       ],
       entry_points = {
             'console_scripts': [
-                  'draftsman-update = draftsman.env:update'
+                  'draftsman-update = draftsman.env:main'
             ]
-      }
+      },
+      classifiers=[
+            "Development Status :: 4 - Beta",
+            "Programming Language :: Python :: 2",
+            "Programming Language :: Python :: 3",
+            "Intended Audience :: Developers",
+            "Intended Audience :: End Users/Desktop",
+            "Operating System :: OS Independent",
+            "License :: OSI Approved :: MIT License"
+      ]
 )

@@ -5,8 +5,13 @@ from __future__ import unicode_literals
 
 from draftsman import signatures
 from draftsman.data import entities
-from draftsman.data import signals
-from draftsman.error import InvalidItemError, BarIndexError, FilterIndexError
+from draftsman.data import items
+from draftsman.error import (
+    InvalidItemError,
+    BarIndexError,
+    FilterIndexError,
+    DataFormatError,
+)
 from draftsman.warning import BarIndexWarning
 
 from schema import SchemaError
@@ -55,14 +60,10 @@ class InventoryFilterMixin(object):
     @inventory.setter
     def inventory(self, value):
         # type: (dict) -> None
-        if value is None:
-            self._inventory = {}
-        else:
-            try:
-                self._inventory = signatures.INVENTORY_FILTER.validate(value)
-            except SchemaError:
-                # TODO: more verbose
-                raise TypeError("Invalid inventory format")
+        try:
+            self._inventory = signatures.INVENTORY_FILTER.validate(value)
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -81,7 +82,7 @@ class InventoryFilterMixin(object):
             self._inventory.pop("bar", None)
             return
 
-        if not isinstance(value, int):
+        if not isinstance(value, six.integer_types):
             raise TypeError("'bar' must be an int")
 
         if not 0 <= value < 65536:
@@ -110,15 +111,13 @@ class InventoryFilterMixin(object):
         if "filters" not in self.inventory:
             self.inventory["filters"] = []
 
-        try:
-            index = signatures.INTEGER.validate(index)
-        except SchemaError:
-            # TODO: more verbose
-            raise TypeError("Invalid index format")
+        if not isinstance(index, six.integer_types):
+            raise TypeError("'index' must be an int")
+
         if item is not None:
             # Make sure item string is unicode
             item = six.text_type(item)
-            if item not in signals.item:  # FIXME: maybe items.raw?
+            if item not in items.raw:  # FIXME: maybe items.raw?
                 raise InvalidItemError(item)
 
         if not 0 <= index < self.inventory_size:
@@ -151,14 +150,11 @@ class InventoryFilterMixin(object):
             self.inventory.pop("filters", None)
             return
 
-        # Make sure filters conforms
-        # TODO
-
         # Make sure the items are item signals
         for item in filters:
             if isinstance(item, dict):
                 item = item["name"]
-            if item not in signals.item:
+            if item not in items.raw:
                 raise InvalidItemError(item)
 
         for i in range(len(filters)):

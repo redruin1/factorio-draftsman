@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import ConstantCombinator, constant_combinators
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 import sys
@@ -113,6 +113,10 @@ class ConstantCombinatorTesting(TestCase):
             self.assertEqual(combinator.circuit_connectable, True)
             self.assertEqual(combinator.dual_circuit_connectable, False)
 
+    def test_item_slot_count(self):
+        combinator = ConstantCombinator()
+        self.assertEqual(combinator.item_slot_count, 20)
+
     def test_set_signal(self):
         combinator = ConstantCombinator()
         combinator.set_signal(0, "signal-A", 100)
@@ -177,6 +181,13 @@ class ConstantCombinatorTesting(TestCase):
                 ]
             },
         )
+
+        with self.assertRaises(TypeError):
+            combinator.set_signal(TypeError, "something")
+        with self.assertRaises(DataFormatError):
+            combinator.set_signal(1, TypeError)
+        with self.assertRaises(TypeError):
+            combinator.set_signal(1, "iron-ore", TypeError)
 
     def test_set_signals(self):
         combinator = ConstantCombinator()
@@ -249,6 +260,9 @@ class ConstantCombinatorTesting(TestCase):
         # Test clear signals
         combinator.set_signals(None)
         self.assertEqual(combinator.control_behavior, {})
+
+        with self.assertRaises(DataFormatError):
+            combinator.set_signals({"something", "wrong"})
 
     def test_get_signal(self):
         combinator = ConstantCombinator()

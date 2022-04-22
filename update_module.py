@@ -1,3 +1,3 @@
-from draftsman.env import update
+from draftsman.env import main
 
-update()
+main()

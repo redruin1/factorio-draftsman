@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
 from draftsman.error import InvalidItemError, InvalidSideError
 from draftsman.warning import DraftsmanWarning
@@ -26,7 +26,7 @@ class Splitter(DirectionalMixin, Entity):
         super(Splitter, self).__init__(name, splitters, **kwargs)
 
         if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
-            self._collision_mask = entities.raw[self.name]["collision_mask"]
+            self._collision_mask = set(entities.raw[self.name]["collision_mask"])
         else:  # pragma: no coverage
             self._collision_mask = {
                 "object-layer",

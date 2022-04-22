@@ -1,77 +1,78 @@
-from opcode import hasconst
-from draftsman import Blueprint, Container, new_entity, BlueprintBook
-from draftsman.classes import Group
-from draftsman.data import signals
-# from draftsman.classes.blueprint import KeyList
-from draftsman import utils
-from draftsman.data import entities
 
-import json
+from logging import Filter
+from draftsman.classes.group import Group
+from draftsman.blueprintable import Blueprint
+from draftsman.entity import *
+from draftsman.data import entities, items
+import copy
+import weakref
 
-# bp_string = "0eNqd0ttqwzAMBuB30bVTloOT1q9SxshBHYJECbYyFoLffU4GYWPuNnop+/dn2WiFpp9xssQCZgVqR3Zgris4euW639ZkmRAMkOAACrgetgp7bMVSm9xmy3WL4BUQd/gOJvXPCpCFhPDT2ovlheehQRsChyK2ZjeNVpIGewn6NLpwbOTt3o2q8pNWsIBJLsVJe69+YNn9liJceXB5nMsPbsCO5iE51Gns/yB1nCweeu6d/vRDWBbHygO71U4SYodWwkbEKr41pqAjG/5lT5QRufq/fP5NDpO0z535MqYK3tC6PZCd06K6ZJVOdZqXT95/AMv66Tw="
+import six
 
-# blueprint = Blueprint(bp_string)
-# blueprint.label = "Hello, draftsman!"
+blueprint = Blueprint()
 
-# # Determine where the electric furnace is
-# furnace = blueprint.find_entities_filtered(type = "furnace")[0]
-# pos = [furnace.tile_position["x"] + 1, furnace.tile_position["y"] + 1]
-# print(furnace)
-# blueprint.translate(-pos[0], -pos[1])
-# print(furnace.tile_position)
+# blueprint.entities.append("wooden-chest", tile_position = (-2, 0), id = "wood")
 
-# container = Container("steel-chest")
-# # Set the inventory bar
-# container.bar = int(container.inventory_size / 2)
-# # Lets change the position of our entity in tile coordinates as well
-# container.tile_position = (3, 0)
-# blueprint.add_entity(container)
+# group = Group()
 
+# a = Container("steel-chest", id = "A")
+# b = Container("steel-chest", tile_position = (1, 0), id = "B")
+# #a.add_circuit_connection("red", b)
+
+# group.id = "1"
+# group.position = (0, 0)
+# group.entities.append(a)
+# group.entities.append(b)
+# group.add_circuit_connection("red", "A", "B")
+
+# blueprint.entities.append(group)
+
+# group.id = "2"
+# group.position = (2, 0)
+# blueprint.entities.append(group)
+
+# blueprint.add_circuit_connection("red", "wood", ("1", "A"))
+# blueprint.add_circuit_connection("green", ("1", "B"), ("2", "A"))
+# assert blueprint.entities["1"].entities["A"] is blueprint.entities[("1", "A")]
+
+# print(len(blueprint.entities))
+
+# print(blueprint.entities[("2", "A")])
+# print(blueprint.entities[("2", "A")].id)
+
+# group1 = Group("A")
+# group2 = Group("B")
+# group3 = Group("A")
+# c = Container("wooden-chest", id = "C")
+# base = Container("wooden-chest", id = "base", tile_position = (3, 0))
+
+# group3.entities.append(c)
+# group2.entities.append(group3)
+# group1.entities.append(group2)
+# blueprint.entities.append(group1)
+# blueprint.entities.append(base)
+
+# blueprint.add_circuit_connection("red", ("A", "B", "A", "C"), "base")
+
+# blueprint.entities[("A", "B", "A")].id = "D"
+
+# blueprint.add_circuit_connection("green", ("A", "B", "D", "C"), "base")
+
+# print(blueprint.to_dict())
 # print(blueprint)
 # print(blueprint.to_string())
 
-# blueprint.entities[0].id = "something"
+# silo = RocketSilo()
+# silo.auto_launch = True
+# silo.set_item_request("productivity-module-3", 4)
+# silo.set_item_request("low-density-structure", 720)
 
-# blueprint.add_entity("wooden-chest", id = "something")
+# blueprint.entities.append(silo)
 
-# blueprint.entities["something"].id = "something else"
-# blueprint.entities["something"] -> KeyError
-# blueprint.entities["something else"] -> {...}
+# print(blueprint.to_string())
 
-# test_list = KeyList()
+tester = FilterInserter("filter-inserter")
+tester.set_item_filter(10, "iron-ore")
+blueprint.entities.append(tester)
 
-# test_list.append("wooden-chest", position = (1, 2), id = "something")
-
-# print(test_list.data)
-# print(test_list.key_map)
-# print(test_list.key_to_idx)
-# print(test_list.idx_to_key)
-
-# test_list.clear()
-
-# print(test_list.data)
-# print(test_list.key_map)
-# print(test_list.key_to_idx)
-# print(test_list.idx_to_key)
-
-# source = utils.string_to_JSON("0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTI0s7A0q60FAHmRE1c=")
-# print(utils.decode_version(source["blueprint"]["version"]))
-
-# blueprint = Blueprint("0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTI0s7A0q60FAHmRE1c=")
-# print(blueprint.version_tuple())
-# assert blueprint.to_dict() == utils.string_to_JSON("0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTI0s7A0q60FAHmRE1c=")
-
-#print(json.dumps(entities.raw["pumpjack"]["output_fluid_box"], indent = 2))
-#print(json.dumps(entities.raw["oil-refinery"]["fluid_boxes"], indent = 2))
-#print(json.dumps(entities.raw["chemical-plant"]["fluid_boxes"], indent = 2))
-
-blueprint = Blueprint()
-blueprint.entities.append(Container())
-
-group = Group(id = "chests")
-group.entities.append(Container("iron-chest"))
-
-blueprint.entities.append(group)
-
-print(blueprint)
 print(blueprint.to_string())

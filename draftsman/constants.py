@@ -22,12 +22,6 @@ class Direction(IntEnum):
     WEST = 6
     NORTHWEST = 7
 
-    # def __repr__(self):
-    #     return "<{}.{}: {}>".format(type(self).__name__, self.name, self.value)
-
-    # def __str__(self):
-    #     return str(self.value)
-
 
 class ReadMode(IntEnum):
     """
@@ -37,12 +31,6 @@ class ReadMode(IntEnum):
 
     PULSE = 0
     HOLD = 1
-
-    # def __repr__(self):
-    #     return "<{}.{}: {}>".format(type(self).__name__, self.name, self.value)
-
-    # def __str__(self):
-    #     return str(self.value)
 
 
 class MiningDrillReadMode(IntEnum):
@@ -54,12 +42,6 @@ class MiningDrillReadMode(IntEnum):
     UNDER_DRILL = 0
     TOTAL_PATCH = 1
 
-    # def __repr__(self):
-    #     return "<{}.{}: {}>".format(type(self).__name__, self.name, self.value)
-
-    # def __str__(self):
-    #     return str(self.value)
-
 
 class ModeOfOperation(IntEnum):
     """
@@ -69,9 +51,3 @@ class ModeOfOperation(IntEnum):
     ENABLE_DISABLE = 0
     SET_FILTERS = 1
     NONE = 3
-
-    # def __repr__(self):
-    #     return "<{}.{}: {}>".format(type(self).__name__, self.name, self.value)
-
-    # def __str__(self):
-    #     return str(self.value)

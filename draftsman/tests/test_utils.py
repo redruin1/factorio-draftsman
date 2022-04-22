@@ -4,7 +4,7 @@
 from collections import OrderedDict
 from draftsman import utils
 from draftsman.error import InvalidSignalError
-from draftsman.data import recipes
+from draftsman.data import recipes, signals
 
 import sys
 
@@ -80,23 +80,26 @@ class UtilsTesting(TestCase):
         self.assertEqual(utils.version_tuple_to_string((1, 15, 2, 3)), "1.15.2.3")
 
     def test_get_signal_type(self):
-        self.assertEqual(utils.get_signal_type("signal-anything"), "virtual")
-        self.assertEqual(utils.get_signal_type("water"), "fluid")
-        self.assertEqual(utils.get_signal_type("wooden-chest"), "item")
+        self.assertEqual(signals.get_signal_type("signal-anything"), "virtual")
+        self.assertEqual(signals.get_signal_type("water"), "fluid")
+        self.assertEqual(signals.get_signal_type("wooden-chest"), "item")
         with self.assertRaises(InvalidSignalError):
-            utils.get_signal_type("incorrect")
+            signals.get_signal_type("incorrect")
 
     def test_signal_dict(self):
         self.assertEqual(
-            utils.signal_dict("signal-anything"),
+            signals.signal_dict("signal-anything"),
             {"name": "signal-anything", "type": "virtual"},
         )
-        self.assertEqual(utils.signal_dict("water"), {"name": "water", "type": "fluid"})
         self.assertEqual(
-            utils.signal_dict("wooden-chest"), {"name": "wooden-chest", "type": "item"}
+            signals.signal_dict("water"), {"name": "water", "type": "fluid"}
+        )
+        self.assertEqual(
+            signals.signal_dict("wooden-chest"),
+            {"name": "wooden-chest", "type": "item"},
         )
         with self.assertRaises(InvalidSignalError):
-            utils.signal_dict("incorrect")
+            signals.signal_dict("incorrect")
 
     # def test_dist(self):
     #     self.assertAlmostEqual(
@@ -188,14 +191,21 @@ class UtilsTesting(TestCase):
         self.assertEqual(utils.aabb_to_dimensions([[-5, -5], [10, 0]]), (15, 5))
 
     def test_get_recipe_ingredients(self):
-        self.assertEqual(utils.get_recipe_ingredients("wooden-chest"), {"wood"})
+        # Normal, list-type
+        self.assertEqual(recipes.get_recipe_ingredients("wooden-chest"), {"wood"})
+        # Normal, dict-type
         self.assertEqual(
-            utils.get_recipe_ingredients("iron-gear-wheel"), {"iron-plate"}
+            recipes.get_recipe_ingredients("plastic-bar"), {"petroleum-gas", "coal"}
         )
+        # Expensive, list-type
+        self.assertEqual(
+            recipes.get_recipe_ingredients("iron-gear-wheel"), {"iron-plate"}
+        )
+        # Custom examples
         recipes.raw["test-1"] = {"ingredients": [["iron-plate", 2]]}
-        self.assertEqual(utils.get_recipe_ingredients("test-1"), {"iron-plate"})
+        self.assertEqual(recipes.get_recipe_ingredients("test-1"), {"iron-plate"})
         recipes.raw["test-2"] = {"normal": {"ingredients": [{"name": "iron-plate"}]}}
-        self.assertEqual(utils.get_recipe_ingredients("test-2"), {"iron-plate"})
+        self.assertEqual(recipes.get_recipe_ingredients("test-2"), {"iron-plate"})
 
     def test_reissue_warnings(self):
         @utils.reissue_warnings

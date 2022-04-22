@@ -4,7 +4,8 @@
 from __future__ import unicode_literals
 
 from draftsman import signatures
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
+from draftsman.classes.mixins import RequestItemsMixin
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import rocket_silos
@@ -12,7 +13,7 @@ from draftsman.data.entities import rocket_silos
 import warnings
 
 
-class RocketSilo(Entity):
+class RocketSilo(RequestItemsMixin, Entity):
     def __init__(self, name=rocket_silos[0], **kwargs):
         # type: (str, **dict) -> None
         super(RocketSilo, self).__init__(name, rocket_silos, **kwargs)

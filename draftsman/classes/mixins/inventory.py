@@ -22,6 +22,8 @@ class InventoryMixin(object):
 
         self._inventory_size = entities.raw[self.name]["inventory_size"]
 
+        self._inventory_bar_enabled = True
+
         self.bar = None
         if "bar" in kwargs:
             self.bar = kwargs["bar"]
@@ -42,6 +44,17 @@ class InventoryMixin(object):
     # =========================================================================
 
     @property
+    def inventory_bar_enabled(self):
+        # type: () -> bool
+        """
+        Read only
+        TODO
+        """
+        return self._inventory_bar_enabled
+
+    # =========================================================================
+
+    @property
     def bar(self):
         # type: () -> int
         """
@@ -52,22 +65,26 @@ class InventoryMixin(object):
     @bar.setter
     def bar(self, value):
         # type: (int) -> None
+        if not self.inventory_bar_enabled:
+            raise BarIndexError("This entity does not have bar control")
+
         if value is None:
             self._bar = None
-            return
-
-        if not isinstance(value, int):
-            raise TypeError("'bar' must be an int")
-
-        self._bar = value
-
-        if not 0 <= value < 65536:
-            raise BarIndexError("Bar index ({}) not in range [0, 65536)".format(value))
-        elif value >= self.inventory_size:
-            warnings.warn(
-                "Bar index ({}) not in range [0, {})".format(
-                    value, self.inventory_size
-                ),
-                BarIndexWarning,
-                stacklevel=2,
-            )
+        elif isinstance(value, int):
+            if not 0 <= value < 65536:
+                # Error if out of range
+                raise BarIndexError(
+                    "Bar index ({}) not in range [0, 65536)".format(value)
+                )
+            elif value >= self.inventory_size:
+                # Warn if greater than what makes sense
+                warnings.warn(
+                    "Bar index ({}) not in range [0, {})".format(
+                        value, self.inventory_size
+                    ),
+                    BarIndexWarning,
+                    stacklevel=2,
+                )
+            self._bar = value
+        else:
+            raise TypeError("'bar' must be an int or None")

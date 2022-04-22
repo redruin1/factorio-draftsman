@@ -30,19 +30,19 @@ def main():
         "coal": 40,
         "iron-ore": 40,
         "copper-ore": 40,
-        "uranium-ore": 40
+        "uranium-ore": 40,
     }
 
     blueprint = Blueprint()
     # Locomotive
-    blueprint.entities.append("locomotive", position = [0, 0], orientation = 0.75)
+    blueprint.entities.append("locomotive", position=[0, 0], orientation=0.75)
     # Offset the position to account for the Locomotive
     train_car_position = 1
 
     # Create the cargo wagons
-    cargo_wagon = CargoWagon("cargo-wagon", orientation = 0.75)
-    slot_count = 0 # because inventory slot indexing starts at 1 instead of 0
-    
+    cargo_wagon = CargoWagon("cargo-wagon", orientation=0.75)
+    slot_count = 0  # because inventory slot indexing starts at 1 instead of 0
+
     for item, slots in contents.items():
         # Set the filters
         for _ in range(slots):
@@ -52,24 +52,24 @@ def main():
                 cargo_wagon.tile_position = (7 * train_car_position, 0)
                 blueprint.entities.append(cargo_wagon)
                 # Reset
-                cargo_wagon = CargoWagon("cargo-wagon", orientation = 0.75)
+                cargo_wagon = CargoWagon("cargo-wagon", orientation=0.75)
                 slot_count = 0
                 train_car_position += 1
-            
+
             cargo_wagon.set_inventory_filter(slot_count, item)
             slot_count += 1
-    
+
     # Add the last wagon if we didn't exceed the inventory
     cargo_wagon.tile_position = (7 * train_car_position, 0)
     blueprint.entities.append(cargo_wagon)
 
     # Add a fancy title
     blueprint.label = "1-{} Filtered Train".format(train_car_position)
-    blueprint.label_color = (1.0, 0.0, 0.0) # because why not
+    blueprint.label_color = (1.0, 0.0, 0.0)  # because why not
 
-    #print(blueprint)
+    # print(blueprint)
     print(blueprint.to_string())
-    
+
 
 if __name__ == "__main__":
     main()

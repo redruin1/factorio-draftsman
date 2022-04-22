@@ -1,0 +1,147 @@
+Blueprints
+==========
+
+Differences between a Blueprint object and a JSON dict
+------------------------------------------------------
+
+Blueprint classes have 2 attributes that are different than a static blueprint dict:
+
+1. blueprint.entities
+2. blueprint.tiles
+
+Both of these are a ``<EntityList>`` and ``<TileList>``, respectively.
+Both lists have all of the normal methods you would expect from lists:
+
+.. code-block:: python
+
+    blueprint = Blueprint()
+    blueprint.entities[0]           # __getitem__
+    blueprint.entities[1] = ...     # __setitem__
+    blueprint.entities.append(...)
+    blueprint.entities.insert(...)
+    blueprint.entities.reverse()
+    blueprint.entities.sort()
+    blueprint.entities.copy()
+    # TileLists are largely the same:
+    blueprint.tiles.append(...)
+    # etc...
+
+However, they also posess some extra functions. 
+Like most other blueprint attributes, they are type-checked to only accept ``EntityLike`` and ``Tile`` objects:
+
+.. code-block:: python
+
+    blueprint.entities.append(20)   # TypeError: Entry in EntityList must be an EntityLike
+    blueprint.tiles.append(30)      # TypeError: Entry in TileList must be a Tile
+
+Their append and insert functions allow for keyword arguments, similar to ``new_entity()`` or Entity and Tile constructors:
+
+.. code-block:: python
+
+    from draftsman import Blueprint, Inserter, Tile
+
+    blueprint = Blueprint()
+    blueprint.entities.append("inserter", id = "test", tile_position = (14, 10))
+    assert isinstance(blueprint.entities[0], Inserter)
+    assert blueprint.entities[0].name == "inserter"
+    assert blueprint.entities[0].id == "test"
+    assert blueprint.entities[0].tile_position == {"x": 14, "y": 10}
+
+    # Insert is also similar with an additional positional argument:
+    blueprint.tiles.insert(0, "refined-hazard-concrete-left", position = (1, 1))
+    assert isinstance(blueprint.tiles[0], Tile)
+    assert blueprint.tiles[0].name == "refined-hazard-concrete-left"
+    assert blueprint.tiles[0].position = {"x": 1, "y": 1}
+
+    blueprint.entities.append("any old string") # InvalidEntityError: 'any old string'
+
+EntityLists can be indexed by string if there is a matching entity with that id inside of the EntityList:
+
+.. code-block:: python
+
+    blueprint = Blueprint()
+    belt = TransportBelt("fast-transport-belt", id = "this works!")
+    blueprint.entities.append(belt)
+    assert blueprint.entities["this works!"].name == "fast-transport-belt"
+
+This only works for entities because tiles have no IDs.
+
+Blueprint Dimensions
+--------------------
+
+Spatial Queries inside Blueprints
+---------------------------------
+
+The reason for choosing a Spatial hash-map over a Quadtree was two-fold:
+
+1. Spatial hashmaps tend to perform best on small grids of similarly-sized objects spaced evenly across an area; which tends to describe most Blueprints rather well.
+2. In this case, a hash-map was simpler to implement than a full blown quadtree, and at this point a hashmap is probably perfectly sufficient for the needs of most users.
+
+
+Manipulating Entities inside of Blueprints
+------------------------------------------
+
+Giving the user direct access to the ``entities`` list allows for very clear and flexible code.
+Sometimes, though, this flexibility can be a little *too* much:
+
+.. code-block:: python
+
+    # Lets place a small power pole at the origin
+    blueprint.entities.append("small-electric-pole")
+    # Now, let's place a inserter right next to it
+    blueprint.entities.append("inserter", tile_position = (1, 0))
+
+    # What if we do this?
+    blueprint.entities[0].name = "substation"
+    # This:
+    #   Now should raise an OverlappingEntitiesWarning because it intersects the inserter
+    #   Changes the dimensions of the entire blueprint
+    #   Might change the hashmap grid cells the entity is located in
+    #   Might introduce invalid data states where an entity now has attributes it shouldn't
+
+Thats a lot of potential problems! 
+Now, theoretically it should be possible to handle all of these cases properly, though handling them *elegantly* is a tougher problem.
+Currently, Draftsman sidesteps this by simply preventing the modification of the entity's name when it exists inside a blueprint:
+
+.. code-block:: python
+
+    blueprint.entities[0].name = "substation" # DraftsmanError: cannot modify when in blueprint
+
+Note however that not all attributes are like this, and most can still be modified when placed inside a blueprint; only an important, select few are restricted in this way.
+A complete list of all attributes that are 'guarded' like this and their reasons are provided below:
+
+.. list-table:: Restricted Entity Attributes
+    :header-rows: 1
+
+    * - Attribute
+      - Reason(s)
+    * - ``entity.name``
+      - * New entity dimension has potential to occupy other entities' space
+        * New entity dimension might change dimensions of parent blueprint
+        * Might exist in the incorrect hashmap grid cells
+        * New entity could have data it shouldn't
+    * - | ``entity.position`` or
+        | ``entity.tile_position``
+      - * New position has potential to occupy other entities' space
+        * New position might change dimensions of parent blueprint
+        * Might exist in the incorrect hashmap grid cells
+    * - ``entity.direction`` (if applicable)
+      - * New direction (if non-square) might occupy other entities' space
+        * New position might change dimensions of parent blueprint
+        * Might exist in the incorrect hashmap grid cells
+    * - ``entity.id`` (if applicable)
+      - * Changes the ``key_map`` of the ``EntityList`` object it resides in
+        * Has a chance to invalidate already established connections
+
+The proper way to deal with modifying these parameters on an entity is to remove it, change its attribute, and then re-add it:
+
+.. code-block:: python
+
+    blueprint.entities.append("small-electric-pole")
+    blueprint.entities.append("inserter", tile_position = (1, 0))
+
+    power_pole = blueprint.entities.pop(0) # small-electric-pole
+    power_pole.name = "substation"
+    blueprint.entities.append(power_pole)
+    # This raises the correct warnings and errors in a much more predictable way,
+    # which makes the maintainer much happier :)

@@ -6,5 +6,6 @@ Handbook
 .. toctree::
     :maxdepth: 2
     
-    overview/index.rst
+    overview/entities.rst
+    overview/blueprints.rst
     concepts/index.rst

@@ -3,6 +3,7 @@
 
 from draftsman.classes.blueprint import SpatialHashMap
 from draftsman.tile import Tile
+from draftsman.warning import OverlappingObjectsWarning
 
 import sys
 
@@ -65,11 +66,15 @@ class SpatialHashMapTesting(TestCase):
         results = map.get_on_point((0, 0))
         self.assertEqual(results, [tile_to_add])
         other_tile_to_add = Tile("landfill", (0, 0))
-        map.add(other_tile_to_add)
+        with self.assertWarns(OverlappingObjectsWarning):
+            map.add(other_tile_to_add)
         results = map.get_on_point((0, 0))
         self.assertEqual(results, [tile_to_add, other_tile_to_add])
         results = map.get_on_point((0, 0), limit=1)
         self.assertEqual(results, [tile_to_add])
+        # Point not in map case
+        results = map.get_on_point((100, 100))
+        self.assertEqual(results, [])
 
     def test_get_in_area(self):
         map = SpatialHashMap()

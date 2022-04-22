@@ -3,10 +3,9 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import RequestItemsMixin, RecipeMixin
 from draftsman.error import InvalidItemError
-from draftsman.utils import get_recipe_ingredients
 from draftsman.warning import (
     DraftsmanWarning,
     ModuleLimitationWarning,
@@ -15,7 +14,8 @@ from draftsman.warning import (
 
 from draftsman.data.entities import assembling_machines
 from draftsman.data import modules
-from draftsman.data import signals
+from draftsman.data import items
+from draftsman.data import recipes
 
 import warnings
 
@@ -38,8 +38,8 @@ class AssemblingMachine(RecipeMixin, RequestItemsMixin, Entity):
         Overwritten
         """
         # Make sure the item exists
-        if item not in signals.item:  # TODO: maybe items.all instead?
-            raise InvalidItemError(item)
+        if item not in items.raw:
+            raise InvalidItemError("'{}'".format(item))
 
         # If the item is a module
         if item in modules.raw:
@@ -59,7 +59,7 @@ class AssemblingMachine(RecipeMixin, RequestItemsMixin, Entity):
 
         # Make sure the item is one of the input ingredients for the recipe
         elif self.recipe is not None:
-            ingredients = get_recipe_ingredients(self.recipe)
+            ingredients = recipes.get_recipe_ingredients(self.recipe)
 
             if item not in ingredients:
                 warnings.warn(

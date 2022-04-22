@@ -1,7 +1,9 @@
 # blueprintbook.py
 # -*- encoding: utf-8 -*-
 
-# TODO: Complete!
+"""
+TODO: documentation
+"""
 
 from __future__ import unicode_literals
 
@@ -11,6 +13,8 @@ from draftsman.error import IncorrectBlueprintTypeError
 from draftsman import signatures
 from draftsman import utils
 from draftsman.warning import DraftsmanWarning
+
+from draftsman.data.signals import signal_dict
 
 try:  # pragma: no coverage
     from collections.abc import MutableSequence
@@ -210,7 +214,7 @@ class BlueprintBook(object):
         for i, signal in enumerate(value):
             if isinstance(signal, str):
                 out = {"index": i + 1}
-                out["signal"] = utils.signal_dict(signal)
+                out["signal"] = signal_dict(signal)
             elif isinstance(signal, dict):
                 try:
                     out = signatures.ICON.validate(signal)

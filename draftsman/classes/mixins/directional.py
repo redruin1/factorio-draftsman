@@ -55,9 +55,9 @@ class DirectionalMixin(object):
     @direction.setter
     def direction(self, value):
         # type: (Direction) -> None
-        if self.blueprint:
+        if self.parent:
             raise DraftsmanError(
-                "Cannot set direction of entity while it's in a Blueprint"
+                "Cannot set direction of entity while it's in another object"
             )
 
         if value is None:

@@ -4,12 +4,12 @@
 from __future__ import unicode_literals
 
 from draftsman import signatures
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMixin
-from draftsman.utils import signal_dict
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import roboports
+from draftsman.data.signals import signal_dict
 
 from schema import SchemaError
 import six

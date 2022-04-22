@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import RequestItemsMixin
 from draftsman.error import InvalidItemError
 from draftsman.warning import (
@@ -38,7 +38,7 @@ class Beacon(RequestItemsMixin, Entity):
         """
         # Make sure the item exists
         if item not in signals.item:  # TODO: maybe items.all instead?
-            raise InvalidItemError(item)
+            raise InvalidItemError("'{}'".format(item))
 
         if item not in modules.raw:
             warnings.warn(

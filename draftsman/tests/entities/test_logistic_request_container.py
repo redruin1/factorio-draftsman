@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import LogisticRequestContainer, logistic_request_containers
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
@@ -104,12 +104,12 @@ class LogisticRequestContainerTesting(TestCase):
         with self.assertRaises(TypeError):
             LogisticRequestContainer("logistic-chest-requester", bar="not even trying")
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             LogisticRequestContainer(
                 "logistic-chest-requester", connections={"this is": ["very", "wrong"]}
             )
 
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             LogisticRequestContainer(
                 "logistic-chest-requester",
                 request_filters={"this is": ["very", "wrong"]},

@@ -13,5 +13,5 @@ else:  # pragma: no coverage
 
 class ValidateVersion(TestCase):
     def test_versions(self):
-        self.assertEqual(draftsman.__version__, "0.5.0")
-        self.assertEqual(draftsman.__version_info__, (0, 5, 0))
+        self.assertEqual(draftsman.__version__, "0.6.0")
+        self.assertEqual(draftsman.__version_info__, (0, 6, 0))

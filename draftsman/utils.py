@@ -9,16 +9,12 @@ provided to the user as-is.
 
 from __future__ import unicode_literals
 
-from draftsman.error import MalformedBlueprintStringError, InvalidSignalError
-
-from draftsman.data import recipes
-from draftsman.data import signals
+from draftsman.error import MalformedBlueprintStringError
 
 import base64
 import json
 import math
 from functools import wraps
-import six
 from typing import Any
 import warnings
 import zlib
@@ -140,56 +136,17 @@ def version_tuple_to_string(version_tuple):
     return ".".join(str(x) for x in version_tuple)
 
 
-def get_signal_type(signal_name):
-    # type: (str) -> str
-    """
-    Returns the type of the signal based on its ID string.
-
-    Signal ID objects in blueprints require a ``"type"`` field when specifying
-    them. However, this information is redundant most of the time, as the type
-    for any signal is always the same, making writing it out arduous. This
-    function conveniently gets the signal type from the signal's name.
-
-    :param signal_name: The name of the signal.
-    :returns: ``"virtual"``, ``"fluid"``, or ``"item"``
-    :exception InvalidSignalError: If the signal name is not contained within
-        :py:mod:`draftsman.data.signals`.
-    """
-    # if signal_name in signals.virtual:
-    #     return "virtual"
-    # elif signal_name in signals.fluid:
-    #     return "fluid"
-    # elif signal_name in signals.item:
-    #     return "item"
-    # else:
-    #     raise InvalidSignalError("'{}'".format(str(signal_name)))
-
-    try:
-        return six.text_type(signals.raw[signal_name])
-    except KeyError:
-        raise InvalidSignalError("'{}'".format(signal_name))
-
-
-def signal_dict(signal_name):
-    # type: (str) -> dict
-    """
-    Creates a Signal ID ``dict`` from the given signal name.
-
-    Uses :py:func:`get_signal_type` to get the type for the dictionary.
-
-    :param signal_name: The name of the signal.
-
-    :returns: A dict with the ``"name"`` and ``type`` key's set.
-    """
-    return {"name": signal_name, "type": get_signal_type(signal_name)}
-
-
 def dist(point1, point2):
     """
     Gets the Euclidean distance between two points.
     This is mostly just for python 2 compatability.
     """
-    return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
+    try:
+        return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
+    except KeyError:
+        return math.sqrt(
+            (point1["x"] - point2["x"]) ** 2 + (point1["y"] - point2["y"]) ** 2
+        )
 
 
 def point_in_aabb(p, a):
@@ -301,51 +258,43 @@ def aabb_to_dimensions(aabb):
     # type: (list[list, list]) -> tuple[int, int]
     """
     Gets the tile-dimensions of an AABB, or the minimum number of tiles across
-    each axis that the box would have to take up.
+    each axis that the box would have to take up. If the input `aabb` is None,
+    the function returns (0, 0).
 
     :param aabb: 2-Dimensional list where the first pair is the minimum coordinate
         and the second pair is the maximum coordinate.
 
     :returns: a tuple of the form ``(tile_width, tile_height)``
     """
+    if aabb is None:
+        return 0, 0
     x = int(math.ceil(aabb[1][0] - aabb[0][0]))
     y = int(math.ceil(aabb[1][1] - aabb[0][1]))
     return x, y
 
 
-def get_recipe_ingredients(recipe_name):
-    # type: (str) -> set[str]
-    """
-    Returns a set of all item types that `recipe_name` requires. Discards
-    quantities.
-
-    First attempts to get the ``"ingredients"`` key from the recipe. If that
-    fails, we then attempt to get the contents of the ``"normal"`` key from
-    recipe (which is the list of ingredients under non-expensive map settings).
-
-    .. NOTE::
-
-        Assumes that the items required for 'normal' mode are the same as
-        'expensive' mode. This is unlikely true under all circumstances, but how
-        will we issue warnings for invalid item requests if we dont know what
-        mode the world save is in?
-
-    :param recipe_name: The name of the recipe to get the ingredients of.
-
-    :returns: A ``set`` of names of each Factorio item that the recipe requires.
-    """
-    if "ingredients" in recipes.raw[recipe_name]:
-        try:
-            return {x[0] for x in recipes.raw[recipe_name]["ingredients"]}
-        except KeyError:
-            return {x["name"] for x in recipes.raw[recipe_name]["ingredients"]}
-    else:  # "normal" in recipes.raw[recipe_name]:
-        try:
-            return {x[0] for x in recipes.raw[recipe_name]["normal"]["ingredients"]}
-        except KeyError:
-            return {
-                x["name"] for x in recipes.raw[recipe_name]["normal"]["ingredients"]
-            }
+# def ignore_traceback(func):
+#     # type: (Any) -> Any
+#     """
+#     Decorator that removes other decorators from traceback.
+#     Pulled from https://stackoverflow.com/questions/22825165/can-decorators-be-removed-from-python-exception-tracebacks
+#     """
+#     @wraps(func)
+#     def wrapper_ignore_exctb(*args, **kwargs):
+#         try:
+#             return func(*args, **kwargs)
+#         except Exception:
+#             # Code to remove this decorator from traceback
+#             exc_type, exc_value, exc_traceback = sys.exc_info()
+#             try:
+#                 exc_traceback = exc_traceback.tb_next
+#                 exc_traceback = exc_traceback.tb_next
+#             except Exception:  # pragma: no coverage
+#                 pass
+#             ex = exc_type(exc_value)
+#             ex.__traceback__ = exc_traceback
+#             raise ex
+#     return wrapper_ignore_exctb
 
 
 def reissue_warnings(func):
@@ -358,7 +307,7 @@ def reissue_warnings(func):
 
     :returns: The result of the function.
     """
-
+    # @ignore_traceback
     @wraps(func)
     def inner(*args, **kwargs):
         with warnings.catch_warnings(record=True) as warning_list:

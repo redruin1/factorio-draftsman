@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from draftsman.constants import Direction, ModeOfOperation
 from draftsman.entity import TransportBelt, transport_belts
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
@@ -92,10 +92,10 @@ class TransportBeltTesting(TestCase):
         with self.assertRaises(ValueError):
             TransportBelt("transport-belt", direction="incorrect")
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             TransportBelt("transport-belt", connections={"this is": ["very", "wrong"]})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             TransportBelt(
                 "transport-belt",
                 control_behavior={"this is": ["also", "very", "wrong"]},

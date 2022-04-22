@@ -88,16 +88,16 @@ class CircuitConditionMixinTesting(TestCase):
 
         # Errors
         # Constant first
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             transport_belt.set_enabled_condition(10, ">", "signal-B")
         # Invalid A
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             transport_belt.set_enabled_condition(TypeError, ">", "signal-B")
         # Invalid Operation
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             transport_belt.set_enabled_condition("signal-A", "hmm", "signal-B")
         # Invalid B
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             transport_belt.set_enabled_condition("signal-A", ">", TypeError)
 
     def test_remove_enabled_condition(self):  # TODO delete
@@ -151,233 +151,7 @@ class CircuitConditionMixinTesting(TestCase):
 
 
 class CircuitConnectableMixinTesting(TestCase):
-    def test_add_circuit_connection(self):
-        container1 = Container("steel-chest", id="c1", tile_position=[-1, 0])
-        container2 = Container("steel-chest", id="c2", tile_position=[1, 0])
-
-        # Redundant, thats what the constructor uses
-        # container.set_connections()
-
-        # When writing entity connections, I want each function to only modify
-        # the calling entity; this means in order to setup a "normal" connection
-        # you have to call the function twice, once to connect entity A to
-        # entity B and again to connect entity B to entity A:
-        container1.add_circuit_connection("red", container2)
-        # container2.add_circuit_connection("red", container1)
-        # Note that this connection cannot be realized unless put into a
-        # `Blueprint` object, as each entity has no knowledge of what the id's
-        # of other entities are.
-        # Also note that its impossible to set an entity to connect to an int
-        # `entity_number` instead of a string `id`. It wouldn't make much sense
-        # anyway; how do you figure out the `entity_number` of an entity that
-        # currently isn't in any blueprint?
-        self.assertEqual(
-            container1.to_dict(),
-            {
-                "name": "steel-chest",
-                "position": {"x": -0.5, "y": 0.5},
-                "connections": {"1": {"red": [{"entity_id": "c2"}]}},
-            },
-        )
-        self.assertEqual(
-            container2.to_dict(),
-            {
-                "name": "steel-chest",
-                "position": {"x": 1.5, "y": 0.5},
-                "connections": {"1": {"red": [{"entity_id": "c1"}]}},
-            },
-        )
-        # Test duplicate connection
-        container2.add_circuit_connection("red", container1)
-        self.assertEqual(
-            container1.to_dict(),
-            {
-                "name": "steel-chest",
-                "position": {"x": -0.5, "y": 0.5},
-                "connections": {"1": {"red": [{"entity_id": "c2"}]}},
-            },
-        )
-        self.assertEqual(
-            container2.to_dict(),
-            {
-                "name": "steel-chest",
-                "position": {"x": 1.5, "y": 0.5},
-                "connections": {"1": {"red": [{"entity_id": "c1"}]}},
-            },
-        )
-
-        # set_connections to None
-        container1.connections = {}
-        self.assertEqual(container1.connections, {})
-
-        # Test when the same side and color dict already exists
-        container3 = Container(id="test")
-        container2.add_circuit_connection("red", container3)
-        self.assertEqual(
-            container2.to_dict(),
-            {
-                "name": "steel-chest",
-                "position": {"x": 1.5, "y": 0.5},
-                "connections": {
-                    "1": {"red": [{"entity_id": "c1"}, {"entity_id": "test"}]}
-                },
-            },
-        )
-
-        # Test multiple connection points
-        arithmetic_combinator = ArithmeticCombinator(id="a")
-        decider_combinator = DeciderCombinator(id="d")
-        arithmetic_combinator.add_circuit_connection(
-            "green", arithmetic_combinator, 1, 2
-        )
-        decider_combinator.add_circuit_connection("red", arithmetic_combinator, 1, 2)
-        self.assertEqual(
-            arithmetic_combinator.connections,
-            {
-                "1": {"green": [{"entity_id": "a", "circuit_id": 2}]},
-                "2": {
-                    "green": [{"entity_id": "a", "circuit_id": 1}],
-                    "red": [{"entity_id": "d", "circuit_id": 1}],
-                },
-            },
-        )
-        self.assertEqual(
-            decider_combinator.connections,
-            {"1": {"red": [{"entity_id": "a", "circuit_id": 2}]}},
-        )
-
-        # Warnings
-        # Warn if source or target side is not 1 on entity that is not dual
-        # connectable
-        with self.assertWarns(ConnectionSideWarning):
-            container1.add_circuit_connection("green", container2, 1, 2)
-        with self.assertWarns(ConnectionSideWarning):
-            container2.add_circuit_connection("green", container1, 2, 1)
-        # Warn if connection being made is over too long a distance
-        with self.assertWarns(ConnectionDistanceWarning):
-            container4 = Container(position=[100, 100], id="no error pls")
-            container2.add_circuit_connection("green", container4)
-
-        # Errors
-        with self.assertRaises(InvalidWireTypeError):
-            container1.add_circuit_connection("wrong", container2)
-
-        with self.assertRaises(TypeError):
-            container1.add_circuit_connection("red", SchemaError)
-
-        with self.assertRaises(ValueError):
-            container_with_no_id = Container()
-            container1.add_circuit_connection("red", container_with_no_id)
-
-        with self.assertRaises(InvalidConnectionSideError):
-            container1.add_circuit_connection("red", container2, "fish", 2)
-        with self.assertRaises(InvalidConnectionSideError):
-            container2.add_circuit_connection("red", container2, 2, "fish")
-
-        with self.assertRaises(EntityNotCircuitConnectableError):
-            not_circuit_connectable = Splitter("fast-splitter", id="no error pls")
-            container1.add_circuit_connection("red", not_circuit_connectable)
-
-    def test_remove_circuit_connection(self):
-        container1 = Container(id="testing1", tile_position=[0, 0])
-        container2 = Container(id="testing2", tile_position=[1, 0])
-
-        # Null case
-        container1.remove_circuit_connection("red", container2)
-        self.assertEqual(
-            container1.to_dict(),
-            {
-                "name": "wooden-chest",
-                "position": {"x": 0.5, "y": 0.5},
-            },
-        )
-        self.assertEqual(
-            container2.to_dict(),
-            {
-                "name": "wooden-chest",
-                "position": {"x": 1.5, "y": 0.5},
-            },
-        )
-
-        # Normal Operation
-        container1.add_circuit_connection("red", container2)
-        container2.add_circuit_connection("green", container1)
-        container1.remove_circuit_connection("red", container2)
-        self.assertEqual(
-            container1.to_dict(),
-            {
-                "name": "wooden-chest",
-                "position": {"x": 0.5, "y": 0.5},
-                "connections": {"1": {"green": [{"entity_id": "testing2"}]}},
-            },
-        )
-        self.assertEqual(
-            container2.to_dict(),
-            {
-                "name": "wooden-chest",
-                "position": {"x": 1.5, "y": 0.5},
-                "connections": {"1": {"green": [{"entity_id": "testing1"}]}},
-            },
-        )
-
-        # Redundant operation
-        container1.remove_circuit_connection("red", container1)
-        self.assertEqual(
-            container1.to_dict(),
-            {
-                "name": "wooden-chest",
-                "position": {"x": 0.5, "y": 0.5},
-                "connections": {"1": {"green": [{"entity_id": "testing2"}]}},
-            },
-        )
-        # Test multiple connection points
-        arithmetic_combinator = ArithmeticCombinator(id="a")
-        decider_combinator = DeciderCombinator(id="d")
-        constant_combinator = ConstantCombinator(id="c")
-
-        arithmetic_combinator.add_circuit_connection("green", decider_combinator)
-        arithmetic_combinator.add_circuit_connection("green", decider_combinator, 1, 2)
-        arithmetic_combinator.add_circuit_connection(
-            "green", arithmetic_combinator, 1, 2
-        )
-        arithmetic_combinator.add_circuit_connection("red", decider_combinator, 2, 1)
-        arithmetic_combinator.add_circuit_connection("red", decider_combinator, 2, 2)
-        constant_combinator.add_circuit_connection("red", decider_combinator, 1, 2)
-
-        arithmetic_combinator.remove_circuit_connection("green", decider_combinator)
-        arithmetic_combinator.remove_circuit_connection(
-            "green", decider_combinator, 1, 2
-        )
-        arithmetic_combinator.remove_circuit_connection(
-            "green", arithmetic_combinator, 1, 2
-        )
-        arithmetic_combinator.remove_circuit_connection("red", decider_combinator, 2, 1)
-        arithmetic_combinator.remove_circuit_connection("red", decider_combinator, 2, 2)
-
-        self.assertEqual(arithmetic_combinator.connections, {})
-        self.assertEqual(
-            decider_combinator.connections, {"2": {"red": [{"entity_id": "c"}]}}
-        )
-        self.assertEqual(
-            constant_combinator.connections,
-            {"1": {"red": [{"entity_id": "d", "circuit_id": 2}]}},
-        )
-
-        # Errors
-        with self.assertRaises(InvalidWireTypeError):
-            container1.remove_circuit_connection("wrong", container2)
-
-        with self.assertRaises(TypeError):
-            container1.remove_circuit_connection("red", SchemaError)
-
-        with self.assertRaises(ValueError):
-            container_with_no_id = Container()
-            container1.remove_circuit_connection("red", container_with_no_id)
-
-        with self.assertRaises(InvalidConnectionSideError):
-            container1.remove_circuit_connection("red", container2, "fish", 2)
-        with self.assertRaises(InvalidConnectionSideError):
-            container2.remove_circuit_connection("red", container2, 2, "fish")
+    pass
 
 
 ################################################################################
@@ -409,7 +183,7 @@ class CircuitReadContentsMixinTesting(TestCase):
         transport_belt.read_mode = None
         self.assertEqual(transport_belt.control_behavior, {})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             transport_belt.read_mode = "wrong"
 
 
@@ -438,7 +212,7 @@ class CircuitReadHandMixinTesting(TestCase):
         inserter.read_mode = None
         self.assertEqual(inserter.control_behavior, {})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             inserter.read_mode = "wrong"
 
 
@@ -469,10 +243,10 @@ class ColorMixinTesting(TestCase):
         train_stop.color = None
         self.assertEqual(train_stop.color, None)
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             train_stop.color = (1000, 200, 0)
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             train_stop.color = ("wrong", 1.0, 1.0)
 
 
@@ -594,11 +368,10 @@ class FiltersMixinTesting(TestCase):
         inserter.set_item_filter(0, None)
         self.assertEqual(inserter.filters, [{"index": 2, "name": "burner-inserter"}])
 
-        # Warnings
-        # with self.assertWarns(UserWarning):
-        #     inserter.set_item_filter(100, "small-lamp")
-
         # Errors
+        with self.assertRaises(IndexError):
+            inserter.set_item_filter(100, "small-lamp")
+
         with self.assertRaises(InvalidItemError):
             inserter.set_item_filter(0, "incorrect")
 
@@ -636,16 +409,19 @@ class FiltersMixinTesting(TestCase):
         inserter.set_item_filters(None)
         self.assertEqual(inserter.filters, None)
 
-        # Warnings
-        # Outside of index range
-        # with self.assertWarns(UserWarning):
-        #     inserter.set_item_filters(
-        #         {"index": 1, "name": "transport-belt"},
-        #         {"index": 100, "name": "fast-transport-belt"},
-        #         {"index": 3, "name": "express-transport-belt"}
-        #     )
-
         # Errors
+        with self.assertRaises(DataFormatError):
+            inserter.set_item_filters({"incorrect": "format"})
+
+        with self.assertRaises(IndexError):
+            inserter.set_item_filters(
+                [
+                    {"index": 1, "name": "transport-belt"},
+                    {"index": 100, "name": "fast-transport-belt"},
+                    {"index": 3, "name": "express-transport-belt"},
+                ]
+            )
+
         with self.assertRaises(InvalidItemError):
             inserter.set_item_filters(
                 ["transport-belt", "incorrect", "express-transport-belt"]
@@ -805,7 +581,14 @@ class InventoryFilterMixinTesting(TestCase):
 
 class IOTypeMixinTesting(TestCase):
     def test_set_io_type(self):
-        pass  # unnecessary?
+        belt = UndergroundBelt()
+        # belt.io_type = "input"
+
+        with self.assertRaises(TypeError):
+            belt.io_type = TypeError
+
+        with self.assertRaises(ValueError):
+            belt.io_type = "not correct"
 
 
 ################################################################################
@@ -859,16 +642,16 @@ class LogisticConditionMixinTesting(TestCase):
 
         # Errors
         # Constant first
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             transport_belt.set_logistic_condition(10, ">", "signal-B")
         # Invalid A
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             transport_belt.set_logistic_condition(TypeError, ">", "signal-B")
         # Invalid Operation
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             transport_belt.set_logistic_condition("signal-A", "hmm", "signal-B")
         # Invalid B
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             transport_belt.set_logistic_condition("signal-A", ">", TypeError)
 
     def test_remove_logistic_condition(self):  # TODO delete
@@ -899,7 +682,7 @@ class ModeOfOperationMixinTesting(TestCase):
             {"circuit_mode_of_operation": ModeOfOperation.NONE},
         )
         # Errors
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             inserter.mode_of_operation = "wrong"
 
 
@@ -932,107 +715,107 @@ class PowerConnectableMixinTesting(TestCase):
         substation = ElectricPole("substation")
         substation.neighbours = None
         self.assertEqual(substation.neighbours, [])
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             substation.neighbours = {"completely", "wrong"}
 
-    def test_add_power_connection(self):
-        substation1 = ElectricPole("substation", id="1")
-        substation2 = ElectricPole("substation", id="2")
-        power_switch = PowerSwitch(id="p")
+    # def test_add_power_connection(self):
+    #     substation1 = ElectricPole("substation", id="1")
+    #     substation2 = ElectricPole("substation", id="2")
+    #     power_switch = PowerSwitch(id="p")
 
-        substation1.add_power_connection(substation2)
-        self.assertEqual(substation1.neighbours, ["2"])
-        self.assertEqual(substation2.neighbours, ["1"])
-        substation2.add_power_connection(substation1)
-        self.assertEqual(substation1.neighbours, ["2"])
-        self.assertEqual(substation2.neighbours, ["1"])
+    #     substation1.add_power_connection(substation2)
+    #     self.assertEqual(substation1.neighbours, ["2"])
+    #     self.assertEqual(substation2.neighbours, ["1"])
+    #     substation2.add_power_connection(substation1)
+    #     self.assertEqual(substation1.neighbours, ["2"])
+    #     self.assertEqual(substation2.neighbours, ["1"])
 
-        substation1.add_power_connection(power_switch)
-        self.assertEqual(substation1.neighbours, ["2"])
-        self.assertEqual(
-            power_switch.connections, {"Cu0": [{"entity_id": "1", "wire_id": 0}]}
-        )
-        power_switch.add_power_connection(substation1)
-        self.assertEqual(substation1.neighbours, ["2"])
-        self.assertEqual(
-            power_switch.connections, {"Cu0": [{"entity_id": "1", "wire_id": 0}]}
-        )
-        substation2.add_power_connection(power_switch)
-        substation2.add_power_connection(power_switch)
-        self.assertEqual(substation2.neighbours, ["1"])
-        self.assertEqual(
-            power_switch.connections,
-            {
-                "Cu0": [
-                    {"entity_id": "1", "wire_id": 0},
-                    {"entity_id": "2", "wire_id": 0},
-                ]
-            },
-        )
-        power_switch.add_power_connection(substation2, side=2)
-        self.assertEqual(
-            power_switch.connections,
-            {
-                "Cu0": [
-                    {"entity_id": "1", "wire_id": 0},
-                    {"entity_id": "2", "wire_id": 0},
-                ],
-                "Cu1": [{"entity_id": "2", "wire_id": 0}],
-            },
-        )
+    #     substation1.add_power_connection(power_switch)
+    #     self.assertEqual(substation1.neighbours, ["2"])
+    #     self.assertEqual(
+    #         power_switch.connections, {"Cu0": [{"entity_id": "1", "wire_id": 0}]}
+    #     )
+    #     power_switch.add_power_connection(substation1)
+    #     self.assertEqual(substation1.neighbours, ["2"])
+    #     self.assertEqual(
+    #         power_switch.connections, {"Cu0": [{"entity_id": "1", "wire_id": 0}]}
+    #     )
+    #     substation2.add_power_connection(power_switch)
+    #     substation2.add_power_connection(power_switch)
+    #     self.assertEqual(substation2.neighbours, ["1"])
+    #     self.assertEqual(
+    #         power_switch.connections,
+    #         {
+    #             "Cu0": [
+    #                 {"entity_id": "1", "wire_id": 0},
+    #                 {"entity_id": "2", "wire_id": 0},
+    #             ]
+    #         },
+    #     )
+    #     power_switch.add_power_connection(substation2, side=2)
+    #     self.assertEqual(
+    #         power_switch.connections,
+    #         {
+    #             "Cu0": [
+    #                 {"entity_id": "1", "wire_id": 0},
+    #                 {"entity_id": "2", "wire_id": 0},
+    #             ],
+    #             "Cu1": [{"entity_id": "2", "wire_id": 0}],
+    #         },
+    #     )
 
-        # Warnings
-        with self.assertWarns(ConnectionDistanceWarning):
-            other = ElectricPole(position=[100, 0], id="other")
-            substation1.add_power_connection(other)
+    #     # Warnings
+    #     with self.assertWarns(ConnectionDistanceWarning):
+    #         other = ElectricPole(position=[100, 0], id="other")
+    #         substation1.add_power_connection(other)
 
-        # Errors
-        with self.assertRaises(EntityNotPowerConnectableError):
-            substation1.add_power_connection(TransportBelt(id="whatever"))
-        with self.assertRaises(Exception):
-            power_switch.add_power_connection(PowerSwitch())
+    #     # Errors
+    #     with self.assertRaises(EntityNotPowerConnectableError):
+    #         substation1.add_power_connection(TransportBelt(id="whatever"))
+    #     with self.assertRaises(Exception):
+    #         power_switch.add_power_connection(PowerSwitch())
 
-        # Make sure correct even after errors
-        self.assertEqual(substation1.neighbours, ["2", "other"])
-        self.assertEqual(
-            power_switch.connections,
-            {
-                "Cu0": [
-                    {"entity_id": "1", "wire_id": 0},
-                    {"entity_id": "2", "wire_id": 0},
-                ],
-                "Cu1": [{"entity_id": "2", "wire_id": 0}],
-            },
-        )
+    #     # Make sure correct even after errors
+    #     self.assertEqual(substation1.neighbours, ["2", "other"])
+    #     self.assertEqual(
+    #         power_switch.connections,
+    #         {
+    #             "Cu0": [
+    #                 {"entity_id": "1", "wire_id": 0},
+    #                 {"entity_id": "2", "wire_id": 0},
+    #             ],
+    #             "Cu1": [{"entity_id": "2", "wire_id": 0}],
+    #         },
+    #     )
 
-        # Test removing
-        substation1.remove_power_connection(substation2)
-        substation1.remove_power_connection(substation2)
-        self.assertEqual(substation1.neighbours, ["other"])
-        self.assertEqual(substation2.neighbours, [])
+    #     # Test removing
+    #     substation1.remove_power_connection(substation2)
+    #     substation1.remove_power_connection(substation2)
+    #     self.assertEqual(substation1.neighbours, ["other"])
+    #     self.assertEqual(substation2.neighbours, [])
 
-        substation1.remove_power_connection(power_switch)
-        substation1.remove_power_connection(power_switch)
-        self.assertEqual(substation1.neighbours, ["other"])
-        self.assertEqual(
-            power_switch.connections,
-            {
-                "Cu0": [{"entity_id": "2", "wire_id": 0}],
-                "Cu1": [{"entity_id": "2", "wire_id": 0}],
-            },
-        )
+    #     substation1.remove_power_connection(power_switch)
+    #     substation1.remove_power_connection(power_switch)
+    #     self.assertEqual(substation1.neighbours, ["other"])
+    #     self.assertEqual(
+    #         power_switch.connections,
+    #         {
+    #             "Cu0": [{"entity_id": "2", "wire_id": 0}],
+    #             "Cu1": [{"entity_id": "2", "wire_id": 0}],
+    #         },
+    #     )
 
-        substation1.add_power_connection(power_switch)
-        power_switch.remove_power_connection(substation2, side=1)
-        power_switch.remove_power_connection(substation2, side=1)
-        power_switch.remove_power_connection(substation1)
-        power_switch.remove_power_connection(substation1)
-        self.assertEqual(
-            power_switch.connections, {"Cu1": [{"entity_id": "2", "wire_id": 0}]}
-        )
-        substation2.remove_power_connection(power_switch, side=2)
-        substation2.remove_power_connection(power_switch, side=2)
-        self.assertEqual(power_switch.connections, {})
+    #     substation1.add_power_connection(power_switch)
+    #     power_switch.remove_power_connection(substation2, side=1)
+    #     power_switch.remove_power_connection(substation2, side=1)
+    #     power_switch.remove_power_connection(substation1)
+    #     power_switch.remove_power_connection(substation1)
+    #     self.assertEqual(
+    #         power_switch.connections, {"Cu1": [{"entity_id": "2", "wire_id": 0}]}
+    #     )
+    #     substation2.remove_power_connection(power_switch, side=2)
+    #     substation2.remove_power_connection(power_switch, side=2)
+    #     self.assertEqual(power_switch.connections, {})
 
 
 ################################################################################
@@ -1056,7 +839,7 @@ class ReadRailSignalMixinTesting(TestCase):
         )
         rail_signal.red_output_signal = None
         self.assertEqual(rail_signal.control_behavior, {})
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             rail_signal.red_output_signal = TypeError
         with self.assertRaises(InvalidSignalError):
             rail_signal.red_output_signal = "incorrect"
@@ -1076,7 +859,7 @@ class ReadRailSignalMixinTesting(TestCase):
         )
         rail_signal.yellow_output_signal = None
         self.assertEqual(rail_signal.control_behavior, {})
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             rail_signal.yellow_output_signal = TypeError
         with self.assertRaises(InvalidSignalError):
             rail_signal.yellow_output_signal = "wrong"
@@ -1096,7 +879,7 @@ class ReadRailSignalMixinTesting(TestCase):
         )
         rail_signal.green_output_signal = None
         self.assertEqual(rail_signal.control_behavior, {})
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             rail_signal.green_output_signal = TypeError
         with self.assertRaises(InvalidSignalError):
             rail_signal.green_output_signal = "mistake"
@@ -1107,7 +890,10 @@ class ReadRailSignalMixinTesting(TestCase):
 
 class RecipeMixinTesting(TestCase):
     def test_set_recipe(self):
-        pass
+        machine = AssemblingMachine()
+
+        with self.assertRaises(TypeError):
+            machine.recipe = TypeError
 
 
 ################################################################################
@@ -1156,7 +942,7 @@ class RequestFiltersMixinTesting(TestCase):
             storage_chest.set_request_filter("incorrect", "iron-ore", 100)
         with self.assertRaises(InvalidItemError):
             storage_chest.set_request_filter(1, "incorrect", 100)
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(TypeError):
             storage_chest.set_request_filter(1, "iron-ore", "incorrect")
         with self.assertRaises(FilterIndexError):
             storage_chest.set_request_filter(-1, "iron-ore", 100)
@@ -1189,7 +975,7 @@ class RequestFiltersMixinTesting(TestCase):
             storage_chest.request_filters,
             [{"index": 1, "name": "iron-ore", "count": 200}],
         )
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             storage_chest.set_request_filters("very wrong")
 
 
@@ -1251,7 +1037,7 @@ class StackSizeMixinTesting(TestCase):
         inserter.stack_control_signal = None
         self.assertEqual(inserter.control_behavior, {})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             inserter.stack_control_signal = TypeError
         with self.assertRaises(InvalidSignalError):
             inserter.stack_control_signal = "wrong_name_lol"

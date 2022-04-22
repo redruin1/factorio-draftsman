@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.error import InvalidItemError, FilterIndexError, InvalidModeError
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
@@ -84,10 +84,14 @@ class InfinityContainer(Entity):
     def set_infinity_filter(self, index, name, mode="at-least", count=0):
         # type: (int, str, str, int) -> None
         """ """
-        index = signatures.INTEGER.validate(index)
-        name = signatures.STRING.validate(name)
-        mode = signatures.STRING.validate(mode)
-        count = signatures.INTEGER.validate(count)
+
+        try:
+            index = signatures.INTEGER.validate(index)
+            name = signatures.STRING_OR_NONE.validate(name)
+            mode = signatures.STRING.validate(mode)
+            count = signatures.INTEGER.validate(count)
+        except SchemaError as e:
+            six.raise_from(TypeError(e), None)
 
         if not 0 <= index < 1000:
             raise FilterIndexError("Filter index {} not in range [0, 1000)")

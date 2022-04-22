@@ -3,18 +3,20 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes import Entity
+from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
 )
+from draftsman.error import DataFormatError
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import decider_combinators
 
 from schema import SchemaError
+import six
 from typing import Union
 import warnings
 
@@ -244,10 +246,13 @@ class DeciderCombinator(
         # type: (Union[str, int], str, Union[str, int], str) -> None
         """ """
         # Check all the parameters before we set anything to preserve original
-        a = signatures.SIGNAL_ID_OR_CONSTANT.validate(a)
-        op = signatures.COMPARATOR.validate(op)
-        b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
-        out = signatures.SIGNAL_ID.validate(out)
+        try:
+            a = signatures.SIGNAL_ID_OR_CONSTANT.validate(a)
+            op = signatures.COMPARATOR.validate(op)
+            b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
+            out = signatures.SIGNAL_ID_OR_NONE.validate(out)
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
         if "decider_conditions" not in self.control_behavior:
             self.control_behavior["decider_conditions"] = {}

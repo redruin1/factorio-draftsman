@@ -45,7 +45,6 @@ class CircuitReadResourceMixin(object):  # (ControlBehaviorMixin)
         # type: (MiningDrillReadMode) -> None
         if value is None:
             self.control_behavior.pop("circuit_resource_read_mode", None)
-        elif isinstance(value, int):
-            self.control_behavior["circuit_resource_read_mode"] = value
         else:
-            raise TypeError("'read_mode' must be an instance of int or None")
+            value = MiningDrillReadMode(value)
+            self.control_behavior["circuit_resource_read_mode"] = value

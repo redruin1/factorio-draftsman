@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from draftsman.constants import Direction
 from draftsman.entity import TrainStop, train_stops
-from draftsman.error import InvalidEntityError, InvalidSignalError
+from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatError
 from draftsman.warning import DraftsmanWarning, RailAlignmentWarning, DirectionWarning
 
 from schema import SchemaError
@@ -121,7 +121,7 @@ class TrainStopTesting(TestCase):
             TrainStop("this is not a curved rail")
         with self.assertRaises(TypeError):
             TrainStop(station=100)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             TrainStop(color="wrong")
 
     def test_set_manual_trains_limit(self):
