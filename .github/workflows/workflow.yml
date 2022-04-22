@@ -1,0 +1,28 @@
+name: Example workflow for Codecov
+on: [push]
+jobs:
+  run:
+    env:
+      PYTHON: '3.7'
+    steps:
+    - uses: actions/checkout@master
+    - name: Setup Python
+      uses: actions/setup-python@master
+      with:
+        python-version: 3.7
+    - name: Generate coverage report
+      run: |
+        pip install unittest
+        pip install coverage
+        coverage run
+        coverage xml
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v2
+      with:
+        directory: ./coverage/reports/
+        env_vars: PYTHON
+        fail_ci_if_error: true
+        files: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        verbose: true
