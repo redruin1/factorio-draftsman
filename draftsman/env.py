@@ -1357,8 +1357,6 @@ def update(verbose=False):
                 # Reset the deletion table
                 RESET_MOD_STATE()
 
-    print("hella slick; nothing broke!")
-
     extract_mods(mods, data_location, verbose)
 
     extract_entities(lua, data_location, verbose)
@@ -1368,6 +1366,8 @@ def update(verbose=False):
     extract_recipes(lua, data_location, verbose)
     extract_signals(lua, data_location, verbose)
     extract_tiles(lua, data_location, verbose)
+
+    print("hella slick; nothing broke!")
 
 
 def main():

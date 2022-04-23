@@ -27,7 +27,7 @@ def package_files(*directories):
     for directory in directories:
       for (path, _, filenames) in os.walk(directory):
             for filename in filenames:
-                  paths.append(os.path.join('..', path, filename))
+                  paths.append(os.path.join(path, filename))
     return paths
 
 
