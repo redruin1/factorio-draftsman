@@ -18,7 +18,8 @@ jobs:
     - name: Generate coverage report
       run: |
         pip install -r requirements.txt
-        pip install ./draftsman/
+        ls
+        pip install .
         coverage run
         coverage xml
     - name: Upload coverage to Codecov
