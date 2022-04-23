@@ -991,11 +991,14 @@ def update(verbose=False):
     # env_dir = os.path.dirname(__file__)
     #print(draftsman.__path__)
     env_dir = draftsman.__path__[0]
-    print(env_dir)
     # Create some quick access folders
     factorio_data = os.path.join(env_dir, "factorio-data")
     factorio_mods = os.path.join(env_dir, "factorio-mods")
     data_location = os.path.join(env_dir, "data")
+
+    # lets take a look at what exactly is in the data folder
+    for name, _, files in os.walk(factorio_data):
+        print(name)
 
     # Get the info from factorio-data and treat it as the "base" mod
     with open(os.path.join(factorio_data, "base", "info.json")) as base_info_file:

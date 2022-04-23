@@ -19,7 +19,6 @@ jobs:
       run: |
         pip install coverage
         pip install .
-        python -c "import draftsman as _; print(_.__path__)"
         draftsman-update --verbose
         coverage run
         coverage xml

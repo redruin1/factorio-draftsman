@@ -69,12 +69,12 @@ setup(name='factorio-draftsman',
             'draftsman.prototypes'
       ],
       package_data = {
-            #'draftsman': ["factorio-mods/.gitignore"],
             'draftsman': 
                   package_files(
                         "draftsman/factorio-data",
                         "draftsman/compatibility",
-                        "draftsman/tests")
+                        "draftsman/tests"
+                  )
       },
       include_package_data = True,
       install_requires = [

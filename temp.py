@@ -6,8 +6,10 @@ from draftsman.entity import *
 from draftsman.data import entities, items
 import copy
 import weakref
+import draftsman
 
 import six
+import os
 
 blueprint = Blueprint()
 
@@ -71,8 +73,6 @@ blueprint = Blueprint()
 
 # print(blueprint.to_string())
 
-tester = FilterInserter("filter-inserter")
-tester.set_item_filter(10, "iron-ore")
-blueprint.entities.append(tester)
-
-print(blueprint.to_string())
+for name, dirs, files in os.walk(draftsman.__path__[0]):
+    print(name)
+    print(files)
