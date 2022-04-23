@@ -16,6 +16,7 @@ try:
 except NameError:
     FileNotFoundError = IOError
 
+import draftsman
 from draftsman.error import (
     MissingModError,
     IncompatableModError,
@@ -987,7 +988,7 @@ def update(verbose=False):
     this routine.
     """
     # Figure out what directory we're in
-    env_dir = os.path.dirname(__file__)
+    env_dir = os.path.dirname(draftsman.__path__)
     print(env_dir)
     # Create some quick access folders
     factorio_data = os.path.join(env_dir, "factorio-data")
