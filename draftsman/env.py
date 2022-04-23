@@ -997,6 +997,7 @@ def update(verbose=False):
     data_location = os.path.join(env_dir, "data")
 
     # lets take a look at what exactly is in the data folder
+    print(factorio_data)
     for name, _, files in os.walk(factorio_data):
         print(name)
 
