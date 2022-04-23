@@ -19,7 +19,7 @@ jobs:
       run: |
         pip install -r requirements.txt
         pip install .
-        update-draftsman --verbose
+        python -m draftsman update-draftsman --verbose
         coverage run
         coverage xml
     - name: Upload coverage to Codecov
