@@ -17,9 +17,8 @@ jobs:
         python-version: 3.7
     - name: Generate coverage report
       run: |
-        pip install -r requirements.txt
         pip install .
-        python -m draftsman update-draftsman --verbose
+        draftsman-update --verbose
         coverage run
         coverage xml
     - name: Upload coverage to Codecov
