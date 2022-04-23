@@ -51,7 +51,7 @@ def package_files(*directories):
 #             self.execute(_setup_factorio_environment, (),
 #                          msg = "Setting up the Factorio Envrionment...")
 
-with open("README.md", "r", encoding="utf-8") as fh:
+with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(name='factorio-draftsman',

@@ -988,7 +988,9 @@ def update(verbose=False):
     this routine.
     """
     # Figure out what directory we're in
-    env_dir = os.path.dirname(draftsman.__path__)
+    # env_dir = os.path.dirname(__file__)
+    #print(draftsman.__path__)
+    env_dir = draftsman.__path__[0]
     print(env_dir)
     # Create some quick access folders
     factorio_data = os.path.join(env_dir, "factorio-data")
