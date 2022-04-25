@@ -18,7 +18,7 @@ jobs:
     - name: Generate coverage report
       run: |
         pip install coverage
-        pip install .
+        pip install -e .
         draftsman-update --verbose
         coverage run
         coverage xml
