@@ -11,9 +11,8 @@ jobs:
       PYTHON: '3.7'
     steps:
     - uses: actions/checkout@master
-    - name: Download Submodule
-      run: |
-        git submodule update --recursive
+      with:
+        submodules: true
     - name: Setup Python
       uses: actions/setup-python@master
       with:
