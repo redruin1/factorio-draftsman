@@ -8,7 +8,7 @@ coverage
 tox
 black
 # Compatibility
+typing; python_version < '3.8' # The module uses Literals
 importlib-resources; python_version < '3.7'
-typing; python_version < '3.5'
 enum34; python_version < '3.4'
 future; python_version < '3.0'

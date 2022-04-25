@@ -81,11 +81,11 @@ setup(name='factorio-draftsman',
             "schema >= 0.7.5",
             "lupa >= 1.10",
             "six >= 1.16.0",
-            "unittest2 >= 1.1.0",
+            "typing; python_version < '3.8'",
             "importlib-resources; python_version < '3.7'",
-            "typing; python_version < '3.5'",
             "enum34; python_version < '3.4'",
-            "future; python_version < '3.0'"
+            "future; python_version < '3.0'",
+            "unittest2 >= 1.1.0; python_version < '3.0'",
       ],
       entry_points = {
             'console_scripts': [
