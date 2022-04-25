@@ -2,6 +2,7 @@
 
 ![A logo generated with 'examples/draftsman_logo.py'](https://github.com/redruin1/factorio-draftsman/blob/main/docs/img/logo.png)
 
+[![codecov](https://codecov.io/gh/redruin1/factorio-draftsman/branch/main/graph/badge.svg?token=UERAOXVTO1)](https://codecov.io/gh/redruin1/factorio-draftsman)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 A 'draftsman' is a kind of artist that specializes in creating technical drawings across many engineering disciplines, including architectural, mechanical, and electrical.
@@ -99,7 +100,7 @@ For more examples on what exactly you can do with draftsman, take a look at the 
 ## Usage
 
 ### Installation:
-To install the module from PYPI:
+To install the module from PyPI:
 ```
 pip install factorio-draftsman
 ```
