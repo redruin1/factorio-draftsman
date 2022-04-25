@@ -11,6 +11,8 @@ jobs:
       PYTHON: '3.7'
     steps:
     - uses: actions/checkout@master
+    - name: Download Submodule
+    - uses: textbook/git-checkout-submodule-action@master
     - name: Setup Python
       uses: actions/setup-python@master
       with:

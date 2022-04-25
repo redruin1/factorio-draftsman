@@ -998,7 +998,7 @@ def update(verbose=False):
 
     # lets take a look at what exactly is in the data folder
     print("\t", env_dir)
-    for name, _, files in os.walk(env_dir):
+    for name, files, _ in os.walk(env_dir):
         print("\t", name)
 
     # Get the info from factorio-data and treat it as the "base" mod
