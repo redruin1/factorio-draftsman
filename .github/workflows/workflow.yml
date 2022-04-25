@@ -12,7 +12,8 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - name: Download Submodule
-      uses: textbook/git-checkout-submodule-action@master
+      run: |
+        git submodule update --recursive
     - name: Setup Python
       uses: actions/setup-python@master
       with:
