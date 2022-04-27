@@ -79,7 +79,7 @@ print(blueprint_book.to_string())  # Blueprint string
 Simply put, Draftsman attempts to provide a universal solution to the task of creating and manipulating Factorio blueprint strings, which are compressed text strings used by players to share their constructions easily with others.
 Draftsman allows users to programmatically create these strings via script, allowing for designs that would normally be too tedious to design by hand, such as combinator computer compilers, image-to-blueprint converters, pumpjack placers, as well as any other complex or repetitive design better suited for a computer's touch.
 
-For more information on what exactly Draftsman is and does, as well as its intended purpose and philosophy, [you can read the documentation here](https://github.com/redruin1/factorio-draftsman/tree/main/examples).
+For more information on what exactly Draftsman is and does, as well as its intended purpose and philosophy, [you can read the documentation here](https://factorio-draftsman.readthedocs.io/en/latest/index.html).
 
 For more examples on what exactly you can do with draftsman, take a look at the [examples folder](https://github.com/redruin1/factorio-draftsman/tree/main/examples).
 
