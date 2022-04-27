@@ -73,7 +73,6 @@ setup(name='factorio-draftsman',
                   package_files(
                         "draftsman/factorio-data",
                         "draftsman/compatibility",
-                        "draftsman/tests"
                   )
       },
       include_package_data = True,

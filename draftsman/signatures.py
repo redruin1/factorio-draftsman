@@ -1,6 +1,12 @@
 # signatures.py
 # -*- encoding: utf-8 -*-
 
+"""
+Module of data formats, implemented as ``Schema`` objects. Used to validate and
+normalize data.
+"""
+
+
 from __future__ import unicode_literals
 
 from draftsman.classes.entitylike import EntityLike
@@ -38,14 +44,8 @@ def normalize_color(color):
         try:
             new_color["a"] = color[3]
         except IndexError:
-            new_color["a"] = 1.0
+            pass
         return new_color
-    elif isinstance(color, dict):
-        try:
-            color["a"]
-        except KeyError:
-            color["a"] = 1.0
-        return color
     else:
         return color
 
@@ -58,22 +58,22 @@ COLOR = Schema(
                 "r": And(
                     Use(float),
                     lambda x: 0 <= x <= 255,
-                    error="'r' not in range [0, 255]",
+                    error="Invalid 'r' value",
                 ),
                 "g": And(
                     Use(float),
                     lambda x: 0 <= x <= 255,
-                    error="'g' not in range [0, 255]",
+                    error="Invalid 'g' value",
                 ),
                 "b": And(
                     Use(float),
                     lambda x: 0 <= x <= 255,
-                    error="'b' not in range [0, 255]",
+                    error="Invalid 'b' value",
                 ),
-                "a": And(
+                Optional("a"): And(
                     Use(float),
                     lambda x: 0 <= x <= 255,
-                    error="'a' not in range [0, 255]",
+                    error="Invalid 'a' value",
                 ),
             },
             None,
@@ -91,28 +91,30 @@ def normalize_signal_id(name):
 
 SIGNAL_ID = Schema(
     And(
-        Use(normalize_signal_id),
+        Use(normalize_signal_id, error="unknown input signal id"),
         {"name": six.text_type, "type": six.text_type},
     )
 )
 
 SIGNAL_ID_OR_NONE = Schema(
     And(
-        Use(normalize_signal_id),
+        Use(normalize_signal_id, error="unknown input signal id"),
         Or({"name": six.text_type, "type": six.text_type}, None),
     )
 )
 
 SIGNAL_ID_OR_CONSTANT = Schema(
     And(
-        Use(normalize_signal_id),
+        Use(normalize_signal_id, error="unknown input signal id"),
         Or({"name": six.text_type, "type": six.text_type}, int, None),
     )
 )
 
 
 def normalize_comparator(op):
-    if op == "<=":
+    if op == "==":
+        return "="
+    elif op == "<=":
         return "≤"
     elif op == ">=":
         return "≥"
@@ -142,14 +144,31 @@ CONDITION = Schema(
     }
 )
 
-ICON = Schema({"index": Use(int), "signal": SIGNAL_ID})
+ICON = Schema(
+    {
+        "index": And(Use(int), lambda x: 1 <= x <= 4, error="invalid index"),
+        "signal": SIGNAL_ID,
+    }
+)
+
+
+def normalize_icons(icons):
+    for i, icon in enumerate(icons):
+        if isinstance(icon, six.string_types):
+            icons[i] = {"index": i + 1, "signal": signal_dict(icon)}
+    return icons
+
+
+ICONS = Schema(And(Use(normalize_icons), Or([ICON], None)))
 
 CIRCUIT_CONNECTION_POINT = Schema(
     {"entity_id": Or(int, six.text_type), Optional("circuit_id"): Or(1, 2)}
 )
+
 POWER_CONNECTION_POINT = Schema(
     {"entity_id": Or(int, six.text_type), Optional("wire_id"): Or(0, 1)}
 )
+
 CONNECTIONS = Schema(
     And(
         Use(lambda x: {} if x is None else x),  # Convert to empty dict if None

@@ -1,4 +1,5 @@
 # transformable.py
+# -*- encoding: utf-8 -*-
 
 from draftsman.error import RotationError, FlippingError
 from draftsman.warning import RailAlignmentWarning
@@ -8,15 +9,22 @@ import warnings
 
 class Transformable(object):
     """
-    Allows a collection of entities to translate, rotate, and flip. Operates
-    on the `entities` EntityList, the `tiles` TileList, and the `entity_hashmap`
-    and `tile_hashmap` SpatialHashMaps respectively.
+    Implements a number of functions that allow the parent class to spatially
+    transform its ``entities`` and ``tiles`` lists. All of the following methods
+    operate in-place, meaning that the original positions and directions of
+    every entity and tile are modified each time they are called.
     """
 
     def translate(self, x, y):
         # type: (int, int) -> None
         """
-        Translates all entities and tiles in the blueprint by an amount.
+        Translates all entities and tiles in the blueprint by ``x`` and ``y``.
+        Raises :py:class:`~draftsman.warning.RailAlignmentWarning` if the
+        parent class contains double-grid-aligned entities and the translation
+        amount is an odd value on either x or y.
+
+        :param x: A number indicating how much to translate along x.
+        :param y: A number indicating how much to translate along y.
         """
         # Warn if attempting to translate by an odd amount when containing
         # double-grid-aligned entities
@@ -66,14 +74,25 @@ class Transformable(object):
     def rotate(self, angle):
         # type: (int) -> None
         """
-        Rotate the blueprint by `angle`, if possible. Operates the same as
+        Rotate the blueprint by ``angle``, if possible. Operates the same as
         pressing 'r' with a blueprint selected.
-        ``angle`` is specified in terms of Direction Enum, meaning that a
+
+        ``angle`` is specified in terms of Direction enum, meaning that a
         rotation of 2 is 90 degrees clockwise.
+
         Because eight-way rotatable entities exist in a weird gray area, this
         function behaves like the feature in-game and only rotates on 90 degree
         intervals. Attempting to rotate the blueprint an odd amount raises
-        an :py:class:`draftsman.error.RotationError`.
+        an :py:class:`~draftsman.error.RotationError`.
+
+        .. WARNING::
+
+            **This function is currently under active development.**
+
+        :param angle: The angle to rotate the blueprint by.
+
+        :exception RotationError: If the rotation is attempted with an odd
+            value.
         """
         # TODO: handle different origin locations
         angle = angle % 8
@@ -138,21 +157,21 @@ class Transformable(object):
         self.recalculate_area()
 
     def flip(self, direction="horizontal"):
-        # type: (str, float) -> None
+        # type: (str) -> None
         """
-        Flip the blueprint across `axis`, if possible.
+        Flip the blueprint across an axis, if possible. Flipping is done over
+        the x or y axis, depeding on the input ``direction``.
 
         .. WARNING::
 
-            **This function is not "Factorio-safe" and is currently under
-            development.** The function still operates, though it will not
-            throw ``BlueprintFlippingError`` when the blueprint contains
-            entities that cannot be flipped, which may break some blueprints.
-            Proceed with caution.
+            **This function is currently under active development.**
+
+        :param direction: The direction to flip by; either ``"horizontal"`` or
+            ``"vertical"``
         """
         # TODO: handle different axis locations
-        # Prevent the blueprint from being flipped if it contains entities that
-        # cannot be flipped
+        # TODO: Prevent the blueprint from being flipped if it contains entities
+        # that cannot be flipped
         # if not self.flippable:
         #     raise BlueprintFlippingError("Blueprint cannot be flipped")
 

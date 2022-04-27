@@ -5,3 +5,4 @@ exclude draftsman/factorio-mods/mod-settings.dat
 exclude draftsman/factorio-mods/mod-list.json
 
 include draftsman/factorio-data/*
+include test/test_*.py

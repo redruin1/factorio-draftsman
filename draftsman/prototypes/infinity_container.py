@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.error import InvalidItemError, FilterIndexError, InvalidModeError
+from draftsman.error import InvalidItemError, InvalidModeError
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
 
@@ -94,7 +94,7 @@ class InfinityContainer(Entity):
             six.raise_from(TypeError(e), None)
 
         if not 0 <= index < 1000:
-            raise FilterIndexError("Filter index {} not in range [0, 1000)")
+            raise IndexError("Filter index {} not in range [0, 1000)")
         if name is not None and name not in items.raw:
             raise InvalidItemError(name)
         if mode not in {"at-least", "at-most", "exactly"}:

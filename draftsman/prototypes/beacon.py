@@ -14,7 +14,7 @@ from draftsman.warning import (
 
 from draftsman.data.entities import beacons
 from draftsman.data import modules
-from draftsman.data import signals
+from draftsman.data import items
 
 import warnings
 
@@ -37,7 +37,7 @@ class Beacon(RequestItemsMixin, Entity):
         Overwritten
         """
         # Make sure the item exists
-        if item not in signals.item:  # TODO: maybe items.all instead?
+        if item not in items.raw:
             raise InvalidItemError("'{}'".format(item))
 
         if item not in modules.raw:

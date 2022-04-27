@@ -1,4 +1,5 @@
 # spatiallike.py
+# -*- encoding: utf-8 -*-
 
 import abc
 import six
@@ -7,8 +8,8 @@ import six
 @six.add_metaclass(abc.ABCMeta)
 class SpatialLike(object):
     """
-    Abstract class that provides a template for creating an object that can be
-    added to a `SpatialHashMap`.
+    Abstract class that provides the necessary methods so that an object that
+    can be added to a :py:class:`~draftsman.classes.spatialhashmap.SpatialHashMap`.
     """
 
     @abc.abstractproperty
@@ -29,17 +30,17 @@ class SpatialLike(object):
     @abc.abstractproperty
     def collision_mask(self):  # pragma: no coverage
         """
-        Set of strings representing the layers that this object collides with.
-        Objects will only collide with one another if their `get_area()`s
-        overlap and their `collision_mask`s have at least one similar entry.
+        A set of strings representing the layers that this object collides with.
         """
         pass
 
     def get_area(self):
         # type: () -> list
         """
-        Gets the world-space coordinate AABB of the object. Equivalent to the sum of the
-        object's `position` and it's `collision_box`.
+        Gets the world-space coordinate AABB of the object. Equivalent to the
+        object's ``collision_box`` offset by it's ``position``.
+
+        :returns: The offset collision box, in world-space coordinates.
         """
         return [
             [

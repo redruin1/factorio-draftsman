@@ -13,7 +13,7 @@ import six
 
 class FiltersMixin(object):
     """
-    Used by filter inserters and loaders to specify their item filters.
+    Allows the entity to specify item filters.
     """
 
     def __init__(self, name, similar_entities, **kwargs):
@@ -35,8 +35,11 @@ class FiltersMixin(object):
     def filter_count(self):
         # type: () -> int
         """
-        Read only
-        TODO
+        The number of filter slots that this Entity has in total. Equivalent to
+        the ``"filter_count"`` key in Factorio's ``data.raw``. Not exported;
+        read only.
+
+        :type: ``int``
         """
         return self._filter_count
 
@@ -44,7 +47,16 @@ class FiltersMixin(object):
 
     def set_item_filter(self, index, item):
         # type: (int, str) -> None
-        """ """
+        """
+        Sets one of the item filters of the Entity.
+
+        :param index: The index of the filter to set.
+        :param item: The string name of the item to filter.
+
+        :exception IndexError: If ``index`` is set to a value exceeding or equal
+            to ``filter_count``.
+        :exception InvalidItemError: If ``item`` is not a valid item name.
+        """
         if self.filters is None:
             self.filters = []
 
@@ -75,6 +87,28 @@ class FiltersMixin(object):
 
     def set_item_filters(self, filters):
         # type: (list) -> None
+        """
+        Sets all of the item filters of the Entity.
+
+        ``filters`` can be either of the following 2 formats::
+
+            [{"index": int, "signal": item_name_1}, ...]
+            # Or
+            [item_name_1, item_name_2, ...]
+
+        With the second format, the index of each item is set to it's position
+        in the list. ``filters`` can also be ``None``, which will wipe all item
+        filters that the Entity has.
+
+        :param filters: The item filters to give the Entity.
+
+        :exception DataFormatError: If the ``filters`` argument does not match
+            the specification above.
+        :exception IndexError: If the index of one of the entries exceeds or
+            equals the ``filter_count`` of the Entity.
+        :exception InvalidItemError: If the item name of one of the entries is
+            not valid.
+        """
         if filters is None:
             self.filters = None
             return

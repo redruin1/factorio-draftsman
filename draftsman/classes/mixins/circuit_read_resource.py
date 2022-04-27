@@ -9,14 +9,29 @@ from draftsman.constants import MiningDrillReadMode
 
 class CircuitReadResourceMixin(object):  # (ControlBehaviorMixin)
     """
-    TODO
+    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
+
+    Enables the Entity to read the resources underneath it.
+
+    .. seealso::
+
+        | :py:class:`~draftsman.classes.mixins.circuit_read_contents.CircuitReadContentsMixin`
+        | :py:class:`~draftsman.classes.mixins.circuit_read_hand.CircuitReadHandMixin`
     """
 
     @property
     def read_resources(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not this Entity is set to read the resources underneath to a
+        circuit network.
+
+        :getter: Gets the value of ``read_resources``, or ``None`` if not set.
+        :setter: Sets the value of ``read_resources``.
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or
+            ``None``.
         """
         return self.control_behavior.get("circuit_read_resources", None)
 
@@ -36,7 +51,16 @@ class CircuitReadResourceMixin(object):  # (ControlBehaviorMixin)
     def read_mode(self):
         # type: () -> MiningDrillReadMode
         """
-        TODO
+        The mode in which the resources underneath the Entity should be read.
+        Either ``MiningDrillReadMode.UNDER_DRILL`` or
+        ``MiningDrillReadMode.TOTAL_PATCH``.
+
+        :getter: Gets the value of ``read_mode``, or ``None`` if not set.
+        :setter: Sets the value of ``read_mode``.
+        :type: :py:data:`~draftsman.constants.MiningDrillReadMode`
+
+        :exception ValueError: If set to anything other than a
+            ``MiningDrillReadMode`` value or their ``int`` equivalent.
         """
         return self.control_behavior.get("circuit_resource_read_mode", None)
 

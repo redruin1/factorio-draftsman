@@ -3,15 +3,6 @@
 
 # TODO: Add warnings for placement constraints on rails and rail signals
 
-"""
-What are the parameters we need to check for when doing modifying entities within a blueprint?
-
-id: when we change an entity's id, it has to change the key_map entry in KeyList.
-position: when we change an entity's position, we have to check if the blueprint's dimensions/aabb changed.
-    (And Group for that matter!)
-
-TODO: documentation
-"""
 
 from __future__ import unicode_literals
 
@@ -26,6 +17,7 @@ from draftsman.error import (
     DraftsmanError,
     IncorrectBlueprintTypeError,
     UnreasonablySizedBlueprintError,
+    DataFormatError,
 )
 from draftsman import signatures
 from draftsman.tile import Tile
@@ -48,7 +40,9 @@ import warnings
 
 class Blueprint(Transformable, TileCollection, EntityCollection):
     """
-    Factorio Blueprint class.
+    Factorio Blueprint class. Contains and maintains a list of ``EntityLikes``
+    and ``Tiles`` and a selection of other metadata. Inherits all the functions
+    and attributes you would expect, as well as some extra functionality.
     """
 
     # =========================================================================
@@ -57,13 +51,15 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
     @utils.reissue_warnings
     def __init__(self, blueprint=None):
-        # type: (dict) -> None
+        # type: (Union[str, dict]) -> None
         """
-        Creates a Blueprint class. Will load the data from `blueprint_string`
-        if provided, otherwise initializes with defaults.
+        Creates a ``Blueprint`` class. Will load the data from ``blueprint`` if
+        provided, and otherwise initializes itself with defaults. ``blueprint``
+        can be either an encoded blueprint string or a dict object containing
+        the desired key-value pairs.
 
-        Args:
-            blueprint_string (str): Factorio-format blueprint string
+        :param blueprint_string: Either a Factorio-format blueprint string or a
+            ``dict`` object with the desired keys in the correct format.
         """
         if blueprint is None:
             self.setup()
@@ -78,22 +74,43 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def load_from_string(self, blueprint_string):
         # type: (str) -> None
         """
-        Load the Blueprint with the contents of `blueprint_string`.
+        Load the Blueprint with the contents of ``blueprint_string``. Raises
+        ``draftsman.warning.DraftsmanWarning`` if there are any unrecognized
+        keywords in the blueprint string.
 
-        Args:
-            blueprint_string (str): Factorio-encoded blueprint string
+        :param blueprint_string: Factorio-encoded blueprint string.
+
+        :exception MalformedBlueprintStringError: If the input string is not
+            decodable to a JSON object.
+        :exception IncorrectBlueprintTypeError: If the input string is of a
+            different type than the base class, such as a ``BlueprintBook``.
         """
         root = utils.string_to_JSON(blueprint_string)
         # Ensure that the blueprint string actually points to a blueprint
         if "blueprint" not in root:
-            raise IncorrectBlueprintTypeError
+            raise IncorrectBlueprintTypeError(
+                "Root element of Blueprint string not 'blueprint'"
+            )
 
         self.setup(**root["blueprint"])
 
     @utils.reissue_warnings
     def setup(self, **kwargs):
         """
-        Setup the Blueprint's parameters as keywords.
+        Setup the Blueprint's parameters with the input keywords as values.
+        Raises ``draftsman.warning.DraftsmanWarning`` if any of the input
+        keywords are unrecognized.
+
+        :param kwargs: The dict of all keywords to set in the blueprint.
+
+        :Example:
+
+        .. code-block:: python
+
+            blueprint = Blueprint()
+            blueprint.setup(label="test", description="testing...")
+            assert blueprint.label == "test"
+            assert blueprint.description == "testing..."
         """
         self.root = dict()
 
@@ -187,14 +204,14 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def label(self):
         # type: () -> str
         """
-        Sets the Blueprint's label (title). Setting label to `None` deletes the
-        parameter from the Blueprint.
+        The Blueprint's label (title).
 
-        Args:
-            label (str): The new title of the blueprint
+        :getter: Gets the label, or ``None`` if not set.
+        :setter: Sets the label of the ``Blueprint``.
+        :type: ``str``
 
-        Raises:
-            ValueError if `label` is not a string
+        :exception TypeError: When setting ``label`` to something other than
+            ``str`` or ``None``.
         """
         return self.root.get("label", None)
 
@@ -214,16 +231,33 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def label_color(self):
         # type: () -> dict
         """
-        Sets the color of the Blueprint's label (title).
+        The color of the Blueprint's label.
 
-        Args:
-            r (float): Red component, 0.0 - 1.0
-            g (float): Green component, 0.0 - 1.0
-            b (float): Blue component, 0.0 - 1.0
-            a (float): Alpha component, 0.0 - 1.0
+        The ``label_color`` parameter exists in a dict format with the "r", "g",
+        "b", and an optional "a" keys. The color can be specified like that, or
+        it can be specified more succinctly as a sequence of 3-4 numbers,
+        representing the colors in that order.
 
-        Raises:
-            SchemaError if any of the values cannot be resolved to floats
+        The value of each of the numbers (according to Factorio spec) can be
+        either in the range of [0.0, 1.0] or [0, 255]; if all the numbers are
+        <= 1.0, the former range is used, and the latter otherwise. If "a" is
+        omitted, it defaults to 1.0 or 255 when imported, depending on the
+        range of the other numbers.
+
+        :getter: Gets the color of the label, or ``None`` if not set.
+        :setter: Sets the label color of the ``Blueprint``.
+        :type: ``dict{"r": number, "g": number, "b": number, Optional("a"): number}``
+
+        :exception DataFormatError: If the input ``label_color`` does not match
+            the above specification.
+
+        :example:
+
+        .. code-block:: python
+
+            blueprint.label_color = (127, 127, 127)
+            print(blueprint.label_color)
+            # {'r': 127.0, 'g': 127.0, 'b': 127.0}
         """
         return self.root.get("label_color", None)
 
@@ -236,9 +270,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
         try:
             self.root["label_color"] = signatures.COLOR.validate(value)
-        except SchemaError:
+        except SchemaError as e:
             # TODO: more verbose
-            raise TypeError("Invalid Color format")
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -246,13 +280,25 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def icons(self):
         # type: () -> list
         """
-        Sets the icon or icons associated with the blueprint.
+        The icons of the Blueprint.
 
-        Args:
-            signals: List of signal names to set as icons
+        Stored as a list of ``ICON`` objects, which are dicts that contain a
+        ``SIGNAL_ID`` and an ``index`` key. Icons can be specified in this
+        format, or they can be specified more succinctly with a simple list of
+        signal names as strings.
 
-        Raises:
-            InvalidSignalID if any signal is not a string or unknown
+        All signal entries must be a valid signal id. If the input format is a
+        list of strings, the index of each item will be it's place in the list
+        + 1. The number of entries cannot exceed 4, or else a
+        ``DataFormatError`` is raised.
+
+        :getter: Gets the list if icons, or ``None`` if not set.
+        :setter: Sets the icons of the Blueprint. Removes the attribute if set
+            to ``None``.
+        :type: ``dict{"index": int, "signal": {"name": str, "type": str}}``
+
+        :exception DataFormatError: If the set value does not match the
+            specification above.
         """
         return self.root.get("icons", None)
 
@@ -262,22 +308,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         if value is None:
             self.root.pop("icons", None)
             return
-
-        self.root["icons"] = []
-        for i, signal in enumerate(value):
-            if isinstance(signal, six.string_types):
-                out = {"index": i + 1}
-                out["signal"] = signal_dict(six.text_type(signal))
-            elif isinstance(signal, dict):
-                try:
-                    out = signatures.ICON.validate(signal)
-                except SchemaError:
-                    # TODO: more verbose
-                    raise ValueError("Incorrect icon format")
-            else:
-                raise TypeError("Icon entries must be either a str or a dict")
-
-            self.root["icons"].append(out)
+        try:
+            self.root["icons"] = signatures.ICONS.validate(value)
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -285,7 +319,16 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def description(self):
         # type: () -> str
         """
-        Sets the description for the blueprint.
+        The description of the Blueprint. Visible when hovering over it when
+        inside someone's inventory.
+
+        :getter: Gets the description, or ``None`` if not set.
+        :setter: Sets the description of the Blueprint. Removes the attribute if
+            set to ``None``.
+        :type: ``str``
+
+        :exception TypeError: If setting to anything other than a ``str`` or
+            ``None``.
         """
         return self.root.get("description", None)
 
@@ -305,7 +348,41 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def version(self):
         # type: () -> int
         """
-        The version of the Blueprint.
+        The version of Factorio the Blueprint was created in/intended for.
+
+        The Blueprint ``version`` is a 64-bit integer, which is a bitwise-OR
+        of four 16-bit numbers. You can interpret this number more clearly by
+        decoding it with :py:func:`draftsman.utils.decode_version`, or you can
+        use the functions :py:func:`version_tuple` or :py:func:`version_string`
+        which will give you a more readable output. This version number defaults
+        to the version of Factorio that Draftsman is currently initialized with.
+
+        The version can be set either as said 64-bit int, or a sequence of
+        ints, usually a list or tuple, which is then encoded into the combined
+        representation. The sequence is defined as:
+        ``[major_version, minor_version, patch, development_release]``
+        with ``patch`` and ``development_release`` defaulting to 0.
+
+        .. seealso::
+
+            `<https://wiki.factorio.com/Version_string_format>`_
+
+        :getter: Gets the version, or ``None`` if not set.
+        :setter: Sets the version of the Blueprint. Removes the attribute if set
+            to ``None``.
+        :type: ``int``
+
+        :exception TypeError: If set to anything other than an ``int``, sequence
+            of ``ints``, or ``None``.
+
+        :example:
+
+        .. code-block:: python
+
+            blueprint.version = (1, 0) # version 1.0.0.0
+            assert blueprint.version == 281474976710656
+            assert blueprint.version_tuple() == (1, 0, 0, 0)
+            assert blueprint.version_string() == "1.0.0.0"
         """
         return self.root.get("version", None)
 
@@ -330,7 +407,14 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         Sets the size of the snapping grid to use. The presence of this entry
         determines whether or not the Blueprint will have a snapping grid or
         not.
-        TODO: change the format to work with tuples
+
+        The value can be set either as a ``dict`` with ``"x"`` and ``"y"`` keys,
+        or as a sequence of ints.
+
+        :getter: Gets the size of the snapping grid, or ``None`` if not set.
+        :setter: Sets the size of the snapping grid. Removes the attribute if
+            set to ``None``
+        :type: ``dict{"x": int, "y": int}``
         """
         return self.root.get("snap-to-grid", None)
 
@@ -359,9 +443,18 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         # type: () -> list
         """
         Sets the position of the snapping grid. Offsets all of the
-        positions of the entities by this amount.
+        positions of the entities by this amount, effectively acting as a
+        translation in relation to the snapping grid.
 
-        NOTE: This function does not offset each entities position until export!
+        .. NOTE::
+
+            This function does not offset each entities position until export!
+
+        :getter: Gets the offset amount of the snapping grid, or ``None`` if not
+            set.
+        :setter: Sets the offset amount of the snapping grid. Removes the
+            attribute if set to ``None``.
+        :type: ``dict{"x": int, "y": int}``
         """
         return self._snapping_grid_position
 
@@ -389,8 +482,18 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def absolute_snapping(self):
         # type: () -> bool
         """
-        Set whether or not the blueprint uses absolute positioning or relative
-        positioning for the snapping grid.
+        Whether or not the blueprint uses absolute positioning or relative
+        positioning for the snapping grid. On import, a value of ``None`` is
+        interpreted as a default ``True``.
+
+        :getter: Gets whether or not this blueprint uses absolute positioning,
+            or ``None`` if not set.
+        :setter: Sets whether or not to use absolute-snapping. Removes the
+            attribute if set to ``None``.
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or
+            ``None``.
         """
         return self.root.get("absolute-snapping", None)
 
@@ -410,7 +513,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def position_relative_to_grid(self):
         # type: () -> dict
         """
-        TODO
+        The absolute position of the snapping grid in the world. Only used if
+        ``absolute_snapping`` is set to ``True`` or ``None``.
+
+        :getter: Gets the absolute grid-position offset, or ``None`` if not set.
+        :setter: Sets the a
+        :type: ``dict{"x": int, "y": int}``
         """
         return self.root.get("position-relative-to-grid", None)
 
@@ -438,15 +546,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def entities(self):
         # type: () -> EntityList
         """
-        A list of the Blueprint's entities.
-
-        An EntityList has all of the functionality of a normal list:
-
-        `example`
-
-        EntityList also allows the user to access entities by their id as index:
-
-        `example`
+        The list of the Blueprint's entities. Internally the list is a custom
+        class named :py:class`draftsman.classes.EntityList`, which has all the
+        normal properties of a regular list, as well as some extra features.
+        For more information on ``EntityList``, check out it's documentation
+        *here*. TODO
         """
         return self.root["entities"]
 
@@ -468,7 +572,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
     def on_entity_insert(self, entitylike):
         # type: (EntityLike) -> None
-        """ """
+        """
+        Callback function for when an ``EntityLike`` is added to this
+        Blueprint's ``entities`` list. Handles the addition of the entity into
+        the  Blueprint's ``SpatialHashMap``, and recalculates it's dimensions.
+        """
         # Add to hashmap (as well as any children)
         self.entity_hashmap.recursively_add(entitylike)
 
@@ -487,7 +595,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
     def on_entity_set(self, old_entitylike, new_entitylike):
         # type: (EntityLike, EntityLike) -> None
-        """ """
+        """
+        Callback function for when an entity is overwritten in a Blueprint's
+        ``entities`` list. Handles the removal of the old ``EntityLike`` from
+        the ``SpatialHashMap`` and adds the new one in it's stead.
+        """
         # Remove the entity and its children
         self.entity_hashmap.recursively_remove(old_entitylike)
         # Add the new entity and its children
@@ -495,7 +607,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
     def on_entity_remove(self, entitylike):
         # type: (EntityLike) -> None
-        """ """
+        """
+        Callback function for when an entity is removed from a Blueprint's
+        ``entities`` list. Handles the removal of the ``EntityLike`` from the
+        ``SpatialHashMap``.
+        """
         # Remove the entity and its children
         self.entity_hashmap.recursively_remove(entitylike)
 
@@ -504,6 +620,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     @property
     def entity_hashmap(self):
         # type: () -> SpatialHashMap
+        """
+        The ``SpatialHashMap`` for ``entities``. Not exported; read only.
+        """
         return self._entity_hashmap
 
     # =========================================================================
@@ -512,7 +631,25 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def tiles(self):
         # type: () -> TileList
         """
-        A list of the Blueprint's tiles.
+        The list of the Blueprint's tiles. Internally the list is a custom
+        class named :py:class`draftsman.classes.TileList`, which has all the
+        normal properties of a regular list, as well as some extra features.
+        For more information on ``TileList``, check out it's documentation
+        *here*.
+
+        :example:
+
+        .. code-block:: python
+
+            blueprint.tiles.append("landfill")
+            assert isinstance(blueprint.tiles[-1], Tile)
+            assert blueprint.tiles[-1].name == "landfill"
+
+            blueprint.tiles.insert(0, "refined-hazard-concrete", position=(1, 0))
+            assert blueprint.tiles[0].position == {"x": 1.5, "y": 1.5}
+
+            blueprint.entities = None
+            assert len(blueprint.entities) == 0
         """
         return self.root["tiles"]
 
@@ -534,6 +671,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     @property
     def tile_hashmap(self):
         # type: () -> SpatialHashMap
+        """
+        The ``SpatialHashMap`` for ``entities``. Not exported; read only.
+        """
         return self._tile_hashmap
 
     # =========================================================================
@@ -543,6 +683,21 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         # type: () -> list
         """
         A list of the Blueprint's schedules.
+
+        .. NOTE::
+
+            Currently there is no framework around creating schedules by script;
+            It can still be done by manipulating the contents of this list, but
+            an easier way to manipulate trains and their schedules is still
+            under development.
+
+        .. seealso::
+
+            `<https://wiki.factorio.com/Blueprint_string_format#Schedule_object>`_
+
+        :type: ``list[SCHEDULE]``
+
+        :exception DataFormatError:
         """
         return self.root["schedules"]
 
@@ -551,14 +706,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         # type: (list) -> None
         if value is None:
             self.root["schedules"] = []
-        elif isinstance(value, list):
-            try:
-                self.root["schedules"] = signatures.SCHEDULES.validate(value)
-            except SchemaError:
-                # TODO: more verbose
-                raise ValueError("Incorrect schedules format")
-        else:
-            raise TypeError("'schedules' must be a list or None")
+            return
+        try:
+            self.root["schedules"] = signatures.SCHEDULES.validate(value)
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -566,7 +718,15 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def area(self):
         # type: () -> list[list[float]]
         """
-        Read only
+        The Axis-aligned Bounding Box of the Blueprint's dimensions. Not
+        exported; for user aid. Read only.
+
+        Stored internally as a list of two lists, where the first one represents
+        the top-left corner (minimum) and the second the bottom-right corner
+        (maximum). This attribute is updated every time an Entity or Tile is
+        changed inside the Blueprint.
+
+        :type: ``list[list[float, float], list[float, float]]``
         """
         return self._area
 
@@ -576,7 +736,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def tile_width(self):
         # type: () -> int
         """
-        Read only
+        The width of the Blueprint's ``area``, rounded up to the nearest tile.
+        Read only.
+
+        :type: ``int``
         """
         return self._tile_width
 
@@ -586,7 +749,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def tile_height(self):
         # type: () -> int
         """
-        Read only
+        The width of the Blueprint's ``area``, rounded up to the nearest tile.
+        Read only.
+
+        :type: ``int``
         """
         return self._tile_height
 
@@ -596,7 +762,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def double_grid_aligned(self):
         # type: () -> bool
         """
-        Read only
+        Whether or not the blueprint is aligned with the double grid, which is
+        the grid that rail entities use, like rails and train-stops. If the
+        blueprint has any entities that are double-grid-aligned, the Blueprint
+        is considered double-grid-aligned. Read only.
+
+        :type: ``bool``
         """
         for entity in self.entities:
             if entity.double_grid_aligned:
@@ -612,6 +783,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         # type: () -> tuple(int, int, int, int)
         """
         Returns the version of the Blueprint as a 4-length tuple.
+
+        :returns: a 4 length tuple in the format ``(major, minor, patch, dev_ver)``.
         """
         return utils.decode_version(self.root["version"])
 
@@ -619,6 +792,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         # type: () -> str
         """
         Returns the version of the Blueprint in human-readable string.
+
+        :returns: a ``str`` of 4 version numbers joined by a '.' character.
         """
         version_tuple = utils.decode_version(self.root["version"])
         return utils.version_tuple_to_string(version_tuple)
@@ -626,8 +801,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def recalculate_area(self):
         # type: () -> None
         """
-        Recalculates the dimensions of the area and tile_width and
-        height. Called when an EntityLike or Tile object is altered or removed.
+        Recalculates the ``area``, ``tile_width``, and ``tile_height``. Called
+        automatically when an EntityLike or Tile object is altered or removed.
+        Can be called by the end user, though it shouldn't be neccessary.
         """
         self._area = None
         for entity in self.entities:
@@ -651,6 +827,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         Returns the blueprint as a dictionary. Intended for getting the
         precursor to a Factorio blueprint string before encoding and compression
         takes place.
+
+        :returns: The dict representation of the Blueprint.
         """
         # Create a copy ourself to modify
         copied_self = deepcopy(self)
@@ -754,7 +932,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def to_string(self):  # pragma: no coverage
         # type: () -> str
         """
-        Returns the Blueprint as a Factorio blueprint string.
+        Returns the Blueprint as an encoded Factorio blueprint string.
+
+        :returns: The zlib-compressed, base-64 encoded string.
         """
         return utils.JSON_to_string(self.to_dict())
 

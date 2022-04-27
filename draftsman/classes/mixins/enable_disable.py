@@ -8,15 +8,27 @@ from draftsman import signatures
 
 class EnableDisableMixin(object):  # (ControlBehaviorMixin)
     """
+    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
+
     Allows the entity to control whether or not it's circuit condition affects
-    its operation. Usually used with CircuitConditionMixin.
+    its operation.
     """
 
     @property
     def enable_disable(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not the machine enables its operation based on the circuit
+        condition. Only used on entities that have multiple operation states,
+        including (but not limited to) a circuit condition.
+
+        :getter: Gets the value of ``enable_disable``, or ``None`` if not set.
+        :setter: Sets the value of ``enable_disable``. Removes the attribute if
+            set to ``None``.
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or
+            ``None``.
         """
         return self.control_behavior.get("circuit_enable_disable", None)
 

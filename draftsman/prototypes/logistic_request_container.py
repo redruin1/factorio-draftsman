@@ -5,12 +5,13 @@ from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    ModeOfOperationMixin,
+    LogisticModeOfOperationMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
     InventoryMixin,
 )
+from draftsman.constants import LogisticModeOfOperation
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
 
@@ -20,7 +21,7 @@ import warnings
 
 
 class LogisticRequestContainer(
-    ModeOfOperationMixin,
+    LogisticModeOfOperationMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
@@ -31,6 +32,9 @@ class LogisticRequestContainer(
 
     def __init__(self, name=logistic_request_containers[0], **kwargs):
         # type: (str, **dict) -> None
+        """
+        TODO
+        """
         super(LogisticRequestContainer, self).__init__(
             name, logistic_request_containers, **kwargs
         )

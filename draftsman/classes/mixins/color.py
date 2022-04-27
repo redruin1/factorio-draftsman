@@ -13,7 +13,7 @@ import six
 
 class ColorMixin(object):
     """
-    Gives the entity an editable color. Used on Locomotives and Train Stops.
+    Gives the entity an editable color.
     """
 
     def __init__(self, name, similar_entities, **kwargs):
@@ -30,7 +30,25 @@ class ColorMixin(object):
     def color(self):
         # type: () -> dict
         """
-        TODO
+        The color of the Entity.
+
+        The ``color`` attribute exists in a dict format with the "r", "g",
+        "b", and an optional "a" keys. The color can be specified like that, or
+        it can be specified more succinctly as a sequence of 3-4 numbers,
+        representing the colors in that order.
+
+        The value of each of the numbers (according to Factorio spec) can be
+        either in the range of [0.0, 1.0] or [0, 255]; if all the numbers are
+        <= 1.0, the former range is used, and the latter otherwise. If "a" is
+        omitted, it defaults to 1.0 or 255 when imported, depending on the
+        range of the other numbers.
+
+        :getter: Gets the color of the Entity, or ``None`` if not set.
+        :setter: Sets the color of the Entity.
+        :type: ``dict{"r": float, "g": float, "b": float, Optional("a"): float}``
+
+        :exception DataFormatError: If the set ``color`` does not match the
+            above specification.
         """
         return self._color
 

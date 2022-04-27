@@ -1,7 +1,12 @@
 # blueprint.py
 
+"""
+Alias module. Imports :py:class:`.Blueprint` and :py:class:`.BlueprintBook` 
+under the namespace ``draftsman``.
+"""
+
 from draftsman import utils
-from draftsman.error import MalformedBlueprintStringError
+from draftsman.error import IncorrectBlueprintTypeError
 from typing import Union
 
 
@@ -11,20 +16,24 @@ from draftsman.classes.blueprintbook import BlueprintBook
 
 def get_blueprintable_from_string(blueprint_string):
     # type: (str) -> Union[Blueprint, BlueprintBook]
-    """Returns a `Blueprint` or a `Blueprint` depending on the string passed in.
+    """
+    Returns a :py:class:`.Blueprint` or a :py:class:`.BlueprintBook` depending
+    on the string passed in.
 
-    Gets a Blueprintable object based off of the `blueprint_string`. A
-    'Blueprintable object' in this context either a Blueprint or a
+    Gets a Blueprintable object based off of the ``blueprint_string``. A
+    "Blueprintable object" in this context means either a Blueprint or a
     BlueprintBook, depending on the particular string you passed in. This
-    function allows you generically accept either Blueprint strings or
-    BlueprintBook strings.
+    function allows you generically accept either Blueprint or BlueprintBook
+    strings and return the appropriate class instance.
 
-    Returns:
-        Either a Blueprint or a BlueprintBook, depending on the input string.
+    :param blueprint_string: The blueprint string to interpret.
 
-    Raises:
-        MalformedBlueprintStringError: if the blueprint_string cannot be
-            resolved to be a valid Blueprint or BlueprintBook.
+    :returns: Either a ``Blueprint`` or ``BlueprintBook`` object.
+
+    :exception MalformedBlueprintStringError: If the ``blueprint_string`` cannot
+        be resolved due to an error with the zlib or JSON decompression.
+    :exception IncorrectBlueprintTypeError: If the root level of the
+        decompressed JSON object is neither ``"blueprint"``, ``"blueprint_book"``.
     """
     blueprintable = utils.string_to_JSON(blueprint_string)
     if "blueprint" in blueprintable:
@@ -32,4 +41,4 @@ def get_blueprintable_from_string(blueprint_string):
     elif "blueprint_book" in blueprintable:
         return BlueprintBook(blueprint_string)
     else:
-        raise MalformedBlueprintStringError
+        raise IncorrectBlueprintTypeError

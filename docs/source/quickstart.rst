@@ -4,46 +4,44 @@ Quickstart
 Installation
 ------------
 
-Like many Python modules, Draftsman is fairly easy to install. 
-If you simply want to install the latest version of Draftsman for the latest version of Factorio:
+Like many Python modules, Draftsman is easy to install. 
+First, install the module from PyPI:
 
 .. code-block:: console
 
     (.venv) $ pip install factorio-draftsman
-    (.venc) $ draftsman-update
 
-.. Note::
-    Draftsman's versioning system is based around the version of factorio first, followed by the version of the package in the format::
+Once that's complete, we need to initialize the modules data.
+Draftsman comes pre-packaged with the latest version of Factorio's data, which needs to be initialized once on startup.
+Draftsman has the console command ``draftsman-update`` to do exactly this:
 
-        F.F.F.D.D.D
+.. code-block:: console
+
+    (.venv) $ draftsman-update --verbose
+
+Once this command finishes, if you see the output ``hella slick; nothing broke!`` then you can be sure that the process went smoothly.
+
+.. NOTE::
     
-    where 'F's represent Factorio version numbers and 'D's represent Draftsman version numbers. 
-    For example, if you wanted to install the latest Draftsman version for Factorio 1.0, you would write:
+    **In order for the module to be set up correctly, both of the above commands must be run.**
+    Ideally, the ``draftsman-update`` command would be run automatically after install, though I have yet to find an elegant way to do this.
 
-    .. code-block:: console
+Draftsman uses the standard library's ``unittest`` for testing.
+To test if the package installed correctly, run the following command:
 
-        (.venv) $ pip install factorio-draftsman == 1.0
+.. code-block:: console
 
-    And if you needed Draftsman version 0.3.5 for Factorio 1.1.53:
-
-    .. code-block:: console
-
-        (.venv) $ pip install factorio-draftsman == 1.1.53.0.3.5
-
-To test if the package installed correctly, we'll write a quick script:
-
-.. code-block:: python
-
-    import draftsman
-    print(draftsman.__version__)
-    print(draftsman.__factorio_version__)
+    python -m unittest discover
 
 If you see an output like::
 
-    0.3.5
-    1.1.53
+    ......................................................................
+    ----------------------------------------------------------------------
+    Ran 312 tests in 0.179s
 
-Then you're on the right track.
+    OK
+
+Then everything should be ready to go.
 
 Creating a Blueprint
 --------------------
@@ -59,7 +57,7 @@ And here's it's blueprint string:
 
     0eNqd0ttqwzAMBuB30bVTloOT1q9SxshBHYJECbYyFoLffU4GYWPuNnop+/dn2WiFpp9xssQCZgVqR3Zgris4euW639ZkmRAMkOAACrgetgp7bMVSm9xmy3WL4BUQd/gOJvXPCpCFhPDT2ovlheehQRsChyK2ZjeNVpIGewn6NLpwbOTt3o2q8pNWsIBJLsVJe69+YNn9liJceXB5nMsPbsCO5iE51Gns/yB1nCweeu6d/vRDWBbHygO71U4SYodWwkbEKr41pqAjG/5lT5QRufq/fP5NDpO0z535MqYK3tC6PZCd06K6ZJVOdZqXT95/AMv66Tw=
 
-Factorio blueprint strings are simply zlib compressed JSON text files, whichcan be easily decoded into Python dictionaries and re-encoded after modification. 
+Factorio blueprint strings are simply zlib compressed JSON text files, which can be easily decoded into Python dictionaries and re-encoded after modification. 
 Let's start off simple by doing just that:
 
 .. code-block:: python
@@ -92,7 +90,7 @@ Lets start by instead of loading the blueprint string into a raw dict, we load i
 
 .. code-block:: python
 
-    from draftsman import Blueprint
+    from draftsman.blueprintable import Blueprint
 
     bp_string = "..."
     
@@ -403,7 +401,7 @@ acting as if the bar index was not set, but does so *silently*; which, if such
 a component is critical, can be hard to catch. Wouldn't it be better to be 
 notified of such a mistake without necessarily affecting program function?
 
-As a result, in addtion to attempting to be *"Factorio-safe"*, Draftsman also 
+As a result, in addition to attempting to be *"Factorio-safe"*, Draftsman also 
 attempts to be *"Factorio-correct"*: If some component or attribute does not 
 break the importing/exporting process, but either doesn't make sense or fails to
 achieve the desired effect, a warning is raised:
@@ -431,7 +429,8 @@ Here's a full working example:
 
 .. code-block:: python
 
-    from draftsman import Blueprint, Container
+    from draftsman.blueprintable import Blueprint
+    from draftsman.entity import Container
 
     bp_string = "0eNqd0ttqwzAMBuB30bVTloOT1q9SxshBHYJECbYyFoLffU4GYWPuNnop+/dn2WiFpp9xssQCZgVqR3Zgris4euW639ZkmRAMkOAACrgetgp7bMVSm9xmy3WL4BUQd/gOJvXPCpCFhPDT2ovlheehQRsChyK2ZjeNVpIGewn6NLpwbOTt3o2q8pNWsIBJLsVJe69+YNn9liJceXB5nMsPbsCO5iE51Gns/yB1nCweeu6d/vRDWBbHygO71U4SYodWwkbEKr41pqAjG/5lT5QRufq/fP5NDpO0z535MqYK3tC6PZCd06K6ZJVOdZqXT95/AMv66Tw="
 
@@ -470,4 +469,4 @@ If you want to know more about how Draftsman works and how you can use it to it'
 
 If you want to take a look at some more complex examples, head to the `examples folder <https://github.com/redruin1/factorio-draftsman/tree/main/examples>`_:
 
-Alternatively, if you think you've seen enough and want to dive into the API, take a look at the :ref:`Reference`.
+Alternatively, if you think you've seen enough and want to dive into the API, take a look at the :doc:`reference <reference/index>`.

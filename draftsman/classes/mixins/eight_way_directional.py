@@ -13,7 +13,12 @@ from typing import Union
 
 class EightWayDirectionalMixin(object):
     """
-    Enables entities to be rotated across 8 directions.
+    Allows the Entity to be rotated in the 8 cardinal directions and diagonals.
+    Sets the ``rotatable`` attribute to ``True``.
+
+    .. seealso::
+
+        :py:class:`~.mixins.directional.DirectionalMixin`
     """
 
     def __init__(self, name, similar_entities, tile_position=[0, 0], **kwargs):
@@ -46,7 +51,22 @@ class EightWayDirectionalMixin(object):
     def direction(self):
         # type: () -> Direction
         """
-        TODO
+        The direction that the Entity is facing. An Entity's "front" is usually
+        the direction of it's outputs, if it has any.
+
+        Note that for rail entities, what "direction" means to them is not
+        entirely intuitive, especially in the diagonal directions. Proceed with
+        caution.
+
+        :getter: Gets the direction that the Entity is facing.
+        :setter: Sets the direction of the Entity. Defaults to ``Direction.NORTH``
+            if set to ``None``.
+        :type: :py:data:`~draftsman.constants.Direction`
+
+        :exception DraftsmanError: If the direction is set while inside an
+            Collection, [which is forbidden.] TODO
+        :exception ValueError: If set to anything other than a ``Direction``, or
+            its equivalent ``int``.
         """
         return self._direction
 

@@ -11,7 +11,10 @@ import warnings
 
 
 class DoubleGridAlignedMixin(object):
-    """ """
+    """
+    Makes the Entity issue warnings if set to an odd tile-position coordinate.
+    Sets the ``double_grid_aligned`` attribute to ``True``.
+    """
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
@@ -31,25 +34,39 @@ class DoubleGridAlignedMixin(object):
     @property
     def position(self):
         # type: () -> dict
-        """The position of the entity.
+        """
+        The "canonical" position of the Entity, or the one that Factorio uses.
+        Positions of most entities are located at their center, which can either
+        be in the middle of a tile or on it's transition, depending on the
+        Entity's ``tile_width`` and ``tile_height``.
 
-        The position of the entity in. Positions of most entities are located
-        at their center, which can either be in the middle of a tile or it's
-        transition, depending on the entities `tile_width` and `tile_height`.
+        ``position`` can be specified as a ``dict`` with ``"x"`` and ``"y"``
+        keys, or more succinctly as a sequence of floats, usually a ``list`` or
+        ``tuple``.
+
+        This property is updated in tandem with ``tile_position``, so using them
+        both interchangeably is both allowed and encouraged.
+
+        Raises :py:class:`~draftsman.warning.RailAlignmentWarning` if the x or y
+        position is odd.
+
+        :getter: Gets the position of the Entity.
+        :setter: Sets the position of the Entity.
+        :type: ``dict{"x": float, "y": float}``
+
+        :exception IndexError: If the set value does not match the above
+            specification.
+        :exception DraftsmanError: If the entities position is modified when
+            inside a EntityCollection, [which is forbidden.] TODO
         """
         return self._position
 
     @position.setter
     def position(self, value):
         # type: (Union[dict, list, tuple]) -> None
-        try:
-            self._position = {"x": float(value["x"]), "y": float(value["y"])}
-        except TypeError:
-            self._position = {"x": float(value[0]), "y": float(value[1])}
 
-        grid_x = round(self._position["x"] - self._tile_width / 2.0)
-        grid_y = round(self._position["y"] - self._tile_height / 2.0)
-        self._tile_position = {"x": grid_x, "y": grid_y}
+        # Call Entity's position property setter
+        super(DoubleGridAlignedMixin, type(self)).position.fset(self, value)
 
         # if the grid alignment is off, warn the user
         if self._tile_position["x"] % 2 == 1 or self._tile_position["y"] % 2 == 1:
@@ -71,29 +88,38 @@ class DoubleGridAlignedMixin(object):
     @property
     def tile_position(self):
         # type: () -> dict
-        """The tile-position of the Entity.
+        """
+        The tile-position of the Entity. The tile position is the position
+        according the the LuaSurface tile grid, and is the top left corner of
+        the top-leftmost tile of the Entity.
 
-        `tile_position` is the position according to the LuaSurface tile grid,
-        and is represented as integers
+        ``tile_position`` can be specified as a ``dict`` with ``"x"`` and
+        ``"y"`` keys, or more succinctly as a sequence of floats, usually a
+        ``list`` or ``tuple``.
 
-        Overwritten
+        This property is updated in tandem with ``position``, so using them both
+        interchangeably is both allowed and encouraged.
+
+        Raises :py:class:`~draftsman.warning.RailAlignmentWarning` if the x or y
+        position is odd.
+
+        :getter: Gets the tile position of the Entity.
+        :setter: Sets the tile position of the Entity.
+        :type: ``dict{"x": int, "y": int}``
+
+        :exception IndexError: If the set value does not match the above
+            specification.
+        :exception DraftsmanError: If the entities position is modified when
+            inside a EntityCollection, [which is forbidden.] TODO
         """
         return self._tile_position
 
     @tile_position.setter
     def tile_position(self, value):
         # type: (Union[dict, list, tuple]) -> None
-        try:
-            self._tile_position = {
-                "x": math.floor(value["x"]),
-                "y": math.floor(value["y"]),
-            }
-        except TypeError:
-            self._tile_position = {"x": math.floor(value[0]), "y": math.floor(value[1])}
 
-        absolute_x = self._tile_position["x"] + self._tile_width / 2.0
-        absolute_y = self._tile_position["y"] + self._tile_height / 2.0
-        self._position = {"x": absolute_x, "y": absolute_y}
+        # Call Entity's tile_position property setter
+        super(DoubleGridAlignedMixin, type(self)).tile_position.fset(self, value)
 
         # if the grid alignment is off, warn the user
         if self._tile_position["x"] % 2 == 1 or self._tile_position["y"] % 2 == 1:

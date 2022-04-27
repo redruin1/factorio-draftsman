@@ -82,7 +82,8 @@ Manipulating Entities inside of Blueprints
 ------------------------------------------
 
 Giving the user direct access to the ``entities`` list allows for very clear and flexible code.
-Sometimes, though, this flexibility can be a little *too* much:
+Sometimes, though, this flexibility can be a little *too* much. 
+Consider the following illustration:
 
 .. code-block:: python
 
@@ -94,10 +95,18 @@ Sometimes, though, this flexibility can be a little *too* much:
     # What if we do this?
     blueprint.entities[0].name = "substation"
     # This:
-    #   Now should raise an OverlappingEntitiesWarning because it intersects the inserter
-    #   Changes the dimensions of the entire blueprint
-    #   Might change the hashmap grid cells the entity is located in
-    #   Might introduce invalid data states where an entity now has attributes it shouldn't
+    #   Now should raise an OverlappingEntitiesWarning because it intersects the inserter.
+    #   Changes the dimensions of the entire blueprint.
+    #   Might change the hashmap grid cells the entity is located in.
+    #   Might introduce invalid data states where an entity now has attributes it shouldn't.
+    # Also consider:
+    #   What if we had a connection between an entity and we moved it out of it's maximum
+    #   range? That should issue a ConnectionRangeWarning as well.
+    #   What about Rail signals, that can only exist adjacent to a rail entity? If we 
+    #   happen to move one to an invalid position, we should throw another warning on top of
+    #   anything else.
+    #   In fact, this can be generalized to any entity that has some kind of placement
+    #   restriction on it; we need recheck all of these every time the object is moved!
 
 Thats a lot of potential problems! 
 Now, theoretically it should be possible to handle all of these cases properly, though handling them *elegantly* is a tougher problem.
@@ -105,7 +114,7 @@ Currently, Draftsman sidesteps this by simply preventing the modification of the
 
 .. code-block:: python
 
-    blueprint.entities[0].name = "substation" # DraftsmanError: cannot modify when in blueprint
+    blueprint.entities[0].name = "substation" # DraftsmanError: cannot modify when in an EntityCollection
 
 Note however that not all attributes are like this, and most can still be modified when placed inside a blueprint; only an important, select few are restricted in this way.
 A complete list of all attributes that are 'guarded' like this and their reasons are provided below:

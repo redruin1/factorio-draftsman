@@ -1,4 +1,5 @@
 # collection.py
+# -*- encoding: utf-8 -*-
 
 from draftsman.classes.entitylike import EntityLike
 from draftsman.classes.tile import Tile
@@ -18,14 +19,15 @@ from draftsman import utils
 
 import abc
 import six
+from typing import Union
 import warnings
 
 
 @six.add_metaclass(abc.ABCMeta)
 class EntityCollection(object):
     """
-    Abstract class used for other constructs that can contain EntityLikes, such
-    as Group and Blueprint.
+    Abstract class used to describe an object that can contain a list of
+    :py:class:`~draftsman.classes.entitylike.EntityLike` instances.
     """
 
     # =========================================================================
@@ -34,10 +36,18 @@ class EntityCollection(object):
 
     @abc.abstractproperty
     def entities(self):  # pragma: no coverage
+        """
+        Object that holds the ``EntityLikes``, usually a
+        :py:class:`~draftsman.classes.entitylist.EntityList`.
+        """
         pass
 
     @abc.abstractproperty
     def entity_hashmap(self):  # pragma: no coverage
+        """
+        Object that holds the spatial information of the entities of this object,
+        usually a :py:class:`~draftsman.classes.spatialhashmap.SpatialHashMap`.
+        """
         pass
 
     # TODO: utilize
@@ -59,14 +69,32 @@ class EntityCollection(object):
 
     def on_entity_insert(self, entitylike):  # pragma: no coverage
         # type: (EntityLike) -> None
+        """
+        Function called when an ``EntityLike`` is inserted into this object's
+        ``entities`` list (assuming that the ``entities`` list is a
+        ``EntityList``). By default, this function does nothing, but any
+        child class can customize it's functionality by overriding it.
+        """
         pass
 
     def on_entity_set(self, old_entitylike, new_entitylike):  # pragma: no coverage
         # type: (EntityLike, EntityLike) -> None
+        """
+        Function called when an ``EntityLike`` is replaced with another in this
+        object's ``entities`` list (assuming that the ``entities`` list is a
+        ``EntityList``). By default, this function does nothing, but any
+        child class can customize it's functionality by overriding it.
+        """
         pass
 
     def on_entity_remove(self, entitylike):  # pragma: no coverage
         # type: (EntityLike) -> None
+        """
+        Function called when an ``EntityLike`` is removed from this object's
+        ``entities`` list (assuming that the ``entities`` list is a
+        ``EntityList``). By default, this function does nothing, but any
+        child class can customize it's functionality by overriding it.
+        """
         pass
 
     # =========================================================================
@@ -74,9 +102,20 @@ class EntityCollection(object):
     # =========================================================================
 
     def find_entity(self, name, position):
-        # type: (str, tuple) -> EntityLike
+        # type: (str, Union[tuple, list, dict]) -> EntityLike
         """
-        Finds an entity with `name` at a grid position `position`.
+        TODO: Make compatible with Groups
+
+        Finds an entity with ``name`` at a grid position ``position``. If
+        multiple entities exist in the queried position, the one that was first
+        placed is returned.
+
+        :param name: The name of the entity to look for.
+        :param position: Either a sequence of two ``floats``, or a ``dict`` with
+            an ``"x"`` and ``"y"`` keys.
+
+        :retuns: The ``EntityLike`` at ``position``, or ``None`` of none were
+            found.
         """
         results = self.entity_hashmap.get_on_point(position)
         try:
@@ -87,9 +126,20 @@ class EntityCollection(object):
     def find_entities(self, aabb=None):
         # type: (list) -> list[EntityLike]
         """
-        Returns a list of all entities within the area `aabb`. Works similiarly
-        to `LuaSurface.find_entities`. If no `aabb` is provided then the
-        function simply returns all the entities in the blueprint.
+        TODO: Make compatible with Groups
+
+        Returns a list of all entities within the area ``aabb``. Works
+        similiarly to
+        `LuaSurface.find_entities <https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_entities>`_.
+        If no ``aabb`` is provided then the method simply returns all the
+        entities in the blueprint.
+
+        :param aabb: A list of two lists, each of two floats. The first pair
+            represents the top-left corner (minimum) and the second the
+            bottom-right corner (maximum).
+
+        :returns: A regular ``list`` of ``EntityLikes`` whose ``collision_box``
+            overlaps the queried AABB.
         """
         if aabb is None:
             return list(self.entities)
@@ -99,21 +149,59 @@ class EntityCollection(object):
     def find_entities_filtered(self, **kwargs):
         # type: (**dict) -> list[EntityLike]
         """
-        Returns a filtered list of entities within the `Collection`. Works
-        similarly to `LuaSurface.find_entities_filtered`.
+        TODO: Make compatible with Groups
 
-        Possible keywords include:
-        * area: AABB to search in
-        * position: grid position to search
-        * radius: radius around position to search in
-        * name: name or set of names, only entities with those names will be
-        returned
-        * type: type or set of types, only entities of those types will be
-        returned
-        * direction: direction or set of directions, only entities facing those
-        directions will be returned
-        * limit: maximum number of entities to return
-        * invert: Boolean, whether or not to invert the search selection
+        Returns a filtered list of entities within the ``Collection``. Works
+        similarly to
+        `LuaSurface.find_entities_filtered <https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_entities_filtered>`_.
+
+        Keywords are organized into two main categrories: **region** and
+        **criteria**:
+
+        .. list-table:: Region keywords
+            :header-rows: 1
+
+            * - Name
+              - Type
+              - Description
+            * - ``position``
+              - ``[float, float]`` or ``{"x": float, "y": float}``
+              - Grid position to search.
+            * - ``radius``
+              - ``float``
+              - Radius of the circle around position to search.
+            * - ``area``
+              - ``[[float, float], [float, float]]``
+              - AABB to search in.
+
+        .. list-table:: Criteria keywords
+            :header-rows: 1
+
+            * - Name
+              - Type
+              - Description
+            * - ``name``
+              - ``str`` or ``set{str}``
+              - The name(s) of the entities that you want to search for.
+            * - ``type``
+              - ``str`` or ``set{str}``
+              - The type(s) of the entities that you want to search for.
+            * - ``direction``
+              - ``Direction`` or ``set{Direction}``
+              - | The direction(s) of the entities that you want to search for.
+                | Excludes entities that have no direction.
+            * - ``limit``
+              - ``int``
+              - | Limit the maximum size of the returned list to this amount.
+                | Unlimited by default.
+            * - ``invert``
+              - ``bool``
+              - | Whether or not to return the inverse of the search.
+                | False by default.
+
+        ``position`` and ``radius`` take precidence over ``aabb`` if all are
+        specified. If no region keywords are specified, the entire Collection is
+        searched.
         """
 
         search_region = []
@@ -170,20 +258,56 @@ class EntityCollection(object):
     # =========================================================================
 
     def add_power_connection(self, id1, id2, side=1):
-        # type: (str, str, int) -> None
+        # type: (Union[str, int], Union[str, int], int) -> None
         """
-        Adds a copper wire power connection between two entities. Side specifies
-        which side to connect to when establishing a connection to a dual-power-
-        connectable entity (usually a power-switch).
+        Adds a copper wire power connection between two entities. Each ID can
+        either be the index of the entity in the ``entities`` list, or it's
+        string ID. Side specifies which side to connect to when establishing a
+        connection to a dual-power-connectable entity (usually a power-switch).
+        Does nothing if the connection already exists.
 
-        .. NOTE:
+        Raises :py:class:`~draftsman.warning.ConnectionRangeWarning` if the
+        distance between the two entities exceeds the maximum wire distance
+        between the two.
 
-            `side` is in 1-based notation (1 and 2, input and output) which is
-            identical to circuit connections, though internally the connections
-            are represented in 0-based notation as "Cu0" and "Cu1" respectively.
+        Raises :py:class:`~draftsman.warning.TooManyConnectionsWarning` if
+        either of the power poles exceed 5 connections when this connection is
+        added.
+
+        .. NOTE::
+
+            ``side`` is in 1-based notation (1 and 2, input and output) which is
+            identical to circuit connections. Internally, however, the
+            connections are represented in 0-based notation as "Cu0" and "Cu1"
+            respectively.
+
+        .. NOTE::
+
+            You might notice that unlike :py:meth:`add_circuit_connection`,
+            there is only one ``side`` argument. This is because it is actually
+            impossible to connect two dual-power-connectable entities with one
+            another; they must be connected to a power pole in-between.
+
+        :param id1: ID or index of the first entity to join.
+        :param id2: ID or index of the second entity to join.
+        :param side: Which side of a dual-power-connectable entity to connect
+            to, where ``1`` is "input" and ``2`` is "output". Only used when
+            connecting a dual-power-connectable entity. Defaults to ``1``.
+
+        :exception KeyError, IndexError: If ``id1`` and/or ``id2`` are invalid
+            ID's or indices to the parent Collection.
+        :exception InvalidConnectionSideError: If ``side`` is neither ``1`` nor
+            ``2``.
+        :exception EntityNotPowerConnectableError: If either `entity1` or
+            `entity2` do not have the capability to be copper wire connected.
+        :exception DraftsmanError: If both `entity1` and `entity2` are
+            dual-power-connectable, of which a connection is forbidden.
         """
         entity_1 = self.entities[id1]
         entity_2 = self.entities[id2]
+
+        if side not in {1, 2}:
+            raise InvalidConnectionSideError("'{}'".format(side))
 
         if not entity_1.power_connectable:
             raise EntityNotPowerConnectableError(entity_1.name)
@@ -255,7 +379,22 @@ class EntityCollection(object):
     def remove_power_connection(self, id1, id2, side=1):
         # type: (str, str, int) -> None
         """
-        Removes a copper wire power connection between two entities.
+        Removes a copper wire power connection between two entities. Each id can
+        either be the index of the entity in the ``entities`` list, or it's
+        string ID. ``side`` specifies which side to remove the connection from
+        when removing a connection to a dual-power-connectable entity (usually a
+        power-switch). Does nothing if the connection does not exist.
+
+        :param id1: ID or index of the first entity to remove the connection to.
+        :param id2: ID or index of the second entity to remove the connection
+            to.
+        :param side: Which side of a dual-power-connectable entity to remove the
+            connection from, where ``1`` is "input" and ``2`` is "output". Only
+            used when disjoining a dual-power-connectable entity. Defaults to
+            ``1``.
+
+        :exception KeyError, IndexError: If ``id1`` and/or ``id2`` are invalid
+            ID's or indices to the parent Collection.
         """
         entity_1 = self.entities[id1]
         entity_2 = self.entities[id2]
@@ -295,21 +434,41 @@ class EntityCollection(object):
     def remove_power_connections(self):
         # type: () -> None
         """
-        Remove all power connections in the Collection.
-        TODO: handle power switches
+        Remove all power connections in the Collection, including any power
+        connections between power switches. Does nothing if there are no power
+        connections in the Collection.
         """
         for entity in self.entities:
             if hasattr(entity, "neighbours"):
                 entity.neighbours = None
+            if hasattr(entity, "connections"):
+                if "Cu0" in entity.connections:
+                    del entity.connections["Cu0"]
+                if "Cu1" in entity.connections:
+                    del entity.connections["Cu1"]
 
     def generate_power_connections(self, prefer_axis=True, only_axis=False):
         # type: (bool, bool) -> None
         """
         Automatically create power connections between all electric poles.
 
-        The algorithm used is similar to demi-pixel's
-        `generateElectricalConnections()` (https://github.com/demipixel/factorio-blueprint/blob/master/src/electrical-connections.ts)
-        but with some slight differences.
+        The algorithm used is similar to demi-pixel's `generateElectricalConnections()
+        <https://github.com/demipixel/factorio-blueprint/blob/master/src/electrical-connections.ts>`_
+        function, but with some slight differences. Power poles are still
+        prioritized closest first, but can be selected to prefer to connect
+        neighbours on the same axis, as well as *only* connect to neighbours on
+        the same axis. This function will only connect power poles that have
+        less than 5 power connections already made, preserving power connections
+        that were manually specified. This function does not generate
+        connections between power-switches.
+
+        :param prefer_axis: Determines whether or not to rank power-poles on the
+            same x or y coordinate higher than poles that are closer, but not on
+            either axis. Used to prefer creating neat, regular grids when
+            possible. ``True`` by default.
+        :param only_axis: Removes any neighbour that does not lie on the same
+            x or y axis from the candidate pool, preventing non grid
+            connections. ``False`` by default.
         """
         # Get all power poles in the Collection
         electric_poles = self.find_entities_filtered(type="electric-pole")
@@ -366,7 +525,41 @@ class EntityCollection(object):
     def add_circuit_connection(self, color, id1, id2, side1=1, side2=1):
         # type: (str, str, str, int, int) -> None
         """
-        Adds a circuit wire connection between two entities.
+        Adds a circuit wire connection between two entities. Each ID can
+        either be the index of the entity in the ``entities`` list, or it's
+        string ID. Color specifies the color of the wire to make the connection
+        with, and is either ``"red"`` or ``"green"``. ``side1`` specifies which
+        side of the first entity to connect to (if applicable), and ``side2``
+        specifies which side of the second entity to connect to (if applicable).
+        Does nothing if the connection already exists.
+
+        Raises :py:class:`~draftsman.warning.ConnectionSideWarning` if the side
+        of either of the entities is ``2`` when the entity is not
+        dual-circuit-connectable.
+
+        Raises :py:class:`~draftsman.warning.ConnectionRangeWarning` if the
+        distance between the two entities exceeds the maximum wire distance
+        between the two.
+
+        :param color: Color of the wire to make the connection with. Must be
+            either ``"red"`` or ``"green"``.
+        :param id1: ID or index of the first entity to join.
+        :param id2: ID or index of the second entity to join.
+        :param side1: Which side of the first dual-circuit-entity to connect to,
+            where ``1`` is "input" and ``2`` is "output". Only used when the
+            first entity is dual-circuit-connectable. Defaults to ``1``.
+        :param side2: Which side of the second dual-circuit-entity to connect
+            to, where ``1`` is "input" and ``2`` is "output". Only used when the
+            second entity is dual-circuit-connectable. Defaults to ``1``.
+
+        :exception KeyError, IndexError: If ``id1`` and/or ``id2`` are invalid
+            ID's or indices to the parent Collection.
+        :exception InvalidWireTypeError: If ``color`` is neither ``"red"`` nor
+            ``"green"``.
+        :exception InvalidConnectionSideError: If ``side1`` or ``side2`` are
+            neither ``1`` nor ``2``.
+        :exception EntityNotCircuitConnectableError: If either `entity_1` or
+            `entity_2` do not have the capability to be circuit wire connected.
         """
         entity_1 = self.entities[id1]
         entity_2 = self.entities[id2]
@@ -374,9 +567,9 @@ class EntityCollection(object):
         if color not in {"red", "green"}:
             raise InvalidWireTypeError(color)
         if side1 not in {1, 2}:
-            raise InvalidConnectionSideError(side1)
+            raise InvalidConnectionSideError("'{}'".format(side1))
         if side2 not in {1, 2}:
-            raise InvalidConnectionSideError(side2)
+            raise InvalidConnectionSideError("'{}'".format(side2))
 
         if not entity_1.circuit_connectable:
             raise EntityNotCircuitConnectableError(entity_1.name)
@@ -456,7 +649,28 @@ class EntityCollection(object):
     def remove_circuit_connection(self, color, id1, id2, side1=1, side2=1):
         # type: (str, str, str, int, int) -> None
         """
-        Removes a circuit wire connection between two entities.
+        Removes a circuit wire connection between two entities. Each ID can
+        either be the index of the entity in the ``entities`` list, or it's
+        string ID. ``side1`` specifies which side of the first entity to remove
+        the connection from (if applicable), and ``side2`` specifies which side
+        of the second entity to remove the connection from (if applicable). Does
+        nothing if the connection doesn't exist.
+
+        :param color: Color of the wire to remove. Either ``"red"`` or
+            ``"green"``.
+        :param id1: ID or index of the first entity to remove the connection to.
+        :param id2: ID or index of the second entity to remove the connection to.
+        :param side1: Which side of the first dual-circuit-connectable entity to
+            remove the connection from, where ``1`` is "input" and ``2`` is
+            "output". Only used when disjoining a dual-circuit-connectable
+            entity. Defaults to ``1``.
+        :param side2: Which side of the second dual-circuit-connectable entity
+            to remove the connection from, where ``1`` is "input" and ``2`` is
+            "output". Only used when disjoining a dual-circuit-connectable
+            entity. Defaults to ``1``.
+
+        :exception KeyError, IndexError: If ``id1`` and/or ``id2`` are invalid
+            ID's or indices to the parent Collection.
         """
         entity_1 = self.entities[id1]
         entity_2 = self.entities[id2]
@@ -509,12 +723,15 @@ class EntityCollection(object):
     def remove_circuit_connections(self):
         # type: () -> None
         """
-        Remove all power connections in the Collection.
-        TODO: handle power switches
+        Remove all circuit connections in the Collection. Does nothing if there
+        are no circuit connections in the Collection
         """
         for entity in self.entities:
             if hasattr(entity, "connections"):
-                entity.connections = None
+                if "1" in entity.connections:
+                    del entity.connections["1"]
+                if "2" in entity.connections:
+                    del entity.connections["2"]
 
 
 # =============================================================================
@@ -523,16 +740,24 @@ class EntityCollection(object):
 @six.add_metaclass(abc.ABCMeta)
 class TileCollection(object):
     """
-    Abstract class used for other constructs that can contain EntityLikes, such
-    as Blueprint.
+    Abstract class used to describe an object that can contain a list of
+    :py:class:`~draftsman.classes.tile.Tile` instances.
     """
 
     @abc.abstractproperty
     def tiles(self):  # pragma: no coverage
+        """
+        Object that holds the ``Tiles``, usually a
+        :py:class:`~draftsman.classes.tilelist.TileList`.
+        """
         pass
 
     @abc.abstractproperty
     def tile_hashmap(self):  # pragma: no coverage
+        """
+        Object that holds the spatial information for the Tiles of this object,
+        usually a :py:class:`~draftsman.classes.spatialhashmap.SpatialHashMap`.
+        """
         pass
 
     # =========================================================================
@@ -541,7 +766,16 @@ class TileCollection(object):
 
     def find_tile(self, x, y):
         # type: (int, int) -> Tile
-        """ """
+        """
+        Returns the tile at the tile-coordinate ``x`` and ``y``. If there are
+        multiple tiles at that location, the entity that was inserted first is
+        returned.
+
+        :param x: X-position in tile-coordinates to search.
+        :param y: Y-position in tile-coordinates to search.
+
+        :returns: The tile at ``(x, y)``, or ``None`` if there is none.
+        """
         tiles = self.tile_hashmap.get_on_point((x + 0.5, y + 0.5))
         try:
             return tiles[0]
@@ -552,15 +786,45 @@ class TileCollection(object):
         # type: (**dict) -> list[Tile]
         """
         Returns a filtered list of tiles within the blueprint. Works
-        similarly to `LuaSurface.find_tiles_filtered`.
+        similarly to
+        `LuaSurface.find_tiles_filtered <https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_tiles_filtered>`_.
 
-        Possible keywords include:
-        * area: AABB to search in
-        * position: grid position to search
-        * radius: radius around position to search in
-        * name: name or set of names, only entities with those names will be
-        returned
-        * limit: maximum number of entities to return
+        Keywords are organized into two main categrories: **region** and
+        **criteria**:
+
+        .. list-table:: Region keywords
+            :header-rows: 1
+
+            * - Name
+              - Type
+              - Description
+            * - ``position``
+              - ``[float, float]`` or ``{"x": float, "y": float}``
+              - Grid position to search.
+            * - ``radius``
+              - ``float``
+              - Radius of the circle around position to search.
+            * - ``area``
+              - ``[[float, float], [float, float]]``
+              - AABB to search in.
+
+        .. list-table:: Criteria keywords
+            :header-rows: 1
+
+            * - Name
+              - Type
+              - Description
+            * - ``name``
+              - ``str`` or ``set{str}``
+              - The name(s) of the entities that you want to search for.
+            * - ``limit``
+              - ``int``
+              - | Limit the maximum size of the returned list to this amount.
+                | Unlimited by default.
+
+        ``position`` and ``radius`` take precidence over ``aabb`` if all are
+        specified. If no region keywords are specified, the entire Collection is
+        searched.
         """
 
         if "position" in kwargs and "radius" in kwargs:

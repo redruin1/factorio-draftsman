@@ -13,7 +13,7 @@ import six
 
 class CircuitConnectableMixin(object):
     """
-    Enables the entity to be connected to circuit networks.
+    Enables the Entity to be connected to circuit networks.
     """
 
     def __init__(self, name, similar_entities, **kwargs):
@@ -47,7 +47,10 @@ class CircuitConnectableMixin(object):
     def circuit_wire_max_distance(self):
         # type: () -> int
         """
-        Read only
+        The maximum distance that this entity can reach for circuit connections.
+        Not exported; read only.
+
+        :type: ``float``
         """
         return self._circuit_wire_max_distance
 
@@ -57,7 +60,13 @@ class CircuitConnectableMixin(object):
     def connections(self):
         # type: () -> dict
         """
-        TODO
+        Connections dictionary. Primarily holds information about the Entity's
+        circuit connections (as well as copper wire connections).
+
+        :type: See :py:data:`draftsman.signatures.CONNECTIONS`
+
+        :exception DataFormatError: If set to anything that does not match the
+            format of :py:data:`draftsman.signatures.CONNECTIONS`.
         """
         return self._connections
 

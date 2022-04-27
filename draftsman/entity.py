@@ -1,8 +1,15 @@
 # entity.py
 
+"""
+Entity alias module. Imports the base-class :py:class:`.Entity`, as well as
+all the prototypes in :py:mod:`draftsman.prototypes`.
+"""
+
 from draftsman.classes.entity import Entity
 from draftsman.error import InvalidEntityError
 
+
+# fmt: off
 from draftsman.prototypes.container import Container, containers
 from draftsman.prototypes.storage_tank import StorageTank, storage_tanks
 from draftsman.prototypes.transport_belt import TransportBelt, transport_belts
@@ -24,45 +31,18 @@ from draftsman.prototypes.locomotive import Locomotive, locomotives
 from draftsman.prototypes.cargo_wagon import CargoWagon, cargo_wagons
 from draftsman.prototypes.fluid_wagon import FluidWagon, fluid_wagons
 from draftsman.prototypes.artillery_wagon import ArtilleryWagon, artillery_wagons
-from draftsman.prototypes.logistic_passive_container import (
-    LogisticPassiveContainer,
-    logistic_passive_containers,
-)
-from draftsman.prototypes.logistic_active_container import (
-    LogisticActiveContainer,
-    logistic_active_containers,
-)
-from draftsman.prototypes.logistic_storage_container import (
-    LogisticStorageContainer,
-    logistic_storage_containers,
-)
-from draftsman.prototypes.logistic_buffer_container import (
-    LogisticBufferContainer,
-    logistic_buffer_containers,
-)
-from draftsman.prototypes.logistic_request_container import (
-    LogisticRequestContainer,
-    logistic_request_containers,
-)
+from draftsman.prototypes.logistic_passive_container import LogisticPassiveContainer, logistic_passive_containers
+from draftsman.prototypes.logistic_active_container import LogisticActiveContainer, logistic_active_containers
+from draftsman.prototypes.logistic_storage_container import LogisticStorageContainer, logistic_storage_containers
+from draftsman.prototypes.logistic_buffer_container import LogisticBufferContainer, logistic_buffer_containers
+from draftsman.prototypes.logistic_request_container import LogisticRequestContainer, logistic_request_containers
 from draftsman.prototypes.roboport import Roboport, roboports
 from draftsman.prototypes.lamp import Lamp, lamps
-from draftsman.prototypes.arithmetic_combinator import (
-    ArithmeticCombinator,
-    arithmetic_combinators,
-)
-from draftsman.prototypes.decider_combinator import (
-    DeciderCombinator,
-    decider_combinators,
-)
-from draftsman.prototypes.constant_combinator import (
-    ConstantCombinator,
-    constant_combinators,
-)
+from draftsman.prototypes.arithmetic_combinator import ArithmeticCombinator, arithmetic_combinators
+from draftsman.prototypes.decider_combinator import DeciderCombinator, decider_combinators
+from draftsman.prototypes.constant_combinator import ConstantCombinator, constant_combinators
 from draftsman.prototypes.power_switch import PowerSwitch, power_switches
-from draftsman.prototypes.programmable_speaker import (
-    ProgrammableSpeaker,
-    programmable_speakers,
-)
+from draftsman.prototypes.programmable_speaker import ProgrammableSpeaker, programmable_speakers
 from draftsman.prototypes.boiler import Boiler, boilers
 from draftsman.prototypes.generator import Generator, generators
 from draftsman.prototypes.solar_panel import SolarPanel, solar_panels
@@ -72,10 +52,7 @@ from draftsman.prototypes.heat_pipe import HeatPipe, heat_pipes
 from draftsman.prototypes.mining_drill import MiningDrill, mining_drills
 from draftsman.prototypes.offshore_pump import OffshorePump, offshore_pumps
 from draftsman.prototypes.furnace import Furnace, furnaces
-from draftsman.prototypes.assembling_machine import (
-    AssemblingMachine,
-    assembling_machines,
-)
+from draftsman.prototypes.assembling_machine import AssemblingMachine, assembling_machines
 from draftsman.prototypes.lab import Lab, labs
 from draftsman.prototypes.beacon import Beacon, beacons
 from draftsman.prototypes.rocket_silo import RocketSilo, rocket_silos
@@ -84,39 +61,37 @@ from draftsman.prototypes.wall import Wall, walls
 from draftsman.prototypes.gate import Gate, gates
 from draftsman.prototypes.turret import Turret, turrets
 from draftsman.prototypes.radar import Radar, radars
-from draftsman.prototypes.electric_energy_interface import (
-    ElectricEnergyInterface,
-    electric_energy_interfaces,
-)
+from draftsman.prototypes.electric_energy_interface import ElectricEnergyInterface, electric_energy_interfaces
 from draftsman.prototypes.linked_container import LinkedContainer, linked_containers
 from draftsman.prototypes.heat_interface import HeatInterface, heat_interfaces
 from draftsman.prototypes.linked_belt import LinkedBelt, linked_belts
-from draftsman.prototypes.infinity_container import (
-    InfinityContainer,
-    infinity_containers,
-)
+from draftsman.prototypes.infinity_container import InfinityContainer, infinity_containers
 from draftsman.prototypes.infinity_pipe import InfinityPipe, infinity_pipes
 from draftsman.prototypes.burner_generator import BurnerGenerator, burner_generators
+# fmt: on
 
 
 def new_entity(name, **kwargs):
     # type: (str, **dict) -> Entity
     """
-    Factory function for creating a new Entity. The class used will be based
-    on the entity's name, so `new_entity("wooden-chest")` will return a
-    `Container()` instance.
+    Factory function for creating a new ``Entity``. The class used will be based
+    on the entity's name, so ``new_entity("wooden-chest")`` will return a
+    ``Container`` instance. Useful if you know the name of the Entity you want
+    to make, but don't know what type it is.
 
     Any additional keyword arguments are passed to the entity's constructor,
-    allowing you to specify the entity's position, id, or any other relevant
-    information.
+    allowing you to specify the entity's position, ID, or any other relevant
+    information during construction.
 
-    Warns:
-        * `UserWarning` if any keyword passed in is not recognized by that
-        Entity class' constructor.
+    Raises :py:class:`~draftsman.warning.DraftsmanWarning` if any keyword passed
+    in is not recognized by that Entity's class constructor.
 
-    Raises:
-        * `InvalidEntityID` if the name passed in is not recognized as any valid
-        entity name.
+    :param name: The string name of an Entity.
+    :param kwargs: A dict of all the keyword arguments to pass to the 
+        constructor.
+
+    :exception InvalidEntityID: If the name passed in is not recognized as any
+        valid entity name.
     """
     if name in containers:
         return Container(name, **kwargs)

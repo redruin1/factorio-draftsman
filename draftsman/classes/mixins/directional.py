@@ -15,7 +15,12 @@ import warnings
 
 class DirectionalMixin(object):
     """
-    Enables entities to be rotated.
+    Allows the Entity to be rotated in the 4 cardinal directions. Sets the
+    ``rotatable`` attribute to ``True``.
+
+    .. seealso::
+
+        :py:class:`~.mixins.eight_way_directional.EightWayDirectionalMixin`
     """
 
     def __init__(self, name, similar_entities, tile_position=[0, 0], **kwargs):
@@ -48,7 +53,25 @@ class DirectionalMixin(object):
     def direction(self):
         # type: () -> Direction
         """
-        TODO
+        The direction that the Entity is facing. An Entity's "front" is usually
+        the direction of it's outputs, if it has any.
+
+        For some entities, this attribute may be redundant; for example, the
+        direction value for an ``AssemblingMachine`` only matters if the machine
+        has a fluid input or output.
+
+        Raises :py:class:`~draftsman.warning.DirectionWarning` if set to a
+        diagonal direction.
+
+        :getter: Gets the direction that the Entity is facing.
+        :setter: Sets the direction of the Entity. Defaults to ``Direction.NORTH``
+            if set to ``None``.
+        :type: :py:data:`~draftsman.constants.Direction`
+
+        :exception DraftsmanError: If the direction is set while inside an
+            Collection, [which is forbidden.] TODO
+        :exception ValueError: If set to anything other than a ``Direction``, or
+            its equivalent ``int``.
         """
         return self._direction
 

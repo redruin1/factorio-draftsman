@@ -8,14 +8,27 @@ from typing import Union
 
 class LogisticConditionMixin(object):  # (ControlBehaviorMixin)
     """
-    Gives the Entity the capablility to be logistic network controlled.
+    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
+
+    Allows the Entity to have an logistic enable condition, such as when the
+    amount of some item in the logistic network exceeds some constant.
     """
 
     @property
     def connect_to_logistic_network(self):
         # type: () -> str
         """
-        TODO
+        Whether or not this entity should use it's logistic network condition to
+        control its operation (if it has one).
+
+        :getter: Gets the value of ``connect_to_logistic_network``, or ``None``
+            if not set.
+        :setter: Sets the value of ``connect_to_logistic_network``. Removes the
+            key if set to ``None``.
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or
+            ``None``.
         """
         return self.control_behavior.get("connect_to_logistic_network", None)
 
@@ -30,11 +43,37 @@ class LogisticConditionMixin(object):  # (ControlBehaviorMixin)
 
     # =========================================================================
 
-    def set_logistic_condition(self, a=None, op="<", b=0):
+    def set_logistic_condition(self, a=None, cmp="<", b=0):
         # type: (str, str, Union[str, int]) -> None
-        """ """
-        self._set_condition("logistic_condition", a, op, b)
+        """
+        Sets the logistic condition of the Entity.
 
-    def remove_logistic_condition(self):  # TODO: delete
-        """ """
+        ``cmp`` can be specified as stored as the single unicode character which
+        is used by Factorio, or you can use the Python formatted 2-character
+        equivalents::
+
+            # One of:
+            [">", "<", "=",  "≥",  "≤",  "≠"]
+            # Or, alternatively:
+            [">", "<", "==", ">=", "<=", "!="]
+
+        If specified in the second format, they are converted to and stored as
+        the first format.
+
+        :param a: The string name of the first signal.
+        :param cmp: The operation to use, as specified above.
+        :param b: The string name of the second signal, or some 32-bit constant.
+
+        :exception DataFormatError: If ``a`` is not a valid signal name, if
+            ``cmp`` is not a valid operation, or if ``b`` is neither a valid
+            signal name nor a constant.
+        """
+        self._set_condition("logistic_condition", a, cmp, b)
+
+    def remove_logistic_condition(self):
+        # type: () -> None
+        """
+        Removes the logistic condition of the Entity. Does nothing if the Entity
+        has no logistic condition to remove.
+        """
         self.control_behavior.pop("logistic_condition", None)

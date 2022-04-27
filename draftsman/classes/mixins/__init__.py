@@ -16,7 +16,8 @@ from draftsman.classes.mixins.inventory_filter import InventoryFilterMixin
 from draftsman.classes.mixins.inventory import InventoryMixin
 from draftsman.classes.mixins.io_type import IOTypeMixin
 from draftsman.classes.mixins.logistic_condition import LogisticConditionMixin
-from draftsman.classes.mixins.mode_of_operation import ModeOfOperationMixin
+from draftsman.classes.mixins.mode_of_operation import InserterModeOfOperationMixin
+from draftsman.classes.mixins.mode_of_operation import LogisticModeOfOperationMixin
 from draftsman.classes.mixins.orientation import OrientationMixin
 from draftsman.classes.mixins.power_connectable import PowerConnectableMixin
 from draftsman.classes.mixins.read_rail_signal import ReadRailSignalMixin

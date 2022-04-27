@@ -4,7 +4,6 @@
 # TODO: make sure that all functions that modify the entity preserve the
 #       entity's contents when they throw an error (this is done for the most
 #       part, though I'm sure there are corner cases)
-# TODO: documentation!
 
 # Long term:
 # TODO: defaults!
@@ -15,23 +14,46 @@ from __future__ import unicode_literals
 
 from draftsman.classes.entitylike import EntityLike
 
-from draftsman import signatures
 from draftsman.data import entities
 from draftsman.error import InvalidEntityError, DraftsmanError
 from draftsman.utils import aabb_to_dimensions
 
-import copy
 import math
 from schema import SchemaError
 from typing import Any, Union, Callable
 import six
-import weakref
+
+# import weakref
 
 
 class Entity(EntityLike):
+    """
+    Entity base-class. Used for all entity types that are specified in Factorio.
+    Categorizes entities into "types" based on their class, each of which is
+    implemented in :py:mod:`draftsman.prototypes`.
+    """
+
     def __init__(self, name, similar_entities, tile_position=[0, 0], **kwargs):
         # type: (str, list[str], Union[list, dict], **dict) -> None
-        """ """
+        """
+        Constructs a new Entity. All prototypes have this entity as their most
+        Parent class.
+
+        Raises :py:class:`draftsman.warning.DraftsmanWarning` for every unused
+        keyword passed into the constructor.
+
+        :param name: The name of the entity. Must be one of ``similar_entities``.
+        :param similar_entities: A list of valid names associated with this
+            Entity class. Can be though of as a list of all the entities of this
+            type.
+        :param tile_position: The tile position to set the entity to. Defaults
+            to the origin.
+        :param kwargs: Any other valid parameters to set.
+
+        :exception InvalidEntityError: If ``name`` is set to anything other than
+            an entry in ``similar_entities``.
+        """
+        # Init EntityLike
         super(Entity, self).__init__()
         # Create a set of keywords that transfer in to_dict function
         # Since some things we want to keep internal without sending to to_dict
@@ -112,9 +134,9 @@ class Entity(EntityLike):
     def name(self):
         # type: () -> str
         """
-        Read Only
-        The name of the entity. The name must be a Factorio ID string; Setting
-        the name to anything else raises an `InvalidEntityID` error.
+        The name of the entity. Must be a valid Factorio ID string. Read only.
+
+        :type: ``str``
         """
         return self._name
 
@@ -138,7 +160,14 @@ class Entity(EntityLike):
     def type(self):
         # type: () -> str
         """
-        Read Only
+        The type of the Entity. Equivalent to the key found in Factorio's
+        ``data.raw``. Mostly equivalent to the type of the entity instance,
+        though there are some differences, [as noted here].
+        Can be used as a criteria to search with in
+        :py:meth:`~draftsman.classes.collection.EntityCollection.find_entities_filtered`.
+        Not exported; read only.
+
+        :type: ``str``
         """
         return self._type
 
@@ -147,14 +176,27 @@ class Entity(EntityLike):
     @property
     def id(self):
         # type: () -> str
-        """ """
+        """
+        A unique string ID associated with this entity. ID's can be anything,
+        though there can only be one entity with a particular ID in an
+        EntityCollection. Not exported.
+
+        :getter: Gets the ID of the entity, or ``None`` if the entity has no ID.
+        :setter: Sets the ID of the entity.
+        :type: ``str``
+
+        :exception TypeError: If the set value is anything other than a ``str``
+            or ``None``.
+        :exception Draftsman: If the ID is changed while inside an
+            EntityCollection, [which is forbidden.] TODO
+        """
         return self._id
 
     @id.setter
     def id(self, value):
         # type: (str) -> None
         if self.parent:
-            raise DraftsmanError("Cannot modify inside a collection")
+            raise DraftsmanError("Cannot modify inside a EntityCollection")
 
         if value is None:
             self._id = value
@@ -169,11 +211,26 @@ class Entity(EntityLike):
     def position(self):
         # type: () -> dict
         """
-        The position of the entity.
+        The "canonical" position of the Entity, or the one that Factorio uses.
+        Positions of most entities are located at their center, which can either
+        be in the middle of a tile or on it's transition, depending on the
+        Entity's ``tile_width`` and ``tile_height``.
 
-        Positions of most entities are located
-        at their center, which can either be in the middle of a tile or it's
-        transition, depending on the entities `tile_width` and `tile_height`.
+        ``position`` can be specified as a ``dict`` with ``"x"`` and ``"y"``
+        keys, or more succinctly as a sequence of floats, usually a ``list`` or
+        ``tuple``.
+
+        This property is updated in tandem with ``tile_position``, so using them
+        both interchangeably is both allowed and encouraged.
+
+        :getter: Gets the position of the Entity.
+        :setter: Sets the position of the Entity.
+        :type: ``dict{"x": float, "y": float}``
+
+        :exception IndexError: If the set value does not match the above
+            specification.
+        :exception DraftsmanError: If the entities position is modified when
+            inside a EntityCollection, [which is forbidden.] TODO
         """
         return self._position
 
@@ -200,10 +257,25 @@ class Entity(EntityLike):
     def tile_position(self):
         # type: () -> dict
         """
-        The tile-position of the Entity.
+        The tile-position of the Entity. The tile position is the position
+        according the the LuaSurface tile grid, and is the top left corner of
+        the top-leftmost tile of the Entity.
 
-        `tile_position` is the position according to the LuaSurface tile grid,
-        and is represented as integers
+        ``tile_position`` can be specified as a ``dict`` with ``"x"`` and
+        ``"y"`` keys, or more succinctly as a sequence of floats, usually a
+        ``list`` or ``tuple``.
+
+        This property is updated in tandem with ``position``, so using them both
+        interchangeably is both allowed and encouraged.
+
+        :getter: Gets the tile position of the Entity.
+        :setter: Sets the tile position of the Entity.
+        :type: ``dict{"x": int, "y": int}``
+
+        :exception IndexError: If the set value does not match the above
+            specification.
+        :exception DraftsmanError: If the entities position is modified when
+            inside a EntityCollection, [which is forbidden.] TODO
         """
         return self._tile_position
 
@@ -233,7 +305,15 @@ class Entity(EntityLike):
     def collision_box(self):
         # type: () -> list
         """
-        Read Only
+        The AABB that stores the collision area of the Entity. Equivalent to
+        the one specified in Factorio's ``data.raw``. Not exported; read only.
+
+        The ``collision_box`` treats the Entity's position as the origin. This
+        means that it is position independent, and equivalent for all entities
+        with the same name. If you want to know the area the Entity occupies in
+        world-space, you can use :py:meth:`get_area` instead.
+
+        :type: ``[[float, float], [float, float]]``
         """
         return self._collision_box
 
@@ -243,7 +323,11 @@ class Entity(EntityLike):
     def collision_mask(self):
         # type: () -> set
         """
-        Read only
+        The set of all collision layers that this Entity collides with,
+        specified as strings. Equivalent to Factorio's ``data.raw`` equivalent.
+        Not exported; read only.
+
+        :type: ``set{str}``
         """
         return self._collision_mask
 
@@ -253,7 +337,10 @@ class Entity(EntityLike):
     def tile_width(self):
         # type: () -> int
         """
-        Read Only
+        The width of the entity in tiles, rounded up to the nearest integer.
+        Not exported; read only.
+
+        :type: ``int``
         """
         return self._tile_width
 
@@ -263,7 +350,10 @@ class Entity(EntityLike):
     def tile_height(self):
         # type: () -> int
         """
-        Read Only
+        The height of the entity in tiles, rounded up to the nearest integer.
+        Not exported; read only.
+
+        :type: ``int``
         """
         return self._tile_height
 
@@ -273,8 +363,23 @@ class Entity(EntityLike):
     def hidden(self):
         # type: () -> bool
         """
-        Read only
-        TODO
+        Whether or not this Entity is considered "hidden", as specified in it's
+        flags in Factorio's ``data.raw``. Not exported; read only.
+
+        .. NOTE::
+
+            "Hidden" in this context is somewhat unintuitive, as items you might
+            think would be considered hidden may not be. Ship wreckage entities,
+            for example, are not considered "hidden", even though the only way
+            to access them is with the editor. Keep this in mind when querying
+            this attribute, especially since this discrepancy might be
+            considered a bug later on.
+
+        .. seealso::
+
+            `<https://wiki.factorio.com/Types/EntityPrototypeFlags>`_
+
+        :type: ``bool``
         """
         return self._hidden
 
@@ -283,15 +388,24 @@ class Entity(EntityLike):
     @property
     def tags(self):
         # type: () -> dict
-        """ """
+        """
+        Tags associated with this Entity. Commonly used by mods to add custom
+        data to a particular Entity when exporting and importing Blueprint
+        strings.
+
+        :getter: Gets the tags of the Entity, or ``None`` if not set.
+        :setter: Sets the Entity's tags.
+        :type: ``dict{Any: Any}``
+
+        :exception TypeError: If tags is set to anything other than a ``dict``
+            or ``None``.
+        """
         return self._tags
 
     @tags.setter
     def tags(self, tags):
         # type: (dict) -> None
-        if tags is None:
-            self._tags = None
-        elif isinstance(tags, dict):
+        if tags is None or isinstance(tags, dict):
             self._tags = tags
         else:
             raise TypeError("'tags' must be a dict or None")
@@ -303,7 +417,21 @@ class Entity(EntityLike):
         """
         Converts the Entity to its JSON dict representation. The keys returned
         are determined by the contents of the `exports` dictionary and their
-        function values.
+        criteria functions.
+
+        A attribute from the Entity will be included as a key in the output dict
+        if both of the following conditions are met:
+
+        1. The attribute is in the ``exports`` dictionary
+        2. The associated criteria function is either not present or returns
+           ``True``. This is used to avoid including excess keys, keeping
+           Blueprint string size down.
+
+        In addition, a second function may be provided to have a formatting step
+        to alter either the key and/or its value, which gets inserted into the
+        output ``dict``.
+
+        :returns: The exported JSON-dict representation of the Entity.
         """
         # Only add the keys in the exports dictionary
         out = {}
@@ -345,20 +473,31 @@ class Entity(EntityLike):
     def _add_export(self, name, criterion=None, formatter=None):
         # type: (str, Callable, Callable) -> None
         """
-        Adds an export key with a criteria function.
+        Adds a key to ``exports`` with an optional criteria and formatting
+        function.
 
         We can't just convert the entire entity to a dict, because there are a
         number of keys (for technical or space reasons) that we dont want to
-        add to the dictionary. Instead, we hold a dictionary of the keys we do
-        want to add to the dictionary and add those if they're present in the
-        Entity object.
+        add to the dictionary. Instead, we keep track of the keys we do want
+        (``exports``) and add those if they're present in the Entity object.
 
         However, some items that are present in Entity might be initialized to
-        `None` or otherwise redundant values, which would just take up space in
-        the output dict. Hence, we can also provide a criteria function that
+        ``None`` or otherwise redundant values, which would just take up space
+        in the output dict. Hence, we can also provide a criteria function that
         takes a single argument, the value of the element in the `Entity`. If
-        the function is not present, or if the function is present and returns
-        `True`, then the key and its value are added to the output dict.
+        the function returns ``True``, the key is added to the output dictionary.
+        If the function is ``None``, the key is always added.
+
+        This function also supports an optional ``formatter`` function that
+        takes two arguments, the ``key`` and ``value`` pair and returns a tuple
+        of the two in the same order. This allows to perform any modification to
+        the key or value before being added to the output dict.
+
+        :param name: The name of the attribute that you would like to keep.
+        :param criterion: Function that determines whether or not the attribute
+            should be added.
+        :param formatter: Function that determines the output format of the
+            key-value pair in the output dictionary.
         """
         self.exports[name] = [criterion, formatter]
 
@@ -387,4 +526,4 @@ class Entity(EntityLike):
 
     def __repr__(self):  # pragma: no coverage
         # type: () -> str
-        return "<{}>{}".format(self.__class__.__name__, str(self.to_dict()))
+        return "<{}>{}".format(type(self).__name__, str(self.to_dict()))

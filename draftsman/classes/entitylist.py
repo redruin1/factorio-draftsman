@@ -1,4 +1,5 @@
 # entitylist.py
+# -*- encoding: utf-8 -*-
 
 from draftsman.classes.entitylike import EntityLike
 from draftsman.entity import new_entity
@@ -21,12 +22,27 @@ if TYPE_CHECKING:  # pragma: no coverage
 
 class EntityList(MutableSequence):
     """
-    TODO
+    Custom object for storing sequences of
+    :py:class:`~draftsman.classes.entitylike.EntityLike`.
+
+    Contains all the functionality of a normal ``list``. Adds the ability
+    to index with id strings, as well as extra framework for interfacing with
+    :py:class:`~draftsman.classes.collection.EntityCollection` classes.
     """
 
     @utils.reissue_warnings
     def __init__(self, parent, initlist=None):
         # type: (EntityCollection, Any) -> None
+        """
+        Instantiates a new ``EntityList``.
+
+        :param parent: The parent object that contains the EntityList; used when
+            assigning the ``parent`` to entities when inserted.
+        :param initlist: A list containing data to initialize with.
+
+        :exception TypeError: If any of the entries in ``initlist`` are neither
+            a ``dict`` nor an ``EntityLike``.
+        """
         self.data = []
         self.key_map = {}
         self.key_to_idx = {}
@@ -47,19 +63,123 @@ class EntityList(MutableSequence):
                     )
 
     @utils.reissue_warnings
-    def append(self, entity, **kwargs):
-        # type: (EntityLike, **dict) -> None
+    def append(self, entity, copy=True, **kwargs):
+        # type: (EntityLike, bool, **dict) -> None
         """
-        Appends the EntityLike to the end of the sequence.
+        Appends the ``EntityLike`` to the end of the sequence.
+
+        Supports an optional shorthand where you can specify the string name of
+        an Entity as ``entity`` and any keyword arguments, which are appended to
+        the constructor of that entity.
+
+        :param entity: Either an instance of ``EntityLike``, or a string
+            reprenting the name of an Entity.
+        :param copy: Whether or not to create a copy of the passed in
+            ``EntityLike``. If ``entity`` is in string shorthand, this option
+            is ignored and a new instance is always created.
+        :param kwargs: Any other keyword arguments to pass to the constructor
+            in string shorthand.
+
+        .. NOTE::
+
+            Keyword arguments are only considered if ``entity`` is a string:
+
+            .. code-block:: python
+
+                test_inserter = Inserter("fast-inserter")
+                blueprint.entities.append(test_inserter, id="test")
+                # Prints "None" because id was never set in test_inserter
+                print(blueprint.entities[-1].id)
+
+        :example:
+
+        .. code-block:: python
+
+            blueprint = Blueprint()
+            assert isinstance(blueprint.entities, EntityList)
+
+            # Append Entity instance
+            blueprint.entities.append(Container("steel-chest"))
+            assert blueprint.entities[-1].name == "steel-chest"
+
+            # Append shorthand
+            blueprint.entities.append("wooden-chest", tile_position=(1, 1))
+            assert blueprint.entities[-1].name == "wooden-chest"
+            assert blueprint.entities[-1].tile_position == {"x": 1, "y": 1}
+
+            # Key indexing
+            blueprint.entities.append(
+                TransportBelt(id = "some_id", tile_position=(1, 0))
+            )
+            assert isinstance(blueprint.entities["some_id"], TransportBelt)
+
+            # No copy
+            inserter = Inserter("fast-inserter", tile_position=(0, 1))
+            blueprint.entities.append(inserter, copy=False)
+            inserter.stack_size_override = 1
+            assert inserter is blueprint.entities[-1]
+            assert blueprint.entities[-1].stack_size_override == 1
         """
-        self.insert(len(self.data), entity, **kwargs)
+        self.insert(len(self.data), entity, copy=copy, **kwargs)
 
     @utils.reissue_warnings
     def insert(self, idx, entity, copy=True, **kwargs):
         # type: (int, EntityLike, bool, **dict) -> None
         """
-        Inserts an element into the EntityList. If the added entity has an "id"
-        attribute, the key_map is automatically set to point to the same entity.
+        Inserts an ``EntityLike`` into the sequence.
+
+        Supports an optional shorthand where you can specify the string name of
+        an Entity as ``entity`` and any keyword arguments, which are appended to
+        the constructor of that entity.
+
+        :param idx: The integer index to put the ``EntityLike``.
+        :param entity: Either an instance of ``EntityLike``, or a string
+            reprenting the name of an Entity.
+        :param copy: Whether or not to create a copy of the passed in
+            ``EntityLike``. If ``entity`` is in string shorthand, this option
+            is ignored and a new instance is always created.
+        :param kwargs: Any other keyword arguments to pass to the constructor
+            in string shorthand.
+
+        .. NOTE::
+
+            Keyword arguments are only considered if ``entity`` is a string:
+
+            .. code-block:: python
+
+                test_inserter = Inserter("fast-inserter")
+                blueprint.entities.insert(0, test_inserter, id="test")
+                # Prints "None" because id was never set in test_inserter
+                print(blueprint.entities[-1].id)
+
+        :example:
+
+        .. code-block:: python
+
+            blueprint = Blueprint()
+            assert isinstance(blueprint.entities, EntityList)
+
+            # Insert Entity instance
+            blueprint.entities.insert(0, Container("steel-chest"))
+            assert blueprint.entities[0].name == "steel-chest"
+
+            # Insert shorthand
+            blueprint.entities.insert(1, "wooden-chest", tile_position=(1, 1))
+            assert blueprint.entities[1].name == "wooden-chest"
+            assert blueprint.entities[1].tile_position == {"x": 1, "y": 1}
+
+            # Key indexing
+            blueprint.entities.insert(
+                0, TransportBelt(id = "some_id", tile_position=(1, 0))
+            )
+            assert isinstance(blueprint.entities["some_id"], TransportBelt)
+
+            # No copy
+            inserter = Inserter("fast-inserter", tile_position=(0, 1))
+            blueprint.entities.insert(0, inserter, copy=False)
+            inserter.stack_size_override = 1
+            assert inserter is blueprint.entities[0]
+            assert blueprint.entities[0].stack_size_override == 1
         """
         # Determine the id of the input entity
         entity_id = None
@@ -195,26 +315,44 @@ class EntityList(MutableSequence):
         # type: () -> int
         return len(self.data)
 
-    def check_entity(self, entity):
+    def check_entity(self, entitylike):
         # type: (EntityLike) -> None
         """
         Check to see if adding the entity to the EntityList would cause any
-        problems. Raises errors and warnings.
+        problems.
+
+        Raises :py:class:`~draftsman.warning.HiddenEntityWarning` if the
+        ``Entity`` is marked as hidden.
+
+        :param entitylike: ``EntityLike`` instance to check.
+
+        :exception TypeError: If ``entitylike`` is not an ``EntityLike``
+            instance.
+        :exception DuplicateIDError: If ``entitylike.id`` already exists in the
+            ``EntityList``
         """
-        if not isinstance(entity, EntityLike):
+        if not isinstance(entitylike, EntityLike):
             raise TypeError("Entry in EntityList must be an EntityLike")
 
-        if entity.id is not None and entity.id in self.key_map:
-            raise DuplicateIDError(entity.id)
+        if entitylike.id is not None and entitylike.id in self.key_map:
+            raise DuplicateIDError(entitylike.id)
 
         # Warn if the placed entity is hidden
-        if getattr(entity, "hidden", False):
-            warnings.warn("{}".format(type(entity)), HiddenEntityWarning, stacklevel=2)
+        if getattr(entitylike, "hidden", False):
+            warnings.warn(
+                "{}".format(type(entitylike)), HiddenEntityWarning, stacklevel=2
+            )
 
     def remove_key(self, key):
         # type: (str) -> None
         """
-        Removes the key from the key mapping dicts.
+        Shorthand to remove ``key`` from the key mapping dictionaries. Does
+        nothing if key is ``None``.
+
+        :param key: The string to remove.
+
+        :exception KeyError: If attempting to remove a key that does not exist
+            in the ``EntityList``.
         """
         if key is not None:
             idx = self.key_to_idx[key]
@@ -223,10 +361,16 @@ class EntityList(MutableSequence):
             del self.idx_to_key[idx]
 
     def set_key(self, key, value):
-        # type: (str, Any) -> None
+        # type: (str, EntityLike) -> None
         """
-        Sets a key in the key mapping structures such that they point to
-        `value`.
+        Shorthand to set ``key`` in the key mapping dictionaries to point to
+        ``value``.
+
+        :param key: A ``str`` to associate with ``value``.
+        :param value: An ``EntityLike`` instance to associate with ``key``.
+
+        :exception IndexError: If ``value`` is not found within the
+            ``EntityList``.
         """
         idx = self.data.index(value)
         self.key_map[key] = value
@@ -236,7 +380,15 @@ class EntityList(MutableSequence):
     def get_pair(self, item):
         # type: (Union[int, str]) -> tuple[int, str]
         """
-        Gets the converse key or index and returns them both as a pair.
+        Takes either an index or a key, finds the converse entry associated with
+        it, and returns them both as a pair.
+
+        :param item: Either an integer index or a string key.
+
+        :returns: A tuple of the format ``(index, key)``.
+
+        :exception KeyError: If key ``item`` is not found in the key mapping
+            dictionaries in the ``EntityList``.
         """
         if isinstance(item, six.string_types):
             return (self.key_to_idx[six.text_type(item)], item)
@@ -246,7 +398,7 @@ class EntityList(MutableSequence):
     def _shift_key_indices(self, idx, amt):
         # type: (int, int) -> None
         """
-        Shifts all of the key mappings above `idx` by `amt`. Used when
+        Shifts all of the key mappings above ``idx`` by ``amt``. Used when
         inserting or removing elements before the end, which moves what index
         each key should point to.
         """

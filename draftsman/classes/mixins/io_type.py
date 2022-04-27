@@ -12,7 +12,7 @@ import six
 
 class IOTypeMixin(object):
     """
-    Gives an entity a Input/Output type. Used on underground belts and loaders.
+    Gives an entity a Input/Output type.
     """
 
     def __init__(self, name, similar_entities, **kwargs):
@@ -35,9 +35,18 @@ class IOTypeMixin(object):
     def io_type(self):
         # type: () -> str
         """
-        Input-output type of the entity. Can be either 'input', 'output', or
-        None.
-        TODO
+        Whether this entity is set to recieve or send items. Used to
+        differentiate between input and output underground belts, as well as
+        whether or not a loader inserts or removes items from an adjacent
+        container. Can be one of ``"input"``, ``"output"``, or ``None``.
+
+        :getter: Sets the input/output type of the Entity.
+        :setter: Gets the input/output type of the Entity.
+        :type: ``str``
+
+        :exception TypeError: If set to anything other than a ``str`` or ``None``.
+        :exception ValueError: If set to anything other than ``"input"`` or
+            ``"output"``.
         """
         return self._io_type
 
@@ -45,7 +54,7 @@ class IOTypeMixin(object):
     def io_type(self, value):
         # type: (str) -> None
         try:
-            value = signatures.STRING.validate(value)
+            value = signatures.STRING_OR_NONE.validate(value)
         except SchemaError as e:
             six.raise_from(TypeError(e), None)
 

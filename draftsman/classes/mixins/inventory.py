@@ -5,8 +5,8 @@ from __future__ import unicode_literals
 
 from draftsman import signatures
 from draftsman.data import entities
-from draftsman.error import BarIndexError
-from draftsman.warning import BarIndexWarning
+from draftsman.error import DraftsmanError
+from draftsman.warning import IndexWarning
 
 import warnings
 
@@ -36,8 +36,11 @@ class InventoryMixin(object):
     def inventory_size(self):
         # type: () -> int
         """
-        Read Only
-        TODO
+        The number of inventory slots that this Entity has. Equivalent to the
+        ``"inventory_size"`` key in Factorio's ``data.raw``. Not exported; read
+        only.
+
+        :type: ``int``
         """
         return self._inventory_size
 
@@ -47,8 +50,11 @@ class InventoryMixin(object):
     def inventory_bar_enabled(self):
         # type: () -> bool
         """
-        Read only
-        TODO
+        Whether or not this Entity has its inventory limiting bar enabled.
+        Equivalent to the ``"enable_inventory_bar"`` key in Factorio's
+        ``data.raw``. Not exported; read only.
+
+        :type: ``bool``
         """
         return self._inventory_bar_enabled
 
@@ -58,7 +64,22 @@ class InventoryMixin(object):
     def bar(self):
         # type: () -> int
         """
-        TODO
+        The limiting bar of the inventory. Used to prevent a the final-most
+        slots in the inventory from accepting items.
+
+        Raises :py:class:`~draftsman.warning.IndexWarning` if the set value
+        exceeds the Entity's ``inventory_size`` attribute.
+
+        :getter: Gets the bar location of the inventory.
+        :setter: Sets the bar location of the inventory.
+        :type: ``int``
+
+        :exception DraftsmanError: If attempting to set the bar of an Entity
+            that has the ``inventory_bar_enabled`` attribute set to ``False``.
+        :exception TypeError: If set to anything other than an ``int`` or
+            ``None``.
+        :exception IndexError: If the set value lies outside of the range
+            ``[0, 65536)``.
         """
         return self._bar
 
@@ -66,23 +87,21 @@ class InventoryMixin(object):
     def bar(self, value):
         # type: (int) -> None
         if not self.inventory_bar_enabled:
-            raise BarIndexError("This entity does not have bar control")
+            raise DraftsmanError("This entity does not have bar control")
 
         if value is None:
             self._bar = None
         elif isinstance(value, int):
             if not 0 <= value < 65536:
                 # Error if out of range
-                raise BarIndexError(
-                    "Bar index ({}) not in range [0, 65536)".format(value)
-                )
+                raise IndexError("Bar index ({}) not in range [0, 65536)".format(value))
             elif value >= self.inventory_size:
                 # Warn if greater than what makes sense
                 warnings.warn(
                     "Bar index ({}) not in range [0, {})".format(
                         value, self.inventory_size
                     ),
-                    BarIndexWarning,
+                    IndexWarning,
                     stacklevel=2,
                 )
             self._bar = value

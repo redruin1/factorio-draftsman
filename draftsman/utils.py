@@ -26,6 +26,7 @@ def string_to_JSON(string):
     Decodes a Factorio Blueprint string to a readable JSON Dict.
 
     Follows the data format specification `here <https://wiki.factorio.com/Blueprint_string_format>`_.
+
     For the inverse operation, see :py:func:`JSON_to_string`.
 
     :param string: The input Factorio blueprint string.
@@ -47,6 +48,7 @@ def JSON_to_string(JSON):
     Encodes a JSON dict to a Factorio-readable blueprint string.
 
     Follows the data format specification `here <https://wiki.factorio.com/Blueprint_string_format>`_.
+
     For the inverse operation, see :py:func:`string_to_JSON`.
 
     .. NOTE::
@@ -54,7 +56,7 @@ def JSON_to_string(JSON):
         This function does not verify the data before encoding it. Attempting
         to import an incorrectly formatted blueprint ``dict`` will usually
         result with an error in Factorio. If you need format validation,
-        consider using :py:class:`draftsman.Blueprint` instead.
+        consider using :py:class:`.Blueprint` instead.
 
     :param JSON: The input JSON ``dict`` object.
 
@@ -72,6 +74,7 @@ def encode_version(major, minor, patch=0, dev_ver=0):
 
     Encodes 4 16-bit version numbers into a 64 bit unsigned integer used
     to specify the version of a Factorio Blueprint or Blueprint Book.
+
     For the inverse operation, see :py:func:`decode_version`.
 
     :param major:   Major version number.
@@ -91,6 +94,7 @@ def decode_version(version_number):
     Decodes a 64 bit unsigned integer into 4 unsigned shorts and returns them
     as a 4-length tuple, which is usually more readable than the combined
     format.
+
     For the inverse operation, see :py:func:`encode_version`.
 
     :param version_number: The version number to decode.
@@ -111,6 +115,7 @@ def version_string_to_tuple(version_string):
     Used extensively when parsing mod versions when updating the package's data,
     provided to the user for convinience. Splits a string by the dot character
     and converts each component to an ``int``.
+
     For the inverse operation, see :py:func:`version_tuple_to_string`.
 
     :param version_string: The version string to separate.
@@ -127,6 +132,7 @@ def version_tuple_to_string(version_tuple):
 
     Converts each element of the tuple to a string and then joins them with the
     '.' character.
+    
     For the inverse operation, see, :py:func:`version_string_to_tuple`.
 
     :param version_tuple: The n-length tuple to interpret.

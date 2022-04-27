@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from draftsman import signatures
 from draftsman.data import items
-from draftsman.error import InvalidItemError, FilterIndexError, DataFormatError
+from draftsman.error import InvalidItemError, DataFormatError
 
 from schema import SchemaError
 import six
@@ -13,7 +13,7 @@ import six
 
 class RequestFiltersMixin(object):
     """
-    Used to allow Logistics Containers to request items from the Logisitics
+    Used to allow Logistics Containers to request items from the Logistic
     network.
     """
 
@@ -32,22 +32,37 @@ class RequestFiltersMixin(object):
 
     def set_request_filter(self, index, item, count=0):
         # type: (int, str, int) -> None
-        """ """
+        """
+        Sets the request filter at a particular index to request an amount of a
+        certain item. Factorio imposes that an Entity can only have 1000 active
+        requests at the same time.
+
+        :param index: The index of the item request.
+        :param item: The item name to request, or ``None``.
+        :param count: The amount to request.
+
+        :exception TypeError: If ``index`` is not an ``int``, ``item`` is not a
+            ``str`` or ``None``, or ``count`` is not an ``int``.
+        :exception InvalidItemError: If ``item`` is not a valid item name.
+        :exception IndexError: If ``index`` is not in the range ``[0, 1000)``.
+        """
+        # TODO: maybe make the count default to the item stack size?
+        # TODO: what if count is not positive?
+        try:
+            index = signatures.INTEGER.validate(index)
+            item = signatures.STRING_OR_NONE.validate(item)
+            count = signatures.INTEGER.validate(count)
+        except SchemaError as e:
+            six.raise_from(TypeError(e), None)
+
+        if item is not None and item not in items.raw:
+            raise InvalidItemError("'{}'".format(item))
+
+        if not 0 <= index < 1000:
+            raise IndexError("Filter index ({}) not in range [0, 1000)".format(index))
 
         if self.request_filters is None:
             self.request_filters = []
-
-        if not isinstance(index, six.integer_types):
-            raise TypeError("'index' must be an int")
-        if item is not None and item not in items.raw:
-            raise InvalidItemError(item)
-        if not isinstance(count, six.integer_types):
-            raise TypeError("'count' must be an int")
-
-        if not 0 <= index < 1000:
-            raise FilterIndexError(
-                "Filter index ({}) not in range [0, 1000)".format(index)
-            )
 
         # Check to see if filters already contains an entry with the same index
         for i, filter in enumerate(self.request_filters):
@@ -64,8 +79,22 @@ class RequestFiltersMixin(object):
 
     def set_request_filters(self, filters):
         # type: (list) -> None
-        """ """
+        """
+        Sets all the request filters of the Entity, where filters is of the
+        format::
 
+            [(item_1, count_1), (item_2, count_2), ...]
+
+        where ``item_x`` is a ``str`` name and ``count_x`` is a positive integer.
+
+        :param filters: The request filters to set.
+
+        :exception DataFormatError: If ``filters`` does not match the format
+            specified above.
+        :exception InvalidItemError: If ``item_x`` is not a valid item name.
+        """
+        # TODO: rework to not use set_request_filter
+        # TODO: what if count is not positive?
         # Validate filters
         try:
             filters = signatures.REQUEST_FILTERS.validate(filters)

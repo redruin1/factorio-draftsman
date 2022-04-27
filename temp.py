@@ -1,7 +1,7 @@
 
 from logging import Filter
 from draftsman.classes.group import Group
-from draftsman.blueprintable import Blueprint
+from draftsman.blueprintable import Blueprint, BlueprintBook
 from draftsman.entity import *
 from draftsman.data import entities, items
 import copy
@@ -73,6 +73,8 @@ blueprint = Blueprint()
 
 # print(blueprint.to_string())
 
-for name, dirs, files in os.walk(draftsman.__path__[0]):
-    print(name)
-    print(files)
+blueprint.entities.append(Group("A"))
+blueprint.entities.append(Group("B", type="different_type"))
+
+diff = blueprint.find_entities_filtered(type="different_type")
+assert diff[0] is blueprint.entities["B"]

@@ -8,14 +8,14 @@ from draftsman.classes.mixins import (
     FiltersMixin,
     StackSizeMixin,
     CircuitReadHandMixin,
-    ModeOfOperationMixin,
+    InserterModeOfOperationMixin,
     CircuitConditionMixin,
-    EnableDisableMixin,
     LogisticConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
 )
+from draftsman.constants import InserterModeOfOperation
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import filter_inserters
@@ -28,9 +28,8 @@ class FilterInserter(
     FiltersMixin,
     StackSizeMixin,
     CircuitReadHandMixin,
-    ModeOfOperationMixin,
+    InserterModeOfOperationMixin,
     CircuitConditionMixin,
-    EnableDisableMixin,
     LogisticConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
@@ -38,11 +37,24 @@ class FilterInserter(
     Entity,
 ):
     """
-    TODO
+    Filter inserter Entity prototype.
+
+    .. NOTE::
+
+        In Factorio, the ``Inserter`` prototype includes both regular and filter
+        inserters. In Draftsman, inserters are split into two different classes,
+        :py:class:`~.Inserter` and :py:class:`~.FilterInserter`
+
+    .. seealso::
+
+        :py:class:`~.Inserter`
     """
 
     def __init__(self, name=filter_inserters[0], **kwargs):
         # type: (str, **dict) -> None
+        """
+        TODO
+        """
         super(FilterInserter, self).__init__(name, filter_inserters, **kwargs)
 
         self.filter_mode = None

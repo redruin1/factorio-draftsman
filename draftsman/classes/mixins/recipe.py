@@ -15,7 +15,8 @@ import warnings
 
 class RecipeMixin(object):
     """
-    TODO
+    Enables the Entity to have a current recipe it's set to make and a set of
+    recipes that it can make.
     """
 
     def __init__(self, name, similar_entities, **kwargs):
@@ -38,8 +39,10 @@ class RecipeMixin(object):
     def recipes(self):
         # type: () -> list
         """
-        Read only
-        TODO
+        A list of all the recipes that this Entity can set itself to assemble.
+        Not exported; read only.
+
+        :type: ``list[str]``
         """
         return self._recipes
 
@@ -49,7 +52,23 @@ class RecipeMixin(object):
     def recipe(self):
         # type: () -> str
         """
-        TODO
+        The recipe that this Entity is currently set to make.
+
+        Raises a :py:class:`~draftsman.warning.ModuleLimitationWarning` if the
+        recipe changes to one that conflicts with the current module requests.
+
+        Raises a :py:class:`~draftsman.warning.ItemLimtiationWarning` if the
+        recipe changes to one whose input ingredients no longer match the
+        current item requests.
+
+        :getter: Gets the current recipe of the Entity.
+        :setter: Sets the current recipe of the Entity.
+        :type: ``str``
+
+        :exception TypeError: If set to anything other than a ``str`` or
+            ``None``.
+        :exception InvalidRecipeError: If set to a string that is not contained
+            within this Entity's ``recipes``.
         """
         return self._recipe
 

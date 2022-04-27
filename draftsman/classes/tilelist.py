@@ -1,4 +1,5 @@
 # tilelist.py
+# -*- encoding: utf-8 -*-
 
 from draftsman.classes.tile import Tile
 from draftsman.error import UnreasonablySizedBlueprintError

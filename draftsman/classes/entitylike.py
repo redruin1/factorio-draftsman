@@ -6,12 +6,13 @@ from __future__ import unicode_literals
 import abc
 import six
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from draftsman.classes.spatiallike import SpatialLike
 
 if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.collection import Collection
+    from draftsman.classes.collection import EntityCollection
+    from draftsman.classes.entity import Entity
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -21,20 +22,23 @@ class EntityLike(SpatialLike):
     custom entity analogues that can be passed into Blueprint instances. `Group`
     and `RailPlanner` are examples of custom EntityLike classes.
 
-    All `EntityLike` subclasses must have the following properties:
-        * `name`
-        * `type`
-        * `id`
-        * `collision_box`
-        * `tile_width`
-        * `tile_height`
+    All `EntityLike` subclasses must implement the following properties:
 
-    All `EntityLike` subclasses must have the following methods:
-        * `get_area()` for placing them in spatial hashmap(?)
-        * `to_dict()` for converting it to a blueprint string when exported
+    * `name`
+    * `type`
+    * `id`
+    * `position`
+    * `collision_box`
+    * `collision_mask`
+    * `tile_width`
+    * `tile_height`
     """
 
     def __init__(self):
+        # type: () -> None
+        """
+        TODO
+        """
         # Parent reference (Internal)
         # Overwritten if the EntityLike is placed inside a Blueprint or Group
         self._parent = None
@@ -58,11 +62,13 @@ class EntityLike(SpatialLike):
 
     @property
     def parent(self):
-        # type: () -> Collection
-        # TODO: change output type to something generic
+        # type: () -> EntityCollection
         """
-        Read only
-        TODO
+        The parent EntityCollection object that contains the entity, or
+        ``None`` if the entity does not currently exist within an
+        EntityCollection. Not exported; read only.
+
+        :type: ``EntityCollection``
         """
         return self._parent
 
@@ -72,8 +78,10 @@ class EntityLike(SpatialLike):
     def power_connectable(self):
         # type: () -> bool
         """
-        Read only
-        TODO
+        Whether or not this EntityLike can be connected using power wires. Not
+        exported; read only.
+
+        :type: ``bool``
         """
         return self._power_connectable
 
@@ -83,8 +91,10 @@ class EntityLike(SpatialLike):
     def dual_power_connectable(self):
         # type: () -> bool
         """
-        Read only
-        TODO
+        Whether or not this EntityLike has two power connection points. Not
+        exported; read only.
+
+        :type: ``bool``
         """
         return self._dual_power_connectable
 
@@ -94,8 +104,10 @@ class EntityLike(SpatialLike):
     def circuit_connectable(self):
         # type: () -> bool
         """
-        Read only
-        TODO
+        Whether or not this EntityLike can be connected using circuit wires. Not
+        exported; read only.
+
+        :type: ``bool``
         """
         return self._circuit_connectable
 
@@ -105,8 +117,10 @@ class EntityLike(SpatialLike):
     def dual_circuit_connectable(self):
         # type: () -> bool
         """
-        Read only
-        TODO
+        Whether or not this EntityLike has two circuit connection points. Not
+        exported; read only.
+
+        :type: ``bool``
         """
         return self._dual_circuit_connectable
 
@@ -116,8 +130,10 @@ class EntityLike(SpatialLike):
     def double_grid_aligned(self):
         # type: () -> bool
         """
-        Read only
-        TODO
+        Whether or not this EntityLike is "double-grid-aligned", which applies
+        to a number of rail entities. Not exported; read only.
+
+        :type: ``bool``
         """
         return self._double_grid_aligned
 
@@ -127,8 +143,9 @@ class EntityLike(SpatialLike):
     def rotatable(self):
         # type: () -> bool
         """
-        Read only
-        TODO
+        Whether or not this EntityLike can be rotated. Not exported; read only.
+
+        :type: ``bool``
         """
         return self._rotatable
 
@@ -138,8 +155,13 @@ class EntityLike(SpatialLike):
     def flippable(self):
         # type: () -> bool
         """
-        Read only
-        TODO
+        Whether or not this EntityLike can be flipped. Not exported; read only.
+
+        .. WARNING::
+
+            Currently unimplemented. Defaults to ``True`` for all entities.
+
+        :type: ``bool``
         """
         return self._flippable
 
@@ -167,38 +189,46 @@ class EntityLike(SpatialLike):
     def tile_height(self):  # pragma: no coverage
         pass
 
-    # @abc.abstractmethod
-    # def get_area(self):  # pragma: no coverage
-    #     pass
-
     def on_insert(self):  # pragma: no coverage
+        # type: () -> None
         """
-        Default function. Called when an this EntityLike is inserted into an
-        EntityList. Allows the user to perform extra checks, validation, or
-        operations when the EntityLike is added to the `Collection`. For
-        example, if we are placing a rail signal in a blueprint, we might want
-        to check the surrounding area to see if we are adjacent to a rail, and
-        issue a warning if we are not.
+        Default function; does nothing.
+
+        Called when an this ``EntityLike`` is inserted into an ``EntityList``.
+        Allows the user to perform extra checks, validation, or operations when
+        the EntityLike is added to the EntityCollection. For example, if we are
+        placing a RailSignal in a Blueprint, we might want to check the
+        surrounding area to see if we are adjacent to a rail, and issue a
+        warning if we are not.
 
         Note that this is only intended to perform checks in relation to THIS
-        specific entity; the `Collection` class has it's own custom functions
-        for managing the parent's state.
+        specific entity; the ``EntityCollection`` class has it's own custom
+        functions for managing the it's own state.
         """
         pass
 
     def on_remove(self):  # pragma: no coverage
+        # type: () -> None
         """
-        Default function. Same functionality as `on_insert`, but for cleanup
-        operations when removed instead of when inserted.
+        Default function; does nothing.
+
+        Same functionality as :py:meth:`on_insert`, but for cleanup operations
+        when this ``EntityLike`` is removed instead of when it's inserted.
         """
         pass
 
     def get(self):
-        # type: () -> EntityLike
+        # type: () -> Union[Entity, list[Entity]]
         """
-        Called during `blueprint.to_dict()`. Returns the entity or list of
-        entities that make up this EntityLike. On `Entity`s this is redundant,
-        but it allows the user to specify exactly what entities they want to
-        return.
+        Called during ``blueprint.to_dict()``. Used to resolve ``EntityLike``
+        objects into an ``Entity`` or list of ``Entity`` objects.
+
+        Conceptually, this can be thought of as a conversion of an abstract
+        ``EntityLike`` object into one or more concrete ``Entity`` objects,
+        as the only objects that can exist in an exported blueprint dict or
+        string must be ``Entity`` objects.
+
+        :returns: One or more ``Entity`` instances that represent this
+            ``EntityLike``.
         """
         return self

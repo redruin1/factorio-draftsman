@@ -1,9 +1,6 @@
 # tile.py
 # -*- encoding: utf-8 -*-
 
-"""
-Tile module. Contains the ``Tile`` class.
-"""
 
 from __future__ import unicode_literals
 
@@ -19,23 +16,33 @@ if TYPE_CHECKING:  # pragma: no coverage
 
 
 class Tile(SpatialLike):
-    """ """
+    """
+    Tile class. Used for keeping track of tiles in Blueprints.
+    """
 
-    def __init__(self, name, position=[0, 0]):
+    def __init__(self, name, position=(0, 0)):
         # type: (str, int, int) -> None
-        """ """
+        """
+        Create a new Tile with ``name`` at ``position``. ``position`` defaults
+        to ``(0, 0)``.
+
+        :param name: Name of the Tile to create.
+        :param position: Position of the tile, in grid-coordinates.
+
+        :exception InvalidTileError: If the name is not a valid Factorio tile id.
+        :exception IndexError: If the position does not match the correct
+            specification.
+        """
         # Reference to parent blueprint
         self._parent = None
 
         # Tile name
-        if name not in tiles.raw:
-            raise InvalidTileError("'{}'".format(str(name)))
         self.name = name
 
         # Tile positions are in grid coordinates
         self.position = position
 
-        # Tile aabb for SpatialHashMap
+        # Tile AABB for SpatialHashMap
         self._collision_box = [[0, 0], [1, 1]]
 
         # Tile mask for SpatialHashMap
@@ -54,15 +61,17 @@ class Tile(SpatialLike):
     def name(self):
         # type: () -> str
         """
-        The name of the Entity.
+        The name of the Tile.
 
-        Must be one of the entries in ``draftsman.data.tiles.raw`` in order for
-        the tile to be recognized as valid.
+        Must be one of the entries in :py:data:`draftsman.data.tiles.raw` in
+        order for the tile to be recognized as valid.
+
+        :getter: Gets the name of the Tile.
+        :setter: Sest the name of the Tile.
+        :type: ``str``
 
         :exception InvalidTileError: If the set name is not a valid Factorio
             tile id.
-
-        :type: ``str``
         """
         return self._name
 
@@ -80,7 +89,21 @@ class Tile(SpatialLike):
     def position(self):
         # type: () -> dict
         """
-        The position of the tile, in tile grid coordinates.
+        The position of the tile, in tile-grid coordinates.
+
+        ``position`` can be specified as a ``dict`` with ``"x"`` and
+        ``"y"`` keys, or more succinctly as a sequence of floats, usually a
+        ``list`` or ``tuple``.
+
+        This property is updated in tandem with ``position``, so using them both
+        interchangeably is both allowed and encouraged.
+
+        :getter: Gets the position of the Entity.
+        :setter: Sets the position of the Entity.
+        :type: ``dict{"x": int, "y": int}``
+
+        :exception IndexError: If the set value does not match the above
+            specification.
         """
         return self._position
 
@@ -112,6 +135,11 @@ class Tile(SpatialLike):
 
     def to_dict(self):
         # type: () -> dict
+        """
+        Converts the Tile to its JSON-dict representation.
+
+        :returns: The exported JSON-dict representation of the Tile.
+        """
         return {"name": self.name, "position": self.position}
 
     def __repr__(self):

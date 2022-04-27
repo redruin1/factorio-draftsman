@@ -5,12 +5,13 @@ from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    ModeOfOperationMixin,
+    LogisticModeOfOperationMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
     InventoryMixin,
 )
+from draftsman.constants import LogisticModeOfOperation
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import logistic_buffer_containers
@@ -19,7 +20,7 @@ import warnings
 
 
 class LogisticBufferContainer(
-    ModeOfOperationMixin,
+    LogisticModeOfOperationMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
@@ -30,6 +31,12 @@ class LogisticBufferContainer(
 
     def __init__(self, name=logistic_buffer_containers[0], **kwargs):
         # type: (str, **dict) -> None
+        """
+        TODO
+        """
+        # Set the mode of operation type for this entity
+        self._mode_of_operation_type = LogisticModeOfOperation
+
         super(LogisticBufferContainer, self).__init__(
             name, logistic_buffer_containers, **kwargs
         )

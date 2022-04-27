@@ -1,7 +1,4 @@
-.. factorio-draftsman documentation master file, created by
-   sphinx-quickstart on Mon Mar 21 22:22:43 2022.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. factorio-draftsman documentation master file
 
 factorio-draftsman
 ==============================================
@@ -11,16 +8,17 @@ factorio-draftsman
 .. image:: ../img/logo.png
    :alt: The Draftsman logo created by an example script.
 
-.. image:: https://readthedocs.org/projects/pillow/badge/?version=latest
-   :target: https://factorio-draftsman.readthedocs.io/?badge=latest
+.. image:: https://readthedocs.org/projects/factorio-draftsman/badge/?version=latest
+   :target: https://factorio-draftsman.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
 
-.. image:: https://codecov.io/gh/python-factorio-draftsman/draftsman/branch/main/graph/badge.svg
-   :target: https://codecov.io/gh/python-factorio-draftsman/draftsman
-   :alt: Code coverage
+.. image:: https://codecov.io/gh/redruin1/factorio-draftsman/branch/main/graph/badge.svg?token=UERAOXVTO1
+   :target: https://codecov.io/gh/redruin1/factorio-draftsman
+   :alt: Code Coverage    
 
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :target: https://github.com/psf/black
+   :alt: Code Style: Black
 
 Overview:
 ---------
@@ -33,13 +31,14 @@ In addition to the standard features you would expect, Draftsman also has a numb
 
 * Unique entity ID's to make identification easier.
 * Querying blueprint contents by area, name, type, as well as other criteria.
+* The grouping of entities for aid in structure and design.
 * Verbose warnings for modifications on import normally ignored by Factorio.
 
-Draftsman is also unique in that it emulates the `Factorio data lifecycle <https://lua-api.factorio.com/latest/Data-Lifecycle.html>`_ directly, extracting all data that the modules uses directly from `Wube's public repository <https://github.com/wube/factorio-data>`_. 
+Draftsman is also unique in that it emulates the `Factorio data lifecycle <https://lua-api.factorio.com/latest/Data-Lifecycle.html>`_ directly, extracting all data that the module uses directly from `Wube's public repository <https://github.com/wube/factorio-data>`_. 
 This ensures a direct continuity between Factorio's data and Draftsman, which makes the module much easier to maintain over specific Factorio versions, as well as over time.
 By emulating the data-lifecycle in this manner, Draftsman is also the first package of this type to allow mod support *built-in*.
 
-Draftsman is cross-platform, and guaranteed to work on versions of Python >= 2.7.
+Draftsman is cross-platform, and guaranteed to work on the latest versions of Python 2 and 3.
 Draftsman is also guaranteed to work with versions of Factorio 1.0 and up. 
 Prior to that most functionality *should* still work, but your mileage may vary.
 

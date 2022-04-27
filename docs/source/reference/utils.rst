@@ -1,11 +1,9 @@
-.. py:module:: draftsman.utils
 .. py:currentmodule:: draftsman.utils
 
-:py:mod:`~draftsman.utils` Module
-=================================
+:py:mod:`~draftsman.utils`
+==========================
 
-Functions
----------
+.. automodule:: draftsman.utils
 
 .. autofunction:: string_to_JSON
 
@@ -19,10 +17,6 @@ Functions
 
 .. autofunction:: version_tuple_to_string
 
-.. autofunction:: get_signal_type
-
-.. autofunction:: signal_dict
-
 .. autofunction:: aabb_overlaps_aabb
 
 .. autofunction:: aabb_overlaps_circle
@@ -35,4 +29,4 @@ Functions
 
 .. autofunction:: extend_aabb
 
-.. autofunction:: get_recipe_ingredients
+.. autodecorator:: reissue_warnings

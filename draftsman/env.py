@@ -1,11 +1,13 @@
 # env.py
 
 """
-Manages the Factorio environment.
+Manages the Factorio environment. Primarily holds :py:func:`draftsman.env.update()`,
+which runs through the Factorio data lifecycle and updates the data in 
+:py:mod:`draftsman.data`.
 """
 
 # TODO:
-# Make sure everythin is sorted
+# Make sure everything is sorted
 # Make sure everything uses OrderedDict for backwards compatability(?)
 
 from __future__ import print_function
@@ -16,7 +18,6 @@ try:
 except NameError:
     FileNotFoundError = IOError
 
-import draftsman
 from draftsman.error import (
     MissingModError,
     IncompatableModError,
@@ -49,6 +50,10 @@ lua_module_regex = re.compile(lua_module_pattern)
 
 
 class Mod(object):
+    """
+    Mod object that stores metadata during the load process. Mostly used for 
+    structuring the data and determining the load order.
+    """
     def __init__(
         self, name, internal_folder, version, archive, location, info, files, data
     ):
@@ -92,7 +97,7 @@ class Mod(object):
 
 def file_to_string(filepath):
     """
-    Simply grabs a files contents and returns it as a string.
+    Simply grabs a file's contents and returns it as a string.
     """
     with open(filepath, mode="r") as file:
         return file.read()
@@ -100,7 +105,9 @@ def file_to_string(filepath):
 
 def get_mod_settings(location):
     """
-    Reads `mod_settings.dat` and stores it as an easy-to-read dict.
+    Reads `mod_settings.dat` and stores it as an easy-to-read dict. Would be 
+    trivial to implement an editor with this function. (Well, assuming you write
+    a function to export back to a ``.dat`` file)
     """
     # Property Tree Enum
     PropertyTreeType = {
@@ -185,7 +192,11 @@ def get_mod_settings(location):
 
 def python_require(mod_list, current_mod, module_name, package_path):
     """
-    Function called from lua that attempts to get the .
+    Function called from Lua that checks for a file in a ``zipfile`` archive,
+    and returns the contents of the file if found.
+
+    Used in the modified Lua ``require()`` function that handles special cases
+    to model Factorio's load pattern.
     """
 
     # Determine the mod we need
@@ -269,10 +280,13 @@ def get_order(data, objects_to_sort):
 
     Item sort order:
     (https://forums.factorio.com/viewtopic.php?p=23818#p23818)
+
     1. object groups
     2. object subgroups
     3. object itself
+    
     Across the previous categories, each is sorted by:
+    
     1. the item order string
     2. the item name (lexographic)
     """
@@ -350,8 +364,7 @@ def get_order(data, objects_to_sort):
 
 def extract_mods(loaded_mods, data_location, verbose):
     """
-    Extract all the mods in the folder, whether or not they're enabled and their
-    version.
+    Extract all the mod versions to ``mods.pkl`` in :py:mod:`draftsman.data`.
     """
     out_mods = {}
     for mod in loaded_mods:
@@ -365,7 +378,9 @@ def extract_mods(loaded_mods, data_location, verbose):
 
 
 def extract_entities(lua, data_location, verbose):
-    """Extracts the entity data needed and writes it to a pickle file."""
+    """
+    Extracts the entities to ``entities.pkl`` in :py:mod:`draftsman.data`.
+    """
 
     data = lua.globals().data
 
@@ -654,7 +669,9 @@ def extract_entities(lua, data_location, verbose):
 
 
 def extract_instruments(lua, data_location, verbose):
-    """ """
+    """
+    Extracts the instruments to ``instruments.pkl`` in :py:mod:`draftsman.data`.
+    """
     data = lua.globals().data
 
     instrument_raw = {}
@@ -696,6 +713,9 @@ def extract_instruments(lua, data_location, verbose):
 
 
 def extract_items(lua, data_location, verbose):
+    """
+    Extracts the items to ``items.pkl`` in :py:mod:`draftsman.data`.
+    """
     data = lua.globals().data
 
     groups = convert_table_to_dict(data.raw["item-group"])
@@ -811,7 +831,9 @@ def extract_items(lua, data_location, verbose):
 
 
 def extract_modules(lua, data_location, verbose):
-    """ """
+    """
+    Extracts the modules to ``modules.pkl`` in :py:mod:`draftsman.data`.
+    """
     data = lua.globals().data
 
     # Init categories
@@ -843,7 +865,9 @@ def extract_modules(lua, data_location, verbose):
 
 
 def extract_recipes(lua, data_location, verbose):
-    """ """
+    """
+    Extracts the recipes to ``recipes.pkl`` in :py:mod:`draftsman.data`.
+    """
     data = lua.globals().data
 
     out_categories = {}
@@ -889,7 +913,9 @@ def extract_recipes(lua, data_location, verbose):
 
 
 def extract_signals(lua, data_location, verbose):
-    """ """
+    """
+    Extracts the signals to ``signals.pkl`` in :py:mod:`draftsman.data`.
+    """
     data = lua.globals().data
 
     signals = {}
@@ -948,7 +974,9 @@ def extract_signals(lua, data_location, verbose):
 
 
 def extract_tiles(lua, data_location, verbose):
-    """ """
+    """
+    Extracts the tiles to ``tiles.pkl`` in :py:mod:`draftsman.data`.
+    """
     data = lua.globals().data
 
     tiles = convert_table_to_dict(data.raw["tile"])
@@ -980,26 +1008,19 @@ def extract_tiles(lua, data_location, verbose):
 
 def update(verbose=False):
     """
-    Updates the data in the `draftsman.data` modules.
+    Updates the data in the :py:mod:`.draftsman.data` modules.
 
     Emulates the load pattern of Factorio and loads all of its data (hopefully)
     in the same way. Then that data is extracted into the module, updating it's
-    contents. Updates and changes made to `factorio-data` are also reflected in
-    this routine.
+    contents. Updates and changes made to the ``factorio-data`` folder are also 
+    reflected in this routine.
     """
     # Figure out what directory we're in
     env_dir = os.path.dirname(__file__)
-    # env_dir = draftsman.__path__[0]
-    # env_dir = os.path.dirname(draftsman.__file__)
     # Create some quick access folders
     factorio_data = os.path.join(env_dir, "factorio-data")
     factorio_mods = os.path.join(env_dir, "factorio-mods")
     data_location = os.path.join(env_dir, "data")
-
-    # lets take a look at what exactly is in the data folder
-    print("\t", env_dir)
-    for name, files, _ in os.walk(env_dir):
-        print("\t", name)
 
     # Get the info from factorio-data and treat it as the "base" mod
     with open(os.path.join(factorio_data, "base", "info.json")) as base_info_file:
@@ -1371,14 +1392,17 @@ def update(verbose=False):
 
 
 def main():
+    """
+    ``draftsman-update`` console script entry point. Runs ``update()`` with
+    command line arguments passed through. Type ``draftsman-update -h`` for a 
+    list of commands for ``draftsman-update``.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-v", "--verbose", 
-        action="store_true", 
-        help="Show extra information during the update"
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Show extra information during the update",
     )
     args = parser.parse_args()
-    update(verbose = args.verbose)
-
-if __name__ == "__main__":
-    main()
+    update(verbose=args.verbose)

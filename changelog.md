@@ -1,4 +1,11 @@
 # Changelog
+## **0.8.0**
+* Added a *whole lot* of documentation, or a first pass at least
+* Updated the quick-start with updated information
+* Setup a GitHub workflow to automatically upload code coverage for the badge
+* Split the `ModeOfOperation` enumeration into `InserterModeOfOperation` and `LogisticModeOfOperation`
+* Going to attempt to get Docs integration and passing
+
 ## **0.6.0**
 * First public release!
 * Added `Groups`(!)
@@ -23,7 +30,7 @@
 * Removed some redundant files
 
 ## **0.3.5.2**
-* Split all of the Mixins into their own files, as well as Entity, EntityLike, Group, etc.
+* Split all of the mixins into their own files, as well as Entity, EntityLike, Group, etc.
 * Added the `SpatialHashMap` structure for Blueprints to speed up `find_entities` and `find_tiles`
 * Added lots of utility functions related to `SpatialHashMap`
 * Changed Blueprint `entities` and `tiles` to `KeyList` instead of `list`

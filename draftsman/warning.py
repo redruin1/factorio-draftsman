@@ -1,14 +1,18 @@
-# draftsman_warnings.py
+# warning.py
 
-import warnings
+# TODO: maybe generic RangeWarning?
+
+"""
+Draftsman warnings. Used to enforce "Factorio-correctness".
+"""
 
 
 class DraftsmanWarning(UserWarning):
     """
-    Root warning class for `draftsman`. Useful if you want to easily ignore all
-    warnings issued from the module without getting rid of errors entirely;
-    simply filter this class. This is a subclass of `UserWarning`, and all other
-    warnings are subclasses of this.
+    Root warning class for ``draftsman``. Useful if you want to easily ignore 
+    all warnings issued from the module without getting rid of warnings entirely;
+    simply filter this class. This is a subclass of ``UserWarning``, and all 
+    other Draftsman warnings are subclasses of this.
     """
 
     pass
@@ -16,7 +20,7 @@ class DraftsmanWarning(UserWarning):
 
 class ValueWarning(DraftsmanWarning):
     """
-    Generic warning, similar to ValueError. Raised when a input value is
+    Generic warning, similar to ``ValueError``. Raised when a input value is
     incorrect, but wont cause the blueprint to fail import.
     """
 
@@ -26,16 +30,16 @@ class ValueWarning(DraftsmanWarning):
 class DirectionWarning(DraftsmanWarning):
     """
     Raised when the direction does not match the rotation type, e.g. setting
-    a 4-way rotatable Entity to have `Direction.NORTHWEST`.
+    a 4-way rotatable Entity's direction to :py:data:`Direction.NORTHWEST`.
     """
 
     pass
 
 
-class BarIndexWarning(DraftsmanWarning):
+class IndexWarning(DraftsmanWarning):
     """
-    Raised when the location of the inventory bar is out of range for the
-    particular Entity.
+    Raised when the index of some element is out of expected range, though not
+    catastrophically-so.
     """
 
     pass
@@ -79,8 +83,8 @@ class RailAlignmentWarning(DraftsmanWarning):
 
 class ItemLimitationWarning(DraftsmanWarning):
     """
-    Raised when an Item request does not match the AssemblingMachine's recipe
-    inputs.
+    Raised when an item request does not match the :py:class:`.AssemblingMachine`'s 
+    recipe inputs.
     """
 
     pass
@@ -88,8 +92,8 @@ class ItemLimitationWarning(DraftsmanWarning):
 
 class ModuleLimitationWarning(DraftsmanWarning):
     """
-    Raised when the modules inside of an Entity conflict, either with the entity
-    type or its recipe.
+    Raised when the modules inside of an :py:class:`.Entity` conflict, either 
+    with the Entity's type or it's recipe.
     """
 
     pass
@@ -97,8 +101,8 @@ class ModuleLimitationWarning(DraftsmanWarning):
 
 class ModuleCapacityWarning(DraftsmanWarning):
     """
-    Raised when the number of modules in an Entity with module slots exceeds
-    the total module capacity.
+    Raised when the number of modules in an :py:class:`.Entity` with module slots 
+    exceeds the total module capacity.
     """
 
     pass
@@ -107,7 +111,7 @@ class ModuleCapacityWarning(DraftsmanWarning):
 class TemperatureRangeWarning(DraftsmanWarning):
     """
     Raised when the temperature of a heat interface is outside of the range
-    [0, 1000].
+    ``[0, 1000]``.
     """
 
     pass
@@ -116,7 +120,7 @@ class TemperatureRangeWarning(DraftsmanWarning):
 class VolumeRangeWarning(DraftsmanWarning):
     """
     Raised when the volume of a programmable speaker is outside of the range
-    [0.0, 1.0]
+    ``[0.0, 1.0]``
     """
 
     pass
@@ -132,9 +136,10 @@ class HiddenEntityWarning(DraftsmanWarning):
 
 class OverlappingObjectsWarning(DraftsmanWarning):
     """
-    Raised when the area returned by get_area() for an object overlaps another
-    object or objects already placed inside a SpatialHashMap. This warning is
-    raised for both entities and tiles.
+    Raised when the area returned by :py:meth:`~.SpatialLike.get_area()` for an 
+    object overlaps another object or objects already placed inside a 
+    :py:class:`.SpatialHashMap`. This warning is raised for both entities and 
+    tiles.
     """
 
     pass
@@ -143,7 +148,8 @@ class OverlappingObjectsWarning(DraftsmanWarning):
 class UselessConnectionWarning(DraftsmanWarning):
     """
     Raised when a circuit connection is functionally useless, such as when a
-    wall is connected with a circuit wire without an adjacent gate.
+    wall is connected with a circuit wire without an adjacent gate (which *is*
+    possible).
     """
 
     pass

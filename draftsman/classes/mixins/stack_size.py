@@ -13,7 +13,10 @@ import six
 
 class StackSizeMixin(object):  # (ControlBehaviorMixin)
     """
-    TODO
+    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
+
+    Gives the entity a stack size attribute. Allows it to give a constant,
+    overridden stack size and a circuit-set stack size.
     """
 
     def __init__(self, name, similar_entities, **kwargs):
@@ -33,14 +36,21 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
     def override_stack_size(self):
         # type: () -> int
         """
-        Sets an inserter's stack size override.
-        TODO
+        Sets an inserter's stack size override. Will use this unless a circuit
+        stack size is set and enabled.
+
+        :getter: Gets the overridden stack size.
+        :setter: Sets the overridden stack size.
+        :type: ``int``
+
+        :exception TypeError:
         """
         return self._override_stack_size
 
     @override_stack_size.setter
     def override_stack_size(self, value):
         # type: (int) -> None
+        # TODO: what if out of range?
         if value is None or isinstance(value, six.integer_types):
             self._override_stack_size = value
         else:
@@ -53,7 +63,15 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
         # type: () -> bool
         """
         Sets if the inserter's stack size is controlled by circuit signal.
-        TODO
+
+        :getter: Gets whether or not the circuit stack size is enabled, or
+            ``None`` if not set.
+        :setter: Sets whether or not the circuit stack size is enabled. Removes
+            the key if set to ``None``.
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or
+            ``None``.
         """
         return self.control_behavior.get("circuit_set_stack_size", None)
 
@@ -74,7 +92,24 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
         # type: () -> dict
         """
         Specify the stack size input signal for the inserter if enabled.
-        TODO
+
+        Stored as a ``dict`` in the format ``{"name": str, "type": str}``, where
+        ``name`` is the name of the signal and ``type`` is it's type, either
+        ``"item"``, ``"fluid"``, or ``"signal"``.
+
+        However, because a signal's type is always constant and can be inferred,
+        it is recommended to simply set the attribute to the string name of the
+        signal which will automatically be converted to the above format.
+
+        :getter: Gets the stack control signal, or ``None`` if not set.
+        :setter: Sets the stack control signal. Removes the key if set to
+            ``None``.
+        :type: :py:class:`draftsman.signatures.SIGNAL_ID`
+
+        :exception InvalidSignalID: If set to a string that is not a valid
+            signal name.
+        :exception DataFormatError: If set to a dict that does not match the
+            dict format specified above.
         """
         return self.control_behavior.get("stack_control_input_signal", None)
 

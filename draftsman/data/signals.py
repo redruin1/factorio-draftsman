@@ -62,4 +62,4 @@ def signal_dict(signal_name):
 
     :returns: A dict with the ``"name"`` and ``type`` key's set.
     """
-    return {"name": signal_name, "type": get_signal_type(signal_name)}
+    return {"name": six.text_type(signal_name), "type": get_signal_type(signal_name)}

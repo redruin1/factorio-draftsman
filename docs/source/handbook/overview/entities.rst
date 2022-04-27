@@ -189,7 +189,7 @@ The basic distinction is this:
 * ``EntityLike`` is for any custom entity type for scripting functionality.
 
 If the object is an instance of ``Entity``, the implicit assumption is that it must exist in Factorio in some form or another; Think assembling machines, pumps, drills, etc.
-``EntityLike``s are more flexible: EntityLikes  can do anything, as long as it resolves itself to one or more ``Entity``s when exported while inside a Blueprint.
+``EntityLikes`` are more flexible: EntityLikes can do anything, as long as it resolves itself to one or more ``Entity`` objects when exported while inside a Blueprint.
 For example, say I'm working with combinators and I have a common design where I link a whole bunch of constant combinators in a regular grid, like so:
 
 [combinator image]

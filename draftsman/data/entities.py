@@ -13,7 +13,13 @@ from draftsman import data
 
 with pkg_resources.open_binary(data, "entities.pkl") as inp:
     _data = pickle.load(inp)
+
+    # Aggregation of all the the entity dicts from data.raw collected in one
+    # place.
     raw = _data["raw"]
+
+    # Ordered lists of strings, each containing a valid name for that entity
+    # type, sorted by their Factorio order strings.
     containers = _data["containers"]
     storage_tanks = _data["storage_tanks"]
     transport_belts = _data["transport_belts"]
