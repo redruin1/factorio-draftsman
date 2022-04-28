@@ -74,5 +74,5 @@ highlight_language = 'python'
 #     update(verbose=True)
 
 # This is scuffed
-from draftsman.env import update
-update(verbose=True)
+import subprocess
+subprocess.run(["draftsman-update", "--verbose"])
