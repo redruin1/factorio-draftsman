@@ -6,8 +6,11 @@ build:
     python: "3.10"
 
 sphinx:
+  fail_on_warning: true
   configuration: docs/source/conf.py
 
 python:
   install:
+  - method: pip
+    path: .
   - requirements: docs/requirements.txt
