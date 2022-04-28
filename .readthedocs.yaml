@@ -6,6 +6,7 @@ build:
     python: "3.10"
 
 submodules:
+  include: all
   recursive: true
 
 sphinx:
