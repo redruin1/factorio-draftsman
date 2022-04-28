@@ -69,6 +69,10 @@ html_static_path = ['_static']
 
 highlight_language = 'python'
 
-def setup(app):
-    from draftsman.env import update
-    update(verbose=True)
+# def setup(app):
+#     from draftsman.env import update
+#     update(verbose=True)
+
+# This is scuffed
+from draftsman.env import update
+update(verbose=True)
