@@ -4,6 +4,9 @@
 :py:mod:`~draftsman.classes`
 ============================
 
+The implementations each of the Draftsman's classes. 
+Some of which are aliased at the root level of the package, such as :py:mod:`~draftsman.blueprintable` and :py:mod:`~draftsman.tile`.
+
 .. toctree::
     :maxdepth: 2
 

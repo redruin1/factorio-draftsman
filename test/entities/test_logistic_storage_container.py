@@ -26,7 +26,7 @@ class LogisticStorageContainerTesting(TestCase):
             connections={
                 "1": {
                     "red": [
-                        {"entity_id": "another_entity"},
+                        {"entity_id": 2},
                         {"entity_id": 2, "circuit_id": 1},
                     ]
                 }
@@ -41,7 +41,7 @@ class LogisticStorageContainerTesting(TestCase):
                 "connections": {
                     "1": {
                         "red": [
-                            {"entity_id": "another_entity"},
+                            {"entity_id": 2},
                             {"entity_id": 2, "circuit_id": 1},
                         ]
                     }

@@ -80,13 +80,8 @@ html_static_path = ['_static']
 
 highlight_language = 'python'
 
+# This would be nice include in just the readthedocs configuration pass because
+# this doesn't need to take place locally
 def setup(app):
     from draftsman.env import update
     update(verbose=True)
-
-# This is scuffed
-# import subprocess
-# subprocess.run(["pwd"])
-# subprocess.run(["cd .."])
-# subprocess.run(["ls"])
-# subprocess.run(["draftsman-update", "--verbose"])

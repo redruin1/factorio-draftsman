@@ -39,7 +39,7 @@ class DirectionWarning(DraftsmanWarning):
 class IndexWarning(DraftsmanWarning):
     """
     Raised when the index of some element is out of expected range, though not
-    catastrophically-so.
+    to the point of failing import.
     """
 
     pass
@@ -65,8 +65,8 @@ class ConnectionSideWarning(DraftsmanWarning):
 
 class TooManyConnectionsWarning(DraftsmanWarning):
     """
-    Raised when a power connection is attempted between an entity that already
-    has 5 or more connections.
+    Raised when a power connection is attempted between an power-pole that 
+    already has 5 or more connections.
     """
 
     pass

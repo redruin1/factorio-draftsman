@@ -3,7 +3,7 @@ from logging import Filter
 from draftsman.classes.group import Group
 from draftsman.blueprintable import Blueprint, BlueprintBook
 from draftsman.entity import *
-from draftsman.data import entities, items
+from draftsman.data import entities, items, instruments
 import copy
 import weakref
 import draftsman
@@ -73,8 +73,11 @@ blueprint = Blueprint()
 
 # print(blueprint.to_string())
 
-blueprint.entities.append(Group("A"))
-blueprint.entities.append(Group("B", type="different_type"))
+import json
+print(json.dumps(items.subgroups["belt"], indent=4))
 
-diff = blueprint.find_entities_filtered(type="different_type")
-assert diff[0] is blueprint.entities["B"]
+print(items.subgroups["belt"]["group"])
+print(items.groups["logistics"])
+
+for subgroup in items.groups["logistics"]["subgroups"]["belt"]:
+    print(subgroup)

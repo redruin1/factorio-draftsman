@@ -38,7 +38,7 @@ class FilterInserterTesting(TestCase):
                 "circuit_hand_read_mode": ReadMode.PULSE,
             },
             connections={
-                "1": {"green": [{"entity_id": "other_entity", "circuit_id": 1}]}
+                "1": {"green": [{"entity_id": 2, "circuit_id": 1}]}
             },
             filters=["wooden-chest", "iron-chest", "steel-chest"],
         )
@@ -64,7 +64,7 @@ class FilterInserterTesting(TestCase):
                     "circuit_hand_read_mode": 0,
                 },
                 "connections": {
-                    "1": {"green": [{"entity_id": "other_entity", "circuit_id": 1}]}
+                    "1": {"green": [{"entity_id": 2, "circuit_id": 1}]}
                 },
                 "filters": [
                     {"index": 1, "name": "wooden-chest"},

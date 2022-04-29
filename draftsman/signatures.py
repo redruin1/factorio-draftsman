@@ -3,7 +3,8 @@
 
 """
 Module of data formats, implemented as ``Schema`` objects. Used to validate and
-normalize data.
+normalize data. Each one raises a ``SchemaError`` if the passed in data does not 
+match the data format specified, which is usually wrapped with ``DraftsmanError``.
 """
 
 
@@ -22,7 +23,7 @@ import six
 
 
 INTEGER = Schema(int)
-INTEGER_OR_NONE = Schema(Or(INTEGER, None))
+INTEGER_OR_NONE = Schema(Or(int, None))
 
 STRING = Schema(
     And(
@@ -32,7 +33,7 @@ STRING = Schema(
 )
 STRING_OR_NONE = Schema(Or(STRING, None))
 
-AABB = Schema(Or([[Use(int), Use(int)], [Use(int), Use(int)]], None))
+AABB = Schema(Or([[Use(float), Use(float)], [Use(float), Use(float)]], None))
 
 
 def normalize_color(color):
@@ -161,12 +162,14 @@ def normalize_icons(icons):
 
 ICONS = Schema(And(Use(normalize_icons), Or([ICON], None)))
 
+ASSOCIATION = Schema(Or(int, EntityLike))
+
 CIRCUIT_CONNECTION_POINT = Schema(
-    {"entity_id": Or(int, six.text_type), Optional("circuit_id"): Or(1, 2)}
+    {"entity_id": ASSOCIATION, Optional("circuit_id"): Or(1, 2)}
 )
 
 POWER_CONNECTION_POINT = Schema(
-    {"entity_id": Or(int, six.text_type), Optional("wire_id"): Or(0, 1)}
+    {"entity_id": ASSOCIATION, Optional("wire_id"): Or(0, 1)}
 )
 
 CONNECTIONS = Schema(
@@ -188,7 +191,7 @@ CONNECTIONS = Schema(
 )
 
 NEIGHBOURS = Schema(
-    And(Use(lambda x: [] if x is None else x), [Or(int, six.text_type)])
+    And(Use(lambda x: [] if x is None else x), [ASSOCIATION])
 )
 
 SIGNAL_FILTER = Schema({"index": int, "signal": SIGNAL_ID, "count": int})
@@ -210,7 +213,7 @@ SIGNAL_FILTERS = Schema(And(Use(normalize_signal_filters), [SIGNAL_FILTER]))
 INFINITY_FILTER = Schema(
     {
         "index": int,
-        "name": six.text_type,
+        "name": STRING,
         "count": int,
         "mode": Or("at-least", "at-most", "exactly"),
     }
@@ -222,7 +225,7 @@ INFINITY_CONTAINER = Schema(
 
 INFINITY_PIPE = Schema(
     {
-        Optional("name"): six.text_type,
+        Optional("name"): STRING,
         Optional("percentage"): int,
         Optional("mode"): Or("at-least", "at-most", "exactly", "add", "remove"),
         Optional("temperature"): int,
@@ -332,12 +335,12 @@ CONTROL_BEHAVIOR = Schema(
 
 def normalize_inventory(filters):
     for i, entry in enumerate(filters):
-        if isinstance(entry, six.text_type):
+        if isinstance(entry, six.string_types):
             filters[i] = {"index": i + 1, "name": filters[i]}
     return filters
 
 
-FILTER_ENTRY = Schema({"name": six.text_type, "index": int})
+FILTER_ENTRY = Schema({"index": int, "name": STRING})
 FILTERS = Schema(And(Use(normalize_inventory), [FILTER_ENTRY]))
 INVENTORY_FILTER = Schema(
     And(
@@ -349,7 +352,7 @@ INVENTORY_FILTER = Schema(
     )
 )
 
-REQUEST_FILTERS = Schema([(six.text_type, int)])
+REQUEST_FILTERS = Schema([(STRING, int)]) # TODO: change this
 
 WAIT_CONDITION = Schema(
     {
@@ -372,9 +375,9 @@ WAIT_CONDITION = Schema(
 )
 SCHEDULE = Schema(
     {
-        Optional("locomotives"): [Or(int, EntityLike)],
+        Optional("locomotives"): [ASSOCIATION],
         "schedule": [
-            {"station": six.text_type, Optional("wait_conditions"): [WAIT_CONDITION]}
+            {"station": STRING, Optional("wait_conditions"): [WAIT_CONDITION]}
         ],
     }
 )
