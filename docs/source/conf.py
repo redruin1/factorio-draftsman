@@ -75,4 +75,5 @@ highlight_language = 'python'
 
 # This is scuffed
 import subprocess
+subprocess.run(["ls"])
 subprocess.run(["draftsman-update", "--verbose"])
