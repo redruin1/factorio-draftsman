@@ -14,7 +14,10 @@ import warnings
 
 
 class Loader(FiltersMixin, IOTypeMixin, DirectionalMixin, Entity):
-    """ """
+    """
+    An entity that inserts items directly from a belt to an inventory or
+    vise-versa.
+    """
 
     def __init__(self, name=loaders[0], **kwargs):
         # type: (str, **dict) -> None

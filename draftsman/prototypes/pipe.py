@@ -12,7 +12,9 @@ import warnings
 
 
 class Pipe(Entity):
-    """ """
+    """
+    An entity that transports a fluid.
+    """
 
     def __init__(self, name=pipes[0], **kwargs):
         # type: (str, **dict) -> None

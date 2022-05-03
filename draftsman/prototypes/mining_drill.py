@@ -19,7 +19,7 @@ from draftsman.warning import DraftsmanWarning, ItemLimitationWarning
 
 from draftsman.data.entities import mining_drills
 from draftsman.data import modules
-from draftsman.data import signals
+from draftsman.data import items
 
 import warnings
 
@@ -36,6 +36,10 @@ class MiningDrill(
     Entity,
     object,
 ):
+    """
+    An entity that extracts resources from the environment.
+    """
+
     def __init__(self, name=mining_drills[0], **kwargs):
         # type: (str, **dict) -> None
         super(MiningDrill, self).__init__(name, mining_drills, **kwargs)
@@ -49,11 +53,9 @@ class MiningDrill(
 
     def set_item_request(self, item, amount):
         # type: (str, int) -> None
-        """
-        Overwritten
-        """
+        # TODO: docstring
         # Make sure the item exists
-        if item not in signals.item:  # TODO: maybe items.all instead?
+        if item not in items.raw:
             raise InvalidItemError(item)
 
         if item not in modules.raw:

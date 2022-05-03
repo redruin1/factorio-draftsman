@@ -132,7 +132,7 @@ def version_tuple_to_string(version_tuple):
 
     Converts each element of the tuple to a string and then joins them with the
     '.' character.
-    
+
     For the inverse operation, see, :py:func:`version_string_to_tuple`.
 
     :param version_tuple: The n-length tuple to interpret.

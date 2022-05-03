@@ -18,6 +18,10 @@ import warnings
 
 
 class Furnace(RequestItemsMixin, Entity):
+    """
+    An entity that takes a fuel and an input item and creates an output item.
+    """
+
     def __init__(self, name=furnaces[0], **kwargs):
         # type: (str, **dict) -> None
         super(Furnace, self).__init__(name, furnaces, **kwargs)
@@ -45,8 +49,10 @@ class Furnace(RequestItemsMixin, Entity):
     def valid_input_ingredients(self):
         # type: () -> set
         """
-        Read only
-        TODO
+        A set of strings, each one an ingredient that can be used as a input for
+        some recipe. Not exported; read only.
+
+        :type: ``set{str}``
         """
         return self._valid_input_ingredients
 
@@ -54,9 +60,6 @@ class Furnace(RequestItemsMixin, Entity):
 
     def set_item_request(self, item, amount):
         # type: (str, int) -> None
-        """
-        Overwritten
-        """
         # Make sure the item exists
         if item not in items.raw:
             raise InvalidItemError(item)

@@ -28,13 +28,12 @@ class LogisticRequestContainer(
     InventoryMixin,
     Entity,
 ):
-    """ """
+    """
+    A logistics container that requests items with a primary priority.
+    """
 
     def __init__(self, name=logistic_request_containers[0], **kwargs):
         # type: (str, **dict) -> None
-        """
-        TODO
-        """
         super(LogisticRequestContainer, self).__init__(
             name, logistic_request_containers, **kwargs
         )
@@ -58,7 +57,13 @@ class LogisticRequestContainer(
     def request_from_buffers(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not this requester can request from buffer chests.
+
+        :getter: Gets whether or not to recieve from buffers.
+        :setter: Sets whether or not to recieve from buffers.
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
         return self._request_from_buffers
 
@@ -69,10 +74,3 @@ class LogisticRequestContainer(
             self._request_from_buffers = value
         else:
             raise TypeError("'request_from_buffers' must be a bool or None")
-
-    # def set_request_from_buffers(self, value):
-    #     # type: (bool) -> None
-    #     """
-    #     Sets whether or not this requester can recieve items from buffer chests.
-    #     """
-    #     self.request_from_buffers = signatures.BOOLEAN.validate(value)

@@ -45,9 +45,6 @@ class Wall(
     @property
     def enable_disable(self):
         # type: () -> bool
-        """
-        TODO
-        """
         return self.control_behavior.get("circuit_open_gate", None)
 
     @enable_disable.setter
@@ -66,7 +63,10 @@ class Wall(
     def read_gate(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not to read the state of an adjacent gate, whether it's
+        opened or closed.
+
+        :type: ``bool``
         """
         return self.control_behavior.get("circuit_read_sensor", None)
 
@@ -86,7 +86,9 @@ class Wall(
     def output_signal(self):
         # type: () -> dict
         """
-        TODO
+        What signal to output the state of the adjacent gate.
+
+        :type: :py:class:`.SIGNAL_ID`
         """
         return self.control_behavior.get("output_signal", None)
 

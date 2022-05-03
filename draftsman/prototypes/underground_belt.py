@@ -14,7 +14,9 @@ import warnings
 
 
 class UndergroundBelt(IOTypeMixin, DirectionalMixin, Entity):
-    """ """
+    """
+    A transport belt that transfers items underneath other entities.
+    """
 
     def __init__(self, name=underground_belts[0], **kwargs):
         # type: (str, **dict) -> None

@@ -3,7 +3,7 @@ from logging import Filter
 from draftsman.classes.group import Group
 from draftsman.blueprintable import Blueprint, BlueprintBook
 from draftsman.entity import *
-from draftsman.data import entities, items, instruments
+from draftsman.data import entities, items, instruments, mods, modules, recipes, signals, tiles
 import copy
 import weakref
 import draftsman
@@ -73,11 +73,14 @@ blueprint = Blueprint()
 
 # print(blueprint.to_string())
 
-import json
-print(json.dumps(items.subgroups["belt"], indent=4))
+from draftsman.entity import new_entity
 
-print(items.subgroups["belt"]["group"])
-print(items.groups["logistics"])
+deployer = new_entity("blueprint-deployer")
+print(deployer)
+# <Container>{'name': 'blueprint-deployer', 'position': {'x': 0.5, 'y': 0.5}}
+assert deployer.inventory_size == 1
+assert deployer.inventory_bar_enabled == False
+# deployer.bar = 10 # DraftsmanError: This entity does not have bar control
 
-for subgroup in items.groups["logistics"]["subgroups"]["belt"]:
-    print(subgroup)
+# Lets see what the new list of containers are
+print(entities.containers)

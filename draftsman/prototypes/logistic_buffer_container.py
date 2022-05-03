@@ -27,13 +27,12 @@ class LogisticBufferContainer(
     InventoryMixin,
     Entity,
 ):
-    """ """
+    """
+    A logistics container that requests items on a secondary priority.
+    """
 
     def __init__(self, name=logistic_buffer_containers[0], **kwargs):
         # type: (str, **dict) -> None
-        """
-        TODO
-        """
         # Set the mode of operation type for this entity
         self._mode_of_operation_type = LogisticModeOfOperation
 

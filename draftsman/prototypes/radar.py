@@ -12,6 +12,10 @@ import warnings
 
 
 class Radar(Entity):
+    """
+    An entity that scans neighbouring chunks periodically.
+    """
+
     def __init__(self, name=radars[0], **kwargs):
         # type: (str, **dict) -> None
         super(Radar, self).__init__(name, radars, **kwargs)

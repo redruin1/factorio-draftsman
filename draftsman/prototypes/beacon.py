@@ -20,6 +20,10 @@ import warnings
 
 
 class Beacon(RequestItemsMixin, Entity):
+    """
+    An entity designed to apply module effects to other machine's in it's radius.
+    """
+
     def __init__(self, name=beacons[0], **kwargs):
         # type: (str, **dict) -> None
         super(Beacon, self).__init__(name, beacons, **kwargs)

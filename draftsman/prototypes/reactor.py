@@ -12,6 +12,10 @@ import warnings
 
 
 class Reactor(Entity):
+    """
+    An entity that converts a fuel into thermal energy.
+    """
+
     def __init__(self, name=reactors[0], **kwargs):
         # type: (str, **dict) -> None
         super(Reactor, self).__init__(name, reactors, **kwargs)

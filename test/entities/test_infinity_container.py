@@ -8,6 +8,7 @@ from draftsman.error import (
     InvalidEntityError,
     InvalidItemError,
     InvalidModeError,
+    DataFormatError,
 )
 from draftsman.warning import DraftsmanWarning
 
@@ -77,7 +78,7 @@ class InfinityContainerTesting(TestCase):
         )
         container.infinity_settings = None
         self.assertEqual(container.infinity_settings, {})
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             container.infinity_settings = {"this is": ["incorrect", "for", "sure"]}
 
     def test_set_remove_unfiltered_items(self):
@@ -105,7 +106,7 @@ class InfinityContainerTesting(TestCase):
         )
         container.set_infinity_filters(None)
         self.assertEqual(container.infinity_settings, {})
-        with self.assertRaises(SchemaError):
+        with self.assertRaises(DataFormatError):
             container.set_infinity_filters("incorrect")
 
     def test_set_infinity_filter(self):

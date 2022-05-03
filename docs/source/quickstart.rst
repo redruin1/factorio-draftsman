@@ -17,7 +17,7 @@ Draftsman has the console command ``draftsman-update`` to do exactly this:
 
 .. code-block:: console
 
-    (.venv) $ draftsman-update --verbose
+    (.venv) $ draftsman-update
 
 Once this command finishes, if you see the output ``hella slick; nothing broke!`` then you can be sure that the process went smoothly.
 
@@ -25,23 +25,6 @@ Once this command finishes, if you see the output ``hella slick; nothing broke!`
     
     **In order for the module to be set up correctly, both of the above commands must be run.**
     Ideally, the ``draftsman-update`` command would be run automatically after install, though I have yet to find an elegant way to do this.
-
-Draftsman uses the standard library's ``unittest`` for testing.
-To test if the package installed correctly, run the following command:
-
-.. code-block:: console
-
-    python -m unittest discover
-
-If you see an output like::
-
-    ......................................................................
-    ----------------------------------------------------------------------
-    Ran 312 tests in 0.179s
-
-    OK
-
-Then everything should be ready to go.
 
 Creating a Blueprint
 --------------------
@@ -86,7 +69,7 @@ For some users, these two functions `and this page <https://wiki.factorio.com/Bl
 Technically, that's all you need; blueprint strings are just JSON dicts after all. 
 However, Draftsman intends to be far more than just 4 lines of code!
 
-Lets start by instead of loading the blueprint string into a raw dict, we load it into a ``Blueprint`` instance:
+Lets start by instead of loading the blueprint string into a raw dict, we load it into a :py:class:`.Blueprint` instance:
 
 .. code-block:: python
 
@@ -102,10 +85,11 @@ Lets start by instead of loading the blueprint string into a raw dict, we load i
     print(blueprint)
     print(blueprint.to_string())
 
-Blueprint allows the user to modify almost all components of the blueprint by attribute, as shown with ``blueprint.label`` above. 
-Blueprint also provides methods that operate on itself, such as the ``to_string()`` function, as well as a prettier string representation using the Python standard library ``json``.
+Blueprint allows the user to modify almost all components of the blueprint by attribute, as shown with :py:attr:`~.Blueprint.label` above. 
+Blueprint also provides methods that operate on itself, such as the :py:meth:`~.Blueprint.to_string` function, as well as a prettier string representation using the Python standard library ``json``.
 
-Blueprint can also be accessed by key just like the previous dict example, and is identical for most keys. ([read here for more info on the differences.])
+Blueprint can also be accessed by key just like the previous dict example, and is identical for most keys.
+([Read here for more info on the differences.])
 
 .. code-block:: python
 
@@ -373,9 +357,9 @@ Suppose we want to set the limiting bar to limit half the inventory:
     All methods and attributes in Draftsman use **0-indexed notation unless 
     otherwise specified.**
 
-However, what if we didn't know that a steel-chest has 48 slots? Or what if 
-steel-chest's inventory size was changed by some mod? Instead, we can write 
-something like this:
+However, what if we didn't know that a steel-chest has 48 slots? 
+Or what if steel-chest's inventory size was changed by some mod? 
+Instead, we can write something like this:
 
 .. code-block:: python
 
@@ -387,38 +371,33 @@ which works with every Container (even modded ones!):
 
 .. image:: ../img/quickstart/all_default_container_inventories.png
 
-Being *"Factorio-safe"* also applies to entities. If we were to set the bar 
-to be anything other than an unsigned short, Factorio would throw a fit. Thus,
-Draftsman throws an error right when we make the mistake:
+Being *"Factorio-safe"* also applies to entities. 
+If we were to set the bar to be anything other than an unsigned short, Factorio would throw a fit. 
+Thus, Draftsman throws an error right when we make the mistake:
 
 .. code-block:: python
 
-    container.bar = -1 # BarIndexError: 'bar' not in range [0, 65536)
+    container.bar = -1 # IndexError: 'bar' not in range [0, 65536)
 
-However, what if we were to set the index to a number within that range, but 
-greater than the number of inventory slots? Factorio swallows this, simply 
-acting as if the bar index was not set, but does so *silently*; which, if such
-a component is critical, can be hard to catch. Wouldn't it be better to be 
-notified of such a mistake without necessarily affecting program function?
+However, what if we were to set the index to a number within that range, but greater than the number of inventory slots? 
+Factorio swallows this, simply acting as if the bar index was not set, but does so *silently*; which, if such a component is critical, can be hard to catch. 
+Wouldn't it be better to be notified of such a mistake without necessarily affecting program function?
 
-As a result, in addition to attempting to be *"Factorio-safe"*, Draftsman also 
-attempts to be *"Factorio-correct"*: If some component or attribute does not 
-break the importing/exporting process, but either doesn't make sense or fails to
-achieve the desired effect, a warning is raised:
+As a result, in addition to attempting to be *"Factorio-safe"*, Draftsman also attempts to be *"Factorio-correct"*: If some component or attribute does not break the importing/exporting process, but either doesn't make sense or fails to achieve the desired effect, a warning is raised:
 
 .. code-block:: python
 
-    container.bar = 100 # BarIndexWarning: 'bar' not in range [0, 48)
+    container.bar = 100 # IndexWarning: 'bar' not in range [0, 48)
 
 Thus, we can now see our mistake and fix it. Or, we can just ignore it:
 
 .. code-block:: python
 
     import warnings
-    from draftsman.warning import BarIndexWarning, DraftsmanWarning
+    from draftsman.warning import IndexWarning, DraftsmanWarning
 
     # We can choose to ignore just this specific warning
-    warnings.simplefilter("ignore", BarIndexWarning)
+    warnings.simplefilter("ignore", IndexWarning)
     # Or we can ignore all warnings issued by Draftsman
     warnings.simplefilter("ignore", DraftsmanWarning)
 
@@ -460,13 +439,11 @@ Hopefully now you can start to see just how capable Draftsman is.
 Still, this barely scratches the surface of this module's capabilities. 
 If you want to know more about how Draftsman works and how you can use it to it's fullest, check out the Handbook:
 
-* Entities
-* Blueprints
-* BlueprintBooks
-* Groups
-* How to use EntityLike to make your own custom entity types
-* How to use mods with Draftsman
+.. toctree::
+    :maxdepth: 2
 
-If you want to take a look at some more complex examples, head to the `examples folder <https://github.com/redruin1/factorio-draftsman/tree/main/examples>`_:
+    handbook/index.rst
 
-Alternatively, if you think you've seen enough and want to dive into the API, take a look at the :doc:`reference <reference/index>`.
+If you want to take a look at some more complex examples, you can take a look at the `examples folder here <https://github.com/redruin1/factorio-draftsman/tree/main/examples>`_.
+
+Alternatively, if you think you've seen enough and want to dive into the API, take a look at the :doc:`Reference <reference/index>`.

@@ -14,11 +14,7 @@ import warnings
 
 class Container(CircuitConnectableMixin, InventoryMixin, Entity):
     """
-    * `wooden-chest`
-    * `iron-chest`
-    * `steel-chest`
-    * `logistic-chest-active-provider`
-    * `logistic-chest-passive-provider`
+    An entity that holds items.
     """
 
     def __init__(self, name=containers[0], **kwargs):

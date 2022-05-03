@@ -18,7 +18,9 @@ import warnings
 
 
 class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
-    """ """
+    """
+    An entity that acts as a node in a logistics network.
+    """
 
     def __init__(self, name=roboports[0], **kwargs):
         # type: (str, **dict) -> None

@@ -36,9 +36,7 @@ class InserterTesting(TestCase):
                 "circuit_read_hand_contents": True,
                 "circuit_hand_read_mode": ReadMode.PULSE,
             },
-            connections={
-                "1": {"green": [{"entity_id": 2, "circuit_id": 1}]}
-            },
+            connections={"1": {"green": [{"entity_id": 2, "circuit_id": 1}]}},
         )
         self.assertEqual(
             inserter.to_dict(),
@@ -60,9 +58,7 @@ class InserterTesting(TestCase):
                     "circuit_read_hand_contents": True,
                     "circuit_hand_read_mode": 0,
                 },
-                "connections": {
-                    "1": {"green": [{"entity_id": 2, "circuit_id": 1}]}
-                },
+                "connections": {"1": {"green": [{"entity_id": 2, "circuit_id": 1}]}},
             },
         )
 

@@ -15,8 +15,13 @@ import warnings
 
 class LinkedBelt(DirectionalMixin, Entity):
     """
-    Functionally, currently unimplemented. Need to analyze how mods use this
-    entity, as I can't seem to figure out the example one in the game.
+    A belt object that can transfer items over any distance, regardless of
+    constraint, as long as the two are paired together.
+
+    .. WARNING::
+
+        Functionally, currently unimplemented. Need to analyze how mods use this
+        entity, as I can't seem to figure out the example one in the game.
     """
 
     def __init__(self, name=linked_belts[0], **kwargs):

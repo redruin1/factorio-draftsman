@@ -13,6 +13,11 @@ import warnings
 
 
 class Boiler(DirectionalMixin, Entity):
+    """
+    An entity that uses a fuel to convert a fluid (usually water) to another
+    fluid (usually steam).
+    """
+
     def __init__(self, name=boilers[0], **kwargs):
         # type: (str, **dict) -> None
         super(Boiler, self).__init__(name, boilers, **kwargs)

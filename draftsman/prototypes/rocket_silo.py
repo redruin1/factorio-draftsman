@@ -14,6 +14,10 @@ import warnings
 
 
 class RocketSilo(RequestItemsMixin, Entity):
+    """
+    An entity that produces rockets, usually used in research.
+    """
+
     def __init__(self, name=rocket_silos[0], **kwargs):
         # type: (str, **dict) -> None
         super(RocketSilo, self).__init__(name, rocket_silos, **kwargs)
@@ -37,7 +41,14 @@ class RocketSilo(RequestItemsMixin, Entity):
     def auto_launch(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not to automatically launch the rocket when it's cargo is
+        full.
+
+        :getter: Gets whether or not to automatically launch.
+        :setter: Sets whether or not to automatically launch.
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
         return self._auto_launch
 

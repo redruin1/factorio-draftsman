@@ -9,3 +9,5 @@ Handbook
     overview/entities.rst
     overview/blueprints.rst
     concepts/index.rst
+    groups.rst
+    modding.rst

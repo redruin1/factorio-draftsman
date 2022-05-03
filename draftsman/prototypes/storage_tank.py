@@ -13,7 +13,9 @@ import warnings
 
 
 class StorageTank(CircuitConnectableMixin, DirectionalMixin, Entity):
-    """ """
+    """
+    An entity that stores a fluid.
+    """
 
     def __init__(self, name=storage_tanks[0], **kwargs):
         # type: (str, **dict) -> None

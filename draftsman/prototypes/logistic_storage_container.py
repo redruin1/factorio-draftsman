@@ -19,7 +19,10 @@ import warnings
 class LogisticStorageContainer(
     CircuitConnectableMixin, RequestFiltersMixin, InventoryMixin, Entity
 ):
-    """ """
+    """
+    A logistics container that stores items not currently being used in the
+    logistic network.
+    """
 
     def __init__(self, name=logistic_storage_containers[0], **kwargs):
         # type: (str, **dict) -> None

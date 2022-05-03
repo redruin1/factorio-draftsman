@@ -14,7 +14,9 @@ import warnings
 
 
 class CargoWagon(InventoryFilterMixin, OrientationMixin, Entity):
-    """ """
+    """
+    A train wagon that holds items as cargo.
+    """
 
     def __init__(self, name=cargo_wagons[0], **kwargs):
         # type: (str, **dict) -> None

@@ -13,7 +13,9 @@ import warnings
 
 
 class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
-    """ """
+    """
+    An entity used to distribute electrical energy as a network.
+    """
 
     def __init__(self, name=electric_poles[0], **kwargs):
         # type: (str, **dict) -> None

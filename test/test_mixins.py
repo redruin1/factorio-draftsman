@@ -34,15 +34,15 @@ class CircuitConditionMixinTesting(TestCase):
         with self.assertRaises(TypeError):
             transport_belt.enable_disable = "True"
 
-    def test_set_enabled_condition(self):
+    def test_set_circuit_condition(self):
         transport_belt = TransportBelt()
         # Valid
-        transport_belt.set_enabled_condition(None)
+        transport_belt.set_circuit_condition(None)
         self.assertEqual(
             transport_belt.control_behavior,
             {"circuit_condition": {"comparator": "<", "constant": 0}},
         )
-        transport_belt.set_enabled_condition("signal-A", ">", -10)
+        transport_belt.set_circuit_condition("signal-A", ">", -10)
         self.assertEqual(
             transport_belt.control_behavior,
             {
@@ -53,7 +53,7 @@ class CircuitConditionMixinTesting(TestCase):
                 }
             },
         )
-        transport_belt.set_enabled_condition("signal-A", "==", -10)
+        transport_belt.set_circuit_condition("signal-A", "==", -10)
         self.assertEqual(
             transport_belt.control_behavior,
             {
@@ -64,7 +64,7 @@ class CircuitConditionMixinTesting(TestCase):
                 }
             },
         )
-        transport_belt.set_enabled_condition("signal-A", "<=", "signal-B")
+        transport_belt.set_circuit_condition("signal-A", "<=", "signal-B")
         self.assertEqual(
             transport_belt.control_behavior,
             {
@@ -75,7 +75,7 @@ class CircuitConditionMixinTesting(TestCase):
                 }
             },
         )
-        transport_belt.set_enabled_condition("signal-A", "≤", "signal-B")
+        transport_belt.set_circuit_condition("signal-A", "≤", "signal-B")
         self.assertEqual(
             transport_belt.control_behavior,
             {
@@ -86,7 +86,7 @@ class CircuitConditionMixinTesting(TestCase):
                 }
             },
         )
-        transport_belt.set_enabled_condition("signal-A", "!=", "signal-B")
+        transport_belt.set_circuit_condition("signal-A", "!=", "signal-B")
         self.assertEqual(
             transport_belt.control_behavior,
             {
@@ -101,21 +101,21 @@ class CircuitConditionMixinTesting(TestCase):
         # Errors
         # Constant first
         with self.assertRaises(DataFormatError):
-            transport_belt.set_enabled_condition(10, ">", "signal-B")
+            transport_belt.set_circuit_condition(10, ">", "signal-B")
         # Invalid A
         with self.assertRaises(DataFormatError):
-            transport_belt.set_enabled_condition(TypeError, ">", "signal-B")
+            transport_belt.set_circuit_condition(TypeError, ">", "signal-B")
         # Invalid Operation
         with self.assertRaises(DataFormatError):
-            transport_belt.set_enabled_condition("signal-A", "hmm", "signal-B")
+            transport_belt.set_circuit_condition("signal-A", "hmm", "signal-B")
         # Invalid B
         with self.assertRaises(DataFormatError):
-            transport_belt.set_enabled_condition("signal-A", ">", TypeError)
+            transport_belt.set_circuit_condition("signal-A", ">", TypeError)
 
-    def test_remove_enabled_condition(self):  # TODO delete
+    def test_remove_circuit_condition(self):  # TODO delete
         transport_belt = TransportBelt()
-        transport_belt.set_enabled_condition(None)
-        transport_belt.remove_enabled_condition()
+        transport_belt.set_circuit_condition(None)
+        transport_belt.remove_circuit_condition()
         self.assertEqual(transport_belt.control_behavior, {})
 
     def test_normalize_circuit_condition(self):  # TODO delete

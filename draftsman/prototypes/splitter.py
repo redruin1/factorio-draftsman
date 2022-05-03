@@ -19,7 +19,10 @@ import warnings
 
 
 class Splitter(DirectionalMixin, Entity):
-    """ """
+    """
+    An entity that evenly splits a set of input belts between a set of output
+    belts.
+    """
 
     def __init__(self, name=splitters[0], **kwargs):
         # type: (str, **dict) -> None
@@ -66,7 +69,16 @@ class Splitter(DirectionalMixin, Entity):
     def input_priority(self):
         # type: () -> Literal["left", "right", None]
         """
-        TODO
+        The input priority of the ``Splitter``. Can be one of ``"left"`` or
+        ``"right"``.
+
+        :getter: Gets the input priority.
+        :setter: Sets the input priority.
+        :type: ``str``
+
+        :exception TypeError: If set to anything other than a ``str`` or ``None``.
+        :exception InvalidSideError: If set to an invalid side as specified
+            above.
         """
         return self._input_priority
 
@@ -90,7 +102,16 @@ class Splitter(DirectionalMixin, Entity):
     def output_priority(self):
         # type: () -> Literal["left", "right", None]
         """
-        TODO
+        The outpu priority of the ``Splitter``. Can be one of ``"left"`` or
+        ``"right"``.
+
+        :getter: Gets the output priority.
+        :setter: Sets the output priority.
+        :type: ``str``
+
+        :exception TypeError: If set to anything other than a ``str`` or ``None``.
+        :exception InvalidSideError: If set to an invalid side as specified
+            above.
         """
         return self._output_priority
 
@@ -113,8 +134,15 @@ class Splitter(DirectionalMixin, Entity):
     @property
     def filter(self):
         """
-        Sets the Splitter's filter. Default filter output side is 'left'.
-        TODO
+        Sets the Splitter's filter. If ``filter`` is set but ``output_priority``
+        is not, then the output side defaults to ``"left"``.
+
+        :getter: Gets the splitter's item filter.
+        :setter: Sets the splitter's item filter.
+        :type: ``str``
+
+        :exception TypeError: If set to anything other than a ``str`` or ``None``.
+        :exception InvalidItemError: If set to an invalid item name.
         """
         return self._filter
 

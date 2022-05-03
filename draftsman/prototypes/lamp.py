@@ -20,7 +20,9 @@ import warnings
 class Lamp(
     CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, Entity
 ):
-    """ """
+    """
+    An entity that illuminates an area.
+    """
 
     def __init__(self, name=lamps[0], **kwargs):
         # type: (str, **dict) -> None
@@ -39,7 +41,15 @@ class Lamp(
     def use_colors(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not this entity should use color signals to determine it's
+        color.
+
+        :getter: Gets whether or not to use colors, or ``None`` if not set.
+        :setter: Sets whether or not to use colors. Removes the key if set to
+            ``None``.
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
         return self.control_behavior.get("use_colors", None)
 
@@ -52,13 +62,3 @@ class Lamp(
             self.control_behavior["use_colors"] = value
         else:
             raise TypeError("'use_colors' must be a bool or None")
-
-    # def set_use_colors(self, value):
-    #     # type: (bool) -> None
-    #     """
-    #     """
-    #     if value is None:
-    #         self.control_behavior.pop("use_colors", None)
-    #     else:
-    #         value = signatures.BOOLEAN.validate(value)
-    #         self.control_behavior["use_colors"] = value

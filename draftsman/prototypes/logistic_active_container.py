@@ -13,7 +13,10 @@ import warnings
 
 
 class LogisticActiveContainer(CircuitConnectableMixin, InventoryMixin, Entity):
-    """ """
+    """
+    A logistics container that immediately provides it's contents to the
+    logistic network.
+    """
 
     def __init__(self, name=logistic_active_containers[0], **kwargs):
         # type: (str, **dict) -> None

@@ -14,7 +14,7 @@ class CircuitConditionMixin(object):  # (ControlBehaviorMixin)
     value of some signal exceeds some constant.
     """
 
-    def set_enabled_condition(self, a=None, cmp="<", b=0):
+    def set_circuit_condition(self, a=None, cmp="<", b=0):
         # type: (str, str, Union[str, int]) -> None
         """
         Sets the circuit condition of the Entity.
@@ -41,7 +41,7 @@ class CircuitConditionMixin(object):  # (ControlBehaviorMixin)
         """
         self._set_condition("circuit_condition", a, cmp, b)
 
-    def remove_enabled_condition(self):
+    def remove_circuit_condition(self):
         # type: () -> None
         """
         Removes the circuit condition of the Entity. Does nothing if the Entity

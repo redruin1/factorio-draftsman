@@ -30,7 +30,10 @@ class RailChainSignal(
     EightWayDirectionalMixin,
     Entity,
 ):
-    """ """
+    """
+    A rail signal that allows determines access of a current rail block based on
+    a forward rail block.
+    """
 
     def __init__(self, name=rail_chain_signals[0], **kwargs):
         # type: (str, **dict) -> None
@@ -54,7 +57,24 @@ class RailChainSignal(
     def blue_output_signal(self):
         # type: () -> dict
         """
-        TODO
+        The blue output signal. Sent when the rail signal's state is blue.
+
+        Stored as a ``dict`` in the format ``{"name": str, "type": str}``, where
+        ``name`` is the name of the signal and ``type`` is it's type, either
+        ``"item"``, ``"fluid"``, or ``"signal"``.
+
+        However, because a signal's type is always constant and can be inferred,
+        it is recommended to simply set the attribute to the string name of the
+        signal which will automatically be converted to the above format.
+
+        :getter: Gets the blue output signal, or ``None`` if not set.
+        :setter: Sets the blue output signal. Removes the key if set to ``None``.
+        :type: :py:class:`draftsman.signatures.SIGNAL_ID`
+
+        :exception InvalidSignalID: If set to a string that is not a valid
+            signal name.
+        :exception DataFormatError: If set to a dict that does not match the
+            dict format specified above.
         """
         return self.control_behavior.get("blue_output_signal", None)
 

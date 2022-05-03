@@ -190,9 +190,7 @@ CONNECTIONS = Schema(
     )
 )
 
-NEIGHBOURS = Schema(
-    And(Use(lambda x: [] if x is None else x), [ASSOCIATION])
-)
+NEIGHBOURS = Schema(And(Use(lambda x: [] if x is None else x), [ASSOCIATION]))
 
 SIGNAL_FILTER = Schema({"index": int, "signal": SIGNAL_ID, "count": int})
 
@@ -220,33 +218,48 @@ INFINITY_FILTER = Schema(
 )
 INFINITY_FILTERS = Schema([INFINITY_FILTER])
 INFINITY_CONTAINER = Schema(
-    {Optional("remove_unfiltered_items"): bool, Optional("filters"): INFINITY_FILTERS}
+    And(
+        Use(lambda x: {} if x is None else x),
+        {
+            Optional("remove_unfiltered_items"): bool,
+            Optional("filters"): INFINITY_FILTERS,
+        },
+    )
 )
 
 INFINITY_PIPE = Schema(
-    {
-        Optional("name"): STRING,
-        Optional("percentage"): int,
-        Optional("mode"): Or("at-least", "at-most", "exactly", "add", "remove"),
-        Optional("temperature"): int,
-    }
+    And(
+        Use(lambda x: {} if x is None else x),
+        {
+            Optional("name"): STRING,
+            Optional("percentage"): int,
+            Optional("mode"): Or("at-least", "at-most", "exactly", "add", "remove"),
+            Optional("temperature"): int,
+        },
+    )
 )
 
 PARAMETERS = Schema(
-    {
-        Optional("playback_volume"): float,
-        Optional("playback_globally"): bool,
-        Optional("allow_polyphony"): bool,
-    }
+    And(
+        Use(lambda x: {} if x is None else x),
+        {
+            Optional("playback_volume"): float,
+            Optional("playback_globally"): bool,
+            Optional("allow_polyphony"): bool,
+        },
+    )
 )
 
 ALERT_PARAMETERS = Schema(
-    {
-        Optional("show_alert"): bool,
-        Optional("show_on_map"): bool,
-        Optional("icon_signal_id"): SIGNAL_ID,
-        Optional("alert_message"): six.text_type,
-    }
+    And(
+        Use(lambda x: {} if x is None else x),
+        {
+            Optional("show_alert"): bool,
+            Optional("show_on_map"): bool,
+            Optional("icon_signal_id"): SIGNAL_ID,
+            Optional("alert_message"): six.text_type,
+        },
+    )
 )
 
 CONTROL_BEHAVIOR = Schema(
@@ -352,7 +365,7 @@ INVENTORY_FILTER = Schema(
     )
 )
 
-REQUEST_FILTERS = Schema([(STRING, int)]) # TODO: change this
+REQUEST_FILTERS = Schema([(STRING, int)])  # TODO: change this
 
 WAIT_CONDITION = Schema(
     {

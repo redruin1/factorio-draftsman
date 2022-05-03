@@ -14,7 +14,9 @@ import warnings
 
 
 class ArtilleryWagon(OrientationMixin, Entity):
-    """ """
+    """
+    An artillery train car.
+    """
 
     def __init__(self, name=artillery_wagons[0], **kwargs):
         # type: (str, **dict) -> None

@@ -14,7 +14,9 @@ import warnings
 
 
 class Locomotive(ColorMixin, OrientationMixin, Entity):
-    """ """
+    """
+    A train car that moves other wagons around using a fuel.
+    """
 
     def __init__(self, name=locomotives[0], **kwargs):
         # type: (str, **dict) -> None

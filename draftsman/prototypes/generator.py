@@ -13,6 +13,10 @@ import warnings
 
 
 class Generator(DirectionalMixin, Entity):
+    """
+    An entity that converts a fluid (usually steam) to electricity.
+    """
+
     def __init__(self, name=generators[0], **kwargs):
         # type: (str, **dict) -> None
         super(Generator, self).__init__(name, generators, **kwargs)

@@ -24,7 +24,10 @@ import warnings
 class ArithmeticCombinator(
     ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
 ):
-    """ """
+    """
+    An arithmetic combinator. Peforms a mathematical or bitwise operation on
+    circuit signals.
+    """
 
     def __init__(self, name=arithmetic_combinators[0], **kwargs):
         # type: (str, **dict) -> None
@@ -227,7 +230,18 @@ class ArithmeticCombinator(
 
     def set_arithmetic_conditions(self, a=None, op="*", b=0, out=None):
         # type: (Union[str, int], str, Union[str, int], str) -> None
-        """ """
+        """
+        Sets the arithmetic condition of the ArithmeticCombinator.
+
+        :param a: The name of the first signal to set, some constant, or ``None``.
+        :param op: The string representation of the operation to perform, as
+            specified above.
+        :param b: The name of the second signal to set, some constant, or ``None``.
+        :param out: The name of the output signal to set, or ``None``.
+
+        :exception DataFormatError: If any argument fails to match the formats
+            specified above.
+        """
 
         # Check all the parameters before we set anything to preserve original
         try:
@@ -276,7 +290,10 @@ class ArithmeticCombinator(
         else:  # Signal Dict
             arithmetic_conditions["output_signal"] = out
 
-    def remove_arithmetic_conditions(self):  # TODO: remove
+    def remove_arithmetic_conditions(self):
         # type: () -> None
-        """ """
+        """
+        Removes the entire ``"arithmetic_conditions"`` key from the control
+        behavior.
+        """
         self.control_behavior.pop("arithmetic_conditions", None)

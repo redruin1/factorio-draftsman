@@ -14,8 +14,7 @@ import warnings
 
 class BurnerGenerator(DirectionalMixin, Entity):
     """
-    TODO: think about, because burner generators from mods like Space
-    Exploration don't have orientation. Are they the same entity type?
+    A electrical generator that only requires fuel in order to function.
     """
 
     def __init__(self, name=burner_generators[0], **kwargs):

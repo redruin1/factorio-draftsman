@@ -14,7 +14,9 @@ import warnings
 
 
 class FluidWagon(OrientationMixin, Entity):
-    """ """
+    """
+    A train wagon that holds a fluid as cargo.
+    """
 
     def __init__(self, name=fluid_wagons[0], **kwargs):
         # type: (str, **dict) -> None

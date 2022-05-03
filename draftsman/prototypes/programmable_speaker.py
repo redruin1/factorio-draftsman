@@ -10,7 +10,12 @@ from draftsman.classes.mixins import (
     ControlBehaviorMixin,
     CircuitConnectableMixin,
 )
-from draftsman.error import DraftsmanError, InvalidInstrumentID, InvalidNoteID
+from draftsman.error import (
+    DataFormatError,
+    DraftsmanError,
+    InvalidInstrumentID,
+    InvalidNoteID,
+)
 from draftsman.warning import DraftsmanWarning, VolumeRangeWarning
 
 from draftsman.data.entities import programmable_speakers
@@ -26,7 +31,10 @@ import warnings
 class ProgrammableSpeaker(
     CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, Entity
 ):
-    """ """
+    """
+    An entity that makes sounds that can be controlled by circuit network
+    signals.
+    """
 
     def __init__(self, name=programmable_speakers[0], **kwargs):
         # type: (str, **dict) -> None
@@ -88,8 +96,10 @@ class ProgrammableSpeaker(
     def instruments(self):
         # type: () -> dict
         """
-        Read only
-        TODO
+        A list of all instruments that this ``ProgrammableSpeaker`` has. Not
+        exported; read only.
+
+        :type: ``list``.
         """
         return self._instruments
 
@@ -99,21 +109,24 @@ class ProgrammableSpeaker(
     def parameters(self):
         # type: () -> dict
         """
-        TODO
+        A set of general attributes that affect this programmable speaker.
+
+        :getter: Gets the parameters of the speaker.
+        :setter: Sets the parameters of the speaker.
+        :type: :py:class:`.PARAMETERS`
+
+        :exception DataFormatError: If set to anything that does not match the
+            :py:class:`.PARAMETERS` format.
         """
         return self._parameters
 
     @parameters.setter
     def parameters(self, value):
         # type: (dict) -> None
-        if value is None:
-            self._parameters = {}
-        else:
-            try:
-                self._parameters = signatures.PARAMETERS.validate(value)
-            except SchemaError:
-                # TODO: more verbose
-                raise TypeError("Invalid parameters format")
+        try:
+            self._parameters = signatures.PARAMETERS.validate(value)
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -121,21 +134,25 @@ class ProgrammableSpeaker(
     def alert_parameters(self):
         # type: () -> dict
         """
-        TODO
+        A set of attributes that affect the alert this programmable speaker
+        makes (if it's set to do so).
+
+        :getter: Gets the alert parameters of the speaker.
+        :setter: Sets the alert parameters of the speaker.
+        :type: :py:class:`.ALERT_PARAMETERS`
+
+        :exception DataFormatError: If set to anything that does not match the
+            :py:class:`.ALERT_PARAMETERS` format.
         """
         return self._alert_parameters
 
     @alert_parameters.setter
     def alert_parameters(self, value):
         # type: (dict) -> None
-        if value is None:
-            self._alert_parameters = {}
-        else:
-            try:
-                self._alert_parameters = signatures.ALERT_PARAMETERS.validate(value)
-            except SchemaError:
-                # TODO: more verbose
-                raise TypeError("Invalid alert_parameters format")
+        try:
+            self._alert_parameters = signatures.ALERT_PARAMETERS.validate(value)
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -143,7 +160,18 @@ class ProgrammableSpeaker(
     def volume(self):
         # type: () -> float
         """
-        TODO
+        The volume of the programmable speaker, in the range ``[0.0, 1.0]``.
+
+        Raises :py:class:`VolumeRangeWarning` if set to a value outside of the
+        range ``[0.0, 1.0]``.
+
+        :getter: Gets the volume of the speaker, or ``None`` if not set.
+        :setter: Sets the volume of the speaker. Removes the key if set to
+            ``None``.
+        :type: ``float``
+
+        :exception TypeError: If set to anything other than a ``float`` or
+            ``None``.
         """
         return self.parameters.get("playback_volume", None)
 
@@ -170,7 +198,12 @@ class ProgrammableSpeaker(
     def global_playback(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not to play this sound at a constant volume regardless of
+        distance.
+
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
         return self.parameters.get("playback_globally", None)
 
@@ -190,7 +223,11 @@ class ProgrammableSpeaker(
     def show_alert(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not to show an alert to the player(s) if a sound is played.
+
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
         return self.alert_parameters.get("show_alert", None)
 
@@ -210,7 +247,11 @@ class ProgrammableSpeaker(
     def allow_polyphony(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not to allow the speaker to play multiple notes at once.
+
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
         return self.parameters.get("allow_polyphony", None)
 
@@ -230,7 +271,11 @@ class ProgrammableSpeaker(
     def show_alert_on_map(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not to show the alert on the map where the speaker lives.
+
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
         return self.alert_parameters.get("show_on_map", None)
 
@@ -250,7 +295,15 @@ class ProgrammableSpeaker(
     def alert_icon(self):
         # type: () -> dict
         """
-        TODO
+        What icon to show to the player(s) and on the map if the speaker makes a
+        sound (and alerts are enabled).
+
+        :type: :py:class:`.SIGNAL_ID`
+
+        :exception InvalidSignalError: If set to a ``str`` that is not a valid
+            signal ID.
+        :exception DataFormatError: If set to a ``dict`` that does not match
+            :py:class:`.SIGNAL_ID`.
         """
         return self.alert_parameters.get("icon_signal_id", None)
 
@@ -275,7 +328,15 @@ class ProgrammableSpeaker(
     def alert_message(self):
         # type: () -> str
         """
-        TODO
+        What message to show to the player(s) if the speaker makes a sound (and
+        alerts are enabled).
+
+        :type: :py:class:`.SIGNAL_ID`
+
+        :exception InvalidSignalError: If set to a ``str`` that is not a valid
+            signal ID.
+        :exception DataFormatError: If set to a ``dict`` that does not match
+            :py:class:`.SIGNAL_ID`.
         """
         return self.alert_parameters.get("alert_message", None)
 
@@ -294,6 +355,14 @@ class ProgrammableSpeaker(
     @property
     def signal_value_is_pitch(self):
         # type: () -> bool
+        """
+        Whether or not the value of a signal determines the pitch of the note to
+        play.
+
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
+        """
         if "circuit_parameters" not in self.control_behavior:
             return None
         circuit_parameters = self.control_behavior["circuit_parameters"]
@@ -319,12 +388,21 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
-    # TODO: use these
     @property
     def instrument_id(self):
         # type: () -> int
         """
-        Numeiric index of the instrument.
+        Numeric index of the instrument. Updated in tandem with
+        ``instrument_name``.
+
+        :getter: Gets the number of the current instrument, or ``None`` if not
+            set.
+        :setter: Sets the number of the current instrument. Removes the key if
+            set to ``None``.
+
+        :exception InvalidInstrumentID: If set to a number that is not
+            recognized as a valid instrument index for this speaker.
+        :exception TypeError: If set to anything other than an ``int`` or ``None``.
         """
         if "circuit_parameters" not in self.control_behavior:
             return None
@@ -366,7 +444,16 @@ class ProgrammableSpeaker(
     def instrument_name(self):
         # type: () -> str
         """
-        Name of the instrument.
+        Name of the instrument. Updated in tandem with ``instrument_id``. Not
+        exported.
+
+        :getter: Gets the name of the current instrument, or ``None`` if not set.
+        :setter: Sets the name of the current instrument. Removes the key if set
+            to ``None``.
+
+        :exception InvalidInstrumentID: If set to a name that is not recognized
+            as a valid instrument index for this speaker.
+        :exception TypeError: If set to anything other than a ``str`` or ``None``.
         """
         return self._instrument_name
 
@@ -401,12 +488,19 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
-    # TODO: use these
     @property
     def note_id(self):
         # type: () -> int
         """
-        Numeric index of the note.
+        Numeric index of the note. Updated in tandem with ``note_name``.
+
+        :getter: Gets the number of the current note, or ``None`` if not set.
+        :setter: Sets the number of the current note. Removes the key if set to
+            ``None``.
+
+        :exception InvalidInstrumentID: If set to a number that is not
+            recognized as a valid note index for this speaker.
+        :exception TypeError: If set to anything other than an ``int`` or ``None``.
         """
         if "circuit_parameters" not in self.control_behavior:
             return None
@@ -445,7 +539,15 @@ class ProgrammableSpeaker(
     def note_name(self):
         # type: () -> str
         """
-        Name of the note
+        Name of the note. Updated in tandem with ``note_id``. Not exported.
+
+        :getter: Gets the name of the current instrument, or ``None`` if not set.
+        :setter: Sets the name of the current instrument. Removes the key if set
+            to ``None``.
+
+        :exception InvalidInstrumentID: If set to a name that is not recognized
+            as a valid instrument name for this speaker.
+        :exception TypeError: If set to anything other than a ``str`` or ``None``.
         """
         return self._note_name
 

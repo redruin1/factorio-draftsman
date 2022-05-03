@@ -9,9 +9,9 @@ Draftsman warnings. Used to enforce "Factorio-correctness".
 
 class DraftsmanWarning(UserWarning):
     """
-    Root warning class for ``draftsman``. Useful if you want to easily ignore 
+    Root warning class for ``draftsman``. Useful if you want to easily ignore
     all warnings issued from the module without getting rid of warnings entirely;
-    simply filter this class. This is a subclass of ``UserWarning``, and all 
+    simply filter this class. This is a subclass of ``UserWarning``, and all
     other Draftsman warnings are subclasses of this.
     """
 
@@ -65,7 +65,7 @@ class ConnectionSideWarning(DraftsmanWarning):
 
 class TooManyConnectionsWarning(DraftsmanWarning):
     """
-    Raised when a power connection is attempted between an power-pole that 
+    Raised when a power connection is attempted between an power-pole that
     already has 5 or more connections.
     """
 
@@ -83,7 +83,7 @@ class RailAlignmentWarning(DraftsmanWarning):
 
 class ItemLimitationWarning(DraftsmanWarning):
     """
-    Raised when an item request does not match the :py:class:`.AssemblingMachine`'s 
+    Raised when an item request does not match the :py:class:`.AssemblingMachine`'s
     recipe inputs.
     """
 
@@ -92,7 +92,7 @@ class ItemLimitationWarning(DraftsmanWarning):
 
 class ModuleLimitationWarning(DraftsmanWarning):
     """
-    Raised when the modules inside of an :py:class:`.Entity` conflict, either 
+    Raised when the modules inside of an :py:class:`.Entity` conflict, either
     with the Entity's type or it's recipe.
     """
 
@@ -101,7 +101,7 @@ class ModuleLimitationWarning(DraftsmanWarning):
 
 class ModuleCapacityWarning(DraftsmanWarning):
     """
-    Raised when the number of modules in an :py:class:`.Entity` with module slots 
+    Raised when the number of modules in an :py:class:`.Entity` with module slots
     exceeds the total module capacity.
     """
 
@@ -136,9 +136,9 @@ class HiddenEntityWarning(DraftsmanWarning):
 
 class OverlappingObjectsWarning(DraftsmanWarning):
     """
-    Raised when the area returned by :py:meth:`~.SpatialLike.get_area()` for an 
-    object overlaps another object or objects already placed inside a 
-    :py:class:`.SpatialHashMap`. This warning is raised for both entities and 
+    Raised when the area returned by :py:meth:`~.SpatialLike.get_area()` for an
+    object overlaps another object or objects already placed inside a
+    :py:class:`.SpatialHashMap`. This warning is raised for both entities and
     tiles.
     """
 

@@ -24,7 +24,9 @@ class Pump(
     DirectionalMixin,
     Entity,
 ):
-    """ """
+    """
+    An entity that aids fluid transfer through pipes.
+    """
 
     def __init__(self, name=pumps[0], **kwargs):
         # type: (str, **dict) -> None

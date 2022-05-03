@@ -146,9 +146,13 @@ will adjust as well.
 
 ## TODO
 * Write a script or some framework to test what Factorio versions are compatible with current version
+* Re-implement circuit attributes for `DeciderCombinator` and `ArithmeticCombinator`
+* Figure out a consistent manner to treat filter objects (fix all the TODO's in the code)
+* Folder mod loading
 * Figure out exactly what determines if an `Entity` is flip-able or not
 * Figure out a way to make Entity associations weakrefs (more specifically, how to deepcopy weakrefs)
 * Most of the data extracted from `data.raw` is sorted, but not all of it
+* Make testing work with mods
 * RailPlanner (specify rail paths via turtle-like commands)
 * Maybe integrate defaults for more succinct blueprint strings?
 * Look into Lua bindings via backport to C

@@ -31,7 +31,9 @@ class TransportBelt(
     DirectionalMixin,
     Entity,
 ):
-    """ """
+    """
+    An entity that transports items.
+    """
 
     def __init__(self, name=transport_belts[0], **kwargs):
         # type: (str, **dict) -> None

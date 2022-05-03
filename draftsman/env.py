@@ -45,15 +45,16 @@ dependency_string_pattern = (
 )
 dependency_regex = re.compile(dependency_string_pattern)
 
-lua_module_pattern = "\\.\\/factorio-mods\\/(.+)\\/.*"
+lua_module_pattern = "\\.\\/factorio-mods\\/(.+?)\\/.*"
 lua_module_regex = re.compile(lua_module_pattern)
 
 
 class Mod(object):
     """
-    Mod object that stores metadata during the load process. Mostly used for 
+    Mod object that stores metadata during the load process. Mostly used for
     structuring the data and determining the load order.
     """
+
     def __init__(
         self, name, internal_folder, version, archive, location, info, files, data
     ):
@@ -105,7 +106,7 @@ def file_to_string(filepath):
 
 def get_mod_settings(location):
     """
-    Reads `mod_settings.dat` and stores it as an easy-to-read dict. Would be 
+    Reads `mod_settings.dat` and stores it as an easy-to-read dict. Would be
     trivial to implement an editor with this function. (Well, assuming you write
     a function to export back to a ``.dat`` file)
     """
@@ -184,7 +185,7 @@ def get_mod_settings(location):
         # header_flag = bool(int.from_bytes(mod_settings_dat.read(1), "little", signed=False))
         header_flag = bool(struct.unpack("<?", mod_settings_dat.read(1))[0])
         # print(header_flag)
-        assert version[::-1] >= __factorio_version_info__ and not header_flag
+        # assert version[::-1] >= __factorio_version_info__ and not header_flag
         mod_settings = get_data(mod_settings_dat)
 
     return mod_settings
@@ -284,9 +285,9 @@ def get_order(data, objects_to_sort):
     1. object groups
     2. object subgroups
     3. object itself
-    
+
     Across the previous categories, each is sorted by:
-    
+
     1. the item order string
     2. the item name (lexographic)
     """
@@ -368,7 +369,7 @@ def extract_mods(loaded_mods, data_location, verbose):
     """
     out_mods = {}
     for mod in loaded_mods:
-        out_mods[mod] = loaded_mods[mod].version
+        out_mods[mod] = version_string_to_tuple(loaded_mods[mod].version)
 
     with open(os.path.join(data_location, "mods.pkl"), "wb") as out:
         pickle.dump(out_mods, out, pickle.HIGHEST_PROTOCOL)
@@ -1012,7 +1013,7 @@ def update(verbose=False):
 
     Emulates the load pattern of Factorio and loads all of its data (hopefully)
     in the same way. Then that data is extracted into the module, updating it's
-    contents. Updates and changes made to the ``factorio-data`` folder are also 
+    contents. Updates and changes made to the ``factorio-data`` folder are also
     reflected in this routine.
     """
     # Figure out what directory we're in
@@ -1142,15 +1143,6 @@ def update(verbose=False):
 
         else:  # Regular file
             continue  # Ignore
-
-        print("mod_info:", mod_info)
-
-        if verbose:
-            print(mod_obj)
-            print(mod_name)
-            print(mod_version)
-            print("archive?", archive)
-            print(mod_location)
 
         # Ensure that the mod's factorio version is correct
         mod_factorio_version = version_string_to_tuple(mod_info["factorio_version"])
@@ -1394,7 +1386,7 @@ def update(verbose=False):
 def main():
     """
     ``draftsman-update`` console script entry point. Runs ``update()`` with
-    command line arguments passed through. Type ``draftsman-update -h`` for a 
+    command line arguments passed through. Type ``draftsman-update -h`` for a
     list of commands for ``draftsman-update``.
     """
     parser = argparse.ArgumentParser()

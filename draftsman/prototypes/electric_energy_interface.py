@@ -13,6 +13,10 @@ import warnings
 
 
 class ElectricEnergyInterface(Entity):
+    """
+    An entity that interfaces with an electrical grid.
+    """
+
     def __init__(self, name=electric_energy_interfaces[0], **kwargs):
         # type: (str, **dict) -> None
         super(ElectricEnergyInterface, self).__init__(
@@ -50,7 +54,14 @@ class ElectricEnergyInterface(Entity):
     def buffer_size(self):
         # type: () -> int
         """
-        TODO
+        The amount of electrical energy to store in Watts.
+
+        :getter: Gets the value of the buffer.
+        :setter: Sets the value of the buffer.
+        :type: ``int``
+
+        :exception TypeError: If set to anything other than an ``int`` or
+            ``None``.
         """
         return self._buffer_size
 
@@ -68,7 +79,14 @@ class ElectricEnergyInterface(Entity):
     def power_production(self):
         # type: () -> int
         """
-        TODO
+        The amount of electrical energy to create each tick in Watts.
+
+        :getter: Gets how much to make.
+        :setter: Sets how much to make.
+        :type: ``int``
+
+        :exception TypeError: If set to anything other than an ``int`` or
+            ``None``.
         """
         return self._power_production
 
@@ -86,7 +104,14 @@ class ElectricEnergyInterface(Entity):
     def power_usage(self):
         # type: () -> int
         """
-        TODO
+        The amount of electrical energy to use each tick in Watts.
+
+        :getter: Gets how much to use.
+        :setter: Sets how much to use.
+        :type: ``int``
+
+        :exception TypeError: If set to anything other than an ``int`` or
+            ``None``.
         """
         return self._power_usage
 

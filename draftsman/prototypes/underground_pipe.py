@@ -13,7 +13,9 @@ import warnings
 
 
 class UndergroundPipe(DirectionalMixin, Entity):
-    """ """
+    """
+    A pipe that transports fluids underneath other entities.
+    """
 
     def __init__(self, name=underground_pipes[0], **kwargs):
         # type: (str, **dict) -> None

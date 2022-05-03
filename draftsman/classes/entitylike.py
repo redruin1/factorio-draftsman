@@ -191,44 +191,12 @@ class EntityLike(SpatialLike):
 
     def on_insert(self):  # pragma: no coverage
         # type: () -> None
-        """
-        Default function; does nothing.
-
-        Called when an this ``EntityLike`` is inserted into an ``EntityList``.
-        Allows the user to perform extra checks, validation, or operations when
-        the EntityLike is added to the EntityCollection. For example, if we are
-        placing a RailSignal in a Blueprint, we might want to check the
-        surrounding area to see if we are adjacent to a rail, and issue a
-        warning if we are not.
-
-        Note that this is only intended to perform checks in relation to THIS
-        specific entity; the ``EntityCollection`` class has it's own custom
-        functions for managing the it's own state.
-        """
         pass
 
     def on_remove(self):  # pragma: no coverage
         # type: () -> None
-        """
-        Default function; does nothing.
-
-        Same functionality as :py:meth:`on_insert`, but for cleanup operations
-        when this ``EntityLike`` is removed instead of when it's inserted.
-        """
         pass
 
     def get(self):
         # type: () -> Union[Entity, list[Entity]]
-        """
-        Called during ``blueprint.to_dict()``. Used to resolve ``EntityLike``
-        objects into an ``Entity`` or list of ``Entity`` objects.
-
-        Conceptually, this can be thought of as a conversion of an abstract
-        ``EntityLike`` object into one or more concrete ``Entity`` objects,
-        as the only objects that can exist in an exported blueprint dict or
-        string must be ``Entity`` objects.
-
-        :returns: One or more ``Entity`` instances that represent this
-            ``EntityLike``.
-        """
         return self

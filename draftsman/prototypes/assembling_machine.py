@@ -21,6 +21,12 @@ import warnings
 
 
 class AssemblingMachine(RecipeMixin, RequestItemsMixin, Entity):
+    """
+    A machine that takes input items and produces output items. Includes
+    chemical plants, oil refineries, and centrifuges, but does not include
+    :py:class:`.RocketSilo`.
+    """
+
     def __init__(self, name=assembling_machines[0], **kwargs):
         # type: (str, **dict) -> None
         super(AssemblingMachine, self).__init__(name, assembling_machines, **kwargs)
@@ -34,9 +40,6 @@ class AssemblingMachine(RecipeMixin, RequestItemsMixin, Entity):
 
     def set_item_request(self, item, amount):
         # type: (str, int) -> None
-        """
-        Overwritten
-        """
         # Make sure the item exists
         if item not in items.raw:
             raise InvalidItemError("'{}'".format(item))

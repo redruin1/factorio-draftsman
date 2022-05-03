@@ -184,7 +184,7 @@ class ConstantCombinatorTesting(TestCase):
 
         with self.assertRaises(TypeError):
             combinator.set_signal(TypeError, "something")
-        with self.assertRaises(DataFormatError):
+        with self.assertRaises(TypeError):
             combinator.set_signal(1, TypeError)
         with self.assertRaises(TypeError):
             combinator.set_signal(1, "iron-ore", TypeError)

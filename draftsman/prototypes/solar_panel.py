@@ -12,6 +12,10 @@ import warnings
 
 
 class SolarPanel(Entity):
+    """
+    An entity that produces electricity depending on the presence of the sun.
+    """
+
     def __init__(self, name=solar_panels[0], **kwargs):
         # type: (str, **dict) -> None
         super(SolarPanel, self).__init__(name, solar_panels, **kwargs)

@@ -17,9 +17,7 @@ else:  # pragma: no coverage
 
 class ElectricPoleTesting(TestCase):
     def test_constructor_init(self):
-        electric_pole = ElectricPole(
-            "substation", position=[1, 1], neighbours=[1, 2]
-        )
+        electric_pole = ElectricPole("substation", position=[1, 1], neighbours=[1, 2])
 
         # Warnings
         with self.assertWarns(DraftsmanWarning):

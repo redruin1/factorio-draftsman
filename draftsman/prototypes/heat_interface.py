@@ -14,6 +14,10 @@ import warnings
 
 
 class HeatInterface(Entity):
+    """
+    An entity that interacts with a heat network.
+    """
+
     def __init__(self, name=heat_interfaces[0], **kwargs):
         # type: (str, **dict) -> None
         super(HeatInterface, self).__init__(name, heat_interfaces, **kwargs)
@@ -43,7 +47,17 @@ class HeatInterface(Entity):
     def temperature(self):
         # type: () -> int
         """
-        TODO
+        The temperature of the interface in degrees.
+
+        Raises :py:class:`.TemperatureRangeWarning` if set to a value not in the
+        range ``[0, 1000]``.
+
+        :getter: Gets the temperature of the interface.
+        :setter: Sets the temperature of the interface
+        :type: ``int``
+
+        :exception TypeError: If set to anything other than an ``int`` or
+            ``None``.
         """
         return self._temperature
 
@@ -70,12 +84,23 @@ class HeatInterface(Entity):
     def mode(self):
         # type: () -> str
         """
-        TODO
-        * "at-least"
-        * "at-most"
-        * "exactly"
-        * "add"
-        * "remove"
+        Manner in which to interact with the heat network. Can be one of:
+
+        .. code-block:: python
+
+            "at-least"  # At least this hot
+            "at-most"   # At most this hot
+            "exactly"   # Exactly this temperature
+            "add"       # Add this temperature amount each tick
+            "remove"    # Remove this temperature amount each tick
+            None        # No mode set
+
+        :getter: Gets the mode of the interface.
+        :setter: Sets the mode of the interface.
+        :type: ``str``
+
+        :exception InvalidModeError: If set to anything other than one of the
+            valid strings above or ``None``.
         """
         return self._mode
 
@@ -86,21 +111,3 @@ class HeatInterface(Entity):
             self._mode = value
         else:
             raise InvalidModeError(value)
-
-    # =========================================================================
-
-    # def set_mode(self, mode):
-    #     # type: (str) -> None
-    #     """
-    #     * "at-least"
-    #     * "at-most"
-    #     * "exactly"
-    #     * "add"
-    #     * "remove"
-    #     """
-    #     if mode is None:
-    #         self.mode = "at-least"
-    #     else:
-    #         if mode not in {"at-least", "at-most", "exactly", "add", "remove"}:
-    #             raise InvalidModeError(mode)
-    #         self.mode = mode

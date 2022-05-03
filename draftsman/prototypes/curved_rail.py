@@ -14,7 +14,9 @@ import warnings
 
 
 class CurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
-    """ """
+    """
+    A curved rail entity.
+    """
 
     def __init__(self, name=curved_rails[0], **kwargs):
         # type: (str, **dict) -> None

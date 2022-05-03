@@ -4,7 +4,12 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import InfinityPipe, infinity_pipes
-from draftsman.error import InvalidEntityError, InvalidFluidError, InvalidModeError
+from draftsman.error import (
+    InvalidEntityError,
+    InvalidFluidError,
+    InvalidModeError,
+    DataFormatError,
+)
 from draftsman.warning import DraftsmanWarning, TemperatureRangeWarning
 
 from schema import SchemaError
@@ -48,7 +53,7 @@ class InfinityPipeTesting(TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             InfinityPipe("this is not an infinity pipe")
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             InfinityPipe(infinity_settings={"clearly": "wrong"})
 
     def test_set_infinity_settings(self):
@@ -70,7 +75,7 @@ class InfinityPipeTesting(TestCase):
         )
         pipe.infinity_settings = None
         self.assertEqual(pipe.infinity_settings, {})
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             InfinityPipe(infinity_settings={"clearly": "wrong"})
 
     def test_set_infinite_fluid_settings(self):

@@ -13,6 +13,10 @@ import warnings
 
 
 class Turret(DirectionalMixin, Entity):
+    """
+    An entity that automatically targets and attacks other forces in range.
+    """
+
     def __init__(self, name=turrets[0], **kwargs):
         # type: (str, **dict) -> None
         super(Turret, self).__init__(name, turrets, **kwargs)

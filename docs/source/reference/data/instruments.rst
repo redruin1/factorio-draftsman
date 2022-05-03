@@ -3,9 +3,13 @@
 :py:mod:`~draftsman.data.instruments`
 =====================================
 
-.. py:data:: instruments.raw
+.. py:data:: raw
 
-    A dict of all instruments indexed by the name of the speaker that plays them.
+    A ``dict`` of all instruments indexed by the name of the speaker that plays them.
+
+    .. seealso::
+
+        `<https://wiki.factorio.com/Prototype/ProgrammableSpeaker#instruments>`_
 
     .. code-block:: python
 
@@ -69,10 +73,10 @@
             # ...
         ]
 
-.. py:data:: instruments.index
+.. py:data:: index
 
     A quick reference dict that provides the numeric equivalent to a key index.
-    The inverse of :py:data:`instruments.names`.
+    The inverse of :py:data:`names`.
     Follows the format:
 
     .. code-block:: python
@@ -124,10 +128,10 @@
             "triangle": 16
         }
 
-.. py:data:: instruments.names
+.. py:data:: names
 
     A quick reference dict that provides the key equivalent to a numeric index.
-    The inverse of :py:data:`instruments.index`.
+    The inverse of :py:data:`index`.
     Follows the format:
 
     .. code-block:: python

@@ -30,7 +30,10 @@ class RailSignal(
     EightWayDirectionalMixin,
     Entity,
 ):
-    """ """
+    """
+    A rail signal that determines whether or not trains can pass along their
+    rail block.
+    """
 
     def __init__(self, name=rail_signals[0], **kwargs):
         # type: (str, **dict) -> None
@@ -54,7 +57,15 @@ class RailSignal(
     def read_signal(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not to read the state of the rail signal as their output
+        signals.
+
+        :getter: Gets whether or not to read the signal, or ``None`` if not set.
+        :setter: Sets whether or not to read the signal. Removes the key if set
+            to ``None``.
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
         return self.control_behavior.get("circuit_read_signal", None)
 
@@ -73,9 +84,6 @@ class RailSignal(
     @property
     def enable_disable(self):
         # type: () -> bool
-        """
-        TODO: write (overwritten)
-        """
         return self.control_behavior.get("circuit_close_signal", None)
 
     @enable_disable.setter

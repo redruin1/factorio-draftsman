@@ -14,6 +14,10 @@ import warnings
 
 
 class Gate(DirectionalMixin, Entity):
+    """
+    A wall that opens near the player.
+    """
+
     def __init__(self, name=gates[0], **kwargs):
         # type: (str, **dict) -> None
         super(Gate, self).__init__(name, gates, **kwargs)

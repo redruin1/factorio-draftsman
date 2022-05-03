@@ -13,6 +13,10 @@ import warnings
 
 
 class HeatPipe(Entity):
+    """
+    An entity used to transfer thermal energy.
+    """
+
     def __init__(self, name=heat_pipes[0], **kwargs):
         # type: (str, **dict) -> None
         super(HeatPipe, self).__init__(name, heat_pipes, **kwargs)

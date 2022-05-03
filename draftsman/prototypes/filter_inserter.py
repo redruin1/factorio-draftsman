@@ -37,24 +37,18 @@ class FilterInserter(
     Entity,
 ):
     """
-    Filter inserter Entity prototype.
+    An entity that can move items between machines, and has the ability to
+    ignore moving specific items.
 
     .. NOTE::
 
         In Factorio, the ``Inserter`` prototype includes both regular and filter
         inserters. In Draftsman, inserters are split into two different classes,
         :py:class:`~.Inserter` and :py:class:`~.FilterInserter`
-
-    .. seealso::
-
-        :py:class:`~.Inserter`
     """
 
     def __init__(self, name=filter_inserters[0], **kwargs):
         # type: (str, **dict) -> None
-        """
-        TODO
-        """
         super(FilterInserter, self).__init__(name, filter_inserters, **kwargs)
 
         self.filter_mode = None
@@ -76,7 +70,16 @@ class FilterInserter(
     def filter_mode(self):
         # type: () -> str
         """
-        TODO
+        The mode that the filter is set to. Can be either ``"whitelist"`` or
+        ``"blacklist"``.
+
+        :getter: Gets the filter mode.
+        :setter: Sets the filter mode.
+        :type: ``str``
+
+        :exception ValueError: If set to a ``str`` that is neither ``"whitelist"``
+            nor ``"blacklist"``.
+        :exception TypeError: If set to anything other than a ``str`` or ``None``.
         """
         return self._filter_mode
 

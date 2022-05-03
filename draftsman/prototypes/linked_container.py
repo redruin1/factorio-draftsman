@@ -14,6 +14,11 @@ import warnings
 
 
 class LinkedContainer(InventoryMixin, Entity):
+    """
+    An entity that allows sharing it's contents with any other ``LinkedContainer``
+    with the same ``link_id``.
+    """
+
     def __init__(self, name=linked_containers[0], **kwargs):
         # type: (str, **dict) -> None
         super(LinkedContainer, self).__init__(name, linked_containers, **kwargs)
@@ -37,7 +42,15 @@ class LinkedContainer(InventoryMixin, Entity):
     def link_id(self):
         # type: () -> int
         """
-        TODO
+        The linking ID that this ``LinkedContainer`` currently has. Encoded as
+        a 32 bit unsigned integer, where a container only links to another with
+        the same ``link_id``.
+
+        :getter: Gets the link ID of the ``LinkedContainer``.
+        :setter: Sets the link ID of the ``LinkedContainer``.
+        :type: ``int``
+
+        :exception TypeError: If set to anything other than an ``int`` or ``None``.
         """
         return self._link_id
 
@@ -54,20 +67,19 @@ class LinkedContainer(InventoryMixin, Entity):
 
     # =========================================================================
 
-    # def set_links(self, id):
-    #     # type: (int) -> None
-    #     """
-    #     """
-    #     # TODO: assert id in range(0, 2^32-1)
-    #     if id is None:
-    #         self.link_id = 0
-    #     else:
-    #         self.link_id = signatures.INTEGER.validate(id)
-
     def set_link(self, number, enabled):
         # type: (int, bool) -> None
-        """ """
-        assert number < 32
+        """
+        Set a single "link point". Corresponds to flipping a single bit in
+        ``link_id``.
+
+        :param number: Which bit to flip in ``link_id``.
+        :param enabled: Whether or not to set it to ``1`` or to ``0``.
+
+        :exception AssertionError: If ``number`` is not in the range ``[0, 32)``.
+        """
+        # TODO change assertion error
+        assert 0 <= number < 32
         if enabled:
             self.link_id |= 1 << number
         else:

@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.error import InvalidFluidError, InvalidModeError
+from draftsman.error import InvalidFluidError, InvalidModeError, DataFormatError
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning, TemperatureRangeWarning
 
@@ -17,7 +17,9 @@ import warnings
 
 
 class InfinityPipe(Entity):
-    """ """
+    """
+    An entity used to create an infinite amount of any fluid at any temperature.
+    """
 
     def __init__(self, name=infinity_pipes[0], **kwargs):
         # type: (str, **dict) -> None
@@ -42,22 +44,27 @@ class InfinityPipe(Entity):
     def infinity_settings(self):
         # type: () -> dict
         """
-        TODO
+        The settings that control the manner in which what fluid is spawned or
+        removed.
+
+        :getter: Gets the ``infinity_settings`` of the ``InfinityPipe``.
+        :setter: Sets the ``infinity_settings`` of the ``InfinityPipe``.
+            Defaults to an empty ``dict`` if set to ``None``.
+        :type: :py:data:`.INFINITY_PIPE`
+
+        :exception DataFormatError: If set to anything that does not match the
+            :py:data:`.INFINITY_PIPE` format.
         """
         return self._infinity_settings
 
     @infinity_settings.setter
     def infinity_settings(self, value):
         # type: (dict) -> None
-        if value is None:
-            self._infinity_settings = {}
-        else:
-            try:
-                value = signatures.INFINITY_PIPE.validate(value)
-                self._infinity_settings = value
-            except SchemaError:
-                # TODO: more verbose
-                raise TypeError("Invalid infinity_settings format")
+        try:
+            value = signatures.INFINITY_PIPE.validate(value)
+            self._infinity_settings = value
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -65,7 +72,14 @@ class InfinityPipe(Entity):
     def infinite_fluid_name(self):
         # type: () -> str
         """
-        TODO
+        Sets the name of the infinite fluid.
+
+        :getter: Gets the infinite fluid name, or ``None`` if not set.
+        :setter: Sets the infinite fluid name. Removes the key if set to ``None``.
+        :type: ``str``
+
+        :exception TypeError: If set to anything other than a ``str`` or ``None``.
+        :exception InvalidFluidError: If set to an invalid fluid name.
         """
         return self.infinity_settings.get("name", None)
 
@@ -88,7 +102,14 @@ class InfinityPipe(Entity):
     def infinite_fluid_percentage(self):
         # type: () -> int
         """
-        TODO
+        The percentage of the infinite fluid in the pipe.
+
+        :getter: Gets the percentage full, or ``None`` if not set.
+        :setter: Sets the percentage full. Removes the key if set to ``None``.
+        :type: int
+
+        :exception TypeError: If set to anything other than an ``int`` or ``None``.
+        :exception ValueError: If set to a negative percentage, which is forbidden.
         """
         return self.infinity_settings.get("percentage", None)
 
@@ -110,7 +131,23 @@ class InfinityPipe(Entity):
     def infinite_fluid_mode(self):
         # type: () -> str
         """
-        TODO
+        The mode in which to manage the infinite fluid. Can be one of:
+
+        .. code-block:: python
+
+            "at-least"  # At least this much fluid
+            "at-most"   # At most this much fluid
+            "exactly"   # Exactly this much fluid
+            "add"       # Add this much fluid each tick
+            "remove"    # Remove this much fluid each tick
+
+        :getter: Gets the fluid mode, or ``None`` if not set.
+        :setter: Sets the fluid mode. Removes the key if set to ``None``.
+        :type: ``str``
+
+        :exception TypeError: If set to anything other than a ``str`` or ``None``.
+        :exception InvalidModeError: If set to anything other than one of the
+            values described above.
         """
         return self.infinity_settings.get("mode", None)
 
@@ -137,18 +174,29 @@ class InfinityPipe(Entity):
 
     @property
     def infinite_fluid_temperature(self):
-        # type: () -> int
+        # type: () -> float
         """
-        TODO
+        The temperature of the infinite fluid, in degrees.
+
+        Raises :py:class:`TemperatureRangeWarning` if ``temperature`` is set to
+        anything not in the range ``[0, 1000]``.
+
+        :getter: Gets the fluid temperature, or ``None`` if not set.
+        :setter: Sets the fluid temperature. Removes the key if set to ``None``.
+        :type: ``float``
+
+        :exception TypeError: If set to anything other than a ``float``, ``int``,
+            or ``None``.
         """
         return self.infinity_settings.get("temperature", None)
 
     @infinite_fluid_temperature.setter
     def infinite_fluid_temperature(self, value):
-        # type: (int) -> None
+        # type: (float) -> None
+        # TODO: check if this is float or int
         if value is None:
             self.infinity_settings.pop("temperature", None)
-        elif isinstance(value, int):
+        elif isinstance(value, (float, int)):
             if not 0 <= value <= 1000:
                 warnings.warn(
                     "'infinite_fluid_temperature' ({}) not in range [0, 1000]; "
@@ -156,17 +204,37 @@ class InfinityPipe(Entity):
                     TemperatureRangeWarning,
                     stacklevel=2,
                 )
-            self.infinity_settings["temperature"] = value
+            self.infinity_settings["temperature"] = float(value)
         else:
             raise TypeError("'temperature' must be an int or None")
 
     # =========================================================================
 
     def set_infinite_fluid(
-        self, name=None, percentage=0, mode="at-least", temperature=0
+        self, name=None, percentage=0, mode="at-least", temperature=25
     ):
-        # type: (str, int, str, int) -> None
-        """ """
+        # type: (str, int, str, float) -> None
+        """
+        Sets all of the parameters of the infinite fluid at once.
+
+        Raises :py:class:`TemperatureRangeWarning` if ``temperature`` is set to
+        anything not in the range ``[0, 1000]``.
+
+        :param name: The name of the fluid to set.
+        :param percentage: The percentage full the pipe is.
+        :param mode: The mode in which to interact with the fluid. Can be one of
+            ``"at-least"``, ``"at-most"``, ``"exactly"``, ``"add"``, or
+            ``"remove"``.
+        :param temperature: The temperature of the fluid to create.
+
+        :exception TypeError: If any of the argument's types mismatch their
+            intended values.
+        :exception InvalidFluidError: If ``name`` is not a valid name for a
+            fluid.
+        :exception InvalidModeError: If ``mode`` is not one of the values
+            specified above.
+        :exception ValueError: If percentage was set to a negative value.
+        """
         try:
             name = signatures.STRING.validate(name)
             percentage = signatures.INTEGER.validate(percentage)

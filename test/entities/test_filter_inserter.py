@@ -37,9 +37,7 @@ class FilterInserterTesting(TestCase):
                 "circuit_read_hand_contents": True,
                 "circuit_hand_read_mode": ReadMode.PULSE,
             },
-            connections={
-                "1": {"green": [{"entity_id": 2, "circuit_id": 1}]}
-            },
+            connections={"1": {"green": [{"entity_id": 2, "circuit_id": 1}]}},
             filters=["wooden-chest", "iron-chest", "steel-chest"],
         )
         self.assertEqual(
@@ -63,9 +61,7 @@ class FilterInserterTesting(TestCase):
                     "circuit_read_hand_contents": True,
                     "circuit_hand_read_mode": 0,
                 },
-                "connections": {
-                    "1": {"green": [{"entity_id": 2, "circuit_id": 1}]}
-                },
+                "connections": {"1": {"green": [{"entity_id": 2, "circuit_id": 1}]}},
                 "filters": [
                     {"index": 1, "name": "wooden-chest"},
                     {"index": 2, "name": "iron-chest"},

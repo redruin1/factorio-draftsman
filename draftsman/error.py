@@ -8,9 +8,10 @@ Draftsman errors. Used to enforce "Factorio-safety".
 # Base
 # =============================================================================
 
+
 class DraftsmanError(Exception):
     """
-    Default error for ``draftsman``. Issued when some behavior directly 
+    Default error for ``draftsman``. Issued when some behavior directly
     conflicts with the module's function.
     """
 
@@ -19,22 +20,24 @@ class DraftsmanError(Exception):
 
 class DataFormatError(DraftsmanError):
     """
-    Issued when a value passed in to a method or attribute violates the required 
+    Issued when a value passed in to a method or attribute violates the required
     structure for that data, such that it violates "Factorio-correctness".
     """
 
     pass
 
+
 # =============================================================================
 # Blueprintables
 # =============================================================================
 
+
 class IncorrectBlueprintTypeError(DraftsmanError):
     """
     Raised when attempting to construct a :py:class:`.Blueprint` object without
-    the ``"blueprint"`` key or a :py:class:`.BlueprintBook` without the 
-    ``"blueprint_book"`` key in their root trees. Most commonly issued when 
-    trying to create a ``Blueprint`` with a ``BlueprintBook`` string, and 
+    the ``"blueprint"`` key or a :py:class:`.BlueprintBook` without the
+    ``"blueprint_book"`` key in their root trees. Most commonly issued when
+    trying to create a ``Blueprint`` with a ``BlueprintBook`` string, and
     vice-versa.
     """
 
@@ -43,7 +46,7 @@ class IncorrectBlueprintTypeError(DraftsmanError):
 
 class DuplicateIDError(DraftsmanError):
     """
-    Raised when two EntityLike's are added to a :py:class:`.EntityCollection` 
+    Raised when two EntityLike's are added to a :py:class:`.EntityCollection`
     with the same ID, which is disallowed.
     """
 
@@ -52,8 +55,8 @@ class DuplicateIDError(DraftsmanError):
 
 class UnreasonablySizedBlueprintError(DraftsmanError):
     """
-    Raised when a :py:class:`.Blueprint` exceeds 10,000 x 10,000 tiles in 
-    relative size. Note that this is not about distance from the origin; rather 
+    Raised when a :py:class:`.Blueprint` exceeds 10,000 x 10,000 tiles in
+    relative size. Note that this is not about distance from the origin; rather
     the distance from the furthest entities on either axis across the Blueprint.
     """
 
@@ -63,7 +66,7 @@ class UnreasonablySizedBlueprintError(DraftsmanError):
 class RotationError(DraftsmanError):
     """
     Raised when a rotation angle has been chosen that does not align with the
-    possible rotations that the :py:class:`.EntityCollection` can have, such as 
+    possible rotations that the :py:class:`.EntityCollection` can have, such as
     rotations by 45 degrees.
     """
 
@@ -72,20 +75,22 @@ class RotationError(DraftsmanError):
 
 class FlippingError(DraftsmanError):
     """
-    Raised when attempting to flip a :py:class:`.EntityCollection` that contains 
+    Raised when attempting to flip a :py:class:`.EntityCollection` that contains
     entities that cannot be flipped.
     """
 
     pass
 
+
 # =============================================================================
 # Entities
 # =============================================================================
 
+
 class InvalidEntityError(DraftsmanError):
     """
     Raised when an Entity's name is not one of the ``similar_entities`` for it's
-    child type, or when it is not any valid entry in 
+    child type, or when it is not any valid entry in
     :py:data:`draftsman.data.entities.raw`.
     """
 
@@ -121,7 +126,7 @@ class InvalidWireTypeError(DraftsmanError):
 
 class InvalidConnectionSideError(DraftsmanError):
     """
-    Raised when a circuit connection is connected to a side other than ``1`` 
+    Raised when a circuit connection is connected to a side other than ``1``
     or ``2``.
     """
 
@@ -148,8 +153,8 @@ class InvalidModuleError(DraftsmanError):
 
 class InvalidInstrumentID(DraftsmanError):
     """
-    Raised when setting a :py:class:`ProgrammableSpeaker`'s instrument to a 
-    number that exceeds it's instrument count, or a string that is not the name 
+    Raised when setting a :py:class:`ProgrammableSpeaker`'s instrument to a
+    number that exceeds it's instrument count, or a string that is not the name
     of any of it's instruments.
     """
 
@@ -158,8 +163,8 @@ class InvalidInstrumentID(DraftsmanError):
 
 class InvalidNoteID(DraftsmanError):
     """
-    Raised when setting a :py:class:`ProgrammableSpeaker`'s note to a number 
-    that exceeds the number of notes in it's selected instrument, or a string 
+    Raised when setting a :py:class:`ProgrammableSpeaker`'s note to a number
+    that exceeds the number of notes in it's selected instrument, or a string
     that is not the name of any of the notes created by the current instrument.
     """
 
@@ -199,9 +204,11 @@ class EntityNotCircuitConnectableError(DraftsmanError):
 
     pass
 
+
 # =============================================================================
 # Environment
 # =============================================================================
+
 
 class IncompatableModError(DraftsmanError):
     """
@@ -229,13 +236,15 @@ class IncorrectModVersionError(DraftsmanError):
 
     pass
 
+
 # =============================================================================
 # Data
 # =============================================================================
 
+
 class InvalidTileError(DraftsmanError):
     """
-    Raised when creating a :py:class:`.Tile` with, or changing it's name to, 
+    Raised when creating a :py:class:`.Tile` with, or changing it's name to,
     anything other than a valid tile name.
     """
 
@@ -259,9 +268,11 @@ class InvalidItemError(DraftsmanError):
 
     pass
 
+
 # =============================================================================
 # Utilities
 # =============================================================================
+
 
 class MalformedBlueprintStringError(DraftsmanError):
     """
@@ -271,6 +282,3 @@ class MalformedBlueprintStringError(DraftsmanError):
     """
 
     pass
-
-
-

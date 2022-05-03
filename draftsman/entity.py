@@ -87,7 +87,7 @@ def new_entity(name, **kwargs):
     in is not recognized by that Entity's class constructor.
 
     :param name: The string name of an Entity.
-    :param kwargs: A dict of all the keyword arguments to pass to the 
+    :param kwargs: A dict of all the keyword arguments to pass to the
         constructor.
 
     :exception InvalidEntityID: If the name passed in is not recognized as any

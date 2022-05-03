@@ -26,13 +26,13 @@ def get_signal_type(signal_name):
     """
     Returns the type of the signal based on its ID string.
 
-    Signal ID objects in blueprints require a ``"type"`` field when specifying
+    SignalID objects in blueprints require a ``"type"`` field when specifying
     them. However, this information is redundant most of the time, as the type
     for any signal is always the same, making writing it out arduous. This
     function conveniently gets the signal type from the signal's name.
 
     :param signal_name: The name of the signal.
-    :returns: ``"virtual"``, ``"fluid"``, or ``"item"``
+    :returns: ``"item"``, ``"fluid"``, or ``"virtual"``
     :exception InvalidSignalError: If the signal name is not contained within
         :py:mod:`draftsman.data.signals`.
     """
@@ -54,12 +54,12 @@ def get_signal_type(signal_name):
 def signal_dict(signal_name):
     # type: (str) -> dict
     """
-    Creates a Signal ID ``dict`` from the given signal name.
+    Creates a SignalID ``dict`` from the given signal name.
 
     Uses :py:func:`get_signal_type` to get the type for the dictionary.
 
     :param signal_name: The name of the signal.
 
-    :returns: A dict with the ``"name"`` and ``type`` key's set.
+    :returns: A dict with the ``"name"`` and ``"type"`` keys set.
     """
     return {"name": six.text_type(signal_name), "type": get_signal_type(signal_name)}

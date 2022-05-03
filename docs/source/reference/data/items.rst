@@ -3,10 +3,22 @@
 :py:mod:`~draftsman.data.items`
 ===============================
 
-.. py:data:: items.raw
+.. py:data:: raw
 
-    A dictionary indexed with all of the valid item names.
-    Provides a convenient place to query data about any item.
+    A ``dict`` indexed with all of the valid item *signal* names.
+    Provides a convenient place to query data about almost every item.
+
+    .. NOTE::
+
+        Factorio has a lot of "items", and they're spread out over multiple different prototype categories.
+        Draftsman accumulates all of the placable items and any item that can be used as a signal.
+        This includes all production items, as well as items like ``rail-planner``, ``"blueprint``, ``upgrade-planner``, etc.
+        There are however a number of more abstract items (usually used for modding) that are *not* included, such as ``item-with-label``, ``item-with-tags``, ``item-with-entity-data`` and any other generic template item that cannot be manifested inside a blueprint.
+
+    .. seealso::
+
+        | `<https://wiki.factorio.com/Data.raw#item>`_
+        | `<https://wiki.factorio.com/Prototype/Item>`_
 
     :example:
 
@@ -31,19 +43,15 @@
             "icon_mipmaps": 4
         }
 
-.. py:data:: items.subgroups
+.. py:data:: subgroups
 
-    A dict of all item subgroups. Each entry is of the format:
+    A ``dict`` of all item subgroups.
+    Each entry is equivalent to Factorio's ``data.raw``, except for an extra ``"items"`` key which holds a dictionary of all items that this group holds.
 
-    .. code-block:: python
+    .. seealso::
 
-        {
-            "name": "name of the subgroup"
-            "type": "type of the subgroup"
-            "order": "order string of the subgroup"
-            "group": "name of the group this subgroup belongs to"
-            "items": {...} # Dict of items entries in this subgroup
-        }
+        | `<https://wiki.factorio.com/Data.raw#item-subgroup>`_
+        | `<https://wiki.factorio.com/Prototype/ItemSubGroup>`_
 
     :example:
 
@@ -69,21 +77,15 @@
         fast-loader
         express-loader        
 
-.. py:data:: items.groups
+.. py:data:: groups
 
-    A dict of all item groups. Each entry is of the format:
+    A ``dict`` of all item groups. 
+    Each entry is equivalent to Factorio's ``data.raw``, except for an extra ``"subgroups"`` key which holds a dictionary of all subgroups that this group holds.
 
-    .. code-block:: python
+    .. seealso::
 
-        {
-            "name": "name of the group"
-            "type": "type of the group"
-            "icon_size": "size of the icon image"
-            "icon": "icon used on the crafting menu"
-            "icon_mipmaps": "number of mipmaps"
-            "order": "order string of the subgroup"
-            "subgroups": {...} # Dict of subgroups in this group
-        }
+        | `<https://wiki.factorio.com/Data.raw#item-group>`_
+        | `<https://wiki.factorio.com/Prototype/ItemGroup>`_
 
     :example:
 

@@ -13,6 +13,10 @@ import warnings
 
 
 class Lab(RequestItemsMixin, Entity):
+    """
+    An entity that consumes items and produces research.
+    """
+
     def __init__(self, name=labs[0], **kwargs):
         # type: (str, **dict) -> None
         super(Lab, self).__init__(name, labs, **kwargs)

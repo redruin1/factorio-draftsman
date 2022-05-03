@@ -3,10 +3,14 @@
 :py:mod:`~draftsman.data.entities`
 ==================================
 
-.. py:data:: entities.raw
+.. py:data:: raw
 
     A dictionary indexed with all of the valid entity names.
     The dict contains all entities, regardless of type, which provides a convenient place to query data about any entity.
+
+    .. seealso::
+
+        `<https://wiki.factorio.com/Prototype/Entity>`_
 
     .. code-block:: python
 
@@ -68,239 +72,239 @@
 
 --------------------------------------------------------------------------------
 
-.. py:data:: entities.containers
+.. py:data:: containers
 
     A sorted list of all instances of :py:class:`.Container`.
 
-.. py:data:: entities.storage_tanks
+.. py:data:: storage_tanks
 
     A sorted list of all instances of :py:class:`.StorageTank`.
 
-.. py:data:: entities.transport_belts
+.. py:data:: transport_belts
 
     A sorted list of all instances of :py:class:`.TransportBelt`.
 
-.. py:data:: entities.underground_belts
+.. py:data:: underground_belts
 
     A sorted list of all instances of :py:class:`.UndergroundBelt`.
 
-.. py:data:: entities.splitters
+.. py:data:: splitters
 
     A sorted list of all instances of :py:class:`.Splitter`.
 
-.. py:data:: entities.inserters
+.. py:data:: inserters
 
     A sorted list of all instances of :py:class:`.Inserter`.
 
-.. py:data:: entities.filter_inserters
+.. py:data:: filter_inserters
 
     A sorted list of all instances of :py:class:`.FilterInserter`.
 
-.. py:data:: entities.loaders
+.. py:data:: loaders
 
     A sorted list of all instances of :py:class:`.Loader`.
 
-.. py:data:: entities.electric_poles
+.. py:data:: electric_poles
 
     A sorted list of all instances of :py:class:`.ElectricPole`.
 
-.. py:data:: entities.pipes
+.. py:data:: pipes
 
     A sorted list of all instances of :py:class:`.Pipe`.
 
-.. py:data:: entities.underground_pipes
+.. py:data:: underground_pipes
 
     A sorted list of all instances of :py:class:`.UndergroundPipe`.
 
-.. py:data:: entities.pumps
+.. py:data:: pumps
 
     A sorted list of all instances of :py:class:`.Pump`.
 
-.. py:data:: entities.straight_rails
+.. py:data:: straight_rails
 
     A sorted list of all instances of :py:class:`.StraightRail`.
 
-.. py:data:: entities.curved_rails
+.. py:data:: curved_rails
 
     A sorted list of all instances of :py:class:`.CurvedRail`.
 
-.. py:data:: entities.train_stops
+.. py:data:: train_stops
 
     A sorted list of all instances of :py:class:`.TrainStop`.
 
-.. py:data:: entities.rail_signals
+.. py:data:: rail_signals
 
     A sorted list of all instances of :py:class:`.RailSignal`.
 
-.. py:data:: entities.rail_chain_signals
+.. py:data:: rail_chain_signals
 
     A sorted list of all instances of :py:class:`.RailChainSignal`.
 
-.. py:data:: entities.locomotives
+.. py:data:: locomotives
 
     A sorted list of all instances of :py:class:`.Locomotive`.
 
-.. py:data:: entities.cargo_wagons
+.. py:data:: cargo_wagons
 
     A sorted list of all instances of :py:class:`.CargoWagon`.
 
-.. py:data:: entities.fluid_wagons
+.. py:data:: fluid_wagons
 
     A sorted list of all instances of :py:class:`.FluidWagon`.
 
-.. py:data:: entities.artillery_wagons
+.. py:data:: artillery_wagons
 
     A sorted list of all instances of :py:class:`.ArtilleryWagon`.
 
-.. py:data:: entities.logistic_passive_containers
+.. py:data:: logistic_passive_containers
 
     A sorted list of all instances of :py:class:`.LogisticPassiveContainer`.
 
-.. py:data:: entities.logistic_active_containers
+.. py:data:: logistic_active_containers
 
     A sorted list of all instances of :py:class:`.LogisticActiveContainer`.
 
-.. py:data:: entities.logistic_storage_containers
+.. py:data:: logistic_storage_containers
 
     A sorted list of all instances of :py:class:`.LogisticStorageContainer`.
 
-.. py:data:: entities.logistic_buffer_containers
+.. py:data:: logistic_buffer_containers
 
     A sorted list of all instances of :py:class:`.LogisticBufferContainer`.
 
-.. py:data:: entities.logistic_request_containers
+.. py:data:: logistic_request_containers
 
     A sorted list of all instances of :py:class:`.LogisticRequestContainer`.
 
-.. py:data:: entities.roboports
+.. py:data:: roboports
 
     A sorted list of all instances of :py:class:`.Roboports`.
 
-.. py:data:: entities.lamps
+.. py:data:: lamps
 
     A sorted list of all instances of :py:class:`.Lamp`.
 
-.. py:data:: entities.arithmetic_combinators
+.. py:data:: arithmetic_combinators
 
     A sorted list of all instances of :py:class:`.ArithmeticCombinator`.
 
-.. py:data:: entities.decider_combinators
+.. py:data:: decider_combinators
 
     A sorted list of all instances of :py:class:`.DeciderCombinator`.
 
-.. py:data:: entities.constant_combinators
+.. py:data:: constant_combinators
 
     A sorted list of all instances of :py:class:`.ConstantCombinator`.
 
-.. py:data:: entities.power_switches
+.. py:data:: power_switches
 
     A sorted list of all instances of :py:class:`.PowerSwitch`.
 
-.. py:data:: entities.programmable_speakers
+.. py:data:: programmable_speakers
 
     A sorted list of all instances of :py:class:`.ProgrammableSpeaker`.
 
-.. py:data:: entities.boilers
+.. py:data:: boilers
 
     A sorted list of all instances of :py:class:`.Boiler`.
     Boilers convert a fuel to heat a fluid (usually water) into another (usually steam).
 
-.. py:data:: entities.generators
+.. py:data:: generators
 
     A sorted list of all instances of :py:class:`.Generator`.
     Generators convert a fluid (usually steam) into electricity.
 
-.. py:data:: entities.solar_panels
+.. py:data:: solar_panels
 
     A sorted list of all instances of :py:class:`.SolarPanel`.
 
-.. py:data:: entities.accumulators
+.. py:data:: accumulators
 
     A sorted list of all instances of :py:class:`.Accumulator`.
 
-.. py:data:: entities.reactors
+.. py:data:: reactors
 
     A sorted list of all instances of :py:class:`.Reactor`.
 
-.. py:data:: entities.heat_pipes
+.. py:data:: heat_pipes
 
     A sorted list of all instances of :py:class:`.HeatPipe`.
 
-.. py:data:: entities.mining_drills
+.. py:data:: mining_drills
 
     A sorted list of all instances of :py:class:`.MiningDrill`.
     This includes pumpjacks and any other extraction machine.
 
-.. py:data:: entities.offshore_pumps
+.. py:data:: offshore_pumps
 
     A sorted list of all instances of :py:class:`.OffshorePump`.
 
-.. py:data:: entities.furnaces
+.. py:data:: furnaces
 
     A sorted list of all instances of :py:class:`.Furnaces`.
 
-.. py:data:: entities.assembling_machines
+.. py:data:: assembling_machines
 
     A sorted list of all instances of :py:class:`.AssemblingMachine`.
     This includes chemical plants, oil refineries, and centrifuges.
 
-.. py:data:: entities.labs
+.. py:data:: labs
 
     A sorted list of all instances of :py:class:`.Lab`.
 
-.. py:data:: entities.beacons
+.. py:data:: beacons
 
     A sorted list of all instances of :py:class:`.Beacon`.
 
-.. py:data:: entities.rocket_silos
+.. py:data:: rocket_silos
 
     A sorted list of all instances of :py:class:`.RocketSilo`.
 
-.. py:data:: entities.land_mines
+.. py:data:: land_mines
 
     A sorted list of all instances of :py:class:`.LandMine`.
 
-.. py:data:: entities.walls
+.. py:data:: walls
 
     A sorted list of all instances of :py:class:`.Wall`.
 
-.. py:data:: entities.gates
+.. py:data:: gates
 
     A sorted list of all instances of :py:class:`.Gate`.
 
-.. py:data:: entities.turrets
+.. py:data:: turrets
 
     A sorted list of all instances of :py:class:`.Turret`.
     Includes the contents of Factorio's ``AmmoTurret``, ``EnergyTurret``, ``FluidTurret``, and ``ArtilleryTurret``.
 
-.. py:data:: entities.radars
+.. py:data:: radars
 
     A sorted list of all instances of :py:class:`.Radar`.
 
-.. py:data:: entities.electric_energy_interfaces
+.. py:data:: electric_energy_interfaces
 
     A sorted list of all instances of :py:class:`.ElectricEnergyInterface`.
 
-.. py:data:: entities.linked_containers
+.. py:data:: linked_containers
 
     A sorted list of all instances of :py:class:`.LinkedContainer`.
 
-.. py:data:: entities.heat_interfaces
+.. py:data:: heat_interfaces
 
     A sorted list of all instances of :py:class:`.HeatInterface`.
 
-.. py:data:: entities.linked_belts
+.. py:data:: linked_belts
 
     A sorted list of all instances of :py:class:`.LinkedBelt`.
 
-.. py:data:: entities.infinity_containers
+.. py:data:: infinity_containers
 
     A sorted list of all instances of :py:class:`.InfinityContainer`.
 
-.. py:data:: entities.infinity_pipes
+.. py:data:: infinity_pipes
 
     A sorted list of all instances of :py:class:`.InfinityPipe`.
 
-.. py:data:: entities.burner_generators
+.. py:data:: burner_generators
 
     A sorted list of all instances of :py:class:`.BurnerGenerator`.

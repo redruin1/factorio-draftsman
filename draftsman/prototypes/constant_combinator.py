@@ -25,9 +25,12 @@ class ConstantCombinator(
     ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
 ):
     """
-    TODO: maybe keep signal filters internally as an array of Signal objects,
-    and then use Signal.to_dict() during that stage?
+    A combinator that holds a number of constant signals that can be output to
+    the circuit network.
     """
+
+    # TODO: maybe keep signal filters internally as an array of Signal objects,
+    # and then use Signal.to_dict() during that stage?
 
     def __init__(self, name=constant_combinators[0], **kwargs):
         # type: (str, **dict) -> None
@@ -48,8 +51,11 @@ class ConstantCombinator(
     def item_slot_count(self):
         # type: () -> int
         """
-        Read only
-        TODO
+        The total number of signal slots that this ``ConstantCombinator`` can
+        hold. Equivalent to ``"item_slot_count"`` from Factorio's ``data.raw``.
+        Not exported; read only.
+
+        :type: ``int``
         """
         return self._item_slot_count
 
@@ -57,14 +63,26 @@ class ConstantCombinator(
 
     def set_signal(self, index, signal, count=0):
         # type: (int, str, int) -> None
-        """ """
+        """
+        Set the signal of the ``ConstantCombinator`` at a particular index with
+        a particular value.
+
+        :param index: The index of the signal.
+        :param signal: The name of the signal.
+        :param count: The value of the signal.
+
+        :exception TypeError: If ``index`` is not an ``int``, if ``name`` is not
+            a ``str``, or if ``count`` is not an ``int``.
+        """
+        # TODO: change these
+        # TODO: what if index is out of range?
         # Check validity before modifying self
         if not isinstance(index, six.integer_types):
             raise TypeError("'index' must be an int")
         try:
             signal = signatures.SIGNAL_ID_OR_NONE.validate(signal)
         except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+            six.raise_from(TypeError(e), None)
         if not isinstance(count, six.integer_types):
             raise TypeError("'count' must be an int")
 
@@ -91,7 +109,15 @@ class ConstantCombinator(
 
     def get_signal(self, index):
         # type: (int) -> dict
-        """ """
+        """
+        Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
+        if it exists.
+
+        :param index: The index of the signal to analyze.
+
+        :returns: A ``dict`` that conforms to :py:data:`.SIGNAL_FILTER`, or
+            ``None`` if nothing was found at that index.
+        """
         filters = self.control_behavior.get("filters", None)
         if not filters:
             return None
@@ -100,8 +126,28 @@ class ConstantCombinator(
 
     def set_signals(self, signals):
         # type: (list) -> None
-        """ """
+        """
+        Set all the signals of the ``ConstantCombinator``.
 
+        ``signals`` can be specified as one of two formats:
+
+        .. code-block:: python
+
+            [{"index": int, "signal": SIGNAL_ID, "count": int}, ...]
+            # Or
+            [(signal_name, signal_value), (str, int), ...]
+
+        where the location of each tuple in the parent list is equivalent to the
+        ``index`` of the entry in the ``ConstantCombinator``.
+
+        :param signals: The signals to set the data to, in the format
+            :py:data:`.SIGNAL_FILTERS` specified above.
+
+        :exception DataFormatError: If ``signals`` does not match the format
+            specified in :py:data:`.SIGNAL_FILTERS`.
+        """
+        # TODO: change how this works
+        # TODO: what if index is out of range?
         if signals is None:
             self.control_behavior.pop("filters", None)
         else:

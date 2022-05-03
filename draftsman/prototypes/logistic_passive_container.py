@@ -13,7 +13,10 @@ import warnings
 
 
 class LogisticPassiveContainer(CircuitConnectableMixin, InventoryMixin, Entity):
-    """ """
+    """
+    A logistics container that provides it's contents to the logistic network
+    when needed by the network.
+    """
 
     def __init__(self, name=logistic_passive_containers[0], **kwargs):
         # type: (str, **dict) -> None

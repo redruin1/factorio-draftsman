@@ -24,7 +24,9 @@ import warnings
 class DeciderCombinator(
     ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
 ):
-    """ """
+    """
+    A decider combinator. Makes comparisons based on circuit network inputs.
+    """
 
     def __init__(self, name=decider_combinators[0], **kwargs):
         # type: (str, **dict) -> None
@@ -220,6 +222,18 @@ class DeciderCombinator(
     @property
     def copy_count_from_input(self):
         # type: () -> bool
+        """
+        Whether or not the input value of a signal is transposed to the output
+        signal.
+
+        :getter: Gets whether or not to copy the value, or ``None`` is not set.
+        :setter: Sets whether or not to copy the value. Removes the key if set
+            to ``None``.
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or
+            ``None``.
+        """
         decider_conditions = self.control_behavior.get("decider_conditions", None)
         if not decider_conditions:
             return None
@@ -242,13 +256,26 @@ class DeciderCombinator(
 
     # =========================================================================
 
-    def set_decider_conditions(self, a=None, op="<", b=0, out=None):
+    def set_decider_conditions(self, a=None, cmp="<", b=0, out=None):
         # type: (Union[str, int], str, Union[str, int], str) -> None
-        """ """
+        """
+        Set the operation for the ``DeciderCombinator``.
+
+        :param a: The first signal, constant, or ``None``, as specified in
+            :py:data:`.SIGNAL_ID_OR_CONSTANT`.
+        :param cmp: The comparison operator, as specified in :py:data:`.COMPARATOR`.
+        :param b: The second signal, constant or ``None``, as specified in
+            :py:data:`.SIGNAL_ID_OR_CONSTANT`..
+        :param out: The output signal, or ``None``, as specified in
+            :py:data:`.SIGNAL_ID_OR_NONE`.
+
+        :exception DataFormatError: If the any of the arguments fail to match
+            their correct formats.
+        """
         # Check all the parameters before we set anything to preserve original
         try:
             a = signatures.SIGNAL_ID_OR_CONSTANT.validate(a)
-            op = signatures.COMPARATOR.validate(op)
+            cmp = signatures.COMPARATOR.validate(cmp)
             b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
             out = signatures.SIGNAL_ID_OR_NONE.validate(out)
         except SchemaError as e:
@@ -281,10 +308,10 @@ class DeciderCombinator(
                 decider_conditions.pop("first_constant", None)
 
         # op
-        if op is None:
+        if cmp is None:
             decider_conditions.pop("comparator", None)
         else:
-            decider_conditions["comparator"] = op
+            decider_conditions["comparator"] = cmp
 
         # B
         if b is None:  # Default
@@ -312,6 +339,9 @@ class DeciderCombinator(
 
     def remove_decider_conditions(self):
         # type: () -> None
-        """ """
+        """
+        Removes the decider conditions. This includes the condition itself, as
+        well as the ``"copy_count_from_input"`` key.
+        """
         # TODO: delete this function
         self.control_behavior.pop("decider_conditions", None)

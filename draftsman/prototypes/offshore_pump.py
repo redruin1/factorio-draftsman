@@ -26,6 +26,10 @@ class OffshorePump(
     DirectionalMixin,
     Entity,
 ):
+    """
+    An entity that pumps a fluid from the environment.
+    """
+
     def __init__(self, name=offshore_pumps[0], **kwargs):
         # type: (str, **dict) -> None
         super(OffshorePump, self).__init__(name, offshore_pumps, **kwargs)

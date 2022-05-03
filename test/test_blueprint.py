@@ -997,7 +997,7 @@ class BlueprintTesting(TestCase):
 
         with self.assertRaises(InvalidConnectionSideError):
             blueprint.add_power_connection("1", "p", 3)
-        
+
         blueprint.entities.append("radar", tile_position=(0, 6), id="3")
 
         with self.assertRaises(EntityNotPowerConnectableError):
@@ -1060,15 +1060,15 @@ class BlueprintTesting(TestCase):
                             "position": {"x": 1.0, "y": 2.0},
                             "connections": {
                                 "Cu0": [{"entity_id": 2, "wire_id": 0}],
-                                "Cu1": [{"entity_id": 3, "wire_id": 0}]
+                                "Cu1": [{"entity_id": 3, "wire_id": 0}],
                             },
-                            "entity_number": 4
+                            "entity_number": 4,
                         },
                         {
                             "name": "radar",
                             "position": {"x": 1.5, "y": 4.5},
-                            "entity_number": 5
-                        }
+                            "entity_number": 5,
+                        },
                     ],
                     "version": encode_version(*__factorio_version_info__),
                 }
@@ -1099,13 +1099,13 @@ class BlueprintTesting(TestCase):
                         {
                             "name": "power-switch",
                             "position": {"x": 1.0, "y": 2.0},
-                            "entity_number": 4
+                            "entity_number": 4,
                         },
                         {
                             "name": "radar",
                             "position": {"x": 1.5, "y": 4.5},
-                            "entity_number": 5
-                        }
+                            "entity_number": 5,
+                        },
                     ],
                     "version": encode_version(*__factorio_version_info__),
                 }
@@ -1392,7 +1392,7 @@ class BlueprintTesting(TestCase):
                             "connections": {
                                 "1": {
                                     "red": [{"entity_id": 3, "circuit_id": 1}],
-                                    "green": [{"entity_id": 3, "circuit_id": 2}]
+                                    "green": [{"entity_id": 3, "circuit_id": 2}],
                                 }
                             },
                             "entity_number": 2,
@@ -1401,12 +1401,8 @@ class BlueprintTesting(TestCase):
                             "name": "decider-combinator",
                             "position": {"x": 4.5, "y": 1.0},
                             "connections": {
-                                "1": {
-                                    "red": [{"entity_id": 2}]
-                                },
-                                "2": {
-                                    "green": [{"entity_id": 2}]
-                                }
+                                "1": {"red": [{"entity_id": 2}]},
+                                "2": {"green": [{"entity_id": 2}]},
                             },
                             "entity_number": 3,
                         },
@@ -1414,7 +1410,7 @@ class BlueprintTesting(TestCase):
                             "name": "transport-belt",
                             "position": {"x": 5.5, "y": 0.5},
                             "entity_number": 4,
-                        }
+                        },
                     ],
                     "version": encode_version(*__factorio_version_info__),
                 }
@@ -1446,7 +1442,7 @@ class BlueprintTesting(TestCase):
                             "name": "transport-belt",
                             "position": {"x": 5.5, "y": 0.5},
                             "entity_number": 4,
-                        }
+                        },
                     ],
                     "version": encode_version(*__factorio_version_info__),
                 }

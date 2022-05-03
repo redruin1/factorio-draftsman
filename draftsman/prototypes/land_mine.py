@@ -13,6 +13,10 @@ import warnings
 
 
 class LandMine(Entity):
+    """
+    An entity that explodes when in proximity to another force.
+    """
+
     def __init__(self, name=land_mines[0], **kwargs):
         # type: (str, **dict) -> None
         super(LandMine, self).__init__(name, land_mines, **kwargs)

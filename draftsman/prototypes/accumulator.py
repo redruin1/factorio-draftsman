@@ -18,6 +18,10 @@ import warnings
 
 
 class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
+    """
+    An entity that stores electricity for periods of high demand.
+    """
+
     def __init__(self, name=accumulators[0], **kwargs):
         # type: (str, **dict) -> None
         super(Accumulator, self).__init__(name, accumulators, **kwargs)
@@ -35,7 +39,16 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     def output_signal(self):
         # type: () -> dict
         """
-        TODO
+        The signal used to output this accumulator's charge level, if set.
+
+        :getter: Gets the output signal, or ``None`` if not set.
+        :setter: Sets the output signal. Removes the key if set to ``None``.
+        :type: :py:data:`.SIGNAL_ID`
+
+        :exception InvalidSignalError: If set to a string not recognized as a valid
+            signal name.
+        :exception DataFormatError: If set to a ``dict`` that does not comply
+            with the :py:data:`.SIGNAL_ID` format.
         """
         return self.control_behavior.get("output_signal", None)
 

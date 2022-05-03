@@ -37,7 +37,9 @@ class TrainStop(
     DirectionalMixin,
     Entity,
 ):
-    """ """
+    """
+    A stop for making train schedules for locomotives.
+    """
 
     def __init__(self, name=train_stops[0], similar_entities=train_stops, **kwargs):
         # type: (str, list[str], **dict) -> None
@@ -68,7 +70,7 @@ class TrainStop(
     def station(self):
         # type: () -> str
         """
-        TODO
+        The name of this station.
         """
         return self._station
 
@@ -88,7 +90,8 @@ class TrainStop(
     def manual_trains_limit(self):
         # type: () -> int
         """
-        TODO
+        A limit to the amount of trains that can use this stop. Overridden by
+        the circuit signal set train limit (if present).
         """
         return self._manual_trains_limit
 
@@ -106,7 +109,8 @@ class TrainStop(
     def read_from_train(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not to read the train's contents when stopped at this train
+        stop.
         """
         return self.control_behavior.get("read_from_train", None)
 
@@ -126,7 +130,8 @@ class TrainStop(
     def read_stopped_train(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not to read a unique number associated with the train
+        currently stopped at the station.
         """
         return self.control_behavior.get("read_stopped_train", None)
 
@@ -146,7 +151,8 @@ class TrainStop(
     def train_stopped_signal(self):
         # type: () -> dict
         """
-        TODO
+        What signal to output the unique train ID if a train is currently
+        stopped at a station.
         """
         return self.control_behavior.get("train_stopped_signal", None)
 
@@ -171,7 +177,8 @@ class TrainStop(
     def signal_limits_trains(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not an external signal should limit the number of trains that
+        can use this stop.
         """
         return self.control_behavior.get("set_trains_limit", None)
 
@@ -191,7 +198,7 @@ class TrainStop(
     def trains_limit_signal(self):
         # type: () -> dict
         """
-        TODO
+        What signal to read to limit the number of trains that can use this stop.
         """
         return self.control_behavior.get("trains_limit_signal", None)
 
@@ -216,7 +223,7 @@ class TrainStop(
     def read_trains_count(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not to read the number of trains that currently use this stop.
         """
         return self.control_behavior.get("read_trains_count", None)
 
@@ -236,7 +243,8 @@ class TrainStop(
     def trains_count_signal(self):
         # type: () -> dict
         """
-        TODO
+        What signal to use to output the current number of trains that use this
+        stop.
         """
         return self.control_behavior.get("trains_count_signal", None)
 

@@ -29,7 +29,10 @@ class PowerSwitch(
     DirectionalMixin,
     Entity,
 ):
-    """ """
+    """
+    An entity that connects or disconnects a power network. Can be controlled
+    manually or with a circuit condition or a logistic condition.
+    """
 
     def __init__(self, name=power_switches[0], **kwargs):
         # type: (str, **dict) -> None
@@ -56,7 +59,14 @@ class PowerSwitch(
     def switch_state(self):
         # type: () -> bool
         """
-        TODO
+        Whether the switch is passing electricity or not. This is a manual
+        setting that is overridden by the circuit or logistic condition.
+
+        :getter: Gets the value of the switch state.
+        :setter: Sets the value of the switch state.
+        :type: ``bool``
+
+        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
         return self._switch_state
 

@@ -10,6 +10,7 @@ from draftsman.error import (
     InvalidSignalError,
     InvalidInstrumentID,
     InvalidNoteID,
+    DataFormatError,
 )
 from draftsman.warning import DraftsmanWarning, VolumeRangeWarning
 
@@ -172,7 +173,7 @@ class ProgrammableSpeakerTesting(TestCase):
         speaker.parameters = None
         self.assertEqual(speaker.parameters, {})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             speaker.parameters = "false"
 
     def test_set_alert_parameters(self):
@@ -180,7 +181,7 @@ class ProgrammableSpeakerTesting(TestCase):
         speaker.alert_parameters = None
         self.assertEqual(speaker.alert_parameters, {})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(DataFormatError):
             speaker.alert_parameters = "false"
 
     def test_set_volume(self):

@@ -1,10 +1,14 @@
 # Changelog
+## **0.8.5**
+* Finished first pass of documentation
+
 ## **0.8.0**
 * Added a *whole lot* of documentation, or a first pass at least
 * Updated the quick-start with updated information
 * Setup a GitHub workflow to automatically upload code coverage for the badge
 * Split the `ModeOfOperation` enumeration into `InserterModeOfOperation` and `LogisticModeOfOperation`
 * Going to attempt to get Docs integration and passing
+* Fixed ``draftsman-update`` greedy module name regex
 
 ## **0.6.0**
 * First public release!
