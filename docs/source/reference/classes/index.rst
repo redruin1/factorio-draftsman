@@ -10,6 +10,7 @@ Some of which are aliased at the root level of the package, such as :py:mod:`~dr
 .. toctree::
     :maxdepth: 2
 
+    association.rst
     blueprint.rst
     blueprintbook.rst
     collection.rst

@@ -12,12 +12,12 @@ from schema import SchemaError
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
-    from unittest import TestCase
+    import unittest
 else:  # pragma: no coverage
-    from unittest2 import TestCase
+    import unittest2 as unittest
 
 
-class WallTesting(TestCase):
+class WallTesting(unittest.TestCase):
     def test_contstructor_init(self):
         wall = Wall()
 

@@ -73,14 +73,15 @@ blueprint = Blueprint()
 
 # print(blueprint.to_string())
 
-from draftsman.entity import new_entity
+# blueprint.entities.append("inserter", tile_position = [-1, 0]) # entity[0]
+# blueprint.entities.append("inserter", tile_position = [+1, 0]) # entity[1]
 
-deployer = new_entity("blueprint-deployer")
-print(deployer)
-# <Container>{'name': 'blueprint-deployer', 'position': {'x': 0.5, 'y': 0.5}}
-assert deployer.inventory_size == 1
-assert deployer.inventory_bar_enabled == False
-# deployer.bar = 10 # DraftsmanError: This entity does not have bar control
+# blueprint.add_circuit_connection("red", 0, 1)
 
-# Lets see what the new list of containers are
-print(entities.containers)
+# del blueprint.entities[1]
+
+# print(blueprint.entities[0].connections)
+# # {'1': {'red': [{'entity_id': None}]}}
+
+# print(blueprint.to_string())
+# # InvalidConnectionError: 'inserter' entity at {'x': -0.5, 'y': 0.5} is connected to an entity that no longer exists

@@ -12,12 +12,12 @@ from schema import SchemaError
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
-    from unittest import TestCase
+    import unittest
 else:  # pragma: no coverage
-    from unittest2 import TestCase
+    import unittest2 as unittest
 
 
-class RailChainSignalTesting(TestCase):
+class RailChainSignalTesting(unittest.TestCase):
     def test_constructor_init(self):
         rail_signal = RailChainSignal("rail-chain-signal", control_behavior={})
         self.assertEqual(

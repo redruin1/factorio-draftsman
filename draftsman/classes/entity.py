@@ -187,21 +187,25 @@ class Entity(EntityLike):
 
         :exception TypeError: If the set value is anything other than a ``str``
             or ``None``.
-        :exception Draftsman: If the ID is changed while inside an
-            EntityCollection, [which is forbidden.] TODO
+        :exception DuplicateIDError: If the ID is changed while inside an
+            ``EntityCollection`` to an ID that is already taken by another
+            entity in said ``EntityCollection``.
         """
         return self._id
 
     @id.setter
     def id(self, value):
         # type: (str) -> None
-        if self.parent:
-            raise DraftsmanError("Cannot modify inside a EntityCollection")
-
         if value is None:
+            if self.parent:
+                self.parent.entities.remove_key(self._id)
             self._id = value
         elif isinstance(value, six.string_types):
+            old_id = self._id
             self._id = six.text_type(value)
+            if self.parent:
+                self.parent.entities.remove_key(old_id)
+                self.parent.entities.set_key(self._id, self)
         else:
             raise TypeError("'id' must be a str or None")
 
@@ -230,7 +234,8 @@ class Entity(EntityLike):
         :exception IndexError: If the set value does not match the above
             specification.
         :exception DraftsmanError: If the entities position is modified when
-            inside a EntityCollection, [which is forbidden.] TODO
+            inside a EntityCollection, :ref:`which is forbidden.
+            <handbook.blueprints.forbidden_entity_attributes>`
         """
         return self._position
 
@@ -275,7 +280,8 @@ class Entity(EntityLike):
         :exception IndexError: If the set value does not match the above
             specification.
         :exception DraftsmanError: If the entities position is modified when
-            inside a EntityCollection, [which is forbidden.] TODO
+            inside a EntityCollection, :ref:`which is forbidden.
+            <handbook.blueprints.forbidden_entity_attributes>`
         """
         return self._tile_position
 
@@ -526,4 +532,8 @@ class Entity(EntityLike):
 
     def __repr__(self):  # pragma: no coverage
         # type: () -> str
-        return "<{}>{}".format(type(self).__name__, str(self.to_dict()))
+        return "<{}{}>{}".format(
+            type(self).__name__,
+            " '{}'".format(self.id) if self.id is not None else "",
+            str(self.to_dict()),
+        )

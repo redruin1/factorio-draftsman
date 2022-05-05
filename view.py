@@ -1,5 +1,10 @@
 # view.py
 
+"""
+View a blueprint string's contents. Used for development; useful for
+determining the exact contents of a blueprint string as exported by Factorio.
+"""
+
 import json
 
 from draftsman import utils

@@ -29,9 +29,9 @@ It's API is designed to be clear and self-documenting, from its imports to its e
 
 In addition to the standard features you would expect, Draftsman also has a number of quality-of-life features, including:
 
-* Unique entity ID's to make identification easier.
+* Unique entity IDs, as well as dynamic association between entities.
 * Querying blueprint contents by area, name, type, as well as other criteria.
-* The grouping of entities for aid in structure and design.
+* The grouping of entities to reuse for aid in structure and design.
 * Verbose warnings for modifications on import normally ignored by Factorio.
 
 Draftsman is also unique in that it emulates the `Factorio data lifecycle <https://lua-api.factorio.com/latest/Data-Lifecycle.html>`_ directly, extracting all data that the module uses directly from `Wube's public repository <https://github.com/wube/factorio-data>`_. 
@@ -45,7 +45,7 @@ Prior to that most functionality *should* still work, but your mileage may vary.
 Contents
 --------
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    quickstart.rst
    handbook/index.rst

@@ -7,6 +7,7 @@
 from __future__ import unicode_literals
 
 from draftsman._factorio_version import __factorio_version_info__
+from draftsman.classes.association import Association
 from draftsman.classes.entitylike import EntityLike
 from draftsman.classes.entitylist import EntityList
 from draftsman.classes.tilelist import TileList
@@ -18,6 +19,7 @@ from draftsman.error import (
     IncorrectBlueprintTypeError,
     UnreasonablySizedBlueprintError,
     DataFormatError,
+    InvalidConnectionError,
 )
 from draftsman import signatures
 from draftsman.tile import Tile
@@ -93,6 +95,34 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
             )
 
         self.setup(**root["blueprint"])
+
+        # Convert integer associations to Associations
+        for entity in self.entities:
+            if hasattr(entity, "connections"):  # Wire connections
+                connections = entity.connections
+                for side in connections:
+                    if side in {"1", "2"}:
+                        for color in connections[side]:
+                            connection_points = connections[side][color]
+                            for point in connection_points:
+                                old = point["entity_id"] - 1
+                                point["entity_id"] = Association(self.entities[old])
+
+                    elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+                        connection_points = connections[side]
+                        for point in connection_points:
+                            old = point["entity_id"] - 1
+                            point["entity_id"] = Association(self.entities[old])
+
+            if hasattr(entity, "neighbours"):  # Power pole connections
+                neighbours = entity.neighbours
+                for i, neighbour in enumerate(neighbours):
+                    neighbours[i] = Association(self.entities[neighbour - 1])
+
+        # Change all locomotive names to use Associations
+        for schedule in self.schedules:
+            for i, locomotive in enumerate(schedule["locomotives"]):
+                schedule["locomotives"][i] = Association(self.entities[locomotive - 1])
 
     @utils.reissue_warnings
     def setup(self, **kwargs):
@@ -886,8 +916,15 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
                 tile["position"]["x"] -= self.snapping_grid_position["x"]
                 tile["position"]["y"] -= self.snapping_grid_position["y"]
 
+        def throw_invalid_connection(entity):
+            raise InvalidConnectionError(
+                "'{}' at {} is connected to an entity that no longer exists".format(
+                    entity["name"], entity["position"]
+                )
+            )
+
         # Change all connections to use entity_number
-        # This could be cleaner
+        # This could be nicer
         for entity in out_dict["entities"]:
             if "connections" in entity:  # Wire connections
                 connections = entity["connections"]
@@ -897,27 +934,35 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
                             connection_points = connections[side][color]
                             for point in connection_points:
                                 old = point["entity_id"]
-                                if isinstance(old, EntityLike):
-                                    point["entity_id"] = flattened_list.index(old) + 1
+                                if old is None:  # pragma: no coverage
+                                    throw_invalid_connection(entity)
+                                else:  # Association
+                                    point["entity_id"] = flattened_list.index(old()) + 1
 
                     elif side in {"Cu0", "Cu1"}:  # pragma: no branch
                         connection_points = connections[side]
                         for point in connection_points:
                             old = point["entity_id"]
-                            if isinstance(old, EntityLike):
-                                point["entity_id"] = flattened_list.index(old) + 1
+                            if old is None:  # pragma: no coverage
+                                throw_invalid_connection(entity)
+                            else:  # Association
+                                point["entity_id"] = flattened_list.index(old()) + 1
 
             if "neighbours" in entity:  # Power pole connections
                 neighbours = entity["neighbours"]
                 for i, neighbour in enumerate(neighbours):
-                    if isinstance(neighbour, EntityLike):
-                        neighbours[i] = flattened_list.index(neighbour) + 1
+                    if neighbour is None:  # pragma: no coverage
+                        throw_invalid_connection(entity)
+                    else:  # Association
+                        neighbours[i] = flattened_list.index(neighbour()) + 1
 
         # Change all locomotive names to use entity_number
         for schedule in out_dict["schedules"]:
             for i, locomotive in enumerate(schedule["locomotives"]):
-                if isinstance(locomotive, EntityLike):
-                    schedule["locomotives"][i] = flattened_list.index(locomotive) + 1
+                if locomotive is None:  # pragma: no coverage
+                    throw_invalid_connection(entity)
+                else:  # Association
+                    schedule["locomotives"][i] = flattened_list.index(locomotive()) + 1
 
         # Delete empty entries to compress as much as possible
         if len(out_dict["entities"]) == 0:

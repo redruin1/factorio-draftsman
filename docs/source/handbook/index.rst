@@ -1,13 +1,10 @@
-.. change
-
 Handbook
 ========
 
 .. toctree::
     :maxdepth: 2
     
-    overview/entities.rst
-    overview/blueprints.rst
-    concepts/index.rst
+    blueprints.rst
+    entities.rst
     groups.rst
     modding.rst

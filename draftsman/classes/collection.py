@@ -1,7 +1,10 @@
 # collection.py
 # -*- encoding: utf-8 -*-
 
+from draftsman.classes.association import Association
 from draftsman.classes.entitylike import EntityLike
+from draftsman.classes.entitylist import EntityList
+from draftsman.classes.spatialhashmap import SpatialHashMap
 from draftsman.classes.tile import Tile
 from draftsman.error import (
     DraftsmanError,
@@ -36,6 +39,7 @@ class EntityCollection(object):
 
     @abc.abstractproperty
     def entities(self):  # pragma: no coverage
+        # type: () -> EntityList
         """
         Object that holds the ``EntityLikes``, usually a
         :py:class:`~draftsman.classes.entitylist.EntityList`.
@@ -44,6 +48,7 @@ class EntityCollection(object):
 
     @abc.abstractproperty
     def entity_hashmap(self):  # pragma: no coverage
+        # type: () -> SpatialHashMap
         """
         Object that holds the spatial information of the entities of this object,
         usually a :py:class:`~draftsman.classes.spatialhashmap.SpatialHashMap`.
@@ -353,13 +358,13 @@ class EntityCollection(object):
             if str_side not in entity_1.connections:
                 entity_1.connections[str_side] = []
 
-            entry = {"entity_id": entity_2, "wire_id": 0}
+            entry = {"entity_id": Association(entity_2), "wire_id": 0}
             if entry not in entity_1.connections[str_side]:
                 entity_1.connections[str_side].append(entry)
         else:  # electric pole
             if not entity_2.dual_power_connectable:
-                if entity_2 not in entity_1.neighbours:
-                    entity_1.neighbours.append(entity_2)
+                if Association(entity_2) not in entity_1.neighbours:
+                    entity_1.neighbours.append(Association(entity_2))
 
         # Only worried about target
         if entity_2.dual_power_connectable:  # power switch
@@ -368,13 +373,13 @@ class EntityCollection(object):
             if str_side not in entity_2.connections:
                 entity_2.connections[str_side] = []
 
-            entry = {"entity_id": entity_1, "wire_id": 0}
+            entry = {"entity_id": Association(entity_1), "wire_id": 0}
             if entry not in entity_2.connections[str_side]:
                 entity_2.connections[str_side].append(entry)
         else:  # electric pole
             if not entity_1.dual_power_connectable:
-                if entity_1 not in entity_2.neighbours:
-                    entity_2.neighbours.append(entity_1)
+                if Association(entity_1) not in entity_2.neighbours:
+                    entity_2.neighbours.append(Association(entity_1))
 
     def remove_power_connection(self, id1, id2, side=1):
         # type: (str, str, int) -> None
@@ -402,7 +407,7 @@ class EntityCollection(object):
         # Only worried about self
         if entity_1.dual_power_connectable:  # power switch
             str_side = "Cu" + str(side - 1)
-            entry = {"entity_id": entity_2, "wire_id": 0}
+            entry = {"entity_id": Association(entity_2), "wire_id": 0}
             if str_side in entity_1.connections:
                 if entry in entity_1.connections[str_side]:
                     entity_1.connections[str_side].remove(entry)
@@ -411,14 +416,14 @@ class EntityCollection(object):
         else:  # electric pole
             if not entity_2.dual_power_connectable:
                 try:
-                    entity_1.neighbours.remove(entity_2)
+                    entity_1.neighbours.remove(Association(entity_2))
                 except ValueError:
                     pass
 
         # Only worried about target
         if entity_2.dual_power_connectable:  # power switch
             str_side = "Cu" + str(side - 1)
-            entry = {"entity_id": entity_1, "wire_id": 0}
+            entry = {"entity_id": Association(entity_1), "wire_id": 0}
             if str_side in entity_2.connections:
                 if entry in entity_2.connections[str_side]:
                     entity_2.connections[str_side].remove(entry)
@@ -427,7 +432,7 @@ class EntityCollection(object):
         else:  # electric pole
             if not entity_1.dual_power_connectable:
                 try:
-                    entity_2.neighbours.remove(entity_1)
+                    entity_2.neighbours.remove(Association(entity_1))
                 except ValueError:
                     pass
 
@@ -618,10 +623,10 @@ class EntityCollection(object):
 
         # If dual circuit connectable specify the target side
         if entity_2.dual_circuit_connectable:
-            entry = {"entity_id": entity_2, "circuit_id": side2}
+            entry = {"entity_id": Association(entity_2), "circuit_id": side2}
         else:
             # However, for most entities you dont need a target side
-            entry = {"entity_id": entity_2}
+            entry = {"entity_id": Association(entity_2)}
 
         if entry not in current_color:
             current_color.append(entry)
@@ -638,10 +643,10 @@ class EntityCollection(object):
 
         # If dual circuit connectable specify the target side
         if entity_1.dual_circuit_connectable:
-            entry = {"entity_id": entity_1, "circuit_id": side1}
+            entry = {"entity_id": Association(entity_1), "circuit_id": side1}
         else:
             # However, for most entities you dont need a target side
-            entry = {"entity_id": entity_1}
+            entry = {"entity_id": Association(entity_1)}
 
         if entry not in current_color:
             current_color.append(entry)
@@ -684,10 +689,10 @@ class EntityCollection(object):
 
         # Remove from source
         if entity_2.dual_circuit_connectable:
-            entry = {"entity_id": entity_2, "circuit_id": side2}
+            entry = {"entity_id": Association(entity_2), "circuit_id": side2}
         else:
             # However, for most entities you dont need a target side
-            entry = {"entity_id": entity_2}
+            entry = {"entity_id": Association(entity_2)}
 
         try:
             current_side = entity_1.connections[six.text_type(side1)]
@@ -703,10 +708,10 @@ class EntityCollection(object):
 
         # Remove from target
         if entity_1.dual_circuit_connectable:
-            entry = {"entity_id": entity_1, "circuit_id": side1}
+            entry = {"entity_id": Association(entity_1), "circuit_id": side1}
         else:
             # However, for most entities you dont need a target side
-            entry = {"entity_id": entity_1}
+            entry = {"entity_id": Association(entity_1)}
 
         try:
             current_side = entity_2.connections[six.text_type(side2)]

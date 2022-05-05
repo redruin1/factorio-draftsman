@@ -6,10 +6,10 @@ Overview
 
 :py:class:`.Group` classes in Draftsman are one of it's most powerful features.
 Groups allow you to create "sub-blueprints" that can be placed inside a blueprint multiple times, or even inside other Group objects.
-This allows the user to fragment blueprints into unique, discrete components that can be specified once and then reused multiple times, reducing boilerplate and improving readability.
+This allows the user to fragment blueprints into unique, discrete components that can be specified once and then reused multiple times, reducing repetitive code and improving readability.
 The ability to use Groups was one of the core design pillars of Draftsman when it was originally made, and was present in the very first prototypes of the module.
 
-To illustrate how to use Groups and in what ways they are useful, I'll use the problem that originally sparked the construction of the module in the first place; a design for a combinator computer 32-bit Read-only Memory.
+To illustrate how to use Groups and in what ways they are useful, I'll use the problem that originally sparked the construction of the entire module in the first place; a design for a combinator computer 32-bit Read-only Memory.
 This problem is already solved with an implementation in the `examples folder here <https://github.com/redruin1/factorio-draftsman/blob/main/examples/1KiB_sector_ROM.py>`_ , if you want to take a look at just the raw implementation.
 The rest of this page will be an outline of the problem and a walkthrough of the source, piece-by-piece.
 
@@ -17,16 +17,13 @@ Outline of the problem
 ----------------------
 
 I wanted a compact signal storage medium for a revision of my combinator computer.
-I had 2 primary restrictions:
+I had 3 primary restrictions:
 
     1. I wanted the output signals from the ROM to be true 32-bit numbers.
     2. I wanted to be able to query from 2 places in the ROM simultaneously.
     3. I wanted the data storage to be as spatially compact as possible.
 
 The most compact way to store data in constant combinators to fill every slot with a different signal type and a signal filter apparatus to only pass through the signal or signals that you want.
-
-[img]
-
 The trouble with this is that if you want the filtering process to be fast, the most reliable and simple way to achieve this is to reserve a bit in the number to act as a filter flag, and only output the signals that have that bit set:
 
 .. code-block:: text
@@ -41,7 +38,7 @@ The trouble with this is that if you want the filtering process to be fast, the 
 
 The following example actually requires 2 bits to operate, as a limitation of the decider combinator not being able to check a single bit.
 
-[img]
+.. image:: ../../img/handbook/groups/simple_rom_principle.png
 
 This is fast and works, though it violates the primary restriction; *true* 32-bit numbers.
 No matter which way you work around it, in order to have 32 data bits and at least 1 bit flag to determine which signal to output, you need at minimum 33 bits per data signal, which butts against the limitation of signals in Factorio being only 32-bits in size.
@@ -65,24 +62,24 @@ For simplicities sake, I split the data into the lower 16 bits and the higher 16
     '-' = data bit
     ' ' = unused
 
-[img]
-
 Recombination is simple; The low bits pass through a simple AND of the lower 16 bits of the number to get rid of the filter bit, and the high bits are left shifted 16 spots, also removing the filter bit. The two numbers can be added together on a single wire, since none of their bits overlap, meaning the recombination only has a delay of 1 tick.
 
-[img]
+.. image:: ../../img/handbook/groups/split_rom_principle.png
 
-In order to read from two places at once, I added some gates that only pass the data through if the address points to that sector. This is split across two entirely unique output's meaning that  I labeled the first address *A* and the second *B* to distinguish them and their circuitry from one another. By keeping the two able to read their own sector, this allows the two to read from entirely different sectors simultaneously, which is important on sector boundary.
+In order to read from two places at once, I doubled the above logic to take two address signals, labeled as **A** and **B**.
+In addition, we also need to link sectors in parallel, which means that we need to determine which cluster of combinators to read from, and how to differentiate between each set.
+To do this, we introduces another signal to specify which sector to read from:
 
-[img]
+.. image:: ../../img/handbook/groups/almost_final_design.png
 
-Add some more combinators for a max of 256 signals for each "sector", and some logic for determining which combinators to pull the data from, and you get the final working design:
+Add some more combinators for a max of 256 signals for each "sector", and some logic for converting a numeric address signal to a signal type and sector number, and you get the final working design:
 
-[img]
+.. image:: ../../img/handbook/groups/final_design.png
 
 This works well, and is *very* dense; A row of 4 sectors can hold literal kilobytes of data, 4 KiB per row, all in a data space of only 16 x 11 tiles.
 If you only need 30-bits per number this density could probably almost be doubled, assuming you can figure out the proper interface for it.
 
-However, this manner of storing data is difficult to populate by hand, to say the least. Manually ANDing and shifting a number in a calculator, plus the manner of placing 2 separate signals, while ensuring that they must have the same type in 2 different places with 2 different values, made the design unviable to use by hand despite it's superior design.
+However, this manner of storing data is difficult to populate by hand, to say the least. Manually ANDing and shifting a number in a calculator, plus the manner of placing 2 separate signals, while ensuring that they must have the same type in 2 different places with 2 different values, made the design unviable to use by hand despite it's benefits.
 Of course, this process would be *very simple* if I could just get a computer to do it for me... Hence, Draftsman.
 
 Structure of the Solution
@@ -94,25 +91,16 @@ The basic design can be broken up into a set of unique parts, each one performin
     2. One or more **sectors**, which are where the actual data is stored, which output the high and low bit values across separate output lines, for both address *A* and address *B*;
     3. And a **decoder**, which takes the 4 *high* and *low* output lines, 2 for *A* and 2 for *B*, and recombines them to 2 constant signals each with the correct 32-bit value.
 
-[highlighted design image]
+.. image:: ../../img/handbook/groups/final_design_highlighted.png
 
 Further, an individual **sector** can be discretized into multiple parts of its own:
 
-    1. The "cell" of constant combinators holding the *low* bits;
-    2. The "cell" of constant combinators holding the *high* bits;
-    3. "Gate" combinators that determine whether or not to output the data from this sector;
-    4. And "Selector" combinators that filter the contents from the "gates" and output only the types of signal filtered by the **encoder**.
+    1. The "cell" of constant combinators holding the **low** bits;
+    2. The "cell" of constant combinators holding the **high** bits;
+    3. **Gate** combinators that determine whether or not to output the data from this **sector**;
+    4. And **Selector** combinators that filter the contents from the **gates** and output only the types of signal filtered by the **encoder**.
 
-[highlighted sector img]
-
-Each **sector** has a set of inputs and ouputs that are all connected to each other, by row and column.
-The **encoder** connects to the inputs of all the **sectors** and the **decoder** connects to the outputs of all the sectors.
-
-[design connection image]
-
-In addition, each **sector** has a set of internal connections that are identical between sectors:
-
-[sector connection image]
+.. image:: ../../img/handbook/groups/sector_highlighted.png
 
 Hopefully you can start to see the naturalness of specifying each component as a Group object; Only the position and the data stored changes between each sector.
 It makes sense that we should be able to construct a single sector, connections and all, and then simply copy-paste the object, only changing a few attributes each time.
@@ -218,8 +206,8 @@ The second half of ``__init__`` creates a grid of combinators specified by ``dim
                 except KeyError:
                     pass
 
-Each id of the combinators is set to it's position in the grid, as a string of the format ``"x_y"``, starting at 0.
-This means that the top left combinator of the cell would have the id ``"0_0"`` and would be accessed as such.
+Each ID of the combinators is set to it's position in the grid, as a string of the format ``"x_y"``, starting at 0.
+This means that the top left combinator of the cell would have the ID ``"0_0"`` and would be accessed as such.
 Each entity is added to the ``entities`` list (which is inherited by ``Group``) and is connected in a regular grid to it's neighbours, cementing them together in the same signal network.
 
 The only other function we need is ``set_data``:
@@ -251,26 +239,10 @@ Assertions are made to ensure that we don't have more data than we have unique s
 Then the signal contents of all the combinators are wiped and then set with the signal names and values sequentially starting with the top-leftmost combinator.
 Because signals that have a value of zero are still inserted into the combinator (which makes the output blueprint more complex), in order to reduce bloating of the final blueprint string we only set signals that are non-zero.
 
-We can now use this class to create a rectangular grid of constant combinators of any size, filled with any data. And because we superclass ``Group``, changing the position of the root ``CombinatorCell`` changes the position of all the constant combinators it holds:
-
-.. code-block:: python
-
-    # NOTE: This code is not included in the example implementation, this is just for illustration.
-    blueprint = Blueprint()
-
-    # Create an entity at the origin to show position
-    blueprint.entities.append("transport-belt")
-
-    cell = CombinatorCell("example", dimension=(3, 3), wire_color="green")
-    cell.position = (5, 5)
-    blueprint.entities.append(cell)
-
-    print(blueprint.to_string())
-
-[img of translated cell alone]
-
+We can now use this class to create a rectangular grid of constant combinators of any size, filled with any data. 
 Useful, particularly if one might need to create other ROM designs in the future.
 Let's use this to create the final blueprint.
+
 Before we can start placing entities, we need to create that signal ``mapping`` list mentioned before.
 This is fairly straightforward; the following is specified in the ``main()`` function:
 

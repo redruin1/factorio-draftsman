@@ -9,14 +9,14 @@ from draftsman.data import recipes, signals
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
-    from unittest import TestCase
+    import unittest
 else:  # pragma: no coverage
-    from unittest2 import TestCase
+    import unittest2 as unittest
 
 import warnings
 
 
-class UtilsTesting(TestCase):
+class UtilsTesting(unittest.TestCase):
     def test_string_to_JSON(self):
         # Blueprints
         resulting_dict = utils.string_to_JSON(

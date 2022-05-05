@@ -12,12 +12,12 @@ from schema import SchemaError
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
-    from unittest import TestCase
+    import unittest
 else:  # pragma: no coverage
-    from unittest2 import TestCase
+    import unittest2 as unittest
 
 
-class PowerSwitchTesting(TestCase):
+class PowerSwitchTesting(unittest.TestCase):
     def test_constructor_init(self):
         switch = PowerSwitch("power-switch", tile_position=[0, 0], switch_state=True)
         self.assertEqual(

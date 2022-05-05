@@ -145,14 +145,14 @@ can also just change the settings in either of those and the loading process
 will adjust as well.
 
 ## TODO
-* Write a script or some framework to test what Factorio versions are compatible with current version
+* Fix spatial warnings on groups
 * Re-implement circuit attributes for `DeciderCombinator` and `ArithmeticCombinator`
 * Figure out a consistent manner to treat filter objects (fix all the TODO's in the code)
 * Folder mod loading
 * Figure out exactly what determines if an `Entity` is flip-able or not
-* Figure out a way to make Entity associations weakrefs (more specifically, how to deepcopy weakrefs)
 * Most of the data extracted from `data.raw` is sorted, but not all of it
-* Make testing work with mods
+* Make testing work with mods (harder than it sounds)
+* Split documentation from docstrings so that each function has a more readable example
 * RailPlanner (specify rail paths via turtle-like commands)
 * Maybe integrate defaults for more succinct blueprint strings?
 * Look into Lua bindings via backport to C

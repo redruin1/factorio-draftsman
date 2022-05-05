@@ -14,12 +14,12 @@ from schema import SchemaError
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
-    from unittest import TestCase
+    import unittest
 else:  # pragma: no coverage
-    from unittest2 import TestCase
+    import unittest2 as unittest
 
 
-class CircuitConditionMixinTesting(TestCase):
+class CircuitConditionMixinTesting(unittest.TestCase):
     def test_set_enable_disable(self):
         transport_belt = TransportBelt()
         transport_belt.enable_disable = True
@@ -162,14 +162,14 @@ class CircuitConditionMixinTesting(TestCase):
 ################################################################################
 
 
-class CircuitConnectableMixinTesting(TestCase):
+class CircuitConnectableMixinTesting(unittest.TestCase):
     pass
 
 
 ################################################################################
 
 
-class CircuitReadContentsMixinTesting(TestCase):
+class CircuitReadContentsMixinTesting(unittest.TestCase):
     def test_set_read_contents(self):
         transport_belt = TransportBelt()
         transport_belt.read_contents = True
@@ -202,7 +202,7 @@ class CircuitReadContentsMixinTesting(TestCase):
 ################################################################################
 
 
-class CircuitReadHandMixinTesting(TestCase):
+class CircuitReadHandMixinTesting(unittest.TestCase):
     def test_set_read_contents(self):
         inserter = Inserter()
         inserter.read_hand_contents = True
@@ -231,7 +231,7 @@ class CircuitReadHandMixinTesting(TestCase):
 ################################################################################
 
 
-class CircuitReadResourceMixinTesting(TestCase):
+class CircuitReadResourceMixinTesting(unittest.TestCase):
     def test_set_read_resources(self):
         pass
 
@@ -242,7 +242,7 @@ class CircuitReadResourceMixinTesting(TestCase):
 ################################################################################
 
 
-class ColorMixinTesting(TestCase):
+class ColorMixinTesting(unittest.TestCase):
     def test_set_color(self):
         train_stop = TrainStop()
         # Valid 4 args
@@ -265,7 +265,7 @@ class ColorMixinTesting(TestCase):
 ################################################################################
 
 
-class ControlBehaviorMixinTesting(TestCase):
+class ControlBehaviorMixinTesting(unittest.TestCase):
     def test_set_control_behavior(self):
         combinator = ArithmeticCombinator()
         combinator.control_behavior = None
@@ -275,7 +275,7 @@ class ControlBehaviorMixinTesting(TestCase):
 ################################################################################
 
 
-class DirectionalMixinTesting(TestCase):
+class DirectionalMixinTesting(unittest.TestCase):
     def test_set_direction(self):
         storage_tank = StorageTank()
         storage_tank.direction = Direction.SOUTH
@@ -328,7 +328,7 @@ class DirectionalMixinTesting(TestCase):
 ################################################################################
 
 
-class DoubleGridAlignedMixinTesting(TestCase):
+class DoubleGridAlignedMixinTesting(unittest.TestCase):
     def test_set_absolute_position(self):
         rail = StraightRail()
         self.assertEqual(rail.double_grid_aligned, True)
@@ -339,7 +339,7 @@ class DoubleGridAlignedMixinTesting(TestCase):
 ################################################################################
 
 
-class EightWayDirectionalMixinTesting(TestCase):
+class EightWayDirectionalMixinTesting(unittest.TestCase):
     def test_set_direction(self):
         rail = StraightRail()
         rail.direction = 6
@@ -353,7 +353,7 @@ class EightWayDirectionalMixinTesting(TestCase):
 ################################################################################
 
 
-class FiltersMixinTesting(TestCase):
+class FiltersMixinTesting(unittest.TestCase):
     def test_set_item_filter(self):
         inserter = FilterInserter()
 
@@ -452,7 +452,7 @@ class FiltersMixinTesting(TestCase):
 ################################################################################
 
 
-class InfinitySettingsMixinTesting(TestCase):
+class InfinitySettingsMixinTesting(unittest.TestCase):
     def test_set_infinity_settings(self):
         pass
 
@@ -460,9 +460,9 @@ class InfinitySettingsMixinTesting(TestCase):
 ################################################################################
 
 
-class InventoryMixinTesting(TestCase):
+class InventoryMixinTesting(unittest.TestCase):
     def test_bar_index(self):
-        container = Container()
+        container = Container("wooden-chest")
         with self.assertWarns(IndexWarning):
             for i in range(container.inventory_size + 1):
                 container.bar = i
@@ -480,7 +480,7 @@ class InventoryMixinTesting(TestCase):
 ################################################################################
 
 
-class InventoryFilterMixinTesting(TestCase):
+class InventoryFilterMixinTesting(unittest.TestCase):
     def test_set_inventory(self):
         cargo_wagon = CargoWagon()
         cargo_wagon.inventory = None
@@ -594,7 +594,7 @@ class InventoryFilterMixinTesting(TestCase):
 ################################################################################
 
 
-class IOTypeMixinTesting(TestCase):
+class IOTypeMixinTesting(unittest.TestCase):
     def test_set_io_type(self):
         belt = UndergroundBelt()
         # belt.io_type = "input"
@@ -609,7 +609,7 @@ class IOTypeMixinTesting(TestCase):
 ################################################################################
 
 
-class LogisticConditionMixinTesting(TestCase):
+class LogisticConditionMixinTesting(unittest.TestCase):
     def test_connect_to_logistic_network(self):
         transport_belt = TransportBelt()
         transport_belt.connect_to_logistic_network = True
@@ -679,7 +679,7 @@ class LogisticConditionMixinTesting(TestCase):
 ################################################################################
 
 
-class InserterModeOfOperationMixinTesting(TestCase):
+class InserterModeOfOperationMixinTesting(unittest.TestCase):
     def test_set_mode_of_operation(self):
         inserter = Inserter()
         inserter.mode_of_operation = None
@@ -704,7 +704,7 @@ class InserterModeOfOperationMixinTesting(TestCase):
 ################################################################################
 
 
-class LogisticModeOfOperationMixinTesting(TestCase):
+class LogisticModeOfOperationMixinTesting(unittest.TestCase):
     def test_set_mode_of_operation(self):
         requester = LogisticRequestContainer()
         requester.mode_of_operation = None
@@ -729,7 +729,7 @@ class LogisticModeOfOperationMixinTesting(TestCase):
 ################################################################################
 
 
-class OrientationMixinTesting(TestCase):
+class OrientationMixinTesting(unittest.TestCase):
     def test_set_orientation(self):
         locomotive = Locomotive()
         locomotive.orientation = 0.25
@@ -750,7 +750,7 @@ class OrientationMixinTesting(TestCase):
 ################################################################################
 
 
-class PowerConnectableMixinTesting(TestCase):
+class PowerConnectableMixinTesting(unittest.TestCase):
     def test_set_neighbours(self):
         substation = ElectricPole("substation")
         substation.neighbours = None
@@ -861,7 +861,7 @@ class PowerConnectableMixinTesting(TestCase):
 ################################################################################
 
 
-class ReadRailSignalMixinTesting(TestCase):
+class ReadRailSignalMixinTesting(unittest.TestCase):
     def test_set_output_signals(self):
         rail_signal = RailSignal()
         rail_signal.red_output_signal = "signal-A"
@@ -928,7 +928,7 @@ class ReadRailSignalMixinTesting(TestCase):
 ################################################################################
 
 
-class RecipeMixinTesting(TestCase):
+class RecipeMixinTesting(unittest.TestCase):
     def test_set_recipe(self):
         machine = AssemblingMachine()
 
@@ -939,7 +939,7 @@ class RecipeMixinTesting(TestCase):
 ################################################################################
 
 
-class RequestFiltersMixinTesting(TestCase):
+class RequestFiltersMixinTesting(unittest.TestCase):
     def test_set_request_filter(self):
         storage_chest = LogisticStorageContainer()
         storage_chest.set_request_filter(0, "stone", 100)
@@ -1022,7 +1022,7 @@ class RequestFiltersMixinTesting(TestCase):
 ################################################################################
 
 
-class RequestItemsMixinTesting(TestCase):
+class RequestItemsMixinTesting(unittest.TestCase):
     def test_set_item_request(self):
         pass
 
@@ -1036,7 +1036,7 @@ class RequestItemsMixinTesting(TestCase):
 ################################################################################
 
 
-class StackSizeMixinTesting(TestCase):
+class StackSizeMixinTesting(unittest.TestCase):
     def test_set_stack_size_override(self):
         inserter = Inserter()
         inserter.override_stack_size = 1

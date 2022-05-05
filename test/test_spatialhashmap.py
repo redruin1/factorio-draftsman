@@ -8,12 +8,12 @@ from draftsman.warning import OverlappingObjectsWarning
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
-    from unittest import TestCase
+    import unittest
 else:  # pragma: no coverage
-    from unittest2 import TestCase
+    import unittest2 as unittest
 
 
-class SpatialHashMapTesting(TestCase):
+class SpatialHashMapTesting(unittest.TestCase):
     def test_init(self):
         map = SpatialHashMap()
         self.assertEqual(map.map, {})

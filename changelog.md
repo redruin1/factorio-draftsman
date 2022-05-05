@@ -1,6 +1,11 @@
 # Changelog
 ## **0.8.5**
 * Finished first pass of documentation
+* Added `factorio_version_testing.py`, which tests against prior versions of Factorio
+* Draftsman is validated to work with versions of Factorio >= 1.0.0
+* Added `Association`, which is a loose wrapper around `weakref` and takes care of the association problem
+* Added docs for `Association`
+* Added `--no-mods` flag to `draftsman-update` that just loads the base mod (why didn't I do this before)
 
 ## **0.8.0**
 * Added a *whole lot* of documentation, or a first pass at least

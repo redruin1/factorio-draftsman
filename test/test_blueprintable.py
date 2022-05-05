@@ -8,12 +8,12 @@ from draftsman.utils import JSON_to_string
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
-    from unittest import TestCase
+    import unittest
 else:  # pragma: no coverage
-    from unittest2 import TestCase
+    import unittest2 as unittest
 
 
-class BlueprintUtilsTesting(TestCase):
+class BlueprintUtilsTesting(unittest.TestCase):
     def test_get_blueprintable_from_string(self):
         # Valid Format
         blueprintable = get_blueprintable_from_string(

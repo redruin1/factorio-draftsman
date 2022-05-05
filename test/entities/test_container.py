@@ -8,15 +8,15 @@ from draftsman.error import DraftsmanError, InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 import sys
-
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    from unittest import TestCase
-else:  # pragma: no coverage
-    from unittest2 import TestCase
 import warnings
 
+if sys.version_info >= (3, 3):  # pragma: no coverage
+    import unittest
+else:  # pragma: no coverage
+    import unittest2 as unittest
 
-class ContainerTesting(TestCase):
+
+class ContainerTesting(unittest.TestCase):
     def test_constructor_init(self):
         wooden_chest = Container(
             "wooden-chest",

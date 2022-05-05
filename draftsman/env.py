@@ -411,10 +411,12 @@ def extract_entities(lua, data_location, verbose):
     entities["containers"] = []
     categorize_entities(data.raw["container"], entities["containers"])
     sort(entities["containers"])
+
     #  Storage tanks
     entities["storage_tanks"] = []
     categorize_entities(data.raw["storage-tank"], entities["storage_tanks"])
     sort(entities["storage_tanks"])
+
     #  Belts
     entities["transport_belts"] = []
     categorize_entities(data.raw["transport-belt"], entities["transport_belts"])
@@ -425,6 +427,7 @@ def extract_entities(lua, data_location, verbose):
     entities["splitters"] = []
     categorize_entities(data.raw["splitter"], entities["splitters"])
     sort(entities["splitters"])
+
     #  Inserters
     entities["inserters"] = []
     entities["filter_inserters"] = []
@@ -440,14 +443,17 @@ def extract_entities(lua, data_location, verbose):
             entities["inserters"].append(inserter)
     sort(entities["inserters"])
     sort(entities["filter_inserters"])
+
     #  Loaders
     entities["loaders"] = []
     categorize_entities(data.raw["loader"], entities["loaders"])
     sort(entities["loaders"])
+
     #  Electric poles
     entities["electric_poles"] = []
     categorize_entities(data.raw["electric-pole"], entities["electric_poles"])
     sort(entities["electric_poles"])
+
     #  Pipes
     entities["pipes"] = []
     categorize_entities(data.raw["pipe"], entities["pipes"])
@@ -455,10 +461,12 @@ def extract_entities(lua, data_location, verbose):
     entities["underground_pipes"] = []
     categorize_entities(data.raw["pipe-to-ground"], entities["underground_pipes"])
     sort(entities["underground_pipes"])
+
     #  Pumps
     entities["pumps"] = []
     categorize_entities(data.raw["pump"], entities["pumps"])
     sort(entities["pumps"])
+
     #  Rails
     entities["straight_rails"] = []
     categorize_entities(data.raw["straight-rail"], entities["straight_rails"])
@@ -466,10 +474,12 @@ def extract_entities(lua, data_location, verbose):
     entities["curved_rails"] = []
     categorize_entities(data.raw["curved-rail"], entities["curved_rails"])
     sort(entities["curved_rails"])
+
     #  Train stops
     entities["train_stops"] = []
     categorize_entities(data.raw["train-stop"], entities["train_stops"])
     sort(entities["train_stops"])
+
     #  Rail signals
     entities["rail_signals"] = []
     categorize_entities(data.raw["rail-signal"], entities["rail_signals"])
@@ -477,6 +487,7 @@ def extract_entities(lua, data_location, verbose):
     entities["rail_chain_signals"] = []
     categorize_entities(data.raw["rail-chain-signal"], entities["rail_chain_signals"])
     sort(entities["rail_chain_signals"])
+
     #  Train cars
     entities["locomotives"] = []
     categorize_entities(data.raw["locomotive"], entities["locomotives"])
@@ -490,6 +501,7 @@ def extract_entities(lua, data_location, verbose):
     entities["artillery_wagons"] = []
     categorize_entities(data.raw["artillery-wagon"], entities["artillery_wagons"])
     sort(entities["artillery_wagons"])
+
     #  Logistics containers (Special)
     entities["logistic_passive_containers"] = []
     entities["logistic_active_containers"] = []
@@ -518,14 +530,17 @@ def extract_entities(lua, data_location, verbose):
     sort(entities["logistic_storage_containers"])
     sort(entities["logistic_buffer_containers"])
     sort(entities["logistic_request_containers"])
+
     #  Roboports
     entities["roboports"] = []
     categorize_entities(data.raw["roboport"], entities["roboports"])
     sort(entities["roboports"])
+
     #  Lamps
     entities["lamps"] = []
     categorize_entities(data.raw["lamp"], entities["lamps"])
     sort(entities["lamps"])
+
     #  Combinators
     entities["arithmetic_combinators"] = []
     categorize_entities(
@@ -548,70 +563,87 @@ def extract_entities(lua, data_location, verbose):
         data.raw["programmable-speaker"], entities["programmable_speakers"]
     )
     sort(entities["programmable_speakers"])
+
     #  Boilers / Heat exchangers
     entities["boilers"] = []
     categorize_entities(data.raw["boiler"], entities["boilers"])
     sort(entities["boilers"])
+
     #  Steam engines / turbines
     entities["generators"] = []
     categorize_entities(data.raw["generator"], entities["generators"])
     sort(entities["generators"])
+
     #  Solar panels
     entities["solar_panels"] = []
     categorize_entities(data.raw["solar-panel"], entities["solar_panels"])
     sort(entities["solar_panels"])
+
     #  Accumulators
     entities["accumulators"] = []
     categorize_entities(data.raw["accumulator"], entities["accumulators"])
     sort(entities["accumulators"])
+
     #  Reactors
     entities["reactors"] = []
     categorize_entities(data.raw["reactor"], entities["reactors"])
     sort(entities["reactors"])
+
     #  Heat pipes
     entities["heat_pipes"] = []
     categorize_entities(data.raw["heat-pipe"], entities["heat_pipes"])
     sort(entities["heat_pipes"])
+
     #  Mining drills (Burner, Electric, Pumpjack)
     entities["mining_drills"] = []
     categorize_entities(data.raw["mining-drill"], entities["mining_drills"])
     sort(entities["mining_drills"])
+
     #  Offshore pumps
     entities["offshore_pumps"] = []
     categorize_entities(data.raw["offshore-pump"], entities["offshore_pumps"])
     sort(entities["offshore_pumps"])
+
     #  Furnaces
     entities["furnaces"] = []
     categorize_entities(data.raw["furnace"], entities["furnaces"])
     sort(entities["furnaces"])
+
     #  Assembling machines (1-3 + chemical plant, refinery, and centrifuge)
     entities["assembling_machines"] = []
     categorize_entities(data.raw["assembling-machine"], entities["assembling_machines"])
     sort(entities["assembling_machines"])
+
     #  Labs
     entities["labs"] = []
     categorize_entities(data.raw["lab"], entities["labs"])
     sort(entities["labs"])
+
     #  Beacons
     entities["beacons"] = []
     categorize_entities(data.raw["beacon"], entities["beacons"])
     sort(entities["beacons"])
+
     #  Rocket silos
     entities["rocket_silos"] = []
     categorize_entities(data.raw["rocket-silo"], entities["rocket_silos"])
     sort(entities["rocket_silos"])
+
     #  Landmines
     entities["land_mines"] = []
     categorize_entities(data.raw["land-mine"], entities["land_mines"])
     sort(entities["land_mines"])
+
     #  Walls
     entities["walls"] = []
     categorize_entities(data.raw["wall"], entities["walls"])
     sort(entities["walls"])
+
     #  Gates
     entities["gates"] = []
     categorize_entities(data.raw["gate"], entities["gates"])
     sort(entities["gates"])
+
     #  Turrets
     entities["turrets"] = []
     categorize_entities(data.raw["ammo-turret"], entities["turrets"])
@@ -619,36 +651,50 @@ def extract_entities(lua, data_location, verbose):
     categorize_entities(data.raw["fluid-turret"], entities["turrets"])
     categorize_entities(data.raw["artillery-turret"], entities["turrets"])
     sort(entities["turrets"])
+
     #  Radars
     entities["radars"] = []
     categorize_entities(data.raw["radar"], entities["radars"])
     sort(entities["radars"])
+
     #  Electric Energy Interfaces
     entities["electric_energy_interfaces"] = []
     categorize_entities(
         data.raw["electric-energy-interface"], entities["electric_energy_interfaces"]
     )
     sort(entities["electric_energy_interfaces"])
+
     #  Linked Containers
     entities["linked_containers"] = []
-    categorize_entities(data.raw["linked-container"], entities["linked_containers"])
-    sort(entities["linked_containers"])
+    try:
+        categorize_entities(data.raw["linked-container"], entities["linked_containers"])
+        sort(entities["linked_containers"])
+    except TypeError:
+        pass
+
     #  Heat interfaces
     entities["heat_interfaces"] = []
     categorize_entities(data.raw["heat-interface"], entities["heat_interfaces"])
     sort(entities["heat_interfaces"])
+
     #  Linked belts
     entities["linked_belts"] = []
-    categorize_entities(data.raw["linked-belt"], entities["linked_belts"])
-    sort(entities["linked_belts"])
+    try:
+        categorize_entities(data.raw["linked-belt"], entities["linked_belts"])
+        sort(entities["linked_belts"])
+    except TypeError:
+        pass
+
     #  Infinity containers
     entities["infinity_containers"] = []
     categorize_entities(data.raw["infinity-container"], entities["infinity_containers"])
     sort(entities["infinity_containers"])
+
     #  Infinity pipes
     entities["infinity_pipes"] = []
     categorize_entities(data.raw["infinity-pipe"], entities["infinity_pipes"])
     sort(entities["infinity_pipes"])
+
     #  Burner generators
     entities["burner_generators"] = []
     categorize_entities(data.raw["burner-generator"], entities["burner_generators"])
@@ -1007,7 +1053,7 @@ def extract_tiles(lua, data_location, verbose):
 # =============================================================================
 
 
-def update(verbose=False):
+def update(verbose=False, no_mods=False):
     """
     Updates the data in the :py:mod:`.draftsman.data` modules.
 
@@ -1088,17 +1134,17 @@ def update(verbose=False):
         with open(os.path.join(factorio_mods, "mod-list.json")) as mod_list_file:
             mod_json = json.load(mod_list_file)
             for mod in mod_json["mods"]:
-                mod_list[mod["name"]] = mod["enabled"]
+                mod_list[mod["name"]] = mod["enabled"] and not no_mods
     except FileNotFoundError:  # If no such file is found
-        # Every mod is enabled by default
+        # Every mod is enabled by default, unless `no_mods` is True
         mod_list["base"] = True
         for mod_obj in os.listdir(factorio_mods):
             if mod_obj.lower().endswith(".zip"):
                 mod_name = mod_archive_regex.match(mod_obj).group(1)
-                mod_list[mod_name] = True
+                mod_list[mod_name] = not no_mods
             elif os.path.isdir(os.path.join(factorio_mods, mod_obj)):
                 mod_name = mod_obj
-                mod_list[mod_name] = True
+                mod_list[mod_name] = not no_mods
 
     # Preload all the mods and their versions
     for mod_obj in os.listdir(factorio_mods):
@@ -1144,13 +1190,13 @@ def update(verbose=False):
         else:  # Regular file
             continue  # Ignore
 
-        # Ensure that the mod's factorio version is correct
-        mod_factorio_version = version_string_to_tuple(mod_info["factorio_version"])
-        assert mod_factorio_version <= factorio_version_info
-
         # First make sure the mod is enabled
         if not mod_list[mod_name]:
             continue
+
+        # Ensure that the mod's factorio version is correct
+        mod_factorio_version = version_string_to_tuple(mod_info["factorio_version"])
+        assert mod_factorio_version <= factorio_version_info
 
         mod_data = {}
         # Attempt to load setting files
@@ -1380,7 +1426,7 @@ def update(verbose=False):
     extract_signals(lua, data_location, verbose)
     extract_tiles(lua, data_location, verbose)
 
-    print("hella slick; nothing broke!")
+    print("Update finished.")
 
 
 def main():
@@ -1396,5 +1442,11 @@ def main():
         action="store_true",
         help="Show extra information during the update",
     )
+    parser.add_argument(
+        "--no-mods",
+        action="store_true",
+        help="Only load the 'base' mod and ignore all others; simulates no mods",
+    )
     args = parser.parse_args()
-    update(verbose=args.verbose)
+    update(verbose=args.verbose, no_mods=args.no_mods)
+    print("hella slick; nothing broke!")

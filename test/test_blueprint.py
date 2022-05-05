@@ -5,6 +5,7 @@ from __future__ import absolute_import, unicode_literals
 
 from draftsman._factorio_version import __factorio_version__, __factorio_version_info__
 from draftsman.blueprintable import Blueprint, get_blueprintable_from_string
+from draftsman.classes.association import Association
 from draftsman.classes.blueprint import TileList
 from draftsman.classes.entitylike import EntityLike
 from draftsman.classes.entitylist import EntityList
@@ -35,12 +36,12 @@ from draftsman.warning import (
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
-    from unittest import TestCase
+    import unittest
 else:  # pragma: no coverage
-    from unittest2 import TestCase
+    import unittest2 as unittest
 
 
-class BlueprintTesting(TestCase):
+class BlueprintTesting(unittest.TestCase):
 
     # =========================================================================
     # Blueprint
@@ -424,7 +425,7 @@ class BlueprintTesting(TestCase):
 
         blueprint.schedules = [
             {
-                "locomotives": [blueprint.entities["test_train"]],
+                "locomotives": [Association(blueprint.entities["test_train"])],
                 "schedule": [
                     {
                         "station": "station_name",

@@ -13,12 +13,12 @@ from draftsman.warning import OverlappingObjectsWarning, HiddenEntityWarning
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
-    from unittest import TestCase
+    import unittest
 else:  # pragma: no coverage
-    from unittest2 import TestCase
+    import unittest2 as unittest
 
 
-class EntityListTesting(TestCase):
+class EntityListTesting(unittest.TestCase):
     def test_constructor(self):
         blueprint = Blueprint()
         test = EntityList(blueprint)

@@ -124,6 +124,13 @@ class InvalidWireTypeError(DraftsmanError):
     pass
 
 
+class InvalidConnectionError(DraftsmanError):
+    """
+    Raised when an Association to an Entity still persists even when the Entity
+    that it refers to has been deleted.
+    """
+
+
 class InvalidConnectionSideError(DraftsmanError):
     """
     Raised when a circuit connection is connected to a side other than ``1``

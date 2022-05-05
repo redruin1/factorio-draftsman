@@ -67,6 +67,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     another ``EntityCollection``.
     """
 
+    @utils.reissue_warnings
     def __init__(self, id, name="group", type="group", position=(0, 0), entities=[]):
         # type: (str, str, str, Union[dict, list, tuple], list) -> None
         super(Group, self).__init__()  # EntityLike

@@ -7,12 +7,12 @@ from draftsman.error import InvalidTileError
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
-    from unittest import TestCase
+    import unittest
 else:  # pragma: no coverage
-    from unittest2 import TestCase
+    import unittest2 as unittest
 
 
-class TileTesting(TestCase):
+class TileTesting(unittest.TestCase):
     def test_constructor(self):
         # Specific position
         tile = Tile("hazard-concrete-right", (100, -100))

@@ -25,6 +25,8 @@ Technically there is a total data-space of 60 bits available, though utilizing
 this is left as an excercise to the reader, if desired.
 """
 
+# TODO: fix warnings
+
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.group import Group
 from draftsman.constants import Direction
@@ -134,10 +136,6 @@ class CombinatorCell(Group):
 def main():
     blueprint = Blueprint()
 
-    # Specify whatever numeric data you would like to encode here.
-    # Values can be anything in the signed 32-bit integer range.
-    data = [123, 200000000, -10421]
-
     # Specify the interface signals:
     address_signal = "red-wire"
     sector_index_signal = "green-wire"
@@ -166,6 +164,51 @@ def main():
     add_signals_to_mapping(signals.virtual)
     add_signals_to_mapping(signals.item)
     add_signals_to_mapping(signals.fluid)
+
+    commands = [
+        "LD",
+        0,
+        "I",
+        "LD",
+        1,
+        "T",
+        "LD",
+        2,
+        " ",
+        "LD",
+        3,
+        "W",
+        "LD",
+        4,
+        "O",
+        "LD",
+        5,
+        "R",
+        "LD",
+        6,
+        "K",
+        "LD",
+        7,
+        "S",
+        "LD",
+        8,
+        "!",
+    ]
+
+    # Specify whatever numeric data you would like to encode here.
+    # Values can be anything in the signed 32-bit integer range.
+    data = []
+    i = 0
+    while i < len(commands):
+        if commands[i] == "LD":
+            low_a = 1
+            high_a = commands[i + 1]
+            b = ord(commands[i + 2])
+            data.append(low_a | (high_a << 16))
+            data.append(b)
+            i += 3
+
+    print(data)
 
     # Sectors are akin to Hard-drive sectors and are where the data is stored
     sector = Group(id="sector_0")

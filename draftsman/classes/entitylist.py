@@ -369,9 +369,13 @@ class EntityList(MutableSequence):
         :param key: A ``str`` to associate with ``value``.
         :param value: An ``EntityLike`` instance to associate with ``key``.
 
+        :exception DuplicateIDError: If ``key`` already exists within the
+            ``EntityList``.
         :exception IndexError: If ``value`` is not found within the
             ``EntityList``.
         """
+        if key in self.key_map:
+            raise DuplicateIDError("'{}'".format(key))
         idx = self.data.index(value)
         self.key_map[key] = value
         self.key_to_idx[key] = idx

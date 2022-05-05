@@ -11,12 +11,12 @@ from draftsman.warning import DraftsmanWarning, RailAlignmentWarning
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
-    from unittest import TestCase
+    import unittest
 else:  # pragma: no coverage
-    from unittest2 import TestCase
+    import unittest2 as unittest
 
 
-class StraightRailTesting(TestCase):  # Hoo boy
+class StraightRailTesting(unittest.TestCase):  # Hoo boy
     def test_constructor_init(self):
         straight_rail = StraightRail(
             "straight-rail", tile_position=[0, 0], direction=Direction.NORTHWEST

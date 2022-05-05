@@ -10,12 +10,13 @@ match the data format specified, which is usually wrapped with ``DraftsmanError`
 
 from __future__ import unicode_literals
 
-from draftsman.classes.entitylike import EntityLike
+from draftsman.classes.association import Association
 from draftsman.data.signals import signal_dict
 
 from builtins import int
 from schema import Schema, Use, Optional, Or, And
 import six
+import weakref
 
 
 # TODO: separate CONTROL_BEHAVIOR into their individual signatures for each entity
@@ -162,7 +163,7 @@ def normalize_icons(icons):
 
 ICONS = Schema(And(Use(normalize_icons), Or([ICON], None)))
 
-ASSOCIATION = Schema(Or(int, EntityLike))
+ASSOCIATION = Schema(Or(int, Association))
 
 CIRCUIT_CONNECTION_POINT = Schema(
     {"entity_id": ASSOCIATION, Optional("circuit_id"): Or(1, 2)}

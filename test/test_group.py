@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 
+from draftsman.classes.association import Association
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.entitylist import EntityList
 from draftsman.classes.group import Group
@@ -25,12 +26,12 @@ from draftsman.warning import (
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
-    from unittest import TestCase
+    import unittest
 else:  # pragma: no coverage
-    from unittest2 import TestCase
+    import unittest2 as unittest
 
 
-class GroupTesting(TestCase):
+class GroupTesting(unittest.TestCase):
     def test_default_constructor(self):
         group = Group("default")
         self.assertEqual(group.id, "default")
@@ -42,9 +43,9 @@ class GroupTesting(TestCase):
 
     def test_constructor_init(self):
         entity_list = [
-            Furnace(),
-            Container(tile_position=(4, 0)),
-            ProgrammableSpeaker(tile_position=(8, 0)),
+            Furnace("stone-furnace"),
+            Container("wooden-chest", tile_position=(4, 0)),
+            ProgrammableSpeaker("programmable-speaker", tile_position=(8, 0)),
         ]
         group = Group(
             name="groupA",
@@ -161,9 +162,9 @@ class GroupTesting(TestCase):
         group = Group("test")
         # List case
         group.entities = [
-            Furnace(),
-            Container(tile_position=(4, 0)),
-            ProgrammableSpeaker(tile_position=(8, 0)),
+            Furnace("stone-furnace"),
+            Container("wooden-chest", tile_position=(4, 0)),
+            ProgrammableSpeaker("programmable-speaker", tile_position=(8, 0)),
         ]
         self.assertIsInstance(group.entities, EntityList)
         # None case
@@ -204,8 +205,10 @@ class GroupTesting(TestCase):
             {
                 "name": "substation",
                 "position": {"x": 1.0, "y": 1.0},
-                "neighbours": [group.entities["B"]],
-                "connections": {"1": {"red": [{"entity_id": group.entities["B"]}]}},
+                "neighbours": [Association(group.entities["B"])],
+                "connections": {
+                    "1": {"red": [{"entity_id": Association(group.entities["B"])}]}
+                },
             },
         )
         self.assertEqual(
@@ -213,9 +216,9 @@ class GroupTesting(TestCase):
             {
                 "name": "substation",
                 "position": {"x": 11.0, "y": 11.0},
-                "neighbours": [group.entities["A"]],
+                "neighbours": [Association(group.entities["A"])],
                 "connections": {
-                    "1": {"red": [{"entity_id": group.entities["A"]}]},
+                    "1": {"red": [{"entity_id": Association(group.entities["A"])}]},
                 },
             },
         )
@@ -225,7 +228,9 @@ class GroupTesting(TestCase):
                 "name": "power-switch",
                 "position": {"x": 6.0, "y": 6.0},
                 "connections": {
-                    "Cu1": [{"entity_id": group.entities["B"], "wire_id": 0}]
+                    "Cu1": [
+                        {"entity_id": Association(group.entities["B"]), "wire_id": 0}
+                    ]
                 },
             },
         )
@@ -261,7 +266,9 @@ class GroupTesting(TestCase):
             {
                 "name": "steel-chest",
                 "position": {"x": 0.5, "y": 0.5},
-                "connections": {"1": {"red": [{"entity_id": group.entities[1]}]}},
+                "connections": {
+                    "1": {"red": [{"entity_id": Association(group.entities[1])}]}
+                },
             },
         )
         result = group.entities.pop()
@@ -270,7 +277,9 @@ class GroupTesting(TestCase):
             {
                 "name": "steel-chest",
                 "position": {"x": 3.5, "y": 0.5},
-                "connections": {"1": {"red": [{"entity_id": group.entities[0]}]}},
+                "connections": {
+                    "1": {"red": [{"entity_id": Association(group.entities[0])}]}
+                },
             },
         )
 
@@ -283,37 +292,51 @@ class GroupTesting(TestCase):
 
         # Normal operation
         group.add_power_connection("1", "2")
-        self.assertEqual(group.entities["1"].neighbours, [group.entities["2"]])
-        self.assertEqual(group.entities["2"].neighbours, [group.entities["1"]])
+        self.assertEqual(
+            group.entities["1"].neighbours, [Association(group.entities["2"])]
+        )
+        self.assertEqual(
+            group.entities["2"].neighbours, [Association(group.entities["1"])]
+        )
         # Inverse, but redundant case
         group.add_power_connection("2", "1")
-        self.assertEqual(group.entities["1"].neighbours, [group.entities["2"]])
-        self.assertEqual(group.entities["2"].neighbours, [group.entities["1"]])
+        self.assertEqual(
+            group.entities["1"].neighbours, [Association(group.entities["2"])]
+        )
+        self.assertEqual(
+            group.entities["2"].neighbours, [Association(group.entities["1"])]
+        )
 
         # Dual power connectable case
         group.add_power_connection("1", "p")
-        self.assertEqual(group.entities["1"].neighbours, [group.entities["2"]])
+        self.assertEqual(
+            group.entities["1"].neighbours, [Association(group.entities["2"])]
+        )
         self.assertEqual(
             group.entities["p"].connections,
-            {"Cu0": [{"entity_id": group.entities["1"], "wire_id": 0}]},
+            {"Cu0": [{"entity_id": Association(group.entities["1"]), "wire_id": 0}]},
         )
         # Inverse, but redundant case
         group.add_power_connection("p", "1")
-        self.assertEqual(group.entities["1"].neighbours, [group.entities["2"]])
+        self.assertEqual(
+            group.entities["1"].neighbours, [Association(group.entities["2"])]
+        )
         self.assertEqual(
             group.entities["p"].connections,
-            {"Cu0": [{"entity_id": group.entities["1"], "wire_id": 0}]},
+            {"Cu0": [{"entity_id": Association(group.entities["1"]), "wire_id": 0}]},
         )
         # Redundant case
         group.add_power_connection("2", "p")
         group.add_power_connection("2", "p")
-        self.assertEqual(group.entities["2"].neighbours, [group.entities["1"]])
+        self.assertEqual(
+            group.entities["2"].neighbours, [Association(group.entities["1"])]
+        )
         self.assertEqual(
             group.entities["p"].connections,
             {
                 "Cu0": [
-                    {"entity_id": group.entities["1"], "wire_id": 0},
-                    {"entity_id": group.entities["2"], "wire_id": 0},
+                    {"entity_id": Association(group.entities["1"]), "wire_id": 0},
+                    {"entity_id": Association(group.entities["2"]), "wire_id": 0},
                 ]
             },
         )
@@ -322,10 +345,10 @@ class GroupTesting(TestCase):
             group.entities["p"].connections,
             {
                 "Cu0": [
-                    {"entity_id": group.entities["1"], "wire_id": 0},
-                    {"entity_id": group.entities["2"], "wire_id": 0},
+                    {"entity_id": Association(group.entities["1"]), "wire_id": 0},
+                    {"entity_id": Association(group.entities["2"]), "wire_id": 0},
                 ],
-                "Cu1": [{"entity_id": group.entities["2"], "wire_id": 0}],
+                "Cu1": [{"entity_id": Association(group.entities["2"]), "wire_id": 0}],
             },
         )
 
@@ -349,16 +372,16 @@ class GroupTesting(TestCase):
         # Make sure correct even after errors
         self.assertEqual(
             group.entities["1"].neighbours,
-            [group.entities["2"], group.entities["other"]],
+            [Association(group.entities["2"]), Association(group.entities["other"])],
         )
         self.assertEqual(
             group.entities["p"].connections,
             {
                 "Cu0": [
-                    {"entity_id": group.entities["1"], "wire_id": 0},
-                    {"entity_id": group.entities["2"], "wire_id": 0},
+                    {"entity_id": Association(group.entities["1"]), "wire_id": 0},
+                    {"entity_id": Association(group.entities["2"]), "wire_id": 0},
                 ],
-                "Cu1": [{"entity_id": group.entities["2"], "wire_id": 0}],
+                "Cu1": [{"entity_id": Association(group.entities["2"]), "wire_id": 0}],
             },
         )
 
@@ -366,18 +389,22 @@ class GroupTesting(TestCase):
         # Redundant case
         group.remove_power_connection("1", "2")
         group.remove_power_connection("1", "2")
-        self.assertEqual(group.entities["1"].neighbours, [group.entities["other"]])
+        self.assertEqual(
+            group.entities["1"].neighbours, [Association(group.entities["other"])]
+        )
         self.assertEqual(group.entities["2"].neighbours, [])
 
         # Remove power switch connection that does not exist
         group.remove_power_connection("1", "p")
         group.remove_power_connection("1", "p")
-        self.assertEqual(group.entities["1"].neighbours, [group.entities["other"]])
+        self.assertEqual(
+            group.entities["1"].neighbours, [Association(group.entities["other"])]
+        )
         self.assertEqual(
             group.entities["p"].connections,
             {
-                "Cu0": [{"entity_id": group.entities["2"], "wire_id": 0}],
-                "Cu1": [{"entity_id": group.entities["2"], "wire_id": 0}],
+                "Cu0": [{"entity_id": Association(group.entities["2"]), "wire_id": 0}],
+                "Cu1": [{"entity_id": Association(group.entities["2"]), "wire_id": 0}],
             },
         )
 
@@ -388,7 +415,7 @@ class GroupTesting(TestCase):
         group.remove_power_connection("p", "1")
         self.assertEqual(
             group.entities["p"].connections,
-            {"Cu1": [{"entity_id": group.entities["2"], "wire_id": 0}]},
+            {"Cu1": [{"entity_id": Association(group.entities["2"]), "wire_id": 0}]},
         )
         group.remove_power_connection("2", "p", 2)
         group.remove_power_connection("2", "p", 2)
@@ -407,7 +434,9 @@ class GroupTesting(TestCase):
             {
                 "name": "steel-chest",
                 "position": {"x": -0.5, "y": 0.5},
-                "connections": {"1": {"red": [{"entity_id": group.entities["c2"]}]}},
+                "connections": {
+                    "1": {"red": [{"entity_id": Association(group.entities["c2"])}]}
+                },
             },
         )
         self.assertEqual(
@@ -415,7 +444,9 @@ class GroupTesting(TestCase):
             {
                 "name": "steel-chest",
                 "position": {"x": 1.5, "y": 0.5},
-                "connections": {"1": {"red": [{"entity_id": group.entities["c1"]}]}},
+                "connections": {
+                    "1": {"red": [{"entity_id": Association(group.entities["c1"])}]}
+                },
             },
         )
         # Test duplicate connection
@@ -425,7 +456,9 @@ class GroupTesting(TestCase):
             {
                 "name": "steel-chest",
                 "position": {"x": -0.5, "y": 0.5},
-                "connections": {"1": {"red": [{"entity_id": group.entities["c2"]}]}},
+                "connections": {
+                    "1": {"red": [{"entity_id": Association(group.entities["c2"])}]}
+                },
             },
         )
         self.assertEqual(
@@ -433,7 +466,9 @@ class GroupTesting(TestCase):
             {
                 "name": "steel-chest",
                 "position": {"x": 1.5, "y": 0.5},
-                "connections": {"1": {"red": [{"entity_id": group.entities["c1"]}]}},
+                "connections": {
+                    "1": {"red": [{"entity_id": Association(group.entities["c1"])}]}
+                },
             },
         )
 
@@ -442,7 +477,7 @@ class GroupTesting(TestCase):
         self.assertEqual(group.entities["c1"].connections, {})
 
         # Test when the same side and color dict already exists
-        container3 = Container(id="test")
+        container3 = Container("wooden-chest", id="test")
         group.entities.append(container3)
         group.add_circuit_connection("red", "c2", "test")
         self.assertEqual(
@@ -453,8 +488,8 @@ class GroupTesting(TestCase):
                 "connections": {
                     "1": {
                         "red": [
-                            {"entity_id": group.entities["c1"]},
-                            {"entity_id": group.entities["test"]},
+                            {"entity_id": Association(group.entities["c1"])},
+                            {"entity_id": Association(group.entities["test"])},
                         ]
                     }
                 },
@@ -473,16 +508,42 @@ class GroupTesting(TestCase):
         self.assertEqual(
             group2.entities["a"].connections,
             {
-                "1": {"green": [{"entity_id": group2.entities["a"], "circuit_id": 2}]},
+                "1": {
+                    "green": [
+                        {
+                            "entity_id": Association(group2.entities["a"]),
+                            "circuit_id": 2,
+                        }
+                    ]
+                },
                 "2": {
-                    "green": [{"entity_id": group2.entities["a"], "circuit_id": 1}],
-                    "red": [{"entity_id": group2.entities["d"], "circuit_id": 1}],
+                    "green": [
+                        {
+                            "entity_id": Association(group2.entities["a"]),
+                            "circuit_id": 1,
+                        }
+                    ],
+                    "red": [
+                        {
+                            "entity_id": Association(group2.entities["d"]),
+                            "circuit_id": 1,
+                        }
+                    ],
                 },
             },
         )
         self.assertEqual(
             group2.entities["d"].connections,
-            {"1": {"red": [{"entity_id": group2.entities["a"], "circuit_id": 2}]}},
+            {
+                "1": {
+                    "red": [
+                        {
+                            "entity_id": Association(group2.entities["a"]),
+                            "circuit_id": 2,
+                        }
+                    ]
+                }
+            },
         )
 
         # Warnings
@@ -524,8 +585,8 @@ class GroupTesting(TestCase):
 
     def test_remove_circuit_connection(self):
         group = Group("test")
-        container1 = Container(id="testing1", tile_position=[0, 0])
-        container2 = Container(id="testing2", tile_position=[1, 0])
+        container1 = Container("wooden-chest", id="testing1", tile_position=[0, 0])
+        container2 = Container("wooden-chest", id="testing2", tile_position=[1, 0])
         group.entities = [container1, container2]
 
         # Null case
@@ -555,7 +616,11 @@ class GroupTesting(TestCase):
                 "name": "wooden-chest",
                 "position": {"x": 0.5, "y": 0.5},
                 "connections": {
-                    "1": {"green": [{"entity_id": group.entities["testing2"]}]}
+                    "1": {
+                        "green": [
+                            {"entity_id": Association(group.entities["testing2"])}
+                        ]
+                    }
                 },
             },
         )
@@ -565,7 +630,11 @@ class GroupTesting(TestCase):
                 "name": "wooden-chest",
                 "position": {"x": 1.5, "y": 0.5},
                 "connections": {
-                    "1": {"green": [{"entity_id": group.entities["testing1"]}]}
+                    "1": {
+                        "green": [
+                            {"entity_id": Association(group.entities["testing1"])}
+                        ]
+                    }
                 },
             },
         )
@@ -578,7 +647,11 @@ class GroupTesting(TestCase):
                 "name": "wooden-chest",
                 "position": {"x": 0.5, "y": 0.5},
                 "connections": {
-                    "1": {"green": [{"entity_id": group.entities["testing2"]}]}
+                    "1": {
+                        "green": [
+                            {"entity_id": Association(group.entities["testing2"])}
+                        ]
+                    }
                 },
             },
         )
@@ -609,11 +682,20 @@ class GroupTesting(TestCase):
         self.assertEqual(group2.entities["a"].connections, {})
         self.assertEqual(
             group2.entities["d"].connections,
-            {"2": {"red": [{"entity_id": group2.entities["c"]}]}},
+            {"2": {"red": [{"entity_id": Association(group2.entities["c"])}]}},
         )
         self.assertEqual(
             group2.entities["c"].connections,
-            {"1": {"red": [{"entity_id": group2.entities["d"], "circuit_id": 2}]}},
+            {
+                "1": {
+                    "red": [
+                        {
+                            "entity_id": Association(group2.entities["d"]),
+                            "circuit_id": 2,
+                        }
+                    ]
+                }
+            },
         )
 
         # Errors

@@ -15,12 +15,12 @@ from draftsman.warning import DraftsmanWarning, IndexWarning
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
-    from unittest import TestCase
+    import unittest
 else:  # pragma: no coverage
-    from unittest2 import TestCase
+    import unittest2 as unittest
 
 
-class BlueprintableListTesting(TestCase):
+class BlueprintableListTesting(unittest.TestCase):
     def test_setitem(self):
         blueprint_book = BlueprintBook()
         blueprint_book.blueprints.append(Blueprint())
@@ -40,7 +40,7 @@ class BlueprintableListTesting(TestCase):
         self.assertEqual(blueprint_book.blueprints.data, [])
 
 
-class BlueprintBookTesting(TestCase):
+class BlueprintBookTesting(unittest.TestCase):
     def test_constructor(self):
         blueprint_book = BlueprintBook()
 

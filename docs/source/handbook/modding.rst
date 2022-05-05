@@ -8,19 +8,19 @@ Adding mods to Draftsman is about as easy as installing mods for Factorio itself
 First, we need to determine exactly which mods we want to work with.
 Mods can be downloaded directly from `<https://mods.factorio.com/>`_, but an easier method is to use Factorio's in-game mod browser itself:
 
-.. image:: ../../img/handbook/in_game_factorio_browser.png
+.. image:: ../../img/handbook/modding/in_game_factorio_browser.png
     :alt: Factorio's in-game mod browser.
 
 Select the mods that you want, then press the Install button to automatically download and install the mods and their dependencies.
 You can also setup any user configuration that you want, such as enabling or disabling specific mods, or changing mod specific settings; these changes will be reflected in Draftsman. (As long as they affect the data stage only!)
 
-.. image:: ../../img/handbook/factorio_mod_settings.png
+.. image:: ../../img/handbook/modding/factorio_mod_settings.png
     :alt: Factorio's mod settings, available in Settings > Mod Settings
 
 Then, navigate to the Factorio mods folder. This is usually located somewhere in your home directory.
 For example, on Windows your mods should be located in ``C:\Users\your_name\AppData\Roaming\Factorio\mods``:
 
-.. image:: ../../img/handbook/factorio_mods_folder.png
+.. image:: ../../img/handbook/modding/factorio_mods_folder.png
     :alt: The local mods folder for Factorio.
 
 Next, determine where your Draftsman installation is located.
@@ -30,7 +30,7 @@ You should make sure that the version of Draftsman that you're using corresponds
 
 In that folder you should find a folder titled ``draftsman``, and inside that a folder named ``factorio-mods``:
 
-.. image:: ../../img/handbook/draftsman_mods_folder.png
+.. image:: ../../img/handbook/modding/draftsman_mods_folder.png
     :alt: A depiction of the draftsman mods folder.
 
 Copy and paste the contents from your Factorio mods folder to the ``factorio-mods`` folder in ``draftsman``.
@@ -46,7 +46,7 @@ Any other file that does not end with ``.zip`` will be ignored.
 Then, to resolve these changes simply run ``draftsman-update``.
 Again, make sure you're running the correct ``draftsman-update`` for the version of Draftsman that you installed the mods into.
 You can use the ``--verbose`` or ``-v`` flag to get more information about the load process.
-Here's a fairly complicated example of what you might see:
+The following is the verbose output of the modlist above:
 
 .. code-block:: console
 
@@ -357,12 +357,15 @@ Here's a fairly complicated example of what you might see:
     Extracted recipes...
     Extracted signals...
     Extracted tiles...
+    Update finished.
     hella slick; nothing broke!
 
 
-After the command has finished, all the correct data and prototypes should be loaded properly.
-This means that you can create new instances of modded entities exactly as if they were vanilla ones:
+Writing scripts with mods
+-------------------------
 
+After the command has finished, all the correct data and prototypes should be loaded.
+This means that you can create new instances of modded entities exactly as if they were vanilla ones:
 
 .. code-block:: python
 
@@ -387,7 +390,59 @@ This means that you can create new instances of modded entities exactly as if th
     # 'red-chest', 'se-cartouche-chest', 'factorio-logo-11tiles', 'factorio-logo-16tiles', 
     # 'factorio-logo-22tiles']
 
+However, note that the converse is not necessarily true; If you have the mod enabled, then you can create a modded entity, but if you share that script with another user who doesn't have those mods enabled, the script will fail with an :py:exc:`.InvalidEntityError`.
 
+To handle this case more elegantly, there exists a :py:mod:`.mods` module that indexes the currently enabled mods and their versions (`similar to Factorio's modding API <https://lua-api.factorio.com/latest/Data-Lifecycle.html#:~:text=game%20provides%20the-,mods,-table%20which%20contains>`_). 
+
+.. code-block:: python
+
+    from draftsman.data import mods
+
+    print(mods.mod_list)
+    # {
+    #     'base': (1, 1, 57, 0), # This is the Factorio version, which is treated as a "mod"
+    #     'aai-containers': (0, 2, 10), 
+    #     'aai-industry': (0, 5, 14), 
+    #     'aai-signal-transmission': (0, 4, 4), 
+    #     'Aircraft': (1, 8, 4), 
+    #     'alien-biomes': (0, 6, 7), 
+    #     'ArmouredBiters': (1, 1, 5), 
+    #     'cargo-ships-graphics': (0, 1, 0), 
+    #     'cargo-ships': (0, 1, 16), 
+    #     'CleanedConcrete': (1, 0, 2), 
+    #     'flib': (0, 10, 1), 
+    #     'helmod': (0, 12, 9), 
+    #     'informatron': (0, 2, 2), 
+    #     'islands_world': (1, 1, 0), 
+    #     'jetpack': (0, 3, 1), 
+    #     'LogisticTrainNetwork': (1, 16, 7), 
+    #     'Noxys_Swimming': (0, 4, 2), 
+    #     'Noxys_Waterfill': (0, 4, 3), 
+    #     'recursive-blueprints': (1, 2, 6), 
+    #     'robot_attrition': (0, 5, 12), 
+    #     'shield-projector': (0, 1, 3), 
+    #     'space-exploration-graphics-2': (0, 1, 2), 
+    #     'space-exploration-graphics-3': (0, 1, 1), 
+    #     'space-exploration-graphics-4': (0, 1, 1), 
+    #     'space-exploration-graphics-5': (0, 1, 2), 
+    #     'space-exploration-graphics': (0, 5, 15), 
+    #     'space-exploration-postprocess': (0, 5, 29), 
+    #     'space-exploration': (0, 5, 112)
+    # }
+
+You can use this to ensure that the mods needed for the script's operation are present and of the correct version, and issue more helpful messages when they are not:
+
+.. code-block:: python
+
+    from draftsman.entity import Container
+    from draftsman.data import mods
+    from draftsman.error import MissingModError
+
+    if not mods.mod_list.get("recursive-blueprints", False):
+        raise MissingModError("The Recursive Blueprints mod is needed for this script")
+
+    deployer = Container("blueprint-deployer")
+    # ...
 
 Limitations of mods
 -------------------

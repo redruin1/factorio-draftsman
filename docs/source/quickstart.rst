@@ -437,12 +437,7 @@ And for completeness sake, here's a copy of the changed blueprint string:
 
 Hopefully now you can start to see just how capable Draftsman is. 
 Still, this barely scratches the surface of this module's capabilities. 
-If you want to know more about how Draftsman works and how you can use it to it's fullest, check out the Handbook:
-
-.. toctree::
-    :maxdepth: 2
-
-    handbook/index.rst
+If you want to know more about how Draftsman works and how you can use it to it's fullest, check out the :doc:`Handbook <handbook/index>`.
 
 If you want to take a look at some more complex examples, you can take a look at the `examples folder here <https://github.com/redruin1/factorio-draftsman/tree/main/examples>`_.
 
