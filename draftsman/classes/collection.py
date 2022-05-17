@@ -55,18 +55,33 @@ class EntityCollection(object):
         """
         pass
 
-    # TODO: utilize
-    # @property
-    # def flippable(self):
-    #     # type: () -> bool
-    #     """
-    #     Read only
-    #     """
-    #     for entity in self.entities:
-    #         if not entity.flippable:
-    #             return False
+    @property
+    def rotatable(self):
+        # type: () -> bool
+        """
+        Whether or not this collection can be rotated or not. Included for
+        posterity; always returns True, even when containing entities that have
+        no direction component. Read only.
 
-    #     return True
+        :type: ``bool``
+        """
+        return True
+
+    @property
+    def flippable(self):
+        # type: () -> bool
+        """
+        Whether or not this collection can be flipped or not. This is determined
+        by whether or not any of the entities contained can be flipped or not.
+        Read only.
+
+        :type: ``bool``
+        """
+        for entity in self.entities:
+            if not entity.flippable:
+                return False
+
+        return True
 
     # =========================================================================
     # Custom edge functions for EntityList interaction
@@ -109,8 +124,6 @@ class EntityCollection(object):
     def find_entity(self, name, position):
         # type: (str, Union[tuple, list, dict]) -> EntityLike
         """
-        TODO: Make compatible with Groups
-
         Finds an entity with ``name`` at a grid position ``position``. If
         multiple entities exist in the queried position, the one that was first
         placed is returned.
@@ -131,8 +144,6 @@ class EntityCollection(object):
     def find_entities(self, aabb=None):
         # type: (list) -> list[EntityLike]
         """
-        TODO: Make compatible with Groups
-
         Returns a list of all entities within the area ``aabb``. Works
         similiarly to
         `LuaSurface.find_entities <https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_entities>`_.
@@ -154,11 +165,9 @@ class EntityCollection(object):
     def find_entities_filtered(self, **kwargs):
         # type: (**dict) -> list[EntityLike]
         """
-        TODO: Make compatible with Groups
-
         Returns a filtered list of entities within the ``Collection``. Works
-        similarly to
-        `LuaSurface.find_entities_filtered <https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_entities_filtered>`_.
+        similarly to `LuaSurface.find_entities_filtered
+        <https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_entities_filtered>`_.
 
         Keywords are organized into two main categrories: **region** and
         **criteria**:
@@ -223,7 +232,8 @@ class EntityCollection(object):
             # Intersect entities with area
             search_region = self.entity_hashmap.get_in_area(kwargs["area"])
         else:
-            search_region = self.entities
+            # Search all entities, but make sure it's a 1D list
+            search_region = utils.flatten_entities(self.entities)
 
         if isinstance(kwargs.get("name", None), str):
             names = {kwargs.pop("name", None)}
@@ -484,14 +494,13 @@ class EntityCollection(object):
                 # Don't include ourself in the entities we're connecting to
                 if other is cur_pole:
                     return False
-                # Don't include poles that we're already connected to
-                # TODO
                 # If only_axis is true, only include ones that have the same x
                 # or y
                 if (
                     cur_pole.position["x"] != other.position["x"]
                     and cur_pole.position["y"] != other.position["y"]
-                ) and only_axis:
+                    and only_axis
+                ):
                     return False
                 # Only return poles that are less than the max power pole
                 # distance
@@ -503,14 +512,14 @@ class EntityCollection(object):
 
             potential_neighbours = list(filter(power_connectable, electric_poles))
             # Sort the power poles by distance
-            # potential_neighbours.sort(
-            #     key = lambda x: utils.dist(x.position, cur_pole.position)
-            # )
-            potential_neighbours = sorted(
-                potential_neighbours,
-                key=lambda x: utils.dist(x.position, cur_pole.position),
-                reverse=True,
+            potential_neighbours.sort(
+                key=lambda x: utils.dist(x.position, cur_pole.position)
             )
+            # potential_neighbours = sorted(
+            #     potential_neighbours,
+            #     key=lambda x: utils.dist(x.position, cur_pole.position),
+            #     reverse=True,
+            # )
             # Sort the power poles by whether or not they are on the axis first
             if prefer_axis:
                 potential_neighbours.sort(
@@ -600,8 +609,8 @@ class EntityCollection(object):
         min_dist = min(
             entity_1.circuit_wire_max_distance, entity_2.circuit_wire_max_distance
         )
-        entity_1_pos = [entity_1.position["x"], entity_1.position["y"]]
-        entity_2_pos = [entity_2.position["x"], entity_2.position["y"]]
+        entity_1_pos = [entity_1.global_position["x"], entity_1.global_position["y"]]
+        entity_2_pos = [entity_2.global_position["x"], entity_2.global_position["y"]]
         real_dist = utils.dist(entity_1_pos, entity_2_pos)
         if real_dist > min_dist:
             warnings.warn(

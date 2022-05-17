@@ -112,12 +112,20 @@ class Tile(SpatialLike):
         # type: (Union[dict, list, tuple]) -> None
 
         if self.parent:
-            raise DraftsmanError("Cannot move tile while it's inside a Blueprint")
+            raise DraftsmanError(
+                "Cannot move tile while it's inside an EntityCollection"
+            )
 
         try:
             self._position = {"x": int(value["x"]), "y": int(value["y"])}
         except TypeError:
             self._position = {"x": int(value[0]), "y": int(value[1])}
+
+    # =========================================================================
+
+    @property
+    def global_position(self):
+        return self.position
 
     # =========================================================================
 

@@ -188,6 +188,8 @@ class ConstantCombinatorTesting(unittest.TestCase):
             combinator.set_signal(1, TypeError)
         with self.assertRaises(TypeError):
             combinator.set_signal(1, "iron-ore", TypeError)
+        with self.assertRaises(IndexError):
+            combinator.set_signal(-1, "iron-ore", 0)
 
     def test_set_signals(self):
         combinator = ConstantCombinator()

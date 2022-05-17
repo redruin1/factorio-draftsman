@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 
+from draftsman import __factorio_version_info__
 from draftsman.classes.association import Association
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.entitylist import EntityList
@@ -16,6 +17,7 @@ from draftsman.error import (
     EntityNotCircuitConnectableError,
     RotationError,
 )
+from draftsman.utils import encode_version
 from draftsman.warning import (
     ConnectionSideWarning,
     ConnectionDistanceWarning,
@@ -712,6 +714,17 @@ class GroupTesting(unittest.TestCase):
         with self.assertRaises(InvalidConnectionSideError):
             group.remove_circuit_connection("red", "testing2", "testing1", 2, "fish")
 
+    def test_global_position(self):
+        group = Group("test")
+        group.entities.append("transport-belt")
+        self.assertEqual(group.position, {"x": 0, "y": 0})
+        self.assertEqual(group.entities[0].position, {"x": 0.5, "y": 0.5})
+        self.assertEqual(group.entities[0].global_position, {"x": 0.5, "y": 0.5})
+        group.position = (4, 4)
+        self.assertEqual(group.position, {"x": 4, "y": 4})
+        self.assertEqual(group.entities[0].position, {"x": 0.5, "y": 0.5})
+        self.assertEqual(group.entities[0].global_position, {"x": 4.5, "y": 4.5})
+
     def test_get_area(self):
         group = Group("test")
         group.entities.append("transport-belt")
@@ -793,6 +806,42 @@ class GroupTesting(unittest.TestCase):
         # Note that this messes with the entities position afterward:
         # this is prevented in Blueprint.to_dict by making a copy of itself and
         # using that instead of the original data
+
+    def test_with_blueprint(self):
+        blueprint = Blueprint()
+        blueprint.entities.append("inserter")
+
+        group = Group("test")
+        group.entities.append("inserter", tile_position=(1, 1))
+        group2 = Group("test2")
+        group2.entities.append(group)
+        blueprint.entities.append(group2)
+
+        blueprint.add_circuit_connection("red", 0, ("test2", "test", 0))
+        self.maxDiff = None
+        self.assertEqual(
+            blueprint.to_dict(),
+            {
+                "blueprint": {
+                    "item": "blueprint",
+                    "entities": [
+                        {
+                            "name": "inserter",
+                            "position": {"x": 0.5, "y": 0.5},
+                            "connections": {"1": {"red": [{"entity_id": 2}]}},
+                            "entity_number": 1,
+                        },
+                        {
+                            "name": "inserter",
+                            "position": {"x": 1.5, "y": 1.5},
+                            "connections": {"1": {"red": [{"entity_id": 1}]}},
+                            "entity_number": 2,
+                        },
+                    ],
+                    "version": encode_version(*__factorio_version_info__),
+                }
+            },
+        )
 
     # =========================================================================
 

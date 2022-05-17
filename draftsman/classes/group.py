@@ -1,8 +1,6 @@
 # group.py
 # -*- encoding: utf-8 -*-
 
-# TODO: documentation!
-
 from __future__ import unicode_literals
 
 from draftsman.classes.entitylist import EntityList
@@ -167,6 +165,8 @@ class Group(Transformable, EntityCollection, EntityLike):
         The ID of the Group. Differs from most ``EntityLikes`` in that a Group's
         ID is a *required* parameter.
 
+        TODO: maybe make not required? investigate
+
         :getter: Gets the ID of the Group.
         :setter: Sets the ID of the Group.
         :type: ``str``
@@ -209,7 +209,8 @@ class Group(Transformable, EntityCollection, EntityLike):
         :exception IndexError: If the set value does not match the above
             specification.
         :exception DraftsmanError: If the Group's position is modified when
-            inside a EntityCollection, [which is forbidden.] TODO
+            inside a EntityCollection, :ref:`which is forbidden
+            <handbook.blueprints.forbidden_entity_attributes>`.
         """
         return self._position
 
@@ -229,10 +230,39 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
+    def global_position(self):
+        # type: () -> dict
+        """
+        The "global", or root-most position of the Group. This value is always
+        equivalent to :py:meth:`~.Group.position`, unless the group exists
+        inside another :py:class:`.EntityCollection`. If it does, then it's
+        global position is equivalent to the sum of all parent positions plus
+        it's own position. Used when recursing the position of any sub-entity
+        contained within the ``Group``. Read only.
+
+        :type: ``dict{"x": float, "y": float}``
+        """
+        if self.parent and hasattr(self.parent, "global_position"):
+            return {
+                "x": self.parent.global_position["x"] + self.position["x"],
+                "y": self.parent.global_position["y"] + self.position["y"],
+            }
+        else:
+            return self.position
+
+    # =========================================================================
+
+    @property
     def collision_box(self):
         # type: () -> list
         """
-        TODO
+        The union of all the ``collision_box``s of the entities that this Group
+        holds. Adding an entity to the Group sets the collision box to the
+        minimum bounding box of the Group and the added Entity. If an Entity is
+        changed or removed inside the Group, the ``collision_box`` is
+        reconstructed from scratch. Read only.
+
+        :type: ``[[float, float], [float, float]]``
         """
         return self._collision_box
 
@@ -324,32 +354,14 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def rotatable(self):
-        # type: () -> bool
-        return True
-
-    # =========================================================================
-
-    @property
-    def flippable(self):
-        # type: () -> bool
-        # TODO: uncomment
-        # for entity in self.entities:
-        #     if not entity.flippable:
-        #         return False
-        return True
-
-    # =========================================================================
-
-    @property
     def entities(self):
         # type: () -> EntityList
         """
         The list of the Group's entities. Internally the list is a custom
-        class named :py:class`draftsman.classes.EntityList`, which has all the
+        class named :py:class:`draftsman.classes.EntityList`, which has all the
         normal properties of a regular list, as well as some extra features.
-        For more information on ``EntityList``, check out it's documentation
-        *here*. TODO
+        For more information on ``EntityList``, check out this writeup
+        :ref:`here <handbook.blueprints.blueprint_differences>`.
         """
         return self._entities
 
@@ -433,25 +445,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         :returns: A ``list`` of ``Entity`` instances associated with this
             ``Group``.
         """
-
-        def flatten_entities(entities):
-            out = []
-            for entity in entities:
-                result = entity.get()
-                if isinstance(result, list):
-                    out.extend(flatten_entities(result))
-                else:
-                    out.append(result)
-            return out
-
-        out = flatten_entities(self.entities)
-
-        for out_entity in out:
-            # Offset the Entity's position by the Group's position
-            out_entity.position["x"] += self.position["x"]
-            out_entity.position["y"] += self.position["y"]
-
-        return out
+        return utils.flatten_entities(self.entities)
 
     def recalculate_area(self):
         # type: () -> None

@@ -155,6 +155,18 @@ class InfinityContainerTesting(unittest.TestCase):
             },
         )
 
+        # Default count
+        container.set_infinity_filter(0, "iron-ore", "at-least")
+        self.assertEqual(
+            container.infinity_settings,
+            {
+                "filters": [
+                    {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"},
+                    {"index": 1, "name": "iron-ore", "count": 50, "mode": "at-least"},
+                ]
+            },
+        )
+
         with self.assertRaises(TypeError):
             container.set_infinity_filter("incorrect", "iron-ore")
         with self.assertRaises(TypeError):
@@ -171,3 +183,5 @@ class InfinityContainerTesting(unittest.TestCase):
             container.set_infinity_filter(-1, "iron-ore", "exactly", 200)
         with self.assertRaises(IndexError):
             container.set_infinity_filter(1000, "iron-ore", "exactly", 200)
+        with self.assertRaises(ValueError):
+            container.set_infinity_filter(1, "iron-ore", "exactly", -1)

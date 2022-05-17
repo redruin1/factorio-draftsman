@@ -1,10 +1,6 @@
 # entity.py
 # -*- encoding: utf-8 -*-
 
-# TODO: make sure that all functions that modify the entity preserve the
-#       entity's contents when they throw an error (this is done for the most
-#       part, though I'm sure there are corner cases)
-
 # Long term:
 # TODO: defaults!
 # TODO: "succinct" mode for to_dict(), integrate with better default management
@@ -57,11 +53,9 @@ class Entity(EntityLike):
         super(Entity, self).__init__()
         # Create a set of keywords that transfer in to_dict function
         # Since some things we want to keep internal without sending to to_dict
-        # TODO: maybe make an Exportable class and use for Blueprint as well?
         self.exports = dict()
         # For user convinience, keep track of all the unused arguments, and
         # issue a warning if the user provided one that was not used.
-        # TODO: find a more elegant solution for this functionality
         self.unused_args = kwargs
 
         # Entities of the same type
@@ -116,7 +110,7 @@ class Entity(EntityLike):
             self.unused_args.pop("position")
         else:
             self.tile_position = tile_position
-        self._add_export("position")
+        self._add_export("global_position", None, lambda k, v: ("position", v))
 
         # Entity tags
         self.tags = {}
@@ -308,6 +302,35 @@ class Entity(EntityLike):
     # =========================================================================
 
     @property
+    def global_position(self):
+        # type: () -> dict
+        """
+        The "global", or root-most position of the Entity. This value is always
+        equivalent to :py:meth:`~.Entity.position`, unless the entity exists
+        inside an :py:class:`.EntityCollection`. If it does, then it's global
+        position is equivalent to the sum of all parent positions plus it's own
+        position. For example, if an Entity exists within a :py:class:`.Group`
+        at position ``(5, 5)`` and the ``Group`` exists at ``(5, 5)``, the
+        ``global_position`` of the Entity will be ``(10, 10)``.
+
+        This is used to get an entity's "actual" position in a blueprint, used
+        when adding to a :py:class:`.SpatialHashMap` and when querying the
+        entity by region. This attribute is always exported, but renamed to
+        "position"; read only.
+
+        :type: ``dict{"x": float, "y": float}``
+        """
+        if self.parent and hasattr(self.parent, "global_position"):
+            return {
+                "x": self.parent.global_position["x"] + self.position["x"],
+                "y": self.parent.global_position["y"] + self.position["y"],
+            }
+        else:
+            return self.position
+
+    # =========================================================================
+
+    @property
     def collision_box(self):
         # type: () -> list
         """
@@ -388,6 +411,21 @@ class Entity(EntityLike):
         :type: ``bool``
         """
         return self._hidden
+
+    # =========================================================================
+
+    @property
+    def flippable(self):
+        # type: () -> bool
+        """
+        Whether or not this entity can be mirrored in game using 'F' or 'G'.
+        Not exported; read only.
+
+        .. NOTE::
+
+            Work in progress. May be incorrect, especially for modded entities.
+        """
+        return entities.flippable[self.name]
 
     # =========================================================================
 
@@ -506,29 +544,6 @@ class Entity(EntityLike):
             key-value pair in the output dictionary.
         """
         self.exports[name] = [criterion, formatter]
-
-    # TODO: figure out a way to deepcopy weakrefs
-    # def __deepcopy__(self, memo):
-    #     # Create a new class
-    #     new = object.__new__(type(self))
-    #     memo[id(self)] = new   # add the new class to the memo
-    #     # Insert a deepcopy of all instance attributes
-    #     new.__dict__.update(copy.deepcopy(self.__dict__, memo))
-    #     # Manually update the weakref to be correct
-    #     print(self.connections)
-    #     if hasattr(self, "connections"):
-    #         for side in self.connections:
-    #             current_side = self.connections[side]
-    #             for color in current_side:
-    #                 current_color = current_side[color]
-    #                 for i, entry in enumerate(current_color):
-    #                     old = entry["entity_id"]
-    #                     new.connections[side][color][i]["entity_id"] = weakref.ref(old())
-
-    #     print(new.connections)
-
-    #     #new.container.parent = weakref.ref(new)
-    #     return new
 
     def __repr__(self):  # pragma: no coverage
         # type: () -> str

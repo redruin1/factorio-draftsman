@@ -3,17 +3,19 @@
 
 from __future__ import unicode_literals
 
-from draftsman import signatures
-from draftsman.data import entities
+from draftsman.data import entities, items
 from draftsman.error import DraftsmanError
-from draftsman.warning import IndexWarning
+from draftsman.warning import IndexWarning, ItemCapacityWarning
 
+import math
 import warnings
 
 
 class InventoryMixin(object):
     """
-    Enables the entity to have inventory control.
+    Enables the entity to have inventory control. Keeps track of the currently
+    requested items for this entity and issues warnings if the requested items
+    amount exceeds the inventory size of the entity.
     """
 
     def __init__(self, name, similar_entities, **kwargs):
@@ -22,9 +24,13 @@ class InventoryMixin(object):
 
         self._inventory_size = entities.raw[self.name]["inventory_size"]
 
-        self._inventory_bar_enabled = True
+        self._inventory_bar_enabled = entities.raw[self.name].get(
+            "enable_inventory_bar", True
+        )
 
-        self.bar = None
+        self._inventory_slots_occupied = 0
+
+        self._bar = None
         if "bar" in kwargs:
             self.bar = kwargs["bar"]
             self.unused_args.pop("bar")
@@ -57,6 +63,19 @@ class InventoryMixin(object):
         :type: ``bool``
         """
         return self._inventory_bar_enabled
+
+    # =========================================================================
+
+    @property
+    def inventory_slots_occupied(self):
+        # type: () -> int
+        """
+        The number of inventory slots filled by the item requests for this
+        entity. Used to keep track of requested items and issue warnings if the
+        amount inside the container exceeds the inventory size of the entity.
+        Not exported; read only.
+        """
+        return self._inventory_slots_occupied
 
     # =========================================================================
 
@@ -107,3 +126,27 @@ class InventoryMixin(object):
             self._bar = value
         else:
             raise TypeError("'bar' must be an int or None")
+
+    # =========================================================================
+
+    def set_item_request(self, item, count):
+        # type: (str, int) -> None
+        """
+        Issues warnings if the set item exceeds the inventory size of the entity.
+        """
+        if item in items.raw:
+            stack_size = items.raw[item]["stack_size"]
+            num_slots_add = int(math.ceil(count / float(stack_size)))
+            num_slots_old = int(math.ceil(self.items.get(item, 0) / float(stack_size)))
+
+            self._inventory_slots_occupied -= num_slots_old
+            self._inventory_slots_occupied += num_slots_add
+
+        if self.inventory_slots_occupied > self.inventory_size:
+            warnings.warn(
+                "Current item requests exceeds the inventory size of this entity",
+                ItemCapacityWarning,
+                stacklevel=2,
+            )
+
+        super(InventoryMixin, self).set_item_request(item, count)

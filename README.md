@@ -56,7 +56,7 @@ blueprint.entities.append(
 # Use IDs to keep track of complex blueprints
 blueprint.entities.append("small-lamp", id="blinker", tile_position=(2, 3))
 blinker = blueprint.entities["blinker"]
-blinker.set_enabled_condition("signal-red", "=", 60)
+blinker.set_circuit_condition("signal-red", "=", 60)
 blinker.use_colors = True
 
 blueprint.add_circuit_connection("green", "constant", "clock")
@@ -145,10 +145,9 @@ can also just change the settings in either of those and the loading process
 will adjust as well.
 
 ## TODO
-* Fix spatial warnings on groups
+* Fix Lua load order to only require files from the proper folders
 * Re-implement circuit attributes for `DeciderCombinator` and `ArithmeticCombinator`
-* Figure out a consistent manner to treat filter objects (fix all the TODO's in the code)
-* Folder mod loading
+* Determine which entity prototypes are vanilla and which are modded, and record this during loading
 * Figure out exactly what determines if an `Entity` is flip-able or not
 * Most of the data extracted from `data.raw` is sorted, but not all of it
 * Make testing work with mods (harder than it sounds)

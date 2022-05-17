@@ -43,7 +43,9 @@ class BeaconTesting(unittest.TestCase):
             beacon.set_item_request("steel-plate", 2)
 
         # Errors
-        with self.assertRaises(InvalidItemError):
+        with self.assertRaises(TypeError):
             beacon.set_item_request("incorrect", "nonsense")
+        with self.assertRaises(InvalidItemError):
+            beacon.set_item_request("incorrect", 100)
         with self.assertRaises(TypeError):
             beacon.set_item_request("speed-module-2", "nonsense")

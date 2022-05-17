@@ -1,4 +1,31 @@
 # Changelog
+## 0.9.1
+* Updated `factorio-data` to `1.1.59`
+* Added description of `control_behavior` attribute structure to `docs/source` folder
+* Added read-only `global_position` property to `SpatialLike`; allows for efficient querying of an objects root-most position
+* Added `SpatialHashMap.get_all`
+* Added `utils.flatten_entities` since it's used in a number of places
+* Added a `ItemCapacityWarning`, issued when `*Container` objects request items that exceed their inventory size
+* Added `entities.flippable` to hold whether or not each entity can be flipped or not (tentative, still WIP)
+* Integrated `entities.flippable` into `Entity` class, as well as `Transformable`
+* Updated `tox.ini` to use `--no-mods` on `draftsman-update`
+* Reworked `SpatialHashMap` and `get_area` to use `global_position` instead of `position`
+* Reworked `RequestItemsMixin` and added it to more prototypes
+* Split `ModuleSlotsMixin` from `RequestItemsMixin` to compartmentalize more
+* Adding science pack item requests to a `Lab` no longer raises a warning (works with any lab)
+* Made `set_x_filter` code more consistent across different prototype filter types
+* Added folder loading to `draftsman-update`
+* Documentation format fixes/additions
+* Bugfix: Fixed the local paths that now point from `factorio-draftsman` instead of `factorio-draftsman/draftsman` in `draftsman-update` for folders
+* Bugfix: Changed Lua file requiring so that it makes (somewhat) more sense; Honestly the whole thing is pretty fricking scuffed, and needs a redo
+* Bugfix: Fixed `OverlappingObjectsWarning` occurring when placing two groups with the same local coordinates but different global coordinates in an `EntityCollection`
+* Bugfix: Fixed Maximum recursion depth errors when running `examples/item_stack_signals.py` with large modpacks with many items; this should no longer occur period
+* Bugfix: Split `index_dict` in `env.extract_items` to `group_index_dict` and `subgroup_index_dict`
+* Bugfix: Encapsulated `order` swapping in `env.get_order` with a `try except` block
+
+## **0.9.0**
+* Officially added to PyPI (in beta state for the foreseeable future)
+
 ## **0.8.5**
 * Finished first pass of documentation
 * Added `factorio_version_testing.py`, which tests against prior versions of Factorio

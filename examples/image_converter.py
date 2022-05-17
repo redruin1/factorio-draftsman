@@ -28,6 +28,8 @@ Requirements:
     pyperclip (or you can just output the contents to a file)
 """
 
+# TODO: investigate slowdown; profile
+
 from draftsman.blueprintable import Blueprint
 from draftsman.data import entities
 from draftsman.entity import new_entity
@@ -66,7 +68,7 @@ def main():
     target_size = 200
 
     # open an image
-    img = Image.open("examples/example.png")
+    img = Image.open("examples/example2.png")
     img = img.resize((target_size, target_size))
 
     img_data = np.array(img)[:, :, :3]

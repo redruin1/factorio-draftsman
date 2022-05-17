@@ -51,7 +51,7 @@ blueprint.entities.append(
 # Use IDs to keep track of complex blueprints
 blueprint.entities.append("small-lamp", id="blinker", tile_position=(2, 3))
 blinker = blueprint.entities["blinker"]
-blinker.set_enabled_condition("signal-red", "=", 60)
+blinker.set_circuit_condition("signal-red", "=", 60)
 blinker.use_colors = True
 
 blueprint.add_circuit_connection("green", "constant", "clock")

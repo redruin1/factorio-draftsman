@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
+    RequestItemsMixin,
     LogisticModeOfOperationMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
@@ -21,11 +22,12 @@ import warnings
 
 
 class LogisticRequestContainer(
+    InventoryMixin,
+    RequestItemsMixin,
     LogisticModeOfOperationMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
-    InventoryMixin,
     Entity,
 ):
     """

@@ -19,7 +19,7 @@ import warnings
 
 class InventoryFilterMixin(object):
     """
-    Allows an Entity to set content filters.
+    Allows an Entity to set inventory filters. Only used on :py:class:`.CargoWagon`.
     """
 
     def __init__(self, name, similar_entities, **kwargs):
@@ -224,6 +224,5 @@ class InventoryFilterMixin(object):
             if item["name"] not in items.raw:
                 raise InvalidItemError(item)
 
-        # TODO: rework this
         for i in range(len(filters)):
             self.set_inventory_filter(filters[i]["index"] - 1, filters[i]["name"])

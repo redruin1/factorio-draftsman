@@ -69,7 +69,8 @@ class DirectionalMixin(object):
         :type: :py:data:`~draftsman.constants.Direction`
 
         :exception DraftsmanError: If the direction is set while inside an
-            Collection, [which is forbidden.] TODO
+            Collection, :ref:`which is forbidden
+            <handbook.blueprints.forbidden_entity_attributes>`.
         :exception ValueError: If set to anything other than a ``Direction``, or
             its equivalent ``int``.
         """

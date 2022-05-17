@@ -2,7 +2,7 @@
 # -*- encoding: utf-8 -*-
 
 from draftsman.error import RotationError, FlippingError
-from draftsman.warning import RailAlignmentWarning
+from draftsman.warning import RailAlignmentWarning, FlippingWarning
 
 import warnings
 
@@ -170,10 +170,20 @@ class Transformable(object):
             ``"vertical"``
         """
         # TODO: handle different axis locations
-        # TODO: Prevent the blueprint from being flipped if it contains entities
-        # that cannot be flipped
-        # if not self.flippable:
-        #     raise BlueprintFlippingError("Blueprint cannot be flipped")
+
+        # Issue an error if attempting to flip a collection that has unflippable
+        # entities
+        if not self.flippable:
+            raise FlippingError("Blueprint cannot be flipped")
+
+        # TODO: determine what entities are modded or not
+        # if self.contains_modded_entities:
+        #     warnings.warn(
+        #         "Flipping the blueprint is not guaranteed to work when it has "
+        #         "modded entities inside it; proceed with caution",
+        #         FlippingWarning,
+        #         stacklevel=2
+        #     )
 
         if direction not in {"horizontal", "vertical"}:
             raise ValueError("'direction' must be either 'horizontal' or 'vertical'")

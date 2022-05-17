@@ -24,6 +24,7 @@
     io_type.rst
     logistic_condition.rst
     mode_of_operation.rst
+    modules.rst
     orientation.rst
     power_connectable.rst
     read_rail_signal.rst

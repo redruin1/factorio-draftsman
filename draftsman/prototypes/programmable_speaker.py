@@ -372,7 +372,6 @@ class ProgrammableSpeaker(
     @signal_value_is_pitch.setter
     def signal_value_is_pitch(self, value):
         # type: (bool) -> None
-        # TODO: handle this with defaults
         if "circuit_parameters" not in self.control_behavior:
             self.control_behavior["circuit_parameters"] = {}
         circuit_parameters = self.control_behavior["circuit_parameters"]
@@ -576,74 +575,6 @@ class ProgrammableSpeaker(
             circuit_parameters["note_id"] = self._instrument_ids[instrument_name][value]
         else:
             raise TypeError("'note_name' must be a str or None")
-
-    # def set_instrument(self, instrument):
-    #     # type: (Union[int, str]) -> None
-    #     """
-    #     TODO: fix this function up, its an eyesore
-    #     """
-
-    #     if "circuit_parameters" not in self.control_behavior:
-    #         self.control_behavior["circuit_parameters"] = {}
-    #     circuit_params = self.control_behavior["circuit_parameters"]
-
-    #     # if instrument is None:
-    #     #     circuit_params.pop("instrument_id", None)
-    #     #     if len(circuit_params) == 0:
-    #     #         self.control_behavior.pop("circuit_parameters", None)
-    #     # elif isinstance(instrument, int):
-    #     #     # TODO: If index is out of range, issue Warning
-    #     #     circuit_params["instrument_id"] = instrument
-    #     # elif isinstance(instrument, str):
-    #     #     instrument = list(self.instruments).index(instrument)
-    #     #     circuit_params["instrument_id"] = instrument
-    #     # else:
-    #     #     raise TypeError("instrument_id is neither int nor str")
-
-    #     # How I would like this function to be written:
-    #     if instrument is None:
-    #         circuit_params.pop("instrument_id", None)
-    #         self.instrument = 0
-    #     else:
-    #         instrument = instruments.index[self.name][instrument]["self"]
-    #         self.instrument = instrument
-    #         circuit_params["instrument_id"] = instrument
-    #         # raises keyerror if need be
-
-    # def set_note(self, note):
-    #     # type: (int) -> None
-    #     """
-    #     TODO: fix this function up, its an eyesore
-    #     """
-    #     if "circuit_parameters" not in self.control_behavior:
-    #         self.control_behavior["circuit_parameters"] = {}
-    #     circuit_params = self.control_behavior["circuit_parameters"]
-
-    #     if note is None:
-    #         circuit_params.pop("note_id", None)
-    #         if len(circuit_params) == 0:
-    #             self.control_behavior.pop("circuit_parameters", None)
-    #     elif isinstance(note, int):
-    #         # TODO: If index is out of range, warn or error?
-    #         circuit_params["note_id"] = note
-    #     elif isinstance(note, str):
-    #         # Look for instrument
-    #         instrument_num = circuit_params.pop("instrument_id", None) or 0
-    #         instrument_name = list(self.instruments)[instrument_num]
-    #         # Get notes from that instrument
-    #         instrument_notes = self.instruments[instrument_name]
-    #         #print(instrument_notes)
-    #         circuit_params["note_id"] = instrument_notes.index(note)
-    #     else:
-    #         raise TypeError("note_id is neither int nor str")
-
-    #     # How I would like this function to be written:
-    #     # if note is None:
-    #     #     circuit_params.pop("note_id", None)
-    #     # else:
-    #     #     note = instruments.index[self.name][self.instrument][note]
-    #     #     circuit_params["note_id"] = note
-    #     #     # raises keyerror if need be
 
     # =========================================================================
 

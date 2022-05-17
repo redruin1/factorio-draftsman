@@ -1,6 +1,8 @@
 Blueprints
 ==========
 
+.. _handbook.blueprints.blueprint_differences:
+
 Differences between a Blueprint object and a JSON dict
 ------------------------------------------------------
 

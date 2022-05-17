@@ -4,7 +4,11 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import CircuitConnectableMixin, InventoryMixin
+from draftsman.classes.mixins import (
+    RequestItemsMixin,
+    CircuitConnectableMixin,
+    InventoryMixin,
+)
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import logistic_passive_containers
@@ -12,7 +16,9 @@ from draftsman.data.entities import logistic_passive_containers
 import warnings
 
 
-class LogisticPassiveContainer(CircuitConnectableMixin, InventoryMixin, Entity):
+class LogisticPassiveContainer(
+    InventoryMixin, RequestItemsMixin, CircuitConnectableMixin, Entity
+):
     """
     A logistics container that provides it's contents to the logistic network
     when needed by the network.

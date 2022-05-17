@@ -27,6 +27,7 @@ from draftsman.classes.entitylike import EntityLike
 # from draftsman.classes.entitylist import EntityList
 from draftsman.constants import Direction
 from draftsman.entity import TrainStop, ConstantCombinator, Lamp
+from draftsman.error import MissingModError
 
 import draftsman.data.mods
 
@@ -117,10 +118,8 @@ class LogisticTrainStop(TrainStop):
 def main():
     # This script will only work if we have the LTN mod installed and enabled,
     # so we check to make sure that's met before starting
-    try:
-        assert draftsman.data.mods.mod_list["LogisticTrainNetwork"]
-    except KeyError:
-        raise RuntimeError("'LogisticTrainNetwork' mod is not installed or enabled")
+    if not draftsman.data.mods.mod_list.get("LogisticTrainNetwork", False):
+        raise MissingModError("LogisticTrainNetwork")
 
     blueprint = Blueprint()
 

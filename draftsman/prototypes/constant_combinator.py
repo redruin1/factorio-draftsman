@@ -29,9 +29,6 @@ class ConstantCombinator(
     the circuit network.
     """
 
-    # TODO: maybe keep signal filters internally as an array of Signal objects,
-    # and then use Signal.to_dict() during that stage?
-
     def __init__(self, name=constant_combinators[0], **kwargs):
         # type: (str, **dict) -> None
         super(ConstantCombinator, self).__init__(name, constant_combinators, **kwargs)
@@ -74,17 +71,20 @@ class ConstantCombinator(
         :exception TypeError: If ``index`` is not an ``int``, if ``name`` is not
             a ``str``, or if ``count`` is not an ``int``.
         """
-        # TODO: change these
-        # TODO: what if index is out of range?
         # Check validity before modifying self
-        if not isinstance(index, six.integer_types):
-            raise TypeError("'index' must be an int")
         try:
+            index = signatures.INTEGER.validate(index)
             signal = signatures.SIGNAL_ID_OR_NONE.validate(signal)
+            count = signatures.INTEGER.validate(count)
         except SchemaError as e:
             six.raise_from(TypeError(e), None)
-        if not isinstance(count, six.integer_types):
-            raise TypeError("'count' must be an int")
+
+        if not 0 <= index < self.item_slot_count:
+            raise IndexError(
+                "Signal 'index' ({}) must be in the range [0, {})".format(
+                    index, self.item_slot_count
+                )
+            )
 
         if "filters" not in self.control_behavior:
             self.control_behavior["filters"] = []
@@ -146,8 +146,6 @@ class ConstantCombinator(
         :exception DataFormatError: If ``signals`` does not match the format
             specified in :py:data:`.SIGNAL_FILTERS`.
         """
-        # TODO: change how this works
-        # TODO: what if index is out of range?
         if signals is None:
             self.control_behavior.pop("filters", None)
         else:

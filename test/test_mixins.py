@@ -331,6 +331,8 @@ class DirectionalMixinTesting(unittest.TestCase):
 class DoubleGridAlignedMixinTesting(unittest.TestCase):
     def test_set_absolute_position(self):
         rail = StraightRail()
+        self.assertEqual(rail.position, {"x": 1.0, "y": 1.0})
+        self.assertEqual(rail.tile_position, {"x": 0, "y": 0})
         self.assertEqual(rail.double_grid_aligned, True)
         with self.assertWarns(RailAlignmentWarning):
             rail.position = (2.0, 2.0)
@@ -466,6 +468,10 @@ class InventoryMixinTesting(unittest.TestCase):
         with self.assertWarns(IndexWarning):
             for i in range(container.inventory_size + 1):
                 container.bar = i
+
+        # None case
+        container.bar = None
+        self.assertEqual(container.bar, None)
 
         with self.assertRaises(IndexError):
             container.bar = -1
@@ -743,6 +749,10 @@ class OrientationMixinTesting(unittest.TestCase):
         )
         locomotive.orientation = None
         self.assertEqual(locomotive.orientation, None)
+
+        with self.assertWarns(ValueWarning):
+            locomotive.orientation = 2.0
+
         with self.assertRaises(TypeError):
             locomotive.orientation = "incorrect"
 
@@ -973,7 +983,7 @@ class RequestFiltersMixinTesting(unittest.TestCase):
             storage_chest.request_filters,
             [
                 {"index": 2, "name": "copper-ore", "count": 200},
-                {"index": 3, "name": "fast-transport-belt", "count": 0},
+                {"index": 3, "name": "fast-transport-belt", "count": 100},
             ],
         )
 
@@ -988,6 +998,8 @@ class RequestFiltersMixinTesting(unittest.TestCase):
             storage_chest.set_request_filter(-1, "iron-ore", 100)
         with self.assertRaises(IndexError):
             storage_chest.set_request_filter(1000, "iron-ore", 100)
+        with self.assertRaises(ValueError):
+            storage_chest.set_request_filter(1, "iron-ore", -1)
 
     def test_set_request_filters(self):
         storage_chest = LogisticStorageContainer()

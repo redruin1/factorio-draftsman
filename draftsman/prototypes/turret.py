@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import DirectionalMixin
+from draftsman.classes.mixins import RequestItemsMixin, DirectionalMixin
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import turrets
@@ -12,7 +12,7 @@ from draftsman.data.entities import turrets
 import warnings
 
 
-class Turret(DirectionalMixin, Entity):
+class Turret(RequestItemsMixin, DirectionalMixin, Entity):
     """
     An entity that automatically targets and attacks other forces in range.
     """

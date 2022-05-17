@@ -3,7 +3,9 @@
 
 from __future__ import unicode_literals
 
-from draftsman import signatures
+from draftsman.warning import ValueWarning
+
+import warnings
 
 
 class OrientationMixin(object):
@@ -30,6 +32,9 @@ class OrientationMixin(object):
         The angle that the current Entity is facing, expressed as a ``float``
         in the range ``[0.0, 1.0]``, where ``0.0`` is North.
 
+        Raises :py:class:`.ValueWarning` if set to a value not in the range
+        ``[0.0, 1.0)``.
+
         .. NOTE::
 
             This is distinct from ``direction``, which is used on grid-aligned
@@ -47,8 +52,15 @@ class OrientationMixin(object):
     @orientation.setter
     def orientation(self, value):
         # type: (float) -> None
-        # TODO: what happens when orientation is out of range?
         if value is None or isinstance(value, float):
+            if value is not None and not 0.0 <= value < 1.0:
+                warnings.warn(
+                    "Orientation not in range [0.0, 1.0); will be cast to {} on import".format(
+                        value % 1.0
+                    ),
+                    ValueWarning,
+                    stacklevel=2,
+                )
             self._orientation = value
         else:
             raise TypeError("'orientation' must be a float or None")

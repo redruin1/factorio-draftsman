@@ -1,7 +1,7 @@
 # blueprint.py
 # -*- encoding: utf-8 -*-
 
-# TODO: Add warnings for placement constraints on rails and rail signals
+# TODO: Add warnings for placement constraints on rails, rail signals and train stops
 
 
 from __future__ import unicode_literals
@@ -96,7 +96,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
         self.setup(**root["blueprint"])
 
-        # Convert integer associations to Associations
+        # Convert circuit and power connections to Associations
         for entity in self.entities:
             if hasattr(entity, "connections"):  # Wire connections
                 connections = entity.connections
@@ -119,7 +119,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
                 for i, neighbour in enumerate(neighbours):
                     neighbours[i] = Association(self.entities[neighbour - 1])
 
-        # Change all locomotive names to use Associations
+        # Change all locomotive numbers to use Associations
         for schedule in self.schedules:
             for i, locomotive in enumerate(schedule["locomotives"]):
                 schedule["locomotives"][i] = Association(self.entities[locomotive - 1])
@@ -301,7 +301,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         try:
             self.root["label_color"] = signatures.COLOR.validate(value)
         except SchemaError as e:
-            # TODO: more verbose
             six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
@@ -577,10 +576,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         # type: () -> EntityList
         """
         The list of the Blueprint's entities. Internally the list is a custom
-        class named :py:class`draftsman.classes.EntityList`, which has all the
+        class named :py:class:`draftsman.classes.EntityList`, which has all the
         normal properties of a regular list, as well as some extra features.
-        For more information on ``EntityList``, check out it's documentation
-        *here*. TODO
+        For more information on ``EntityList``, check out this writeup
+        :ref:`here <handbook.blueprints.blueprint_differences>`.
         """
         return self.root["entities"]
 
@@ -594,9 +593,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
             self._entity_hashmap.clear()
             self.root["entities"] = EntityList(self, value)
         elif isinstance(value, EntityList):
-            # TODO: what to do with entity_hashmap?
             value._parent = self  # Make sure the parent is correct
             self.root["entities"] = value
+            # Add the new list entities to the hashmap
+            self._entity_hashmap.clear()
+            for entity in value:
+                self._entity_hashmap.add(entity)
         else:
             raise TypeError("'entities' must be an EntityList, list, or None")
 
@@ -662,10 +664,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         # type: () -> TileList
         """
         The list of the Blueprint's tiles. Internally the list is a custom
-        class named :py:class`draftsman.classes.TileList`, which has all the
-        normal properties of a regular list, as well as some extra features.
-        For more information on ``TileList``, check out it's documentation
-        *here*.
+        class named :py:class:`~.TileList`, which has all the normal properties
+        of a regular list, as well as some extra features.
 
         :example:
 
@@ -678,8 +678,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
             blueprint.tiles.insert(0, "refined-hazard-concrete", position=(1, 0))
             assert blueprint.tiles[0].position == {"x": 1.5, "y": 1.5}
 
-            blueprint.entities = None
-            assert len(blueprint.entities) == 0
+            blueprint.tiles = None
+            assert len(blueprint.tiles) == 0
         """
         return self.root["tiles"]
 
@@ -712,7 +712,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def schedules(self):
         # type: () -> list
         """
-        A list of the Blueprint's schedules.
+        A list of the Blueprint's train schedules.
 
         .. NOTE::
 
@@ -725,9 +725,13 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
             `<https://wiki.factorio.com/Blueprint_string_format#Schedule_object>`_
 
+        :getter: Gets the schedules of the Blueprint.
+        :setter: Sets the schedules of the Blueprint. Defaults to ``[]`` if set
+            to ``None``.
         :type: ``list[SCHEDULE]``
 
-        :exception DataFormatError:
+        :exception DataFormatError: If set to anything other than a ``list`` of
+            :py:data:`.SCHEDULE`.
         """
         return self.root["schedules"]
 
@@ -860,44 +864,34 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
         :returns: The dict representation of the Blueprint.
         """
-        # Create a copy ourself to modify
-        copied_self = deepcopy(self)
-        out_dict = copied_self.root
+        # Create a new dict to return without modifying the original Blueprint
+        # (We exclude "entities" and "tiles" because these objects are not
+        # copyable for space and recursion depth reasons)
+        out_dict = {
+            x: self.root[x] for x in self.root if x not in {"entities", "tiles"}
+        }
 
-        # Generate a flat list of entities recursively, with any custom
-        # modifications applied
-        def flatten_entities(entities):
-            out = []
-            for entity in entities:
-                result = entity.get()
-                if isinstance(result, list):
-                    out.extend(flatten_entities(result))
-                else:
-                    out.append(result)
-            return out
+        # This associates each entity with a numeric index, which we use later
+        flattened_list = utils.flatten_entities(self.root["entities"])
 
-        flattened_list = flatten_entities(copied_self.entities)
-
-        # Preserve associations between copied schedules so that they point to
-        # the correct entities
-        out_dict["schedules"] = copied_self.schedules
-
-        # Now convert all entities into their dict representation and place them
-        # in their final location
+        # Convert all Entities into dicts
         out_dict["entities"] = []
         i = 0
         for entity in flattened_list:
-            result = entity.to_dict()
+            # Get a copy of the dict representation of the Entity
+            # (At this point, Associations are not copied and still point to original)
+            result = deepcopy(entity.to_dict())
             if not isinstance(result, dict):
                 raise DraftsmanError(
                     "{}.to_dict() must return a dict".format(type(entity).__name__)
                 )
+            # Add this to the output's entities and set it's entity_number
             out_dict["entities"].append(result)
             out_dict["entities"][i]["entity_number"] = i + 1
             i += 1
 
         # Convert all tiles into dicts
-        # TODO: maybe handle TileLike?
+        # Maybe handle TileLike?
         out_dict["tiles"] = []
         for tile in self.tiles:
             out_dict["tiles"].append(deepcopy(tile.to_dict()))
@@ -923,8 +917,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
                 )
             )
 
-        # Change all connections to use entity_number
-        # This could be nicer
+        # Convert all associations to use their integer indices
+        # (This could be nicer)
         for entity in out_dict["entities"]:
             if "connections" in entity:  # Wire connections
                 connections = entity["connections"]
@@ -934,7 +928,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
                             connection_points = connections[side][color]
                             for point in connection_points:
                                 old = point["entity_id"]
-                                if old is None:  # pragma: no coverage
+                                if old() is None:  # pragma: no coverage
                                     throw_invalid_connection(entity)
                                 else:  # Association
                                     point["entity_id"] = flattened_list.index(old()) + 1
@@ -943,7 +937,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
                         connection_points = connections[side]
                         for point in connection_points:
                             old = point["entity_id"]
-                            if old is None:  # pragma: no coverage
+                            if old() is None:  # pragma: no coverage
                                 throw_invalid_connection(entity)
                             else:  # Association
                                 point["entity_id"] = flattened_list.index(old()) + 1
@@ -951,7 +945,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
             if "neighbours" in entity:  # Power pole connections
                 neighbours = entity["neighbours"]
                 for i, neighbour in enumerate(neighbours):
-                    if neighbour is None:  # pragma: no coverage
+                    if neighbour() is None:  # pragma: no coverage
                         throw_invalid_connection(entity)
                     else:  # Association
                         neighbours[i] = flattened_list.index(neighbour()) + 1
@@ -959,7 +953,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         # Change all locomotive names to use entity_number
         for schedule in out_dict["schedules"]:
             for i, locomotive in enumerate(schedule["locomotives"]):
-                if locomotive is None:  # pragma: no coverage
+                if locomotive() is None:  # pragma: no coverage
                     throw_invalid_connection(entity)
                 else:  # Association
                     schedule["locomotives"][i] = flattened_list.index(locomotive()) + 1

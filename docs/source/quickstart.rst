@@ -89,7 +89,7 @@ Blueprint allows the user to modify almost all components of the blueprint by at
 Blueprint also provides methods that operate on itself, such as the :py:meth:`~.Blueprint.to_string` function, as well as a prettier string representation using the Python standard library ``json``.
 
 Blueprint can also be accessed by key just like the previous dict example, and is identical for most keys.
-([Read here for more info on the differences.])
+(:ref:`Read here for more info on the differences. <handbook.blueprints.blueprint_differences>`)
 
 .. code-block:: python
 

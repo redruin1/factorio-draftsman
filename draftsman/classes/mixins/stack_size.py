@@ -50,7 +50,6 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
     @override_stack_size.setter
     def override_stack_size(self, value):
         # type: (int) -> None
-        # TODO: what if out of range?
         if value is None or isinstance(value, six.integer_types):
             self._override_stack_size = value
         else:

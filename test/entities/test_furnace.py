@@ -5,7 +5,11 @@ from __future__ import unicode_literals
 
 from draftsman.entity import Furnace, furnaces
 from draftsman.error import InvalidEntityError, InvalidItemError
-from draftsman.warning import DraftsmanWarning, ItemLimitationWarning
+from draftsman.warning import (
+    DraftsmanWarning,
+    ModuleCapacityWarning,
+    ItemLimitationWarning,
+)
 
 from schema import SchemaError
 
@@ -30,18 +34,47 @@ class FurnaceTesting(unittest.TestCase):
             Furnace("not a heat pipe")
 
     def test_set_item_request(self):
+        furnace = Furnace("stone-furnace")
+
+        # Module on stone furnace
+        with self.assertWarns(ModuleCapacityWarning):
+            furnace.set_item_request("speed-module", 2)
+
+        # Fuel on electric furnace
+        # furnace.set_item_request("coal", 100)
+        # self.assertEqual(furnace.items, {"productivity-module-3": 2, "coal": 100})
+
         furnace = Furnace("electric-furnace")
-        # Valid
+        # Module on electric furnace
         furnace.set_item_request("productivity-module-3", 2)
         self.assertEqual(furnace.items, {"productivity-module-3": 2})
+        self.assertEqual(furnace.module_slots_occupied, 2)
 
-        # Warnings
+        # Fuel on electric furnace
+        with self.assertWarns(ItemLimitationWarning):
+            furnace.set_item_request("coal", 100)
+        self.assertEqual(furnace.items, {"productivity-module-3": 2, "coal": 100})
+
+        # Non smeltable item and not fuel
         furnace.set_item_requests(None)
         with self.assertWarns(ItemLimitationWarning):
-            furnace.set_item_request("wood", 100)
+            furnace.set_item_request("copper-plate", 100)
+        self.assertEqual(furnace.items, {"copper-plate": 100})
+        self.assertEqual(furnace.module_slots_occupied, 0)
+
+        furnace.set_item_requests(None)
+        self.assertEqual(furnace.items, {})
+        self.assertEqual(furnace.module_slots_occupied, 0)
 
         # Errors
-        with self.assertRaises(InvalidItemError):
-            furnace.set_item_request("incorrect", "nonsense")
         with self.assertRaises(TypeError):
-            furnace.set_item_request("speed-module-2", "nonsense")
+            furnace.set_item_request("incorrect", "nonsense")
+        with self.assertRaises(InvalidItemError):
+            furnace.set_item_request("incorrect", 100)
+        with self.assertRaises(TypeError):
+            furnace.set_item_request("speed-module-2", TypeError)
+        with self.assertRaises(ValueError):
+            furnace.set_item_request("speed-module-2", -1)
+
+        self.assertEqual(furnace.items, {})
+        self.assertEqual(furnace.module_slots_occupied, 0)

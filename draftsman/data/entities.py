@@ -18,6 +18,9 @@ with pkg_resources.open_binary(data, "entities.pkl") as inp:
     # place.
     raw = _data["raw"]
 
+    # Whether or not each entity is flippable, indexed by their name.
+    flippable = _data["flippable"]
+
     # Ordered lists of strings, each containing a valid name for that entity
     # type, sorted by their Factorio order strings.
     containers = _data["containers"]

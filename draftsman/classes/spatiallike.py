@@ -15,7 +15,14 @@ class SpatialLike(object):
     @abc.abstractproperty
     def position(self):  # pragma: no coverage
         """
-        Position of the object.
+        Position of the object, expressed in local space.
+        """
+        pass
+
+    @abc.abstractproperty
+    def global_position(self):  # pragma: no coverage
+        """
+        Position of the object, expressed in global space.
         """
         pass
 
@@ -44,11 +51,11 @@ class SpatialLike(object):
         """
         return [
             [
-                self.collision_box[0][0] + self.position["x"],
-                self.collision_box[0][1] + self.position["y"],
+                self.collision_box[0][0] + self.global_position["x"],
+                self.collision_box[0][1] + self.global_position["y"],
             ],
             [
-                self.collision_box[1][0] + self.position["x"],
-                self.collision_box[1][1] + self.position["y"],
+                self.collision_box[1][0] + self.global_position["x"],
+                self.collision_box[1][1] + self.global_position["y"],
             ],
         ]

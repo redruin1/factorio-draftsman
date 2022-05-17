@@ -208,6 +208,7 @@ def main():
             data.append(b)
             i += 3
 
+    print("Data encoded:")
     print(data)
 
     # Sectors are akin to Hard-drive sectors and are where the data is stored

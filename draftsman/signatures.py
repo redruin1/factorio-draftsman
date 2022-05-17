@@ -273,13 +273,14 @@ CONTROL_BEHAVIOR = Schema(
             # Logistic condition
             Optional("connect_to_logistic_network"): bool,
             Optional("logistic_condition"): CONDITION,
-            # Transport Belts
+            # Transport Belts + Inserters
             Optional("circuit_read_hand_contents"): bool,
             # Mining Drills
             Optional("circuit_read_resources"): bool,
             # Inserters
-            Optional("circuit_contents_read_mode"): int,
             Optional("circuit_hand_read_mode"): int,
+            # Transport belts
+            Optional("circuit_contents_read_mode"): int,
             # Filter inserters
             Optional("circuit_mode_of_operation"): int,
             Optional("circuit_set_stack_size"): bool,
@@ -308,7 +309,6 @@ CONTROL_BEHAVIOR = Schema(
             Optional("use_colors"): bool,
             # Arithmetic Combinators
             Optional("arithmetic_conditions"): {
-                Optional("constant"): int,
                 Optional("first_constant"): int,
                 Optional("first_signal"): SIGNAL_ID,
                 Optional("operation"): OPERATION,

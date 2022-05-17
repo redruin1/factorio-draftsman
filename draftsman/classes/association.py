@@ -22,19 +22,27 @@ class Association(weakref.ref):
 
         super(Association, self).__init__(item)
 
+    # def __copy__(self):
+    #     return self
+
     def __deepcopy__(self, memo):
-        # type: (dict) -> Association
-        entity_copy = copy.deepcopy(self(), memo)
-        entity = memo.get(id(entity_copy), entity_copy)
-        if entity is None:
-            return None
-        else:
-            return Association(entity)
+        return self
+
+    # def __deepcopy__(self, memo):
+    #     # type: (dict) -> Association
+    #     entity = memo.get(id(self()), copy.deepcopy(self(), memo))
+    #     #print(entity.id)
+    #     if entity is None:
+    #         return None
+    #     else:
+    #         result = Association(entity)
+    #         memo[id(self)] = result
+    #         return result
 
     def __repr__(self):  # pragma: no coverage
         # type: () -> str
         if self() is None:
-            return "None"
+            return "<Association to None>"
 
         return "<Association to {}{}>".format(
             type(self()).__name__,

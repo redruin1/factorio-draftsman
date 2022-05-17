@@ -89,7 +89,11 @@ class AssemblingMachineTesting(unittest.TestCase):
         machine.recipe = "electronic-circuit"
 
         # Errors
+        with self.assertRaises(TypeError):
+            machine.set_item_request(None, "nonsense")
         with self.assertRaises(InvalidItemError):
-            machine.set_item_request("incorrect", "nonsense")
+            machine.set_item_request("incorrect", 100)
         with self.assertRaises(TypeError):
             machine.set_item_request("speed-module-2", "nonsense")
+        with self.assertRaises(ValueError):
+            machine.set_item_request("speed-module-2", -1)

@@ -4,16 +4,17 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import InventoryMixin
-import draftsman.signatures as signatures
+from draftsman.classes.mixins import InventoryMixin, RequestItemsMixin
+from draftsman import signatures
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import linked_containers
 
+import six
 import warnings
 
 
-class LinkedContainer(InventoryMixin, Entity):
+class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
     """
     An entity that allows sharing it's contents with any other ``LinkedContainer``
     with the same ``link_id``.
@@ -44,7 +45,8 @@ class LinkedContainer(InventoryMixin, Entity):
         """
         The linking ID that this ``LinkedContainer`` currently has. Encoded as
         a 32 bit unsigned integer, where a container only links to another with
-        the same ``link_id``.
+        the same ``link_id``. If an integer greater than 32-bits is passed in
+        only the lowest bits are used.
 
         :getter: Gets the link ID of the ``LinkedContainer``.
         :setter: Sets the link ID of the ``LinkedContainer``.
@@ -59,9 +61,8 @@ class LinkedContainer(InventoryMixin, Entity):
         # type: (int) -> None
         if value is None:
             self._link_id = 0
-        elif isinstance(value, int):
-            # TODO: maybe warn if outside of 32 bit range?
-            self._link_id = value
+        elif isinstance(value, six.integer_types):
+            self._link_id = value & 0xFFFFFFFF
         else:
             raise TypeError("'link_id' must be an int or None")
 
@@ -78,8 +79,12 @@ class LinkedContainer(InventoryMixin, Entity):
 
         :exception AssertionError: If ``number`` is not in the range ``[0, 32)``.
         """
-        # TODO change assertion error
-        assert 0 <= number < 32
+        number = int(number)
+        enabled = bool(enabled)
+
+        if not 0 <= number < 32:
+            raise ValueError("'number' must be in the range [0, 32)")
+
         if enabled:
             self.link_id |= 1 << number
         else:

@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.mixins import RequestItemsMixin
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import reactors
@@ -11,7 +12,7 @@ from draftsman.data.entities import reactors
 import warnings
 
 
-class Reactor(Entity):
+class Reactor(RequestItemsMixin, Entity):
     """
     An entity that converts a fuel into thermal energy.
     """

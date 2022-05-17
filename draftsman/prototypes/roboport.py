@@ -39,7 +39,15 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     def read_logistics(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not to read the item contents of the logisitics network.
+
+        :getter: Gets whether or not the logistics are read, or ``None`` if not
+            set.
+        :setter: Sets whether or not the logistics are read. Removes the key if
+            set to ``None``.
+        :type: bool
+
+        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
         return self.control_behavior.get("read_logistics", None)
 
@@ -59,7 +67,16 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     def read_robot_stats(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not to read the number of construction and logistics robots
+        in the logisitics network.
+
+        :getter: Gets whether or not the robot counts are read, or ``None`` if
+            not set.
+        :setter: Sets whether or not the robot counts are read. Removes the key
+            if set to ``None``.
+        :type: bool
+
+        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
         return self.control_behavior.get("read_robot_stats", None)
 
@@ -79,7 +96,17 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     def available_logistic_signal(self):
         # type: () -> dict
         """
-        TODO
+        What signal to output the number of available logistic robots to the
+        circuit network with.
+
+        :getter: Gets the available logistic robot signal, or ``None`` if not
+            set.
+        :setter: Sets the available logistic robot signal. Removes the key if
+            set to ``None``.
+        :type: :py:data:`.SIGNAL_ID`
+
+        :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
+            or ``None``.
         """
         return self.control_behavior.get("available_logistic_output_signal", None)
 
@@ -97,8 +124,8 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             try:
                 value = signatures.SIGNAL_ID.validate(value)
                 self.control_behavior["available_logistic_output_signal"] = value
-            except SchemaError:
-                raise TypeError("Incorrectly formatted SignalID")
+            except SchemaError as e:
+                raise six.raise_from(TypeError(e), None)
 
     # =========================================================================
 
@@ -106,7 +133,16 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     def total_logistic_signal(self):
         # type: () -> dict
         """
-        TODO
+        What signal to output the total number of logistic robots to the
+        circuit network with.
+
+        :getter: Gets the total logistic robot signal, or ``None`` if not set.
+        :setter: Sets the total logistic robot signal. Removes the key if set to
+            ``None``.
+        :type: :py:data:`.SIGNAL_ID`
+
+        :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
+            or ``None``.
         """
         return self.control_behavior.get("total_logistic_output_signal", None)
 
@@ -131,7 +167,17 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     def available_construction_signal(self):
         # type: () -> dict
         """
-        TODO
+        What signal to output the number of available construction robots to the
+        circuit network with.
+
+        :getter: Gets the available construction robot signal, or ``None`` if
+            not set.
+        :setter: Sets the available construction robot signal. Removes the key
+            if set to ``None``.
+        :type: :py:data:`.SIGNAL_ID`
+
+        :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
+            or ``None``.
         """
         return self.control_behavior.get("available_construction_output_signal", None)
 
@@ -158,7 +204,17 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     def total_construction_signal(self):
         # type: () -> dict
         """
-        TODO
+        What signal to output the total number of construction robots to the
+        circuit network with.
+
+        :getter: Gets the total construction robot signal, or ``None`` if not
+            set.
+        :setter: Sets the total construction robot signal. Removes the key if
+            set to ``None``.
+        :type: :py:data:`.SIGNAL_ID`
+
+        :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
+            or ``None``.
         """
         return self.control_behavior.get("total_construction_output_signal", None)
 

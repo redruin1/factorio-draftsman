@@ -35,6 +35,19 @@ class LinkedContainerTesting(unittest.TestCase):
         with self.assertRaises(TypeError):
             LinkedContainer(link_id="incorrect")
 
+    def test_set_link(self):
+        container = LinkedContainer()
+        container.set_link(0, True)
+        container.set_link(1, True)
+        self.assertEqual(container.link_id, 0x0003)
+        container.set_link(0, False)
+        self.assertEqual(container.link_id, 0x0002)
+
+        with self.assertRaises(ValueError):
+            container.set_link(100, True)
+        with self.assertRaises(ValueError):
+            container.set_link("incorrect", False)
+
     def test_set_links(self):
         container = LinkedContainer()
         container.link_id = 0xFFFF
@@ -43,15 +56,3 @@ class LinkedContainerTesting(unittest.TestCase):
         self.assertEqual(container.link_id, 0)
         with self.assertRaises(TypeError):
             container.link_id = "incorrect"
-
-    def test_set_link(self):
-        container = LinkedContainer()
-        container.set_link(0, True)
-        container.set_link(1, True)
-        self.assertEqual(container.link_id, 0x0003)
-        container.set_link(0, False)
-        self.assertEqual(container.link_id, 0x0002)
-        with self.assertRaises(AssertionError):
-            container.set_link(100, True)
-        # with self.assertRaises(SchemaError):
-        #     container.set_links("incorrect")

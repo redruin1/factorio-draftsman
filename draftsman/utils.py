@@ -279,6 +279,25 @@ def aabb_to_dimensions(aabb):
     return x, y
 
 
+def flatten_entities(entities):
+    """
+    Iterates over a list of entities with nested structures and returns a 1D,
+    "flattened" list of those entities.
+
+    :param entities: The list of entities to flatten.
+
+    :returns: A ``list`` containing all the entities in depth-first sequence.
+    """
+    out = []
+    for entity in entities:
+        result = entity.get()
+        if isinstance(result, list):
+            out.extend(flatten_entities(result))
+        else:
+            out.append(result)
+    return out
+
+
 # def ignore_traceback(func):
 #     # type: (Any) -> Any
 #     """

@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
+    RequestItemsMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
     InventoryMixin,
@@ -17,7 +18,11 @@ import warnings
 
 
 class LogisticStorageContainer(
-    CircuitConnectableMixin, RequestFiltersMixin, InventoryMixin, Entity
+    InventoryMixin,
+    RequestItemsMixin,
+    CircuitConnectableMixin,
+    RequestFiltersMixin,
+    Entity,
 ):
     """
     A logistics container that stores items not currently being used in the

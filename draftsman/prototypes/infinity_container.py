@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.mixins import RequestItemsMixin
 from draftsman.error import DataFormatError, InvalidItemError, InvalidModeError
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
@@ -16,7 +17,7 @@ import six
 import warnings
 
 
-class InfinityContainer(Entity):
+class InfinityContainer(RequestItemsMixin, Entity):
     """
     An entity used to create an infinite amount of any item.
     """
@@ -94,7 +95,7 @@ class InfinityContainer(Entity):
 
     # =========================================================================
 
-    def set_infinity_filter(self, index, name, mode="at-least", count=0):
+    def set_infinity_filter(self, index, item, mode="at-least", count=None):
         # type: (int, str, str, int) -> None
         """
         Sets an infinity filter.
@@ -103,7 +104,8 @@ class InfinityContainer(Entity):
         :param name: The name of the item to interact with.
         :param mode: The manner in which to set the filter. Can be one of
             ``"at-least"``, ``"at-most"``, or ``"exactly"``.
-        :param count: The amount of the item to request.
+        :param count: The amount of the item to request. If set to ``None``, the
+            amount set will default to the stack size of ``name``.
 
         :exception TypeError: If ``index`` is not an ``int``, if ``name`` is not
             a ``str``, if ``mode`` is not a ``str``, or if ``count`` is not an
@@ -113,22 +115,26 @@ class InfinityContainer(Entity):
         :exception InvalidModeError: If ``mode`` is not one of the three values
             specified above.
         """
-        # TODO: maybe default count amount equivalent to item stack size?
-        # TODO: what if count is negative?
         try:
             index = signatures.INTEGER.validate(index)
-            name = signatures.STRING_OR_NONE.validate(name)
+            item = signatures.STRING_OR_NONE.validate(item)
             mode = signatures.STRING.validate(mode)
-            count = signatures.INTEGER.validate(count)
+            count = signatures.INTEGER_OR_NONE.validate(count)
         except SchemaError as e:
             six.raise_from(TypeError(e), None)
 
         if not 0 <= index < 1000:
             raise IndexError("Filter index {} not in range [0, 1000)")
-        if name is not None and name not in items.raw:
-            raise InvalidItemError(name)
+        if item is not None and item not in items.raw:
+            raise InvalidItemError(item)
         if mode not in {"at-least", "at-most", "exactly"}:
             raise InvalidModeError(mode)
+        if count is None:  # default count to the item's stack size
+            count = 0 if item is None else items.raw[item]["stack_size"]
+        if count < 0:
+            raise ValueError(
+                "Infinity filter count ({}) must be positive".format(count)
+            )
 
         if "filters" not in self.infinity_settings:
             self.infinity_settings["filters"] = []
@@ -136,12 +142,12 @@ class InfinityContainer(Entity):
         # Check to see if filters already contains an entry with the same index
         for i, filter in enumerate(self.infinity_settings["filters"]):
             if index + 1 == filter["index"]:  # Index already exists in the list
-                if name is None:  # Delete the entry
+                if item is None:  # Delete the entry
                     del self.infinity_settings["filters"][i]
                 else:  # Set the new value
                     self.infinity_settings["filters"][i] = {
                         "index": index + 1,
-                        "name": name,
+                        "name": item,
                         "count": count,
                         "mode": mode,
                     }
@@ -149,7 +155,7 @@ class InfinityContainer(Entity):
 
         # If no entry with the same index was found
         self.infinity_settings["filters"].append(
-            {"name": name, "count": count, "mode": mode, "index": index + 1}
+            {"name": item, "count": count, "mode": mode, "index": index + 1}
         )
 
     def set_infinity_filters(self, filters):
@@ -171,3 +177,9 @@ class InfinityContainer(Entity):
                 self.infinity_settings["filters"] = filters
             except SchemaError as e:
                 six.raise_from(DataFormatError(e), None)
+
+    # def set_item_request(self, item, count):
+    #     # type: (str, int) -> None
+    #     self._handle_inventory_contents(item, count)
+
+    #     super(InfinityContainer, self).set_item_request(item, count)

@@ -23,7 +23,7 @@ class SpatialHashMap(object):
     def __init__(self, cell_size=8):
         # type: (int) -> None
         """
-        TODO
+        Create a new SpatialHashMap.
 
         :param cell_size: Size of the grid in tiles to divide the space up into.
         """
@@ -118,6 +118,21 @@ class SpatialHashMap(object):
         Deletes all entries in the map.
         """
         self.map.clear()
+
+    def get_all(self):
+        """
+        Get all the entities in the hash map. Iterates over every cell and
+        returns the contents sequentially. Useful if you want to get all the
+        Entities in a Blueprint without including structural ones like Groups.
+
+        :returns: A ``list`` of all entities inside the hash map.
+        """
+        items = []
+        for cell_coord in self.map:
+            for item in self.map[cell_coord]:
+                items.append(item)
+
+        return items
 
     def get_in_radius(self, radius, pos, limit=None):
         # type: (float, Sequence[float], int) -> list[SpatialLike]

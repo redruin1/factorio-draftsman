@@ -1,7 +1,5 @@
 # warning.py
 
-# TODO: maybe generic RangeWarning?
-
 """
 Draftsman warnings. Used to enforce "Factorio-correctness".
 """
@@ -31,6 +29,16 @@ class DirectionWarning(DraftsmanWarning):
     """
     Raised when the direction does not match the rotation type, e.g. setting
     a 4-way rotatable Entity's direction to :py:data:`Direction.NORTHWEST`.
+    """
+
+    pass
+
+
+class FlippingWarning(DraftsmanWarning):
+    """
+    Raised when attempting to flip an entity that may or not be able to be
+    flipped. This is only raised when flipping an :py:class:`EntityCollection`
+    with modded entities.
     """
 
     pass
@@ -85,6 +93,15 @@ class ItemLimitationWarning(DraftsmanWarning):
     """
     Raised when an item request does not match the :py:class:`.AssemblingMachine`'s
     recipe inputs.
+    """
+
+    pass
+
+
+class ItemCapacityWarning(DraftsmanWarning):
+    """
+    Raised when an item request exeeds the number of inventory slots of the
+    entity.
     """
 
     pass

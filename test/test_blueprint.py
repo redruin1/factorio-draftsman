@@ -19,7 +19,7 @@ from draftsman.error import (
     InvalidSignalError,
     InvalidConnectionSideError,
     RotationError,
-    FlippingError,  # TODO
+    FlippingError,
     UnreasonablySizedBlueprintError,
     DraftsmanError,
     EntityNotPowerConnectableError,
@@ -390,6 +390,32 @@ class BlueprintTesting(unittest.TestCase):
 
     # =========================================================================
 
+    def test_rotatable(self):
+        blueprint = Blueprint()
+        self.assertEqual(blueprint.rotatable, True)
+
+    # =========================================================================
+
+    def test_flippable(self):
+        blueprint = Blueprint()
+
+        # Test normal case
+        blueprint.entities.append("transport-belt")
+        self.assertEqual(blueprint.flippable, True)
+
+        # Test unflippable case
+        blueprint.entities.append("oil-refinery", tile_position=(1, 1))
+        self.assertEqual(blueprint.flippable, False)
+
+        # Test group case
+        blueprint.entities = None
+        group = Group("test")
+        group.entities.append("pumpjack")
+        blueprint.entities.append(group)
+        self.assertEqual(blueprint.flippable, False)
+
+    # =========================================================================
+
     def test_set_entities(self):
         blueprint = Blueprint()
         blueprint.entities = [Container()]
@@ -436,6 +462,7 @@ class BlueprintTesting(unittest.TestCase):
                 ],
             }
         ]
+        self.assertIs(blueprint.schedules[0]["locomotives"][0](), blueprint.entities[0])
         self.maxDiff = None
         self.assertEqual(
             blueprint.to_dict()["blueprint"],
@@ -790,6 +817,10 @@ class BlueprintTesting(unittest.TestCase):
                 return {"x": 0, "y": 0}
 
             @property
+            def global_position(self):  # pragma: no coverage
+                return self.position
+
+            @property
             def collision_box(self):  # pragma: no coverage
                 return [[0, 0], [1, 1]]
 
@@ -855,6 +886,17 @@ class BlueprintTesting(unittest.TestCase):
         found_entity = blueprint.find_entity("something-else", (1.5, 1.5))
         self.assertIs(found_entity, None)
 
+        # Group search case
+        group = Group("test", position=(-5, -5))
+        group.entities.append("wooden-chest", tile_position=(-5, -5))
+        blueprint.entities.append(group)
+        # Incorrect
+        found_entity = blueprint.find_entity("wooden-chest", (-4.5, -4.5))
+        self.assertIs(found_entity, None)
+        # Correct
+        found_entity = blueprint.find_entity("wooden-chest", (-9.5, -9.5))
+        self.assertIs(found_entity, blueprint.entities[("test", 0)])
+
     # =========================================================================
 
     def test_find_entities(self):
@@ -869,6 +911,20 @@ class BlueprintTesting(unittest.TestCase):
         found_entities = blueprint.find_entities([[0, 0], [6, 6]])
         self.assertEqual(found_entities, [blueprint.entities[0], blueprint.entities[1]])
 
+        # Group search case
+        group = Group("test", position=(-5, -5))
+        group.entities.append("wooden-chest", tile_position=(-5, -5))
+        blueprint.entities.append(group)
+        # Unchanged
+        found_entities = blueprint.find_entities()
+        self.assertEqual(found_entities, blueprint.entities.data)
+        # Unchanged
+        found_entities = blueprint.find_entities([[0, 0], [6, 6]])
+        self.assertEqual(found_entities, [blueprint.entities[0], blueprint.entities[1]])
+        # Entity group
+        found_entities = blueprint.find_entities([[-10, -10], [0, 0]])
+        self.assertEqual(found_entities, [blueprint.entities[("test", 0)]])
+
     # =========================================================================
 
     def test_find_entities_filtered(self):
@@ -879,6 +935,8 @@ class BlueprintTesting(unittest.TestCase):
         blueprint.entities.append(
             "arithmetic-combinator", tile_position=(6, 0), direction=Direction.SOUTH
         )
+
+        self.maxDiff = None
 
         # Return all
         found = blueprint.find_entities_filtered()
@@ -939,6 +997,14 @@ class BlueprintTesting(unittest.TestCase):
             direction={Direction.NORTH, Direction.SOUTH}, invert=True
         )
         self.assertEqual(found, [blueprint.entities[0], blueprint.entities[2]])
+
+        # Group search case
+        blueprint.entities = None
+        group = Group("test")
+        group.entities.append("transport-belt")
+        blueprint.entities.append(group)
+        found = blueprint.find_entities_filtered()
+        self.assertEqual(found, [blueprint.entities[("test", 0)]])
 
     # =========================================================================
 
@@ -1191,13 +1257,13 @@ class BlueprintTesting(unittest.TestCase):
                         {
                             "name": "medium-electric-pole",
                             "position": {"x": 0.5, "y": 0.5},
-                            "neighbours": [5, 4, 3, 2],
+                            "neighbours": [4, 5, 3, 2],
                             "entity_number": 1,
                         },
                         {
                             "name": "medium-electric-pole",
                             "position": {"x": 4.5, "y": 0.5},
-                            "neighbours": [1, 5, 3, 4],
+                            "neighbours": [1, 3, 5, 4],
                             "entity_number": 2,
                         },
                         {
@@ -1281,7 +1347,7 @@ class BlueprintTesting(unittest.TestCase):
                         {
                             "name": "medium-electric-pole",
                             "position": {"x": 0.5, "y": 0.5},
-                            "neighbours": [3, 2],
+                            "neighbours": [2, 3],
                             "entity_number": 1,
                         },
                         {
@@ -1568,3 +1634,6 @@ class BlueprintTesting(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             blueprint.flip("incorrectly")
+        with self.assertRaises(FlippingError):
+            blueprint.entities.append("chemical-plant", tile_position=(4, 4))
+            blueprint.flip()

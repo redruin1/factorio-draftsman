@@ -231,7 +231,7 @@ class ArithmeticCombinator(
     def set_arithmetic_conditions(self, a=None, op="*", b=0, out=None):
         # type: (Union[str, int], str, Union[str, int], str) -> None
         """
-        Sets the arithmetic condition of the ArithmeticCombinator.
+        Sets the entire arithmetic condition of the ArithmeticCombinator.
 
         :param a: The name of the first signal to set, some constant, or ``None``.
         :param op: The string representation of the operation to perform, as

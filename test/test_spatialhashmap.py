@@ -42,7 +42,15 @@ class SpatialHashMapTesting(unittest.TestCase):
         self.assertEqual(map.map, {})
         map.remove(Tile("landfill", (0, 0)))
         self.assertEqual(map.map, {})
-        pass
+
+    def test_get_all(self):
+        map = SpatialHashMap()
+        tile_to_add = Tile("refined-concrete", (0, 0))
+        map.add(tile_to_add)
+        other_tile_to_add = Tile("landfill", (1, 1))
+        map.add(other_tile_to_add)
+
+        self.assertEqual(map.get_all(), [tile_to_add, other_tile_to_add])
 
     def test_get_in_radius(self):
         map = SpatialHashMap()

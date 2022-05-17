@@ -22,13 +22,6 @@ class DoubleGridAlignedMixin(object):
 
         self._double_grid_aligned = True
 
-        # Technically redundant, but we do this to ensure any warnings are met
-        # TODO: maybe remove? Analyze the heirarchy here
-        if "position" in kwargs:
-            self.position = kwargs["position"]
-        elif "tile_position" in kwargs:
-            self.tile_position = kwargs["tile_position"]
-
     # =========================================================================
 
     @property
@@ -57,7 +50,8 @@ class DoubleGridAlignedMixin(object):
         :exception IndexError: If the set value does not match the above
             specification.
         :exception DraftsmanError: If the entities position is modified when
-            inside a EntityCollection, [which is forbidden.] TODO
+            inside a EntityCollection, :ref:`which is forbidden.
+            <handbook.blueprints.forbidden_entity_attributes>`
         """
         return self._position
 
@@ -110,7 +104,8 @@ class DoubleGridAlignedMixin(object):
         :exception IndexError: If the set value does not match the above
             specification.
         :exception DraftsmanError: If the entities position is modified when
-            inside a EntityCollection, [which is forbidden.] TODO
+            inside a EntityCollection, :ref:`which is forbidden.
+            <handbook.blueprints.forbidden_entity_attributes>`
         """
         return self._tile_position
 

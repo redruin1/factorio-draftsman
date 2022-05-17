@@ -1,0 +1,199 @@
+
+# =============================================================================
+
+enum ReadMode:  			# Used for Inserters and TransportBelts when reading their contained contents
+	0: PULSE				# Pulse the content signal for one tick at the beginning
+	1: HOLD					# Hold the content signal for the duration that the entity holds the item
+
+enum MiningDrillReadMode: 	# Used for MiningDrill entities when reading the contents underneath them
+	0: UNDER_DRILL			# Read the contents underneath this one drill
+	1: ENTIRE_PATCH			# Read the contents of the entire resource patch that this drill is mining from
+
+enum InserterMOE:			# Used for inserters to determine their mode of operation
+	0: ENABLE_DISABLE 		# Turn the inserter on or off depending on the circuit or logistic condtion. Default.
+	1: SET_FILTERS			# Use the input signals to set the filters of the inserter. Only works on inserters with filter capabilities
+	2: READ_HAND_CONTENTS	# Read the items in the inserter's hand and output them to the circuit network.
+	3: NONE					# Do nothing, ignore all external signals and operate normally
+	4: SET_STACK_SIZE		# Use an input circuit signal to set the number of items to pick up per swing
+
+enum LogisticMOE:			# Used for logistics containers to determine their mode of operation
+	0: SEND_CONTENTS		# Treat logistic container like a regular chest, and output its contents to the circuit network
+	1. SET_REQUESTS			# Use the input signals to request items to this container. Only works on LogisticContainers that have request capability
+
+# =============================================================================
+
+"control_behavior": { # All of the following parameters inside "control_behavior" are optional.
+	
+	# =================
+	# Circuit Condition
+	# =================
+	# Used by: TransportBelt, MiningDrill, Inserter, TrainStop, PowerSwitch, Lamp, Wall, OffshorePump, ProgrammableSpeaker, Pump, RailSignal
+
+	"circuit_enable_disable": bool, 								# Whether or not to use the "circuit_condition". Note that an entity can preserve it's circuit condition even when this is set to false. Defaults to false.
+	
+	"circuit_condition": { 											# The actual parameters of the circuit condition. Defaults to null.
+		Optional("first_signal"): SignalID,					  		# The first positional signal of the condition. Defaults to null.
+		Optional("second_signal"): SignalID,						# The second positional signal of the condition. Defaults to null.
+		Optional("comparator"): Or(">", "<", "=", "≥", "≤", "≠"),	# The operator to compare the two values against. Expects to be one of the specific unicode strings. Defaults to "<".
+		Optional("constant"): int32 								# The signal value to compare against. MUST be the second operand, the first entry must be a signal. I think "second_signal" takes precedence over "constant", though I'm not sure. Defaults to 0.
+	},
+	
+	# ==================
+	# Logistic Condition
+	# ==================
+	# Used by: TransportBelt, MiningDrill, Inserter, TrainStop, PowerSwitch, Wall, OffshorePump
+	
+	"connect_to_logistic_network": bool, 							# Whether or not to use the "logistic_condition". Works similarly to "circuit_enable_disable", except it reads from the logistic network in range for it's values. I believe this takes precedent over circuit conditions. Defaults to false.
+
+	"logistic_condition": { 										# The actual parameters of the logistic condition. Defaults to null.
+		Optional("first_signal"): SignalID, 				 		# The first positional signal of the condition. Defaults to null.
+		Optional("second_signal"): SignalID,						# The second positional signal of the condition. Defaults to null.
+		Optional("comparator"): Or(">", "<", "=", "≥", "≤", "≠"),	# The operator to compare the two values against. Expects to be one of the specific unicode strings. Defaults to "<".
+		Optional("constant"): int32 								# The signal value to compare against. MUST be the second operand, the first entry must be a signal. I think "second_signal" takes precedence over "contant", though I'm not sure. Defaults to 0.
+	},
+
+	# =================
+	# Mode of operation
+	# =================
+	# Used by: Inserter, LogisticContainer, Lamp (Lamp seems to be deprecated in favor of "use_colors", or it only has one option 0)
+
+	"circuit_mode_of_operation": int,			# Enum used to specify how the entity should behave. This is dependent on the type of entity involved. From my testing, the only two that actually seem to be used is Inserters and LogisticContainer (see the enumerations InserterMOE and LogisticMOE). For all of them, see (https://lua-api.factorio.com/latest/defines.html#defines.control_behavior). Defaults to 0.
+
+	# =============
+	# Read contents
+	# =============
+	# Used by: Inserter, TransportBelt, MiningDrill
+
+	# The following 2 keys all handle whether or not to output the "contents" of the entity to the circuit network:
+
+	"circuit_read_hand_contents": bool, 		# Used on inserters AND transport belts. The amount of items currently being handled by the entity.
+	"circuit_read_resources": bool,				# Used on mining drills. The resources currently below the entity. Exactly what is determined by "circuit_mode_of_operation".
+	
+	"circuit_hand_read_mode": int,				# Used ONLY on inserters. The mode in which to read the contents of the entity. Accepted values are listed in `ReadMode` enum above.
+	"circuit_contents_read_mode": int,			# Used ONLY on transport belts. The mode in which to read the contents of the entity. Accepted values are listed in `ReadMode` enum above.
+
+	# ===========
+	# Set filters
+	# ===========
+
+	"circuit_set_stack_size": bool,				# Whether or not to use the "stack_control_input_signal" to specify the stack size for this filter inserter. Defaults to false.
+	"stack_control_input_signal": SignalID,		# The signal to set the inserter's stack size from if the control behavior is set to SET_STACK_SIZE. 
+
+	# ================
+	# Train stop stuff
+	# ================
+
+	# All of the following parameters apply only to the control behavior of TrainStop.
+
+	"read_from_train": bool,			# Whether or not to read the contents of this train. Defaults to false.
+	"read_stopped_train": bool,			# Whether or not to generate a unique ID for a train when stopped at the station. Defaults to false.
+	"train_stopped_signal": SignalID,	# The signal to use if "read_stopped_train" is set to true. Defaults to TrainStop["default_train_stopped_signal"] ("signal-T" on "train-stop")
+	"set_trains_limit": bool,			# Whether or not to limit the number of trains that can use this stop with a circuit signal. Defaults to false.
+	"trains_limit_signal": SignalID,	# The signal to use if "set_trains_limit" is set to true. Defaults to TrainStop["default_trains_limit_signal"] ("signal-L" on "train-stop")
+	"read_trains_count": bool,			# Whether or not to read the total number of trains that are currently using this stop in their schedules. Defaults to false.
+	"trains_count_signal": SignalID,	# The signal to output the count of the trains to if "read_trains_count" is set to true. Defaults to TrainStop["default_trains_count_signal"] ("signal-C" on "train-stop")
+
+	# =================
+	# Rail signal stuff
+	# =================
+
+	# All of the following parameters apply only to the control behavior of RailSignal and RailChainSignal.
+
+	"red_output_signal": SignalID,		# Used in RailSignal and RailChainSignal. The signal to output a non-zero value of if the signal reads red. Defaults to RailSignal["default_red_output_signal"]. ("signal-red" on "rail-signal")
+	"yellow_output_signal": SignalID,	# Used in RailSignal and RailChainSignal. The signal to output a non-zero value of if the signal reads yellow. Defaults to RailSignal["default_orange_output_signal"] ("signal-yellow" on "rail-signal") (I'm triggered)
+	"green_output_signal": SignalID,	# Used in RailSignal and RailChainSignal. The signal to output a non-zero value of if the signal reads green. Defaults to RailSignal["default_green_output_signal"] ("signal-green" on "rail-signal")
+	"blue_output_signal": SignalID,		# Used RailChainSignal. The signal to output a non-zero value of if the signal reads blue. Defaults to RailChainSignal["default_blue_output_signal"] ("signal-blue" on "rail-chain-signal")
+
+	# ==============
+	# Roboport stuff
+	# ==============
+
+	# All of the following parameters apply only to the control behavior of Roboport.
+
+	"read_logistics": bool,								# Whether or not to output the contents of the logistic network to the circuit network. Defaults to true.
+	"read_robot_stats": bool,							# Whether or not to output the amount of robots in the logistic network to the circuit network. Defaults to false.
+	"available_logistic_output_signal": SignalID,		# Self explanatory; defaults to Roboport["default_available_logistic_output_signal"] ("signal-X" on "roboport")
+	"total_logistic_output_signal": SignalID,			# Self explanatory; defaults to Roboport["default_total_logistic_output_signal"] ("signal-Y" on "roboport")
+	"available_construction_output_signal": SignalID,	# Self explanatory; defaults to Roboport["default_available_construction_output_signal"] ("signal-Z" on "roboport")
+	"total_construction_output_signal": SignalID,		# Self explanatory; defaults to Roboport["default_total_construction_output_signal"] ("signal-T" on "roboport")
+
+	# ==========
+	# Lamp stuff
+	# ==========
+
+	# The following parameter applies only to the control behavior of Lamp.
+
+	"use_colors": bool,		# Whether or not to use colors when the lamp is active. Defaults to false.
+
+	# ===========================
+	# Arithmetic Combinator stuff
+	# ===========================
+
+	# The following parameter(s) apply only to the control behavior of ArithmeticCombinator.
+
+	"arithmetic_conditions": {					# The specifications of the operation.
+		Optional("first_constant"): int32,		# The first constant of the operation. Converse of "first_signal", only one of the two is intended to be used at once. I believe signal takes precedence over constant. Defaults to null.
+		Optional("first_signal"): SIGNAL_ID,	# The first signal of the operation. Converse of "first_constant", only one of the two is intended to be used at once. Defaults to null.
+		Optional("operation"): Or("*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR"),		# The operation to use; self-explanatory. Defaults to "*".
+		Optional("second_constant"): int32,		# The second constant of the operation. Converse of "second_signal", only one of the two is intended to be used at once. I believe signal takes precedence over constant. Defaults to 0.
+		Optional("second_signal"): SIGNAL_ID,	# The second signal of the operation. Converse of "second_constant", only one of the two is intended to be used at once. Defaults to null.
+		Optional("output_signal"): SIGNAL_ID,	# The output signal of the operation. Defaults to null.
+	},
+
+	# ========================
+	# Decider Combinator stuff
+	# ========================
+
+	# The following parameter(s) apply only to the control behavior of DeciderCombinator.
+
+	# The nature of "constant" in "decider_conditions" behaves a little strangely; it seems to have holdover behavior from "circuit_condition". If the "decider_condition" has only a single constant, then it's value
+	# is set to "constant" and it's position is inferred by whatever signal slot is not taken. However, if there are two constants (which is allowed only on DeciderCombinators) then they assume the values 
+	# "first_constant" and "second_constant", respectively. This is why the conditions actually have 3 "constant" keys. Again, I believe signals take precedence over constants if there are two that occupy the same
+	# slot.
+
+	"decider_conditions": {
+		Optional("constant"): int32,								# The constant to use if there is only one in the operation. Defaults to 0.
+		Optional("first_constant"): int32,							# The constant to use in the first slot if there are two constants in the operation. Defaults to null.
+		Optional("first_signal"): SignalID,							# The signal to use in the first slot. Defaults to null.
+		Optional("comparator"): Or(">", "<", "=", "≥", "≤", "≠"),	# The operator to compare the two values against. Expects to be one of the specific unicode strings. Defaults to "<".
+		Optional("second_constant"): int32,							# The constant to use in the second slot if there are two constants in the operation. Defaults to null.
+		Optional("second_signal"): SignalID,						# The signal to use in the second slot. Defaults to null.
+		Optional("output_signal"): SignalID,						# The signal to output the value(s) as. Defaults to null.
+		Optional("copy_count_from_input"): bool,					# Whether or not to copy the value of the input signal to the value of the output signal. Defaults to false.
+	},
+
+	# =========================
+	# Constant Combinator stuff
+	# =========================
+
+	# The following parameter(s) apply only to the control behavior of ConstantCombinator.
+
+	"filters": [				# "filters" can contain 0 to ConstantCombinator["item_slot_count"] entries
+		{
+			"index": int,		# The index of the signal in the constant combinator. Does not have to correspond to the index in the list.
+			"signal": SignalID,	# The signal to set inside the constant combinator.
+			"count": int32,		# The value to set inside the constant combinator. Defaults to 0(? Might be optional, don't remember)
+		},
+		...
+	],
+
+	# ==========================
+	# Programmable Speaker stuff
+	# ==========================
+
+	# The following parameter(s) apply only to the control behavior of ProgrammableSpeaker.
+
+	"circuit_parameters": {
+		Optional("signal_value_is_pitch"): bool,	# Whether or not to use the value of the circuit signal to set the pitch of the note. Defaults to false.
+		Optional("instrument_id"): int,				# The numeric index of the instrument. Corresponds to the order that you see in game. Defaults to 0.
+        Optional("note_id"): int,					# The numeric index of the note corresponding to the current instrument. Corresponds to the order that you see in game. Defaults to 0.
+	},
+
+	# =================
+	# Accumulator stuff
+	# =================
+
+	# The following parameter only applies to the control behavior of Accumulator.
+
+	"ouput_signal": SignalID,	# The signal to output the current charge value of the accumulator to the circuit network. Defaults to Accumulator["default_output_signal"] ("signal-A" on "accumulator").
+}

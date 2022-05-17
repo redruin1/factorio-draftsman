@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
+    ModulesMixin,
     RequestItemsMixin,
     CircuitReadResourceMixin,
     CircuitConditionMixin,
@@ -14,7 +15,7 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     DirectionalMixin,
 )
-from draftsman.error import InvalidItemError
+from draftsman import utils
 from draftsman.warning import DraftsmanWarning, ItemLimitationWarning
 
 from draftsman.data.entities import mining_drills
@@ -25,6 +26,7 @@ import warnings
 
 
 class MiningDrill(
+    ModulesMixin,
     RequestItemsMixin,
     CircuitReadResourceMixin,
     CircuitConditionMixin,
@@ -34,7 +36,6 @@ class MiningDrill(
     CircuitConnectableMixin,
     DirectionalMixin,
     Entity,
-    object,
 ):
     """
     An entity that extracts resources from the environment.
@@ -51,18 +52,20 @@ class MiningDrill(
                 stacklevel=2,
             )
 
+    @utils.reissue_warnings
     def set_item_request(self, item, amount):
         # type: (str, int) -> None
-        # TODO: docstring
         # Make sure the item exists
-        if item not in items.raw:
-            raise InvalidItemError(item)
+        # if item not in items.raw:
+        #     raise InvalidItemError(item)
 
-        if item not in modules.raw:
+        if item in items.raw and item not in modules.raw:
             warnings.warn(
                 "Item '{}' cannot be placed in MiningDrill".format(item),
                 ItemLimitationWarning,
                 stacklevel=2,
             )
+
+        # self._handle_module_slots(item, amount)
 
         super(MiningDrill, self).set_item_request(item, amount)

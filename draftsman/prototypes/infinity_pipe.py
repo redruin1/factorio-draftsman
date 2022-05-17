@@ -102,13 +102,13 @@ class InfinityPipe(Entity):
     def infinite_fluid_percentage(self):
         # type: () -> int
         """
-        The percentage of the infinite fluid in the pipe.
+        The percentage of the infinite fluid in the pipe, where ``1.0`` is 100%.
 
         :getter: Gets the percentage full, or ``None`` if not set.
         :setter: Sets the percentage full. Removes the key if set to ``None``.
-        :type: int
+        :type: float
 
-        :exception TypeError: If set to anything other than an ``int`` or ``None``.
+        :exception TypeError: If set to anything other than an number or ``None``.
         :exception ValueError: If set to a negative percentage, which is forbidden.
         """
         return self.infinity_settings.get("percentage", None)
@@ -118,10 +118,10 @@ class InfinityPipe(Entity):
         # type: (int) -> None
         if value is None:
             self.infinity_settings.pop("percentage", None)
-        elif isinstance(value, (int, float)):
+        elif isinstance(value, (float, int)):
             if value < 0:
                 raise ValueError("'percentage' cannot be negative")
-            self.infinity_settings["percentage"] = value
+            self.infinity_settings["percentage"] = float(value)
         else:
             raise TypeError("'infinite_fluid_percentage' must be a number or None")
 
@@ -183,20 +183,18 @@ class InfinityPipe(Entity):
 
         :getter: Gets the fluid temperature, or ``None`` if not set.
         :setter: Sets the fluid temperature. Removes the key if set to ``None``.
-        :type: ``float``
+        :type: ``int``
 
-        :exception TypeError: If set to anything other than a ``float``, ``int``,
-            or ``None``.
+        :exception TypeError: If set to anything other than a number or ``None``.
         """
         return self.infinity_settings.get("temperature", None)
 
     @infinite_fluid_temperature.setter
     def infinite_fluid_temperature(self, value):
         # type: (float) -> None
-        # TODO: check if this is float or int
         if value is None:
             self.infinity_settings.pop("temperature", None)
-        elif isinstance(value, (float, int)):
+        elif isinstance(value, (int, float)):
             if not 0 <= value <= 1000:
                 warnings.warn(
                     "'infinite_fluid_temperature' ({}) not in range [0, 1000]; "
@@ -204,7 +202,7 @@ class InfinityPipe(Entity):
                     TemperatureRangeWarning,
                     stacklevel=2,
                 )
-            self.infinity_settings["temperature"] = float(value)
+            self.infinity_settings["temperature"] = int(value)
         else:
             raise TypeError("'temperature' must be an int or None")
 

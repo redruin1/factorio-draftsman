@@ -236,7 +236,6 @@ class EntityList(MutableSequence):
     @utils.reissue_warnings
     def __setitem__(self, item, value):
         # type: (Union[int, str], EntityLike) -> None
-        # TODO: maybe make it possible for this function to take string keys?
 
         # Get the key and index of the item
         idx, key = self.get_pair(item)

@@ -1,87 +1,54 @@
-
-from logging import Filter
-from draftsman.classes.group import Group
-from draftsman.blueprintable import Blueprint, BlueprintBook
+from draftsman.blueprintable import Blueprint
 from draftsman.entity import *
-from draftsman.data import entities, items, instruments, mods, modules, recipes, signals, tiles
-import copy
-import weakref
-import draftsman
+from draftsman.data import modules, entities
 
-import six
-import os
+import json
+
 
 blueprint = Blueprint()
 
-# blueprint.entities.append("wooden-chest", tile_position = (-2, 0), id = "wood")
+# turret = Turret("gun-turret")
+# turret.set_item_requests({"piercing-rounds-magazine": 200})
+# blueprint.entities.append(turret)
 
-# group = Group()
+# turret.tile_position = (2, 0)
+# turret.set_item_requests({"piercing-rounds-magazine": 200})
+# blueprint.entities.append(turret)
 
-# a = Container("steel-chest", id = "A")
-# b = Container("steel-chest", tile_position = (1, 0), id = "B")
-# #a.add_circuit_connection("red", b)
+# turret.tile_position = (4, 0)
+# turret.set_item_requests({"uranium-rounds-magazine": 200})
+# blueprint.entities.append(turret)
 
-# group.id = "1"
-# group.position = (0, 0)
-# group.entities.append(a)
-# group.entities.append(b)
-# group.add_circuit_connection("red", "A", "B")
+# artillery_turret = Turret("artillery-turret", tile_position = (6, 0))
+# artillery_turret.set_item_requests({"artillery-shell": 1})
+# blueprint.entities.append(artillery_turret)
 
-# blueprint.entities.append(group)
+# blueprint.label = "Turrets: Ammo item request"
+# blueprint.description = "Each turret that requires ammo preloaded with a full stack of ammo when placed."
 
-# group.id = "2"
-# group.position = (2, 0)
-# blueprint.entities.append(group)
+# machine = AssemblingMachine("assembling-machine-3")
+# machine.recipe = "electronic-circuit"
+# machine.set_item_requests({"copper-cable": 200})
+# blueprint.entities.append(machine)
 
-# blueprint.add_circuit_connection("red", "wood", ("1", "A"))
-# blueprint.add_circuit_connection("green", ("1", "B"), ("2", "A"))
-# assert blueprint.entities["1"].entities["A"] is blueprint.entities[("1", "A")]
+# blueprint.label = "Preloaded Gun Turret"
+# blueprint.description = "A gun turret set to request 200 red-ammo when its placed, automatically filling it from the logistics network. Good for turret creep and offensive efforts."
+print(len(entities.raw["chemical-plant"]["fluid_boxes"]))
+print(len(entities.raw["oil-refinery"]["fluid_boxes"]))
+# print(entities.raw["industrial-furnace"].keys())
+# print(json.dumps(entities.raw["industrial-furnace"]["fluid_boxes"], indent=4))
+# print(entities.flippable["industrial-furnace"])
+print(entities.flippable["chemical-plant"])
+print(entities.flippable["oil-refinery"])
+print(entities.flippable["pumpjack"])
+print(entities.flippable["electric-mining-drill"])
+print(entities.flippable["rail-signal"])
+print(entities.flippable["rail-chain-signal"])
+print(entities.flippable["train-stop"])
+print(entities.flippable["boiler"])
+# print(entities.raw["chemical-plant"]["fluid_boxes"])
 
-# print(len(blueprint.entities))
+for fluid_box in entities.raw["pumpjack"]["output_fluid_box"]["pipe_connections"]:
+    print(fluid_box)
 
-# print(blueprint.entities[("2", "A")])
-# print(blueprint.entities[("2", "A")].id)
-
-# group1 = Group("A")
-# group2 = Group("B")
-# group3 = Group("A")
-# c = Container("wooden-chest", id = "C")
-# base = Container("wooden-chest", id = "base", tile_position = (3, 0))
-
-# group3.entities.append(c)
-# group2.entities.append(group3)
-# group1.entities.append(group2)
-# blueprint.entities.append(group1)
-# blueprint.entities.append(base)
-
-# blueprint.add_circuit_connection("red", ("A", "B", "A", "C"), "base")
-
-# blueprint.entities[("A", "B", "A")].id = "D"
-
-# blueprint.add_circuit_connection("green", ("A", "B", "D", "C"), "base")
-
-# print(blueprint.to_dict())
-# print(blueprint)
-# print(blueprint.to_string())
-
-# silo = RocketSilo()
-# silo.auto_launch = True
-# silo.set_item_request("productivity-module-3", 4)
-# silo.set_item_request("low-density-structure", 720)
-
-# blueprint.entities.append(silo)
-
-# print(blueprint.to_string())
-
-# blueprint.entities.append("inserter", tile_position = [-1, 0]) # entity[0]
-# blueprint.entities.append("inserter", tile_position = [+1, 0]) # entity[1]
-
-# blueprint.add_circuit_connection("red", 0, 1)
-
-# del blueprint.entities[1]
-
-# print(blueprint.entities[0].connections)
-# # {'1': {'red': [{'entity_id': None}]}}
-
-# print(blueprint.to_string())
-# # InvalidConnectionError: 'inserter' entity at {'x': -0.5, 'y': 0.5} is connected to an entity that no longer exists
+print(entities.raw["rail-signal"]["default_orange_output_signal"])

@@ -244,6 +244,14 @@ class IncorrectModVersionError(DraftsmanError):
     pass
 
 
+class IncorrectModFormatError(DraftsmanError):
+    """
+    Raised when the format of a loaded mod conflicts with expectations.
+    """
+
+    pass
+
+
 # =============================================================================
 # Data
 # =============================================================================

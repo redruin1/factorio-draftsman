@@ -4,8 +4,9 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import RequestItemsMixin, RecipeMixin
+from draftsman.classes.mixins import ModulesMixin, RequestItemsMixin, RecipeMixin
 from draftsman.error import InvalidItemError
+from draftsman import utils
 from draftsman.warning import (
     DraftsmanWarning,
     ModuleLimitationWarning,
@@ -14,17 +15,16 @@ from draftsman.warning import (
 
 from draftsman.data.entities import assembling_machines
 from draftsman.data import modules
-from draftsman.data import items
 from draftsman.data import recipes
 
 import warnings
 
 
-class AssemblingMachine(RecipeMixin, RequestItemsMixin, Entity):
+class AssemblingMachine(RecipeMixin, ModulesMixin, RequestItemsMixin, Entity):
     """
     A machine that takes input items and produces output items. Includes
-    chemical plants, oil refineries, and centrifuges, but does not include
-    :py:class:`.RocketSilo`.
+    assembling machines, chemical plants, oil refineries, and centrifuges, but
+    does not include :py:class:`.RocketSilo`.
     """
 
     def __init__(self, name=assembling_machines[0], **kwargs):
@@ -38,15 +38,11 @@ class AssemblingMachine(RecipeMixin, RequestItemsMixin, Entity):
                 stacklevel=2,
             )
 
-    def set_item_request(self, item, amount):
+    @utils.reissue_warnings
+    def set_item_request(self, item, count):
         # type: (str, int) -> None
-        # Make sure the item exists
-        if item not in items.raw:
-            raise InvalidItemError("'{}'".format(item))
-
-        # If the item is a module
         if item in modules.raw:
-            # Check to make sure the recipe within the module's limitations
+            # Check to make sure the recipe is within the module's limitations
             # (If it has any)
             module = modules.raw[item]
             if "limitation" in module:
@@ -73,4 +69,4 @@ class AssemblingMachine(RecipeMixin, RequestItemsMixin, Entity):
                     stacklevel=2,
                 )
 
-        super(AssemblingMachine, self).set_item_request(item, amount)
+        super(AssemblingMachine, self).set_item_request(item, count)

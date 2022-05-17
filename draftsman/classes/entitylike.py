@@ -36,9 +36,6 @@ class EntityLike(SpatialLike):
 
     def __init__(self):
         # type: () -> None
-        """
-        TODO
-        """
         # Parent reference (Internal)
         # Overwritten if the EntityLike is placed inside a Blueprint or Group
         self._parent = None
@@ -143,27 +140,15 @@ class EntityLike(SpatialLike):
     def rotatable(self):
         # type: () -> bool
         """
-        Whether or not this EntityLike can be rotated. Not exported; read only.
+        Whether or not this EntityLike can be rotated. Note that this does not
+        mean that the entity will prevent a blueprint from rotating; more, that
+        this blueprint does not have a concept of different rotation angles. For
+        example, any :py:class:`.Reactor` entity will always return ``rotatable``
+        as ``False`` when queried. Not exported; read only.
 
         :type: ``bool``
         """
         return self._rotatable
-
-    # =========================================================================
-
-    @property
-    def flippable(self):
-        # type: () -> bool
-        """
-        Whether or not this EntityLike can be flipped. Not exported; read only.
-
-        .. WARNING::
-
-            Currently unimplemented. Defaults to ``True`` for all entities.
-
-        :type: ``bool``
-        """
-        return self._flippable
 
     # =========================================================================
     # Abstract Properties

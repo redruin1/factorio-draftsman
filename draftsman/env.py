@@ -22,12 +22,14 @@ from draftsman.error import (
     MissingModError,
     IncompatableModError,
     IncorrectModVersionError,
+    IncorrectModFormatError,
 )
 from draftsman.utils import decode_version, version_string_to_tuple
 from draftsman._factorio_version import __factorio_version_info__
 
 import argparse
 from collections import OrderedDict
+import copy
 import json
 import lupa
 import os
@@ -45,7 +47,7 @@ dependency_string_pattern = (
 )
 dependency_regex = re.compile(dependency_string_pattern)
 
-lua_module_pattern = "\\.\\/factorio-mods\\/(.+?)\\/.*"
+lua_module_pattern = "\\.\\/draftsman\\/factorio-mods\\/(.+?)\\/.*"
 lua_module_regex = re.compile(lua_module_pattern)
 
 
@@ -212,11 +214,11 @@ def python_require(mod_list, current_mod, module_name, package_path):
         mod = current_mod
 
     if not mod.archive:
-        return
+        return None, "Current mod ({}) is not an archive".format(mod.name)
 
     # emulate lua filepath searching
     filepaths = package_path.split(";")
-    filepaths.insert(0, "?.lua")  # Add the raw module to the paths as well
+    # filepaths.insert(0, "?.lua")  # Add the raw module to the paths as well
     for filepath in filepaths:
         # Replace the question mark with the module_name
         filepath = filepath.replace("?", module_name)
@@ -225,7 +227,10 @@ def python_require(mod_list, current_mod, module_name, package_path):
         # Normalize for Zipfile
         filepath = filepath.replace("\\", "/")
         try:
-            return mod.files.read(filepath)
+            result = mod.files.read(filepath)
+            # If we get here, loading was a success: let's analyze the filepath
+            filepath = os.path.dirname(filepath)
+            return result, filepath
         except KeyError:
             pass
 
@@ -244,6 +249,7 @@ def load_stage(lua, mod_list, mod, stage):
     lua.globals().MOD_DIR = mod.location
     lua.globals().CURRENT_FILE = os.path.join(mod.location, stage)
 
+    # Add the base mod folder as a base path (in addition to base and core)
     lua.globals().ADD_PATH(os.path.join(mod.location, "?.lua"))
 
     lua.execute(mod.data[stage])
@@ -318,7 +324,10 @@ def get_order(data, objects_to_sort):
             # Get the item's sort name to actually sort with
             sort_name = sort_object["name"]
             # Replace only the order and its subgroup
-            object_to_sort["order"] = sort_object["order"]
+            try:
+                object_to_sort["order"] = sort_object["order"]
+            except KeyError:
+                pass
             try:
                 object_to_sort["subgroup"] = sort_object["subgroup"]
             except KeyError:
@@ -389,6 +398,80 @@ def extract_entities(lua, data_location, verbose):
 
     entities = {}
     unordered_entities_raw = {}
+    is_flippable = {}
+
+    def is_entity_flippable(entity):
+        """
+        Determines whether or not the input entity can be flipped inside a
+        Blueprint.
+        """
+        # if not entity.get("fluid_boxes", False):
+        #     return True
+
+        # https://forums.factorio.com/102294
+
+        # Check if any entity has a fluid box
+        # fluid_boxes = []
+        # if "fluid_box" in entity:
+        #     fluid_boxes.append(copy.deepcopy(entity["fluid_box"]))
+        # elif "fluid_boxes" in entity:  # Check crafting machine fluid boxes
+        #     boxes_copy = copy.deepcopy(entity["fluid_boxes"])
+        #     if isinstance(boxes_copy, dict):  # Convert to a list if it's a dict
+        #         boxes_copy.pop("off_when_no_fluid_recipe", None)
+        #         boxes_copy = list(boxes_copy.values())
+        #     fluid_boxes.extend(boxes_copy)
+        # elif "output_fluid_box" in entity:  # Check mining-drill fluid boxes
+        #     fluid_boxes.append(copy.deepcopy(entity["output_fluid_box"]))
+
+        # if fluid_boxes:
+
+        #     # Record the position of every fluid box along with their type
+        #     box_locations = {}
+        #     for fluid_box in fluid_boxes:
+        #         for pipe_connection in fluid_box["pipe_connections"]:
+        #             if "position" in pipe_connection:
+        #                 pos = tuple(pipe_connection["position"])
+        #                 box_locations[pos] = pipe_connection.get("type", "input-output")
+        #             elif "positions" in pipe_connection:
+        #                 for pos in pipe_connection["positions"]:
+        #                     pos = tuple(pos)
+        #                     box_locations[pos] = pipe_connection.get("type", "input-output")
+
+        #     # Check the fluid box's mirrored position for conflicts
+        #     for fluid_box in fluid_boxes:
+        #         for pipe_connection in fluid_box["pipe_connections"]:
+        #             if "position" in pipe_connection:
+        #                 pos = tuple(pipe_connection["position"])
+        #                 type = box_locations[pos]
+        #                 if ((-pos[0], pos[1]) in box_locations and
+        #                     type != box_locations[(-pos[0], pos[1])]):
+        #                     return False
+        #                 if ((pos[0], -pos[1]) in box_locations and
+        #                     type != box_locations[(pos[0], -pos[1])]):
+        #                     return False
+        #                 # if pos[0] != 0 and pos[1] != 0:
+        #                 #     return False
+        #             elif "positions" in pipe_connection:
+        #                 for pos in pipe_connection["positions"]:
+        #                     pos = tuple(pos)
+        #                     type = box_locations[pos]
+        #                     if ((-pos[0], pos[1]) in box_locations and
+        #                         type != box_locations[(-pos[0], pos[1])]):
+        #                         return False
+        #                     if ((pos[0], -pos[1]) in box_locations and
+        #                         type != box_locations[(pos[0], -pos[1])]):
+        #                         return False
+
+        # Hardcoded entities: we do this because I have no idea what the
+        # criteria is for unflippablility
+        if entity["name"] in {"pumpjack", "chemical-plant", "oil-refinery"}:
+            return False
+
+        # Restricted types; due to the way rails work these have no flipping
+        if entity["type"] in {"rail-signal", "rail-chain-signal", "train-stop"}:
+            return False
+
+        return True
 
     def categorize_entities(entity_table, target_list):
         entity_dict = convert_table_to_dict(entity_table)
@@ -398,6 +481,8 @@ def extract_entities(lua, data_location, verbose):
                 "not-blueprintable" in flags or "not-deconstructable" in flags
             ):  # or "hidden" in flags
                 continue
+            # Check if an entity is flippable or not
+            is_flippable[entity_name] = is_entity_flippable(entity)
             # maybe move this to get_order?
             unordered_entities_raw[entity_name] = entity
             target_list.append(entity)
@@ -705,6 +790,8 @@ def extract_entities(lua, data_location, verbose):
     for name in raw_order:
         entities["raw"][name] = unordered_entities_raw[name]
 
+    entities["flippable"] = is_flippable
+
     with open(os.path.join(data_location, "entities.pkl"), "wb") as out:
         pickle.dump(entities, out, pickle.HIGHEST_PROTOCOL)
 
@@ -787,21 +874,22 @@ def extract_items(lua, data_location, verbose):
     #     sorted_subgroups[v["name"]] = v
     sorted_subgroups = to_ordered_dict(test_values)
 
-    index_dict = {}
+    group_index_dict = {}
+    subgroup_index_dict = {}
 
     # Initialize item groups
     group_list = list(groups.values())
     for group in group_list:
         group["subgroups"] = []
-        index_dict[group["name"]] = group
+        group_index_dict[group["name"]] = group
 
     # Initialize item subgroups
     subgroup_list = list(subgroups.values())
     for subgroup in subgroup_list:
         subgroup["items"] = []
-        parent_group = index_dict[subgroup["group"]]
+        parent_group = group_index_dict[subgroup["group"]]
         parent_group["subgroups"].append(subgroup)
-        index_dict[subgroup["name"]] = subgroup
+        subgroup_index_dict[subgroup["name"]] = subgroup
 
     def add_item(category, item_name):
         item = category[item_name]
@@ -809,9 +897,9 @@ def extract_items(lua, data_location, verbose):
         #     if "hidden" in item["flags"].values():
         #         return
         if "subgroup" in item:
-            subgroup = index_dict[item["subgroup"]]
+            subgroup = subgroup_index_dict[item["subgroup"]]
         else:
-            subgroup = index_dict["other"]
+            subgroup = subgroup_index_dict["other"]
         if "order" not in item:
             item["order"] = ""
         subgroup["items"].append(item)
@@ -1004,8 +1092,6 @@ def extract_signals(lua, data_location, verbose):
     add_signals("virtual-signal", virtual_signals, "virtual")
 
     item_signals = get_order(data, item_signals)
-    # for signal in fluid_signals:
-    #     print(signal)
     fluid_signals = get_order(data, fluid_signals)
     virtual_signals = get_order(data, virtual_signals)
 
@@ -1129,108 +1215,189 @@ def update(verbose=False, no_mods=False):
     )
 
     # Attempt to get the list of enabled mods from mod-list.json
-    mod_list = {}
+    enabled_mod_list = {}
     try:
         with open(os.path.join(factorio_mods, "mod-list.json")) as mod_list_file:
             mod_json = json.load(mod_list_file)
             for mod in mod_json["mods"]:
-                mod_list[mod["name"]] = mod["enabled"] and not no_mods
+                enabled_mod_list[mod["name"]] = mod["enabled"] and not no_mods
     except FileNotFoundError:  # If no such file is found
         # Every mod is enabled by default, unless `no_mods` is True
-        mod_list["base"] = True
+        enabled_mod_list["base"] = True
         for mod_obj in os.listdir(factorio_mods):
             if mod_obj.lower().endswith(".zip"):
                 mod_name = mod_archive_regex.match(mod_obj).group(1)
-                mod_list[mod_name] = not no_mods
+                enabled_mod_list[mod_name] = not no_mods
             elif os.path.isdir(os.path.join(factorio_mods, mod_obj)):
                 mod_name = mod_obj
-                mod_list[mod_name] = not no_mods
+                enabled_mod_list[mod_name] = not no_mods
 
     # Preload all the mods and their versions
     for mod_obj in os.listdir(factorio_mods):
+        # Minimum info we need to acquire
         mod_name = None
         mod_version = None
+
+        mod_info = None  # Data extracted from the mod's info.json file
+        archive = None  # Is this mod a zip archive or not?
+
         mod_location = os.path.join(factorio_mods, mod_obj)
-        archive = None
-        mod_info = None
-        data = {}
+        external_mod_version = None  # Optional (the filepath version)
 
-        if mod_obj.lower().endswith(".zip"):  # Zip file
+        if os.path.isdir(mod_location):
+            # Folder
+            mod_name = mod_obj
+            # TODO: assert mod folder name matches either "name" or "name_version"
+            # format
+            # m = mod_archive_regex.match(mod_obj)
+            # mod_name = m.group(1)
+            # external_mod_version = m.group(2)
+            # print(mod_obj)
+            try:
+                with open(os.path.join(mod_location, "info.json"), "r") as info_file:
+                    mod_info = json.load(info_file)
+            except FileNotFoundError:
+                raise IncorrectModFormatError(
+                    "Mod '{}' has no 'info.json' file in its root folder".format(
+                        mod_name
+                    )
+                )
 
+            internal_folder = mod_location
+            mod_version = mod_info["version"]
+            archive = False
+
+        elif mod_obj.lower().endswith(".zip"):
+            # Zip file
             m = mod_archive_regex.match(mod_obj)
             mod_name = m.group(1)
             external_mod_version = m.group(2)
             files = zipfile.ZipFile(mod_location, mode="r")
-            # (Zipfiles don't like backslashes even on Windows)
+            # There is no restriction on the name of the folder, just that there
+            # is only one at the root of the archive
+            # All the mods I've seen use the same "mod-name_mod-version", but
+            # the wiki says this is not enforced
+            # Hence, we use this scuffed code to check the root-most directory
+            topdirs = set()
+            for file in files.namelist():
+                # Get the left-most folder of all files, ignoring duplicates
+                basename = None  # guards against UnboundLocalError
+                while file:
+                    file, basename = os.path.split(file)
+                topdirs.add(basename)
+
+            # Make sure there's only one root directory
+            if len(topdirs) != 1:
+                raise IncorrectModFormatError(
+                    "Mod '{}' has more than one root folder in it's archive".format(
+                        mod_name
+                    )
+                )
+
+            internal_folder = topdirs.pop()
             try:
-                internal_folder = mod_name
+                # Zipfiles don't like backslashes, so we manually concatenate
                 mod_info = json.loads(files.read(internal_folder + "/info.json"))
             except KeyError:
-                internal_folder = "{}_{}".format(mod_name, external_mod_version)
-                mod_info = json.loads(files.read(internal_folder + "/info.json"))
+                raise IncorrectModFormatError(
+                    "Mod '{}' has no 'info.json' file in its root folder".format(
+                        mod_name
+                    )
+                )
+
             mod_version = mod_info["version"]
             archive = True
 
-            # Idiot check:
-            assert version_string_to_tuple(
-                external_mod_version
-            ) == version_string_to_tuple(mod_version)
-
-        elif os.path.isdir(os.path.join(factorio_mods, mod_obj)):  # Folder
-
-            # TODO: mod folders can also be named with the "name_version" format
-            mod_name = mod_obj
-            with open(os.path.join(mod_location, "info.json"), "r") as info_file:
-                mod_info = json.load(info_file)
-            mod_version = mod_info["version"]
-            archive = False
-
-            raise NotImplementedError("working on it")  # TODO: finish
-
         else:  # Regular file
-            continue  # Ignore
+            continue  # Ignore: cannot be considered a mod
 
         # First make sure the mod is enabled
-        if not mod_list[mod_name]:
+        if not enabled_mod_list[mod_name]:
             continue
+
+        # Idiot check: assert external version matches internal version
+        if external_mod_version:
+            assert version_string_to_tuple(
+                external_mod_version
+            ) == version_string_to_tuple(
+                mod_version
+            ), "{}: External version does not match internal version".format(
+                mod_name
+            )
 
         # Ensure that the mod's factorio version is correct
         mod_factorio_version = version_string_to_tuple(mod_info["factorio_version"])
         assert mod_factorio_version <= factorio_version_info
 
         mod_data = {}
-        # Attempt to load setting files
-        try:
-            settings = files.read(internal_folder + "/settings.lua")
-            mod_data["settings.lua"] = settings
-        except KeyError:
-            pass
-        try:
-            settings = files.read(internal_folder + "/settings-updates.lua")
-            mod_data["settings-updates.lua"] = settings
-        except KeyError:
-            pass
-        try:
-            settings = files.read(internal_folder + "/settings-final-fixes.lua")
-            mod_data["settings-final-fixes.lua"] = settings
-        except KeyError:
-            pass
-        # Attempt to load data files
-        try:
-            data = files.read(internal_folder + "/data.lua")
-            mod_data["data.lua"] = data
-        except KeyError:
-            pass
-        try:
-            data_updates = files.read(internal_folder + "/data-updates.lua")
-            mod_data["data-updates.lua"] = data_updates
-        except KeyError:
-            pass
-        try:
-            data_final_fixes = files.read(internal_folder + "/data-final-fixes.lua")
-            mod_data["data-final-fixes.lua"] = data_final_fixes
-        except KeyError:
-            pass
+        if archive:
+            # Attempt to load setting files
+            try:
+                settings = files.read(internal_folder + "/settings.lua")
+                mod_data["settings.lua"] = settings
+            except KeyError:
+                pass
+            try:
+                settings = files.read(internal_folder + "/settings-updates.lua")
+                mod_data["settings-updates.lua"] = settings
+            except KeyError:
+                pass
+            try:
+                settings = files.read(internal_folder + "/settings-final-fixes.lua")
+                mod_data["settings-final-fixes.lua"] = settings
+            except KeyError:
+                pass
+            # Attempt to load data files
+            try:
+                data = files.read(internal_folder + "/data.lua")
+                mod_data["data.lua"] = data
+            except KeyError:
+                pass
+            try:
+                data_updates = files.read(internal_folder + "/data-updates.lua")
+                mod_data["data-updates.lua"] = data_updates
+            except KeyError:
+                pass
+            try:
+                data_final_fixes = files.read(internal_folder + "/data-final-fixes.lua")
+                mod_data["data-final-fixes.lua"] = data_final_fixes
+            except KeyError:
+                pass
+        else:  # folder
+            # Attempt to load setting files
+            try:
+                settings = file_to_string(internal_folder + "/settings.lua")
+                mod_data["settings.lua"] = settings
+            except FileNotFoundError:
+                pass
+            try:
+                settings = file_to_string(internal_folder + "/settings-updates.lua")
+                mod_data["settings-updates.lua"] = settings
+            except FileNotFoundError:
+                pass
+            try:
+                settings = file_to_string(internal_folder + "/settings-final-fixes.lua")
+                mod_data["settings-final-fixes.lua"] = settings
+            except FileNotFoundError:
+                pass
+            # Attempt to load data files
+            try:
+                data = file_to_string(internal_folder + "/data.lua")
+                mod_data["data.lua"] = data
+            except FileNotFoundError:
+                pass
+            try:
+                data_updates = file_to_string(internal_folder + "/data-updates.lua")
+                mod_data["data-updates.lua"] = data_updates
+            except FileNotFoundError:
+                pass
+            try:
+                data_final_fixes = file_to_string(
+                    internal_folder + "/data-final-fixes.lua"
+                )
+                mod_data["data-final-fixes.lua"] = data_final_fixes
+            except FileNotFoundError:
+                pass
 
         mods[mod_name] = Mod(
             name=mod_name,
@@ -1250,6 +1417,7 @@ def update(verbose=False, no_mods=False):
 
         if verbose:
             print(mod_name, mod.version)
+            print("archive?", mod.archive)
             print("dependencies:")
 
         for dependency in mod.info["dependencies"]:
@@ -1302,7 +1470,7 @@ def update(verbose=False, no_mods=False):
         print("Load order:")
         print(load_order)
 
-    # Setup emulated factorio environment
+    # Setup emulated factorio environment (Set up at {site-packages}/draftsman)
     lua = lupa.LuaRuntime(unpack_returned_tuples=True)
 
     # Factorio utils
@@ -1339,6 +1507,10 @@ def update(verbose=False, no_mods=False):
     lualib_path = os.path.join(factorio_data, "core", "lualib", "?.lua")
     ADD_PATH(lualib_path)
     load_stage(lua, mods, core_mod, "data.lua")
+
+    # We also add a special path, which is just the entire module
+    # (This is used in archives, mostly)
+    ADD_PATH("?.lua")
 
     # We want to keep core constant, so we wipe the deletion table
     # NOTE: this might end up being a problem, to be safe we might just
