@@ -86,7 +86,7 @@ def setup(app):
     # If it does, we ignore this step
     # If not, we run draftsman.env.update()
     # This ensures that the module is always setup before running autodoc, which is a must
-    # Would be nice to just add a regular command in the readthedocs config, but here we are
+    # Would be nice to just add a regular command in the readthedocs config, but that would be too simple
     import os.path
     import draftsman
     mods_pkl = os.path.join(draftsman.__path__[0], "data", "mods.pkl")

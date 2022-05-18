@@ -1,6 +1,6 @@
 from draftsman.blueprintable import Blueprint
 from draftsman.entity import *
-from draftsman.data import modules, entities
+from draftsman.data import modules, entities, items
 
 import json
 
@@ -51,4 +51,7 @@ print(entities.flippable["boiler"])
 for fluid_box in entities.raw["pumpjack"]["output_fluid_box"]["pipe_connections"]:
     print(fluid_box)
 
-print(entities.raw["rail-signal"]["default_orange_output_signal"])
+for item_name in items.raw:
+    item = items.raw[item_name]
+    if "flags" in item and "hidden" in item["flags"]:
+        print(item_name)

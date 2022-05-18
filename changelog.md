@@ -1,4 +1,8 @@
 # Changelog
+## 0.9.2
+* Added `signals` attribute to `ConstantCombinator`, which aliases `control_behavior["filters"]`
+* Bugfix: resolved #6
+
 ## 0.9.1
 * Updated `factorio-data` to `1.1.59`
 * Added description of `control_behavior` attribute structure to `docs/source` folder

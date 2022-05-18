@@ -181,12 +181,6 @@ class EntityList(MutableSequence):
             assert inserter is blueprint.entities[0]
             assert blueprint.entities[0].stack_size_override == 1
         """
-        # Determine the id of the input entity
-        entity_id = None
-        if "id" in kwargs:
-            entity_id = kwargs["id"]
-        elif hasattr(entity, "id"):
-            entity_id = entity.id
 
         # Convert to Entity if constructed via keyword
         if isinstance(entity, six.string_types):
@@ -195,6 +189,13 @@ class EntityList(MutableSequence):
             # Create a DEEPCopy of the entity if desired
             if copy:
                 entity = deepcopy(entity)
+
+        # Determine the id of the input entity
+        # entity_id = None
+        # if "id" in kwargs:
+        #     entity_id = kwargs["id"]
+        # elif entity.id: #hasattr(entity, "id")
+        #     entity_id = entity.id
 
         # Make sure were not causing any problems by putting this entity in
         self.check_entity(entity)
@@ -208,8 +209,8 @@ class EntityList(MutableSequence):
         # Manage the EntityList
         self.data.insert(idx, entity)
         self._shift_key_indices(idx, 1)
-        if entity_id:
-            self.set_key(entity_id, entity)
+        if entity.id:
+            self.set_key(entity.id, entity)
 
         # Add a reference to the parent in the object
         entity._parent = self._parent
@@ -253,8 +254,8 @@ class EntityList(MutableSequence):
         if key:
             self.remove_key(key)
         if value.id:
-            key = getattr(value, "id")
-            self.set_key(key, value)
+            # key = getattr(value, "id")
+            self.set_key(value.id, value)
 
         # Add a reference to the parent in the object
         value._parent = self._parent
@@ -401,14 +402,21 @@ class EntityList(MutableSequence):
     def _shift_key_indices(self, idx, amt):
         # type: (int, int) -> None
         """
-        Shifts all of the key mappings above ``idx`` by ``amt``. Used when
-        inserting or removing elements before the end, which moves what index
-        each key should point to.
+        Shifts all of the key mappings above or equal to``idx`` by ``amt``. Used
+        when inserting or removing elements before the end, which moves what 
+        index each key should point to.
         """
+        # Shift the indices for key_to_idx
         for key in self.key_map:
             old_idx = self.key_to_idx[key]
             if old_idx >= idx:
                 new_idx = old_idx + amt
                 self.key_to_idx[key] = new_idx
-                del self.idx_to_key[old_idx]
-                self.idx_to_key[new_idx] = key
+                # del self.idx_to_key[old_idx]
+                # # self.idx_to_key.pop(old_idx)
+                # self.idx_to_key[new_idx] = key
+
+        # Reconstruct idx_to_key
+        self.idx_to_key = {}
+        for key in self.key_to_idx:
+            self.idx_to_key[self.key_to_idx[key]] = key

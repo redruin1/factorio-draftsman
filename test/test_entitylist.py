@@ -58,9 +58,6 @@ class EntityListTesting(unittest.TestCase):
         self.assertEqual(test.data[0].bar, 10)
 
         with self.assertWarns(HiddenEntityWarning):
-            # Removing the line below causes unittest to fail on Python 2.7
-            # What the fuck, beware of dragons
-            test.key_map
             test.insert(1, "express-loader", tile_position=(5, 0))
 
         with self.assertRaises(DuplicateIDError):

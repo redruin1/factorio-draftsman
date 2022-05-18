@@ -58,6 +58,47 @@ class ConstantCombinator(
 
     # =========================================================================
 
+    @property
+    def signals(self):
+        # type: () -> list
+        """
+        The list of signals that this :py:class:`.ConstantCombinator` currently
+        holds. Aliases ``control_behavior["filter"]``. Can be set to one of two
+        formats:
+
+        .. code-block:: python
+
+            [{"index": int, "signal": SIGNAL_ID, "count": int}, ...]
+            # Or
+            [(signal_name, signal_value), (str, int), ...]
+
+        If the data is set to the latter, it is converted to the former.
+
+        :getter: Gets the signals of the combinators, or an empty list if not
+            set.
+        :setter: Sets the signals of the combinators. Removes the key if set to
+            None.
+        :type: :py:data:`.SIGNAL_FILTERS`
+
+        :exception DataFormatError: If set to anything that does not match the
+            format specified above.
+        """
+        return self.control_behavior.get("filters", [])
+
+    @signals.setter
+    def signals(self, value):
+        # type: (list) -> None
+        if value is None:
+            self.control_behavior.pop("filters", None)
+        else:
+            try:
+                value = signatures.SIGNAL_FILTERS.validate(value)
+                self.control_behavior["filters"] = value
+            except SchemaError as e:
+                six.raise_from(DataFormatError(e), None)
+
+    # =========================================================================
+
     def set_signal(self, index, signal, count=0):
         # type: (int, str, int) -> None
         """
@@ -124,33 +165,27 @@ class ConstantCombinator(
 
         return next((item for item in filters if item["index"] == index + 1), None)
 
-    def set_signals(self, signals):
-        # type: (list) -> None
-        """
-        Set all the signals of the ``ConstantCombinator``.
+    # def set_signals(self, signals):
+    #     # type: (list) -> None
+    #     """
+    #     Set all the signals of the ``ConstantCombinator``.
 
-        ``signals`` can be specified as one of two formats:
+    #     ``signals`` can be specified as one of two formats:
 
-        .. code-block:: python
+    #     where the location of each tuple in the parent list is equivalent to the
+    #     ``index`` of the entry in the ``ConstantCombinator``.
 
-            [{"index": int, "signal": SIGNAL_ID, "count": int}, ...]
-            # Or
-            [(signal_name, signal_value), (str, int), ...]
+    #     :param signals: The signals to set the data to, in the format
+    #         :py:data:`.SIGNAL_FILTERS` specified above.
 
-        where the location of each tuple in the parent list is equivalent to the
-        ``index`` of the entry in the ``ConstantCombinator``.
-
-        :param signals: The signals to set the data to, in the format
-            :py:data:`.SIGNAL_FILTERS` specified above.
-
-        :exception DataFormatError: If ``signals`` does not match the format
-            specified in :py:data:`.SIGNAL_FILTERS`.
-        """
-        if signals is None:
-            self.control_behavior.pop("filters", None)
-        else:
-            try:
-                signals = signatures.SIGNAL_FILTERS.validate(signals)
-                self.control_behavior["filters"] = signals
-            except SchemaError as e:
-                six.raise_from(DataFormatError(e), None)
+    #     :exception DataFormatError: If ``signals`` does not match the format
+    #         specified in :py:data:`.SIGNAL_FILTERS`.
+    #     """
+    #     if signals is None:
+    #         self.control_behavior.pop("filters", None)
+    #     else:
+    #         try:
+    #             signals = signatures.SIGNAL_FILTERS.validate(signals)
+    #             self.control_behavior["filters"] = signals
+    #         except SchemaError as e:
+    #             six.raise_from(DataFormatError(e), None)

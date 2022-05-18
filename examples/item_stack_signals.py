@@ -22,8 +22,8 @@ COMBINATOR_HEIGHT = 5
 def main():
     blueprint = Blueprint()
 
-    signal_count = 0
     signal_index = 0
+    signals_added = 0
     combinators_added = 0
     x = 0
     y = 0
@@ -35,12 +35,12 @@ def main():
         if "flags" in items.raw[item]:
             if "hidden" in items.raw[item]["flags"]:
                 continue
-        # Keep track of how many signals we've gone through
-        signal_count += 1
         # Write the stack size signal
         stack_size = items.raw[item]["stack_size"]
         combinator.set_signal(signal_index, item, stack_size)
         signal_index += 1
+        # Keep track of how many items we've added in total
+        signals_added += 1
         # Once we exceed the number of signals a combinator can hold, place it and reset
         if signal_index == combinator.item_slot_count:
             # Add the combinator to the blueprint
@@ -50,13 +50,14 @@ def main():
             combinators_added += 1
             y = combinators_added % COMBINATOR_HEIGHT
             x = int(combinators_added / COMBINATOR_HEIGHT)
-            combinator.set_signals(None)  # Clear signals
+            combinator.signals = None  # Clear signals
             combinator.tile_position = (x, y)
             signal_index = 0
 
     # Add the last combinator if partially full
-    combinator.id = "{}_{}".format(x, y)
-    blueprint.entities.append(combinator)
+    if len(combinator.signals) > 0:
+        combinator.id = "{}_{}".format(x, y)
+        blueprint.entities.append(combinator)
 
     # Add connections to each neighbour
     for cx in range(x):
@@ -74,7 +75,7 @@ def main():
             except KeyError:
                 pass
 
-    print("Number of items added:", signal_count)
+    print("Total number of item signals added:", signals_added)
     print(blueprint.to_string())
 
 

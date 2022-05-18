@@ -153,5 +153,6 @@ will adjust as well.
 * Make testing work with mods (harder than it sounds)
 * Split documentation from docstrings so that each function has a more readable example
 * RailPlanner (specify rail paths via turtle-like commands)
+* Custom `data.raw` extraction and formatting?
 * Maybe integrate defaults for more succinct blueprint strings?
 * Look into Lua bindings via backport to C
