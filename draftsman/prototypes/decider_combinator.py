@@ -75,9 +75,9 @@ class DeciderCombinator(
             self.control_behavior["decider_conditions"] = {}
         decider_conditions = self.control_behavior["decider_conditions"]
 
-        if value is None: # Default
+        if value is None:  # Default
             decider_conditions.pop("first_signal", None)
-        else: # Signal Dict
+        else:  # Signal Dict
             decider_conditions["first_signal"] = value
 
     # =========================================================================
@@ -86,8 +86,8 @@ class DeciderCombinator(
     def operation(self):
         # type: () -> str
         """
-        The operation of the ``DeciderCombinator`` Can be specified as stored as 
-        the single unicode character which is used by Factorio, or you can use 
+        The operation of the ``DeciderCombinator`` Can be specified as stored as
+        the single unicode character which is used by Factorio, or you can use
         the Python formatted 2-character equivalents::
 
             # One of:
@@ -95,14 +95,14 @@ class DeciderCombinator(
             # Or, alternatively:
             [">", "<", "==", ">=", "<=", "!="]
 
-        or ``None``. If specified in the second format, they are converted to 
+        or ``None``. If specified in the second format, they are converted to
         and stored as the first format.
 
         :getter: Gets the current operation, or ``None`` if not set.
         :setter: Sets the current operation. Removes the key if set to ``None``.
         :type: ``str``
 
-        :exception TypeError: If set to anything other than one of the values 
+        :exception TypeError: If set to anything other than one of the values
             specified above.
         """
         decider_conditions = self.control_behavior.get("decider_conditions", None)
@@ -136,9 +136,9 @@ class DeciderCombinator(
         """
         The second operand of the ``DeciderCombinator``.
 
-        :getter: Gets the second operand of the operation, or ``None`` if not 
+        :getter: Gets the second operand of the operation, or ``None`` if not
             set.
-        :setter: Sets the second operand of the operation. Removes the key if 
+        :setter: Sets the second operand of the operation. Removes the key if
             set to ``None``.
         :type: :py:data:`.SIGNAL_ID_OR_CONSTANT`
 
@@ -168,13 +168,13 @@ class DeciderCombinator(
             self.control_behavior["decider_conditions"] = {}
         decider_conditions = self.control_behavior["decider_conditions"]
 
-        if value is None: # Default
+        if value is None:  # Default
             decider_conditions.pop("second_signal", None)
             decider_conditions.pop("constant", None)
-        elif isinstance(value, dict): # Signal Dict
+        elif isinstance(value, dict):  # Signal Dict
             decider_conditions["second_signal"] = value
             decider_conditions.pop("constant", None)
-        else: # Constant
+        else:  # Constant
             decider_conditions["constant"] = value
             decider_conditions.pop("second_signal", None)
 
@@ -211,9 +211,9 @@ class DeciderCombinator(
             self.control_behavior["decider_conditions"] = {}
         decider_conditions = self.control_behavior["decider_conditions"]
 
-        if value is None: # Default
+        if value is None:  # Default
             decider_conditions.pop("output_signal", None)
-        else: # Signal Dict
+        else:  # Signal Dict
             decider_conditions["output_signal"] = value
 
     # =========================================================================

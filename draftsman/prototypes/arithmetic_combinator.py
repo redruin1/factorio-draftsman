@@ -83,13 +83,13 @@ class ArithmeticCombinator(
             self.control_behavior["arithmetic_conditions"] = {}
         arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
 
-        if value is None: # Default
+        if value is None:  # Default
             arithmetic_conditions.pop("first_signal", None)
             arithmetic_conditions.pop("first_constant", None)
-        elif isinstance(value, dict): # Signal Dict
+        elif isinstance(value, dict):  # Signal Dict
             arithmetic_conditions["first_signal"] = value
             arithmetic_conditions.pop("first_constant", None)
-        else: # Constant
+        else:  # Constant
             arithmetic_conditions["first_constant"] = value
             arithmetic_conditions.pop("first_signal", None)
 
@@ -112,7 +112,7 @@ class ArithmeticCombinator(
         :setter: Sets the current operation. Removes the key if set to ``None``.
         :type: ``str``
 
-        :exception TypeError: If set to anything other than one of the values 
+        :exception TypeError: If set to anything other than one of the values
             specified above.
         """
         arithmetic_conditions = self.control_behavior.get("arithmetic_conditions", None)
@@ -146,9 +146,9 @@ class ArithmeticCombinator(
         """
         The second operand of the ``ArithmeticCombinator``.
 
-        :getter: Gets the second operand of the operation, or ``None`` if not 
+        :getter: Gets the second operand of the operation, or ``None`` if not
             set.
-        :setter: Sets the second operand of the operation. Removes the key if 
+        :setter: Sets the second operand of the operation. Removes the key if
             set to ``None``.
         :type: :py:data:`.SIGNAL_ID_OR_CONSTANT`
 
@@ -178,13 +178,13 @@ class ArithmeticCombinator(
             self.control_behavior["arithmetic_conditions"] = {}
         arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
 
-        if value is None: # Default
+        if value is None:  # Default
             arithmetic_conditions.pop("second_signal", None)
             arithmetic_conditions.pop("second_constant", None)
-        elif isinstance(value, dict): # Signal Dict
+        elif isinstance(value, dict):  # Signal Dict
             arithmetic_conditions["second_signal"] = value
             arithmetic_conditions.pop("second_constant", None)
-        else: # Constant
+        else:  # Constant
             arithmetic_conditions["second_constant"] = value
             arithmetic_conditions.pop("second_signal", None)
 
@@ -221,9 +221,9 @@ class ArithmeticCombinator(
             self.control_behavior["arithmetic_conditions"] = {}
         arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
 
-        if value is None: # Default
+        if value is None:  # Default
             arithmetic_conditions.pop("output_signal", None)
-        else: # Signal Dict
+        else:  # Signal Dict
             arithmetic_conditions["output_signal"] = value
 
     # =========================================================================

@@ -199,7 +199,7 @@ def python_require(mod_list, current_mod, module_name, package_path):
     and returns the contents of the file if found.
 
     Used in the modified Lua ``require()`` function that handles special cases
-    to model Factorio's load pattern. This function is called after 
+    to model Factorio's load pattern. This function is called after
     `normalize_module_name`, and expects the name to be it's result.
     """
 
@@ -211,14 +211,14 @@ def python_require(mod_list, current_mod, module_name, package_path):
     except TypeError:
         mod_name = None
 
-    # If the name is found, then we change "contexts" to that mod; otherwise, 
+    # If the name is found, then we change "contexts" to that mod; otherwise,
     # the current context is assumed to be be the current mod archive
     if mod_name:
         mod = mod_list[mod_name]
     else:
         mod = current_mod
 
-    # No sense searching the archive if the mod is not one to begin with; we 
+    # No sense searching the archive if the mod is not one to begin with; we
     # relay this information back to the Lua require function
     if not mod.archive:
         return None, "Current mod ({}) is not an archive".format(mod.name)
@@ -1436,20 +1436,20 @@ def update(verbose=False, no_mods=False):
             if verbose:
                 print("\t", flag or " ", dep_name, op or "", version or "")
 
-            if flag == "!": 
+            if flag == "!":
                 # Mod is incompatible with the current mod
                 # Check if that mod exists in the mods folder
                 if dep_name in mods:
                     # If it does, throw an error
                     raise IncompatableModError(mod_name)
                 else:
-                    continue # Otherwise, don't worry about it
-            elif flag == "?": 
+                    continue  # Otherwise, don't worry about it
+            elif flag == "?":
                 # Mod is optional to the current mod
                 if dep_name not in mods:
-                    continue # Don't worry about it
+                    continue  # Don't worry about it
 
-            # Now that we know this is a regular dependency, we ensure that it 
+            # Now that we know this is a regular dependency, we ensure that it
             # exists
             if dep_name not in mods:
                 raise MissingModError(dep_name)
@@ -1499,10 +1499,10 @@ def update(verbose=False, no_mods=False):
         python_mods[mod] = mods[mod].version
     lua.globals().python_mods = python_mods
     # This is still a Python data structure though, so we run the following bit
-    # of code to convert the `python_mods` global to the `mods` Lua table 
+    # of code to convert the `python_mods` global to the `mods` Lua table
     # Factorio wants
     lua.execute(
-    """
+        """
     mods = {}
     for k in python.iter(python_mods) do
         mods[k] = python_mods[k]
@@ -1529,7 +1529,7 @@ def update(verbose=False, no_mods=False):
     # by only loading each file once, and reusing the file when requiring with
     # the same name. This can lead to problems when two mods have the same name
     # for a file, where Lua will load the incorrect one and create issues.
-    # To counteract this, we completly unload all files with this function, 
+    # To counteract this, we completly unload all files with this function,
     # which is called at the end of every load stage.
     lua_unload_cache = lua.globals()["lua_unload_cache"]
 
@@ -1539,7 +1539,7 @@ def update(verbose=False, no_mods=False):
 
     # Add the path to and setup the `core` module
     # This should probably be part of the main load process in case more than
-    # "data.lua" is added to the core module, but core is kinda special and 
+    # "data.lua" is added to the core module, but core is kinda special and
     # would have to be integrated into the load order as a unique case
     lualib_path = os.path.join(factorio_data, "core", "lualib", "?.lua")
     lua_add_path(lualib_path)
@@ -1617,8 +1617,8 @@ def update(verbose=False, no_mods=False):
 
     # At this point, `data.raw` and all other constructs should(!) be properly
     # initialized. Hence, we can now extract the data we wish:
-    
-    extract_mods(mods, data_location, verbose) # Mod names and their versions
+
+    extract_mods(mods, data_location, verbose)  # Mod names and their versions
 
     extract_entities(lua, data_location, verbose)
     extract_instruments(lua, data_location, verbose)
@@ -1630,7 +1630,7 @@ def update(verbose=False, no_mods=False):
 
     # TODO: Think about a way that users can extract the data that they want
     # instead of it being hardcoded for my purposes alone
-    
+
     if verbose:
         print("Update finished.")  # Phew.
 
