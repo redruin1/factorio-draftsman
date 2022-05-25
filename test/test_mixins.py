@@ -488,12 +488,12 @@ class InventoryMixinTesting(unittest.TestCase):
 
 class InventoryFilterMixinTesting(unittest.TestCase):
     def test_set_inventory(self):
-        cargo_wagon = CargoWagon()
+        cargo_wagon = CargoWagon("cargo-wagon")
         cargo_wagon.inventory = None
         self.assertEqual(cargo_wagon.inventory, {})
 
     def test_set_inventory_filter(self):
-        cargo_wagon = CargoWagon()
+        cargo_wagon = CargoWagon("cargo-wagon")
         cargo_wagon.set_inventory_filter(0, "transport-belt")
         self.assertEqual(
             cargo_wagon.inventory, {"filters": [{"index": 1, "name": "transport-belt"}]}
@@ -533,7 +533,7 @@ class InventoryFilterMixinTesting(unittest.TestCase):
             cargo_wagon.set_inventory_filter(50, "stone")
 
     def test_set_inventory_filters(self):
-        cargo_wagon = CargoWagon()
+        cargo_wagon = CargoWagon("cargo-wagon")
         cargo_wagon.set_inventory_filters(["transport-belt", "fast-transport-belt"])
         self.assertEqual(
             cargo_wagon.inventory,

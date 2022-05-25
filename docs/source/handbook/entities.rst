@@ -1,5 +1,7 @@
+.. _handbook.entities.differences:
+
 Entities
-==========
+========
 
 Entities are organized roughly equivalently to the types of `Prototypes <https://wiki.factorio.com/Prototype/EntityWithOwner>`_ found in Factorio.
 Only the entity types that are blueprintable are extracted, and most are identical in name and purpose.

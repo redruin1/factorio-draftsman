@@ -145,12 +145,8 @@ can also just change the settings in either of those and the loading process
 will adjust as well.
 
 ## TODO
-* Fix Lua load order to only require files from the proper folders
-* Re-implement circuit attributes for `DeciderCombinator` and `ArithmeticCombinator`
-* Determine which entity prototypes are vanilla and which are modded, and record this during loading
 * Figure out exactly what determines if an `Entity` is flip-able or not
 * Most of the data extracted from `data.raw` is sorted, but not all of it
-* Make testing work with mods (harder than it sounds)
 * Split documentation from docstrings so that each function has a more readable example
 * RailPlanner (specify rail paths via turtle-like commands)
 * Custom `data.raw` extraction and formatting?

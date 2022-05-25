@@ -403,7 +403,7 @@ class EntityList(MutableSequence):
         # type: (int, int) -> None
         """
         Shifts all of the key mappings above or equal to``idx`` by ``amt``. Used
-        when inserting or removing elements before the end, which moves what 
+        when inserting or removing elements before the end, which moves what
         index each key should point to.
         """
         # Shift the indices for key_to_idx

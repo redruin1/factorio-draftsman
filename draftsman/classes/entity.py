@@ -156,9 +156,10 @@ class Entity(EntityLike):
         """
         The type of the Entity. Equivalent to the key found in Factorio's
         ``data.raw``. Mostly equivalent to the type of the entity instance,
-        though there are some differences, [as noted here].
+        though there are some differences, 
+        :ref:`as noted here <handbook.entities.differences>`.
         Can be used as a criteria to search with in
-        :py:meth:`~draftsman.classes.collection.EntityCollection.find_entities_filtered`.
+        :py:meth:`.EntityCollection.find_entities_filtered`.
         Not exported; read only.
 
         :type: ``str``

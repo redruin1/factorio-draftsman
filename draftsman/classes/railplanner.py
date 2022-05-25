@@ -3,13 +3,13 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes.entitylike import EntityLike
+from draftsman.classes.group import Group
 from draftsman.error import DraftsmanError
 
 from draftsman.data import items
 
 
-class RailPlanner(EntityLike):
+class RailPlanner(Group):
     """
     Rail planner. Allows the user to specify rails in a pen-drawing or turtle-
     based manner. Currently unimplemented.

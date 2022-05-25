@@ -1,7 +1,11 @@
 # Changelog
 ## 0.9.2
 * Added `signals` attribute to `ConstantCombinator`, which aliases `control_behavior["filters"]`
+* (Re)Added circuit attributes back to `ArithmeticCombinator` and `DeciderCombinator`
+* Minor docs fixes
 * Bugfix: resolved #6
+* Bugfix: resolved #8 (At least for now, current behavior should be more predictable)
+* Also cleaned and documented the `update` process in `env.py` to make it a little clearer exactly what's going on, and trimmed the fat
 
 ## 0.9.1
 * Updated `factorio-data` to `1.1.59`

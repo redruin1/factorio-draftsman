@@ -14,8 +14,6 @@ from draftsman.constants import Direction
 from draftsman.data import items
 from draftsman.entity import ConstantCombinator
 
-import copy
-
 COMBINATOR_HEIGHT = 5
 
 

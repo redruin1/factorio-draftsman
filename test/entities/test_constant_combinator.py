@@ -194,41 +194,20 @@ class ConstantCombinatorTesting(unittest.TestCase):
     def test_set_signals(self):
         combinator = ConstantCombinator()
         # Test user format
-        combinator.set_signals(
-            [("signal-A", 100), ("signal-Z", 200), ("iron-ore", 1000)]
-        )
+        combinator.signals = [("signal-A", 100), ("signal-Z", 200), ("iron-ore", 1000)]
         self.assertEqual(
-            combinator.control_behavior,
-            {
-                "filters": [
-                    {
-                        "index": 1,
-                        "signal": {"name": "signal-A", "type": "virtual"},
-                        "count": 100,
-                    },
-                    {
-                        "index": 2,
-                        "signal": {"name": "signal-Z", "type": "virtual"},
-                        "count": 200,
-                    },
-                    {
-                        "index": 3,
-                        "signal": {"name": "iron-ore", "type": "item"},
-                        "count": 1000,
-                    },
-                ]
-            },
-        )
-
-        # Test internal format
-        combinator.set_signals(
+            combinator.signals,
             [
                 {
                     "index": 1,
                     "signal": {"name": "signal-A", "type": "virtual"},
                     "count": 100,
                 },
-                {"index": 2, "signal": "signal-Z", "count": 200},
+                {
+                    "index": 2,
+                    "signal": {"name": "signal-Z", "type": "virtual"},
+                    "count": 200,
+                },
                 {
                     "index": 3,
                     "signal": {"name": "iron-ore", "type": "item"},
@@ -259,20 +238,55 @@ class ConstantCombinatorTesting(unittest.TestCase):
             },
         )
 
+        # Test internal format
+        combinator.signals = [
+            {
+                "index": 1,
+                "signal": {"name": "signal-A", "type": "virtual"},
+                "count": 100,
+            },
+            {"index": 2, "signal": "signal-Z", "count": 200},
+            {
+                "index": 3,
+                "signal": {"name": "iron-ore", "type": "item"},
+                "count": 1000,
+            },
+        ]
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "filters": [
+                    {
+                        "index": 1,
+                        "signal": {"name": "signal-A", "type": "virtual"},
+                        "count": 100,
+                    },
+                    {
+                        "index": 2,
+                        "signal": {"name": "signal-Z", "type": "virtual"},
+                        "count": 200,
+                    },
+                    {
+                        "index": 3,
+                        "signal": {"name": "iron-ore", "type": "item"},
+                        "count": 1000,
+                    },
+                ]
+            },
+        )
+
         # Test clear signals
-        combinator.set_signals(None)
+        combinator.signals = None
         self.assertEqual(combinator.control_behavior, {})
 
         with self.assertRaises(DataFormatError):
-            combinator.set_signals({"something", "wrong"})
+            combinator.signals = {"something", "wrong"}
 
     def test_get_signal(self):
         combinator = ConstantCombinator()
         signal = combinator.get_signal(0)
         self.assertEqual(signal, None)
-        combinator.set_signals(
-            [("signal-A", 100), ("signal-Z", 200), ("iron-ore", 1000)]
-        )
+        combinator.signals = [("signal-A", 100), ("signal-Z", 200), ("iron-ore", 1000)]
         signal = combinator.get_signal(0)
         self.assertEqual(
             signal,
