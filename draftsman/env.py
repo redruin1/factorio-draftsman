@@ -525,7 +525,10 @@ def extract_entities(lua, data_location, verbose):
     for inserter_name, inserter in temp_inserters.items():
         unordered_entities_raw[inserter_name] = inserter
         if "order" not in inserter:
-            inserter["order"] = items[inserter_name]["order"]
+            try:  # getting the inserter order from the associated item if available
+                inserter["order"] = items[inserter_name]["order"]
+            except KeyError:
+                pass
         if "filter_count" in inserter:
             entities["filter_inserters"].append(inserter)
         else:

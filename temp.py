@@ -55,3 +55,5 @@ for item_name in items.raw:
     item = items.raw[item_name]
     if "flags" in item and "hidden" in item["flags"]:
         print(item_name)
+
+print(entities.containers)

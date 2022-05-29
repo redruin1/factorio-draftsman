@@ -1,4 +1,7 @@
 # Changelog
+## 0.9.3
+* Fixed #9
+
 ## 0.9.2
 * Added `signals` attribute to `ConstantCombinator`, which aliases `control_behavior["filters"]`
 * (Re)Added circuit attributes back to `ArithmeticCombinator` and `DeciderCombinator`

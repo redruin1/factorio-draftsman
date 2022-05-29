@@ -57,7 +57,7 @@ with open("README.md", "r") as fh:
 setup(name='factorio-draftsman',
       version = get_version("draftsman/_version.py"),
       author='redruin1',
-      description='Create and modify Factorio blueprint strings.',
+      description='A complete, well-tested, and up-to-date module to manipulate Factorio blueprint strings. Compatible with mods.',
       long_description=long_description,
       long_description_content_type="text/markdown",
       url='https://github.com/redruin1/factorio_blueprint_tools',

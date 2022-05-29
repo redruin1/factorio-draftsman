@@ -85,10 +85,10 @@ Lets start by instead of loading the blueprint string into a raw dict, we load i
     print(blueprint)
     print(blueprint.to_string())
 
-Blueprint allows the user to modify almost all components of the blueprint by attribute, as shown with :py:attr:`~.Blueprint.label` above. 
-Blueprint also provides methods that operate on itself, such as the :py:meth:`~.Blueprint.to_string` function, as well as a prettier string representation using the Python standard library ``json``.
+``Blueprint`` allows the user to modify almost all components of the blueprint by attribute, as shown with :py:attr:`~.Blueprint.label` above. 
+``Blueprint`` also provides methods that operate on itself, such as the :py:meth:`~.Blueprint.to_string` function, as well as a prettier string representation using the Python standard library ``json``.
 
-Blueprint can also be accessed by key just like the previous dict example, and is identical for most keys.
+``Blueprint`` can also be accessed by key just like the previous dict example, and is identical for most keys.
 (:ref:`Read here for more info on the differences. <handbook.blueprints.blueprint_differences>`)
 
 .. code-block:: python
@@ -132,7 +132,7 @@ One can manually change the blueprint dict to what we need to output:
         }
     )
 
-But we've been down this road once before. Enter: the ``Entity`` class! 
+But we've been down this road once before. Enter: the :py:class:`.Entity` class! 
 Or, rather, base class. 
 For simplicity's sake we'll ignore ``Blueprint`` for the moment and focus on just entities.
 
@@ -143,31 +143,28 @@ For simplicity's sake we'll ignore ``Blueprint`` for the moment and focus on jus
     # Create a Container instance, which is a child of Entity.
     container = Container("steel-chest")
 
-``Container`` is a type of ``Entity``, used for holding items and typically includes 
-all the regular chests. The first positional argument to any entity is always
-it's name. It's name has to match the name of a valid Factorio entity_id, 
-otherwise it will raise an ``InvalidEntityError``. You can query exactly what 
-items are containers by checking ``draftsman.data``:
+:py:class:`.Container` is a type of ``Entity``, used for holding items and typically includes all the regular chests. 
+The first positional argument to any entity is always it's name. 
+It's name has to match the name of a valid Factorio name, otherwise it will raise an :py:class:`.InvalidEntityError`. 
+You can query exactly what the valid names for containers are by checking :py:data:`draftsman.data.entities.containers`:
 
 .. code-block:: python
 
     from draftsman.data import entities
 
     print(entities.containers)
-    # On a vanilla install (with no mods) should be akin to:
-    # ['wooden-chest', 'iron-chest', 'steel-chest', ...]
+    # On a vanilla install (with no mods), this should be akin to:
+    # ['wooden-chest', 'iron-chest', 'steel-chest', 'big-ship-wreck-1', 
+    #  'big-ship-wreck-2', 'big-ship-wreck-3', 'blue-chest', 'red-chest', 
+    #  'factorio-logo-11tiles', 'factorio-logo-16tiles', 'factorio-logo-22tiles']
 
 .. Note::
-    ``entities.containers`` and all other "entity lists" include *hidden* items, 
-    as well as items that exist internally that are not craftable or otherwise 
-    available, such as (in the case of Container) the Factorio logo entities. 
-    This is done for completeness sake, as it is hard to distinguish 'unwanted' 
-    entities, especially since 'unwanted' is contextual. 
-    Keep this in mind before blindly iterating over these lists expecting only 
-    the visible entities.
+    :py:data:`.entities.containers` and all other "entity lists" include *hidden* items, as well as items that exist internally that are not craftable or otherwise available, such as (in the case of Container) the Factorio logo entities. 
+    This is done for completeness sake, as it is hard to distinguish 'unwanted' entities, especially since 'unwanted' is contextual. 
+    Keep this in mind before blindly iterating over these lists expecting only the visible entities.
 
 Sometimes, for singleton entities it can be redundant to specify the name for an entity if it's going to be the same every time. 
-Take ``ProgrammableSpeaker`` for example: in most cases, there is only going to be one entity of that type. 
+Take :py:class:`.ProgrammableSpeaker` for example: in most cases, there is only going to be one entity of that type. 
 As a result, all entities have a default name which is the first index of the entity list for that type:
 
 .. code-block:: python
@@ -197,7 +194,6 @@ This feature also works for all other entities as well, not just singletons:
 
     .. image:: ../img/quickstart/crafting_menu.png
 
-
     You can see that because "wooden-chest" is to the left of "iron-chest", "wooden-chest" will always be before "iron-chest" in ``entities.containers`` (Unless some mod messes with their order strings!)
     
     Because the order is highly dependent on what mods the user might have, it's
@@ -205,7 +201,7 @@ This feature also works for all other entities as well, not just singletons:
     an option for simple scripts, in general: "explicit is better than implicit."
 
 Sometimes we might know what the name of an entity is, but not its internal type.
-As a result, there exists a factory function for this exact situation:
+As a result, there exists the factory function :py:func:`.new_entity` for this exact situation:
 
 .. code-block:: python
 
@@ -215,7 +211,7 @@ As a result, there exists a factory function for this exact situation:
     assert isinstance(any_entity, Container)
 
 All entities need two things: their name, which we just covered, and a position.
-Entity objects actually have two commonly used coordinates that are updated in tandem: ``position`` and ``tile_position``.
+Entity objects actually have two commonly used coordinates that are updated in tandem: :py:attr:`~.Entity.position` and :py:attr:`~.Entity.tile_position`.
 The ``position`` of an entity is in floating point coordinates and is the traditional implementation of its position; it usually lies directly at the center of the entity, either sitting in the middle of the tile grid or on its transition.
 The ``tile_position`` of an entity is in integer coordinates and is the position of the top-leftmost tile covered by the entity.
 
@@ -290,7 +286,7 @@ You can specify these parameters in the constructor to immediately set the Entit
 We want to position the container such that the output inserter feeds into it.
 But what coordinate is that?
 We have to figure out exactly where the rest of the entities are before we know where to put the steel chest.
-We could grab a random entity in ``blueprint.entities`` to get a rough idea, but let's do something a little more sophisticated instead:
+We could grab a random entity in :py:attr:`.blueprint.entities` to get a rough idea, but let's do something a little more sophisticated instead:
 
 .. code-block:: python
 
@@ -318,7 +314,7 @@ And presto!
 Specifying the blueprint in absolute coordinates can feel somewhat clunky though.
 It might be slicker to move the entire blueprint from its absolute position to a normalized position, such as around the origin.
 This would make the positions consistent, regardless of where the blueprint was originally constructed.
-Lets use ``translate()`` to do just that:
+Lets use :py:meth:`.Blueprint.translate` to do just that:
 
 .. code-block:: python
 
