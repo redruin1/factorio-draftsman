@@ -8,6 +8,7 @@ coverage
 tox
 black
 gitpython
+build
 # Compatibility
 typing; python_version < '3.8' # The module uses Literals
 importlib-resources; python_version < '3.7'

@@ -7,8 +7,7 @@ which runs through the Factorio data lifecycle and updates the data in
 """
 
 # TODO:
-# Make sure everything is sorted
-# Make sure everything uses OrderedDict for backwards compatability(?)
+# Make sure everything uses OrderedDict for backwards compatability
 
 from __future__ import print_function
 
@@ -234,7 +233,8 @@ def python_require(mod_list, current_mod, module_name, package_path):
         # Normalize for Zipfile if there are backslashes
         filepath = filepath.replace("\\", "/")
         try:
-            return mod.files.read(filepath)
+            fixed_filepath = os.path.dirname(filepath[filepath.find("/") :])
+            return mod.files.read(filepath), fixed_filepath
         except KeyError:
             pass
 
@@ -284,7 +284,7 @@ def convert_table_to_dict(table):
     return out
 
 
-def get_order(data, objects_to_sort):
+def get_order(objects_to_sort, sort_objects, sort_subgroups, sort_groups):
     """
     Sorts the list of objects according to their Factorio order. Attempts to
     sort by item order first, and defaults to entity order if not present.
@@ -302,17 +302,6 @@ def get_order(data, objects_to_sort):
     2. the item name (lexographic)
     """
 
-    item_groups = convert_table_to_dict(data.raw["item-group"])
-    item_subgroups = convert_table_to_dict(data.raw["item-subgroup"])
-    items = convert_table_to_dict(data.raw["item"])
-    # Rail planners:
-    rail_planners = convert_table_to_dict(data.raw["rail-planner"])
-    for _, rail_planner in rail_planners.items():
-        straight_rail_name = rail_planner["straight_rail"]
-        items[straight_rail_name] = rail_planner
-        curved_rail_name = rail_planner["curved_rail"]
-        items[curved_rail_name] = rail_planner
-
     def general_iterator(obj):
         if isinstance(obj, dict):
             return obj.values()
@@ -323,32 +312,56 @@ def get_order(data, objects_to_sort):
     for object_to_sort in general_iterator(objects_to_sort):
         # Try to sort by item order if possible because thats more intuitive
         # Otherwise, fall back onto entity order
-        if object_to_sort["name"] in items:
-            sort_object = items[object_to_sort["name"]]
-            # Get the item's sort name to actually sort with
-            sort_name = sort_object["name"]
-            # Replace only the order and its subgroup
-            try:
-                object_to_sort["order"] = sort_object["order"]
-            except KeyError:
-                pass
-            try:
-                object_to_sort["subgroup"] = sort_object["subgroup"]
-            except KeyError:
-                pass
-        else:
-            # Set the sort name to be identical to the actual object name
+
+        associated_item = None
+        try:
+            # First, try to get the item that this object becomes when mined
+            # Technically, "result" can also be "results", but I'm not sure we
+            # need interpret those kinds of entities, so we ignore that case for
+            # now
+            associated_item = object_to_sort["minable"]["result"]
+        except KeyError:
+            # If not, check the list of items to see if our name is in there
+            if object_to_sort["name"] in sort_objects:
+                associated_item = object_to_sort["name"]
+
+        if associated_item:
+            # Get the name of the sorted item; we sort by this before we sort by
+            # entity name
+            sort_name = sort_objects[associated_item]["name"]
+            # We also try to use the item sort order if available before we use
+            # the entity sort order
+            sort_order = sort_objects[associated_item].get(
+                "order", object_to_sort.get("order", None)
+            )
+
+            # Subgroup is optional, and defaults to "other" if not specified
+            if "subgroup" in sort_objects[associated_item]:
+                subgroup_name = sort_objects[associated_item]["subgroup"]
+                sort_subgroup = sort_subgroups[subgroup_name]
+            else:
+                sort_subgroup = sort_subgroups["other"]
+
+            # Now that we know the subgroup, we can also determine the group
+            # that this object belongs to
+            group_name = sort_subgroup["group"]
+            sort_group = sort_groups[group_name]
+        else:  # the object is either an item or something non-placable
+            # Pull the name and order from the object directly
             sort_name = object_to_sort["name"]
+            sort_order = object_to_sort.get("order", None)
 
-        if "order" not in object_to_sort:
-            object_to_sort["order"] = "zzzzzzzzzzzzzzzzzzzzzzz"
+            # Subgroup is optional, and defaults to "other" if not specified
+            if "subgroup" in object_to_sort:
+                subgroup_name = object_to_sort["subgroup"]
+                sort_subgroup = sort_subgroups[subgroup_name]
+            else:
+                sort_subgroup = sort_subgroups["other"]
 
-        if "subgroup" in object_to_sort:
-            subgroup = item_subgroups[object_to_sort["subgroup"]]
-        else:
-            subgroup = item_subgroups["other"]
-
-        group = item_groups[subgroup["group"]]  # "group" is required
+            # Now that we know the subgroup, we can also determine the group
+            # that this object belongs to
+            group_name = sort_subgroup["group"]
+            sort_group = sort_groups[group_name]
 
         # Sometimes we want to sort an item differently based off a 'parents'
         # name. Consider 'straight-rail' and 'se-straight-rail': name order
@@ -363,14 +376,132 @@ def get_order(data, objects_to_sort):
         # name that we want to preserve.
         modified.append(
             {
-                "obj": (object_to_sort["order"], sort_name, object_to_sort["name"]),
-                "subgroup": (subgroup["order"], subgroup["name"]),
-                "group": (group["order"], group["name"]),
+                "obj": (
+                    sort_order is None,  # We want objects with no order last, not first
+                    sort_order,
+                    sort_name,
+                    object_to_sort["name"],
+                ),
+                "subgroup": (sort_subgroup["order"], sort_subgroup["name"]),
+                "group": (sort_group["order"], sort_group["name"]),
             }
         )
 
     order = sorted(modified, key=lambda x: (x["group"], x["subgroup"], x["obj"]))
-    return [x["obj"][2] for x in order]
+    return [x["obj"][3] for x in order]
+
+
+def get_items(lua):
+    """
+    Gets the loaded items, item subgroups, and item groups. Sorts them and
+    returns them. Saves us the trouble of recalcualting this every time we sort
+    something along item order, which we commonly do.
+    """
+    data = lua.globals().data
+
+    groups = convert_table_to_dict(data.raw["item-group"])
+    subgroups = convert_table_to_dict(data.raw["item-subgroup"])
+
+    def to_ordered_dict(elem):
+        sorted_elem = OrderedDict()
+        for v in elem:
+            sorted_elem[v["name"]] = v
+        return sorted_elem
+
+    # Sort the groups and subgroups dictionaries
+    test_values = sorted(list(groups.values()), key=lambda x: x["order"])
+    # sorted_groups = {}
+    # for v in test_values:
+    #     sorted_groups[v["name"]] = v
+    sorted_groups = to_ordered_dict(test_values)
+
+    test_values = sorted(list(subgroups.values()), key=lambda x: x["order"])
+    # sorted_subgroups = {}
+    # for v in test_values:
+    #     sorted_subgroups[v["name"]] = v
+    sorted_subgroups = to_ordered_dict(test_values)
+
+    group_index_dict = {}
+    subgroup_index_dict = {}
+
+    # Initialize item groups
+    group_list = list(groups.values())
+    for group in group_list:
+        group["subgroups"] = []
+        group_index_dict[group["name"]] = group
+
+    # Initialize item subgroups
+    subgroup_list = list(subgroups.values())
+    for subgroup in subgroup_list:
+        subgroup["items"] = []
+        parent_group = group_index_dict[subgroup["group"]]
+        parent_group["subgroups"].append(subgroup)
+        subgroup_index_dict[subgroup["name"]] = subgroup
+
+    def add_item(category, item_name):
+        item = category[item_name]
+        # if "flags" in item:
+        #     if "hidden" in item["flags"].values():
+        #         return
+        if "subgroup" in item:
+            subgroup = subgroup_index_dict[item["subgroup"]]
+        else:
+            subgroup = subgroup_index_dict["other"]
+        if "order" not in item:
+            item["order"] = ""
+        subgroup["items"].append(item)
+
+    def add_items(category):
+        category = convert_table_to_dict(category)
+        for item_name in category:
+            add_item(category, item_name)
+
+    # Iterate over every item
+    add_items(data.raw["item"])
+    add_items(data.raw["item-with-entity-data"])
+    add_items(data.raw["tool"])
+    add_items(data.raw["ammo"])
+    add_items(data.raw["module"])
+    add_items(data.raw["armor"])
+    add_items(data.raw["gun"])
+    add_items(data.raw["capsule"])
+    # Extras
+    add_items(data.raw["blueprint"])
+    add_items(data.raw["blueprint-book"])
+    add_items(data.raw["upgrade-item"])
+    add_items(data.raw["deconstruction-item"])
+    add_items(data.raw["spidertron-remote"])
+    add_items(data.raw["repair-tool"])  # not an item somehow
+    add_items(data.raw["rail-planner"])
+
+    # Sort everything
+    for i, _ in enumerate(group_list):
+        for j, _ in enumerate(group_list[i]["subgroups"]):
+            group_list[i]["subgroups"][j]["items"] = to_ordered_dict(
+                sorted(
+                    group_list[i]["subgroups"][j]["items"],
+                    key=lambda x: (x["order"], x["name"]),
+                )
+            )
+        group_list[i]["subgroups"] = to_ordered_dict(
+            sorted(group_list[i]["subgroups"], key=lambda x: (x["order"], x["name"]))
+        )
+    group_list = sorted(group_list, key=lambda x: (x["order"], x["name"]))
+
+    # print(json.dumps(group_list[0]["subgroups"], indent=2))
+
+    # print(json.dumps(sorted_groups, indent=2))
+
+    # Flatten into all_items dictionary
+    sorted_items = OrderedDict()
+    for group in group_list:
+        for subgroup_name in group["subgroups"]:
+            subgroup = group["subgroups"][subgroup_name]
+            for item_name in subgroup["items"]:
+                item = subgroup["items"][item_name]
+                sorted_items[item["name"]] = item
+
+    return sorted_items, sorted_subgroups, sorted_groups
 
 
 # =============================================================================
@@ -391,14 +522,12 @@ def extract_mods(loaded_mods, data_location, verbose):
         print("Extracted mods...")
 
 
-def extract_entities(lua, data_location, verbose):
+def extract_entities(lua, data_location, verbose, sort_tuple):
     """
     Extracts the entities to ``entities.pkl`` in :py:mod:`draftsman.data`.
     """
 
     data = lua.globals().data
-
-    items = convert_table_to_dict(data.raw["item"])
 
     entities = {}
     unordered_entities_raw = {}
@@ -492,7 +621,7 @@ def extract_entities(lua, data_location, verbose):
             target_list.append(entity)
 
     def sort(target_list):
-        sorted_list = get_order(data, target_list)
+        sorted_list = get_order(target_list, *sort_tuple)
         for i, x in enumerate(sorted_list):
             target_list[i] = x
 
@@ -524,11 +653,6 @@ def extract_entities(lua, data_location, verbose):
     temp_inserters = convert_table_to_dict(data.raw["inserter"])
     for inserter_name, inserter in temp_inserters.items():
         unordered_entities_raw[inserter_name] = inserter
-        if "order" not in inserter:
-            try:  # getting the inserter order from the associated item if available
-                inserter["order"] = items[inserter_name]["order"]
-            except KeyError:
-                pass
         if "filter_count" in inserter:
             entities["filter_inserters"].append(inserter)
         else:
@@ -604,9 +728,6 @@ def extract_entities(lua, data_location, verbose):
     for container_name, container in logi_containers.items():
         unordered_entities_raw[container_name] = container
         container_type = container["logistic_mode"]
-        if "order" not in container:
-            container["order"] = items[container_name]["order"]
-        container_order = container["order"]
         if container_type == "passive-provider":
             entities["logistic_passive_containers"].append(container)
         elif container_type == "active-provider":
@@ -792,7 +913,7 @@ def extract_entities(lua, data_location, verbose):
     categorize_entities(data.raw["burner-generator"], entities["burner_generators"])
     sort(entities["burner_generators"])
 
-    raw_order = get_order(data, unordered_entities_raw)
+    raw_order = get_order(unordered_entities_raw, *sort_tuple)
     entities["raw"] = OrderedDict()
     for name in raw_order:
         entities["raw"][name] = unordered_entities_raw[name]
@@ -815,7 +936,7 @@ def extract_instruments(lua, data_location, verbose):
     """
     data = lua.globals().data
 
-    instrument_raw = {}
+    instrument_raw = OrderedDict()
     instrument_index = {}
     instrument_names = {}
     speakers = convert_table_to_dict(data.raw["programmable-speaker"])
@@ -835,13 +956,6 @@ def extract_instruments(lua, data_location, verbose):
             instrument_index[speaker][instrument["name"]] = index_dict
             instrument_names[speaker][i] = name_dict
 
-    # Ideally, I'd like to be able to write:
-    # instruments.raw["programmable-speaker"]["alarms"] -> { ... }
-    # instruments.raw["programmable-speaker"][0] -> { ... } # (same dict as above)
-
-    # instruments.index["programmable-speaker"]["alarms"]["self"] -> 0
-    # instruments.index["programmable-speaker"]["alarms"]["siren"] -> 6
-
     with open(os.path.join(data_location, "instruments.pkl"), "wb") as out:
         instrument_data = [instrument_raw, instrument_index, instrument_names]
         pickle.dump(instrument_data, out, pickle.HIGHEST_PROTOCOL)
@@ -853,114 +967,11 @@ def extract_instruments(lua, data_location, verbose):
 # =============================================================================
 
 
-def extract_items(lua, data_location, verbose):
+def extract_items(lua, data_location, verbose, sort_tuple):
     """
     Extracts the items to ``items.pkl`` in :py:mod:`draftsman.data`.
     """
-    data = lua.globals().data
-
-    groups = convert_table_to_dict(data.raw["item-group"])
-    subgroups = convert_table_to_dict(data.raw["item-subgroup"])
-
-    def to_ordered_dict(elem):
-        sorted_elem = OrderedDict()
-        for v in elem:
-            sorted_elem[v["name"]] = v
-        return sorted_elem
-
-    # Sort the groups and subgroups dictionaries
-    test_values = sorted(list(groups.values()), key=lambda x: x["order"])
-    # sorted_groups = {}
-    # for v in test_values:
-    #     sorted_groups[v["name"]] = v
-    sorted_groups = to_ordered_dict(test_values)
-
-    test_values = sorted(list(subgroups.values()), key=lambda x: x["order"])
-    # sorted_subgroups = {}
-    # for v in test_values:
-    #     sorted_subgroups[v["name"]] = v
-    sorted_subgroups = to_ordered_dict(test_values)
-
-    group_index_dict = {}
-    subgroup_index_dict = {}
-
-    # Initialize item groups
-    group_list = list(groups.values())
-    for group in group_list:
-        group["subgroups"] = []
-        group_index_dict[group["name"]] = group
-
-    # Initialize item subgroups
-    subgroup_list = list(subgroups.values())
-    for subgroup in subgroup_list:
-        subgroup["items"] = []
-        parent_group = group_index_dict[subgroup["group"]]
-        parent_group["subgroups"].append(subgroup)
-        subgroup_index_dict[subgroup["name"]] = subgroup
-
-    def add_item(category, item_name):
-        item = category[item_name]
-        # if "flags" in item:
-        #     if "hidden" in item["flags"].values():
-        #         return
-        if "subgroup" in item:
-            subgroup = subgroup_index_dict[item["subgroup"]]
-        else:
-            subgroup = subgroup_index_dict["other"]
-        if "order" not in item:
-            item["order"] = ""
-        subgroup["items"].append(item)
-
-    def add_items(category):
-        category = convert_table_to_dict(category)
-        for item_name in category:
-            add_item(category, item_name)
-
-    # Iterate over every item
-    add_items(data.raw["item"])
-    add_items(data.raw["item-with-entity-data"])
-    add_items(data.raw["tool"])
-    add_items(data.raw["ammo"])
-    add_items(data.raw["module"])
-    add_items(data.raw["armor"])
-    add_items(data.raw["gun"])
-    add_items(data.raw["capsule"])
-    # Extras
-    add_items(data.raw["blueprint"])
-    add_items(data.raw["blueprint-book"])
-    add_items(data.raw["upgrade-item"])
-    add_items(data.raw["deconstruction-item"])
-    add_items(data.raw["spidertron-remote"])
-    add_items(data.raw["repair-tool"])  # not an item somehow
-    add_items(data.raw["rail-planner"])
-
-    # Sort everything
-    for i, _ in enumerate(group_list):
-        for j, _ in enumerate(group_list[i]["subgroups"]):
-            group_list[i]["subgroups"][j]["items"] = to_ordered_dict(
-                sorted(
-                    group_list[i]["subgroups"][j]["items"],
-                    key=lambda x: (x["order"], x["name"]),
-                )
-            )
-        group_list[i]["subgroups"] = to_ordered_dict(
-            sorted(group_list[i]["subgroups"], key=lambda x: (x["order"], x["name"]))
-        )
-    group_list = sorted(group_list, key=lambda x: (x["order"], x["name"]))
-
-    # print(json.dumps(group_list[0]["subgroups"], indent=2))
-
-    # print(json.dumps(sorted_groups, indent=2))
-
-    # Flatten into all_items dictionary
-    sorted_items = OrderedDict()
-    for group in group_list:
-        for subgroup_name in group["subgroups"]:
-            subgroup = group["subgroups"][subgroup_name]
-            for item_name in subgroup["items"]:
-                item = subgroup["items"][item_name]
-                sorted_items[item["name"]] = item
-
+    sorted_items, sorted_subgroups, sorted_groups = sort_tuple
     with open(os.path.join(data_location, "items.pkl"), "wb") as out:
         items = [sorted_items, sorted_subgroups, sorted_groups]
         pickle.dump(items, out, pickle.HIGHEST_PROTOCOL)
@@ -972,7 +983,7 @@ def extract_items(lua, data_location, verbose):
 # =============================================================================
 
 
-def extract_modules(lua, data_location, verbose):
+def extract_modules(lua, data_location, verbose, sort_tuple):
     """
     Extracts the modules to ``modules.pkl`` in :py:mod:`draftsman.data`.
     """
@@ -980,7 +991,7 @@ def extract_modules(lua, data_location, verbose):
 
     # Init categories
     categories = convert_table_to_dict(data.raw["module-category"])
-    out_categories = {}
+    out_categories = OrderedDict()
     for category in categories:
         out_categories[category] = []
 
@@ -991,7 +1002,7 @@ def extract_modules(lua, data_location, verbose):
         module_type = modules[module]["category"]
         out_categories[module_type].append(module)
 
-    raw_order = get_order(data, unsorted_modules_raw)
+    raw_order = get_order(unsorted_modules_raw, *sort_tuple)
     modules_raw = OrderedDict()
     for name in raw_order:
         modules_raw[name] = unsorted_modules_raw[name]
@@ -1006,7 +1017,7 @@ def extract_modules(lua, data_location, verbose):
 # =============================================================================
 
 
-def extract_recipes(lua, data_location, verbose):
+def extract_recipes(lua, data_location, verbose, sort_tuple):
     """
     Extracts the recipes to ``recipes.pkl`` in :py:mod:`draftsman.data`.
     """
@@ -1021,10 +1032,7 @@ def extract_recipes(lua, data_location, verbose):
 
     unsorted_recipes = convert_table_to_dict(data.raw["recipe"])
     for recipe in unsorted_recipes:
-        if "category" in unsorted_recipes[recipe]:
-            category = unsorted_recipes[recipe]["category"]
-        else:
-            category = "crafting"
+        category = unsorted_recipes[recipe].get("category", "crafting")
         out_categories[category].append(unsorted_recipes[recipe]["name"])
 
     machines = convert_table_to_dict(data.raw["assembling-machine"])
@@ -1036,15 +1044,15 @@ def extract_recipes(lua, data_location, verbose):
             for recipe_name in category:
                 for_machine[machine_name].append(recipe_name)
 
-    # TODO: sort all recipes and categories
-    # Problem here is that we should use recipe groups and subgroups instead of
-    # item groups and subgroups
-    # recipe_order = get_order(data, unsorted_recipes)
-    # print(recipe_order)
-    # recipes = OrderedDict()
+    # TODO: recipe sorting still needs to validated
+    # It's mostly correct, though I think I need to do some analysis of subgroup
+    recipe_order = get_order(unsorted_recipes, *sort_tuple)
+    recipes = OrderedDict()
+    for recipe in recipe_order:
+        recipes[recipe] = unsorted_recipes[recipe]
 
     with open(os.path.join(data_location, "recipes.pkl"), "wb") as out:
-        data = [unsorted_recipes, out_categories, for_machine]
+        data = [recipes, out_categories, for_machine]
         pickle.dump(data, out, pickle.HIGHEST_PROTOCOL)
 
     if verbose:
@@ -1054,7 +1062,7 @@ def extract_recipes(lua, data_location, verbose):
 # =============================================================================
 
 
-def extract_signals(lua, data_location, verbose):
+def extract_signals(lua, data_location, verbose, sort_tuple):
     """
     Extracts the signals to ``signals.pkl`` in :py:mod:`draftsman.data`.
     """
@@ -1098,9 +1106,9 @@ def extract_signals(lua, data_location, verbose):
     # Virtual Signals
     add_signals("virtual-signal", virtual_signals, "virtual")
 
-    item_signals = get_order(data, item_signals)
-    fluid_signals = get_order(data, fluid_signals)
-    virtual_signals = get_order(data, virtual_signals)
+    item_signals = get_order(item_signals, *sort_tuple)
+    fluid_signals = get_order(fluid_signals, *sort_tuple)
+    virtual_signals = get_order(virtual_signals, *sort_tuple)
 
     with open(os.path.join(data_location, "signals.pkl"), "wb") as out:
         data = [signals, item_signals, fluid_signals, virtual_signals]
@@ -1123,13 +1131,12 @@ def extract_tiles(lua, data_location, verbose):
 
     tile_list = []
     for tile in tiles:
-        if "order" not in tiles[tile]:
-            tiles[tile]["order"] = "zzzzzzzzzzzzzzzzzzzzzzzzz"
-        tile_list.append((tiles[tile]["order"], tile))
+        tile_order = tiles[tile].get("order", None)
+        tile_list.append((tile_order is None, tile_order, tile))
 
     # Sort
     result = sorted(tile_list)
-    result = [x[1] for x in result]
+    result = [x[2] for x in result]
 
     # Construct new output dict
     out_tiles = {}
@@ -1146,7 +1153,7 @@ def extract_tiles(lua, data_location, verbose):
 # =============================================================================
 
 
-def update(verbose=False, no_mods=False):
+def update(verbose=False, show_logs=False, no_mods=False):
     """
     Updates the data in the :py:mod:`.draftsman.data` modules.
 
@@ -1223,6 +1230,11 @@ def update(verbose=False, no_mods=False):
             ),  # file_to_string("draftsman/factorio-data/base/data-updates.lua")
         },
     )
+
+    # This shouldn't need to be done, but lets create the factorio-mod folder if
+    # it doesn't exist in case the user deletes the whole thing accidently
+    if not os.path.isdir(factorio_mods):
+        os.mkdir(factorio_mods)
 
     # Attempt to get the list of enabled mods from mod-list.json
     enabled_mod_list = {}
@@ -1430,7 +1442,12 @@ def update(verbose=False, no_mods=False):
             print("archive?", mod.archive)
             print("dependencies:")
 
-        for dependency in mod.info["dependencies"]:
+        # A mod might not be specified with dependencies, however.
+        # From deduction of load order it seems all mods require base with or
+        # without specification, so we default to this to mimic Factorio
+        mod_dependencies = mod.info.get("dependencies", ["base"])
+
+        for dependency in mod_dependencies:
             # remove whitespace for consistency
             dependency = "".join(dependency.split())
             m = dependency_regex.match(dependency)
@@ -1517,6 +1534,9 @@ def update(verbose=False, no_mods=False):
     # This function is in charge of reading a required file from a zip archive
     # and providing the source to Lua's `require` function
     lua.globals().python_require = python_require
+
+    # Register logging status within Lua context
+    lua.globals().LOG_ENABLED = show_logs
 
     # Register more compatability changes and define helper functions
     # Primarily, updates the require function to now handle python_require, and
@@ -1623,12 +1643,17 @@ def update(verbose=False, no_mods=False):
 
     extract_mods(mods, data_location, verbose)  # Mod names and their versions
 
-    extract_entities(lua, data_location, verbose)
+    # Lots of items are sorted by item order, subgroup and group
+    # Here we get these things once and pass them into each extraction function
+    # as necessary
+    items = get_items(lua)
+
+    extract_entities(lua, data_location, verbose, items)
     extract_instruments(lua, data_location, verbose)
-    extract_items(lua, data_location, verbose)
-    extract_modules(lua, data_location, verbose)
-    extract_recipes(lua, data_location, verbose)
-    extract_signals(lua, data_location, verbose)
+    extract_items(lua, data_location, verbose, items)
+    extract_modules(lua, data_location, verbose, items)
+    extract_recipes(lua, data_location, verbose, items)
+    extract_signals(lua, data_location, verbose, items)
     extract_tiles(lua, data_location, verbose)
 
     # TODO: Think about a way that users can extract the data that they want
@@ -1652,10 +1677,17 @@ def main():
         help="Show extra information during the update",
     )
     parser.add_argument(
+        "-l",
+        "--log",
+        action="store_true",
+        help="Display any 'log()' messages to stdout; any logged messages will"
+        "be ignored if this argument is not set",
+    )
+    parser.add_argument(
         "--no-mods",
         action="store_true",
         help="Only load the 'base' mod and ignore all others; simulates no mods",
     )
     args = parser.parse_args()
-    update(verbose=args.verbose, no_mods=args.no_mods)
+    update(verbose=args.verbose, show_logs=args.log, no_mods=args.no_mods)
     print("hella slick; nothing broke!")

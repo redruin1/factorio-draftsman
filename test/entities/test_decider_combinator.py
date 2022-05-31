@@ -122,35 +122,34 @@ class DeciderCombinatorTesting(unittest.TestCase):
         combinator = DeciderCombinator("decider-combinator")
         self.assertEqual(combinator.first_operand, None)
         combinator.first_operand = "signal-A"
-        self.assertEqual(combinator.first_operand, {"name": "signal-A", "type": "virtual"})
+        self.assertEqual(
+            combinator.first_operand, {"name": "signal-A", "type": "virtual"}
+        )
         self.assertEqual(
             combinator.control_behavior,
             {
                 "decider_conditions": {
                     "first_signal": {"name": "signal-A", "type": "virtual"}
                 }
-            }
+            },
         )
 
         combinator.first_operand = {"name": "signal-B", "type": "virtual"}
-        self.assertEqual(combinator.first_operand, {"name": "signal-B", "type": "virtual"})
+        self.assertEqual(
+            combinator.first_operand, {"name": "signal-B", "type": "virtual"}
+        )
         self.assertEqual(
             combinator.control_behavior,
             {
                 "decider_conditions": {
                     "first_signal": {"name": "signal-B", "type": "virtual"}
                 }
-            }
+            },
         )
 
         combinator.first_operand = None
         self.assertEqual(combinator.first_operand, None)
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {}
-            }
-        )
+        self.assertEqual(combinator.control_behavior, {"decider_conditions": {}})
 
         with self.assertRaises(TypeError):
             combinator.first_operand = TypeError
@@ -165,33 +164,18 @@ class DeciderCombinatorTesting(unittest.TestCase):
         combinator.operation = "="
         self.assertEqual(combinator.operation, "=")
         self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "operation": "="
-                }
-            }
+            combinator.control_behavior, {"decider_conditions": {"operation": "="}}
         )
 
         combinator.operation = ">="
         self.assertEqual(combinator.operation, "≥")
         self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "operation": "≥"
-                }
-            }
+            combinator.control_behavior, {"decider_conditions": {"operation": "≥"}}
         )
 
         combinator.operation = None
         self.assertEqual(combinator.operation, None)
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {}
-            }
-        )
+        self.assertEqual(combinator.control_behavior, {"decider_conditions": {}})
 
         with self.assertRaises(TypeError):
             combinator.operation = TypeError
@@ -202,36 +186,35 @@ class DeciderCombinatorTesting(unittest.TestCase):
         combinator = DeciderCombinator("decider-combinator")
         self.assertEqual(combinator.second_operand, None)
         combinator.second_operand = "signal-A"
-        self.assertEqual(combinator.second_operand, {"name": "signal-A", "type": "virtual"})
+        self.assertEqual(
+            combinator.second_operand, {"name": "signal-A", "type": "virtual"}
+        )
         self.assertEqual(
             combinator.control_behavior,
             {
                 "decider_conditions": {
                     "second_signal": {"name": "signal-A", "type": "virtual"}
                 }
-            }
+            },
         )
 
         combinator.second_operand = {"name": "signal-B", "type": "virtual"}
-        self.assertEqual(combinator.second_operand, {"name": "signal-B", "type": "virtual"})
+        self.assertEqual(
+            combinator.second_operand, {"name": "signal-B", "type": "virtual"}
+        )
         self.assertEqual(
             combinator.control_behavior,
             {
                 "decider_conditions": {
                     "second_signal": {"name": "signal-B", "type": "virtual"}
                 }
-            }
+            },
         )
 
         combinator.second_operand = 100
         self.assertEqual(combinator.second_operand, 100)
         self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "constant": 100
-                }
-            }
+            combinator.control_behavior, {"decider_conditions": {"constant": 100}}
         )
 
         combinator.first_operand = "signal-A"
@@ -243,7 +226,7 @@ class DeciderCombinatorTesting(unittest.TestCase):
                 "decider_conditions": {
                     "first_signal": {"name": "signal-A", "type": "virtual"}
                 }
-            }
+            },
         )
 
         with self.assertRaises(TypeError):
@@ -255,35 +238,34 @@ class DeciderCombinatorTesting(unittest.TestCase):
         combinator = DeciderCombinator("decider-combinator")
         self.assertEqual(combinator.output_signal, None)
         combinator.output_signal = "signal-A"
-        self.assertEqual(combinator.output_signal, {"name": "signal-A", "type": "virtual"})
+        self.assertEqual(
+            combinator.output_signal, {"name": "signal-A", "type": "virtual"}
+        )
         self.assertEqual(
             combinator.control_behavior,
             {
                 "decider_conditions": {
                     "output_signal": {"name": "signal-A", "type": "virtual"}
                 }
-            }
+            },
         )
 
         combinator.output_signal = {"name": "signal-B", "type": "virtual"}
-        self.assertEqual(combinator.output_signal, {"name": "signal-B", "type": "virtual"})
+        self.assertEqual(
+            combinator.output_signal, {"name": "signal-B", "type": "virtual"}
+        )
         self.assertEqual(
             combinator.control_behavior,
             {
                 "decider_conditions": {
                     "output_signal": {"name": "signal-B", "type": "virtual"}
                 }
-            }
+            },
         )
-        
+
         combinator.output_signal = None
         self.assertEqual(combinator.output_signal, None)
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {}
-            }
-        )
+        self.assertEqual(combinator.control_behavior, {"decider_conditions": {}})
 
         with self.assertRaises(TypeError):
             combinator.output_signal = TypeError

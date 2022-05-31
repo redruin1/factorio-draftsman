@@ -79,6 +79,8 @@ print(blueprint_book.to_string())  # Blueprint string
 Simply put, Draftsman attempts to provide a universal solution to the task of creating and manipulating Factorio blueprint strings, which are compressed text strings used by players to share their constructions easily with others.
 Draftsman allows users to programmatically create these strings via script, allowing for designs that would normally be too tedious to design by hand, such as combinator computer compilers, image-to-blueprint converters, pumpjack placers, as well as any other complex or repetitive design better suited for a computer's touch.
 
+For a user-friendly timeline of how this project came about, as well as some pretty illustrations of it's capabilities, [you can read an article](https://alt-f4.blog/ALTF4-61/) written for the amazing fan-run community spotlight website [Alt-F4](https://alt-f4.blog/).
+
 For more information on what exactly Draftsman is and does, as well as its intended purpose and philosophy, [you can read the documentation here](https://factorio-draftsman.readthedocs.io/en/latest/index.html).
 
 For more examples on what exactly you can do with draftsman, take a look at the [examples folder](https://github.com/redruin1/factorio-draftsman/tree/main/examples).
@@ -145,8 +147,8 @@ can also just change the settings in either of those and the loading process
 will adjust as well.
 
 ## TODO
+* Maybe switch to `setup.cfg` instead of `setup.py`?
 * Figure out exactly what determines if an `Entity` is flip-able or not
-* Most of the data extracted from `data.raw` is sorted, but not all of it
 * Split documentation from docstrings so that each function has a more readable example
 * RailPlanner (specify rail paths via turtle-like commands)
 * Custom `data.raw` extraction and formatting?

@@ -4,6 +4,7 @@
 -- All contents are subject to change.
 
 ---@diagnostic disable:lowercase-global
+---@diagnostic disable:undefined-global
 
 -- Meta globals: these are used to keep track of ourselves during the load
 -- process
@@ -11,6 +12,7 @@ MOD_LIST = nil
 MOD = nil
 MOD_DIR = nil
 CURRENT_FILE = nil
+CURRENT_DIR = ""
 
 -- Menu simulations: can be empty, but cannot be nil
 local menu_simulations = {}
@@ -66,14 +68,20 @@ math.pow = math.pow or function(value, power)
     return value ^ power
 end
 
--- Maybe create a custom log? Probably excessive, I need a debugger for MY code,
--- not the mod's
-function log(message) end
-
 -- Overwrite print to distinguish which "side" the message came from
 local old_print = print
 function print(...)
     old_print("LUA:", ...)
+end
+
+-- Display any logged messages if logging is enabled. Any error messages are
+-- automatially displayed regardless of logging status.
+-- Note that no log file is actually generated, and outputs are lost if not run
+-- with parameter -l or --log
+function log(...)
+    if LOG_ENABLED then
+        print(...)
+    end
 end
 
 -- Get size of lua dict. Factorio's version is implemented on the C++ side,
@@ -101,11 +109,19 @@ local function normalize_module_name(modname)
     -- remove lua from end if present
     modname = modname:gsub(".lua$", "")
 
-    -- normalize dots to paths
-    modname = modname:gsub("%.", "/")
+    -- Normalize dots to paths, if appropriate
+    -- First, check to see if there are any slashes in the path
+    dot_path = modname:find("[/\\]") == nil
+    -- If not, we assume it's a dot separated path, so we convert to forward
+    -- slashes for consistency
+    if dot_path then
+        modname = modname:gsub("%.", "/")
+    end
+    -- We do this because some slash paths can have dots in their folder names
+    -- that should not be converted to path delimeters (Krastorio2)
 
-    -- Handle __mod-name__ format
-    local match, name = modname:match("(__(%D+)__)")
+    -- Handle __mod-name__ format (alphanumeric + '-' + '_')
+    local match, name = modname:match("(__([%w%-_]+)__)")
     --print(modname, match)
 
     local absolute = true
@@ -155,7 +171,6 @@ function require(module_name)
     --print("PARENT_DIR:", PARENT_DIR)
     --print(paths_in_session[PARENT_DIR])
     local added = false
-    --if PARENT_DIR and not paths_in_session[PARENT_DIR] then
     if PARENT_DIR then
         local with_path = PARENT_DIR .. "/?.lua"
         -- add the mod directory to the path if it's an absolute path
@@ -164,6 +179,10 @@ function require(module_name)
         lua_add_path(with_path)
         --print("added path:", with_path)
         --paths_in_session[PARENT_DIR] = true
+        added = true
+    else -- God this whole thing is scuffed
+        if not absolute then with_path = MOD_DIR .. CURRENT_DIR .. "/?.lua" end
+        lua_add_path(with_path)
         added = true
     end
 
@@ -191,6 +210,8 @@ local archive_searcher = function(module_name)
 
     local contents, err = python_require(MOD_LIST, MOD, module_name, package.path)
     if contents then
+        filepath = err
+        CURRENT_DIR = filepath -- hacky patch
         return assert(load(contents, module_name))
     else
         return err

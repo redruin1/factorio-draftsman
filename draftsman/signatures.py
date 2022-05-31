@@ -366,7 +366,17 @@ INVENTORY_FILTER = Schema(
     )
 )
 
-REQUEST_FILTERS = Schema([(STRING, int)])  # TODO: change this
+
+def normalize_request(filters):
+    for i, entry in enumerate(filters):
+        if isinstance(entry, tuple):
+            filters[i] = {"index": i + 1, "name": entry[0], "count": entry[1]}
+    return filters
+
+
+REQUEST_FILTERS = Schema(
+    And(normalize_request, [{"index": int, "name": STRING, "count": int}])
+)  # TODO: change this
 
 WAIT_CONDITION = Schema(
     {

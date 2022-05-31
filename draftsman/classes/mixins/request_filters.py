@@ -103,9 +103,9 @@ class RequestFiltersMixin(object):
 
         # Make sure the items are items
         for item in filters:
-            if item[0] not in items.raw:
-                raise InvalidItemError(item[0])
+            if item["name"] not in items.raw:
+                raise InvalidItemError(item["name"])
 
         self.request_filters = []
         for i in range(len(filters)):
-            self.set_request_filter(i, filters[i][0], filters[i][1])
+            self.set_request_filter(i, filters[i]["name"], filters[i]["count"])

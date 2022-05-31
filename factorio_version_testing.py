@@ -66,10 +66,9 @@ def main():
 
     print("\n", "=" * 100, "\n")
 
-
-    # After testing, reset the submodule's head back to the version right before 
+    # After testing, reset the submodule's head back to the version right before
     # latest
-    # TODO: might be better to just record what version the submodule was at 
+    # TODO: might be better to just record what version the submodule was at
     # before and set it to that afterward
     factorio_data.git.checkout(tag_list[1])
 

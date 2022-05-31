@@ -213,7 +213,7 @@ class ConstantCombinatorTesting(unittest.TestCase):
                     "signal": {"name": "iron-ore", "type": "item"},
                     "count": 1000,
                 },
-            ]
+            ],
         )
         self.assertEqual(
             combinator.control_behavior,

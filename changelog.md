@@ -1,4 +1,20 @@
 # Changelog
+## 0.9.4
+* Added the capability to display any logged messages to during `draftsman-update` with the command line argument `-l` or `--log`
+* Added `prep.py` to prepare releases more automatically so I don't miss steps like a fool (maybe I'll integrate something like poetry in the future)
+* Updated `env.py` to create the `factorio-mods` folder if it doesn't exist, in case the user accidentally deleted it
+* Updated `env.py` so that everything is now sorted (mostly) properly
+* Updated readme to point to related Alt-F4 article
+* Updated `requirements.txt` to include `build` for development
+* Changed the manner in which sort items are searched in `env.py` (related to issue #9)
+* Changed the manner in which the order of items are determined so there's less redundancy
+* Changed `normalize_module_name` from non-digit characters to alphanumeric characters (duh!) (#11)
+* Changed `normalize_module_name` to distinguish between "slash" paths and "dot" paths and only convert "dot" paths if found (#11)
+* Added more duct tape to the local file requiring issue machine (#11)
+* Removed `temp.py` from Github distribution, it was only really intended as scrap paper for me
+* Fixed #10
+* Fixed #12
+
 ## 0.9.3
 * Fixed #9
 
