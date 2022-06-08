@@ -295,6 +295,7 @@ CONTROL_BEHAVIOR = Schema(
             Optional("trains_limit_signal"): SIGNAL_ID,
             Optional("read_trains_count"): bool,
             Optional("trains_count_signal"): SIGNAL_ID,
+            Optional("send_to_train"): bool,
             # Rail signals
             Optional("red_output_signal"): SIGNAL_ID,
             Optional("yellow_output_signal"): SIGNAL_ID,
