@@ -121,7 +121,7 @@ class FiltersMixin(object):
 
         # Make sure the items are items and indices are within standards
         for item in filters:
-            if item["index"] >= self.filter_count:
+            if item["index"] > self.filter_count:
                 raise IndexError(
                     "Index {} exceeds the maximum number of filter slots for this "
                     "entity ({})".format(item["index"], self.filter_count)
