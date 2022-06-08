@@ -10,10 +10,11 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     DirectionalMixin,
 )
-from draftsman.error import DataFormatError
+from draftsman.error import DataFormatError, InvalidSignalError, DraftsmanError
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import arithmetic_combinators
+from draftsman import utils
 
 from schema import SchemaError
 import six
@@ -50,7 +51,14 @@ class ArithmeticCombinator(
     def first_operand(self):
         # type: () -> Union[str, int]
         """
-        The first operand of the ``ArithmeticCombinator``.
+        The first operand of the ``ArithmeticCombinator``. Cannot be set to
+        ``"signal-anything"`` or ``"signal-everything"`` as those signals are
+        prohibited on combinators of this type. Raises an error if set to
+        ``"signal-each"`` while the second operand is also ``"signal-each"``, as
+        only one of the two can be that signal at the same time. If the
+        :py:attr:`.output_signal` of this combinator is set to ``"signal-each"``
+        and this operand is *unset* from ``"signal-each"``, the output signal is
+        set to ``None``.
 
         :getter: Gets the first operand of the operation, or ``None`` if not set.
         :setter: Sets the first operand of the operation. Removes the key if set
@@ -59,6 +67,10 @@ class ArithmeticCombinator(
 
         :exception TypeError: If set to anything other than a ``SIGNAL_ID``, the
             ``str`` name of a valid signal, an ``int``, or ``None``.
+        :exception DraftsmanError: If set to ``"signal-anything"`` or
+            ``"signal-everything"``.
+        :exception DraftsmanError: If set to ``"signal-each"`` when
+            :py:attr:`.second_operand` is also set to ``"signal-each"``.
         """
         arithmetic_conditions = self.control_behavior.get("arithmetic_conditions", None)
         if not arithmetic_conditions:
@@ -83,15 +95,54 @@ class ArithmeticCombinator(
             self.control_behavior["arithmetic_conditions"] = {}
         arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
 
+        old_value = self.first_operand
+
         if value is None:  # Default
             arithmetic_conditions.pop("first_signal", None)
             arithmetic_conditions.pop("first_constant", None)
         elif isinstance(value, dict):  # Signal Dict
+            # Make sure the signals are not anything or everything
+            if value["name"] in {"signal-anything", "signal-everything"}:
+                raise DraftsmanError(
+                    "Signal '{}' is not allowed in ArithmeticCombinator".format(
+                        value["name"]
+                    )
+                )
+
+            # Make sure both operands are not signal-each
+            if isinstance(self.second_operand, dict):
+                second_operand_name = self.second_operand["name"]
+            else:
+                second_operand_name = None
+
+            if value["name"] == "signal-each" and second_operand_name == "signal-each":
+                raise DraftsmanError(
+                    "Both operands cannot be set to 'signal-each' simultaneously"
+                )
+
             arithmetic_conditions["first_signal"] = value
             arithmetic_conditions.pop("first_constant", None)
         else:  # Constant
             arithmetic_conditions["first_constant"] = value
             arithmetic_conditions.pop("first_signal", None)
+
+        # If the operand was 'signal-each' and we changed it to something else,
+        # delete the output signal if it was also 'signal-each'
+        if (
+            isinstance(old_value, dict)
+            and old_value["name"] == "signal-each"
+            and isinstance(value, dict)
+            and value["name"] != "signal-each"
+            and self.output_signal is not None
+            and self.output_signal["name"] == "signal-each"
+        ):
+            warnings.warn(
+                "first_operand unset from 'signal-each'; output_signal can no "
+                "longer be 'signal-each' and will be reset to `None`",
+                DraftsmanWarning,
+                stacklevel=2,
+            )
+            self.output_signal = None
 
     # =========================================================================
 
@@ -144,7 +195,14 @@ class ArithmeticCombinator(
     def second_operand(self):
         # type: () -> Union[dict, int]
         """
-        The second operand of the ``ArithmeticCombinator``.
+        The second operand of the ``ArithmeticCombinator``. Cannot be set to
+        ``"signal-anything"`` or ``"signal-everything"`` as those signals are
+        prohibited on combinators of this type. Raises an error if set to
+        ``"signal-each"`` while the first operand is also ``"signal-each"``, as
+        only one of the two can be that signal at the same time. If the
+        :py:attr:`.output_signal` of this combinator is set to ``"signal-each"``
+        and this operand is *unset* from ``"signal-each"``, the output signal is
+        set to ``None``.
 
         :getter: Gets the second operand of the operation, or ``None`` if not
             set.
@@ -154,6 +212,10 @@ class ArithmeticCombinator(
 
         :exception TypeError: If set to anything other than a ``SIGNAL_ID``, the
             ``str`` name of a valid signal, an ``int``, or ``None``.
+        :exception DraftsmanError: If set to ``"signal-anything"`` or
+            ``"signal-everything"``.
+        :exception DraftsmanError: If set to ``"signal-each"`` when
+            :py:attr:`.first_operand` is also set to ``"signal-each"``.
         """
         arithmetic_conditions = self.control_behavior.get("arithmetic_conditions", None)
         if not arithmetic_conditions:
@@ -178,15 +240,54 @@ class ArithmeticCombinator(
             self.control_behavior["arithmetic_conditions"] = {}
         arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
 
+        old_value = self.second_operand
+
         if value is None:  # Default
             arithmetic_conditions.pop("second_signal", None)
             arithmetic_conditions.pop("second_constant", None)
         elif isinstance(value, dict):  # Signal Dict
+            # Make sure the signals are not anything or everything
+            if value["name"] in {"signal-anything", "signal-everything"}:
+                raise DraftsmanError(
+                    "Signal '{}' is not allowed in ArithmeticCombinator".format(
+                        value["name"]
+                    )
+                )
+
+            # Make sure both operands are not signal-each
+            if isinstance(self.first_operand, dict):
+                first_operand_name = self.first_operand["name"]
+            else:
+                first_operand_name = None
+
+            if value["name"] == "signal-each" and first_operand_name == "signal-each":
+                raise DraftsmanError(
+                    "Both operands cannot be set to 'signal-each' simultaneously"
+                )
+
             arithmetic_conditions["second_signal"] = value
             arithmetic_conditions.pop("second_constant", None)
         else:  # Constant
             arithmetic_conditions["second_constant"] = value
             arithmetic_conditions.pop("second_signal", None)
+
+        # If the operand was 'signal-each' and we changed it to something else,
+        # delete the output signal if it was also 'signal-each'
+        if (
+            isinstance(old_value, dict)
+            and old_value["name"] == "signal-each"
+            and isinstance(value, dict)
+            and value["name"] != "signal-each"
+            and self.output_signal is not None
+            and self.output_signal["name"] == "signal-each"
+        ):
+            warnings.warn(
+                "second_operand unset from 'signal-each'; output_signal can no "
+                "longer be 'signal-each' and will be reset to `None`",
+                DraftsmanWarning,
+                stacklevel=2,
+            )
+            self.output_signal = None
 
     # =========================================================================
 
@@ -194,7 +295,11 @@ class ArithmeticCombinator(
     def output_signal(self):
         # type: () -> dict
         """
-        The output signal of the ``ArithmeticCombinator``.
+        The output signal of the ``ArithmeticCombinator``. Cannot be set to
+        ``"signal-anything"`` or ``"signal-everything"`` as those signals are
+        prohibited on combinators of this type. Can be set to ``"signal-each"``,
+        but only if one of :py:attr:`.first_operand` or :py:attr:`.second_operand`
+        are set to ``"signal-each"`` as well.
 
         :getter: Gets the output signal, or ``None`` if not set.
         :setter: Sets the output signal. Removes the key if set to ``None``.
@@ -202,6 +307,11 @@ class ArithmeticCombinator(
 
         :exception TypeError: If set to anything other than a ``SIGNAL_ID`` or
             ``None``.
+        :exception InvalidSignalError: If set to ``"signal-anything"`` or
+            ``"signal-everything"``.
+        :exception DraftsmanError: If set to ``"signal-each"`` when neither
+            :py:attr:`.first_operand` nor :py:attr:`.second_operand` is set to
+            ``"signal-each"``.
         """
         arithmetic_conditions = self.control_behavior.get("arithmetic_conditions", None)
         if not arithmetic_conditions:
@@ -224,20 +334,56 @@ class ArithmeticCombinator(
         if value is None:  # Default
             arithmetic_conditions.pop("output_signal", None)
         else:  # Signal Dict
+            # Make sure the signals are not anything or everything
+            if value["name"] in {"signal-anything", "signal-everything"}:
+                raise InvalidSignalError(
+                    "Signal '{}' is not allowed in ArithmeticCombinator".format(
+                        value["name"]
+                    )
+                )
+
+            # Make sure if the signal is "signal-each" that one of the operands
+            # are also signal each
+            if isinstance(self.first_operand, dict):
+                first_operand_name = self.first_operand["name"]
+            else:
+                first_operand_name = None
+
+            if isinstance(self.second_operand, dict):
+                second_operand_name = self.second_operand["name"]
+            else:
+                second_operand_name = None
+
+            if (
+                value["name"] == "signal-each"
+                and first_operand_name != "signal-each"
+                and second_operand_name != "signal-each"
+            ):
+                raise DraftsmanError(
+                    "Cannot set 'output_signal' to 'signal-each' when neither "
+                    "first nor second operands are 'signal-each'"
+                )
+
             arithmetic_conditions["output_signal"] = value
 
     # =========================================================================
 
-    def set_arithmetic_conditions(self, a=None, op="*", b=0, out=None):
+    @utils.reissue_warnings
+    def set_arithmetic_conditions(
+        self, first_operand=None, operation="*", second_operand=0, output_signal=None
+    ):
         # type: (Union[str, int], str, Union[str, int], str) -> None
         """
-        Sets the entire arithmetic condition of the ArithmeticCombinator.
+        Sets the entire arithmetic condition of the ``ArithmeticCombinator`` all
+        at once. All of the restrictions for each individual attribute apply.
 
-        :param a: The name of the first signal to set, some constant, or ``None``.
-        :param op: The string representation of the operation to perform, as
-            specified above.
-        :param b: The name of the second signal to set, some constant, or ``None``.
-        :param out: The name of the output signal to set, or ``None``.
+        :param first_operand: The name of the first signal to set, some constant,
+            or ``None``.
+        :param operation: The string representation of the operation to perform.
+            See :py:data:`.OPERATION` for more information on valid values.
+        :param second_operand: The name of the second signal to set, some
+            constant, or ``None``.
+        :param output_signal: The name of the output signal to set, or ``None``.
 
         :exception DataFormatError: If any argument fails to match the formats
             specified above.
@@ -245,55 +391,25 @@ class ArithmeticCombinator(
 
         # Check all the parameters before we set anything to preserve original
         try:
-            a = signatures.SIGNAL_ID_OR_CONSTANT.validate(a)
-            op = signatures.OPERATION.validate(op)
-            b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
-            out = signatures.SIGNAL_ID_OR_NONE.validate(out)
+            first_operand = signatures.SIGNAL_ID_OR_CONSTANT.validate(first_operand)
+            operation = signatures.OPERATION.validate(operation)
+            second_operand = signatures.SIGNAL_ID_OR_CONSTANT.validate(second_operand)
+            output_signal = signatures.SIGNAL_ID_OR_NONE.validate(output_signal)
         except SchemaError as e:
             six.raise_from(DataFormatError(e), None)
 
-        if "arithmetic_conditions" not in self.control_behavior:
-            self.control_behavior["arithmetic_conditions"] = {}
-        arithmetic_conditions = self.control_behavior["arithmetic_conditions"]
-
-        # A
-        if a is None:  # Default
-            arithmetic_conditions.pop("first_signal", None)
-            arithmetic_conditions.pop("first_constant", None)
-        elif isinstance(a, dict):  # Signal Dict
-            arithmetic_conditions["first_signal"] = a
-            arithmetic_conditions.pop("first_constant", None)
-        else:  # Constant
-            arithmetic_conditions["first_constant"] = a
-            arithmetic_conditions.pop("first_signal", None)
-
-        # op
-        if op is None:
-            arithmetic_conditions.pop("operation", None)
-        else:
-            arithmetic_conditions["operation"] = op
-
-        # B
-        if b is None:  # Default
-            arithmetic_conditions.pop("second_signal", None)
-            arithmetic_conditions.pop("second_constant", None)
-        elif isinstance(b, dict):  # Signal Dict
-            arithmetic_conditions["second_signal"] = b
-            arithmetic_conditions.pop("second_constant", None)
-        else:  # Constant
-            arithmetic_conditions["second_constant"] = b
-            arithmetic_conditions.pop("second_signal", None)
-
-        # out
-        if out is None:  # Default
-            arithmetic_conditions.pop("output_signal", None)
-        else:  # Signal Dict
-            arithmetic_conditions["output_signal"] = out
+        self.first_operand = first_operand
+        self.operation = operation
+        self.second_operand = second_operand
+        self.output_signal = output_signal
 
     def remove_arithmetic_conditions(self):
         # type: () -> None
         """
         Removes the entire ``"arithmetic_conditions"`` key from the control
-        behavior.
+        behavior. This is used to quickly delete the entire condition, and to
+        tidy up cases where all of the other attributes are set to ``None``, but
+        the ``"arithmetic_conditions"`` dictionary still exists, taking up space
+        in the exported string.
         """
         self.control_behavior.pop("arithmetic_conditions", None)

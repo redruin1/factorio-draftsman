@@ -16,7 +16,6 @@ from draftsman.tile import Tile
 from draftsman.error import (
     MalformedBlueprintStringError,
     IncorrectBlueprintTypeError,
-    InvalidSignalError,
     InvalidConnectionSideError,
     RotationError,
     FlippingError,
@@ -869,6 +868,13 @@ class BlueprintTesting(unittest.TestCase):
         blueprint = Blueprint()
         blueprint["label"] = "testing"
         self.assertEqual(blueprint["label"], blueprint.root["label"])
+
+    # =========================================================================
+
+    def test_contains(self):
+        blueprint = Blueprint()
+        blueprint["label"] = "testing"
+        self.assertEqual("label" in blueprint, True)
 
     # =========================================================================
     # EntityCollection

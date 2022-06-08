@@ -10,6 +10,7 @@ from draftsman.error import (
     InvalidSignalError,
     InvalidOperationError,
     DataFormatError,
+    DraftsmanError,
 )
 from draftsman.warning import DraftsmanWarning
 
@@ -166,6 +167,54 @@ class ArithmeticCombinatorTesting(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             combinator.first_operand = TypeError
+        with self.assertRaises(DraftsmanError):
+            combinator.first_operand = "signal-anything"
+        with self.assertRaises(DraftsmanError):
+            combinator.first_operand = "signal-everything"
+
+        # Ensure that signal-each cannot be applied to each operand simultaneously
+        combinator.remove_arithmetic_conditions()
+        combinator.second_operand = "signal-each"
+        with self.assertRaises(DraftsmanError):
+            combinator.first_operand = "signal-each"
+
+        # Test remove output signal-each when current is unset from signal-each
+        combinator.remove_arithmetic_conditions()
+        combinator.first_operand = "signal-each"
+        combinator.output_signal = "signal-each"
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "arithmetic_conditions": {
+                    "first_signal": {"name": "signal-each", "type": "virtual"},
+                    "output_signal": {"name": "signal-each", "type": "virtual"},
+                }
+            },
+        )
+
+        # Setting to the same signal should remain the same
+        combinator.first_operand = "signal-each"
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "arithmetic_conditions": {
+                    "first_signal": {"name": "signal-each", "type": "virtual"},
+                    "output_signal": {"name": "signal-each", "type": "virtual"},
+                }
+            },
+        )
+
+        # Setting to non special should remove output_signal
+        with self.assertWarns(DraftsmanWarning):
+            combinator.first_operand = "signal-A"
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "arithmetic_conditions": {
+                    "first_signal": {"name": "signal-A", "type": "virtual"},
+                }
+            },
+        )
 
     def test_set_operation(self):
         combinator = ArithmeticCombinator("arithmetic-combinator")
@@ -231,6 +280,54 @@ class ArithmeticCombinatorTesting(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             combinator.second_operand = TypeError
+        with self.assertRaises(DraftsmanError):
+            combinator.second_operand = "signal-anything"
+        with self.assertRaises(DraftsmanError):
+            combinator.second_operand = "signal-everything"
+
+        # Ensure that signal-each cannot be applied to each operand simultaneously
+        combinator.remove_arithmetic_conditions()
+        combinator.first_operand = "signal-each"
+        with self.assertRaises(DraftsmanError):
+            combinator.second_operand = "signal-each"
+
+        # Test remove output signal-each when current is unset from signal-each
+        combinator.remove_arithmetic_conditions()
+        combinator.second_operand = "signal-each"
+        combinator.output_signal = "signal-each"
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "arithmetic_conditions": {
+                    "second_signal": {"name": "signal-each", "type": "virtual"},
+                    "output_signal": {"name": "signal-each", "type": "virtual"},
+                }
+            },
+        )
+
+        # Setting to the same signal should remain the same
+        combinator.second_operand = "signal-each"
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "arithmetic_conditions": {
+                    "second_signal": {"name": "signal-each", "type": "virtual"},
+                    "output_signal": {"name": "signal-each", "type": "virtual"},
+                }
+            },
+        )
+
+        # Setting to non special should remove output_signal
+        with self.assertWarns(DraftsmanWarning):
+            combinator.second_operand = "signal-A"
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "arithmetic_conditions": {
+                    "second_signal": {"name": "signal-A", "type": "virtual"},
+                }
+            },
+        )
 
     def test_set_output_signal(self):
         combinator = ArithmeticCombinator("arithmetic-combinator")
@@ -269,6 +366,25 @@ class ArithmeticCombinatorTesting(unittest.TestCase):
             combinator.output_signal = TypeError
         with self.assertRaises(TypeError):
             combinator.output_signal = "incorrect"
+        with self.assertRaises(InvalidSignalError):
+            combinator.output_signal = "signal-everything"
+        # Raise error if signal-each is not first or second operand
+        with self.assertRaises(DraftsmanError):
+            combinator.output_signal = "signal-each"
+
+        # Test valid signal-each
+        combinator.remove_arithmetic_conditions()
+        combinator.first_operand = "signal-each"
+        combinator.output_signal = "signal-each"
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "arithmetic_conditions": {
+                    "first_signal": {"name": "signal-each", "type": "virtual"},
+                    "output_signal": {"name": "signal-each", "type": "virtual"},
+                }
+            },
+        )
 
     def test_set_arithmetic_conditions(self):
         combinator = ArithmeticCombinator("arithmetic-combinator")

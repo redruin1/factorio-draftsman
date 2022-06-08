@@ -19,6 +19,7 @@ with pkg_resources.open_binary(data, "signals.pkl") as inp:
     item = _data[1]
     fluid = _data[2]
     virtual = _data[3]
+    pure_virtual = ["signal-everything", "signal-anything", "signal-each"]
 
 
 def get_signal_type(signal_name):

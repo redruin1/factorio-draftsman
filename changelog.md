@@ -1,4 +1,18 @@
 # Changelog
+## 0.9.5
+* Added `keywords` to `setup.py`
+* Added `__contains__` function to `Blueprint` (I thought it was inferred from `__getitem__`, whoops) (#14)
+* Added `defines.lua` as a more comprehensive solution to the Factorio `defines` issue (#15)
+* Added distinguishing between multiple versions of the same mod; the latest mod is always preferred, with warnings for duplicates issued (#15)
+* Started work on `RailPlanner`
+* Other minor documentation changes
+* Fixed the old repo link in `setup.py`
+* Fixed #13:
+    * Implemented the functionality according to the game, preserving Factorio safety
+    * Added the new list `pure_virtual` signals to `draftsman.data.signals` for ease of access/iteration
+    * Updated documentation to reflect these changes
+* Moved initialization of `Blueprint.area` attribute before loading entities in `Blueprint.setup()` (#14)
+
 ## 0.9.4
 * Added the capability to display any logged messages to during `draftsman-update` with the command line argument `-l` or `--log`
 * Added `prep.py` to prepare releases more automatically so I don't miss steps like a fool (maybe I'll integrate something like poetry in the future)
@@ -11,7 +25,7 @@
 * Changed `normalize_module_name` from non-digit characters to alphanumeric characters (duh!) (#11)
 * Changed `normalize_module_name` to distinguish between "slash" paths and "dot" paths and only convert "dot" paths if found (#11)
 * Added more duct tape to the local file requiring issue machine (#11)
-* Removed `temp.py` from Github distribution, it was only really intended as scrap paper for me
+* Removed `temp.py` from GitHub distribution, it was only really intended as scrap paper for me
 * Fixed #10
 * Fixed #12
 
@@ -27,7 +41,7 @@
 * Also cleaned and documented the `update` process in `env.py` to make it a little clearer exactly what's going on, and trimmed the fat
 
 ## 0.9.1
-* Updated `factorio-data` to `1.1.59`
+* Updated `factorio-data` to `1.1.58`
 * Added description of `control_behavior` attribute structure to `docs/source` folder
 * Added read-only `global_position` property to `SpatialLike`; allows for efficient querying of an objects root-most position
 * Added `SpatialHashMap.get_all`

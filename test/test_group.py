@@ -108,8 +108,9 @@ class GroupTesting(unittest.TestCase):
         group.id = "something else"
         self.assertEqual(group.id, "something else")
 
-        with self.assertRaises(TypeError):
-            group.id = None
+        group.id = None
+        self.assertEqual(group.id, None)
+
         with self.assertRaises(TypeError):
             group.id = TypeError
 
@@ -120,6 +121,11 @@ class GroupTesting(unittest.TestCase):
         blueprint.entities[0].id = "another_thing"
         self.assertEqual(blueprint.entities[0].id, "another_thing")
         self.assertIs(blueprint.entities[0], blueprint.entities["another_thing"])
+
+        # Test key map removal on set to None
+        blueprint.entities[0].id = None
+        self.assertEqual(blueprint.entities[0].id, None)
+        self.assertFalse("another_thing" in blueprint.entities)
 
     def test_set_position(self):
         group = Group("test")

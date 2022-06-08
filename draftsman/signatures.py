@@ -34,6 +34,8 @@ STRING = Schema(
 )
 STRING_OR_NONE = Schema(Or(STRING, None))
 
+BOOL_OR_NONE = Schema(Or(bool, None))
+
 AABB = Schema(Or([[Use(float), Use(float)], [Use(float), Use(float)]], None))
 
 

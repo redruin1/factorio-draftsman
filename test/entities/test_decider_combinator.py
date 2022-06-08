@@ -10,8 +10,10 @@ from draftsman.error import (
     InvalidSignalError,
     InvalidOperationError,
     DataFormatError,
+    DraftsmanError,
 )
 from draftsman.warning import DraftsmanWarning
+from draftsman.data import signals
 
 from schema import SchemaError
 
@@ -158,19 +160,42 @@ class DeciderCombinatorTesting(unittest.TestCase):
         with self.assertRaises(TypeError):
             combinator.first_operand = 10
 
+        combinator.remove_decider_conditions()
+        combinator.output_signal = "signal-everything"
+        combinator.first_operand = "signal-everything"
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "decider_conditions": {
+                    "first_signal": {"name": "signal-everything", "type": "virtual"},
+                    "output_signal": {"name": "signal-everything", "type": "virtual"},
+                }
+            },
+        )
+        with self.assertWarns(DraftsmanWarning):
+            combinator.first_operand = "signal-each"
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "decider_conditions": {
+                    "first_signal": {"name": "signal-each", "type": "virtual"}
+                }
+            },
+        )
+
     def test_set_operation(self):
         combinator = DeciderCombinator("decider-combinator")
         self.assertEqual(combinator.operation, None)
         combinator.operation = "="
         self.assertEqual(combinator.operation, "=")
         self.assertEqual(
-            combinator.control_behavior, {"decider_conditions": {"operation": "="}}
+            combinator.control_behavior, {"decider_conditions": {"comparator": "="}}
         )
 
         combinator.operation = ">="
         self.assertEqual(combinator.operation, "≥")
         self.assertEqual(
-            combinator.control_behavior, {"decider_conditions": {"operation": "≥"}}
+            combinator.control_behavior, {"decider_conditions": {"comparator": "≥"}}
         )
 
         combinator.operation = None
@@ -233,6 +258,9 @@ class DeciderCombinatorTesting(unittest.TestCase):
             combinator.second_operand = TypeError
         with self.assertRaises(TypeError):
             combinator.second_operand = "incorrect"
+        for pure_virtual_signal in signals.pure_virtual:
+            with self.assertRaises(DraftsmanError):
+                combinator.second_operand = pure_virtual_signal
 
     def test_set_output_signal(self):
         combinator = DeciderCombinator("decider-combinator")
@@ -271,6 +299,79 @@ class DeciderCombinatorTesting(unittest.TestCase):
             combinator.output_signal = TypeError
         with self.assertRaises(TypeError):
             combinator.output_signal = "incorrect"
+
+        combinator.remove_decider_conditions()
+        combinator.output_signal = "signal-everything"
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "decider_conditions": {
+                    "output_signal": {"name": "signal-everything", "type": "virtual"}
+                }
+            },
+        )
+        with self.assertRaises(DraftsmanError):
+            combinator.output_signal = "signal-anything"
+        with self.assertRaises(DraftsmanError):
+            combinator.output_signal = "signal-each"
+
+        combinator.first_operand = "signal-everything"
+        combinator.output_signal = "signal-everything"
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "decider_conditions": {
+                    "first_signal": {"name": "signal-everything", "type": "virtual"},
+                    "output_signal": {"name": "signal-everything", "type": "virtual"},
+                }
+            },
+        )
+        with self.assertRaises(DraftsmanError):
+            combinator.output_signal = "signal-anything"
+        with self.assertRaises(DraftsmanError):
+            combinator.output_signal = "signal-each"
+
+        combinator.first_operand = "signal-anything"
+        combinator.output_signal = "signal-everything"
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "decider_conditions": {
+                    "first_signal": {"name": "signal-anything", "type": "virtual"},
+                    "output_signal": {"name": "signal-everything", "type": "virtual"},
+                }
+            },
+        )
+        combinator.output_signal = "signal-anything"
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "decider_conditions": {
+                    "first_signal": {"name": "signal-anything", "type": "virtual"},
+                    "output_signal": {"name": "signal-anything", "type": "virtual"},
+                }
+            },
+        )
+
+        with self.assertRaises(DraftsmanError):
+            combinator.output_signal = "signal-each"
+
+        combinator.remove_decider_conditions()
+        combinator.first_operand = "signal-each"
+        combinator.output_signal = "signal-each"
+        self.assertEqual(
+            combinator.control_behavior,
+            {
+                "decider_conditions": {
+                    "first_signal": {"name": "signal-each", "type": "virtual"},
+                    "output_signal": {"name": "signal-each", "type": "virtual"},
+                }
+            },
+        )
+        with self.assertRaises(DraftsmanError):
+            combinator.output_signal = "signal-everything"
+        with self.assertRaises(DraftsmanError):
+            combinator.output_signal = "signal-anything"
 
     def test_set_decider_conditions(self):
         combinator = DeciderCombinator()
@@ -321,7 +422,7 @@ class DeciderCombinatorTesting(unittest.TestCase):
         combinator.set_decider_conditions(None, None, None, None)
         self.assertEqual(combinator.control_behavior, {"decider_conditions": {}})
 
-        combinator.set_decider_conditions(None)
+        combinator.set_decider_conditions()
         self.assertEqual(
             combinator.control_behavior,
             {"decider_conditions": {"comparator": "<", "constant": 0}},

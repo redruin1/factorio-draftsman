@@ -16,7 +16,7 @@
 
         print(json.dumps(signals.raw, indent=4))
 
-    .. code-block:: text
+    .. code-block:: python
 
         {
             "hazard-concrete": "item",
@@ -36,14 +36,79 @@
 .. py:data:: item
 
     A list of all item signal names, sorted by their Factorio order.
+    Dependent on mods.
+
+    .. code-block:: python
+
+        # Possible contents
+        [
+            "wooden-chest",
+            "iron-chest",
+            "steel-chest",
+            "storage-tank",
+            "transport-belt",
+            "fast-transport-belt",
+            "express-transport-belt",
+            "underground-belt",
+            "fast-underground-belt",
+            "express-underground-belt",
+            ...
+        ]
 
 .. py:data:: fluid
 
     A list of all fluid signal names, sorted by their Factorio order.
+    Dependent on mods.
+
+    .. code-block:: python
+
+        # Possible contents
+        [
+            "water",
+            "crude-oil",
+            "steam",
+            "heavy-oil",
+            "light-oil",
+            "petroleum-gas",
+            "sulfuric-acid",
+            "lubricant"
+        ]
 
 .. py:data:: virtual
 
     A list of all virtual signal names, sorted by their Factorio order.
+    Dependent on mods.
+
+    .. code-block:: python
+
+        # Possible contents
+        [
+            "signal-everything",
+            "signal-anything",
+            "signal-each",
+            "signal-0",
+            "signal-1",
+            "signal-2",
+            "signal-3",
+            "signal-4",
+            "signal-5",
+            "signal-6",
+            ...
+        ]
+
+    .. NOTE::
+
+        ``signals.virtual`` contains the signals in ``signals.pure_virtual``,
+        as illustrated above.
+
+.. py:data:: pure_virtual
+
+    A list of all pure virtual signal names, sorted by their Factorio order.
+    This list is constant, independent of mods, and is always equivalent to:
+
+    .. code-block:: python
+
+        ["signal-everything", "signal-anything", "signal-each"]
 
 .. autofunction:: get_signal_type
 

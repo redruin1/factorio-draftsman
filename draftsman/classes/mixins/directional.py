@@ -57,8 +57,8 @@ class DirectionalMixin(object):
         the direction of it's outputs, if it has any.
 
         For some entities, this attribute may be redundant; for example, the
-        direction value for an ``AssemblingMachine`` only matters if the machine
-        has a fluid input or output.
+        direction value for an :py:class:`.AssemblingMachine` only matters if
+        the machine has a fluid input or output.
 
         Raises :py:class:`~draftsman.warning.DirectionWarning` if set to a
         diagonal direction.

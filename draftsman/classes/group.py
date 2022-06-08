@@ -49,7 +49,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     .. code-block:: python
 
         assert blueprint.entities[("1", "A")].id == "A"
-        assert blueprint.entities[("2", "A")].id == "A"
+        assert isinstance(blueprint.entities[("2", "A")], Entity)
         assert blueprint.entities[("1", "C")] is blueprint.entities["1"].entities["C"]
 
     ``EntityLike`` instances in a Group are considered to be in "group-space";
@@ -66,7 +66,9 @@ class Group(Transformable, EntityCollection, EntityLike):
     """
 
     @utils.reissue_warnings
-    def __init__(self, id, name="group", type="group", position=(0, 0), entities=[]):
+    def __init__(
+        self, id=None, name="group", type="group", position=(0, 0), entities=[]
+    ):
         # type: (str, str, str, Union[dict, list, tuple], list) -> None
         super(Group, self).__init__()  # EntityLike
 
@@ -162,32 +164,30 @@ class Group(Transformable, EntityCollection, EntityLike):
     def id(self):
         # type: () -> str
         """
-        The ID of the Group. Differs from most ``EntityLikes`` in that a Group's
-        ID is a *required* parameter.
-
-        TODO: maybe make not required? investigate
+        The ID of the Group. The most local form of identification between
+        Groups.
 
         :getter: Gets the ID of the Group.
         :setter: Sets the ID of the Group.
         :type: ``str``
 
-        :exception TypeError: If set to anything other than a ``str``.
+        :exception TypeError: If set to anything other than a ``str`` or ``None``.
         """
         return self._id
 
     @id.setter
     def id(self, value):
         # type: (str) -> None
-        if isinstance(value, six.string_types):
+        if value is None or isinstance(value, six.string_types):
             old_id = getattr(self, "id", None)
-            self._id = six.text_type(value)
+            self._id = six.text_type(value) if value is not None else value
 
             # Modify parent EntityList key_map
             if self.parent:
                 self.parent.entities.remove_key(old_id)
                 self.parent.entities.set_key(self.id, self)
         else:
-            raise TypeError("'id' must be a str")
+            raise TypeError("'id' must be a str or None")
 
     # =========================================================================
 
@@ -222,10 +222,12 @@ class Group(Transformable, EntityCollection, EntityLike):
                 "Cannot change position of Group while it's inside a Collection"
             )
 
-        try:
+        if "x" in value and "y" in value:
             self._position = {"x": float(value["x"]), "y": float(value["y"])}
-        except TypeError:
+        elif isinstance(value, (list, tuple)):
             self._position = {"x": float(value[0]), "y": float(value[1])}
+        else:
+            raise TypeError("Incorrectly formatted position ({})".format(value))
 
     # =========================================================================
 
@@ -234,7 +236,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         # type: () -> dict
         """
         The "global", or root-most position of the Group. This value is always
-        equivalent to :py:meth:`~.Group.position`, unless the group exists
+        equivalent to :py:attr:`~.Group.position`, unless the group exists
         inside another :py:class:`.EntityCollection`. If it does, then it's
         global position is equivalent to the sum of all parent positions plus
         it's own position. Used when recursing the position of any sub-entity

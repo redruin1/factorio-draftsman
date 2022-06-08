@@ -43,7 +43,8 @@ setup(
     description='A complete, well-tested, and up-to-date module to manipulate Factorio blueprint strings. Compatible with mods.',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url='https://github.com/redruin1/factorio_blueprint_tools',
+    keywords=["factorio", "blueprint", "string"],
+    url='https://github.com/redruin1/factorio-draftsman',
     packages=[
         'draftsman', 
         'draftsman.classes', 

@@ -1254,6 +1254,9 @@ def update(verbose=False, show_logs=False, no_mods=False):
                 mod_name = mod_obj
                 enabled_mod_list[mod_name] = not no_mods
 
+    if verbose:
+        print("\nDiscovering mods...\n")
+
     # Preload all the mods and their versions
     for mod_obj in os.listdir(factorio_mods):
         # The following variables are the minimum info we need to acquire
@@ -1333,8 +1336,11 @@ def update(verbose=False, show_logs=False, no_mods=False):
         else:  # Regular file
             continue  # Ignore: cannot be considered a mod
 
-        # First make sure the mod is enabled
-        if not enabled_mod_list[mod_name]:
+        # First make sure the mod is enabled, and skip if not
+        # (The mod itself is not guaranteed to be in the enabled_mod_list if we
+        # added it manually when mod-list.json already exists, so we default to
+        # True if a particular mod is not found)
+        if not enabled_mod_list.get(mod_name, True):
             continue
 
         # Idiot check: assert external version matches internal version
@@ -1421,7 +1427,18 @@ def update(verbose=False, show_logs=False, no_mods=False):
             except FileNotFoundError:
                 pass
 
-        mods[mod_name] = Mod(
+        # It's possible that a user might have multiples of the same mod with
+        # different versions (issue #15). This can cause conficts where a
+        # earlier version of the mod is loaded last which causes dependency
+        # errors.
+
+        # To fix this, we explicitly check for mods with a duplicate name, and
+        # we only overwrite it if the latter mod's version is greater than the
+        # existing mod's version:
+
+        # TODO: issue warnings if mod exists as both a zip archive and a folder?
+
+        new_mod = Mod(
             name=mod_name,
             internal_folder=internal_folder,
             version=mod_version,
@@ -1431,8 +1448,45 @@ def update(verbose=False, show_logs=False, no_mods=False):
             files=files,
             data=mod_data,
         )
+        # If a mod with this name already exists
+        if mod_name in mods:
+            # We also issue warnings regardless of verbosity, as this is likely
+            # undesired behavior
+            print(
+                "WARNING: Duplicate of mod '{}' found ({})".format(
+                    mod_name, new_mod.version
+                )
+            )
+            old_mod = mods[mod_name]
+            # Skip overwriting this mod if the current one is of a later version
+            # than the current
+            if version_string_to_tuple(new_mod.version) <= version_string_to_tuple(
+                old_mod.version
+            ):
+                print(
+                    "\tSkipping older version ({}) in favor of newer version ({})".format(
+                        new_mod.version, old_mod.version
+                    )
+                )
+                continue
+
+            # Else
+            print(
+                "\tOverwriting older version ({}) with newer version ({})".format(
+                    old_mod.version, new_mod.version
+                )
+            )
+
+        elif verbose:
+            print(mod_name)
+
+        # Add/Overwrite the mod to the list
+        mods[mod_name] = new_mod
 
     # Create the dependency tree
+    if verbose:
+        print("\nDetermining dependency tree...\n")
+
     for mod_name, mod in mods.items():
         if mod_name == "base" or mod_name == "core":
             continue  # clunky, but works for now
@@ -1482,7 +1536,11 @@ def update(verbose=False, show_logs=False, no_mods=False):
                 expr = str(actual_version_tuple) + op + str(target_version_tuple)
                 # print(expr)
                 if not eval(expr):
-                    raise IncorrectModVersionError(version)
+                    raise IncorrectModVersionError(
+                        "mod '{}' version {} not {} {}".format(
+                            mod_name, actual_version_tuple, op, target_version_tuple
+                        )
+                    )
 
             if flag == "~":
                 # The mod is needed and considered a dependency, but we don't
@@ -1498,8 +1556,8 @@ def update(verbose=False, show_logs=False, no_mods=False):
     ]
 
     if verbose:
-        print("Load order:")
-        print(load_order)
+        print("\nLoad order:")
+        print(load_order, end="\n\n")
 
     # Setup emulated factorio environment (Set up at {site-packages}/draftsman)
     lua = lupa.LuaRuntime(unpack_returned_tuples=True)
@@ -1567,6 +1625,11 @@ def update(verbose=False, show_logs=False, no_mods=False):
     lualib_path = os.path.join(factorio_data, "core", "lualib", "?.lua")
     lua_add_path(lualib_path)
     load_stage(lua, mods, core_mod, "data.lua")
+
+    # In addition to core, we also load `defines.lua` in this context
+    # This is not included in `factorio-data` and has to be manually extracted
+    # (See compatibility/defines.lua for more info)
+    lua.execute(file_to_string(os.path.join(env_dir, "compatibility", "defines.lua")))
 
     # We also add a special path, which is just the entire module
     # (This is used for absolute paths in archives, so we add it once here)
@@ -1641,6 +1704,9 @@ def update(verbose=False, show_logs=False, no_mods=False):
     # At this point, `data.raw` and all other constructs should(!) be properly
     # initialized. Hence, we can now extract the data we wish:
 
+    if verbose:
+        print()
+
     extract_mods(mods, data_location, verbose)  # Mod names and their versions
 
     # Lots of items are sorted by item order, subgroup and group
@@ -1660,7 +1726,7 @@ def update(verbose=False, show_logs=False, no_mods=False):
     # instead of it being hardcoded for my purposes alone
 
     if verbose:
-        print("Update finished.")  # Phew.
+        print("\nUpdate finished.")  # Phew.
 
 
 def main():

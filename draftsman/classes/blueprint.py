@@ -184,6 +184,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         elif "position_relative_to_grid" in kwargs:
             self.position_relative_to_grid = kwargs.pop("position_relative_to_grid")
 
+        ### INTERNAL ###
+
+        self._area = None
+        self._tile_width = 0
+        self._tile_height = 0
+
         ### DATA ###
 
         # Create spatial hashing objects to make spatial queries much quicker
@@ -211,12 +217,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         else:
             # self.root["schedules"] = []
             self.schedules = []
-
-        ### INTERNAL ###
-
-        self._area = None
-        self._tile_width = 0
-        self._tile_height = 0
 
         # Issue warnings for any keyword not recognized by Blueprint
         for unused_arg in kwargs:
@@ -982,6 +982,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
     def __getitem__(self, key):
         return self.root[key]
+
+    def __contains__(self, item):
+        return item in self.root
 
     def __str__(self):  # pragma: no coverage
         return "<Blueprint>" + json.dumps(self.to_dict()["blueprint"], indent=2)
