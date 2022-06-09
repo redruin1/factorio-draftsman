@@ -161,7 +161,17 @@ class BlueprintBook(object):
             self.version = utils.encode_version(*__factorio_version_info__)
 
         if "blueprints" in kwargs:
-            self.root["blueprints"] = BlueprintableList(kwargs.pop("blueprints"))
+            blueprints = []
+            for bp_dict in kwargs.pop("blueprints"):
+                if "blueprint" in bp_dict:
+                    blueprints.append(Blueprint(bp_dict["blueprint"]))
+                elif "blueprint_book" in bp_dict:
+                    blueprints.append(BlueprintBook(bp_dict["blueprint_book"]))
+                else:
+                    raise TypeError(
+                        "Element of blueprint book is not a blueprint or blueprint book"
+                        )
+            self.root["blueprints"] = BlueprintableList(blueprints)
         else:
             self.root["blueprints"] = BlueprintableList()
 
