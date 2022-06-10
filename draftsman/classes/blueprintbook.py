@@ -38,7 +38,19 @@ class BlueprintableList(MutableSequence):
         self.data = []
         if initlist is not None:
             for elem in initlist:
-                self.append(elem)
+                if(isinstance(elem, Blueprint)):
+                    self.append(elem)
+                elif(isinstance(elem, BlueprintBook)):
+                    self.append(elem)
+                elif("blueprint" in elem):
+                    self.append(Blueprint(elem["blueprint"]))
+                elif("blueprint_book" in elem):
+                    self.append(BlueprintBook(elem["blueprint_book"]))
+                else:
+                    raise TypeError(
+                        "Element of blueprint book is not blueprint or \
+                        blueprint book object nor is it blueprint dictionary"
+                    )
 
     def insert(self, idx, value):
         # type: (int, Union[Blueprint, BlueprintBook]) -> None
@@ -161,17 +173,7 @@ class BlueprintBook(object):
             self.version = utils.encode_version(*__factorio_version_info__)
 
         if "blueprints" in kwargs:
-            blueprints = []
-            for bp_dict in kwargs.pop("blueprints"):
-                if "blueprint" in bp_dict:
-                    blueprints.append(Blueprint(bp_dict["blueprint"]))
-                elif "blueprint_book" in bp_dict:
-                    blueprints.append(BlueprintBook(bp_dict["blueprint_book"]))
-                else:
-                    raise TypeError(
-                        "Element of blueprint book is not a blueprint or blueprint book"
-                        )
-            self.root["blueprints"] = BlueprintableList(blueprints)
+            self.root["blueprints"] = BlueprintableList(kwargs.pop("blueprints"))
         else:
             self.root["blueprints"] = BlueprintableList()
 
