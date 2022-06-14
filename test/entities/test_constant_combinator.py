@@ -279,6 +279,14 @@ class ConstantCombinatorTesting(unittest.TestCase):
         combinator.signals = None
         self.assertEqual(combinator.control_behavior, {})
 
+        # Test setting to pure virtual raises Warnings
+        with self.assertWarns(DraftsmanWarning):
+            combinator.signals = [("signal-everything", 1)]
+        with self.assertWarns(DraftsmanWarning):
+            combinator.signals = [("signal-anything", 1)]
+        with self.assertWarns(DraftsmanWarning):
+            combinator.signals = [("signal-each", 1)]
+
         with self.assertRaises(DataFormatError):
             combinator.signals = {"something", "wrong"}
 

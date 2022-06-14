@@ -1,4 +1,27 @@
 # Changelog
+## 0.9.6
+* Merged sposker's pull request
+    * Fixed an bug where `IndexError` would be triggered on setting the final item filter slot
+    * Updated `signatures.CONTROL_BEHAVIOR` to include the `send_to_train` key
+* Merged elswindle's pull request
+    * Dictionary Blueprints and BlueprintBook's are now properly converted to `Blueprint` and `BlueprintBook` objects when added to a `BlueprintableList`
+* Fixed documentation for `FilterMixin.set_item_filters` that labeled `"name"` key as `"signal"`
+* Made docs for `FilterMixin.set_item_filters` and `FilterMixin.set_item_filter` more clear
+* Changed `signals.raw` to actually be the extraction from `data.raw` so people can query the order strings and other information (#17)
+* Sorted `signals.raw` according to signal-processing order (virtual -> fluid -> item) instead of item sort order (#17)
+* Added `signals.type_of` as a more specific structure to fulfill the old functionality of `signals.raw` (#17)
+* Changed the functionality of `ConstantCombinator` so that attempting to set one of it's signals to a pure virtual signal results in a `DraftsmanWarning` (because for some grotesque reason Factorio actually allows this)
+* Renamed `InvalidConnectionError` to more general `InvalidAssociationError` and updated documentation
+* Removed requirement for `Groups` to have an ID associated with it (this was required in the past, but is no longer necessary)
+* Fixed unable to find connectable entities when calling `Blueprint.generate_power_connections()` on blueprint that contained `Groups` (#19)
+* Added the capability to specify connections based on entity reference as well instead of just ID or index (`[add/remove]_power_connection`, `[add/remove]_circuit_connection`) (#19)
+    * Made these functions issue `InvalidAssociationError` when attempting to connect two entities that lie outside of the `EntityCollection`
+    * Added recursive `__contains__` function to `EntityList` to facilitate the above
+* Fixed copying of entities between `Blueprints` and `Groups` (#20)
+* Added capability to deepcopy `Entities`, `Groups`, and `Blueprints`, with appropriate errors
+* Added capability to set the `entities` of a `Blueprint` or `Group` to another `Blueprints` or `Groups` `entities` (#16)
+* Added optional `string` keyword for the constructor of `Group` so you can import a blueprint string directly into a group instead of having to create a "scratch" `Blueprint`
+
 ## 0.9.5
 * Added `keywords` to `setup.py`
 * Added `__contains__` function to `Blueprint` (I thought it was inferred from `__getitem__`, whoops) (#14)

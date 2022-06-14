@@ -48,7 +48,8 @@ class FiltersMixin(object):
     def set_item_filter(self, index, item):
         # type: (int, str) -> None
         """
-        Sets one of the item filters of the Entity.
+        Sets one of the item filters of the Entity. `index` in this function is
+        in 0-based notation.
 
         :param index: The index of the filter to set.
         :param item: The string name of the item to filter.
@@ -92,10 +93,11 @@ class FiltersMixin(object):
 
         ``filters`` can be either of the following 2 formats::
 
-            [{"index": int, "signal": item_name_1}, ...]
+            [{"index": int, "name": item_name_1}, ...]
             # Or
             [item_name_1, item_name_2, ...]
 
+        With the first format, the "index" key is in 1-based notation.
         With the second format, the index of each item is set to it's position
         in the list. ``filters`` can also be ``None``, which will wipe all item
         filters that the Entity has.

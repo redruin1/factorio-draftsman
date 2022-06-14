@@ -19,7 +19,7 @@ from draftsman.error import (
     IncorrectBlueprintTypeError,
     UnreasonablySizedBlueprintError,
     DataFormatError,
-    InvalidConnectionError,
+    InvalidAssociationError,
 )
 from draftsman import signatures
 from draftsman.tile import Tile
@@ -29,7 +29,7 @@ from draftsman.warning import DraftsmanWarning
 from draftsman.data.signals import signal_dict
 
 from builtins import int
-from copy import deepcopy
+import copy
 import json
 import math
 from schema import SchemaError
@@ -198,18 +198,18 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
         # Data lists
         if "entities" in kwargs:
-            # self.root["entities"] = EntityList(self, kwargs.pop("entities"))
-            self.entities = EntityList(self, kwargs.pop("entities"))
+            self.root["entities"] = EntityList(self, kwargs.pop("entities"))
+            # self.entities = EntityList(self, kwargs.pop("entities"))
         else:
-            # self.root["entities"] = EntityList(self)
-            self.entities = EntityList(self)
+            self.root["entities"] = EntityList(self)
+            # self.entities = EntityList(self)
 
         if "tiles" in kwargs:
-            # self.root["tiles"] = TileList(self, kwargs.pop("tiles"))
-            self.tiles = TileList(self, kwargs.pop("tiles"))
+            self.root["tiles"] = TileList(self, kwargs.pop("tiles"))
+            # self.tiles = TileList(self, kwargs.pop("tiles"))
         else:
-            # self.root["tiles"] = TileList(self)
-            self.tiles = TileList(self)
+            self.root["tiles"] = TileList(self)
+            # self.tiles = TileList(self)
 
         if "schedules" in kwargs:
             # self.root["schedules"] = kwargs.pop("schedules")
@@ -586,21 +586,19 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     @entities.setter
     def entities(self, value):
         # type: (list[EntityLike]) -> None
+        self._entity_hashmap.clear()
+
         if value is None:
-            self._entity_hashmap.clear()
             self.root["entities"].clear()
         elif isinstance(value, list):
-            self._entity_hashmap.clear()
             self.root["entities"] = EntityList(self, value)
         elif isinstance(value, EntityList):
-            value._parent = self  # Make sure the parent is correct
-            self.root["entities"] = value
-            # Add the new list entities to the hashmap
-            self._entity_hashmap.clear()
-            for entity in value:
-                self._entity_hashmap.add(entity)
+            # Just don't ask
+            self.root["entities"] = copy.deepcopy(value, memo={"new_parent": self})
         else:
             raise TypeError("'entities' must be an EntityList, list, or None")
+
+        self.recalculate_area()
 
     def on_entity_insert(self, entitylike):
         # type: (EntityLike) -> None
@@ -686,15 +684,18 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     @tiles.setter
     def tiles(self, value):
         # type: (list[Tile]) -> None
+        self.tile_hashmap.clear()
+
         if value is None:
             self.root["tiles"] = TileList(self)
         elif isinstance(value, list):
             self.root["tiles"] = TileList(self, value)
         elif isinstance(value, TileList):
-            value._parent = self  # Make sure the parent is correct
-            self.root["tiles"] = value
+            self.root["tiles"] = copy.deepcopy(value)
         else:
             raise TypeError("'tiles' must be a TileList, list, or None")
+
+        self.recalculate_area()
 
     # =========================================================================
 
@@ -880,7 +881,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         for entity in flattened_list:
             # Get a copy of the dict representation of the Entity
             # (At this point, Associations are not copied and still point to original)
-            result = deepcopy(entity.to_dict())
+            result = copy.deepcopy(entity.to_dict())
             if not isinstance(result, dict):
                 raise DraftsmanError(
                     "{}.to_dict() must return a dict".format(type(entity).__name__)
@@ -894,7 +895,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         # Maybe handle TileLike?
         out_dict["tiles"] = []
         for tile in self.tiles:
-            out_dict["tiles"].append(deepcopy(tile.to_dict()))
+            out_dict["tiles"].append(copy.deepcopy(tile.to_dict()))
 
         # Convert all schedules into dicts
         # TODO
@@ -911,7 +912,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
                 tile["position"]["y"] -= self.snapping_grid_position["y"]
 
         def throw_invalid_connection(entity):
-            raise InvalidConnectionError(
+            raise InvalidAssociationError(
                 "'{}' at {} is connected to an entity that no longer exists".format(
                     entity["name"], entity["position"]
                 )
@@ -988,3 +989,43 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
     def __str__(self):  # pragma: no coverage
         return "<Blueprint>" + json.dumps(self.to_dict()["blueprint"], indent=2)
+
+    def __deepcopy__(self, memo):
+        # type: (dict) -> Blueprint
+        """
+        TODO
+        """
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+
+        # Make sure we copy "_entity_hashmap" first so we don't get
+        # OverlappingEntitiesWarnings
+        v = getattr(self, "_entity_hashmap")
+        setattr(result, "_entity_hashmap", copy.deepcopy(v, memo))
+        result.entity_hashmap.clear()
+
+        # We copy everything else, save for the 'root' dictionary, because
+        # deepcopying those depend on some of the other attributes, so we load
+        # those first
+        for k, v in self.__dict__.items():
+            if k == "_entity_hashmap" or k == "root":
+                continue
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+
+        # Finally we can copy the root (most notably EntityList)
+        v = getattr(self, "root")
+        copied_dict = {}
+        for rk, rv in v.items():
+            if rk == "entities":
+                # Create a copy of EntityList with copied self as new
+                # parent so that `result.entities[0].parent` will be
+                # `result`
+                memo["new_parent"] = result  # This is hacky, but fugg it
+                copied_dict[rk] = copy.deepcopy(rv, memo)
+            else:
+                copied_dict[rk] = copy.deepcopy(rv, memo)
+        setattr(result, "root", copied_dict)
+
+        return result

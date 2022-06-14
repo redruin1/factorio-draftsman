@@ -147,8 +147,10 @@ can also just change the settings in either of those and the loading process
 will adjust as well.
 
 ## TODO
+* Change positions of `EntityLike` and `Entity` to be more error consistent
 * Maybe switch to `setup.cfg` instead of `setup.py`?
 * Figure out exactly what determines if an `Entity` is flip-able or not
+* Maybe add interface so that mods can include files that can be loaded with Draftsman?
 * Split documentation from docstrings so that each function has a more readable example
 * RailPlanner (specify rail paths via turtle-like commands)
 * Custom `data.raw` extraction and formatting?

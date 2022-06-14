@@ -1,9 +1,10 @@
 # entitylist.py
 # -*- encoding: utf-8 -*-
 
+from draftsman.classes.association import Association
 from draftsman.classes.entitylike import EntityLike
 from draftsman.entity import new_entity
-from draftsman.error import DuplicateIDError
+from draftsman.error import DuplicateIDError, InvalidAssociationError
 from draftsman import utils
 from draftsman.warning import HiddenEntityWarning
 
@@ -31,7 +32,7 @@ class EntityList(MutableSequence):
     """
 
     @utils.reissue_warnings
-    def __init__(self, parent, initlist=None):
+    def __init__(self, parent=None, initlist=None):
         # type: (EntityCollection, Any) -> None
         """
         Instantiates a new ``EntityList``.
@@ -185,17 +186,9 @@ class EntityList(MutableSequence):
         # Convert to Entity if constructed via keyword
         if isinstance(entity, six.string_types):
             entity = new_entity(six.text_type(entity), **kwargs)
-        else:
+        elif copy:
             # Create a DEEPCopy of the entity if desired
-            if copy:
-                entity = deepcopy(entity)
-
-        # Determine the id of the input entity
-        # entity_id = None
-        # if "id" in kwargs:
-        #     entity_id = kwargs["id"]
-        # elif entity.id: #hasattr(entity, "id")
-        #     entity_id = entity.id
+            entity = deepcopy(entity)
 
         # Make sure were not causing any problems by putting this entity in
         self.check_entity(entity)
@@ -218,7 +211,7 @@ class EntityList(MutableSequence):
     def __getitem__(self, item):
         # type: (Union[int, str, slice]) -> Union[EntityLike, list[EntityLike]]
         if isinstance(item, (list, tuple)):
-            new_base = self.key_map[item[0]]
+            new_base = self[item[0]]
             item = item[1:]
             if len(item) == 1:
                 item = item[0]
@@ -314,6 +307,95 @@ class EntityList(MutableSequence):
     def __len__(self):
         # type: () -> int
         return len(self.data)
+
+    def __contains__(self, item):
+        # type: (EntityLike) -> bool
+        if item in self.data:
+            return True
+        else:  # Check every entity for sublists
+            for entity in self.data:
+                if hasattr(entity, "entities"):
+                    if item in entity.entities:  # recurse
+                        return True
+        # Nothing was found
+        return False
+
+    # def __copy__(self):
+    #     # type: () -> EntityList
+    #     """
+    #     TODO
+    #     """
+    #     # This function does not affect associations
+    #     return EntityList(self._parent, self.data)
+
+    def __deepcopy__(self, memo):
+        # type: (dict) -> EntityList
+        """
+        Creates a deepcopy of the EntityList. Also copies Associations such that
+        they are preserved.
+
+        Deepcopying a raw EntityList will usually lead to complications, as
+        EntityLists were not designed to point to the same parent at the same
+        time; thus, if you specify the key ``"new_parent"`` in the ``memo`` dict,
+        the new EntityList will automatically be created with that object as
+        it's parent. This is bootleg as *fuck*, but it works for now.
+        """
+        # If we've already deepcopied this list, no sense doing it twice
+        # if id(self) in memo:
+        #     return memo[id(self)]
+
+        # We create a new entity with no parent; this is important because we
+        # don't want two EntityLists pointing at the same parent, as this often
+        # leads to overlapping entity warnings
+        # Anything to do with EntityCollection specific things has to be
+        # performed AFTER the deepcopy manually by the caller
+        parent = memo.get("new_parent", self._parent)
+        new = EntityList(parent)
+
+        # First, we make a copy of all entities in self.data and assign them to
+        # a new entity list while keeping track of which new entity corresponds
+        # to which old entity
+        for entity in self.data:
+            entity_copy = memo.get(id(entity), deepcopy(entity, memo))
+            new.append(entity_copy, copy=False)
+            memo[id(entity)] = entity_copy
+
+        def try_to_replace_association(old):
+            try:
+                return Association(memo[id(old())])
+            except KeyError:
+                # The association must belong outside of the copied region
+                raise InvalidAssociationError(
+                    "Attempting to connect to {} which lies outside this "
+                    "EntityCollection; are all Associations between entities "
+                    "contained within this EntityCollection being copied?".format(
+                        repr(old())
+                    )
+                )
+
+        # Then, we iterate over all the associations in every Entity in the new
+        # EntityList and replace them with associations to the new Entities
+        for entity in new:
+            if hasattr(entity, "connections"):
+                connections = entity.connections
+                for side in connections:
+                    if side in {"1", "2"}:
+                        for color in connections[side]:
+                            connection_points = connections[side][color]
+                            for point in connection_points:
+                                old = point["entity_id"]
+                                point["entity_id"] = try_to_replace_association(old)
+                    elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+                        connection_points = connections[side]
+                        for point in connection_points:
+                            old = point["entity_id"]
+                            point["entity_id"] = try_to_replace_association(old)
+            if hasattr(entity, "neighbours"):
+                neighbours = entity.neighbours
+                for i, neighbour in enumerate(neighbours):
+                    neighbours[i] = try_to_replace_association(neighbour)
+
+        return new
 
     def check_entity(self, entitylike):
         # type: (EntityLike) -> None

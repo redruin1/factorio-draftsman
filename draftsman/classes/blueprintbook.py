@@ -38,13 +38,13 @@ class BlueprintableList(MutableSequence):
         self.data = []
         if initlist is not None:
             for elem in initlist:
-                if(isinstance(elem, Blueprint)):
+                if isinstance(elem, Blueprint):
                     self.append(elem)
-                elif(isinstance(elem, BlueprintBook)):
+                elif isinstance(elem, BlueprintBook):
                     self.append(elem)
-                elif("blueprint" in elem):
+                elif "blueprint" in elem:
                     self.append(Blueprint(elem["blueprint"]))
-                elif("blueprint_book" in elem):
+                elif "blueprint_book" in elem:
                     self.append(BlueprintBook(elem["blueprint_book"]))
                 else:
                     raise TypeError(

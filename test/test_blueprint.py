@@ -24,6 +24,7 @@ from draftsman.error import (
     EntityNotPowerConnectableError,
     EntityNotCircuitConnectableError,
     DataFormatError,
+    InvalidAssociationError,
 )
 from draftsman.utils import encode_version
 from draftsman.warning import (
@@ -424,6 +425,16 @@ class BlueprintTesting(unittest.TestCase):
         self.assertIsInstance(blueprint.entities, EntityList)
         self.assertEqual(blueprint.entities.data, [])
 
+        # set by EntityList
+        blueprint.entities.append("wooden-chest")
+        blueprint.entities.append("wooden-chest", tile_position=(1, 0))
+        blueprint.add_circuit_connection("red", 0, 1)
+        blueprint2 = Blueprint()
+        blueprint2.entities = blueprint.entities
+        self.assertIsInstance(blueprint.entities, EntityList)
+        self.assertIsInstance(blueprint2.entities, EntityList)
+        # Ensure blueprint1 is still correct
+
         with self.assertRaises(TypeError):
             blueprint.entities = dict()
 
@@ -437,6 +448,14 @@ class BlueprintTesting(unittest.TestCase):
         blueprint.tiles = None
         self.assertIsInstance(blueprint.tiles, TileList)
         self.assertEqual(blueprint.tiles.data, [])
+
+        blueprint.tiles.append("landfill")
+        blueprint2 = Blueprint()
+        blueprint2.tiles = blueprint.tiles
+        self.assertIsInstance(blueprint.tiles, TileList)
+        self.assertIsInstance(blueprint2.tiles, TileList)
+        self.assertIs(blueprint.tiles[0].parent, blueprint)
+        self.assertIsNot(blueprint2.tiles[0].parent, blueprint)
 
         with self.assertRaises(TypeError):
             blueprint.tiles = dict()
@@ -876,6 +895,120 @@ class BlueprintTesting(unittest.TestCase):
         blueprint["label"] = "testing"
         self.assertEqual("label" in blueprint, True)
 
+    def test_deepcopy(self):
+        blueprint = Blueprint()
+
+        blueprint.entities.append("wooden-chest", id="test container")
+
+        group = Group("powerlines")
+        group.entities.append("small-electric-pole")
+        group.entities.append("small-electric-pole", tile_position=(5, 0))
+        group.add_circuit_connection("red", 0, 1)
+        group.add_power_connection(0, 1)
+        group.position = (0, 1)
+
+        blueprint.entities.append(group)
+        blueprint.add_circuit_connection("green", "test container", ("powerlines", 0))
+
+        self.maxDiff = None
+        # Entities
+        self.assertIs(blueprint.entities[0].parent, blueprint)
+        self.assertIs(
+            blueprint.entities[("powerlines", 0)].parent,
+            blueprint.entities["powerlines"],
+        )
+        self.assertIs(
+            blueprint.entities[("powerlines", 1)].parent,
+            blueprint.entities["powerlines"],
+        )
+        self.assertIs(blueprint.entities["powerlines"].parent, blueprint)
+        # Outcome
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "name": "wooden-chest",
+                        "position": {"x": 0.5, "y": 0.5},
+                        "connections": {"1": {"green": [{"entity_id": 2}]}},
+                        "entity_number": 1,
+                    },
+                    {
+                        "name": "small-electric-pole",
+                        "position": {"x": 0.5, "y": 1.5},
+                        "connections": {
+                            "1": {
+                                "red": [{"entity_id": 3}],
+                                "green": [{"entity_id": 1}],
+                            }
+                        },
+                        "neighbours": [3],
+                        "entity_number": 2,
+                    },
+                    {
+                        "name": "small-electric-pole",
+                        "position": {"x": 5.5, "y": 1.5},
+                        "connections": {"1": {"red": [{"entity_id": 2}]}},
+                        "neighbours": [2],
+                        "entity_number": 3,
+                    },
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+
+        # Create a deepcopy of blueprint
+        import copy
+
+        blueprint_copy = copy.deepcopy(blueprint)
+        # Entities
+        self.assertIs(blueprint_copy.entities[0].parent, blueprint_copy)
+        self.assertIs(
+            blueprint_copy.entities[("powerlines", 0)].parent,
+            blueprint_copy.entities["powerlines"],
+        )
+        self.assertIs(
+            blueprint_copy.entities[("powerlines", 1)].parent,
+            blueprint_copy.entities["powerlines"],
+        )
+        self.assertIs(blueprint_copy.entities["powerlines"].parent, blueprint_copy)
+        # Outcome
+        self.assertEqual(
+            blueprint_copy.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "name": "wooden-chest",
+                        "position": {"x": 0.5, "y": 0.5},
+                        "connections": {"1": {"green": [{"entity_id": 2}]}},
+                        "entity_number": 1,
+                    },
+                    {
+                        "name": "small-electric-pole",
+                        "position": {"x": 0.5, "y": 1.5},
+                        "connections": {
+                            "1": {
+                                "red": [{"entity_id": 3}],
+                                "green": [{"entity_id": 1}],
+                            }
+                        },
+                        "neighbours": [3],
+                        "entity_number": 2,
+                    },
+                    {
+                        "name": "small-electric-pole",
+                        "position": {"x": 5.5, "y": 1.5},
+                        "connections": {"1": {"red": [{"entity_id": 2}]}},
+                        "neighbours": [2],
+                        "entity_number": 3,
+                    },
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+
     # =========================================================================
     # EntityCollection
     # =========================================================================
@@ -1064,6 +1197,66 @@ class BlueprintTesting(unittest.TestCase):
                 "version": encode_version(*__factorio_version_info__),
             },
         )
+
+        # Test direct references
+        # Create some easy variable names
+        substationA = blueprint.entities[0]
+        substationB = blueprint.entities[1]
+
+        blueprint.add_power_connection(substationA, substationB)
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "name": "substation",
+                        "position": {"x": 1.0, "y": 1.0},
+                        "neighbours": [2],
+                        "entity_number": 1,
+                    },
+                    {
+                        "name": "substation",
+                        "position": {"x": 7.0, "y": 1.0},
+                        "neighbours": [1],
+                        "entity_number": 2,
+                    },
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+        blueprint.remove_power_connection(substationB, substationA)
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "name": "substation",
+                        "position": {"x": 1.0, "y": 1.0},
+                        "entity_number": 1,
+                    },
+                    {
+                        "name": "substation",
+                        "position": {"x": 7.0, "y": 1.0},
+                        "entity_number": 2,
+                    },
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+
+        # Test entity not in blueprint
+        substationC = ElectricPole("substation")
+        with self.assertRaises(InvalidAssociationError):
+            blueprint.add_power_connection(substationA, substationC)
+        with self.assertRaises(InvalidAssociationError):
+            blueprint.add_power_connection(substationC, substationB)
+
+        with self.assertRaises(InvalidAssociationError):
+            blueprint.remove_power_connection(substationA, substationC)
+        with self.assertRaises(InvalidAssociationError):
+            blueprint.remove_power_connection(substationC, substationB)
 
         # Errors
         blueprint.entities.append("power-switch", tile_position=(10, 10), id="p")
@@ -1426,6 +1619,66 @@ class BlueprintTesting(unittest.TestCase):
                 "version": encode_version(*__factorio_version_info__),
             },
         )
+
+        # Test direct references
+        # Create some easy variable names
+        substationA = blueprint.entities[0]
+        substationB = blueprint.entities[1]
+
+        blueprint.add_circuit_connection("green", substationA, substationB)
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "name": "substation",
+                        "position": {"x": 1.0, "y": 1.0},
+                        "connections": {"1": {"green": [{"entity_id": 2}]}},
+                        "entity_number": 1,
+                    },
+                    {
+                        "name": "substation",
+                        "position": {"x": 7.0, "y": 1.0},
+                        "connections": {"1": {"green": [{"entity_id": 1}]}},
+                        "entity_number": 2,
+                    },
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+        blueprint.remove_circuit_connection("green", substationB, substationA)
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "name": "substation",
+                        "position": {"x": 1.0, "y": 1.0},
+                        "entity_number": 1,
+                    },
+                    {
+                        "name": "substation",
+                        "position": {"x": 7.0, "y": 1.0},
+                        "entity_number": 2,
+                    },
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+
+        # Test entity not in blueprint
+        substationC = ElectricPole("substation")
+        with self.assertRaises(InvalidAssociationError):
+            blueprint.add_circuit_connection("red", substationA, substationC)
+        with self.assertRaises(InvalidAssociationError):
+            blueprint.add_circuit_connection("red", substationC, substationB)
+
+        with self.assertRaises(InvalidAssociationError):
+            blueprint.remove_circuit_connection("red", substationA, substationC)
+        with self.assertRaises(InvalidAssociationError):
+            blueprint.remove_circuit_connection("red", substationC, substationB)
 
         # Test adjacent gate warning
         # TODO

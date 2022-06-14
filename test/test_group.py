@@ -16,6 +16,9 @@ from draftsman.error import (
     EntityNotPowerConnectableError,
     EntityNotCircuitConnectableError,
     RotationError,
+    InvalidAssociationError,
+    MalformedBlueprintStringError,
+    IncorrectBlueprintTypeError,
 )
 from draftsman.utils import encode_version
 from draftsman.warning import (
@@ -61,6 +64,36 @@ class GroupTesting(unittest.TestCase):
         self.assertEqual(group.id, "test_group")
         self.assertEqual(group.position, {"x": 124.4, "y": 1.645})
 
+        # Initialize from string with entities
+        test_string = "0eNqdkttqwzAMht9F187IwVk23/YxSig5aK0gcYLtLAvB7z45ZaW0gbHdGNn6/euT0Ap1N+FoSDtQK1AzaAvquIKls6668OaWEUEBOexBgK76cDNVWxnwAki3+AUq8aUA1I4c4dVguywnPfU1GhY8fBUwDpbVgw412CHNXnIBC6iIA+/Fk0N6cxiHGU1kZ3LNZc9os4kZjrvR2IScDcnDFN+jUQuKtTMZ3OI49HCYkl807HstfbKucszzUXUWd4CzG3CPLU19hB3DGGqicehwBzz9mUDCE3iiT8JhsH3Ek4zEao10vtTDZML4ZbnDI//Kk/2LJ9vhycow222F1N3GCfhEY7eK6Vsii/e0yHMp8+LV+2+Mw9xY"
+        group = Group(name="test", position=(1, 1), string=test_string)
+        self.assertEqual(group.name, "test")
+        self.assertEqual(group.type, "group")
+        self.assertEqual(group.id, None)
+        self.assertEqual(group.position, {"x": 1.0, "y": 1.0})
+        # Verify contents
+        self.assertEqual(len(group.entities), 4)
+        self.assertIsInstance(group.entities[0], Radar)
+        self.assertIsInstance(group.entities[1], PowerSwitch)
+        self.assertIsInstance(group.entities[2], ElectricPole)
+        self.assertIsInstance(group.entities[3], ElectricPole)
+        self.assertIs(
+            group.entities[2].connections["1"]["red"][0]["entity_id"](),
+            group.entities[3],
+        )
+        self.assertIs(
+            group.entities[3].connections["1"]["red"][0]["entity_id"](),
+            group.entities[2],
+        )
+        self.assertIs(group.entities[2].neighbours[0](), group.entities[3])
+        self.assertIs(group.entities[3].neighbours[0](), group.entities[2])
+
+        # Initialize from blueprint string with no entities
+        empty_blueprint_string = "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTUxMTU3q60FAHmbE1Y="
+        group = Group(string=empty_blueprint_string)
+        self.assertEqual(len(group.entities), 0)
+        self.assertEqual(group.entities.data, [])
+
         # Errors
         with self.assertRaises(TypeError):
             Group(unused_keyword="whatever")
@@ -82,6 +115,13 @@ class GroupTesting(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             Group("test", entities=["incorrect"])
+
+        with self.assertRaises(MalformedBlueprintStringError):
+            Group(string="incorrect")
+        with self.assertRaises(IncorrectBlueprintTypeError):
+            Group(
+                string="0eNqrVkrKKU0tKMrMK4lPys/PVrKqRogUK1lFI3FBcpklqblKVkhiOkplqUXFmfl5SlZGFoYm5pZG5qamJiam5ma1OkqZeSmpFUpWBrWxOhg6dcHW6SglJpdklqXGw5TiMa8WAEeOOPY="
+            )
 
     def test_set_name(self):
         group = Group("test")
@@ -184,6 +224,15 @@ class GroupTesting(unittest.TestCase):
         group2.entities = group.entities
         self.assertIsInstance(group2.entities, EntityList)
         self.assertEqual(group2.entities.data, [])
+
+        group.entities = [
+            Furnace("stone-furnace"),
+            Container("wooden-chest", tile_position=(4, 0)),
+            ProgrammableSpeaker("programmable-speaker", tile_position=(8, 0)),
+        ]
+        group2.entities = group.entities
+        self.assertIsInstance(group2.entities, EntityList)
+        self.assertIsNot(group2.entities, group.entities)
 
         with self.assertRaises(TypeError):
             group2.entities = TypeError
@@ -429,6 +478,8 @@ class GroupTesting(unittest.TestCase):
         group.remove_power_connection("2", "p", 2)
         self.assertEqual(power_switch.connections, {})
 
+        # TODO: test setting connection by reference
+
     def test_add_circuit_connection(self):
         group = Group("test")
         container1 = Container("steel-chest", id="c1", tile_position=[-1, 0])
@@ -591,6 +642,8 @@ class GroupTesting(unittest.TestCase):
             group.entities.append(not_circuit_connectable)
             group.add_circuit_connection("red", "c1", "no error pls")
 
+        # TODO: test setting connection by reference
+
     def test_remove_circuit_connection(self):
         group = Group("test")
         container1 = Container("wooden-chest", id="testing1", tile_position=[0, 0])
@@ -720,6 +773,8 @@ class GroupTesting(unittest.TestCase):
         with self.assertRaises(InvalidConnectionSideError):
             group.remove_circuit_connection("red", "testing2", "testing1", 2, "fish")
 
+        # TODO: test setting connection by reference
+
     def test_global_position(self):
         group = Group("test")
         group.entities.append("transport-belt")
@@ -812,6 +867,69 @@ class GroupTesting(unittest.TestCase):
         # Note that this messes with the entities position afterward:
         # this is prevented in Blueprint.to_dict by making a copy of itself and
         # using that instead of the original data
+
+    def test_deepcopy(self):
+        group = Group()
+        group.entities.append("wooden-chest")
+        group.entities.append("inserter", tile_position=(0, 1))
+        group.entities.append("small-electric-pole", tile_position=(1, 0))
+        group.add_circuit_connection("red", 0, 1)
+        group.entities.append("power-switch", tile_position=(1, 1))
+        group.add_power_connection(2, 3, side=1)
+
+        blueprint = Blueprint()
+        blueprint.entities.append(group, copy=False)
+
+        # Make sure entities' parents are correct
+        self.assertIs(group.entities[0].parent, group)
+        self.assertIs(group.entities[1].parent, group)
+        self.assertIs(group.entities[2].parent, group)
+        # Make sure connections are preserved
+        self.assertIs(
+            group.entities[0].connections["1"]["red"][0]["entity_id"](),
+            group.entities[1],
+        )
+        self.assertIs(
+            group.entities[1].connections["1"]["red"][0]["entity_id"](),
+            group.entities[0],
+        )
+        self.assertIs(
+            group.entities[3].connections["Cu0"][0]["entity_id"](), group.entities[2]
+        )
+        # Make sure the parent is correct
+        self.assertIs(group.parent, blueprint)
+
+        import copy
+
+        group_copy = copy.deepcopy(group)
+
+        # Make sure entities' parents are correct
+        self.assertIs(group_copy.entities[0].parent, group_copy)
+        self.assertIs(group_copy.entities[1].parent, group_copy)
+        self.assertIs(group_copy.entities[2].parent, group_copy)
+        # Make sure connections are preserved
+        self.assertIs(
+            group_copy.entities[0].connections["1"]["red"][0]["entity_id"](),
+            group_copy.entities[1],
+        )
+        self.assertIs(
+            group_copy.entities[1].connections["1"]["red"][0]["entity_id"](),
+            group_copy.entities[0],
+        )
+        self.assertIs(
+            group_copy.entities[3].connections["Cu0"][0]["entity_id"](),
+            group_copy.entities[2],
+        )
+        # Make sure parent of the copied group is reset to None
+        self.assertIs(group_copy.parent, None)
+        # Make sure the hashmap was copied properly and are not equivalent
+        self.assertIsNot(group.entity_hashmap, group_copy.entity_hashmap)
+
+        # Test invalid association
+        blueprint.entities.append("steel-chest", tile_position=(5, 5))
+        blueprint.add_circuit_connection("red", (0, 1), 1)
+        with self.assertRaises(InvalidAssociationError):
+            copy.deepcopy(group)
 
     def test_with_blueprint(self):
         blueprint = Blueprint()

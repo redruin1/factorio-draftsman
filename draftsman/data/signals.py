@@ -16,9 +16,10 @@ except ImportError:  # pragma: no coverage
 with pkg_resources.open_binary(data, "signals.pkl") as inp:
     _data = pickle.load(inp)
     raw = _data[0]
-    item = _data[1]
-    fluid = _data[2]
-    virtual = _data[3]
+    type_of = _data[1]
+    item = _data[2]
+    fluid = _data[3]
+    virtual = _data[4]
     pure_virtual = ["signal-everything", "signal-anything", "signal-each"]
 
 
@@ -47,7 +48,7 @@ def get_signal_type(signal_name):
     #     raise InvalidSignalError("'{}'".format(str(signal_name)))
 
     try:
-        return six.text_type(raw[signal_name])
+        return six.text_type(type_of[signal_name])
     except KeyError:
         raise InvalidSignalError("'{}'".format(signal_name))
 

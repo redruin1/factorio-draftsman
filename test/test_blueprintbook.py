@@ -9,7 +9,7 @@ from draftsman.error import (
     IncorrectBlueprintTypeError,
     DataFormatError,
 )
-from draftsman.utils import encode_version
+from draftsman.utils import encode_version, string_to_JSON
 from draftsman.warning import DraftsmanWarning, IndexWarning
 
 import sys
@@ -21,6 +21,29 @@ else:  # pragma: no coverage
 
 
 class BlueprintableListTesting(unittest.TestCase):
+    def test_constructor(self):
+        # Test initializer conversion
+        bp_string = "0eNpNjl0KgzAQhO8yz1EwmNrmKqUUfxYb0I0ksa1I7t7EQunTMsPMt7Ojm1ZanOEAvcP0lj30dYc3I7dT9sK2EDRMoBkC3M5ZrTyQG51Nt+hoCogCJnlv6CreBIiDCYa+rENsd17njlwK/Cgvawfion+QD4m9WJ9KlvPXBJKyVAIbdFGVKmbqsUH/TRZ4kvNHRZ6rurnIRqm6Vs0pxg8hIEgA"
+
+        bpb_string = "0eNqrVkrKKU0tKMrMK4lPys/PVrKqRogUK1lFI3FBcpklqblKVkhiOkplqUXFmfl5SlZGFoYm5pZG5qamJiam5ma1OkqZeSmpFUpWBrWxOhg6dcHW6SglJpdklqXGw5TiMa8WAEeOOPY="
+
+        initlist = [
+            Blueprint(),  # Blueprint object
+            BlueprintBook(),  # BlueprintBook object
+            string_to_JSON(bp_string),  # Blueprint dict
+            string_to_JSON(bpb_string),  # BlueprintBook dict
+        ]
+
+        blueprintable_list = BlueprintableList(initlist)
+        self.assertIsInstance(blueprintable_list[0], Blueprint)
+        self.assertIsInstance(blueprintable_list[1], BlueprintBook)
+        self.assertIsInstance(blueprintable_list[2], Blueprint)
+        self.assertIsInstance(blueprintable_list[3], BlueprintBook)
+
+        # Errors
+        with self.assertRaises(TypeError):
+            BlueprintableList(["incorrect"])
+
     def test_setitem(self):
         blueprint_book = BlueprintBook()
         blueprint_book.blueprints.append(Blueprint())

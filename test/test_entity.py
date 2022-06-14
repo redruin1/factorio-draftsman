@@ -88,26 +88,29 @@ class EntityTesting(unittest.TestCase):
         with self.assertRaises(TypeError):
             iron_chest.tile_position = (1.0, "raw-fish")
 
-    # def test_repr(self):
-    #     class TestEntity(Entity):
-    #         def __init__(self, name, **kwargs):
-    #             examples = ["loader", "other-loader"]
-    #             super(TestEntity, self).__init__(name, examples, **kwargs)
+    def test_change_name_in_blueprint(self):
+        blueprint = Blueprint()
+        example = Container("wooden-chest", id="whatever")
+        blueprint.entities.append(example)
+        self.assertEqual(blueprint.entities["whatever"].name, example.name)
 
-    #     test = TestEntity("loader")
-    #     self.assertEqual(
-    #         str(test),
-    #         "<TestEntity>{'name': 'loader', 'position': {'x': 0.5, 'y': 1.0}}"
-    #     )
+        with self.assertRaises(AttributeError):
+            blueprint.entities["whatever"].name = "steel-chest"
 
-    # def test_change_name_in_blueprint(self):
-    #     blueprint = Blueprint()
-    #     example = Container("wooden-chest", id="whatever")
-    #     blueprint.entities.append(example)
-    #     self.assertEqual(blueprint.entities["whatever"].name, example.name)
+    def test_deepcopy(self):
+        example = Container("wooden-chest", id="test")
+        blueprint = Blueprint()
+        blueprint.entities.append(example, copy=False)
 
-    #     with self.assertRaises(DraftsmanError):
-    #         blueprint.entities["whatever"].name = "steel-chest"
+        import copy
+
+        copy_example = copy.deepcopy(example)
+        self.assertIsNot(example, copy_example)
+        self.assertEqual(example.name, copy_example.name)
+        self.assertEqual(example.id, copy_example.id)
+        self.assertEqual(example.position, copy_example.position)
+        self.assertIs(example.parent, blueprint)
+        self.assertIs(copy_example.parent, None)  # Make sure parent in copy is None
 
     def test_change_id_in_blueprint(self):
         blueprint = Blueprint()

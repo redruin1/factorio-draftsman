@@ -4,7 +4,7 @@
 from draftsman.classes.association import Association
 from draftsman.classes.blueprint import Blueprint
 from draftsman.entity import Container
-from draftsman.error import InvalidConnectionError
+from draftsman.error import InvalidAssociationError
 
 import sys
 
@@ -33,5 +33,5 @@ class AssociationTesting(unittest.TestCase):
 
         del blueprint.entities[1]
 
-        with self.assertRaises(InvalidConnectionError):
+        with self.assertRaises(InvalidAssociationError):
             blueprint.to_dict()

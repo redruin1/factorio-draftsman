@@ -50,10 +50,10 @@ class SpatialHashMap(object):
                     "Added object '{}' ({}) at {} intersects '{}' ({}) at {}".format(
                         item.name,
                         type(item).__name__,
-                        item.position,
+                        item.global_position,
                         overlapping_item.name,
                         type(overlapping_item).__name__,
-                        overlapping_item.position,
+                        overlapping_item.global_position,
                     ),
                     OverlappingObjectsWarning,
                     stacklevel=2,

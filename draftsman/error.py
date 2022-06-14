@@ -124,10 +124,11 @@ class InvalidWireTypeError(DraftsmanError):
     pass
 
 
-class InvalidConnectionError(DraftsmanError):
+class InvalidAssociationError(DraftsmanError):
     """
     Raised when an Association to an Entity still persists even when the Entity
-    that it refers to has been deleted.
+    that it refers to has been deleted, or when attempting to create an Association
+    between entities that don't exist within the EntityCollection they should.
     """
 
 

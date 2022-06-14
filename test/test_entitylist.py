@@ -6,7 +6,7 @@ from __future__ import absolute_import, unicode_literals
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.entitylist import EntityList
 from draftsman.classes.group import Group
-from draftsman.entity import Container, new_entity
+from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.error import DuplicateIDError
 from draftsman.warning import OverlappingObjectsWarning, HiddenEntityWarning
 
@@ -163,3 +163,24 @@ class EntityListTesting(unittest.TestCase):
         self.assertEqual(blueprint.entities.key_map, {})
         self.assertEqual(blueprint.entities.key_to_idx, {})
         self.assertEqual(blueprint.entities.idx_to_key, {})
+
+    def test_contains(self):
+        blueprint = Blueprint()
+
+        entityA = ElectricPole("small-electric-pole")
+        entityB = ElectricPole("small-electric-pole", tile_position=(1, 0))
+        entityC = Container("wooden-chest", tile_position=(2, 0))
+
+        group = Group()
+        group.entities.append(entityA, copy=False)
+        group.entities.append(entityB, copy=False)
+
+        blueprint.entities.append(group, copy=False)
+        blueprint.entities.append(entityC, copy=False)
+
+        self.assertIn(entityA, group.entities)
+        self.assertIn(entityA, blueprint.entities)
+        self.assertIn(entityB, group.entities)
+        self.assertIn(entityB, blueprint.entities)
+        self.assertNotIn(entityC, group.entities)
+        self.assertIn(entityC, blueprint.entities)

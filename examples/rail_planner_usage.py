@@ -21,17 +21,17 @@ def main():
 
     # rail_planner.head_position = (0, 0)   # implicit
     # rail_planner.direction = 0            # implicit
-    #rail_planner.move_forward(10)
-    #rail_planner.turn_left()
-    #rail_planner.turn_right()
-    #rail_planner.move_forward(10)
+    # rail_planner.move_forward(10)
+    # rail_planner.turn_left()
+    # rail_planner.turn_right()
+    # rail_planner.move_forward(10)
 
     # Add the RailPlanner to the blueprint, but don't copy it so we can modify
     # it outside of the blueprint
     blueprint.entities.append(rail_planner, copy=False)
 
-    #rail_planner.turn_left(4)  # Pick up from where we left off
-    #rail_planner.move_forward(20)
+    # rail_planner.turn_left(4)  # Pick up from where we left off
+    # rail_planner.move_forward(20)
 
     # print(blueprint)
     print(blueprint.to_string())

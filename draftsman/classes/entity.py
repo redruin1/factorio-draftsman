@@ -548,8 +548,9 @@ class Entity(EntityLike):
 
     def __repr__(self):  # pragma: no coverage
         # type: () -> str
-        return "<{}{}>{}".format(
+        return "<{0}{1} at 0x{2:016X}>{3}".format(
             type(self).__name__,
             " '{}'".format(self.id) if self.id is not None else "",
+            id(self),
             str(self.to_dict()),
         )

@@ -3,16 +3,18 @@
 
 from __future__ import unicode_literals
 
+from draftsman.classes.association import Association
 from draftsman.classes.entitylist import EntityList
 from draftsman.classes.collection import EntityCollection
 from draftsman.classes.entitylike import EntityLike
 from draftsman.classes.spatialhashmap import SpatialHashMap
 from draftsman.classes.transformable import Transformable
-from draftsman.error import DraftsmanError
+from draftsman.error import DraftsmanError, IncorrectBlueprintTypeError
 from draftsman import signatures
 from draftsman import utils
 from draftsman.warning import DraftsmanWarning
 
+import copy
 from typing import Union
 import six
 
@@ -67,17 +69,21 @@ class Group(Transformable, EntityCollection, EntityLike):
 
     @utils.reissue_warnings
     def __init__(
-        self, id=None, name="group", type="group", position=(0, 0), entities=[]
+        self,
+        id=None,
+        name="group",
+        type="group",
+        position=(0, 0),
+        entities=[],
+        string=None,
     ):
-        # type: (str, str, str, Union[dict, list, tuple], list) -> None
+        # type: (str, str, str, Union[dict, list, tuple], list, str) -> None
         super(Group, self).__init__()  # EntityLike
 
         self.id = id
 
         self.name = name
         self.type = type
-        self.position = position
-
         self._entity_hashmap = SpatialHashMap()
 
         # Collision box
@@ -90,7 +96,73 @@ class Group(Transformable, EntityCollection, EntityLike):
         self.collision_mask = None  # empty set()
 
         # List of entities
-        self.entities = entities
+        if string is not None:
+            self.load_from_string(string)
+        else:
+            self.entities = entities
+
+        # TODO: the position of this shouldn't matter, but in practice it does,
+        # investigate
+        self.position = position
+
+    @utils.reissue_warnings
+    def load_from_string(self, blueprint_string):
+        # type: (str) -> None
+        """
+        Load the Blueprint with the contents of ``blueprint_string``. Raises
+        ``draftsman.warning.DraftsmanWarning`` if there are any unrecognized
+        keywords in the blueprint string.
+
+        :param blueprint_string: Factorio-encoded blueprint string.
+
+        :exception MalformedBlueprintStringError: If the input string is not
+            decodable to a JSON object.
+        :exception IncorrectBlueprintTypeError: If the input string is of a
+            different type than the base class, such as a ``BlueprintBook``.
+        """
+        root = utils.string_to_JSON(blueprint_string)
+        # Ensure that the blueprint string actually points to a blueprint
+        if "blueprint" not in root:
+            raise IncorrectBlueprintTypeError(
+                "Root element of Blueprint string not 'blueprint'"
+            )
+
+        self.setup(**root["blueprint"])
+
+        # Convert circuit and power connections to Associations
+        for entity in self.entities:
+            if hasattr(entity, "connections"):  # Wire connections
+                connections = entity.connections
+                for side in connections:
+                    if side in {"1", "2"}:
+                        for color in connections[side]:
+                            connection_points = connections[side][color]
+                            for point in connection_points:
+                                old = point["entity_id"] - 1
+                                point["entity_id"] = Association(self.entities[old])
+
+                    elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+                        connection_points = connections[side]
+                        for point in connection_points:
+                            old = point["entity_id"] - 1
+                            point["entity_id"] = Association(self.entities[old])
+
+            if hasattr(entity, "neighbours"):  # Power pole connections
+                neighbours = entity.neighbours
+                for i, neighbour in enumerate(neighbours):
+                    neighbours[i] = Association(self.entities[neighbour - 1])
+
+    @utils.reissue_warnings
+    def setup(self, **kwargs):
+        # type: (dict) -> None
+        """
+        Sets up a Group using a blueprint JSON dict. Currently only reads the
+        ``"entities"`` key and loads them into ``Group.entities``.
+        """
+        if "entities" in kwargs:
+            self._entities = EntityList(self, kwargs.pop("entities"))
+        else:
+            self._entities = EntityList(self)
 
     # =========================================================================
 
@@ -370,18 +442,20 @@ class Group(Transformable, EntityCollection, EntityLike):
     @entities.setter
     @utils.reissue_warnings
     def entities(self, value):
-        # type: (list[EntityLike]) -> None
+        # type: (Union[list[EntityLike], EntityList]) -> None
+        self._entity_hashmap.clear()
+
         if value is None:
-            self._entity_hashmap.clear()
             self._entities.clear()
         elif isinstance(value, list):
-            self._entity_hashmap.clear()
             self._entities = EntityList(self, value)
         elif isinstance(value, EntityList):
-            value._parent = self
-            self._entities = value
+            # Just don't ask
+            self._entities = copy.deepcopy(value, memo={"new_parent": self})
         else:
             raise TypeError("'entities' must be an EntityList, list, or None")
+
+        self.recalculate_area()
 
     # =========================================================================
 
@@ -467,6 +541,9 @@ class Group(Transformable, EntityCollection, EntityLike):
 
     def get_area(self):
         # type: () -> list
+        """
+        Gets the area that this ``Group`` takes up, or the minimum AABB.
+        """
         collision_box = (
             [[0, 0], [0, 0]] if self.collision_box is None else self.collision_box
         )
@@ -484,3 +561,38 @@ class Group(Transformable, EntityCollection, EntityLike):
     def __str__(self):  # pragma: no coverage
         # type: () -> str
         return "<Group>" + str(self.entities.data)
+
+    def __deepcopy__(self, memo):
+        # type: (dict) -> Group
+        """
+        TODO
+        """
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+
+        # Make sure we copy "_entity_hashmap" first so we don't get
+        # OverlappingEntitiesWarnings
+        v = getattr(self, "_entity_hashmap")
+        setattr(result, "_entity_hashmap", copy.deepcopy(v, memo))
+        result.entity_hashmap.clear()
+        # Also make sure "_collision_box" is intialized before setting up
+        # "_entities"
+        v = getattr(self, "_collision_box")
+        setattr(result, "_collision_box", copy.deepcopy(v, memo))
+
+        for k, v in self.__dict__.items():
+            if k == "_parent":
+                # Reset parent to None
+                setattr(result, k, None)
+            elif k == "_entity_hashmap":
+                continue
+            elif k == "_entities":
+                # Create a copy of EntityList with copied self as new parent so
+                # that `result.entities[0].parent` will be `result`
+                memo["new_parent"] = result
+                setattr(result, k, copy.deepcopy(v, memo))
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+
+        return result

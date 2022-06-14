@@ -122,7 +122,7 @@ class CombinatorCell(Group):
         assert len(data) <= self.item_slot_count * self.tile_width * self.tile_height
 
         for combinator in self.entities:
-            combinator.set_signals(None)
+            combinator.signals = None
 
         for i, value in enumerate(data):
             current_combinator = self.entities[int(i / self.item_slot_count)]

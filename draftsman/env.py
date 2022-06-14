@@ -298,7 +298,7 @@ def get_order(objects_to_sort, sort_objects, sort_subgroups, sort_groups):
 
     Across the previous categories, each is sorted by:
 
-    1. the item order string
+    1. the item order string (if present)
     2. the item name (lexographic)
     """
 
@@ -356,7 +356,13 @@ def get_order(objects_to_sort, sort_objects, sort_subgroups, sort_groups):
                 subgroup_name = object_to_sort["subgroup"]
                 sort_subgroup = sort_subgroups[subgroup_name]
             else:
-                sort_subgroup = sort_subgroups["other"]
+                # Set the subgroup to a default value
+                # Maybe sort_subgroup defaults to type of sorted object?
+                if object_to_sort["type"] == "fluid":
+                    # Fluids default to the fluid category
+                    sort_subgroup = sort_subgroups["fluid"]
+                else:
+                    sort_subgroup = sort_subgroups["other"]
 
             # Now that we know the subgroup, we can also determine the group
             # that this object belongs to
@@ -1068,7 +1074,8 @@ def extract_signals(lua, data_location, verbose, sort_tuple):
     """
     data = lua.globals().data
 
-    signals = {}
+    unsorted_raw_signals = {}
+    type_of_signals = {}
     item_signals = []
     fluid_signals = []
     virtual_signals = []
@@ -1081,7 +1088,8 @@ def extract_signals(lua, data_location, verbose, sort_tuple):
             signal_obj = signal_category[signal_name]
             if "flags" in signal_obj and "hidden" in signal_obj["flags"]:
                 continue
-            signals[signal_name] = signal_type
+            unsorted_raw_signals[signal_name] = signal_obj
+            type_of_signals[signal_name] = signal_type
             target_location.append(signal_category[signal_name])
 
     # Item Signals
@@ -1109,9 +1117,20 @@ def extract_signals(lua, data_location, verbose, sort_tuple):
     item_signals = get_order(item_signals, *sort_tuple)
     fluid_signals = get_order(fluid_signals, *sort_tuple)
     virtual_signals = get_order(virtual_signals, *sort_tuple)
+    all_signals_order = virtual_signals + fluid_signals + item_signals
+
+    raw_signals = OrderedDict()
+    for signal in all_signals_order:
+        raw_signals[signal] = unsorted_raw_signals[signal]
 
     with open(os.path.join(data_location, "signals.pkl"), "wb") as out:
-        data = [signals, item_signals, fluid_signals, virtual_signals]
+        data = [
+            raw_signals,
+            type_of_signals,
+            item_signals,
+            fluid_signals,
+            virtual_signals,
+        ]
         pickle.dump(data, out, pickle.HIGHEST_PROTOCOL)
 
     if verbose:

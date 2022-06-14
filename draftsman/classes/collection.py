@@ -11,6 +11,7 @@ from draftsman.error import (
     EntityNotPowerConnectableError,
     InvalidWireTypeError,
     InvalidConnectionSideError,
+    InvalidAssociationError,
     EntityNotCircuitConnectableError,
 )
 from draftsman.warning import (
@@ -144,7 +145,7 @@ class EntityCollection(object):
     def find_entities(self, aabb=None):
         # type: (list) -> list[EntityLike]
         """
-        Returns a list of all entities within the area ``aabb``. Works
+        Returns a ``list`` of all entities within the area ``aabb``. Works
         similiarly to
         `LuaSurface.find_entities <https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_entities>`_.
         If no ``aabb`` is provided then the method simply returns all the
@@ -272,12 +273,28 @@ class EntityCollection(object):
     # Connections
     # =========================================================================
 
-    def add_power_connection(self, id1, id2, side=1):
-        # type: (Union[str, int], Union[str, int], int) -> None
+    def add_power_connection(self, entity_1, entity_2, side=1):
+        # type: (Union[EntityLike, int, str], Union[EntityLike, int, str], int) -> None
         """
-        Adds a copper wire power connection between two entities. Each ID can
-        either be the index of the entity in the ``entities`` list, or it's
-        string ID. Side specifies which side to connect to when establishing a
+        Adds a copper wire power connection between two entities. Each entity
+        can be either a reference to the original entity to connect, the index
+        of the entity in the ``entities`` list, or it's string ID. Tuples of
+        strings and ints mean to recursively search through
+        :py:class:`EntityCollection` instances in the base level, following the
+        logic of :py:meth:`.EntityList.__getitem__`. For example:
+
+        .. code-block:: python
+
+            blueprint.entities.append("small-electric-pole")
+            group = Group("group") # Type of EntityCollection
+            group.entities.append("small-electric-pole", tile_position=(5, 0))
+            blueprint.entities.append(group)
+
+            # Add a connection between the first power pole and the first entity
+            # in the group
+            blueprint.add_power_connection(blueprint.entities[0], ("group", 0))
+
+        Side specifies which side to connect to when establishing a
         connection to a dual-power-connectable entity (usually a power-switch).
         Does nothing if the connection already exists.
 
@@ -303,23 +320,36 @@ class EntityCollection(object):
             impossible to connect two dual-power-connectable entities with one
             another; they must be connected to a power pole in-between.
 
-        :param id1: ID or index of the first entity to join.
-        :param id2: ID or index of the second entity to join.
+        :param entity_1: EntityLike, ID, or index of the first entity to join.
+        :param entity_2: EntityLike, ID or index of the second entity to join.
         :param side: Which side of a dual-power-connectable entity to connect
             to, where ``1`` is "input" and ``2`` is "output". Only used when
             connecting a dual-power-connectable entity. Defaults to ``1``.
 
-        :exception KeyError, IndexError: If ``id1`` and/or ``id2`` are invalid
-            ID's or indices to the parent Collection.
+        :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are
+            invalid ID's or indices to the parent Collection.
+        :exception InvalidAssociationError: If ``entity_1`` and/or ``entity_2``
+            are not inside the parent Collection.
         :exception InvalidConnectionSideError: If ``side`` is neither ``1`` nor
             ``2``.
-        :exception EntityNotPowerConnectableError: If either `entity1` or
-            `entity2` do not have the capability to be copper wire connected.
-        :exception DraftsmanError: If both `entity1` and `entity2` are
+        :exception EntityNotPowerConnectableError: If either `entity_1` or
+            `entity_2` do not have the capability to be copper wire connected.
+        :exception DraftsmanError: If both `entity_1` and `entity_2` are
             dual-power-connectable, of which a connection is forbidden.
         """
-        entity_1 = self.entities[id1]
-        entity_2 = self.entities[id2]
+        if not isinstance(entity_1, EntityLike):
+            entity_1 = self.entities[entity_1]
+        if not isinstance(entity_2, EntityLike):
+            entity_2 = self.entities[entity_2]
+
+        if entity_1 not in self.entities:
+            raise InvalidAssociationError(
+                "entity_1 ({}) not contained within this collection".format(entity_1)
+            )
+        if entity_2 not in self.entities:
+            raise InvalidAssociationError(
+                "entity_2 ({}) not contained within this collection".format(entity_2)
+            )
 
         if side not in {1, 2}:
             raise InvalidConnectionSideError("'{}'".format(side))
@@ -391,28 +421,43 @@ class EntityCollection(object):
                 if Association(entity_1) not in entity_2.neighbours:
                     entity_2.neighbours.append(Association(entity_1))
 
-    def remove_power_connection(self, id1, id2, side=1):
-        # type: (str, str, int) -> None
+    def remove_power_connection(self, entity_1, entity_2, side=1):
+        # type: (Union[EntityLike, int, str], Union[EntityLike, int, str], int) -> None
         """
-        Removes a copper wire power connection between two entities. Each id can
-        either be the index of the entity in the ``entities`` list, or it's
-        string ID. ``side`` specifies which side to remove the connection from
-        when removing a connection to a dual-power-connectable entity (usually a
-        power-switch). Does nothing if the connection does not exist.
+        Removes a copper wire power connection between two entities. Each entity
+        can be either a reference to the original entity to connect, the index
+        of the entity in the ``entities`` list, or it's string ID. ``side``
+        specifies which side to remove the connection from when removing a
+        connection to a dual-power-connectable entity (usually a power-switch).
+        Does nothing if the specified connection does not exist.
 
-        :param id1: ID or index of the first entity to remove the connection to.
-        :param id2: ID or index of the second entity to remove the connection
-            to.
+        :param entity_1: EntityLike, ID or index of the first entity to remove
+            the connection to.
+        :param entity_2: EntityLike, ID or index of the second entity to remove
+            the connection to.
         :param side: Which side of a dual-power-connectable entity to remove the
             connection from, where ``1`` is "input" and ``2`` is "output". Only
             used when disjoining a dual-power-connectable entity. Defaults to
             ``1``.
 
-        :exception KeyError, IndexError: If ``id1`` and/or ``id2`` are invalid
-            ID's or indices to the parent Collection.
+        :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are
+            invalid ID's or indices to the parent Collection.
+        :exception InvalidAssociationError: If ``entity_1`` and/or ``entity_2``
+            are not inside the parent Collection.
         """
-        entity_1 = self.entities[id1]
-        entity_2 = self.entities[id2]
+        if not isinstance(entity_1, EntityLike):
+            entity_1 = self.entities[entity_1]
+        if not isinstance(entity_2, EntityLike):
+            entity_2 = self.entities[entity_2]
+
+        if entity_1 not in self.entities:
+            raise InvalidAssociationError(
+                "entity_1 ({}) not contained within this collection".format(entity_1)
+            )
+        if entity_2 not in self.entities:
+            raise InvalidAssociationError(
+                "entity_2 ({}) not contained within this collection".format(entity_2)
+            )
 
         # Only worried about self
         if entity_1.dual_power_connectable:  # power switch
@@ -480,12 +525,12 @@ class EntityCollection(object):
         :param prefer_axis: Determines whether or not to rank power-poles on the
             same x or y coordinate higher than poles that are closer, but not on
             either axis. Used to prefer creating neat, regular grids when
-            possible. ``True`` by default.
+            possible.
         :param only_axis: Removes any neighbour that does not lie on the same
-            x or y axis from the candidate pool, preventing non grid
-            connections. ``False`` by default.
+            x or y axis from the candidate pool, preventing non-grid
+            connections.
         """
-        # Get all power poles in the Collection
+        # Get all power poles in the Collection (1D list)
         electric_poles = self.find_entities_filtered(type="electric-pole")
         for cur_pole in electric_poles:
             # Get all the power poles candidates
@@ -529,23 +574,23 @@ class EntityCollection(object):
                     )
                 )
 
-            cur_index = self.entities.index(cur_pole)
             while len(cur_pole.neighbours) <= 5 and len(potential_neighbours) > 0:
-                other_index = self.entities.index(potential_neighbours.pop())
-                self.add_power_connection(cur_index, other_index)
+                # Create a power connection directly between two entities
+                self.add_power_connection(cur_pole, potential_neighbours.pop())
 
     # =========================================================================
 
-    def add_circuit_connection(self, color, id1, id2, side1=1, side2=1):
-        # type: (str, str, str, int, int) -> None
+    def add_circuit_connection(self, color, entity_1, entity_2, side1=1, side2=1):
+        # type: (str, Union[EntityLike, int, str], Union[EntityLike, int, str], int, int) -> None
         """
-        Adds a circuit wire connection between two entities. Each ID can
-        either be the index of the entity in the ``entities`` list, or it's
-        string ID. Color specifies the color of the wire to make the connection
-        with, and is either ``"red"`` or ``"green"``. ``side1`` specifies which
-        side of the first entity to connect to (if applicable), and ``side2``
-        specifies which side of the second entity to connect to (if applicable).
-        Does nothing if the connection already exists.
+        Adds a circuit wire connection between two entities. Each entity
+        can be either a reference to the original entity to connect, the index
+        of the entity in the ``entities`` list, or it's string ID. Color
+        specifies the color of the wire to make the connection with, and is
+        either ``"red"`` or ``"green"``. ``side1`` specifies which side of the
+        first entity to connect to (if applicable), and ``side2`` specifies
+        which side of the second entity to connect to (if applicable). Does
+        nothing if the connection already exists.
 
         Raises :py:class:`~draftsman.warning.ConnectionSideWarning` if the side
         of either of the entities is ``2`` when the entity is not
@@ -566,8 +611,10 @@ class EntityCollection(object):
             to, where ``1`` is "input" and ``2`` is "output". Only used when the
             second entity is dual-circuit-connectable. Defaults to ``1``.
 
-        :exception KeyError, IndexError: If ``id1`` and/or ``id2`` are invalid
+        :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are invalid
             ID's or indices to the parent Collection.
+        :exception InvalidAssociationError: If ``entity_1`` and/or ``entity_2``
+            are not inside the parent Collection.
         :exception InvalidWireTypeError: If ``color`` is neither ``"red"`` nor
             ``"green"``.
         :exception InvalidConnectionSideError: If ``side1`` or ``side2`` are
@@ -575,8 +622,19 @@ class EntityCollection(object):
         :exception EntityNotCircuitConnectableError: If either `entity_1` or
             `entity_2` do not have the capability to be circuit wire connected.
         """
-        entity_1 = self.entities[id1]
-        entity_2 = self.entities[id2]
+        if not isinstance(entity_1, EntityLike):
+            entity_1 = self.entities[entity_1]
+        if not isinstance(entity_2, EntityLike):
+            entity_2 = self.entities[entity_2]
+
+        if entity_1 not in self.entities:
+            raise InvalidAssociationError(
+                "entity_1 ({}) not contained within this collection".format(entity_1)
+            )
+        if entity_2 not in self.entities:
+            raise InvalidAssociationError(
+                "entity_2 ({}) not contained within this collection".format(entity_2)
+            )
 
         if color not in {"red", "green"}:
             raise InvalidWireTypeError(color)
@@ -660,20 +718,23 @@ class EntityCollection(object):
         if entry not in current_color:
             current_color.append(entry)
 
-    def remove_circuit_connection(self, color, id1, id2, side1=1, side2=1):
-        # type: (str, str, str, int, int) -> None
+    def remove_circuit_connection(self, color, entity_1, entity_2, side1=1, side2=1):
+        # type: (str, Union[EntityLike, int, str], Union[EntityLike, int, str], int, int) -> None
         """
-        Removes a circuit wire connection between two entities. Each ID can
-        either be the index of the entity in the ``entities`` list, or it's
-        string ID. ``side1`` specifies which side of the first entity to remove
-        the connection from (if applicable), and ``side2`` specifies which side
-        of the second entity to remove the connection from (if applicable). Does
-        nothing if the connection doesn't exist.
+        Removes a circuit wire connection between two entities. Each entity
+        can be either a reference to the original entity to connect, the index
+        of the entity in the ``entities`` list, or it's string ID. ``side1``
+        specifies which side of the first entity to remove the connection from
+        (if applicable), and ``side2`` specifies which side of the second entity
+        to remove the connection from (if applicable). Does nothing if the
+        specified connection doesn't exist.
 
         :param color: Color of the wire to remove. Either ``"red"`` or
             ``"green"``.
-        :param id1: ID or index of the first entity to remove the connection to.
-        :param id2: ID or index of the second entity to remove the connection to.
+        :param entity_1: ID or index of the first entity to remove the
+            connection to.
+        :param entity_@: ID or index of the second entity to remove the
+            connection to.
         :param side1: Which side of the first dual-circuit-connectable entity to
             remove the connection from, where ``1`` is "input" and ``2`` is
             "output". Only used when disjoining a dual-circuit-connectable
@@ -683,11 +744,24 @@ class EntityCollection(object):
             "output". Only used when disjoining a dual-circuit-connectable
             entity. Defaults to ``1``.
 
-        :exception KeyError, IndexError: If ``id1`` and/or ``id2`` are invalid
-            ID's or indices to the parent Collection.
+        :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are
+            invalid ID's or indices to the parent Collection.
+        :exception InvalidAssociationError: If ``entity_1`` and/or ``entity_2``
+            are not inside the parent Collection.
         """
-        entity_1 = self.entities[id1]
-        entity_2 = self.entities[id2]
+        if not isinstance(entity_1, EntityLike):
+            entity_1 = self.entities[entity_1]
+        if not isinstance(entity_2, EntityLike):
+            entity_2 = self.entities[entity_2]
+
+        if entity_1 not in self.entities:
+            raise InvalidAssociationError(
+                "entity_1 ({}) not contained within this collection".format(entity_1)
+            )
+        if entity_2 not in self.entities:
+            raise InvalidAssociationError(
+                "entity_2 ({}) not contained within this collection".format(entity_2)
+            )
 
         if color not in {"red", "green"}:
             raise InvalidWireTypeError(color)

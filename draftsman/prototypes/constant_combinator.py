@@ -15,6 +15,7 @@ from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import constant_combinators
 from draftsman.data import entities
+from draftsman.data import signals
 
 from schema import SchemaError
 import six
@@ -74,6 +75,10 @@ class ConstantCombinator(
 
         If the data is set to the latter, it is converted to the former.
 
+        Raises :py:class:`.DraftsmanWarning` if a signal is set to one of the
+        pure virtual signals ("signal-everything", "signal-anything", or
+        "signal-each").
+
         :getter: Gets the signals of the combinators, or an empty list if not
             set.
         :setter: Sets the signals of the combinators. Removes the key if set to
@@ -93,6 +98,18 @@ class ConstantCombinator(
         else:
             try:
                 value = signatures.SIGNAL_FILTERS.validate(value)
+                # Check for pure virtual signals
+                # APPARENTLY this is allowed, but because this is not "endorsed"
+                # by Factorio we issue warnings if we find one
+                for filter in value:
+                    if filter["signal"]["name"] in signals.pure_virtual:
+                        warnings.warn(
+                            "Set signal in index {} to '{}'; is this intentional?".format(
+                                filter["index"], filter["signal"]["name"]
+                            ),
+                            DraftsmanWarning,
+                            stacklevel=2,
+                        )
                 self.control_behavior["filters"] = value
             except SchemaError as e:
                 six.raise_from(DataFormatError(e), None)

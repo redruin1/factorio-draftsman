@@ -5,7 +5,12 @@
 
 .. py:data:: raw
 
-    A ``dict`` of all signals where the key is the name of the signal and the value is the type of the signal.
+    An ``OrderedDict`` of all signals extracted from ``data.raw``, sorted by the signal processing order.
+    The signal processing order is the sorted virtual signals, followed by the sorted fluid signals, followed by all the sorted item signals.
+    The order of signals in ``signals.raw`` can be considered equivalent to ``signals.virtual + signals.fluid + signals.item``.
+    The exact format of the data depends on what type of item/fluid/signal is being queried.
+    Allows the user to iterate over all signals in order, and query specific properties about them, such as their order string for custom sorting orders.
+    Order and content are dependent on loaded mods.
 
     :example:
 
@@ -14,29 +19,44 @@
         import json
         from draftsman.data import signals
 
-        print(json.dumps(signals.raw, indent=4))
+        print(json.dumps(signals.raw["iron-ore"], indent=4))
 
     .. code-block:: python
 
         {
-            "hazard-concrete": "item",
-            "electronic-circuit": "item",
-            "heat-exchanger": "item",
-            "processing-unit": "item",
-            "nuclear-reactor": "item",
-            "uranium-235": "item",
-            "train-stop": "item",
-            "steam-engine": "item",
-            "substation": "item",
-            "sulfur": "item",
-            "crude-oil-barrel": "item",
-            ...
+            "order": "e[iron-ore]",
+            "pictures": [ ... ],
+            "stack_size": 50,
+            "type": "item",
+            "icon_mipmaps": 4,
+            "name": "iron-ore",
+            "icon": "__base__/graphics/icons/iron-ore.png",
+            "subgroup": "raw-resource",
+            "icon_size": 64
         }
+
+.. py:data:: type_of
+
+    A ``dict`` of all signals where the key is the name of the signal and the value is the *signal* type of the signal.
+    Note that this value may differ from the value of ``signals.raw[signal_name]["type"]``; this value is used specifically during the construction of :py:data:`.SIGNAL_ID`.
+    The returned value can be one of ``"item"``, ``"fluid"``, or ``"virtual"``.
+    Order is dependent on loaded mods.
+
+    .. NOTE::
+
+        This structure is **unsorted**. If you want to iterate over signals in order, consider using ``signals.raw`` instead:
+
+        .. code-block:: python
+
+            from draftsman.data import signals
+
+            for signal_name in signals.raw:
+                print(signals.type_of[signal_name])
 
 .. py:data:: item
 
     A list of all item signal names, sorted by their Factorio order.
-    Dependent on mods.
+    Order and content are dependent on mods.
 
     .. code-block:: python
 
@@ -58,7 +78,7 @@
 .. py:data:: fluid
 
     A list of all fluid signal names, sorted by their Factorio order.
-    Dependent on mods.
+    Order and content are dependent on loaded mods.
 
     .. code-block:: python
 
@@ -77,7 +97,7 @@
 .. py:data:: virtual
 
     A list of all virtual signal names, sorted by their Factorio order.
-    Dependent on mods.
+    Order and content are dependent on loaded mods.
 
     .. code-block:: python
 
