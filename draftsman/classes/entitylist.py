@@ -488,17 +488,22 @@ class EntityList(MutableSequence):
         when inserting or removing elements before the end, which moves what
         index each key should point to.
         """
+
         # Shift the indices for key_to_idx
-        for key in self.key_map:
-            old_idx = self.key_to_idx[key]
-            if old_idx >= idx:
-                new_idx = old_idx + amt
-                self.key_to_idx[key] = new_idx
-                # del self.idx_to_key[old_idx]
-                # # self.idx_to_key.pop(old_idx)
-                # self.idx_to_key[new_idx] = key
+        self.key_to_idx = {key: old_idx + amt if old_idx >= idx else old_idx for key, old_idx in self.key_to_idx.items()}
+
+        # # Shift the indices for key_to_idx
+        # for key, old_idx in self.key_to_idx.items():
+        #     # old_idx = self.key_to_idx[key]
+        #     if old_idx >= idx:
+        #         new_idx = old_idx + amt
+        #         self.key_to_idx[key] = new_idx
+        #         # del self.idx_to_key[old_idx]
+        #         # # self.idx_to_key.pop(old_idx)
+        #         # self.idx_to_key[new_idx] = key
 
         # Reconstruct idx_to_key
-        self.idx_to_key = {}
-        for key in self.key_to_idx:
-            self.idx_to_key[self.key_to_idx[key]] = key
+        # self.idx_to_key = {}
+        # for key in self.key_to_idx:
+        #     self.idx_to_key[self.key_to_idx[key]] = key
+        self.idx_to_key = {value: key for key, value in self.key_to_idx.items()}
