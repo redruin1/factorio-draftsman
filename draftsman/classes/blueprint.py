@@ -96,34 +96,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
         self.setup(**root["blueprint"])
 
-        # Convert circuit and power connections to Associations
-        for entity in self.entities:
-            if hasattr(entity, "connections"):  # Wire connections
-                connections = entity.connections
-                for side in connections:
-                    if side in {"1", "2"}:
-                        for color in connections[side]:
-                            connection_points = connections[side][color]
-                            for point in connection_points:
-                                old = point["entity_id"] - 1
-                                point["entity_id"] = Association(self.entities[old])
-
-                    elif side in {"Cu0", "Cu1"}:  # pragma: no branch
-                        connection_points = connections[side]
-                        for point in connection_points:
-                            old = point["entity_id"] - 1
-                            point["entity_id"] = Association(self.entities[old])
-
-            if hasattr(entity, "neighbours"):  # Power pole connections
-                neighbours = entity.neighbours
-                for i, neighbour in enumerate(neighbours):
-                    neighbours[i] = Association(self.entities[neighbour - 1])
-
-        # Change all locomotive numbers to use Associations
-        for schedule in self.schedules:
-            for i, locomotive in enumerate(schedule["locomotives"]):
-                schedule["locomotives"][i] = Association(self.entities[locomotive - 1])
-
     @utils.reissue_warnings
     def setup(self, **kwargs):
         """
@@ -225,6 +197,34 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        # Convert circuit and power connections to Associations
+        for entity in self.entities:
+            if hasattr(entity, "connections"):  # Wire connections
+                connections = entity.connections
+                for side in connections:
+                    if side in {"1", "2"}:
+                        for color in connections[side]:
+                            connection_points = connections[side][color]
+                            for point in connection_points:
+                                old = point["entity_id"] - 1
+                                point["entity_id"] = Association(self.entities[old])
+
+                    elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+                        connection_points = connections[side]
+                        for point in connection_points:
+                            old = point["entity_id"] - 1
+                            point["entity_id"] = Association(self.entities[old])
+
+            if hasattr(entity, "neighbours"):  # Power pole connections
+                neighbours = entity.neighbours
+                for i, neighbour in enumerate(neighbours):
+                    neighbours[i] = Association(self.entities[neighbour - 1])
+
+        # Change all locomotive numbers to use Associations
+        for schedule in self.schedules:
+            for i, locomotive in enumerate(schedule["locomotives"]):
+                schedule["locomotives"][i] = Association(self.entities[locomotive - 1])
 
     # =========================================================================
     # Blueprint properties

@@ -20,9 +20,9 @@ class IOTypeMixin(object):
         super(IOTypeMixin, self).__init__(name, similar_entities, **kwargs)
 
         self.io_type = "input"  # Default
-        if "io_type" in kwargs:
-            self.io_type = kwargs["io_type"]
-            self.unused_args.pop("io_type")
+        if "type" in kwargs:
+            self.io_type = kwargs["type"]
+            self.unused_args.pop("type")
         self._add_export(
             "io_type",
             lambda x: x is not None and x != "input",
