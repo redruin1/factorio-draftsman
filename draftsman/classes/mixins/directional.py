@@ -12,6 +12,10 @@ from schema import SchemaError
 from typing import Union
 import warnings
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from draftsman.classes.entity import Entity
+
 
 class DirectionalMixin(object):
     """
@@ -113,3 +117,10 @@ class DirectionalMixin(object):
 
         # Reset the grid/absolute positions in case the direction changed
         self.tile_position = (self.tile_position["x"], self.tile_position["y"])
+
+    # =========================================================================
+
+    def mergable_with(self, other):
+        # type: (Entity) -> bool
+        base_mergable = super(DirectionalMixin, self).mergable_with(other)
+        return (base_mergable and self.direction == other.direction)

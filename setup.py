@@ -61,6 +61,7 @@ setup(
         "lupa >= 1.10",
         "six >= 1.16.0",
         "typing",
+        "typing_extensions; python_version < '3.8'",
         "importlib-resources; python_version < '3.7'",
         "enum34; python_version < '3.4'",
         "future; python_version < '3.0'",

@@ -12,6 +12,10 @@ from schema import SchemaError
 import six
 import warnings
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from draftsman.classes.entity import Entity
+
 
 class RecipeMixin(object):
     """
@@ -98,7 +102,7 @@ class RecipeMixin(object):
         # good enough for now
 
         # Check to make sure the recipe matches the module specification
-        if self.items:
+        if hasattr(self, "items") and self.items:
             for item in self.items:
                 # If the item is a module
                 if item in modules.raw:
@@ -121,3 +125,11 @@ class RecipeMixin(object):
                         ItemLimitationWarning,
                         stacklevel=2,
                     )
+
+    # =========================================================================
+
+    def merge(self, other):
+        # type: (Entity) -> None
+        self.recipe = other.recipe
+        
+        super(RecipeMixin, self).merge(other)

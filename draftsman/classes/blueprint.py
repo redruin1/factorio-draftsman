@@ -600,15 +600,15 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
         self.recalculate_area()
 
-    def on_entity_insert(self, entitylike):
-        # type: (EntityLike) -> None
+    def on_entity_insert(self, entitylike, merge):
+        # type: (EntityLike, bool) -> None
         """
         Callback function for when an ``EntityLike`` is added to this
         Blueprint's ``entities`` list. Handles the addition of the entity into
         the  Blueprint's ``SpatialHashMap``, and recalculates it's dimensions.
         """
         # Add to hashmap (as well as any children)
-        self.entity_hashmap.recursively_add(entitylike)
+        self.entity_hashmap.recursively_add(entitylike, merge)
 
         # Update dimensions
         self._area = utils.extend_aabb(self._area, entitylike.get_area())

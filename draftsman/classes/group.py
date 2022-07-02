@@ -469,15 +469,15 @@ class Group(Transformable, EntityCollection, EntityLike):
 
     # =========================================================================
 
-    def on_entity_insert(self, entitylike):
-        # type: (EntityLike) -> None
+    def on_entity_insert(self, entitylike, merge):
+        # type: (EntityLike, bool) -> None
         """
         Callback function for when an ``EntityLike`` is added to this
         Group's ``entities`` list. Handles the addition of the entity into
         the  Group's ``SpatialHashMap``, and recalculates it's dimensions.
         """
         # Add to hashmap (as well as any children)
-        self.entity_hashmap.recursively_add(entitylike)
+        self.entity_hashmap.recursively_add(entitylike, merge)
 
         # Update dimensions
         self._collision_box = utils.extend_aabb(
@@ -557,6 +557,16 @@ class Group(Transformable, EntityCollection, EntityLike):
                 collision_box[1][1] + self.position["y"],
             ],
         ]
+
+    def mergable_with(self, other):
+        # type: (Group) -> bool
+        return (type(self) == type(other) and 
+                self.id == other.id)
+
+    def merge(self, other):
+        # type: (Group) -> None
+        print("group.merge")
+        return super().merge(other)
 
     def __str__(self):  # pragma: no coverage
         # type: () -> str

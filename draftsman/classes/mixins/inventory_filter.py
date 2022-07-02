@@ -16,6 +16,10 @@ from schema import SchemaError
 import six
 import warnings
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from draftsman.classes.entity import Entity
+
 
 class InventoryFilterMixin(object):
     """
@@ -226,3 +230,13 @@ class InventoryFilterMixin(object):
 
         for i in range(len(filters)):
             self.set_inventory_filter(filters[i]["index"] - 1, filters[i]["name"])
+
+    # =========================================================================
+
+    def merge(self, other):
+        # type: (Entity) -> None
+        super(InventoryFilterMixin, self).merge(other)
+
+        self.inventory = {}
+        self.bar = other.bar
+        self.set_inventory_filters(other.filters)

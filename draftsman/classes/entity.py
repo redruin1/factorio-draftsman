@@ -14,6 +14,7 @@ from draftsman.data import entities
 from draftsman.error import InvalidEntityError, DraftsmanError
 from draftsman.utils import aabb_to_dimensions
 
+import abc
 import math
 from schema import SchemaError
 from typing import Any, Union, Callable
@@ -495,25 +496,53 @@ class Entity(EntityLike):
 
         return out
 
-    # def export(self, blueprint):
-    #     """
-    #     Maybe something like this for a more generic method?
-    #     """
-    #     out = {}
-    #     for name, funcs in self.exports.items():
-    #         value = getattr(self, name)
-    #         criterion = funcs[0]
-    #         formatter = funcs[1]
-    #         # Does the value match the criteria to be included?
-    #         if criterion is None or criterion(value):
-    #             if formatter is not None:
-    #                 # Normalize key/value pair
-    #                 k, v = formatter(name, value)
-    #             else:
-    #                 k, v = name, value
-    #             out[k] = v
+    def mergable_with(self, other):
+        # type: (Entity) -> bool
+        return (type(self) == type(other) and
+                self.name == other.name and
+                self.global_position == other.global_position and
+                self.id == other.id)
 
-    #     blueprint["entities"].append(out)
+    def merge(self, other):
+        # type: (Entity) -> None
+        # If applicable,  copy control_behavior verbatim
+        # This handles a large number of settings, but not all; those are taken
+        # care of in this method in each individual Entity subtype
+        if hasattr(self, "control_behavior") and hasattr(other, "control_behavior"):
+            self.control_behavior = other.control_behavior
+        
+        # Add on
+        if hasattr(self, "neighbours") and hasattr(other, "neighbours"):
+            for association in other.neighbours:
+                # Check to make sure we don't exceed max connections
+                if len(self.neighbours) < 5:
+                    # Also check to make sure we don't add the same connection
+                    # multiple times
+                    if association not in self.neighbours:
+                        self.neighbours.append(association)
+
+        if hasattr(self, "connections") and hasattr(other, "connections"):
+            for side in other.connections:
+                if side in {"1", "2"}:
+                    if side not in self.connections:
+                        self.connections[side] = {}
+                    for color in other.connections[side]:
+                        if color not in self.connections[side]:
+                            self.connections[side][color] = []
+                        for point in other.connections[side][color]:
+                            self.connections[side][color].append(point)
+                else: # side in {"Cu0", "Cu1"}:
+                    if side not in self.connections:
+                        self.connections[side] = []
+                    for point in other.connections[side]:
+                        self.connections[side].append(point)
+
+        # Item requests
+        if hasattr(self, "items") and hasattr(other, "items"):
+            # Wipe the old item requests
+            self.items = {}
+            for item, count in other.items.items():
+                self.set_item_request(item, count)
 
     def _add_export(self, name, criterion=None, formatter=None):
         # type: (str, Callable, Callable) -> None

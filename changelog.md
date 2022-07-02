@@ -1,4 +1,18 @@
 # Changelog
+## 0.9.7
+* Merged louga31's pull request
+    * Rewrite of the `_shift_key_indices` in `EntityList` to make it faster using list comprehension
+* Merged elswindle's pull request
+    * Moved conversion of associations from `Blueprint.load_from_string` to `Blueprint.setup` so they always take place
+    * Fixed `UndergroundBelt` `io_type` attribute not reading correctly from key `type`
+    * Changed test case to account for this
+
+* Added `DirectionalMixin` to `AssemblingMachine` (as technically it can have it in select circumstances)
+* Fixed load conflict between `items` and `recipe` in `AssemblingMachine` (#23)
+* Fixed `setup.py` so that it properly requires `typing_extensions` on versions of Python prior to 3.8 (#30)
+* Fixed importing `Literal` so that it follows the above change (#30)
+* Fixed an issue where `BlueprintBook` icons were not properly set and issued an incorrect warning (#31)
+
 ## 0.9.6
 * Merged sposker's pull request
     * Fixed an bug where `IndexError` would be triggered on setting the final item filter slot

@@ -14,8 +14,12 @@ from draftsman.data.entities import splitters
 from draftsman.data import entities
 
 import six
-from typing import Literal
 import warnings
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 
 class Splitter(DirectionalMixin, Entity):

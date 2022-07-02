@@ -10,6 +10,10 @@ from draftsman.data.signals import signal_dict
 from schema import SchemaError
 import six
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from draftsman.classes.entity import Entity
+
 
 class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
     """
@@ -144,3 +148,13 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
                 self.control_behavior["green_output_signal"] = value
             except SchemaError as e:
                 six.raise_from(DataFormatError(e), None)
+
+    # =========================================================================
+
+    def merge(self, other):
+        # type: (Entity) -> None
+        super(ReadRailSignalMixin, self).merge(other)
+
+        self.red_output_signal = other.red_output_signal
+        self.yellow_output_signal = other.yellow_output_signal
+        self.green_output_signal = other.green_output_signal

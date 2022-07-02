@@ -3,12 +3,12 @@
 
 from __future__ import unicode_literals
 
+from draftsman.classes.blueprint import Blueprint
 from draftsman.constants import Direction
-from draftsman.entity import ArithmeticCombinator, arithmetic_combinators
+from draftsman.entity import ArithmeticCombinator, arithmetic_combinators, Container
 from draftsman.error import (
     InvalidEntityError,
     InvalidSignalError,
-    InvalidOperationError,
     DataFormatError,
     DraftsmanError,
 )
@@ -478,3 +478,68 @@ class ArithmeticCombinatorTesting(unittest.TestCase):
         # Test Remove conditions
         combinator.remove_arithmetic_conditions()
         self.assertEqual(combinator.control_behavior, {})
+
+    def test_mergable(self):
+        combinatorA = ArithmeticCombinator("arithmetic-combinator")
+        combinatorB = ArithmeticCombinator("arithmetic-combinator")
+
+        # Compatible
+        self.assertEqual(combinatorA.mergable_with(combinatorB), True)
+
+        combinatorB.set_arithmetic_conditions("signal-A", "+", "signal-B", "signal-C")
+        self.assertEqual(combinatorA.mergable_with(combinatorB), True)
+
+        # Incompatible
+        self.assertEqual(combinatorA.mergable_with(Container()), False)
+
+        combinatorB.tile_position = (10, 0)
+        self.assertEqual(combinatorA.mergable_with(combinatorB), False)
+        combinatorB.tile_position = (0, 0)
+
+        combinatorB.id = "something"
+        self.assertEqual(combinatorA.mergable_with(combinatorB), False)
+        combinatorB.id = None
+
+        combinatorB.direction = Direction.SOUTH
+        self.assertEqual(combinatorA.mergable_with(combinatorB), False)
+        combinatorB.direction = Direction.NORTH
+
+    def test_merge(self):
+        combinatorA = ArithmeticCombinator("arithmetic-combinator")
+        combinatorB = ArithmeticCombinator("arithmetic-combinator")
+        combinatorB.set_arithmetic_conditions("signal-A", "+", "signal-B", "signal-C")
+
+        combinatorA.merge(combinatorB)
+        self.assertEqual(
+            combinatorA.control_behavior,
+            {
+                "arithmetic_conditions": {
+                    "first_signal": {"name": "signal-A", "type": "virtual"},
+                    "operation": "+",
+                    "second_signal": {"name": "signal-B", "type": "virtual"},
+                    "output_signal": {"name": "signal-C", "type": "virtual"}
+                }
+            }
+        )
+
+        # Test blueprint merging
+        blueprint = Blueprint()
+        blueprint.entities.append("arithmetic-combinator")
+
+        entity_to_merge = ArithmeticCombinator("arithmetic-combinator")
+        entity_to_merge.set_arithmetic_conditions("signal-A", "+", "signal-B", "signal-C")
+
+        blueprint.entities.append(entity_to_merge, merge=True)
+
+        self.assertEqual(len(blueprint.entities), 1)
+        self.assertEqual(
+            blueprint.entities[0].control_behavior,
+            {
+                "arithmetic_conditions": {
+                    "first_signal": {"name": "signal-A", "type": "virtual"},
+                    "operation": "+",
+                    "second_signal": {"name": "signal-B", "type": "virtual"},
+                    "output_signal": {"name": "signal-C", "type": "virtual"}
+                }
+            }
+        )

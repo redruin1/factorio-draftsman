@@ -10,6 +10,10 @@ from draftsman.error import InvalidItemError, DataFormatError
 from schema import SchemaError
 import six
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from draftsman.classes.entity import Entity
+
 
 class RequestFiltersMixin(object):
     """
@@ -109,3 +113,9 @@ class RequestFiltersMixin(object):
         self.request_filters = []
         for i in range(len(filters)):
             self.set_request_filter(i, filters[i]["name"], filters[i]["count"])
+
+    def merge(self, other):
+        # type: (Entity) -> None
+        super(RequestFiltersMixin, self).merge(other)
+
+        self.request_filters = other.request_filters

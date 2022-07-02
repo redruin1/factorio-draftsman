@@ -111,3 +111,12 @@ class HeatInterface(Entity):
             self._mode = value
         else:
             raise InvalidModeError(value)
+
+    # =========================================================================
+
+    def merge(self, other):
+        # type: (HeatInterface) -> None
+        self.temperature = other.temperature
+        self.mode = other.mode
+
+        super(HeatInterface, self).merge(other)

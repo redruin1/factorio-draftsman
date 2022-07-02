@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Accumulator, accumulators
+from draftsman.entity import Accumulator, accumulators, Container
 from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
@@ -81,3 +81,47 @@ class AccumulatorTesting(unittest.TestCase):
             accumulator.output_signal = "incorrect"
         with self.assertRaises(DataFormatError):
             accumulator.output_signal = {"incorrectly": "formatted"}
+
+    def test_mergable(self):
+        accumulatorA = Accumulator(
+            "accumulator", 
+            tile_position = (0, 0)
+        )
+        accumulatorB = Accumulator(
+            "accumulator",
+            tile_position = (0, 0)
+        )
+        
+        # Compatible
+        self.assertEqual(accumulatorA.mergable_with(accumulatorB), True)
+
+        accumulatorA.output_signal = "signal-A"
+        self.assertEqual(accumulatorA.mergable_with(accumulatorB), True)
+
+        # Incompatible
+        self.assertEqual(accumulatorA.mergable_with(Container()), False)
+
+        accumulatorA.tile_position = (2, 0)
+        self.assertEqual(accumulatorA.mergable_with(accumulatorB), False)
+
+        accumulatorA.tile_position = (0, 0)
+        accumulatorA.id = "something"
+        self.assertEqual(accumulatorA.mergable_with(accumulatorB), False)
+
+    def test_merge(self):
+        accumulatorA = Accumulator(
+            "accumulator", 
+            tile_position = (0, 0)
+        )
+        accumulatorB = Accumulator(
+            "accumulator",
+            tile_position = (0, 0)
+        )
+        accumulatorB.output_signal = "signal-A"
+
+        accumulatorA.merge(accumulatorB)
+        self.assertEqual(accumulatorA.name, "accumulator")
+        self.assertEqual(accumulatorA.tile_position, {"x": 0, "y": 0})
+        self.assertEqual(
+            accumulatorA.output_signal, {"name": "signal-A", "type": "virtual"}
+        )

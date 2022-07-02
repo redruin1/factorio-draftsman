@@ -39,9 +39,6 @@ class Beacon(ModulesMixin, RequestItemsMixin, Entity):
     @utils.reissue_warnings
     def set_item_request(self, item, count):
         # type: (str, int) -> None
-        # Make sure the item exists
-        # if item not in items.raw:
-        #     raise InvalidItemError("'{}'".format(item))
 
         if item in items.raw and item not in modules.raw:
             warnings.warn(

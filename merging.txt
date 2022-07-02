@@ -1,0 +1,92 @@
+All entities must (in order to me merged)
+
+Be of the same Draftsman type
+Have the same `name`
+Have the same `global_position`
+Have the same `id`
+Have the same `direction` (if applicable)
+Have the same `orientation` (if applicable)
+
+All entities must (in order to be replaced)
+
+Have the same `fast_replacable_group`
+Have the same `type` (Note that this is the internal type, not `type(Container())`; this allows filter inserters to replace regular inserters but regular belts to not replace undergrounds or splitters)
+Have the same `id`
+Have the same `static_tile_height`
+Have the same `static_tile_width`
+Have the same `global_position`
+Have the same `direction` (if applicable)
+Have the same `orientation` (if applicable)
+Have the same `recipe` (if applicable)
+Have the same `output_type` (if applicable) (Underground Belts)
+
+These attributes are always merged:
+
+Control behavior (if applicable)
+Circuit connections (if applicable)
+Power connections (if applicable)
+Item requests (if applicable)
+
+How entities are merged:
+
+Containers: `bar` attribute is copied to the new entity. If the new entity does not have a bar attribute, it is not copied.
+Fluid Tanks: None
+Belts: Belts can be only placed on other belts going the same direction, but they cannot be mixed, i.e. you cannot place an underground belt on a regular belt. In game this would be allowed, but I think in the context of Draftsman this would end up being a mistake more often than being desired behavior, and would also require a complex set of belt behavior features to be implemented which I am not currently prepared to add.
+Underground Belts: None
+Splitters: Input priority, output priority, as well as filter are checked. If the new entity placed on top has none of these attributes, they are inherited from the entity underneath. If the new does have at least one of these attributes, then the old is changed to match the new one exactly.
+Loaders: Item filter; If new item filter has no entries, then the old is inherited verbatim; otherwise the new replaces all of the old. If the old filters exceeds the number of filter slots in new, the list is abridged to the length of the available filter slots in new.
+Inserters: Stack size override is inherited if not present in new, overwritten if it is present in new.
+Filter Inserters: Same as inserters, as well as "whitelist"/"blacklist" attribute and item filters. If the old filters exceeds the number of filter slots in new, the list is abridged to the length of the available filter slots in new.
+Electric Pole: None
+Pipe: None
+Underground Pipe: None
+Pump: None
+Rails: None
+Train Stop: All their stop-specific attributes. Inherited from old if nothing in new, otherwise inherited from new.
+Rail Signal: Red, Yellow, and Green signal, copied if not inherited.
+Rail Chain Signal: Red, Yellow, Green, and Blue signals, copied if not inherited.
+Train cars and Wagons: None
+Logistics Chests: Same as container, as well as request filters. If any attribute on the new chest mismatches anything of the old chest, the old values are lost.
+Roboport: Circuit behaviors (is this part of `control_behavior`?)
+Lamps: None
+Decider Combinator: None (conditions are part of control behavior)
+Arithmetic Combinator: None (conditions are part of control behavior)
+Constant Combinator: Signals are copied if not inherited.
+Power Switch: Switch enabled copied if not inherited.
+Programmable Speaker: All relevant settings copied if not inherited.
+Boiler: None
+Generator: None
+Solar Panel: None
+Accumulator: Charge output signal copied if not inherited.
+Reactor: None
+Heat Pipe: None
+Mining Drill: None
+Assembling Machine: If the recipe of new does not match the recipe of old, then the entities are not mergable. If the old does not have a recipe, it inherits the new recipe. If the new does not have a recipe, the new one inherits the old recipe. If the old recipe cannot be in the new entity, then the recipe is set to None.
+Beacons: None
+Rocket Silo: Auto-cargo-launch option copied if not inherited.
+Land Mine: None
+Walls: None (circuit connections) 
+Gates: None
+Turrets: None
+Radars: None
+Electric Energy Interfaces: All their attributes are copied if not inherited.
+Linked Chests: Same as container, and their link_id is copied if not inherited.
+Heat Interface: Heat interface settings are copied if not inherited.
+Linked Belt: None(?)
+Infinity Chests: Same as containers, as well as infinity settings are copied if not inherited.
+Infinity Pipe: Infinity settings are copied if not inherited.
+Burner Generators: None
+
+
+on adding an entity:
+
+	Create an entity using the shorthand syntax
+	
+	If copy:
+		entity = deepcopy(entity)
+
+	if merge:
+		self.recursive_merge()
+		old_entity = self._parent.find_entity_at_position(entity.global_position)
+		if old_entity and entity.can_merge_with(old_entity):
+			old_entity = entity.merge(old_entity)

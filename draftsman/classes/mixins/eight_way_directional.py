@@ -10,6 +10,10 @@ from draftsman.error import DraftsmanError
 from schema import SchemaError
 from typing import Union
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from draftsman.classes.entity import Entity
+
 
 class EightWayDirectionalMixin(object):
     """
@@ -103,3 +107,10 @@ class EightWayDirectionalMixin(object):
         # Reset the grid/absolute positions in case the direction changed
         # self.set_tile_position(self.tile_position[0], self.tile_position[1])
         self.tile_position = (self.tile_position["x"], self.tile_position["y"])
+
+    # =========================================================================
+
+    def mergable_with(self, other):
+        # type: (Entity) -> bool
+        base_mergable = super(EightWayDirectionalMixin, self).mergable_with(other)
+        return (base_mergable and self.direction == other.direction)

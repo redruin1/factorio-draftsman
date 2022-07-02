@@ -12,6 +12,10 @@ from schema import SchemaError
 import six
 import warnings
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from draftsman.classes.entity import Entity
+
 
 class RequestItemsMixin(object):
     """
@@ -99,3 +103,9 @@ class RequestItemsMixin(object):
             self.items = {}
             for name, count in items.items():
                 self.set_item_request(name, count)
+
+    def merge(self, other):
+        # type: (Entity) -> None
+        super(RequestItemsMixin, self).merge(other)
+
+        self.items = other.request_filters

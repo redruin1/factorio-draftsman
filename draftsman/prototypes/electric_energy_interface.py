@@ -122,3 +122,13 @@ class ElectricEnergyInterface(Entity):
             self._power_usage = value
         else:
             raise TypeError("'power_usage' must be an int or None")
+
+    # =========================================================================
+
+    def merge(self, other):
+        # type: (ElectricEnergyInterface) -> None
+        super(ElectricEnergyInterface, self).merge(other)
+
+        self.buffer_size = other.buffer_size
+        self.power_production = other.power_production
+        self.power_usage = other.power_usage

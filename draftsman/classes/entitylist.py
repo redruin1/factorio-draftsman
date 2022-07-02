@@ -64,8 +64,8 @@ class EntityList(MutableSequence):
                     )
 
     @utils.reissue_warnings
-    def append(self, entity, copy=True, **kwargs):
-        # type: (EntityLike, bool, **dict) -> None
+    def append(self, entity, copy=True, merge=False, **kwargs):
+        # type: (EntityLike, bool, bool, **dict) -> None
         """
         Appends the ``EntityLike`` to the end of the sequence.
 
@@ -78,6 +78,10 @@ class EntityList(MutableSequence):
         :param copy: Whether or not to create a copy of the passed in
             ``EntityLike``. If ``entity`` is in string shorthand, this option
             is ignored and a new instance is always created.
+        :param merge: Whether or not to merge entities of the same type at the
+            same position. Merged entities share non-overlapping attributes and
+            prefer the attributes of the last entity added. Useful for merging 
+            things like rails or power-poles on the edges of tiled blueprints.
         :param kwargs: Any other keyword arguments to pass to the constructor
             in string shorthand.
 
@@ -121,11 +125,11 @@ class EntityList(MutableSequence):
             assert inserter is blueprint.entities[-1]
             assert blueprint.entities[-1].stack_size_override == 1
         """
-        self.insert(len(self.data), entity, copy=copy, **kwargs)
+        self.insert(len(self.data), entity, copy=copy, merge=merge, **kwargs)
 
     @utils.reissue_warnings
-    def insert(self, idx, entity, copy=True, **kwargs):
-        # type: (int, EntityLike, bool, **dict) -> None
+    def insert(self, idx, entity, copy=True, merge=False, **kwargs):
+        # type: (int, EntityLike, bool, bool, **dict) -> None
         """
         Inserts an ``EntityLike`` into the sequence.
 
@@ -139,6 +143,10 @@ class EntityList(MutableSequence):
         :param copy: Whether or not to create a copy of the passed in
             ``EntityLike``. If ``entity`` is in string shorthand, this option
             is ignored and a new instance is always created.
+        :param merge: Whether or not to merge entities of the same type at the
+            same position. Merged entities share non-overlapping attributes and
+            prefer the attributes of the last entity added. Useful for merging 
+            things like rails or power-poles on the edges of tiled blueprints.
         :param kwargs: Any other keyword arguments to pass to the constructor
             in string shorthand.
 
@@ -190,6 +198,24 @@ class EntityList(MutableSequence):
             # Create a DEEPCopy of the entity if desired
             entity = deepcopy(entity)
 
+        # Merge the new entity with the old entity of the same type and location
+        # if specified
+        # if merge:
+        #     if hasattr(entity, "entities"):
+        #     else:
+        #         old_entity = self._parent.find_entity_at_position(entity.position)
+        #         if old_entity and old_entity.mergable_with(entity):
+        #             old_entity.merge(entity)
+        #     for entity in entity.entities:
+        #         old_entity = self._parent.find_entity_at_position(entity.position)
+        #         if old_entity:
+        #             print(old_entity.parent)
+        #             print(entity.parent)
+        #         if old_entity and old_entity.mergable_with(entity):
+        #             print("pass")
+        #             print(old_entity)
+        #             old_entity.merge(entity)
+
         # Make sure were not causing any problems by putting this entity in
         self.check_entity(entity)
 
@@ -197,7 +223,7 @@ class EntityList(MutableSequence):
         entity.on_insert()
 
         # If the parent has any custom logic, perform that now
-        self._parent.on_entity_insert(entity)
+        self._parent.on_entity_insert(entity, merge)
 
         # Manage the EntityList
         self.data.insert(idx, entity)
@@ -319,14 +345,6 @@ class EntityList(MutableSequence):
                         return True
         # Nothing was found
         return False
-
-    # def __copy__(self):
-    #     # type: () -> EntityList
-    #     """
-    #     TODO
-    #     """
-    #     # This function does not affect associations
-    #     return EntityList(self._parent, self.data)
 
     def __deepcopy__(self, memo):
         # type: (dict) -> EntityList
@@ -490,20 +508,10 @@ class EntityList(MutableSequence):
         """
 
         # Shift the indices for key_to_idx
-        self.key_to_idx = {key: old_idx + amt if old_idx >= idx else old_idx for key, old_idx in self.key_to_idx.items()}
-
-        # # Shift the indices for key_to_idx
-        # for key, old_idx in self.key_to_idx.items():
-        #     # old_idx = self.key_to_idx[key]
-        #     if old_idx >= idx:
-        #         new_idx = old_idx + amt
-        #         self.key_to_idx[key] = new_idx
-        #         # del self.idx_to_key[old_idx]
-        #         # # self.idx_to_key.pop(old_idx)
-        #         # self.idx_to_key[new_idx] = key
+        self.key_to_idx = {
+            key: old_idx + amt if old_idx >= idx else old_idx
+            for key, old_idx in self.key_to_idx.items()
+        }
 
         # Reconstruct idx_to_key
-        # self.idx_to_key = {}
-        # for key in self.key_to_idx:
-        #     self.idx_to_key[self.key_to_idx[key]] = key
         self.idx_to_key = {value: key for key, value in self.key_to_idx.items()}

@@ -187,6 +187,34 @@ class EntityLike(SpatialLike):
         # type: () -> Union[Entity, list[Entity]]
         return self
 
+    @abc.abstractmethod
+    def mergable_with(self, other):
+        # type: (EntityLike) -> bool
+        """
+        Checks to see if an entity is "mergable" with another entity. This means
+        that if a certain set of criteria is met, the attributes of ``other`` 
+        will be combined to the attributes of this entity. This is useful for 
+        mimicking cases where entities of the same name and type are placed on 
+        top of each other, merging them together into a single entity with 
+        shared attributes.
+
+        For the full list of all merging rules, see (TODO).
+        """
+        pass
+
+    @abc.abstractmethod
+    def merge(self, other):
+        # type: (EntityLike) -> None
+        """
+        Changes the attributes of the calling entity with the attributes of the
+        passed in entity. The attributes of ``other`` take precedence over the
+        attributes of the calling entity. They can be either copied or merged 
+        together, depending on the specific attribute being merged.
+
+        For the full list of all merging rules, see (TODO).
+        """
+        pass
+
     def __deepcopy__(self, memo):
         # type: (dict) -> EntityLike
         """

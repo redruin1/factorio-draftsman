@@ -9,6 +9,15 @@ from draftsman import signatures
 from schema import SchemaError
 import six
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from draftsman.classes.entity import Entity
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 
 class IOTypeMixin(object):
     """
@@ -19,10 +28,16 @@ class IOTypeMixin(object):
         # type: (str, list[str], **dict) -> None
         super(IOTypeMixin, self).__init__(name, similar_entities, **kwargs)
 
-        self.io_type = "input"  # Default
-        if "type" in kwargs:
+        self.io_type = "input"              # Default
+        # Import dict (internal) format
+        if "type" in kwargs:                
             self.io_type = kwargs["type"]
             self.unused_args.pop("type")
+        # More user-friendly format in line with attribute name
+        elif "io_type" in kwargs:           
+            self.io_type = kwargs["io_type"]
+            self.unused_args.pop("io_type")
+
         self._add_export(
             "io_type",
             lambda x: x is not None and x != "input",
@@ -33,7 +48,7 @@ class IOTypeMixin(object):
 
     @property
     def io_type(self):
-        # type: () -> str
+        # type: () -> Literal["input", "output", None]
         """
         Whether this entity is set to recieve or send items. Used to
         differentiate between input and output underground belts, as well as
@@ -52,7 +67,7 @@ class IOTypeMixin(object):
 
     @io_type.setter
     def io_type(self, value):
-        # type: (str) -> None
+        # type: (Literal["input", "output", None]) -> None
         try:
             value = signatures.STRING_OR_NONE.validate(value)
         except SchemaError as e:
@@ -62,3 +77,11 @@ class IOTypeMixin(object):
             self._io_type = value
         else:
             raise ValueError("'io_type' must be 'input', 'output' or None")
+
+    # =========================================================================
+
+    def merge(self, other):
+        # type: (Entity) -> None
+        super(IOTypeMixin, self).merge(other)
+
+        self.io_type = other.io_type

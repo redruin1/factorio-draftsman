@@ -90,7 +90,7 @@ class BlueprintBook(object):
     Factorio Blueprint Book class. Contains a list of Blueprints as well as some
     of it's own metadata.
     """
-
+    @utils.reissue_warnings
     def __init__(self, blueprint_book=None):
         # type: (str, Union[str, dict]) -> None
         """
@@ -113,6 +113,7 @@ class BlueprintBook(object):
                 "string, a file object, a dictionary, or None"
             )
 
+    @utils.reissue_warnings
     def load_from_string(self, blueprint_string):
         # type: (str) -> None
         """
@@ -134,6 +135,7 @@ class BlueprintBook(object):
 
         self.setup(**root["blueprint_book"])
 
+    @utils.reissue_warnings
     def setup(self, **kwargs):
         # type: (**dict) -> None
         """
@@ -162,6 +164,9 @@ class BlueprintBook(object):
 
         if "label_color" in kwargs:
             self.label_color = kwargs.pop("label_color")
+
+        if "icons" in kwargs:
+            self.icons = kwargs.pop("icons")
 
         self.active_index = 0
         if "active_index" in kwargs:

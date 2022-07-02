@@ -37,8 +37,8 @@ class FilterInserter(
     Entity,
 ):
     """
-    An entity that can move items between machines, and has the ability to
-    ignore moving specific items.
+    An entity that can move items between machines, and has the ability to only
+    move specific items.
 
     .. NOTE::
 
@@ -96,3 +96,11 @@ class FilterInserter(
             self._filter_mode = value
         else:
             raise TypeError("'filter_mode' must be a str or None")
+
+    # =========================================================================
+
+    def merge(self, other):
+        # type: (FilterInserter) -> None
+        super(FilterInserter, self).merge(other)
+
+        self.filter_mode = other.filter_mode

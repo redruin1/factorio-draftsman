@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import ModulesMixin, RequestItemsMixin, RecipeMixin
+from draftsman.classes.mixins import ModulesMixin, RequestItemsMixin, RecipeMixin, DirectionalMixin
 from draftsman.error import InvalidItemError
 from draftsman import utils
 from draftsman.warning import (
@@ -20,7 +20,7 @@ from draftsman.data import recipes
 import warnings
 
 
-class AssemblingMachine(RecipeMixin, ModulesMixin, RequestItemsMixin, Entity):
+class AssemblingMachine(ModulesMixin, RequestItemsMixin, RecipeMixin, DirectionalMixin, Entity):
     """
     A machine that takes input items and produces output items. Includes
     assembling machines, chemical plants, oil refineries, and centrifuges, but
@@ -70,3 +70,5 @@ class AssemblingMachine(RecipeMixin, ModulesMixin, RequestItemsMixin, Entity):
                 )
 
         super(AssemblingMachine, self).set_item_request(item, count)
+
+    # TODO: overwrite direction.setter so that it only works with specific recipes

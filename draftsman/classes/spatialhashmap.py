@@ -4,6 +4,8 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.spatiallike import SpatialLike
+from draftsman.prototypes.straight_rail import StraightRail
+from draftsman.prototypes.curved_rail import CurvedRail
 from draftsman import signatures
 from draftsman import utils
 from draftsman.warning import OverlappingObjectsWarning
@@ -30,24 +32,38 @@ class SpatialHashMap(object):
         self.cell_size = cell_size
         self.map = {}
 
-    def add(self, item):
-        # type: (SpatialLike) -> None
+    def add(self, item, merge=False):
+        # type: (SpatialLike, bool) -> None
         """
         Add a ``SpatialLike`` instance to the ``SpatialHashMap``.
 
         :param: The object to add.
         """
-        # Get cells based off of collision_box
-        cell_coords = self._cell_coords_from_aabb(item.get_area())
 
         # Check to see if any entries currently in the hashmap overlap with the new
         overlapping = self.get_in_area(item.get_area())
         for overlapping_item in overlapping:
+            # # If we can merge the two items and this is desired, do so
+            # if merge and overlapping_item.mergable_with(item):
+            #     print("test")
+            #     overlapping_item.merge(item)
+            #     print(overlapping_item)
+            #     return
+            
+            # Otherwise, we check to issue and OverlappingObjectsWarning
             item_layers = item.collision_mask
             other_layers = overlapping_item.collision_mask
+
+            # This is a hack but should work for now, since rails are hyper 
+            # scuffed in general
+            if (isinstance(item, (StraightRail, CurvedRail)) and 
+                isinstance(overlapping_item, (StraightRail, CurvedRail))):
+                continue
+            
             if len(other_layers.intersection(item_layers)) > 0:
                 warnings.warn(
-                    "Added object '{}' ({}) at {} intersects '{}' ({}) at {}".format(
+                    "Added object '{}' ({}) at {} intersects '{}' ({}) at {}"
+                    .format(
                         item.name,
                         type(item).__name__,
                         item.global_position,
@@ -59,14 +75,16 @@ class SpatialHashMap(object):
                     stacklevel=2,
                 )
 
+        # Get cells based off of collision_box
+        cell_coords = self._cell_coords_from_aabb(item.get_area())
         for cell_coord in cell_coords:
             try:
                 self.map[cell_coord].append(item)
             except KeyError:
                 self.map[cell_coord] = [item]
 
-    def recursively_add(self, item):
-        # type: (SpatialLike) -> None
+    def recursively_add(self, item, merge=False):
+        # type: (SpatialLike, bool) -> None
         """
         Add the leaf-most entities to the hashmap.
 
@@ -78,9 +96,9 @@ class SpatialHashMap(object):
         """
         if hasattr(item, "entities"):
             for sub_item in item.entities:
-                self.recursively_add(sub_item)
+                self.recursively_add(sub_item, merge)
         else:
-            self.add(item)
+            self.add(item, merge)
 
     def remove(self, item):
         # type: (SpatialLike) -> None
@@ -203,10 +221,10 @@ class SpatialHashMap(object):
     def get_in_area(self, area, limit=None):
         # type (list[list[float]], int) -> list[SpatialLike]
         """
-        Get all the entities whose ``collision_box`` overlaps a point.
+        Get all the entities whose ``collision_box`` overlaps an area.
 
-        :param pos: The position to examine; Can be specified as a sequence or
-            as a ``dict`` with ``"x"`` and ``"y"`` keys.
+        :param area: The area to examine; specified in the format 
+            ``[[float, float], [float, float]]``.
         :param limit: A maximum amount of entities to return.
 
         :returns: A ``list`` of all entities that intersect the point. Can be

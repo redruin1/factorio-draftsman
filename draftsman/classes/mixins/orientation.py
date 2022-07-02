@@ -7,6 +7,10 @@ from draftsman.warning import ValueWarning
 
 import warnings
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from draftsman.classes.entity import Entity
+
 
 class OrientationMixin(object):
     """
@@ -64,3 +68,8 @@ class OrientationMixin(object):
             self._orientation = value
         else:
             raise TypeError("'orientation' must be a float or None")
+
+    def mergable_with(self, other):
+        # type: (Entity) -> bool
+        base_mergable = super(OrientationMixin, self).mergable_with(other)
+        return (base_mergable and self.direction == other.direction)

@@ -10,6 +10,10 @@ from draftsman.data.signals import signal_dict
 from schema import SchemaError
 import six
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from draftsman.classes.entity import Entity
+
 
 class StackSizeMixin(object):  # (ControlBehaviorMixin)
     """
@@ -129,3 +133,11 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
                 self.control_behavior["stack_control_input_signal"] = value
             except SchemaError as e:
                 six.raise_from(DataFormatError(e), None)
+
+    # =========================================================================
+
+    def merge(self, other):
+        # type: (Entity) -> None
+        super(StackSizeMixin, self).merge(other)
+
+        self.override_stack_size = other.override_stack_size

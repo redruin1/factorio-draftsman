@@ -109,6 +109,24 @@ class BlueprintBookTesting(unittest.TestCase):
             },
         )
 
+        # Test icons
+        blueprint_book = BlueprintBook(
+            "0eNpFi1EKwjAQBe/yviPYkhjNVURK2i4SbHdLE6sScnfbIvj53sxktMOTpjlwalqRB1xGSDTC/cFhBwqhE45w14wY7uyHzU2fiVZ3TxTYj9t6ifQoa8A9veGqclPwXQoLNb/rqLDQHIMwXH2utL3U1hitjT2V8gXrTjDd"
+        )
+        self.assertEqual(
+            blueprint_book.to_dict(),
+            {
+                "blueprint_book": {
+                    "active_index": 0,
+                    "item": "blueprint-book",
+                    "icons": [
+                        {"index": 1, "signal": {"name": "wood", "type": "item"}}
+                    ],
+                    "version": encode_version(1, 1, 59, 0)
+                }
+            }
+        )
+
         # Incorrect constructor
         with self.assertRaises(TypeError):
             BlueprintBook(TypeError)

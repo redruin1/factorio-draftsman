@@ -10,6 +10,10 @@ from draftsman.warning import IndexWarning, ItemCapacityWarning
 import math
 import warnings
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from draftsman.classes.entity import Entity
+
 
 class InventoryMixin(object):
     """
@@ -150,3 +154,9 @@ class InventoryMixin(object):
             )
 
         super(InventoryMixin, self).set_item_request(item, count)
+
+    def merge(self, other):
+        # type: (Entity) -> None
+        super(InventoryMixin, self).merge(other)
+
+        self.bar = other.bar

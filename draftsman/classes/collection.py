@@ -125,9 +125,9 @@ class EntityCollection(object):
     def find_entity(self, name, position):
         # type: (str, Union[tuple, list, dict]) -> EntityLike
         """
-        Finds an entity with ``name`` at a grid position ``position``. If
-        multiple entities exist in the queried position, the one that was first
-        placed is returned.
+        Finds an entity with ``name`` at a position ``position``. If multiple 
+        entities exist at the queried position, the one that was first placed is
+        returned.
 
         :param name: The name of the entity to look for.
         :param position: Either a sequence of two ``floats``, or a ``dict`` with
@@ -139,6 +139,23 @@ class EntityCollection(object):
         results = self.entity_hashmap.get_on_point(position)
         try:
             return list(filter(lambda x: x.name == name, results))[0]
+        except IndexError:
+            return None
+
+    def find_entity_at_position(self, position):
+        # type: (Union[tuple, list, dict]) -> EntityLike
+        """
+        Finds any entity at the position ``position``. If multiple entities
+        exist at the queried position, the one that was first placed is returned.
+
+        :param position: Either a sequence of two ``floats``, or a ``dict`` with
+            an ``"x"`` and ``"y"`` keys.
+
+        :retuns: The ``EntityLike`` at ``position``, or ``None`` of none were
+            found.
+        """
+        try:
+            return self.entity_hashmap.get_on_point(position)[0]
         except IndexError:
             return None
 
@@ -365,13 +382,14 @@ class EntityCollection(object):
 
         # Issue a warning if the entities being connected are too far apart
         min_dist = min(entity_1.maximum_wire_distance, entity_2.maximum_wire_distance)
-        entity_1_pos = [entity_1.position["x"], entity_1.position["y"]]
-        entity_2_pos = [entity_2.position["x"], entity_2.position["y"]]
+        entity_1_pos = [entity_1.global_position["x"], entity_1.global_position["y"]]
+        entity_2_pos = [entity_2.global_position["x"], entity_2.global_position["y"]]
         real_dist = utils.dist(entity_1_pos, entity_2_pos)
         if real_dist > min_dist:
             warnings.warn(
-                "Distance between entities ({}) is greater than max connection distance"
-                " ({})".format(real_dist, min_dist),
+                "Distance between entity '{}' and entity '{}' ({}) is greater" 
+                " than max connection distance ({})"
+                .format(entity_1.name, entity_2.name, real_dist, min_dist),
                 ConnectionDistanceWarning,
                 stacklevel=2,
             )
@@ -542,14 +560,14 @@ class EntityCollection(object):
                 # If only_axis is true, only include ones that have the same x
                 # or y
                 if (
-                    cur_pole.position["x"] != other.position["x"]
-                    and cur_pole.position["y"] != other.position["y"]
+                    cur_pole.global_position["x"] != other.global_position["x"]
+                    and cur_pole.global_position["y"] != other.global_position["y"]
                     and only_axis
                 ):
                     return False
                 # Only return poles that are less than the max power pole
                 # distance
-                distance = utils.dist(cur_pole.position, other.position)
+                distance = utils.dist(cur_pole.global_position, other.global_position)
                 min_dist = min(
                     cur_pole.maximum_wire_distance, other.maximum_wire_distance
                 )
@@ -558,25 +576,25 @@ class EntityCollection(object):
             potential_neighbours = list(filter(power_connectable, electric_poles))
             # Sort the power poles by distance
             potential_neighbours.sort(
-                key=lambda x: utils.dist(x.position, cur_pole.position)
+                key=lambda x: utils.dist(x.global_position, cur_pole.global_position)
             )
-            # potential_neighbours = sorted(
-            #     potential_neighbours,
-            #     key=lambda x: utils.dist(x.position, cur_pole.position),
-            #     reverse=True,
-            # )
+
             # Sort the power poles by whether or not they are on the axis first
             if prefer_axis:
                 potential_neighbours.sort(
                     key=lambda x: not (
-                        x.position["x"] == cur_pole.position["x"]
-                        or x.position["y"] == cur_pole.position["y"]
+                        x.global_position["x"] == cur_pole.global_position["x"]
+                        or x.global_position["y"] == cur_pole.global_position["y"]
                     )
                 )
 
-            while len(cur_pole.neighbours) <= 5 and len(potential_neighbours) > 0:
-                # Create a power connection directly between two entities
-                self.add_power_connection(cur_pole, potential_neighbours.pop())
+            # Iterate over every potential neighbour
+            while len(potential_neighbours) > 0:
+                neighbour = potential_neighbours.pop()
+                # Make sure this connection would not exceed each entities max 
+                # connections
+                if len(cur_pole.neighbours) < 5 and len(neighbour.neighbours) < 5:
+                    self.add_power_connection(cur_pole, neighbour)
 
     # =========================================================================
 
@@ -672,8 +690,9 @@ class EntityCollection(object):
         real_dist = utils.dist(entity_1_pos, entity_2_pos)
         if real_dist > min_dist:
             warnings.warn(
-                "Distance between entities ({}) is greater than max connection distance"
-                " ({})".format(real_dist, min_dist),
+                "Distance between entity '{}' and entity '{}' ({}) is greater"
+                " than max connection distance ({})"
+                .format(entity_1.name, entity_2.name, real_dist, min_dist),
                 ConnectionDistanceWarning,
                 stacklevel=2,
             )

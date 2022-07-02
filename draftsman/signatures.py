@@ -88,7 +88,7 @@ COLOR = Schema(
 
 def normalize_signal_id(name):
     if isinstance(name, six.string_types):
-        return signal_dict(six.text_type(name))
+        return signal_dict(name)
     else:
         return name
 

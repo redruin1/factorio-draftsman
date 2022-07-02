@@ -48,7 +48,7 @@ def get_signal_type(signal_name):
     #     raise InvalidSignalError("'{}'".format(str(signal_name)))
 
     try:
-        return six.text_type(type_of[signal_name])
+        return type_of[signal_name]
     except KeyError:
         raise InvalidSignalError("'{}'".format(signal_name))
 

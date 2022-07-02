@@ -59,6 +59,9 @@ class UndergroundBeltTesting(unittest.TestCase):
             UndergroundBelt("underground-belt", direction="incorrect")
 
         with self.assertRaises(ValueError):
+            UndergroundBelt("underground-belt", type="incorrect")
+
+        with self.assertRaises(ValueError):
             UndergroundBelt("underground-belt", io_type="incorrect")
 
     def test_power_and_circuit_flags(self):

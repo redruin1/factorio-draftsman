@@ -10,6 +10,10 @@ from typing import Union
 from schema import SchemaError
 import six
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING: # pragma: no coverage
+    from draftsman.classes.entity import Entity
+
 
 class ColorMixin(object):
     """
@@ -59,3 +63,9 @@ class ColorMixin(object):
             self._color = signatures.COLOR.validate(value)
         except SchemaError as e:
             six.raise_from(DataFormatError(e), None)
+
+    def merge(self, other):
+        # type: (Entity) -> None
+        self.color = other.color
+
+        super(ColorMixin, self).merge(other)
