@@ -1,4 +1,7 @@
 # signals.py
+# -*- encoding: utf-8 -*-
+
+from __future__ import unicode_literals
 
 from draftsman import data
 from draftsman.error import InvalidSignalError
@@ -48,7 +51,7 @@ def get_signal_type(signal_name):
     #     raise InvalidSignalError("'{}'".format(str(signal_name)))
 
     try:
-        return type_of[signal_name]
+        return six.text_type(type_of[signal_name])
     except KeyError:
         raise InvalidSignalError("'{}'".format(signal_name))
 

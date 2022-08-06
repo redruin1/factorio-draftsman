@@ -93,3 +93,24 @@ class LabTesting(unittest.TestCase):
 
         self.assertEqual(lab.items, {})
         self.assertEqual(lab.module_slots_occupied, 0)
+
+    def test_mergable_with(self):
+        lab1 = Lab("lab")
+        lab2 = Lab("lab", tags={"some": "stuff"})
+
+        self.assertTrue(lab1.mergable_with(lab1))
+
+        self.assertTrue(lab1.mergable_with(lab2))
+        self.assertTrue(lab2.mergable_with(lab1))
+
+        lab2.tile_position = (1, 1)
+        self.assertFalse(lab1.mergable_with(lab2))
+
+    def test_merge(self):
+        lab1 = Lab("lab")
+        lab2 = Lab("lab", tags={"some": "stuff"})
+
+        lab1.merge(lab2)
+        del lab2
+
+        self.assertEqual(lab1.tags, {"some": "stuff"})

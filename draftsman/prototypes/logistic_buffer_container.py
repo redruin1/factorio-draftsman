@@ -13,10 +13,14 @@ from draftsman.classes.mixins import (
     InventoryMixin,
 )
 from draftsman.constants import LogisticModeOfOperation
+from draftsman.error import DataFormatError
+from draftsman import signatures
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import logistic_buffer_containers
 
+from schema import SchemaError
+import six
 import warnings
 
 
@@ -48,3 +52,15 @@ class LogisticBufferContainer(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+    # =========================================================================
+
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = (
+                signatures.LOGISTIC_BUFFER_CONTROL_BEHAVIOR.validate(value)
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)

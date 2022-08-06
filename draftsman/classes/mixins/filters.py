@@ -134,4 +134,9 @@ class FiltersMixin(object):
         for item in filters:
             self.set_item_filter(item["index"] - 1, item["name"])
 
-    # TODO: add merge() function here
+    def merge(self, other):
+        super(FiltersMixin, self).merge(other)
+
+        self.filters = []
+        for item in other.filters:
+            self.set_item_filter(item["index"] - 1, item["name"])

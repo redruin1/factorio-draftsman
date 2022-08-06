@@ -7,8 +7,6 @@ from draftsman.entity import ElectricEnergyInterface, electric_energy_interfaces
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -68,3 +66,41 @@ class ElectricEnergyInterfaceTesting(unittest.TestCase):
         self.assertEqual(interface.power_usage, None)
         with self.assertRaises(TypeError):
             interface.power_usage = "incorrect"
+
+    def test_mergable_with(self):
+        interface1 = ElectricEnergyInterface("electric-energy-interface")
+        interface2 = ElectricEnergyInterface(
+            "electric-energy-interface",
+            tags={"some": "stuff"},
+            buffer_size=10000,
+            power_production=10000,
+            power_usage=100,
+        )
+
+        self.assertTrue(interface1.mergable_with(interface2))
+        self.assertTrue(interface2.mergable_with(interface1))
+
+        interface1.tile_position = (2, 2)
+        self.assertFalse(interface1.mergable_with(interface2))
+
+        interface2 = InvalidEntityError()
+        self.assertFalse(interface1.mergable_with(interface2))
+
+    def test_merge(self):
+        interface1 = ElectricEnergyInterface(
+            "electric-energy-interface", buffer_size=100
+        )
+        interface2 = ElectricEnergyInterface(
+            "electric-energy-interface",
+            tags={"some": "stuff"},
+            power_production=10000,
+            power_usage=100,
+        )
+
+        interface1.merge(interface2)
+        del interface2
+
+        self.assertEqual(interface1.buffer_size, None)
+        self.assertEqual(interface1.power_production, 10000)
+        self.assertEqual(interface1.power_usage, 100)
+        self.assertEqual(interface1.tags, {"some": "stuff"})

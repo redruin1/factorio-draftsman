@@ -13,7 +13,8 @@ import six
 import warnings
 
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
+
+if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
@@ -131,5 +132,5 @@ class RecipeMixin(object):
     def merge(self, other):
         # type: (Entity) -> None
         self.recipe = other.recipe
-        
+
         super(RecipeMixin, self).merge(other)

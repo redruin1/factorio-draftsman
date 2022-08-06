@@ -24,3 +24,24 @@ class TurretTesting(unittest.TestCase):
 
         with self.assertRaises(InvalidEntityError):
             Turret("this is not a turret")
+
+    def test_mergable_with(self):
+        turret1 = Turret("gun-turret")
+        turret2 = Turret("gun-turret", tags={"some": "stuff"})
+
+        self.assertTrue(turret1.mergable_with(turret1))
+
+        self.assertTrue(turret1.mergable_with(turret2))
+        self.assertTrue(turret2.mergable_with(turret1))
+
+        turret2.tile_position = (1, 1)
+        self.assertFalse(turret1.mergable_with(turret2))
+
+    def test_merge(self):
+        turret1 = Turret("gun-turret")
+        turret2 = Turret("gun-turret", tags={"some": "stuff"})
+
+        turret1.merge(turret2)
+        del turret2
+
+        self.assertEqual(turret1.tags, {"some": "stuff"})

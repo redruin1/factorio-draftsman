@@ -4,10 +4,8 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import RailSignal, rail_signals
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
-
-from schema import SchemaError
 
 import sys
 
@@ -73,12 +71,15 @@ class RailSignalTesting(unittest.TestCase):
         # Warnings:
         with self.assertWarns(DraftsmanWarning):
             RailSignal("rail-signal", invalid_keyword="whatever")
+
         # Warn if the rail signal is not placed next to rail
         # TODO (Complex)
 
         # Errors:
         with self.assertRaises(InvalidEntityError):
             RailSignal("this is not a rail signal")
+        with self.assertRaises(DataFormatError):
+            RailSignal(control_behavior={"blue_output_signal": "signal-A"})
 
     def test_read_signal(self):
         rail_signal = RailSignal()
@@ -99,3 +100,48 @@ class RailSignalTesting(unittest.TestCase):
         self.assertEqual(rail_signal.control_behavior, {})
         with self.assertRaises(TypeError):
             rail_signal.enable_disable = "incorrect"
+
+    def test_mergable_with(self):
+        signal1 = RailSignal("rail-signal")
+        signal2 = RailSignal(
+            "rail-signal",
+            control_behavior={
+                "red_output_signal": "signal-A",
+                "yellow_output_signal": "signal-B",
+                "green_output_signal": "signal-C",
+            },
+            tags={"some": "stuff"},
+        )
+
+        self.assertTrue(signal1.mergable_with(signal1))
+
+        self.assertTrue(signal1.mergable_with(signal2))
+        self.assertTrue(signal2.mergable_with(signal1))
+
+        signal2.tile_position = (1, 1)
+        self.assertFalse(signal1.mergable_with(signal2))
+
+    def test_merge(self):
+        signal1 = RailSignal("rail-signal")
+        signal2 = RailSignal(
+            "rail-signal",
+            control_behavior={
+                "red_output_signal": "signal-A",
+                "yellow_output_signal": "signal-B",
+                "green_output_signal": "signal-C",
+            },
+            tags={"some": "stuff"},
+        )
+
+        signal1.merge(signal2)
+        del signal2
+
+        self.assertEqual(
+            signal1.control_behavior,
+            {
+                "red_output_signal": {"name": "signal-A", "type": "virtual"},
+                "yellow_output_signal": {"name": "signal-B", "type": "virtual"},
+                "green_output_signal": {"name": "signal-C", "type": "virtual"},
+            },
+        )
+        self.assertEqual(signal1.tags, {"some": "stuff"})

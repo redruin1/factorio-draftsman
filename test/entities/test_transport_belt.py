@@ -8,8 +8,6 @@ from draftsman.entity import TransportBelt, transport_belts
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -108,3 +106,84 @@ class TransportBeltTesting(unittest.TestCase):
             self.assertEqual(belt.dual_power_connectable, False)
             self.assertEqual(belt.circuit_connectable, True)
             self.assertEqual(belt.dual_circuit_connectable, False)
+
+    def test_mergable_with(self):
+        belt1 = TransportBelt("fast-transport-belt")
+        belt2 = TransportBelt(
+            "fast-transport-belt",
+            control_behavior={
+                "circuit_enable_disable": True,
+                "circuit_condition": {
+                    "first_signal": "signal-blue",
+                    "comparator": "=",
+                    "second_signal": "signal-blue",
+                },
+                "connect_to_logistic_network": True,
+                "logistic_condition": {
+                    "first_signal": "fast-underground-belt",
+                    "comparator": ">=",
+                    "constant": 0,
+                },
+                "circuit_read_hand_contents": False,
+                "circuit_contents_read_mode": ReadMode.HOLD,
+            },
+            tags={"some": "stuff"},
+        )
+
+        self.assertTrue(belt1.mergable_with(belt1))
+
+        self.assertTrue(belt1.mergable_with(belt2))
+        self.assertTrue(belt2.mergable_with(belt1))
+
+        belt2.tile_position = (1, 1)
+        self.assertFalse(belt1.mergable_with(belt2))
+
+    def test_merge(self):
+        belt1 = TransportBelt("fast-transport-belt")
+        belt2 = TransportBelt(
+            "fast-transport-belt",
+            control_behavior={
+                "circuit_enable_disable": True,
+                "circuit_condition": {
+                    "first_signal": "signal-blue",
+                    "comparator": "=",
+                    "second_signal": "signal-blue",
+                },
+                "connect_to_logistic_network": True,
+                "logistic_condition": {
+                    "first_signal": "fast-underground-belt",
+                    "comparator": ">=",
+                    "constant": 0,
+                },
+                "circuit_read_hand_contents": False,
+                "circuit_contents_read_mode": ReadMode.HOLD,
+            },
+            tags={"some": "stuff"},
+        )
+
+        belt1.merge(belt2)
+        del belt2
+
+        self.assertEqual(
+            belt1.control_behavior,
+            {
+                "circuit_enable_disable": True,
+                "circuit_condition": {
+                    "first_signal": {"name": "signal-blue", "type": "virtual"},
+                    "comparator": "=",
+                    "second_signal": {"name": "signal-blue", "type": "virtual"},
+                },
+                "connect_to_logistic_network": True,
+                "logistic_condition": {
+                    "first_signal": {
+                        "name": "fast-underground-belt",
+                        "type": "item",
+                    },
+                    "comparator": "≥",
+                    "constant": 0,
+                },
+                "circuit_read_hand_contents": False,
+                "circuit_contents_read_mode": ReadMode.HOLD,
+            },
+        )
+        self.assertEqual(belt1.tags, {"some": "stuff"})

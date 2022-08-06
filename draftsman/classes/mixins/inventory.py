@@ -11,7 +11,8 @@ import math
 import warnings
 
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
+
+if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
@@ -24,15 +25,17 @@ class InventoryMixin(object):
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
-        super(InventoryMixin, self).__init__(name, similar_entities, **kwargs)
-
-        self._inventory_size = entities.raw[self.name]["inventory_size"]
-
-        self._inventory_bar_enabled = entities.raw[self.name].get(
-            "enable_inventory_bar", True
-        )
-
+        # TODO: fix this hack
+        try:
+            self._inventory_size = entities.raw[name]["inventory_size"]
+            self._inventory_bar_enabled = entities.raw[name].get(
+                "enable_inventory_bar", True
+            )
+        except:
+            pass
         self._inventory_slots_occupied = 0
+
+        super(InventoryMixin, self).__init__(name, similar_entities, **kwargs)
 
         self._bar = None
         if "bar" in kwargs:

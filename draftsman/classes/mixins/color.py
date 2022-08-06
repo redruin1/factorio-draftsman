@@ -11,7 +11,8 @@ from schema import SchemaError
 import six
 
 from typing import TYPE_CHECKING
-if TYPE_CHECKING: # pragma: no coverage
+
+if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
@@ -66,6 +67,6 @@ class ColorMixin(object):
 
     def merge(self, other):
         # type: (Entity) -> None
-        self.color = other.color
-
         super(ColorMixin, self).merge(other)
+
+        self.color = other.color

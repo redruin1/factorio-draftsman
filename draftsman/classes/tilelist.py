@@ -27,50 +27,39 @@ class TileList(MutableSequence):
             for elem in initlist:
                 self.append(elem)
 
-    def append(self, tile, **kwargs):
-        # type: (Tile, **dict) -> None
+    def append(self, tile, copy=True, merge=False, **kwargs):
+        # type: (Tile, bool, bool, **dict) -> None
         """
         Appends the Tile to the end of the sequence.
         """
-        self.insert(len(self.data), tile, **kwargs)
+        self.insert(len(self.data), tile, copy, merge, **kwargs)
 
-    def insert(self, idx, tile, **kwargs):
-        # type: (int, Tile, **dict) -> None
+    def insert(self, idx, tile, copy=True, merge=False, **kwargs):
+        # type: (int, Tile, bool, bool, **dict) -> None
         """
         Inserts an element into the TileList.
         """
         if isinstance(tile, six.string_types):
-            tile_copy = Tile(six.text_type(tile), **kwargs)
-        else:
-            tile_copy = deepcopy(tile)
+            tile = Tile(six.text_type(tile), **kwargs)
+        elif copy:
+            tile = deepcopy(tile)
 
         # Check tile
-        self.check_tile(tile_copy)
+        self.check_tile(tile)
+
+        tile = self._parent.on_tile_insert(tile, merge)
+
+        if tile is None:  # Tile was merged
+            return  # Don't add this tile to the list
 
         # Manage TileList
-        self.data.insert(idx, tile_copy)
+        self.data.insert(idx, tile)
 
         # Keep a reference of the parent blueprint in the tile
-        tile_copy._parent = self._parent
+        tile._parent = self._parent
 
-        # Add to hashmap
-        self._parent.tile_hashmap.add(tile_copy)
-
-        # Update dimensions
-        self._parent._area = utils.extend_aabb(self._parent._area, tile_copy.get_area())
-        (
-            self._parent._tile_width,
-            self._parent._tile_height,
-        ) = utils.aabb_to_dimensions(self._parent.area)
-
-        # Check the blueprint for unreasonable size
-        if self._parent.tile_width > 10000 or self._parent.tile_height > 10000:
-            raise UnreasonablySizedBlueprintError(
-                "Current blueprint dimensions ({}, {}) exceeds the maximum size"
-                " (10,000 x 10,000)".format(
-                    self._parent.tile_width, self._parent.tile_height
-                )
-            )
+        # TODO: this sucks, but it has to be like this
+        self._parent.recalculate_area()
 
     def __getitem__(self, idx):
         return self.data[idx]
@@ -78,25 +67,37 @@ class TileList(MutableSequence):
     def __setitem__(self, idx, value):
         # type: (int, Tile) -> None
 
-        # Remove from hashmap
-        self._parent.tile_hashmap.remove(self.data[idx])
-
         # Check tile
         self.check_tile(value)
 
-        # Add to hashmap
-        self._parent.tile_hashmap.add(value)
-
-        # Add a reference to the container in the object
-        value._parent = self._parent
+        # Handle parent
+        self._parent.on_tile_set(self.data[idx], value)
 
         # Manage the TileList
         self.data[idx] = value
 
+        # Add a reference to the container in the object
+        value._parent = self._parent
+
+        # TODO: this sucks, but it has to be like this
         self._parent.recalculate_area()
 
     def __delitem__(self, idx):
+        # type: (int) -> None
+        if isinstance(idx, slice):
+            # Get slice parameters
+            start, stop, step = idx.indices(len(self))
+            for i in range(start, stop, step):
+                # Remove from parent
+                self._parent.on_tile_remove(self.data[i])
+        else:
+            self._parent.on_tile_remove(self.data[idx])
+
+        # Remove from self
         del self.data[idx]
+
+        # TODO: this sucks, but it has to be like this
+        self._parent.recalculate_area()
 
     def __len__(self):
         return len(self.data)

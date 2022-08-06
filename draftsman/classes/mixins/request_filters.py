@@ -11,7 +11,8 @@ from schema import SchemaError
 import six
 
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
+
+if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 

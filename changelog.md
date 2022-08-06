@@ -1,4 +1,35 @@
 # Changelog
+
+## 1.0.0
+* Updated `factorio-data` to version `1.1.61`
+* Added a `Vector` class to represent 2d positions, and changed most of the code to reflect this change
+    * This is a breaking change, but it should be much more natural to access positions by attribute `x` and `y` instead of `["x"]` and `["y"]`
+    * By specifying a class like this, custom operators are allowed such as vector math, which means that offsetting positions and other operations have become much easier as a result
+    * `Vector` has a static member function `from_other()` that constructs a `Vector` object from all valid formats accepted in the past (`tuple`, `dict`, `list`, etc.) which is used in all standard functions, so you shouldn't have to change any of their signatures
+    * `Vector` also has a `to_dict()` method to turn it back into it's dictionary format for exporting (`{"x": ..., "y": ...}`)
+    * The `Vector` class is only used on the "outermost" layer due to performance reasons, internally the most common representation is still `list[float, float]`
+* Added an abstract `Shape` class, along with two implementations: `AABB` and `Rectangle`
+    * `AABB` and `Rectangle` are now used for issuing `OverlappingObjectWarning` 
+* All functions that used to use `Sequences` or `list[list[float], list[float]]` have been changed to `Vector` and `AABB` respectively for user clarity
+* Added another class: `CollisionSet`, which is a list of `Shapes` used for checking if two `Entity`s intersect one another
+    * This was needed because curved rails have 2 collision boxes instead of a single one
+    * Collision sets also support rotations, which means that rotations are automatically generated or specified manually for edge cases like rails
+    * In essence, `CollisionSets` provide more flexibility for entity footprints on a per-entity-type (or even per-entity) level
+* Added `find_entity_at_position()` so you can simply check for any entity in particular at a position instead of having to use fully-blown `find_entities_filtered` or the more-specific `find_entity()` function
+* Abstracted `SpatialHashMap` to be an implementation of abstract class `SpatialDataStructure`, which will allow for different implementations such as quadtrees or other algorithms if they happen to be more performant than hash-mapping (For now all `Collections` still use `SpatialHashMap` though)
+* Renamed `entity_hashmap` and `tile_hashmap` to more generic `entity_map` and `tile_map` to reflect the above change
+* Move almost all entity insert/set/remove logic to `EntityCollection.on_entity_insert`, `on_entity_set`, and `on_entity_remove`, which gets called from `EntityList.insert` and related 
+* Added `on_tile_insert`, `on_tile_set`, and `on_tile_remove` to `TileCollection` to mirror the changes to `EntityCollection`
+* Added `copy` keyword to `TileList.insert` and `TileList.append` to mirror `EntityList.insert` and `EntityList.append`
+* Added Entity/Tile merging
+  * Added `merge` keyword to both `EntityList.insert/append` and `TileList.insert/append`
+  * Attempting to use `merge=True` keywords and `copy=False` will result in a `ValueError`, as this behavior is loosely defined (for now at least)
+* Rails now properly issue `OverlappingObjectsWarnings`; Rails can overlap each other provided they don't have the exact same position + direction + type
+* Another big documentation pass
+* Split the `signatures.CONTROL_BEHAVIOR` into many sub implementations, which should improve both safety and (hopefully) performance
+* Fixed #24, #25, #27, #32, #33, and #34
+
+
 ## 0.9.7
 * Merged louga31's pull request
     * Rewrite of the `_shift_key_indices` in `EntityList` to make it faster using list comprehension
@@ -6,7 +37,6 @@
     * Moved conversion of associations from `Blueprint.load_from_string` to `Blueprint.setup` so they always take place
     * Fixed `UndergroundBelt` `io_type` attribute not reading correctly from key `type`
     * Changed test case to account for this
-
 * Added `DirectionalMixin` to `AssemblingMachine` (as technically it can have it in select circumstances)
 * Fixed load conflict between `items` and `recipe` in `AssemblingMachine` (#23)
 * Fixed `setup.py` so that it properly requires `typing_extensions` on versions of Python prior to 3.8 (#30)

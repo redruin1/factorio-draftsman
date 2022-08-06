@@ -26,3 +26,24 @@ class HeatPipeTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             HeatPipe("not a heat pipe")
+
+    def test_mergable_with(self):
+        pipe1 = HeatPipe("heat-pipe")
+        pipe2 = HeatPipe("heat-pipe", tags={"some": "stuff"})
+
+        self.assertTrue(pipe1.mergable_with(pipe1))
+
+        self.assertTrue(pipe1.mergable_with(pipe2))
+        self.assertTrue(pipe2.mergable_with(pipe1))
+
+        pipe2.tile_position = (1, 1)
+        self.assertFalse(pipe1.mergable_with(pipe2))
+
+    def test_merge(self):
+        pipe1 = HeatPipe("heat-pipe")
+        pipe2 = HeatPipe("heat-pipe", tags={"some": "stuff"})
+
+        pipe1.merge(pipe2)
+        del pipe2
+
+        self.assertEqual(pipe1.tags, {"some": "stuff"})

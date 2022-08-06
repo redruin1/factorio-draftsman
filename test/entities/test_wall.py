@@ -4,10 +4,8 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import Wall, walls
-from draftsman.error import InvalidEntityError, InvalidSignalError
+from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatError
 from draftsman.warning import DraftsmanWarning
-
-from schema import SchemaError
 
 import sys
 
@@ -26,6 +24,8 @@ class WallTesting(unittest.TestCase):
 
         with self.assertRaises(InvalidEntityError):
             Wall("this is not a wall")
+        with self.assertRaises(DataFormatError):
+            Wall(control_behavior={"unused_key": "something"})
 
     def test_set_enable_disable(self):
         wall = Wall()
@@ -66,3 +66,24 @@ class WallTesting(unittest.TestCase):
             wall.output_signal = TypeError
         with self.assertRaises(InvalidSignalError):
             wall.output_signal = "incorrect"
+
+    def test_mergable_with(self):
+        wall1 = Wall("stone-wall")
+        wall2 = Wall("stone-wall", tags={"some": "stuff"})
+
+        self.assertTrue(wall1.mergable_with(wall1))
+
+        self.assertTrue(wall1.mergable_with(wall2))
+        self.assertTrue(wall2.mergable_with(wall1))
+
+        wall2.tile_position = (1, 1)
+        self.assertFalse(wall1.mergable_with(wall2))
+
+    def test_merge(self):
+        wall1 = Wall("stone-wall")
+        wall2 = Wall("stone-wall", tags={"some": "stuff"})
+
+        wall1.merge(wall2)
+        del wall2
+
+        self.assertEqual(wall1.tags, {"some": "stuff"})

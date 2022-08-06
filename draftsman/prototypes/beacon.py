@@ -27,6 +27,10 @@ class Beacon(ModulesMixin, RequestItemsMixin, Entity):
 
     def __init__(self, name=beacons[0], **kwargs):
         # type: (str, **dict) -> None
+        """
+        TODO
+        """
+
         super(Beacon, self).__init__(name, beacons, **kwargs)
 
         for unused_arg in self.unused_args:

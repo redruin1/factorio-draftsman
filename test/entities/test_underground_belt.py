@@ -5,10 +5,8 @@ from __future__ import unicode_literals
 
 from draftsman.constants import Direction
 from draftsman.entity import UndergroundBelt, underground_belts
-from draftsman.error import InvalidEntityError, DataFormatError
+from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
-
-from schema import SchemaError
 
 import sys
 
@@ -33,6 +31,16 @@ class UndergroundBeltTesting(unittest.TestCase):
                 "name": "underground-belt",
                 "position": {"x": 1.5, "y": 1.5},
                 "direction": 2,
+                "type": "output",
+            },
+        )
+
+        underground_belt = UndergroundBelt("underground-belt", type="output")
+        self.assertEqual(
+            underground_belt.to_dict(),
+            {
+                "name": "underground-belt",
+                "position": {"x": 0.5, "y": 0.5},
                 "type": "output",
             },
         )
@@ -71,3 +79,29 @@ class UndergroundBeltTesting(unittest.TestCase):
             self.assertEqual(underground_belt.dual_power_connectable, False)
             self.assertEqual(underground_belt.circuit_connectable, False)
             self.assertEqual(underground_belt.dual_circuit_connectable, False)
+
+    def test_mergable_with(self):
+        belt1 = UndergroundBelt("underground-belt")
+        belt2 = UndergroundBelt(
+            "underground-belt", io_type="output", tags={"some": "stuff"}
+        )
+
+        self.assertTrue(belt1.mergable_with(belt1))
+
+        self.assertTrue(belt1.mergable_with(belt2))
+        self.assertTrue(belt2.mergable_with(belt1))
+
+        belt2.tile_position = (1, 1)
+        self.assertFalse(belt1.mergable_with(belt2))
+
+    def test_merge(self):
+        belt1 = UndergroundBelt("underground-belt")
+        belt2 = UndergroundBelt(
+            "underground-belt", io_type="output", tags={"some": "stuff"}
+        )
+
+        belt1.merge(belt2)
+        del belt2
+
+        self.assertEqual(belt1.io_type, "output")
+        self.assertEqual(belt1.tags, {"some": "stuff"})

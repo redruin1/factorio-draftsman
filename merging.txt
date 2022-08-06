@@ -90,3 +90,110 @@ on adding an entity:
 		old_entity = self._parent.find_entity_at_position(entity.global_position)
 		if old_entity and entity.can_merge_with(old_entity):
 			old_entity = entity.merge(old_entity)
+
+
+Q. Does merging happen on an EntityLike basis or an Entity basis? EntityLike has the potential for early-out in special circumstances, but Entity only is simpler.
+A. Entity basis; the early out capabilities are not as useful as just checking all sub-entities, and this routine is already complex enough.
+
+Given a blueprint:
+	
+	When we add an entity:
+
+		1. Check to make sure that it is an entity/create a new one for shorthand format
+		2. For every entity currently in the blueprint:
+			- For every entity currently in the added entity (either single or Group):
+				- Check if the entity overlaps another entity
+					- If the overlapping entities pass the merge rules, then merge
+					- Otherwise, raise a warning
+				
+				- Run an entity specific restriction function that issues errors/warnings if there are problems with this placement
+
+
+Add the group to the list
+Iterate over every newly added entity in that group
+	If they overlap and satisfy the merging rules, merge onto the existing one and delete the new one (wasteful)
+Final step: iterate over the group and see if any group is now empty
+	If that's the case, remove the entire group as it is now redundant (also wasteful)
+
+Better idea:
+
+Get the original/copy of the Group
+Iterate over every entity in the Group:
+	If they overlap with one currently inside and satisfy the merging rules, modify the one that already exists in the list and delete this entry in the Group (WHAT IF NOT A COPY?)
+After iterating over all, check to see if the Group is empty; if it is, there's no need to add it to the list
+If not, add it to the list, update the id's/indices, and set the new parent
+
+Entity A -> "testing"
+Entity B -> "testing"
+
+[&Entity A] -> "testing"
+[&Entity A] <= [&Entity B] -> "testing"
+
+TODO: make sure when we delete entries in the Group we do not delete the actual data itself [Entity B], rather just the reference to the data [&Entity B]
+
+Adding an EntityLike:
+	if hasattr(entitylike, "entities"):
+		for entity in entitylike:
+			add_entitylike_recursive(entity);
+	else:
+		...
+
+
+Things we still need:
+
+- parent-child relationships between Entity, EntityLike, Group, and Blueprint
+- framework to check for issues on a per-entity basis
+	(A lot of these are in relation to their spatial location and interaction with entities around them... how to integrate?)
+
+EntityList: A list of entities
+SpatialHashMap: a way to organize Entity references into spatial regions for easy querying.
+EntityCollection: An entity that holds an EntityList, as well as a SpatialHashMap. Has many utility functions used for querying it's contents. Has a set of overridable functions to allow for user control of what happens when entities are inserted into it's `entities` EntityList (such as updating the HashMap).
+
+Q. Is there a use for EntityList outside of a Collection?
+A. Not much. It operates under the assumption that it has a parent and that said parent has a set of configured functions designed for it, make it unwieldly to use especially for anyone that isn't me. Given the complexity of the operations, I certainly don't like that I have distribute the computation so much across so many different locations.
+
+Q. Is there a use for SpatialHashMap outside of a Collection?
+A. Also not much. SpatialHashMap is only designed for Entities as it does a lot of entity specific stuff, plus my implementation is fairly rudimentary and probably not performant. If you want convenience, you'd write your own simple class; if you want performance, you'd use a better library; if you want to put it into your own classes, it would probably be more difficult than creating your own from scratch.
+
+Honestly, it might also make sense to abstract the SpatialHashMap into some generic class, like EntitySpace or something similar, so it can be possible to slot different algorithm types for different purposes, so you could use a quadtree or something similar if you needed better sparse tree querying.
+
+blueprint.entities.append(...) checklist:
+
+1. Create a copy of the entity (if needed)
+2. (Optional) Check to see if the placement of the entity creates issues
+	- There are generic constraints, and Entity-specific constraints:
+	- Generic constraints are things like overlapping entities, and can be performed in `on_entity_insert`
+	- Entity specific constraints can be done by calling `entity.on_insert(parent_structure)` (there should also be an option to disable)
+		- For most entities, this does nothing, as there are little placement constraints
+		- For things like rails signals however, it's important that they should be placed next to rails
+3. (Optional) Add the entity reference to the SpatialDataStructure
+4. Update the data list/keys/etc.
+5. Set the entity's parent to the parent of this EntityList (keep the chain up to date)
+
+
+image size: (354, 567) px
+origin: (212, 283) px
+unit scale: 70.5 px
+Big rect:
+p1: (36, 103) (-2.5, -2.55)
+p2: (113, 51) (-1.4, -3.3)
+p3: (259, 416) (0.65, 1.88)
+p4: (337, 360) (1.75, 1.1)
+
+width = [1.331 - 1.348]   1.4?
+height = [5.411 - 5.435]  5.45?
+center = (-0.375, -0.7175)
+angle = 35
+
+--------------------------
+
+Small rect:
+p1: (229, 406) (0.25, 1.8)
+p2: (335, 406) (1.75, 1.8)
+p3: (335, 557) (1.75, 3.9)
+p4: (229, 557) (0.25, 3.9)
+
+width = 1.5
+height = 2.1
+center = (1.0, 2.85)
+angle = 0

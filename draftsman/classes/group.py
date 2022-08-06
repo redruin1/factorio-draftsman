@@ -4,15 +4,22 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.association import Association
+from draftsman.classes.collisionset import CollisionSet
 from draftsman.classes.entitylist import EntityList
 from draftsman.classes.collection import EntityCollection
 from draftsman.classes.entitylike import EntityLike
-from draftsman.classes.spatialhashmap import SpatialHashMap
+from draftsman.classes.spatial_data_structure import SpatialDataStructure
+from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.classes.transformable import Transformable
+from draftsman.classes.vector import Vector
 from draftsman.error import DraftsmanError, IncorrectBlueprintTypeError
-from draftsman import signatures
-from draftsman import utils
-from draftsman.warning import DraftsmanWarning
+from draftsman.utils import (
+    reissue_warnings,
+    string_to_JSON,
+    flatten_entities,
+    aabb_to_dimensions,
+    AABB,
+)
 
 import copy
 from typing import Union
@@ -67,7 +74,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     another ``EntityCollection``.
     """
 
-    @utils.reissue_warnings
+    @reissue_warnings
     def __init__(
         self,
         id=None,
@@ -84,10 +91,10 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         self.name = name
         self.type = type
-        self._entity_hashmap = SpatialHashMap()
+        self._entity_map = SpatialHashMap()
 
         # Collision box
-        self.collision_box = None
+        self._collision_set = CollisionSet([])
 
         # Tile dimensions
         self.tile_width, self.tile_height = 0, 0
@@ -105,7 +112,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         # investigate
         self.position = position
 
-    @utils.reissue_warnings
+    @reissue_warnings
     def load_from_string(self, blueprint_string):
         # type: (str) -> None
         """
@@ -120,7 +127,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         :exception IncorrectBlueprintTypeError: If the input string is of a
             different type than the base class, such as a ``BlueprintBook``.
         """
-        root = utils.string_to_JSON(blueprint_string)
+        root = string_to_JSON(blueprint_string)
         # Ensure that the blueprint string actually points to a blueprint
         if "blueprint" not in root:
             raise IncorrectBlueprintTypeError(
@@ -152,7 +159,7 @@ class Group(Transformable, EntityCollection, EntityLike):
                 for i, neighbour in enumerate(neighbours):
                     neighbours[i] = Association(self.entities[neighbour - 1])
 
-    @utils.reissue_warnings
+    @reissue_warnings
     def setup(self, **kwargs):
         # type: (dict) -> None
         """
@@ -294,12 +301,14 @@ class Group(Transformable, EntityCollection, EntityLike):
                 "Cannot change position of Group while it's inside a Collection"
             )
 
-        if "x" in value and "y" in value:
-            self._position = {"x": float(value["x"]), "y": float(value["y"])}
-        elif isinstance(value, (list, tuple)):
-            self._position = {"x": float(value[0]), "y": float(value[1])}
-        else:
-            raise TypeError("Incorrectly formatted position ({})".format(value))
+        self._position = Vector.from_other(value, float)
+
+        # if "x" in value and "y" in value:
+        #     self._position = {"x": float(value["x"]), "y": float(value["y"])}
+        # elif isinstance(value, (list, tuple)):
+        #     self._position = {"x": float(value[0]), "y": float(value[1])}
+        # else:
+        #     raise TypeError("Incorrectly formatted position ({})".format(value))
 
     # =========================================================================
 
@@ -317,33 +326,52 @@ class Group(Transformable, EntityCollection, EntityLike):
         :type: ``dict{"x": float, "y": float}``
         """
         if self.parent and hasattr(self.parent, "global_position"):
-            return {
-                "x": self.parent.global_position["x"] + self.position["x"],
-                "y": self.parent.global_position["y"] + self.position["y"],
-            }
+            return self.parent.global_position + self.position
         else:
             return self.position
 
     # =========================================================================
 
+    # @property
+    # def collision_box(self):
+    #     # type: () -> list
+    #     """
+    #     The union of all the ``collision_box``s of the entities that this Group
+    #     holds. Adding an entity to the Group sets the collision box to the
+    #     minimum bounding box of the Group and the added Entity. If an Entity is
+    #     changed or removed inside the Group, the ``collision_box`` is
+    #     reconstructed from scratch. Read only.
+
+    #     :type: ``[[float, float], [float, float]]``
+    #     """
+    #     return self._collision_box
+
+    # @collision_box.setter
+    # def collision_box(self, value):
+    #     # type: (list) -> None
+    #     self._collision_box = signatures.AABB.validate(value)
+
     @property
-    def collision_box(self):
-        # type: () -> list
+    def collision_set(self):
+        # type: () -> CollisionSet
         """
-        The union of all the ``collision_box``s of the entities that this Group
-        holds. Adding an entity to the Group sets the collision box to the
-        minimum bounding box of the Group and the added Entity. If an Entity is
-        changed or removed inside the Group, the ``collision_box`` is
-        reconstructed from scratch. Read only.
-
-        :type: ``[[float, float], [float, float]]``
+        TODO: is this even a good idea to have in the first place? It seems like
+        having this set be the union of all entities it contains would make the
+        most sense, but that would be slow to compute instead of using a spatial
+        map for that. The user could specify a custom collision set, but how
+        is that supposed to interact with the hashmap? no idea
         """
-        return self._collision_box
+        return self._collision_set
 
-    @collision_box.setter
-    def collision_box(self, value):
-        # type: (list) -> None
-        self._collision_box = signatures.AABB.validate(value)
+    # @collision_set.setter
+    # def collision_set(self, value):
+    #     # type: (CollisionSet) -> None
+    #     # TODO: error checking
+    #     if value is None:
+    #         self._collision_set = CollisionSet([])
+    #     else:
+    #         self._collision_set = value
+    # self._collision_set = value
 
     # =========================================================================
 
@@ -440,10 +468,10 @@ class Group(Transformable, EntityCollection, EntityLike):
         return self._entities
 
     @entities.setter
-    @utils.reissue_warnings
+    @reissue_warnings
     def entities(self, value):
         # type: (Union[list[EntityLike], EntityList]) -> None
-        self._entity_hashmap.clear()
+        self._entity_map.clear()
 
         if value is None:
             self._entities.clear()
@@ -460,33 +488,41 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def entity_hashmap(self):
-        # type: () -> SpatialHashMap
+    def entity_map(self):
+        # type: () -> SpatialDataStructure
         """
-        The ``SpatialHashMap`` for ``entities``. Not exported; read only.
+        An implementation of :py:class:`.SpatialDataStructure` for ``entities``.
+        Not exported; read only.
         """
-        return self._entity_hashmap
+        return self._entity_map
 
     # =========================================================================
 
     def on_entity_insert(self, entitylike, merge):
-        # type: (EntityLike, bool) -> None
+        # type: (EntityLike, bool) -> EntityLike
         """
         Callback function for when an ``EntityLike`` is added to this
         Group's ``entities`` list. Handles the addition of the entity into
         the  Group's ``SpatialHashMap``, and recalculates it's dimensions.
         """
+        # Handle overlapping and merging
+        entitylike = self.entity_map.handle_overlapping(entitylike, merge)
+
+        if entitylike is None:  # entire structure was merged
+            return entitylike  # early exit
+
         # Add to hashmap (as well as any children)
-        self.entity_hashmap.recursively_add(entitylike, merge)
+        self.entity_map.recursive_add(entitylike)
 
         # Update dimensions
-        self._collision_box = utils.extend_aabb(
-            self._collision_box, entitylike.get_area()
-        )
+        # TODO: do we really even want the following
+        self._collision_set.shapes.extend(entitylike.get_world_collision_set().shapes)
         (
             self._tile_width,
             self._tile_height,
-        ) = utils.aabb_to_dimensions(self.collision_box)
+        ) = aabb_to_dimensions(self._collision_set.get_bounding_box())
+
+        return entitylike
 
     def on_entity_set(self, old_entitylike, new_entitylike):
         # type: (EntityLike, EntityLike) -> None
@@ -496,9 +532,15 @@ class Group(Transformable, EntityCollection, EntityLike):
         the ``SpatialHashMap`` and adds the new one in it's stead.
         """
         # Remove the entity and its children
-        self.entity_hashmap.recursively_remove(old_entitylike)
+        self.entity_map.recursive_remove(old_entitylike)
+
+        # Handle overlapping
+        self.entity_map.handle_overlapping(new_entitylike, False)
+
         # Add the new entity and its children
-        self.entity_hashmap.recursively_add(new_entitylike)
+        self.entity_map.recursive_add(new_entitylike)
+
+        self.recalculate_area()
 
     def on_entity_remove(self, entitylike):
         # type: (EntityLike) -> None
@@ -508,7 +550,9 @@ class Group(Transformable, EntityCollection, EntityLike):
         ``SpatialHashMap``.
         """
         # Remove the entity and its children
-        self.entity_hashmap.recursively_remove(entitylike)
+        self.entity_map.recursive_remove(entitylike)
+
+        self.recalculate_area()
 
     # =========================================================================
 
@@ -521,7 +565,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         :returns: A ``list`` of ``Entity`` instances associated with this
             ``Group``.
         """
-        return utils.flatten_entities(self.entities)
+        return flatten_entities(self.entities)
 
     def recalculate_area(self):
         # type: () -> None
@@ -529,44 +573,70 @@ class Group(Transformable, EntityCollection, EntityLike):
         Recalculates the dimensions of the area and tile_width and
         height. Called when an ``EntityLike`` object is altered or removed.
         """
-        self._collision_box = None
+        self._collision_set = CollisionSet([])
         for entity in self.entities:
-            self._collision_box = utils.extend_aabb(
-                self._collision_box, entity.get_area()
-            )
+            self._collision_set.shapes += entity.get_world_collision_set().shapes
 
-        self._tile_width, self._tile_height = utils.aabb_to_dimensions(
-            self._collision_box
+        self._tile_width, self._tile_height = aabb_to_dimensions(
+            self._collision_set.get_bounding_box()
         )
 
-    def get_area(self):
-        # type: () -> list
+    # def get_area(self):
+    #     # type: () -> AABB
+    #     """
+    #     Gets the area that this ``Group`` takes up, or the minimum AABB.
+    #     TODO
+    #     """
+    #     collision_box = (
+    #         [[0, 0], [0, 0]] if self.collision_box is None else self.collision_box
+    #     )
+    #     return [
+    #         [
+    #             collision_box[0][0] + self.position["x"],
+    #             collision_box[0][1] + self.position["y"],
+    #         ],
+    #         [
+    #             collision_box[1][0] + self.position["x"],
+    #             collision_box[1][1] + self.position["y"],
+    #         ],
+    #     ]
+
+    # def get_world_collision_set(self):
+    #     # type: () -> CollisionSet
+    #     """
+    #     TODO
+    #     """
+    #     return self.
+
+    def get_world_bounding_box(self):
+        # type: () -> AABB
         """
-        Gets the area that this ``Group`` takes up, or the minimum AABB.
+        TODO
         """
-        collision_box = (
-            [[0, 0], [0, 0]] if self.collision_box is None else self.collision_box
-        )
-        return [
-            [
-                collision_box[0][0] + self.position["x"],
-                collision_box[0][1] + self.position["y"],
-            ],
-            [
-                collision_box[1][0] + self.position["x"],
-                collision_box[1][1] + self.position["y"],
-            ],
-        ]
+        # bounding_box = AABB(0, 0, 0, 0)
+        # if self.collision_set is None
+        # bounding_box = AABB(0, 0, 0, 0) if self.collision_set is None else self.collision_set.get_bounding_box()
+        bounding_box = self.collision_set.get_bounding_box()
+
+        if bounding_box is not None:
+            bounding_box.top_left[0] += self.global_position.x
+            bounding_box.top_left[1] += self.global_position.y
+            bounding_box.bot_right[0] += self.global_position.x
+            bounding_box.bot_right[1] += self.global_position.y
+
+        return bounding_box
 
     def mergable_with(self, other):
         # type: (Group) -> bool
-        return (type(self) == type(other) and 
-                self.id == other.id)
+        # For now, we assume that Groups themselves are not mergable
+        # return type(self) == type(other) and self.id == other.id
+        return False
 
     def merge(self, other):
         # type: (Group) -> None
-        print("group.merge")
-        return super().merge(other)
+        # For now, we assume that Groups themselves are not mergable
+        # print("group.merge")
+        return  # Do nothing
 
     def __str__(self):  # pragma: no coverage
         # type: () -> str
@@ -575,27 +645,31 @@ class Group(Transformable, EntityCollection, EntityLike):
     def __deepcopy__(self, memo):
         # type: (dict) -> Group
         """
-        TODO
+        Creates a deepcopy of a :py:class:`.Group` and it's contents. Preserves
+        all Entities and Associations within the copied group, *except* for
+        assocations that point to entities outside the copied group.
+
+        :returns: A deepcopy of a :py:class:`.Group`.
         """
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
 
-        # Make sure we copy "_entity_hashmap" first so we don't get
+        # Make sure we copy "_entity_map" first so we don't get
         # OverlappingEntitiesWarnings
-        v = getattr(self, "_entity_hashmap")
-        setattr(result, "_entity_hashmap", copy.deepcopy(v, memo))
-        result.entity_hashmap.clear()
+        v = getattr(self, "_entity_map")
+        setattr(result, "_entity_map", copy.deepcopy(v, memo))
+        result.entity_map.clear()
         # Also make sure "_collision_box" is intialized before setting up
         # "_entities"
-        v = getattr(self, "_collision_box")
-        setattr(result, "_collision_box", copy.deepcopy(v, memo))
+        v = getattr(self, "_collision_set")
+        setattr(result, "_collision_set", copy.deepcopy(v, memo))
 
         for k, v in self.__dict__.items():
             if k == "_parent":
                 # Reset parent to None
                 setattr(result, k, None)
-            elif k == "_entity_hashmap":
+            elif k == "_entity_map":
                 continue
             elif k == "_entities":
                 # Create a copy of EntityList with copied self as new parent so

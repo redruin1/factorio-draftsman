@@ -23,12 +23,11 @@ if TYPE_CHECKING:  # pragma: no coverage
 
 class EntityList(MutableSequence):
     """
-    Custom object for storing sequences of
-    :py:class:`~draftsman.classes.entitylike.EntityLike`.
+    Custom object for storing sequences of :py:class:`.EntityLike`.
 
     Contains all the functionality of a normal ``list``. Adds the ability
     to index with id strings, as well as extra framework for interfacing with
-    :py:class:`~draftsman.classes.collection.EntityCollection` classes.
+    :py:class:`.EntityCollection` classes.
     """
 
     @utils.reissue_warnings
@@ -64,8 +63,8 @@ class EntityList(MutableSequence):
                     )
 
     @utils.reissue_warnings
-    def append(self, entity, copy=True, merge=False, **kwargs):
-        # type: (EntityLike, bool, bool, **dict) -> None
+    def append(self, name, copy=True, merge=False, **kwargs):
+        # type: (Union[str, EntityLike], bool, bool, **dict) -> None
         """
         Appends the ``EntityLike`` to the end of the sequence.
 
@@ -73,14 +72,14 @@ class EntityList(MutableSequence):
         an Entity as ``entity`` and any keyword arguments, which are appended to
         the constructor of that entity.
 
-        :param entity: Either an instance of ``EntityLike``, or a string
-            reprenting the name of an Entity.
+        :param name: Either a string reprenting the name of an ``Entity``, or an
+            :py:class:`.EntityLike` instance.
         :param copy: Whether or not to create a copy of the passed in
-            ``EntityLike``. If ``entity`` is in string shorthand, this option
-            is ignored and a new instance is always created.
+            ``EntityLike``. If ``entitylike`` is in string shorthand, this
+            option is ignored and a new instance is always created.
         :param merge: Whether or not to merge entities of the same type at the
             same position. Merged entities share non-overlapping attributes and
-            prefer the attributes of the last entity added. Useful for merging 
+            prefer the attributes of the last entity added. Useful for merging
             things like rails or power-poles on the edges of tiled blueprints.
         :param kwargs: Any other keyword arguments to pass to the constructor
             in string shorthand.
@@ -125,11 +124,11 @@ class EntityList(MutableSequence):
             assert inserter is blueprint.entities[-1]
             assert blueprint.entities[-1].stack_size_override == 1
         """
-        self.insert(len(self.data), entity, copy=copy, merge=merge, **kwargs)
+        self.insert(len(self.data), name, copy=copy, merge=merge, **kwargs)
 
     @utils.reissue_warnings
-    def insert(self, idx, entity, copy=True, merge=False, **kwargs):
-        # type: (int, EntityLike, bool, bool, **dict) -> None
+    def insert(self, idx, name, copy=True, merge=False, **kwargs):
+        # type: (int, Union[str, EntityLike], bool, bool, **dict) -> None
         """
         Inserts an ``EntityLike`` into the sequence.
 
@@ -138,14 +137,14 @@ class EntityList(MutableSequence):
         the constructor of that entity.
 
         :param idx: The integer index to put the ``EntityLike``.
-        :param entity: Either an instance of ``EntityLike``, or a string
-            reprenting the name of an Entity.
+        :param name: Either a string reprenting the name of an ``Entity``, or an
+            :py:class:`.EntityLike` instance.
         :param copy: Whether or not to create a copy of the passed in
-            ``EntityLike``. If ``entity`` is in string shorthand, this option
-            is ignored and a new instance is always created.
+            ``EntityLike``. If ``entitylike`` is in string shorthand, this
+            option is ignored and a new instance is always created.
         :param merge: Whether or not to merge entities of the same type at the
             same position. Merged entities share non-overlapping attributes and
-            prefer the attributes of the last entity added. Useful for merging 
+            prefer the attributes of the last entity added. Useful for merging
             things like rails or power-poles on the edges of tiled blueprints.
         :param kwargs: Any other keyword arguments to pass to the constructor
             in string shorthand.
@@ -191,48 +190,78 @@ class EntityList(MutableSequence):
             assert blueprint.entities[0].stack_size_override == 1
         """
 
-        # Convert to Entity if constructed via keyword
-        if isinstance(entity, six.string_types):
-            entity = new_entity(six.text_type(entity), **kwargs)
-        elif copy:
+        # Convert to new Entity if constructed via string keyword
+        new = False
+        if isinstance(name, six.string_types):
+            entitylike = new_entity(name, **kwargs)
+            new = True
+        else:
+            entitylike = name
+
+        if copy and not new:
             # Create a DEEPCopy of the entity if desired
-            entity = deepcopy(entity)
+            entitylike = deepcopy(entitylike)
 
-        # Merge the new entity with the old entity of the same type and location
-        # if specified
-        # if merge:
-        #     if hasattr(entity, "entities"):
-        #     else:
-        #         old_entity = self._parent.find_entity_at_position(entity.position)
-        #         if old_entity and old_entity.mergable_with(entity):
-        #             old_entity.merge(entity)
-        #     for entity in entity.entities:
-        #         old_entity = self._parent.find_entity_at_position(entity.position)
-        #         if old_entity:
-        #             print(old_entity.parent)
-        #             print(entity.parent)
-        #         if old_entity and old_entity.mergable_with(entity):
-        #             print("pass")
-        #             print(old_entity)
-        #             old_entity.merge(entity)
+        # If we attempt to merge an entitylike that isn't a copy, bad things
+        # will probably happen
+        # Not really sure what *should* happen in that case, so lets just nip
+        # that in the bud for now
+        if not copy and merge:
+            raise ValueError(
+                "Attempting to merge a non-copy, which is disallowed (for now at least)"
+            )
 
-        # Make sure were not causing any problems by putting this entity in
-        self.check_entity(entity)
+        # Do a set of idiot checks on the entity to make sure everything's okay
+        self.check_entitylike(entitylike)
 
-        # If the entity has any custom logic, perform that now
-        entity.on_insert()
+        # In general, the parent entity is in charge of issuing Collection-
+        # specific warnings and errors, such as OverlappingObjectsWarnings and
+        # handling it's spatial map, if desired. The parent is also in charge of
+        # handling per-entity warnings, as that information is more closely tied
+        # to the parent than the `EntityList`.
+        # To keep data consistency, any changes made to the passed in entitylike
+        # during the course of the function are persistent afterwards.
+        entitylike = self._parent.on_entity_insert(entitylike, merge)
 
-        # If the parent has any custom logic, perform that now
-        self._parent.on_entity_insert(entity, merge)
+        if entitylike is None:  # input entity was entirely merged
+            return  # exit without adding to list
 
-        # Manage the EntityList
-        self.data.insert(idx, entity)
+        # Once the parent has itself in order, we can update our data
+        self.data.insert(idx, entitylike)
         self._shift_key_indices(idx, 1)
-        if entity.id:
-            self.set_key(entity.id, entity)
+        if entitylike.id:
+            self.set_key(entitylike.id, entitylike)
 
-        # Add a reference to the parent in the object
-        entity._parent = self._parent
+        # We make sure the entity we just added points to the correct parent now
+        # that it's inserted
+        entitylike._parent = self._parent
+
+    def recursive_remove(self, item):
+        # type: (EntityLike) -> None
+        """
+        Removes an EntityLike from the EntityList. Recurses through any
+        subgroups to see if ``item`` is there, removing the root-most entity
+        first.
+        """
+        # First, try to delete the item from this list
+        try:
+            del self[self.index(item)]
+            return
+        except ValueError:
+            pass
+
+        # Then, try to delete the item from any sublists
+        for existing_item in self.data:
+            # if isinstance(existing_item, EntityCollection): # better, but impossible
+            if hasattr(existing_item, "entities"):  # FIXME: somewhat unsafe
+                try:
+                    existing_item.entities.remove(item)
+                    return
+                except ValueError:
+                    pass
+
+        # If we've made it this far, it's not anywhere in the list
+        raise ValueError
 
     def __getitem__(self, item):
         # type: (Union[int, str, slice]) -> Union[EntityLike, list[EntityLike]]
@@ -261,7 +290,7 @@ class EntityList(MutableSequence):
         idx, key = self.get_pair(item)
 
         # Make sure were not causing any problems by putting this entity in
-        self.check_entity(value)
+        self.check_entitylike(value)
 
         # Perform any logic that the parent has to do
         self._parent.on_entity_set(self.data[idx], value)
@@ -279,6 +308,7 @@ class EntityList(MutableSequence):
         # Add a reference to the parent in the object
         value._parent = self._parent
 
+        # TODO: this sucks man
         self._parent.recalculate_area()
 
     def __delitem__(self, item):
@@ -289,9 +319,6 @@ class EntityList(MutableSequence):
             for i in range(start, stop, step):
                 # Get pair
                 idx, key = self.get_pair(i)
-
-                # Handle EntityLike
-                self.data[idx].on_remove()
 
                 # Handle parent
                 self._parent.on_entity_remove(self.data[idx])
@@ -306,15 +333,13 @@ class EntityList(MutableSequence):
             # Delete all entries in the main list
             del self.data[item]
 
+            # TODO: this sucks man
             self._parent.recalculate_area()
         else:
             # Get pair
             if isinstance(item, int):
                 item %= len(self.data)
             idx, key = self.get_pair(item)
-
-            # Handle EntityLike
-            self.data[idx].on_remove()
 
             # Handle parent
             self._parent.on_entity_remove(self.data[idx])
@@ -328,6 +353,7 @@ class EntityList(MutableSequence):
             # Shift all entries above down by one
             self._shift_key_indices(idx, -1)
 
+            # TODO: this sucks man
             self._parent.recalculate_area()
 
     def __len__(self):
@@ -415,21 +441,21 @@ class EntityList(MutableSequence):
 
         return new
 
-    def check_entity(self, entitylike):
+    def check_entitylike(self, entitylike):
         # type: (EntityLike) -> None
         """
-        Check to see if adding the entity to the EntityList would cause any
-        problems.
+        A set of universal checks that all :py:class:`.EntityLike`s have to
+        follow if they are to be added to this ``EntityList``.
 
-        Raises :py:class:`~draftsman.warning.HiddenEntityWarning` if the
-        ``Entity`` is marked as hidden.
+        Raises :py:class:`.HiddenEntityWarning` if the ``EntityLike`` being
+        checked is marked as hidden.
 
         :param entitylike: ``EntityLike`` instance to check.
 
         :exception TypeError: If ``entitylike`` is not an ``EntityLike``
             instance.
-        :exception DuplicateIDError: If ``entitylike.id`` already exists in the
-            ``EntityList``
+        :exception DuplicateIDError: If ``entitylike.id`` is already taken in
+            the ``EntityList``.
         """
         if not isinstance(entitylike, EntityLike):
             raise TypeError("Entry in EntityList must be an EntityLike")
@@ -440,7 +466,9 @@ class EntityList(MutableSequence):
         # Warn if the placed entity is hidden
         if getattr(entitylike, "hidden", False):
             warnings.warn(
-                "{}".format(type(entitylike)), HiddenEntityWarning, stacklevel=2
+                "Attempting to add hidden entity '{}'".format(type(entitylike)),
+                HiddenEntityWarning,
+                stacklevel=2,
             )
 
     def remove_key(self, key):

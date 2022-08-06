@@ -26,6 +26,10 @@ class TileListTesting(unittest.TestCase):
         blueprint.tiles.insert(1, "refined-concrete", position=(1, 1))
         self.assertEqual(blueprint.tiles.data, [blueprint.tiles[0], blueprint.tiles[1]])
 
+        # Test merging
+        blueprint.tiles.insert(2, "landfill", merge=True)
+        self.assertEqual(blueprint.tiles.data, [blueprint.tiles[0], blueprint.tiles[1]])
+
         with self.assertWarns(OverlappingObjectsWarning):
             blueprint.tiles.insert(2, "landfill")
 
@@ -34,6 +38,17 @@ class TileListTesting(unittest.TestCase):
 
         with self.assertRaises(UnreasonablySizedBlueprintError):
             blueprint.tiles.insert(0, "landfill", position=(-15000, 0))
+
+        # Test no copy
+        blueprint = Blueprint()
+        local_tile = Tile("landfill", position=[1, 1])
+        blueprint.tiles.append(local_tile, copy=False)
+        local_tile.name = "concrete"
+        self.assertIs(local_tile, blueprint.tiles[0])
+        self.assertEqual(
+            blueprint.tiles[0].to_dict(),
+            {"name": "concrete", "position": {"x": 1, "y": 1}},
+        )
 
     def test_getitem(self):
         pass

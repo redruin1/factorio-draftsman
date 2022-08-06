@@ -1,4 +1,5 @@
 # mods.py
+# -*- encoding: utf-8 -*-
 
 import pickle
 

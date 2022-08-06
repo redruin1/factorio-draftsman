@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 from draftsman import signatures
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMixin
+from draftsman.error import DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import roboports
@@ -32,6 +33,18 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+    # =========================================================================
+
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = signatures.ROBOPORT_CONTROL_BEHAVIOR.validate(
+                value
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 

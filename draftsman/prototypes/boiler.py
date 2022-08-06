@@ -20,6 +20,10 @@ class Boiler(RequestItemsMixin, DirectionalMixin, Entity):
 
     def __init__(self, name=boilers[0], **kwargs):
         # type: (str, **dict) -> None
+        """
+        TODO
+        """
+
         super(Boiler, self).__init__(name, boilers, **kwargs)
 
         for unused_arg in self.unused_args:

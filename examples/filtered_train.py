@@ -49,7 +49,7 @@ def main():
             # Check to see if we've exceeded the current wagon's size
             if slot_count >= 40:
                 # Add a new wagon
-                cargo_wagon.tile_position = (7 * train_car_position, 0)
+                cargo_wagon.position = (7 * train_car_position, 0)
                 blueprint.entities.append(cargo_wagon)
                 # Reset
                 cargo_wagon = CargoWagon("cargo-wagon", orientation=0.75)
@@ -60,7 +60,7 @@ def main():
             slot_count += 1
 
     # Add the last wagon if we didn't exceed the inventory
-    cargo_wagon.tile_position = (7 * train_car_position, 0)
+    cargo_wagon.position = (7 * train_car_position, 0)
     blueprint.entities.append(cargo_wagon)
 
     # Add a fancy title

@@ -14,8 +14,6 @@ from draftsman.error import (
 )
 from draftsman.warning import DraftsmanWarning, VolumeRangeWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -152,6 +150,8 @@ class ProgrammableSpeakerTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             ProgrammableSpeaker("not a programmable speaker")
+        with self.assertRaises(DataFormatError):
+            ProgrammableSpeaker(control_behavior={"unused_key": "something"})
 
     def test_flags(self):
         for name in programmable_speakers:
@@ -418,3 +418,78 @@ class ProgrammableSpeakerTesting(unittest.TestCase):
             speaker.note_name = "incorrect"
         with self.assertRaises(TypeError):
             speaker.note_name = TypeError
+
+    def test_mergable_with(self):
+        speaker1 = ProgrammableSpeaker("programmable-speaker")
+        speaker2 = ProgrammableSpeaker(
+            "programmable-speaker",
+            parameters={
+                "playback_volume": 1.0,
+                "playback_globally": True,
+                "allow_polyphony": True,
+            },
+            alert_parameters={
+                "show_alert": True,
+                "show_on_map": False,
+                "icon_signal_id": "signal-check",
+                "alert_message": "some string",
+            },
+            control_behavior={
+                "circuit_parameters": {
+                    "signal_value_is_pitch": False,
+                    "instrument_id": 1,
+                    "note_id": 1,
+                }
+            },
+            tags={"some": "stuff"},
+        )
+
+        self.assertTrue(speaker1.mergable_with(speaker1))
+
+        self.assertTrue(speaker1.mergable_with(speaker2))
+        self.assertTrue(speaker2.mergable_with(speaker1))
+
+        speaker2.tile_position = (1, 1)
+        self.assertFalse(speaker1.mergable_with(speaker2))
+
+    def test_merge(self):
+        speaker1 = ProgrammableSpeaker("programmable-speaker")
+        speaker2 = ProgrammableSpeaker(
+            "programmable-speaker",
+            parameters={
+                "playback_volume": 1.0,
+                "playback_globally": True,
+                "allow_polyphony": True,
+            },
+            alert_parameters={
+                "show_alert": True,
+                "show_on_map": False,
+                "icon_signal_id": "signal-check",
+                "alert_message": "some string",
+            },
+            control_behavior={
+                "circuit_parameters": {
+                    "signal_value_is_pitch": False,
+                    "instrument_id": 1,
+                    "note_id": 1,
+                }
+            },
+            tags={"some": "stuff"},
+        )
+
+        speaker1.merge(speaker2)
+        del speaker2
+
+        self.assertEqual(speaker1.volume, 1.0)
+        self.assertEqual(speaker1.global_playback, True)
+        self.assertEqual(speaker1.allow_polyphony, True)
+        self.assertEqual(speaker1.show_alert, True)
+        self.assertEqual(speaker1.show_alert_on_map, False)
+        self.assertEqual(
+            speaker1.alert_icon, {"name": "signal-check", "type": "virtual"}
+        )
+        self.assertEqual(speaker1.alert_message, "some string")
+        self.assertEqual(speaker1.signal_value_is_pitch, False)
+        self.assertEqual(speaker1.instrument_id, 1)
+        self.assertEqual(speaker1.note_id, 1)
+        self.assertEqual(speaker1.tags, {"some": "stuff"})

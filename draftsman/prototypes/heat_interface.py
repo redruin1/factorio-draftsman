@@ -116,7 +116,7 @@ class HeatInterface(Entity):
 
     def merge(self, other):
         # type: (HeatInterface) -> None
+        super(HeatInterface, self).merge(other)
+
         self.temperature = other.temperature
         self.mode = other.mode
-
-        super(HeatInterface, self).merge(other)

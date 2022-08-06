@@ -4,10 +4,8 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import Roboport, roboports
-from draftsman.error import InvalidEntityError, InvalidSignalError
+from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatError
 from draftsman.warning import DraftsmanWarning
-
-from schema import SchemaError
 
 import sys
 
@@ -129,6 +127,8 @@ class RoboportTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             Roboport("this is not a roboport")
+        with self.assertRaises(DataFormatError):
+            Roboport(control_behavior={"unused_key": "something"})
 
     def test_set_read_logistics(self):
         roboport = Roboport()
@@ -268,3 +268,69 @@ class RoboportTesting(unittest.TestCase):
             roboport.total_construction_signal = TypeError
         with self.assertRaises(InvalidSignalError):
             roboport.total_construction_signal = "incorrect"
+
+    def test_mergable_with(self):
+        roboport1 = Roboport("roboport")
+        roboport2 = Roboport(
+            "roboport",
+            control_behavior={
+                "read_logistics": True,
+                "read_robot_stats": True,
+                "available_logistic_output_signal": "signal-A",
+                "total_logistic_output_signal": "signal-B",
+                "available_construction_output_signal": "signal-C",
+                "total_construction_output_signal": "signal-D",
+            },
+            tags={"some": "stuff"},
+        )
+
+        self.assertTrue(roboport1.mergable_with(roboport1))
+
+        self.assertTrue(roboport1.mergable_with(roboport2))
+        self.assertTrue(roboport2.mergable_with(roboport1))
+
+        roboport2.tile_position = (1, 1)
+        self.assertFalse(roboport1.mergable_with(roboport2))
+
+    def test_merge(self):
+        roboport1 = Roboport("roboport")
+        roboport2 = Roboport(
+            "roboport",
+            control_behavior={
+                "read_logistics": True,
+                "read_robot_stats": True,
+                "available_logistic_output_signal": "signal-A",
+                "total_logistic_output_signal": "signal-B",
+                "available_construction_output_signal": "signal-C",
+                "total_construction_output_signal": "signal-D",
+            },
+            tags={"some": "stuff"},
+        )
+
+        roboport1.merge(roboport2)
+        del roboport2
+
+        self.assertEqual(
+            roboport1.control_behavior,
+            {
+                "read_logistics": True,
+                "read_robot_stats": True,
+                "available_logistic_output_signal": {
+                    "name": "signal-A",
+                    "type": "virtual",
+                },
+                "total_logistic_output_signal": {
+                    "name": "signal-B",
+                    "type": "virtual",
+                },
+                "available_construction_output_signal": {
+                    "name": "signal-C",
+                    "type": "virtual",
+                },
+                "total_construction_output_signal": {
+                    "name": "signal-D",
+                    "type": "virtual",
+                },
+            },
+        )
+        self.assertEqual(roboport1.tags, {"some": "stuff"})

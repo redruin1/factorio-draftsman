@@ -8,19 +8,17 @@
 
 from __future__ import unicode_literals
 
+from draftsman.classes.association import Association
+from draftsman.classes.collisionset import CollisionSet
 from draftsman.classes.entitylike import EntityLike
-
+from draftsman.classes.vector import Vector
 from draftsman.data import entities
 from draftsman.error import InvalidEntityError, DraftsmanError
-from draftsman.utils import aabb_to_dimensions
+from draftsman import utils
 
-import abc
-import math
-from schema import SchemaError
-from typing import Any, Union, Callable
+import copy
+from typing import Union, Callable
 import six
-
-# import weakref
 
 
 class Entity(EntityLike):
@@ -69,7 +67,7 @@ class Entity(EntityLike):
                     name, self.__class__.__name__
                 )
             )
-        self._name = name
+        self._name = six.text_type(name)
         self._add_export("name")
 
         # Entity type
@@ -81,8 +79,26 @@ class Entity(EntityLike):
             self.id = kwargs["id"]
             self.unused_args.pop("id")
 
-        # Collision box (Internal)
-        self._collision_box = entities.raw[self.name]["collision_box"][:]  # copy
+        # TODO: technically there's no reason each individual entity needs it's
+        # own copy of it's collision set, (aside from rotation)
+        # Therefore it would be more efficient to create a lookup table where
+        # each Entity type would get the root copy of the data and then
+        # transform it when needed (less performant maybe?)
+
+        # Collision set (Internal)
+        # Check to see if we have overwritten this value with the better ones
+        if not hasattr(self, "_overwritten_collision_set"):
+            collision_box = entities.raw[self.name]["collision_box"]
+            self._collision_set = CollisionSet(
+                [
+                    utils.AABB(
+                        collision_box[0][0],
+                        collision_box[0][1],
+                        collision_box[1][0],
+                        collision_box[1][1],
+                    )
+                ]
+            )
 
         # Collision mask (Internal)
         if "collision_mask" in entities.raw[self.name]:
@@ -96,7 +112,11 @@ class Entity(EntityLike):
             }
 
         # Tile Width and Height (Internal)
-        self._tile_width, self._tile_height = aabb_to_dimensions(self._collision_box)
+        # Usually tile dimensions are implicitly based on the collision box
+        self._tile_width, self._tile_height = utils.aabb_to_dimensions(
+            self._collision_set.get_bounding_box()
+        )
+        # But sometimes it can be overrided in special cases (rails)
         if "tile_width" in entities.raw[self.name]:
             self._tile_width = entities.raw[self.name]["tile_width"]
         if "tile_height" in entities.raw[self.name]:
@@ -111,7 +131,9 @@ class Entity(EntityLike):
             self.unused_args.pop("position")
         else:
             self.tile_position = tile_position
-        self._add_export("global_position", None, lambda k, v: ("position", v))
+        self._add_export(
+            "global_position", None, lambda k, v: ("position", v.to_dict())
+        )
 
         # Entity tags
         self.tags = {}
@@ -209,7 +231,7 @@ class Entity(EntityLike):
 
     @property
     def position(self):
-        # type: () -> dict
+        # type: () -> Vector
         """
         The "canonical" position of the Entity, or the one that Factorio uses.
         Positions of most entities are located at their center, which can either
@@ -218,14 +240,15 @@ class Entity(EntityLike):
 
         ``position`` can be specified as a ``dict`` with ``"x"`` and ``"y"``
         keys, or more succinctly as a sequence of floats, usually a ``list`` or
-        ``tuple``.
+        ``tuple``. ``position`` can also be specified more verbosely as a
+        ``Vector`` instance as well.
 
         This property is updated in tandem with ``tile_position``, so using them
         both interchangeably is both allowed and encouraged.
 
         :getter: Gets the position of the Entity.
         :setter: Sets the position of the Entity.
-        :type: ``dict{"x": float, "y": float}``
+        :type: :py:class:`.Vector`
 
         :exception IndexError: If the set value does not match the above
             specification.
@@ -237,26 +260,29 @@ class Entity(EntityLike):
 
     @position.setter
     def position(self, value):
-        # type: (Union[dict, list, tuple]) -> None
+        # type: (Union[dict, list, tuple, Vector]) -> None
         if self.parent:
             raise DraftsmanError(
                 "Cannot change position of entity while it's inside another object"
             )
 
-        try:
-            self._position = {"x": float(value["x"]), "y": float(value["y"])}
-        except TypeError:
-            self._position = {"x": float(value[0]), "y": float(value[1])}
+        self._position = Vector.from_other(value, float)
 
-        grid_x = round(self._position["x"] - self._tile_width / 2.0)
-        grid_y = round(self._position["y"] - self._tile_height / 2.0)
-        self._tile_position = {"x": grid_x, "y": grid_y}
+        # try:
+        #     self._position = Vector.from_other({"x": float(value["x"]), "y": float(value["y"])})
+        # except TypeError:
+        #     self._position = {"x": float(value[0]), "y": float(value[1])}
+
+        grid_x = round(self._position.x - self.tile_width / 2.0)
+        grid_y = round(self._position.y - self.tile_height / 2.0)
+        # self._tile_position = {"x": grid_x, "y": grid_y}
+        self._tile_position = Vector(grid_x, grid_y)
 
     # =========================================================================
 
     @property
     def tile_position(self):
-        # type: () -> dict
+        # type: () -> Vector
         """
         The tile-position of the Entity. The tile position is the position
         according the the LuaSurface tile grid, and is the top left corner of
@@ -271,7 +297,7 @@ class Entity(EntityLike):
 
         :getter: Gets the tile position of the Entity.
         :setter: Sets the tile position of the Entity.
-        :type: ``dict{"x": int, "y": int}``
+        :type: :py:class:`.Vector`
 
         :exception IndexError: If the set value does not match the above
             specification.
@@ -289,17 +315,20 @@ class Entity(EntityLike):
                 "Cannot change position of entity while it's inside another object"
             )
 
-        try:
-            self._tile_position = {
-                "x": math.floor(value["x"]),
-                "y": math.floor(value["y"]),
-            }
-        except TypeError:
-            self._tile_position = {"x": math.floor(value[0]), "y": math.floor(value[1])}
+        self._tile_position = Vector.from_other(value, int)
 
-        absolute_x = self._tile_position["x"] + self._tile_width / 2.0
-        absolute_y = self._tile_position["y"] + self._tile_height / 2.0
-        self._position = {"x": absolute_x, "y": absolute_y}
+        # try:
+        #     self._tile_position = {
+        #         "x": math.floor(value["x"]),
+        #         "y": math.floor(value["y"]),
+        #     }
+        # except TypeError:
+        #     self._tile_position = {"x": math.floor(value[0]), "y": math.floor(value[1])}
+
+        absolute_x = self._tile_position.x + self.tile_width / 2.0
+        absolute_y = self._tile_position.y + self.tile_height / 2.0
+        # self._position = {"x": absolute_x, "y": absolute_y}
+        self._position = Vector(absolute_x, absolute_y)
 
     # =========================================================================
 
@@ -323,30 +352,35 @@ class Entity(EntityLike):
         :type: ``dict{"x": float, "y": float}``
         """
         if self.parent and hasattr(self.parent, "global_position"):
-            return {
-                "x": self.parent.global_position["x"] + self.position["x"],
-                "y": self.parent.global_position["y"] + self.position["y"],
-            }
+            return self.parent.global_position + self.position
         else:
             return self.position
 
     # =========================================================================
 
+    # @property
+    # def collision_box(self):
+    #     # type: () -> list
+    #     """
+    #     The AABB that stores the collision area of the Entity. Equivalent to
+    #     the one specified in Factorio's ``data.raw``. Not exported; read only.
+
+    #     The ``collision_box`` treats the Entity's position as the origin. This
+    #     means that it is position independent, and equivalent for all entities
+    #     with the same name. If you want to know the area the Entity occupies in
+    #     world-space, you can use :py:meth:`get_area` instead.
+
+    #     :type: ``[[float, float], [float, float]]``
+    #     """
+    #     return self._collision_box
+
     @property
-    def collision_box(self):
-        # type: () -> list
+    def collision_set(self):
+        # type: () -> CollisionSet
         """
-        The AABB that stores the collision area of the Entity. Equivalent to
-        the one specified in Factorio's ``data.raw``. Not exported; read only.
-
-        The ``collision_box`` treats the Entity's position as the origin. This
-        means that it is position independent, and equivalent for all entities
-        with the same name. If you want to know the area the Entity occupies in
-        world-space, you can use :py:meth:`get_area` instead.
-
-        :type: ``[[float, float], [float, float]]``
+        TODO
         """
-        return self._collision_box
+        return self._collision_set
 
     # =========================================================================
 
@@ -498,29 +532,111 @@ class Entity(EntityLike):
 
     def mergable_with(self, other):
         # type: (Entity) -> bool
-        return (type(self) == type(other) and
-                self.name == other.name and
-                self.global_position == other.global_position and
-                self.id == other.id)
+        return (
+            type(self) == type(other)
+            and self.name == other.name
+            and self.global_position == other.global_position
+            and self.id == other.id
+        )
 
     def merge(self, other):
         # type: (Entity) -> None
-        # If applicable,  copy control_behavior verbatim
-        # This handles a large number of settings, but not all; those are taken
-        # care of in this method in each individual Entity subtype
-        if hasattr(self, "control_behavior") and hasattr(other, "control_behavior"):
-            self.control_behavior = other.control_behavior
-        
-        # Add on
-        if hasattr(self, "neighbours") and hasattr(other, "neighbours"):
-            for association in other.neighbours:
-                # Check to make sure we don't exceed max connections
-                if len(self.neighbours) < 5:
-                    # Also check to make sure we don't add the same connection
-                    # multiple times
-                    if association not in self.neighbours:
-                        self.neighbours.append(association)
+        # TODO: It might be smarter to just move all these into thier own mixins;
+        # that way we wouldn't have to call hasattr() for all of them
 
+        # Control Behavior (overwrite self with other)
+        if hasattr(self, "control_behavior") and hasattr(other, "control_behavior"):
+            # TODO: set on per entity basis
+            self.control_behavior = copy.deepcopy(other.control_behavior)
+
+        # Power Neighbours (union of the two sets, not exceeding 5 connections)
+        if hasattr(self, "neighbours") and hasattr(other, "neighbours"):
+            # Iterate over every association in other (the to-be deleted entity)
+            for association in other.neighbours:
+                # Keep track of whether or not this association was added to self
+                association_added = False
+
+                # Make sure we don't add the same association multiple times
+                if association not in self.neighbours:
+                    # Also make sure we don't exceed 5 connections
+                    if len(self.neighbours) < 5:
+                        self.neighbours.append(association)
+                        association_added = True
+
+                # However, entities that used to point to `other` still do,
+                # which causes problems since `other` is usually to be deleted
+                # after merging
+                # So we now we find the entity that other used to point to and
+                # iterate over it's neighbours:
+                associated_entity = association()
+                for i, old_association in enumerate(associated_entity.neighbours):
+                    # If the association used to point to `other`, make it point
+                    # to `self`
+                    if old_association == Association(other):
+                        # Only do so, however, if this association is not
+                        # already in the set of neighbours and we added the
+                        # connection before, and if we actually even merged the
+                        # connection in the first place
+                        if (
+                            Association(self) not in associated_entity.neighbours
+                            and association_added
+                        ):
+                            associated_entity.neighbours[i] = Association(self)
+                        else:
+                            # Otherwise, the association points to an entity
+                            # that will likely become invalid, so we remove it
+                            associated_entity.neighbours.remove(old_association)
+
+        def merge_circuit_connection(self, side, color, point, other):
+            # Keep track of whether or not this association was added to self
+            association_added = False
+
+            # Make sure we don't add the same association multiple times
+            if point not in self.connections[side][color]:
+                self.connections[side][color].append(point)
+                association_added = True
+
+            # Determine the location where `point` points to
+            association = point["entity_id"]
+            associated_entity = association()
+            target_side = point.get("circuit_id", 1)  # default to `1` if not there
+            if associated_entity.dual_circuit_connectable:
+                target = {"entity_id": Association(self), "circuit_id": target_side}
+            else:
+                target = {"entity_id": Association(self)}
+
+            target_location = associated_entity.connections[str(target_side)][color]
+            for point in target_location:
+                if point["entity_id"] == Association(other):
+                    if target not in target_location and association_added:
+                        point["entity_id"] = Association(self)
+                    else:
+                        target_location.remove(point)
+
+        # Okay, so merging power connections is not guaranteed to even have a
+        # consistent result, due to the fact that they're one-directional by
+        # nature
+        # Thus, for now at least, I'm going to just flat out prevent users from
+        # merging power-switches until I figure out some way to manage this
+        # issue
+
+        # def merge_power_connection(self, side, point, other):
+        #     # Make sure we don't add the same association multiple times
+        #     # point["entity_id"] = Association(self)
+        #     # target = {"entity_id": Association(self), "wire_id": 0}
+
+        #     # if point["entity_id"] == Association(other):
+        #     #     if target not in self.connections[side]:
+        #     #         self.connections[side].append(point)
+        #     #     else:
+        #     #         point["entity_id"] = Association(self)
+
+        #     association = point["entity_id"]
+        #     associated_entity = association()
+        #     if associated_entity:
+        #         print("what the fuck")
+
+        # Connections (union of the two sets)
         if hasattr(self, "connections") and hasattr(other, "connections"):
             for side in other.connections:
                 if side in {"1", "2"}:
@@ -530,19 +646,21 @@ class Entity(EntityLike):
                         if color not in self.connections[side]:
                             self.connections[side][color] = []
                         for point in other.connections[side][color]:
-                            self.connections[side][color].append(point)
-                else: # side in {"Cu0", "Cu1"}:
-                    if side not in self.connections:
-                        self.connections[side] = []
-                    for point in other.connections[side]:
-                        self.connections[side].append(point)
+                            merge_circuit_connection(self, side, color, point, other)
+                else:  # side in {"Cu0", "Cu1"}:
+                    # if side not in self.connections:
+                    #     self.connections[side] = []
+                    # for point in other.connections[side]:
+                    #     if point not in self.connections[side]:
+                    #         self.connections[side].append(point)
+                    #     merge_power_connection(self, side, point, other)
+                    raise ValueError(
+                        "Cannot merge power switches (yet); see <TODO> for details"
+                    )
 
-        # Item requests
-        if hasattr(self, "items") and hasattr(other, "items"):
-            # Wipe the old item requests
-            self.items = {}
-            for item, count in other.items.items():
-                self.set_item_request(item, count)
+        # Tags (overwrite self with other)
+        # (make sure to make a copy in case the original data gets deleted)
+        self.tags = copy.deepcopy(other.tags)
 
     def _add_export(self, name, criterion=None, formatter=None):
         # type: (str, Callable, Callable) -> None
@@ -577,9 +695,15 @@ class Entity(EntityLike):
 
     def __repr__(self):  # pragma: no coverage
         # type: () -> str
-        return "<{0}{1} at 0x{2:016X}>{3}".format(
+        return "<{0}{1}>{2}".format(
             type(self).__name__,
             " '{}'".format(self.id) if self.id is not None else "",
-            id(self),
             str(self.to_dict()),
         )
+        # Association debug printing
+        # return "<{0}{1} at 0x{2:016X}>{3}".format(
+        #     type(self).__name__,
+        #     " '{}'".format(self.id) if self.id is not None else "",
+        #     id(self),
+        #     str(self.to_dict()),
+        # )

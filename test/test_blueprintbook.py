@@ -119,12 +119,10 @@ class BlueprintBookTesting(unittest.TestCase):
                 "blueprint_book": {
                     "active_index": 0,
                     "item": "blueprint-book",
-                    "icons": [
-                        {"index": 1, "signal": {"name": "wood", "type": "item"}}
-                    ],
-                    "version": encode_version(1, 1, 59, 0)
+                    "icons": [{"index": 1, "signal": {"name": "wood", "type": "item"}}],
+                    "version": encode_version(1, 1, 59, 0),
                 }
-            }
+            },
         )
 
         # Incorrect constructor

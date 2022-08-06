@@ -196,7 +196,7 @@ Associations default to ``None`` when the entity it should point to was collecte
     del blueprint.entities[1]
 
     print(blueprint.entities[0].connections)
-    # {'1': {'red': [{'entity_id': None}]}}
+    # {'1': {'red': [{'entity_id': Association to None}]}}
 
     print(blueprint.to_string())
     # InvalidConnectionError: 'inserter' entity at {'x': -0.5, 'y': 0.5} is connected to an entity that 
@@ -287,3 +287,26 @@ An examples could be a ``Grid`` class, that places a specific entity at an X and
 
     The code above is under heavy development while I try to make it more intuitive and easier for users to specify thier own custom classes.
     Keep this in mind that behavior might change drastically from version to version while I iron out the details.
+
+.. _handbook.entities.entity-merging:
+
+Entity Merging
+--------------
+
+When playing Factorio, the game allows you to place certian entities of similar types on top of other entities, which combines their attributes in specific ways. As now intruduced in version ``1.0.0``, a subset of this behavior is now also supported in Draftsman.
+
+To be more specific, *entity merging* is defined with the following criteria:
+
+1. Be an instance of the same class (``Container``, ``TransportBelt``, ``ElectricPole``, etc.)
+2. Have the exact same :py:attr:`~.Entity.name`
+3. Have the same :py:attr:`~.Entity.id` (can be ``None``, but both must be ``None``)
+4. Occupy the exact same :py:attr:`~.Entity.global_position`
+5. Be facing the exact same :py:attr:`~.DirectionalMixin.direction` (if applicable)
+
+.. NOTE::
+
+    Entity merging does **NOT** include *replacing*, such as defined under Factorio's fast-replacable-group. This is why entity merging is described as a subset of Factorio's behavior, as replacing entities with entities with different names is not (currently) implemented.
+
+.. WARNING::
+
+    Due to technical reasons, merging power switches with power-wire connections (either "Cu0" or "Cu1") right now is **prohibited**. Bascially, these wire connections are abnormal in that they are 1-directional, which makes the order in which entities merge important to the final outcome of the merging result, as there is no way to check from the entity that is being pointed to back to the power switch that points to it to update it's connections. Fixing this is possible, but it requires a deliberate decision, and since this happens to be a minimal edge case and the merging of wire connections is already complex enough, this is the current behavior.

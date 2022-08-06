@@ -4,8 +4,10 @@
 from draftsman.classes.association import Association
 from draftsman.classes.entitylike import EntityLike
 from draftsman.classes.entitylist import EntityList
-from draftsman.classes.spatialhashmap import SpatialHashMap
+from draftsman.classes.tilelist import TileList
+from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.tile import Tile
+from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.error import (
     DraftsmanError,
     EntityNotPowerConnectableError,
@@ -19,7 +21,7 @@ from draftsman.warning import (
     ConnectionDistanceWarning,
     TooManyConnectionsWarning,
 )
-from draftsman import utils
+from draftsman.utils import AABB, PrimitiveAABB, flatten_entities, distance
 
 import abc
 import six
@@ -42,17 +44,16 @@ class EntityCollection(object):
     def entities(self):  # pragma: no coverage
         # type: () -> EntityList
         """
-        Object that holds the ``EntityLikes``, usually a
-        :py:class:`~draftsman.classes.entitylist.EntityList`.
+        Object that holds the ``EntityLikes``, usually a :py:class:`.EntityList`.
         """
         pass
 
     @abc.abstractproperty
-    def entity_hashmap(self):  # pragma: no coverage
-        # type: () -> SpatialHashMap
+    def entity_map(self):  # pragma: no coverage
+        # type: () -> SpatialDataStructure
         """
-        Object that holds the spatial information of the entities of this object,
-        usually a :py:class:`~draftsman.classes.spatialhashmap.SpatialHashMap`.
+        Object that holds references to the entities organized by their spatial
+        position. An implementation of :py:class:`.SpatialDataStructure`.
         """
         pass
 
@@ -88,8 +89,8 @@ class EntityCollection(object):
     # Custom edge functions for EntityList interaction
     # =========================================================================
 
-    def on_entity_insert(self, entitylike):  # pragma: no coverage
-        # type: (EntityLike) -> None
+    def on_entity_insert(self, entitylike, merge):  # pragma: no coverage
+        # type: (EntityLike, bool) -> EntityLike
         """
         Function called when an ``EntityLike`` is inserted into this object's
         ``entities`` list (assuming that the ``entities`` list is a
@@ -123,44 +124,44 @@ class EntityCollection(object):
     # =========================================================================
 
     def find_entity(self, name, position):
-        # type: (str, Union[tuple, list, dict]) -> EntityLike
+        # type: (str, Union[Vector, PrimitiveVector]) -> EntityLike
         """
-        Finds an entity with ``name`` at a position ``position``. If multiple 
+        Finds an entity with ``name`` at a position ``position``. If multiple
         entities exist at the queried position, the one that was first placed is
         returned.
 
         :param name: The name of the entity to look for.
-        :param position: Either a sequence of two ``floats``, or a ``dict`` with
-            an ``"x"`` and ``"y"`` keys.
+        :param position: The position to search, either a PrimitiveVector or a
+            :py:class:`.Vector`.
 
         :retuns: The ``EntityLike`` at ``position``, or ``None`` of none were
             found.
         """
-        results = self.entity_hashmap.get_on_point(position)
+        results = self.entity_map.get_on_point(position)
         try:
             return list(filter(lambda x: x.name == name, results))[0]
         except IndexError:
             return None
 
     def find_entity_at_position(self, position):
-        # type: (Union[tuple, list, dict]) -> EntityLike
+        # type: (Union[Vector, PrimitiveVector]) -> EntityLike
         """
         Finds any entity at the position ``position``. If multiple entities
         exist at the queried position, the one that was first placed is returned.
 
-        :param position: Either a sequence of two ``floats``, or a ``dict`` with
-            an ``"x"`` and ``"y"`` keys.
+        :param position: The position to search, either a PrimitiveVector or a
+            :py:class:`.Vector`.
 
         :retuns: The ``EntityLike`` at ``position``, or ``None`` of none were
             found.
         """
         try:
-            return self.entity_hashmap.get_on_point(position)[0]
+            return self.entity_map.get_on_point(position)[0]
         except IndexError:
             return None
 
     def find_entities(self, aabb=None):
-        # type: (list) -> list[EntityLike]
+        # type: (Union[AABB, PrimitiveAABB]) -> list[EntityLike]
         """
         Returns a ``list`` of all entities within the area ``aabb``. Works
         similiarly to
@@ -168,9 +169,8 @@ class EntityCollection(object):
         If no ``aabb`` is provided then the method simply returns all the
         entities in the blueprint.
 
-        :param aabb: A list of two lists, each of two floats. The first pair
-            represents the top-left corner (minimum) and the second the
-            bottom-right corner (maximum).
+        :param aabb: An :py:class:`.AABB`, or a ``Sequence`` of 4 floats,
+            usually a ``list`` or ``tuple``.
 
         :returns: A regular ``list`` of ``EntityLikes`` whose ``collision_box``
             overlaps the queried AABB.
@@ -178,7 +178,10 @@ class EntityCollection(object):
         if aabb is None:
             return list(self.entities)
 
-        return self.entity_hashmap.get_in_area(aabb)
+        # Normalize AABB
+        aabb = AABB.from_other(aabb)
+
+        return self.entity_map.get_in_area(aabb)
 
     def find_entities_filtered(self, **kwargs):
         # type: (**dict) -> list[EntityLike]
@@ -197,13 +200,13 @@ class EntityCollection(object):
               - Type
               - Description
             * - ``position``
-              - ``[float, float]`` or ``{"x": float, "y": float}``
+              - ``Vector`` or ``PrimitiveVector``
               - Grid position to search.
             * - ``radius``
               - ``float``
               - Radius of the circle around position to search.
             * - ``area``
-              - ``[[float, float], [float, float]]``
+              - ``AABB`` or ``PrimitiveAABB``
               - AABB to search in.
 
         .. list-table:: Criteria keywords
@@ -240,18 +243,19 @@ class EntityCollection(object):
         if "position" in kwargs:
             if "radius" in kwargs:
                 # Intersect entities with circle
-                search_region = self.entity_hashmap.get_in_radius(
+                search_region = self.entity_map.get_in_radius(
                     kwargs["radius"], kwargs["position"]
                 )
             else:
                 # Intersect entities with point
-                search_region = self.entity_hashmap.get_on_point(kwargs["position"])
+                search_region = self.entity_map.get_on_point(kwargs["position"])
         elif "area" in kwargs:
             # Intersect entities with area
-            search_region = self.entity_hashmap.get_in_area(kwargs["area"])
+            area = AABB.from_other(kwargs["area"])
+            search_region = self.entity_map.get_in_area(area)
         else:
             # Search all entities, but make sure it's a 1D list
-            search_region = utils.flatten_entities(self.entities)
+            search_region = flatten_entities(self.entities)
 
         if isinstance(kwargs.get("name", None), str):
             names = {kwargs.pop("name", None)}
@@ -382,14 +386,15 @@ class EntityCollection(object):
 
         # Issue a warning if the entities being connected are too far apart
         min_dist = min(entity_1.maximum_wire_distance, entity_2.maximum_wire_distance)
-        entity_1_pos = [entity_1.global_position["x"], entity_1.global_position["y"]]
-        entity_2_pos = [entity_2.global_position["x"], entity_2.global_position["y"]]
-        real_dist = utils.dist(entity_1_pos, entity_2_pos)
+        real_dist = distance(
+            entity_1.global_position.data, entity_2.global_position.data
+        )
         if real_dist > min_dist:
             warnings.warn(
-                "Distance between entity '{}' and entity '{}' ({}) is greater" 
-                " than max connection distance ({})"
-                .format(entity_1.name, entity_2.name, real_dist, min_dist),
+                "Distance between entity '{}' and entity '{}' ({}) is greater"
+                " than max connection distance ({})".format(
+                    entity_1.name, entity_2.name, real_dist, min_dist
+                ),
                 ConnectionDistanceWarning,
                 stacklevel=2,
             )
@@ -409,7 +414,7 @@ class EntityCollection(object):
                 stacklevel=2,
             )
 
-        # Only worried about self
+        # Only worried about entity_1
         if entity_1.dual_power_connectable:  # power switch
             # Add copper circuit connection
             str_side = "Cu" + str(side - 1)
@@ -424,7 +429,7 @@ class EntityCollection(object):
                 if Association(entity_2) not in entity_1.neighbours:
                     entity_1.neighbours.append(Association(entity_2))
 
-        # Only worried about target
+        # Only worried about entity_2
         if entity_2.dual_power_connectable:  # power switch
             # Add copper circuit connection
             str_side = "Cu" + str(side - 1)
@@ -513,17 +518,23 @@ class EntityCollection(object):
         # type: () -> None
         """
         Remove all power connections in the Collection, including any power
-        connections between power switches. Does nothing if there are no power
-        connections in the Collection.
+        connections between power switches. Recurses through any subgroups, and
+        removes power connections from them as well. Does nothing if there are
+        no power connections in the Collection.
         """
         for entity in self.entities:
-            if hasattr(entity, "neighbours"):
-                entity.neighbours = None
-            if hasattr(entity, "connections"):
-                if "Cu0" in entity.connections:
-                    del entity.connections["Cu0"]
-                if "Cu1" in entity.connections:
-                    del entity.connections["Cu1"]
+            if isinstance(entity, EntityCollection):
+                # Recursively remove connections from subgroups
+                entity.remove_power_connections()
+            else:
+                # Remove the connections for this particular entity
+                if hasattr(entity, "neighbours"):
+                    entity.neighbours = None
+                if hasattr(entity, "connections"):
+                    if "Cu0" in entity.connections:
+                        del entity.connections["Cu0"]
+                    if "Cu1" in entity.connections:
+                        del entity.connections["Cu1"]
 
     def generate_power_connections(self, prefer_axis=True, only_axis=False):
         # type: (bool, bool) -> None
@@ -560,38 +571,42 @@ class EntityCollection(object):
                 # If only_axis is true, only include ones that have the same x
                 # or y
                 if (
-                    cur_pole.global_position["x"] != other.global_position["x"]
-                    and cur_pole.global_position["y"] != other.global_position["y"]
+                    cur_pole.global_position.x != other.global_position.x
+                    and cur_pole.global_position.y != other.global_position.y
                     and only_axis
                 ):
                     return False
                 # Only return poles that are less than the max power pole
                 # distance
-                distance = utils.dist(cur_pole.global_position, other.global_position)
+                dist = distance(
+                    cur_pole.global_position.data, other.global_position.data
+                )
                 min_dist = min(
                     cur_pole.maximum_wire_distance, other.maximum_wire_distance
                 )
-                return distance <= min_dist
+                return dist <= min_dist
 
             potential_neighbours = list(filter(power_connectable, electric_poles))
             # Sort the power poles by distance
             potential_neighbours.sort(
-                key=lambda x: utils.dist(x.global_position, cur_pole.global_position)
+                key=lambda x: distance(
+                    x.global_position.data, cur_pole.global_position.data
+                )
             )
 
             # Sort the power poles by whether or not they are on the axis first
             if prefer_axis:
                 potential_neighbours.sort(
                     key=lambda x: not (
-                        x.global_position["x"] == cur_pole.global_position["x"]
-                        or x.global_position["y"] == cur_pole.global_position["y"]
+                        x.global_position.x == cur_pole.global_position.x
+                        or x.global_position.y == cur_pole.global_position.y
                     )
                 )
 
             # Iterate over every potential neighbour
             while len(potential_neighbours) > 0:
                 neighbour = potential_neighbours.pop()
-                # Make sure this connection would not exceed each entities max 
+                # Make sure this connection would not exceed each entities max
                 # connections
                 if len(cur_pole.neighbours) < 5 and len(neighbour.neighbours) < 5:
                     self.add_power_connection(cur_pole, neighbour)
@@ -685,14 +700,15 @@ class EntityCollection(object):
         min_dist = min(
             entity_1.circuit_wire_max_distance, entity_2.circuit_wire_max_distance
         )
-        entity_1_pos = [entity_1.global_position["x"], entity_1.global_position["y"]]
-        entity_2_pos = [entity_2.global_position["x"], entity_2.global_position["y"]]
-        real_dist = utils.dist(entity_1_pos, entity_2_pos)
+        real_dist = distance(
+            entity_1.global_position.data, entity_2.global_position.data
+        )
         if real_dist > min_dist:
             warnings.warn(
                 "Distance between entity '{}' and entity '{}' ({}) is greater"
-                " than max connection distance ({})"
-                .format(entity_1.name, entity_2.name, real_dist, min_dist),
+                " than max connection distance ({})".format(
+                    entity_1.name, entity_2.name, real_dist, min_dist
+                ),
                 ConnectionDistanceWarning,
                 stacklevel=2,
             )
@@ -830,15 +846,21 @@ class EntityCollection(object):
     def remove_circuit_connections(self):
         # type: () -> None
         """
-        Remove all circuit connections in the Collection. Does nothing if there
-        are no circuit connections in the Collection
+        Remove all circuit connections in the Collection. Recurses through all
+        subgroups and removes circuit connections from them as well. Does
+        nothing if there are no circuit connections in the Collection.
         """
         for entity in self.entities:
-            if hasattr(entity, "connections"):
-                if "1" in entity.connections:
-                    del entity.connections["1"]
-                if "2" in entity.connections:
-                    del entity.connections["2"]
+            if isinstance(entity, EntityCollection):
+                # Recursively remove connections from subgroups
+                entity.remove_circuit_connections()
+            else:
+                # Remove the connections from this particular entity
+                if hasattr(entity, "connections"):
+                    if "1" in entity.connections:
+                        del entity.connections["1"]
+                    if "2" in entity.connections:
+                        del entity.connections["2"]
 
 
 # =============================================================================
@@ -848,11 +870,12 @@ class EntityCollection(object):
 class TileCollection(object):
     """
     Abstract class used to describe an object that can contain a list of
-    :py:class:`~draftsman.classes.tile.Tile` instances.
+    :py:class:`.Tile` instances.
     """
 
     @abc.abstractproperty
     def tiles(self):  # pragma: no coverage
+        # type: () -> TileList
         """
         Object that holds the ``Tiles``, usually a
         :py:class:`~draftsman.classes.tilelist.TileList`.
@@ -860,7 +883,8 @@ class TileCollection(object):
         pass
 
     @abc.abstractproperty
-    def tile_hashmap(self):  # pragma: no coverage
+    def tile_map(self):  # pragma: no coverage
+        # type: () -> SpatialDataStructure
         """
         Object that holds the spatial information for the Tiles of this object,
         usually a :py:class:`~draftsman.classes.spatialhashmap.SpatialHashMap`.
@@ -868,22 +892,47 @@ class TileCollection(object):
         pass
 
     # =========================================================================
+    # Custom edge functions for TileList interaction
+    # =========================================================================
+
+    def on_tile_insert(self, tile, merge):  # pragma: no coverage
+        # type: (Tile, bool) -> Tile
+        """
+        TODO
+        """
+        pass
+
+    def on_tile_set(self, old_tile, new_tile):  # pragma: no coverage
+        # type: (Tile, bool) -> None
+        """
+        TODO
+        """
+        pass
+
+    def on_tile_remove(self, tile):  # pragma: no coverage
+        # type: (Tile) -> None
+        """
+        TODO
+        """
+        pass
+
+    # =========================================================================
     # Queries
     # =========================================================================
 
-    def find_tile(self, x, y):
-        # type: (int, int) -> Tile
+    def find_tile(self, position):
+        # type: (Union[Vector, PrimitiveVector]) -> Tile
         """
-        Returns the tile at the tile-coordinate ``x`` and ``y``. If there are
+        Returns the tile at the tile coordinate ``position``. If there are
         multiple tiles at that location, the entity that was inserted first is
         returned.
 
-        :param x: X-position in tile-coordinates to search.
-        :param y: Y-position in tile-coordinates to search.
+        :param position: The position to search, either a PrimitiveVector or a
+            :py:class:`.Vector`.
 
-        :returns: The tile at ``(x, y)``, or ``None`` if there is none.
+        :returns: The tile at ``position``, or ``None`` if there is none.
         """
-        tiles = self.tile_hashmap.get_on_point((x + 0.5, y + 0.5))
+        tiles = self.tile_map.get_on_point(Vector(0.5, 0.5) + position)
         try:
             return tiles[0]
         except IndexError:
@@ -906,13 +955,13 @@ class TileCollection(object):
               - Type
               - Description
             * - ``position``
-              - ``[float, float]`` or ``{"x": float, "y": float}``
+              - ``Vector`` or ``PrimitiveVector``
               - Grid position to search.
             * - ``radius``
               - ``float``
               - Radius of the circle around position to search.
             * - ``area``
-              - ``[[float, float], [float, float]]``
+              - ``AABB`` or ``PrimitiveAABB``
               - AABB to search in.
 
         .. list-table:: Criteria keywords
@@ -936,12 +985,13 @@ class TileCollection(object):
 
         if "position" in kwargs and "radius" in kwargs:
             # Intersect entities with circle
-            search_region = self.tile_hashmap.get_in_radius(
+            search_region = self.tile_map.get_in_radius(
                 kwargs["radius"], kwargs["position"]
             )
         elif "area" in kwargs:
             # Intersect entities with area
-            search_region = self.tile_hashmap.get_in_area(kwargs["area"])
+            area = AABB.from_other(kwargs["area"])
+            search_region = self.tile_map.get_in_area(area)
         else:
             search_region = self.tiles
 
@@ -953,12 +1003,12 @@ class TileCollection(object):
         # Keep track of how many
         limit = kwargs.pop("limit", len(search_region))
 
-        def test(entity):
-            if names is not None and entity.name not in names:
+        def test(tile):
+            if names is not None and tile.name not in names:
                 return False
             return True
 
         if kwargs.get("invert", False):
-            return list(filter(lambda entity: not test(entity), search_region))[:limit]
+            return list(filter(lambda tile: not test(tile), search_region))[:limit]
         else:
-            return list(filter(lambda entity: test(entity), search_region))[:limit]
+            return list(filter(lambda tile: test(tile), search_region))[:limit]

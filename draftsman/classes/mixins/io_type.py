@@ -10,7 +10,8 @@ from schema import SchemaError
 import six
 
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
+
+if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 try:
@@ -28,13 +29,13 @@ class IOTypeMixin(object):
         # type: (str, list[str], **dict) -> None
         super(IOTypeMixin, self).__init__(name, similar_entities, **kwargs)
 
-        self.io_type = "input"              # Default
+        self.io_type = "input"  # Default
         # Import dict (internal) format
-        if "type" in kwargs:                
+        if "type" in kwargs:
             self.io_type = kwargs["type"]
             self.unused_args.pop("type")
         # More user-friendly format in line with attribute name
-        elif "io_type" in kwargs:           
+        elif "io_type" in kwargs:
             self.io_type = kwargs["io_type"]
             self.unused_args.pop("io_type")
 

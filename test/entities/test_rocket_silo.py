@@ -34,3 +34,25 @@ class RocketSiloTesting(unittest.TestCase):
             RocketSilo("this is not a rocket silo")
         with self.assertRaises(TypeError):
             RocketSilo(auto_launch="incorrect")
+
+    def test_mergable_with(self):
+        silo1 = RocketSilo("rocket-silo")
+        silo2 = RocketSilo("rocket-silo", auto_launch=True, tags={"some": "stuff"})
+
+        self.assertTrue(silo1.mergable_with(silo1))
+
+        self.assertTrue(silo1.mergable_with(silo2))
+        self.assertTrue(silo2.mergable_with(silo1))
+
+        silo2.tile_position = (1, 1)
+        self.assertFalse(silo1.mergable_with(silo2))
+
+    def test_merge(self):
+        silo1 = RocketSilo("rocket-silo")
+        silo2 = RocketSilo("rocket-silo", auto_launch=True, tags={"some": "stuff"})
+
+        silo1.merge(silo2)
+        del silo2
+
+        self.assertEqual(silo1.auto_launch, True)
+        self.assertEqual(silo1.tags, {"some": "stuff"})

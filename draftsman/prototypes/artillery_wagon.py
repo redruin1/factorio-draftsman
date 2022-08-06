@@ -20,6 +20,10 @@ class ArtilleryWagon(OrientationMixin, Entity):
 
     def __init__(self, name=artillery_wagons[0], **kwargs):
         # type: (str, **dict) -> None
+        """
+        TODO
+        """
+
         super(ArtilleryWagon, self).__init__(name, artillery_wagons, **kwargs)
 
         if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage

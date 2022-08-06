@@ -26,3 +26,24 @@ class PipeTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             Pipe("Ceci n'est pas une pipe.")
+
+    def test_mergable_with(self):
+        pipe1 = Pipe("pipe")
+        pipe2 = Pipe("pipe", tags={"some": "stuff"})
+
+        self.assertTrue(pipe1.mergable_with(pipe1))
+
+        self.assertTrue(pipe1.mergable_with(pipe2))
+        self.assertTrue(pipe2.mergable_with(pipe1))
+
+        pipe2.tile_position = (1, 1)
+        self.assertFalse(pipe1.mergable_with(pipe2))
+
+    def test_merge(self):
+        pipe1 = Pipe("pipe")
+        pipe2 = Pipe("pipe", tags={"some": "stuff"})
+
+        pipe1.merge(pipe2)
+        del pipe2
+
+        self.assertEqual(pipe1.tags, {"some": "stuff"})

@@ -13,11 +13,15 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     DirectionalMixin,
 )
+from draftsman.error import DataFormatError
+from draftsman import signatures
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import transport_belts
 from draftsman.data import entities
 
+from schema import SchemaError
+import six
 import warnings
 
 
@@ -55,3 +59,15 @@ class TransportBelt(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+    # =========================================================================
+
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = (
+                signatures.TRANSPORT_BELT_CONTROL_BEHAVIOR.validate(value)
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)

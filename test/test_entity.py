@@ -2,12 +2,12 @@
 # -*- encoding: utf-8 -*-
 
 from draftsman.blueprintable import *
+from draftsman.classes.vector import Vector
 from draftsman.constants import *
 from draftsman.entity import *
 from draftsman.error import *
 from draftsman.warning import *
-
-from schema import SchemaError
+from draftsman.utils import AABB
 
 import sys
 
@@ -60,9 +60,11 @@ class EntityTesting(unittest.TestCase):
         with self.assertRaises(TypeError):
             container.tags = "incorrect"
 
-    def test_get_area(self):
+    def test_get_world_bounding_box(self):
         combinator = DeciderCombinator(tile_position=[3, 3], direction=Direction.EAST)
-        self.assertEqual(combinator.get_area(), [[3.35, 3.15], [4.65, 3.85]])
+        self.assertEqual(
+            combinator.get_world_bounding_box(), AABB(3.35, 3.15, 4.65, 3.85)
+        )
 
     # def test_set_name(self):
     #     iron_chest = Container("iron-chest")
@@ -75,18 +77,29 @@ class EntityTesting(unittest.TestCase):
     def test_set_position(self):
         iron_chest = Container("iron-chest")
         iron_chest.position = (1.23, 1.34)
-        self.assertAlmostEqual(iron_chest.position, {"x": 1.23, "y": 1.34})
-        self.assertEqual(iron_chest.tile_position, {"x": 1, "y": 1})
+        self.assertAlmostEqual(iron_chest.position, Vector(1.23, 1.34))
+        self.assertAlmostEqual(iron_chest.position.to_dict(), {"x": 1.23, "y": 1.34})
+        self.assertEqual(iron_chest.tile_position, Vector(1, 1))
+        self.assertEqual(iron_chest.tile_position.to_dict(), {"x": 1, "y": 1})
 
         with self.assertRaises(ValueError):
             iron_chest.position = ("fish", 10)
 
         iron_chest.tile_position = (10, 10.1)  # should cast float to int
-        self.assertEqual(iron_chest.tile_position, {"x": 10, "y": 10})
-        self.assertAlmostEqual(iron_chest.position, {"x": 10.5, "y": 10.5})
+        self.assertEqual(iron_chest.tile_position, Vector(10, 10))
+        self.assertEqual(iron_chest.tile_position.to_dict(), {"x": 10, "y": 10})
+        self.assertAlmostEqual(iron_chest.position, Vector(10.5, 10.5))
+        self.assertAlmostEqual(iron_chest.position.to_dict(), {"x": 10.5, "y": 10.5})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             iron_chest.tile_position = (1.0, "raw-fish")
+
+    # def test_modify_position_attribute(self):
+    #     # TODO: this would be nice
+    #     iron_chest = Container("iron-chest")
+    #     iron_chest.position.x += 1
+    #     self.assertEqual(iron_chest.position, Vector(1.5, 0.5))
+    #     self.assertEqual(iron_chest.tile_position, Vector(1, 0))
 
     def test_change_name_in_blueprint(self):
         blueprint = Blueprint()

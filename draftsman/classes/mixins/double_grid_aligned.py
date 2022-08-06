@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 
+from draftsman.classes.vector import Vector
 from draftsman.warning import RailAlignmentWarning
 
 import math
@@ -63,11 +64,11 @@ class DoubleGridAlignedMixin(object):
         super(DoubleGridAlignedMixin, type(self)).position.fset(self, value)
 
         # if the grid alignment is off, warn the user
-        if self._tile_position["x"] % 2 == 1 or self._tile_position["y"] % 2 == 1:
-            cast_position = [
-                math.floor(self._tile_position["x"] / 2) * 2,
-                math.floor(self._tile_position["y"] / 2) * 2,
-            ]
+        if self._tile_position.x % 2 == 1 or self._tile_position.y % 2 == 1:
+            cast_position = Vector(
+                math.floor(self._tile_position.x / 2) * 2,
+                math.floor(self._tile_position.y / 2) * 2,
+            )
             warnings.warn(
                 "Double-grid aligned entity is not placed along chunk grid; "
                 "entity's position will be cast from {} to {} when imported".format(
@@ -117,11 +118,11 @@ class DoubleGridAlignedMixin(object):
         super(DoubleGridAlignedMixin, type(self)).tile_position.fset(self, value)
 
         # if the grid alignment is off, warn the user
-        if self._tile_position["x"] % 2 == 1 or self._tile_position["y"] % 2 == 1:
-            cast_position = [
-                math.floor(self._tile_position["x"] / 2) * 2,
-                math.floor(self._tile_position["y"] / 2) * 2,
-            ]
+        if self._tile_position.x % 2 == 1 or self._tile_position.y % 2 == 1:
+            cast_position = Vector(
+                math.floor(self._tile_position.x / 2) * 2,
+                math.floor(self._tile_position.y / 2) * 2,
+            )
             warnings.warn(
                 "Double-grid aligned entity is not placed along chunk grid; "
                 "entity's position will be cast from {} to {} when imported".format(

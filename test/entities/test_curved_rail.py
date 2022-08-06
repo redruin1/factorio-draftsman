@@ -23,7 +23,7 @@ class CurvedRailTesting(unittest.TestCase):
         )
         self.assertEqual(
             curved_rail.to_dict(),
-            {"name": "curved-rail", "position": {"x": 2.0, "y": 2.0}, "direction": 7},
+            {"name": "curved-rail", "position": {"x": 4.0, "y": 2.5}, "direction": 7},
         )
 
         # Warnings:
@@ -37,3 +37,26 @@ class CurvedRailTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             CurvedRail("this is not a curved rail")
+
+    def test_mergable_with(self):
+        rail1 = CurvedRail("curved-rail")
+        rail2 = CurvedRail("curved-rail", tags={"some": "stuff"})
+
+        self.assertTrue(rail1.mergable_with(rail2))
+        self.assertTrue(rail2.mergable_with(rail1))
+
+        rail2.direction = Direction.NORTHEAST
+        self.assertFalse(rail1.mergable_with(rail2))
+
+        rail2.direction = Direction.NORTH
+        rail2.tile_position = (10, 10)
+        self.assertFalse(rail1.mergable_with(rail2))
+
+    def test_merge(self):
+        rail1 = CurvedRail("curved-rail")
+        rail2 = CurvedRail("curved-rail", tags={"some": "stuff"})
+
+        rail1.merge(rail2)
+        del rail2
+
+        self.assertEqual(rail1.tags, {"some": "stuff"})

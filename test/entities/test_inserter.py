@@ -8,8 +8,6 @@ from draftsman.entity import Inserter, inserters
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -119,3 +117,31 @@ class InserterTesting(unittest.TestCase):
             self.assertEqual(inserter.dual_power_connectable, False)
             self.assertEqual(inserter.circuit_connectable, True)
             self.assertEqual(inserter.dual_circuit_connectable, False)
+
+    def test_mergable_with(self):
+        inserter1 = Inserter("inserter")
+        inserter2 = Inserter("inserter", override_stack_size=1, tags={"some": "stuff"})
+        self.assertTrue(inserter1.mergable_with(inserter1))
+
+        self.assertTrue(inserter1.mergable_with(inserter2))
+        self.assertTrue(inserter2.mergable_with(inserter1))
+
+        inserter2.tile_position = (1, 1)
+        self.assertFalse(inserter1.mergable_with(inserter2))
+
+        inserter2.tile_position = (0, 0)
+        inserter2.direction = Direction.EAST
+        self.assertFalse(inserter1.mergable_with(inserter2))
+
+        inserter2 = Inserter("fast-inserter")
+        self.assertFalse(inserter1.mergable_with(inserter2))
+
+    def test_merge(self):
+        inserter1 = Inserter("inserter")
+        inserter2 = Inserter("inserter", override_stack_size=1, tags={"some": "stuff"})
+
+        inserter1.merge(inserter2)
+        del inserter2
+
+        self.assertEqual(inserter1.override_stack_size, 1)
+        self.assertEqual(inserter1.tags, {"some": "stuff"})

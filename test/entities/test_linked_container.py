@@ -7,8 +7,6 @@ from draftsman.entity import LinkedContainer, linked_containers
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -22,7 +20,11 @@ class LinkedContainerTesting(unittest.TestCase):
         container = LinkedContainer(link_id=1000)
         self.assertEqual(
             container.to_dict(),
-            {"name": container.name, "position": container.position, "link_id": 1000},
+            {
+                "name": container.name,
+                "position": container.position.to_dict(),
+                "link_id": 1000,
+            },
         )
 
         # Warnings
@@ -56,3 +58,25 @@ class LinkedContainerTesting(unittest.TestCase):
         self.assertEqual(container.link_id, 0)
         with self.assertRaises(TypeError):
             container.link_id = "incorrect"
+
+    def test_mergable_with(self):
+        container1 = LinkedContainer()
+        container2 = LinkedContainer(link_id=0xFFFF, tags={"some": "stuff"})
+
+        self.assertTrue(container1.mergable_with(container1))
+
+        self.assertTrue(container1.mergable_with(container2))
+        self.assertTrue(container2.mergable_with(container1))
+
+        container2.tile_position = (1, 1)
+        self.assertFalse(container1.mergable_with(container2))
+
+    def test_merge(self):
+        container1 = LinkedContainer()
+        container2 = LinkedContainer(link_id=0xFFFF, tags={"some": "stuff"})
+
+        container1.merge(container2)
+        del container2
+
+        self.assertEqual(container1.link_id, 0xFFFF)
+        self.assertEqual(container1.tags, {"some": "stuff"})

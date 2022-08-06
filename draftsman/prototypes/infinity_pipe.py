@@ -262,3 +262,11 @@ class InfinityPipe(Entity):
         self.infinity_settings["percentage"] = percentage
         self.infinity_settings["mode"] = mode
         self.infinity_settings["temperature"] = temperature
+
+    def merge(self, other):
+        super(InfinityPipe, self).merge(other)
+
+        self.infinite_fluid_name = other.infinite_fluid_name
+        self.infinite_fluid_percentage = other.infinite_fluid_percentage
+        self.infinite_fluid_mode = other.infinite_fluid_mode
+        self.infinite_fluid_temperature = other.infinite_fluid_temperature

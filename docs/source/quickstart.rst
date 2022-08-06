@@ -24,7 +24,11 @@ Once this command finishes, if you see the output ``hella slick; nothing broke!`
 .. NOTE::
     
     **In order for the module to be set up correctly, both of the above commands must be run.**
-    Ideally, the ``draftsman-update`` command would be run automatically after install, though I have yet to find an elegant way to do this.
+
+.. NOTE::
+
+    ``draftsman-update`` comes with a number of options, which you can view with ``draftsman-update -h`` or ``draftsman-update --help``.
+    One such option is ``-v`` or ``--verbose``, which displays more detailed information on the process.
 
 Creating a Blueprint
 --------------------
@@ -91,27 +95,37 @@ Lets start by instead of loading the blueprint string into a raw dict, we load i
 ``Blueprint`` can also be accessed by key just like the previous dict example, and is identical for most keys.
 (:ref:`Read here for more info on the differences. <handbook.blueprints.blueprint_differences>`)
 
-.. code-block:: python
+.. testsetup::
+
+    from draftsman.blueprintable import Blueprint
+    blueprint = Blueprint()
+    from draftsman.entity import Container
+    from draftsman.classes.vector import Vector
+
+.. doctest::
 
     # Note that there's no type checking when doing this.
-    blueprint["label"] = "Hello, draftsman!" 
-    assert blueprint.label is blueprint["label"]
+    >>> blueprint["label"] = "Hello, draftsman!" 
+    >>> assert blueprint.label is blueprint["label"]
 
 Draftsman strives to be *"Factorio-safe"*, meaning that if the blueprint string raises an error on import, it should raise an error in script. 
 This can be demonstrated by attempting to set the label to anything other than a string:
 
-.. code-block:: python
+.. doctest::
 
-    blueprint.label = False # TypeError: 'label' must be a str or None
+    >>> blueprint.label = False
+    Traceback (most recent call last):
+       ...
+    TypeError: 'label' must be a string or None
 
 Draftsman uses ``None`` as a special value to represent either 'no-value' or 'default-value', and sometimes removes elements from the internal structure depending on the attribute. 
 This is safer than using ``del`` as often-times attributes are required for certain operations, and most of the time the user doesn't actually want to *delete* an attribute, rather, just set it to nothing.
 We can showcase this by using the above example once more and set ``label`` to ``None``:
 
-.. code-block:: python
+.. doctest::
 
-    blueprint.label = None
-    assert "label" not in blueprint
+    >>> blueprint.label = None
+    >>> assert "label" not in blueprint
 
 In this case, the ``"label"`` key is removed from the blueprint structure when we set it to ``None``, deleting it. 
 Thus, if the imported blueprint string already had its label set before we imported it, it will be removed.
@@ -136,7 +150,7 @@ But we've been down this road once before. Enter: the :py:class:`.Entity` class!
 Or, rather, base class. 
 For simplicity's sake we'll ignore ``Blueprint`` for the moment and focus on just entities.
 
-.. code-block:: python
+.. code-block:: python 
 
     from draftsman.entity import Container
 
@@ -148,15 +162,13 @@ The first positional argument to any entity is always it's name.
 It's name has to match the name of a valid Factorio name, otherwise it will raise an :py:class:`.InvalidEntityError`. 
 You can query exactly what the valid names for containers are by checking :py:data:`draftsman.data.entities.containers`:
 
-.. code-block:: python
+.. doctest::
 
-    from draftsman.data import entities
+    >>> from draftsman.data import entities
+    >>> print(entities.containers)
+    ['wooden-chest', 'iron-chest', 'steel-chest', 'big-ship-wreck-1', 'big-ship-wreck-2', 'big-ship-wreck-3', 'blue-chest', 'red-chest', 'factorio-logo-11tiles', 'factorio-logo-16tiles', 'factorio-logo-22tiles']
 
-    print(entities.containers)
-    # On a vanilla install (with no mods), this should be akin to:
-    # ['wooden-chest', 'iron-chest', 'steel-chest', 'big-ship-wreck-1', 
-    #  'big-ship-wreck-2', 'big-ship-wreck-3', 'blue-chest', 'red-chest', 
-    #  'factorio-logo-11tiles', 'factorio-logo-16tiles', 'factorio-logo-22tiles']
+Doing so gives you all valid entities of that type; the example above is a likely output with a vanilla installation of Draftsman.
 
 .. Note::
     :py:data:`.entities.containers` and all other "entity lists" include *hidden* items, as well as items that exist internally that are not craftable or otherwise available, such as (in the case of Container) the Factorio logo entities. 
@@ -167,24 +179,25 @@ Sometimes, for singleton entities it can be redundant to specify the name for an
 Take :py:class:`.ProgrammableSpeaker` for example: in most cases, there is only going to be one entity of that type. 
 As a result, all entities have a default name which is the first index of the entity list for that type:
 
-.. code-block:: python
+.. doctest::
 
-    from draftsman.entity import ProgrammableSpeaker
-    from draftsman.data import entities
+    >>> from draftsman.entity import ProgrammableSpeaker
+    >>> from draftsman.data import entities
 
-    speaker = ProgrammableSpeaker() # "programmable-speaker"
-    assert speaker.name == entities.programmable_speakers[0]
+    >>> speaker = ProgrammableSpeaker()
+    >>> assert speaker.name == "programmable-speaker"
+    >>> assert speaker.name == entities.programmable_speakers[0]
 
 This feature also works for all other entities as well, not just singletons:
 
-.. code-block:: python
+.. doctest::
     
-    from draftsman.entity import *
-    from draftsman.data import entities
+    >>> from draftsman.entity import *
+    >>> from draftsman.data import entities
 
     # Keep in mind that this is with no mods
-    container = Container()
-    assert container.name == "wooden-chest"
+    >>> container = Container()
+    >>> assert container.name == "wooden-chest"
 
 .. Note::
     The order of each entity list is determined by the `Factorio sort order <https://forums.factorio.com/viewtopic.php?p=23818#p23818>`_.
@@ -203,12 +216,12 @@ This feature also works for all other entities as well, not just singletons:
 Sometimes we might know what the name of an entity is, but not its internal type.
 As a result, there exists the factory function :py:func:`.new_entity` for this exact situation:
 
-.. code-block:: python
+.. doctest::
 
-    from draftsman.entity import new_entity, Container
+    >>> from draftsman.entity import new_entity, Container
 
-    any_entity = new_entity("steel-chest")
-    assert isinstance(any_entity, Container)
+    >>> any_entity = new_entity("steel-chest")
+    >>> assert isinstance(any_entity, Container)
 
 All entities need two things: their name, which we just covered, and a position.
 Entity objects actually have two commonly used coordinates that are updated in tandem: :py:attr:`~.Entity.position` and :py:attr:`~.Entity.tile_position`.
@@ -219,93 +232,126 @@ The ``tile_position`` of an entity is in integer coordinates and is the position
     
     The red dots represent the ``position``, the green dots the ``tile_position``, and the green squares the associated tile at ``tile_position``.
 
-If no position for the entity is specified, it defaults to ``tile_position`` (0, 0). Its absolute position is then deduced from its ``tile_width`` and ``tile_height``:
+If no position for the entity is specified, it defaults to ``tile_position`` (0, 0). Its absolute position is then deduced from its :py:attr:`~.Entity.tile_width` and :py:attr:`~.Entity.tile_height`:
 
-.. code-block:: python
+.. doctest::
 
-    container = Container("steel-chest")
-    print(container.tile_position)                      # {"x": 0,   "y": 0}
-    print(container.tile_width, container.tile_height)  # 1, 1
-    print(container.position)                           # {"x": 0.5, "y": 0.5}
+    >>> container = Container("steel-chest")
+    >>> print(container.tile_position)
+    (0, 0)
+    >>> print((container.tile_width, container.tile_height))
+    (1, 1)
+    >>> print(container.position)
+    (0.5, 0.5)
 
-You can specify either parameter and the other will update:
+As shown, both ``position`` and ``tile_position`` are instances of :py:class:`.Vector`, which is a standard 2D vector with an ``x`` and ``y`` attribute.
+You can specify either parameter and the other will update to the proper value:
 
-.. code-block:: python
+.. doctest::
 
-    container = Container("steel-chest")
-    container.position = {"x": 10.5, "y": 10.5}
-    print(container.tile_position) # {"x": 10, "y": 10}
+    >>> container = Container("steel-chest")
+    >>> container.position = Vector(10.5, 10.5)
+    >>> print(container.tile_position)
+    (10, 10)
 
-Because the explicit dict form is a little unweildly, you can also specify either position type as a sequence, usually a list or tuple:
+Because the explicit ``Vector`` constructor form is a little unweildly, you can also specify either position type as a sequence, usually a list or tuple:
 
-.. code-block:: python
+.. doctest::
 
     # Note that the data format still remains a dict with x and y keys
     # after assignment.
     
     # Tuple
-    container.position = (15.5, 45.5) # or [15.5, 45.5]
-    assert container.position == {"x": 15.5, "y": 45.5}
+    >>> container.position = (15.5, 45.5)
+    >>> container.position
+    <Vector>(15.5, 45.5)
     
     # List
-    container.tile_position = [2, 3] # or (2, 3)
-    assert container.tile_position == {"x": 2, "y": 3}
+    >>> container.tile_position = [2, 3]
+    >>> container.tile_position
+    <Vector>(2, 3)
     
+For compatibility, you can also specify ``position`` or ``tile_position`` as a ``dict`` with ``"x"`` and ``"y"`` keys to match the format of the underlying dictionary.
+
+.. doctest::
+
+    >>> container.position = {"x": -10.5, "y": 10.5}
+    >>> container.position
+    <Vector>(-10.5, 10.5)
+
 You can specify these parameters in the constructor to immediately set the Entity's position as well:
 
-.. code-block:: python
+.. doctest::
 
-    container1 = Container("steel-chest", tile_position = (-5, 10))
-    container2 = Container("iron-chest", position = {"x": 10.5, "y": 15.5})
+    >>> container1 = Container("steel-chest", tile_position = (-5, 10))
+    >>> container2 = Container("iron-chest", position = {"x": 10.5, "y": 15.5})
 
 .. Note::
 
     All attributes of an Entity can be set as a keyword in its constructor.
     This is done so you can take existing entity dictionaries and directly pass them into an Entity constructor as keyword arguments:
 
-    .. code-block:: python
+    .. doctest::
 
-        example = {
-            "name": "iron-chest",
-            "position": (0.5, 0.5),
-            # any other valid attribute...
-        }
+        >>> example = {
+        ...     "name": "iron-chest",
+        ...     "position": (0.5, 0.5),
+        ...     # any other valid attribute...
+        ... }
 
-        container = Container(**example)
-        assert container.position == {"x": 0.5, "y": 0.5}
+        >>> container = Container(**example)
+        >>> container.position
+        <Vector>(0.5, 0.5)
 
-        # This also works with new_entity():
-        any_entity = new_entity(**example)
-        assert any_entity.name == "iron-chest"
-        assert any_entity.type == "container"
+        >>> # This also works with new_entity():
+        >>> any_entity = new_entity(**example)
+        >>> any_entity.name
+        'iron-chest'
+        >>> any_entity.type
+        'container'
 
         # and blueprint.entities.append() as well:
-        blueprint.entities.append(**example)
-        assert blueprint.entities[-1].name == "iron-chest"
+        >>> blueprint.entities.append(**example)
+        >>> blueprint.entities[-1].name
+        'iron-chest'
 
 We want to position the container such that the output inserter feeds into it.
 But what coordinate is that?
 We have to figure out exactly where the rest of the entities are before we know where to put the steel chest.
 We could grab a random entity in :py:attr:`.blueprint.entities` to get a rough idea, but let's do something a little more sophisticated instead:
 
-.. code-block:: python
+.. testsetup:: group3
 
-    furnace = blueprint.find_entities_filtered(name = "electric-furnace")[0]
-    print(furnace) 
-    # <Furnace>{'name': 'electric-furnace', 'position': {'x': 176.5, 'y': -93.5}}
+    from draftsman.blueprintable import Blueprint
+    from draftsman.entity import Container
+
+    bp_string = "0eNqd0ttqwzAMBuB30bVTloOT1q9SxshBHYJECbYyFoLffU4GYWPuNnop+/dn2WiFpp9xssQCZgVqR3Zgris4euW639ZkmRAMkOAACrgetgp7bMVSm9xmy3WL4BUQd/gOJvXPCpCFhPDT2ovlheehQRsChyK2ZjeNVpIGewn6NLpwbOTt3o2q8pNWsIBJLsVJe69+YNn9liJceXB5nMsPbsCO5iE51Gns/yB1nCweeu6d/vRDWBbHygO71U4SYodWwkbEKr41pqAjG/5lT5QRufq/fP5NDpO0z535MqYK3tC6PZCd06K6ZJVOdZqXT95/AMv66Tw="
+    
+    # Create a Blueprint object
+    blueprint = Blueprint(bp_string)
+
+    blueprint.label = "Hello, Draftsman!"
+
+    container = Container("steel-chest")
+
+.. doctest:: group3
+
+    >>> furnace = blueprint.find_entities_filtered(name = "electric-furnace")[0]
+    >>> print(furnace) 
+    <Furnace>{'name': 'electric-furnace', 'position': {'x': 176.5, 'y': -93.5}}
 
 Anyone familiar with the `LuaSurface API <https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_entities_filtered>`_ might recognize this function.
 This rendition searches the entities in the blueprint with a set of criteria and returns the list of entities that match.
 Here, we search for any entity with the name ``"electric-furnace"``, which will give us a nice anchor to read from as we know there is only one in the blueprint.
 
-Since we now know that the center of the furnace is at (176.5, -93.5), we can simply set the container 3 tiles to the right to place it correctly:
+Since we now know that the center of the furnace is at (176.5, -93.5), we can simply set the container 3 tiles to the right to place it correctly. We can add a tuple (or list or dict) to the furnace position and set the resulting vector to the container's position:
 
-.. code-block:: python
+.. doctest:: group3
 
-    pos = furnace.position
-    container.position = (pos["x"] + 3, pos["y"])
+    >>> container.position = furnace.position + (3, 0)
 
-    blueprint.entities.append(container)
+    # Now we can add it to the blueprint
+    >>> blueprint.entities.append(container)
 
 And presto!
 
@@ -316,23 +362,22 @@ It might be slicker to move the entire blueprint from its absolute position to a
 This would make the positions consistent, regardless of where the blueprint was originally constructed.
 Lets use :py:meth:`.Blueprint.translate` to do just that:
 
-.. code-block:: python
+.. doctest:: group3
 
     # Lets say we want to set the blueprint origin to the middle tile of the
     # 3x3 electric furnace
     # First, lets get the tile position of the furnace (which is it's top left 
     # corner) and add 1 to each coordinate to get its center tile
-    center = [furnace.tile_position["x"] + 1, furnace.tile_position["y"] + 1]
+    >>> center = furnace.tile_position + (1, 1)
     
     # Now we translate in the opposite direction to make that point the origin
-    blueprint.translate(-center[0], -center[1])
-    print(furnace.tile_position) # {"x": -1, "y": -1}
+    >>> blueprint.translate(-center.x, -center.y)
+    >>> print(furnace.tile_position)
+    (-1, -1)
 
-    # Now we can specify the container at location (3, 0) and get the same result as before.
-    container.tile_position = (3, 0)
-    blueprint.entities.append(container)
-
-    print(blueprint.to_string())
+    # Now we can specify the container at tile position (3, 0) and get the same result as before.
+    >>> container.tile_position = (3, 0)
+    >>> blueprint.entities.append(container)
     
 .. Note::
 
@@ -371,9 +416,12 @@ Being *"Factorio-safe"* also applies to entities.
 If we were to set the bar to be anything other than an unsigned short, Factorio would throw a fit. 
 Thus, Draftsman throws an error right when we make the mistake:
 
-.. code-block:: python
+.. doctest:: group3
 
-    container.bar = -1 # IndexError: 'bar' not in range [0, 65536)
+    >>> container.bar = -1
+    Traceback (most recent call last):
+       ...
+    IndexError: 'bar' not in range [0, 65536)
 
 However, what if we were to set the index to a number within that range, but greater than the number of inventory slots? 
 Factorio swallows this, simply acting as if the bar index was not set, but does so *silently*; which, if such a component is critical, can be hard to catch. 
@@ -381,9 +429,9 @@ Wouldn't it be better to be notified of such a mistake without necessarily affec
 
 As a result, in addition to attempting to be *"Factorio-safe"*, Draftsman also attempts to be *"Factorio-correct"*: If some component or attribute does not break the importing/exporting process, but either doesn't make sense or fails to achieve the desired effect, a warning is raised:
 
-.. code-block:: python
+.. doctest:: group3
 
-    container.bar = 100 # IndexWarning: 'bar' not in range [0, 48)
+    >>> container.bar = 100 # IndexWarning: 'bar' not in range [0, 48)
 
 Thus, we can now see our mistake and fix it. Or, we can just ignore it:
 

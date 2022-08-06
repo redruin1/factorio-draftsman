@@ -45,6 +45,18 @@ class ConstantCombinator(
 
     # =========================================================================
 
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = (
+                signatures.CONSTANT_COMBINATOR_CONTROL_BEHAVIOR.validate(value)
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
+
+    # =========================================================================
+
     @property
     def item_slot_count(self):
         # type: () -> int
@@ -133,6 +145,7 @@ class ConstantCombinator(
         try:
             index = signatures.INTEGER.validate(index)
             signal = signatures.SIGNAL_ID_OR_NONE.validate(signal)
+            # signal = signals.signal_dict(signal) if signal is not None else None
             count = signatures.INTEGER.validate(count)
         except SchemaError as e:
             six.raise_from(TypeError(e), None)
@@ -160,7 +173,7 @@ class ConstantCombinator(
                     }
                 return
 
-        # If no entry with the same index was found
+        # If no entry with the same index was found, create a new one
         self.control_behavior["filters"].append(
             {"index": index + 1, "signal": signal, "count": count}
         )

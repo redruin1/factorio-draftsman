@@ -6,12 +6,13 @@ from __future__ import unicode_literals
 from draftsman.error import DataFormatError
 from draftsman import signatures
 
+from abc import ABCMeta, abstractmethod
 from typing import Union
 from schema import SchemaError
 import six
 
-
-class ControlBehaviorMixin(object):
+# six.add_metaclass(ABCMeta) # Doesn't work for some reason
+class ControlBehaviorMixin(six.with_metaclass(ABCMeta, object)):
     """
     Enables the entity to specify control behavior.
 
@@ -66,13 +67,10 @@ class ControlBehaviorMixin(object):
         return self._control_behavior
 
     @control_behavior.setter
-    def control_behavior(self, value):
+    @abstractmethod
+    def control_behavior(self, value):  # pragma: no coverage
         # type: (dict) -> None
-        # TODO specific control_behavior signatures depending on the child entity
-        try:
-            self._control_behavior = signatures.CONTROL_BEHAVIOR.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        pass
 
     # =========================================================================
 

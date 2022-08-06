@@ -21,19 +21,28 @@ class Furnace(ModulesMixin, RequestItemsMixin, Entity):
 
     def __init__(self, name=furnaces[0], **kwargs):
         # type: (str, **dict) -> None
+
+        # FIXME: the following
+        # Create a set of valid ingredients for this entity
+        try:
+            crafting_categories = raw[name]["crafting_categories"]
+            total_recipes = []
+            for crafting_category in crafting_categories:
+                total_recipes.extend(recipes.categories[crafting_category])
+
+            self._valid_input_ingredients = set()
+            for recipe_name in total_recipes:
+                self._valid_input_ingredients.update(
+                    recipes.get_recipe_ingredients(recipe_name)
+                )
+        except:
+            pass
+
+        # print(name)
+
         super(Furnace, self).__init__(name, furnaces, **kwargs)
 
-        # Create a set of valid ingredients for this entity
-        crafting_categories = raw[self.name]["crafting_categories"]
-        total_recipes = []
-        for crafting_category in crafting_categories:
-            total_recipes.extend(recipes.categories[crafting_category])
-
-        self._valid_input_ingredients = set()
-        for name in total_recipes:
-            self._valid_input_ingredients.update(recipes.get_recipe_ingredients(name))
-
-        # Get a set of valid fuel items for this entity
+        # TODO: Get a set of valid fuel items for this entity
         # self._valid_fuel_items = set()
         # energy_source = raw[self.name]["energy_source"]
 

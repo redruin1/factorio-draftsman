@@ -7,8 +7,6 @@ from draftsman.entity import FluidWagon, fluid_wagons
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -44,3 +42,24 @@ class FluidWagonTesting(unittest.TestCase):
             FluidWagon("this is not a fluid wagon")
         with self.assertRaises(TypeError):
             FluidWagon("fluid-wagon", orientation="wrong")
+
+    def test_mergable_with(self):
+        wagon1 = FluidWagon("fluid-wagon")
+        wagon2 = FluidWagon("fluid-wagon", tags={"some": "stuff"})
+
+        self.assertTrue(wagon1.mergable_with(wagon1))
+
+        self.assertTrue(wagon1.mergable_with(wagon2))
+        self.assertTrue(wagon2.mergable_with(wagon1))
+
+        wagon2.orientation = 0.5
+        self.assertFalse(wagon1.mergable_with(wagon2))
+
+    def test_merge(self):
+        wagon1 = FluidWagon("fluid-wagon")
+        wagon2 = FluidWagon("fluid-wagon", tags={"some": "stuff"})
+
+        wagon1.merge(wagon2)
+        del wagon2
+
+        self.assertEqual(wagon1.tags, {"some": "stuff"})

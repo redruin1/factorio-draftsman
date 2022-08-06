@@ -92,6 +92,18 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = (
+                signatures.PROGRAMMABLE_SPEAKER_CONTROL_BEHAVIOR.validate(value)
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
+
+    # =========================================================================
+
     @property
     def instruments(self):
         # type: () -> dict
@@ -578,23 +590,9 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
-    def _normalize_circuit_parameters(self):
-        """
-        Ideally I would get rid of this function, but having access to the
-        entity's instrument seems necessary and I dont have access to that in
-        draftsman.signatures
-        """
-        # if "circuit_parameters" in self.control_behavior:
-        #     circuit_params = self.control_behavior["circuit_parameters"]
-        #     # Set the instruments
-        #     if "instrument_id" in circuit_params:
-        #         instrument = circuit_params["instrument_id"]
-        #         if isinstance(instrument, str):
-        #             instrument_id = list(self.instruments).index(instrument)
-        #             circuit_params["instrument_id"] = instrument_id
+    def merge(self, other):
+        # type: (ProgrammableSpeaker) -> None
+        super(ProgrammableSpeaker, self).merge(other)
 
-        #     if "note_id" in circuit_params:
-        #         note = circuit_params["note_id"]
-        #         if isinstance(note, str):
-        #             note_id = self.instruments[instrument].index(note)
-        #             circuit_params["note_id"] = note_id
+        self.parameters = other.parameters
+        self.alert_parameters = other.alert_parameters

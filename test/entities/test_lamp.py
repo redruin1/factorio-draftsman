@@ -4,10 +4,8 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import Lamp, lamps
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
-
-from schema import SchemaError
 
 import sys
 
@@ -36,9 +34,11 @@ class LampTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             Lamp("this is not a lamp")
+        with self.assertRaises(DataFormatError):
+            Lamp(control_behavior={"unused_key": "something"})
 
     def test_set_use_colors(self):
-        lamp = Lamp()
+        lamp = Lamp("small-lamp")
         lamp.use_colors = True
         self.assertEqual(lamp.control_behavior, {"use_colors": True})
         lamp.use_colors = None
@@ -46,3 +46,29 @@ class LampTesting(unittest.TestCase):
         self.assertEqual(lamp.control_behavior, {})
         with self.assertRaises(TypeError):
             lamp.use_colors = "incorrect"
+
+    def test_mergable_with(self):
+        lamp1 = Lamp("small-lamp")
+        lamp2 = Lamp(
+            "small-lamp", control_behavior={"use_colors": True}, tags={"some": "stuff"}
+        )
+
+        self.assertTrue(lamp1.mergable_with(lamp1))
+
+        self.assertTrue(lamp1.mergable_with(lamp2))
+        self.assertTrue(lamp2.mergable_with(lamp1))
+
+        lamp2.tile_position = (1, 1)
+        self.assertFalse(lamp1.mergable_with(lamp2))
+
+    def test_merge(self):
+        lamp1 = Lamp("small-lamp")
+        lamp2 = Lamp(
+            "small-lamp", control_behavior={"use_colors": True}, tags={"some": "stuff"}
+        )
+
+        lamp1.merge(lamp2)
+        del lamp2
+
+        self.assertEqual(lamp1.use_colors, True)
+        self.assertEqual(lamp1.tags, {"some": "stuff"})

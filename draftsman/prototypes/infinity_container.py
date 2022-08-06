@@ -183,3 +183,8 @@ class InfinityContainer(RequestItemsMixin, Entity):
     #     self._handle_inventory_contents(item, count)
 
     #     super(InfinityContainer, self).set_item_request(item, count)
+
+    def merge(self, other):
+        super(InfinityContainer, self).merge(other)
+
+        self.infinity_settings = other.infinity_settings

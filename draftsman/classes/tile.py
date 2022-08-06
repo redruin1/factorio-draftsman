@@ -4,8 +4,11 @@
 
 from __future__ import unicode_literals
 
+from draftsman.classes.collisionset import CollisionSet
 from draftsman.classes.spatiallike import SpatialLike
+from draftsman.classes.vector import Vector
 from draftsman.error import InvalidTileError, DraftsmanError
+from draftsman.utils import AABB
 
 import draftsman.data.tiles as tiles
 
@@ -43,7 +46,8 @@ class Tile(SpatialLike):
         self.position = position
 
         # Tile AABB for SpatialHashMap
-        self._collision_box = [[0, 0], [1, 1]]
+        # self._collision_box = [[0, 0], [1, 1]]
+        self._collision_set = CollisionSet([AABB(0, 0, 1, 1)])
 
         # Tile mask for SpatialHashMap
         self._collision_mask = set(tiles.raw[self.name]["collision_mask"])
@@ -112,26 +116,32 @@ class Tile(SpatialLike):
         # type: (Union[dict, list, tuple]) -> None
 
         if self.parent:
-            raise DraftsmanError(
-                "Cannot move tile while it's inside an EntityCollection"
-            )
+            raise DraftsmanError("Cannot move tile while it's inside a TileCollection")
 
-        try:
-            self._position = {"x": int(value["x"]), "y": int(value["y"])}
-        except TypeError:
-            self._position = {"x": int(value[0]), "y": int(value[1])}
+        self._position = Vector.from_other(value, int)
+
+        # if isinstance(value, Vector):
+        #     self._position = Vector(int(value.x), int(value.y))
+        # else:
+        #     try:
+        #         self._position = Vector(int(value["x"]), int(value["y"]))
+        #     except TypeError:
+        #         self._position = Vector(int(value[0]), int(value[1]))
 
     # =========================================================================
 
     @property
     def global_position(self):
+        # This is redundant in this case because tiles cannot be placed inside
+        # of Groups (yet)
+        # However, it's still necessary.
         return self.position
 
     # =========================================================================
 
     @property
-    def collision_box(self):
-        return self._collision_box
+    def collision_set(self):
+        return self._collision_set
 
     # =========================================================================
 
@@ -141,6 +151,34 @@ class Tile(SpatialLike):
 
     # =========================================================================
 
+    def mergable_with(self, other):
+        # type: (Tile) -> bool
+        """
+        Determines if two entities are mergeable, or that they can be combined
+        into a single tile. Two tiles are considered mergable if they have the
+        same ``name`` and exist at the same ``position``
+
+        :param other: The other ``Tile`` to check against.
+
+        :returns: ``True`` if the tiles are mergable, ``False`` otherwise.
+        """
+        return (
+            isinstance(other, Tile)
+            and self.name == other.name
+            and self.position == other.position
+        )
+
+    def merge(self, other):
+        # type: (Tile) -> None
+        """
+        Merges this tile with another one. Due to the simplicity of tiles, this
+        does nothing, and is simply added for compatibility with entity merging.
+
+        :param other: The other tile to inherit data from, if such a thing were
+            to happen.
+        """
+        pass
+
     def to_dict(self):
         # type: () -> dict
         """
@@ -148,14 +186,8 @@ class Tile(SpatialLike):
 
         :returns: The exported JSON-dict representation of the Tile.
         """
-        return {"name": self.name, "position": self.position}
+        return {"name": self.name, "position": self.position.to_dict()}
 
-    def __repr__(self):
-        return (
-            "<Tile>{'name': '" + self.name + "', 'position': "
-            "{'x': "
-            + str(self.position["x"])
-            + ", 'y': "
-            + str(self.position["y"])
-            + "}}"
-        )
+    def __repr__(self):  # pragma: no coverage
+        # type: () -> str
+        return "<Tile>{}".format(self.to_dict())

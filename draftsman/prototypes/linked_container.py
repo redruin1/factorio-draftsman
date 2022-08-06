@@ -89,3 +89,9 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
             self.link_id |= 1 << number
         else:
             self.link_id &= ~(1 << number)
+
+    def merge(self, other):
+        # type: (LinkedContainer) -> None
+        super(LinkedContainer, self).merge(other)
+
+        self.link_id = other.link_id

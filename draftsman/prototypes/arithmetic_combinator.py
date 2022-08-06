@@ -32,6 +32,10 @@ class ArithmeticCombinator(
 
     def __init__(self, name=arithmetic_combinators[0], **kwargs):
         # type: (str, **dict) -> None
+        """
+        TODO
+        """
+
         super(ArithmeticCombinator, self).__init__(
             name, arithmetic_combinators, **kwargs
         )
@@ -44,6 +48,18 @@ class ArithmeticCombinator(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+    # =========================================================================
+
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = (
+                signatures.ARITHMETIC_COMBINATOR_CONTROL_BEHAVIOR.validate(value)
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 

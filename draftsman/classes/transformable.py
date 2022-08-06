@@ -2,6 +2,7 @@
 # -*- encoding: utf-8 -*-
 
 from draftsman.error import RotationError, FlippingError
+from draftsman.classes.vector import Vector
 from draftsman.warning import RailAlignmentWarning, FlippingWarning
 
 import warnings
@@ -39,35 +40,37 @@ class Transformable(object):
 
         # Entities
         for entity in self.entities:
-            # Remove from hashmap
-            self.entity_hashmap.remove(entity)
+            # Remove from map
+            self.entity_map.remove(entity)
 
             entity._parent = None
 
             # Change entity position
-            entity.position = (entity.position["x"] + x, entity.position["y"] + y)
+            # entity.position = entity.position + Vector(x, y)
+            entity.position += Vector(x, y)
 
             entity._parent = self
 
-            # Re-add to hashmap
-            self.entity_hashmap.add(entity)
+            # Re-add to map
+            self.entity_map.add(entity)
 
         # Tiles
         if hasattr(self, "tiles"):
             for tile in self.tiles:
-                # Remove from hashmap
-                self.tile_hashmap.remove(tile)
+                # Remove from map
+                self.tile_map.remove(tile)
 
                 tile._parent = None
 
                 # Change entity position
-                tile.position["x"] += x
-                tile.position["y"] += y
+                # tile.position["x"] += x
+                # tile.position["y"] += y
+                tile.position += Vector(x, y)
 
                 tile._parent = self
 
-                # Re-add to hashmap
-                self.tile_hashmap.add(tile)
+                # Re-add to map
+                self.tile_map.add(tile)
 
         self.recalculate_area()
 
@@ -110,49 +113,51 @@ class Transformable(object):
 
         # Entities
         for entity in self.entities:
-            # Remove from hashmap
-            self.entity_hashmap.remove(entity)
-
-            # Make a (separate!) copy of the position to transform
-            pos = [entity.position["x"], entity.position["y"]]
+            # Remove from map
+            self.entity_map.remove(entity)
 
             entity._parent = None
+
+            # Make a (separate!) copy of the position to transform
+            # pos = [entity.position["x"], entity.position["y"]]
+            pos = Vector(entity.position.x, entity.position.y)
 
             # Alter the direction
             if entity.rotatable:
                 entity.direction += angle
             # Alter (both) the position(s)
             entity.position = (
-                pos[0] * matrix[0] + pos[1] * matrix[2],
-                pos[0] * matrix[1] + pos[1] * matrix[3],
+                pos.x * matrix[0] + pos.y * matrix[2],
+                pos.x * matrix[1] + pos.y * matrix[3],
             )
 
             entity._parent = self
 
-            # Re-add to hashmap
-            self.entity_hashmap.add(entity)
+            # Re-add to map
+            self.entity_map.add(entity)
 
         # Tiles
         if hasattr(self, "tiles"):
             for tile in self.tiles:
-                # Remove from hashmap
-                self.tile_hashmap.remove(tile)
+                # Remove from map
+                self.tile_map.remove(tile)
 
                 tile._parent = None
 
                 # Make a (separate!) copy of the position to transform
                 # With tiles we rotate from their center
-                pos = [tile.position["x"] + 0.5, tile.position["y"] + 0.5]
+                pos = Vector(tile.position.x + 0.5, tile.position.y + 0.5)
+
                 # Alter the position
                 tile.position = (
-                    pos[0] * matrix[0] + pos[1] * matrix[2] - 0.5,
-                    pos[0] * matrix[1] + pos[1] * matrix[3] - 0.5,
+                    pos.x * matrix[0] + pos.y * matrix[2] - 0.5,
+                    pos.x * matrix[1] + pos.y * matrix[3] - 0.5,
                 )
 
                 tile._parent = self
 
-                # Re-add to hashmap
-                self.tile_hashmap.add(tile)
+                # Re-add to map
+                self.tile_map.add(tile)
 
         self.recalculate_area()
 
@@ -193,13 +198,13 @@ class Transformable(object):
 
         # Entities
         for entity in self.entities:
-            # Remove from hashmap
-            self.entity_hashmap.remove(entity)
+            # Remove from map
+            self.entity_map.remove(entity)
 
             entity._parent = None
 
             # Make a (separate!) copy of the position to transform
-            pos = [entity.position["x"], entity.position["y"]]
+            pos = Vector(entity.position.x, entity.position.y)
             # Alter the direction
             if entity.rotatable:
                 if direction == "horizontal":
@@ -208,30 +213,30 @@ class Transformable(object):
                     entity.direction += (((-2 * entity.direction) % 8) - 4) % 8
 
             # Alter (both) the position(s)
-            entity.position = (pos[0] * matrix[0], pos[1] * matrix[1])
+            entity.position = (pos.x * matrix[0], pos.y * matrix[1])
 
             entity._parent = self
 
-            # Re-add to hashmap
-            self.entity_hashmap.add(entity)
+            # Re-add to map
+            self.entity_map.add(entity)
 
         # Tiles
         if hasattr(self, "tiles"):
             for tile in self.tiles:
-                # Remove from hashmap
-                self.tile_hashmap.remove(tile)
+                # Remove from map
+                self.tile_map.remove(tile)
 
                 tile._parent = None
 
                 # Make a (separate!) copy of the position to transform
                 # With tiles we flip from their center
-                pos = [tile.position["x"] + 0.5, tile.position["y"] + 0.5]
+                pos = Vector(tile.position.x + 0.5, tile.position.y + 0.5)
                 # Alter the position
-                tile.position = (pos[0] * matrix[0] - 0.5, pos[1] * matrix[1] - 0.5)
+                tile.position = (pos.x * matrix[0] - 0.5, pos.y * matrix[1] - 0.5)
 
                 tile._parent = self
 
-                # Re-add to hashmap
-                self.tile_hashmap.add(tile)
+                # Re-add to map
+                self.tile_map.add(tile)
 
         self.recalculate_area()

@@ -162,3 +162,13 @@ class Splitter(DirectionalMixin, Entity):
             self._filter = value
         else:
             raise TypeError("'filter' must be a str or None")
+
+    # =========================================================================
+
+    def merge(self, other):
+        # type: (Splitter) -> None
+        super(Splitter, self).merge(other)
+
+        self.input_priority = other.input_priority
+        self.output_priority = other.output_priority
+        self.filter = other.filter

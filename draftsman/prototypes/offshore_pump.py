@@ -11,10 +11,14 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     DirectionalMixin,
 )
+from draftsman.error import DataFormatError
+from draftsman import signatures
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import offshore_pumps
 
+from schema import SchemaError
+import six
 import warnings
 
 
@@ -40,3 +44,15 @@ class OffshorePump(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+    # =========================================================================
+
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = signatures.OFFSHORE_PUMP_CONTROL_BEHAVIOR.validate(
+                value
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)

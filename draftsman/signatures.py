@@ -20,7 +20,6 @@ import weakref
 
 
 # TODO: separate CONTROL_BEHAVIOR into their individual signatures for each entity
-# TODO: write user-friendly error messages
 
 
 INTEGER = Schema(int)
@@ -265,52 +264,98 @@ ALERT_PARAMETERS = Schema(
     )
 )
 
-CONTROL_BEHAVIOR = Schema(
+# CONTROL_BEHAVIOR = Schema(
+#     And(
+#         Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+#         {
+#             # Circuit condition
+#             Optional("circuit_enable_disable"): bool,
+#             Optional("circuit_condition"): CONDITION,
+#             # Logistic condition
+#             Optional("connect_to_logistic_network"): bool,
+#             Optional("logistic_condition"): CONDITION,
+#             # Transport Belts + Inserters
+#             Optional("circuit_read_hand_contents"): bool,
+#             # Mining Drills
+#             Optional("circuit_read_resources"): bool,
+#             # Inserters
+#             Optional("circuit_hand_read_mode"): int,
+#             # Transport belts
+#             Optional("circuit_contents_read_mode"): int,
+#             # Filter inserters
+#             Optional("circuit_mode_of_operation"): int,
+#             Optional("circuit_set_stack_size"): bool,
+#             Optional("stack_control_input_signal"): SIGNAL_ID,
+#             # Train Stops
+#             Optional("read_from_train"): bool,
+#             Optional("read_stopped_train"): bool,
+#             Optional("train_stopped_signal"): SIGNAL_ID,
+#             Optional("set_trains_limit"): bool,
+#             Optional("trains_limit_signal"): SIGNAL_ID,
+#             Optional("read_trains_count"): bool,
+#             Optional("trains_count_signal"): SIGNAL_ID,
+#             Optional("send_to_train"): bool,
+#             # Rail signals
+#             Optional("red_output_signal"): SIGNAL_ID,
+#             Optional("yellow_output_signal"): SIGNAL_ID,
+#             Optional("green_output_signal"): SIGNAL_ID,
+#             Optional("blue_output_signal"): SIGNAL_ID,
+#             # Roboports
+#             Optional("read_logistics"): bool,
+#             Optional("read_robot_stats"): bool,
+#             Optional("available_logistic_output_signal"): SIGNAL_ID,
+#             Optional("total_logistic_output_signal"): SIGNAL_ID,
+#             Optional("available_construction_output_signal"): SIGNAL_ID,
+#             Optional("total_construction_output_signal"): SIGNAL_ID,
+#             # Lamps
+#             Optional("use_colors"): bool,
+#             # Arithmetic Combinators
+#             Optional("arithmetic_conditions"): {
+#                 Optional("first_constant"): int,
+#                 Optional("first_signal"): SIGNAL_ID,
+#                 Optional("operation"): OPERATION,
+#                 Optional("second_constant"): int,
+#                 Optional("second_signal"): SIGNAL_ID,
+#                 Optional("output_signal"): SIGNAL_ID,
+#             },
+#             # Decider Combinators
+#             Optional("decider_conditions"): {
+#                 Optional("constant"): int,
+#                 Optional("first_constant"): int,
+#                 Optional("first_signal"): SIGNAL_ID,
+#                 Optional("comparator"): COMPARATOR,
+#                 Optional("second_constant"): int,
+#                 Optional("second_signal"): SIGNAL_ID,
+#                 Optional("output_signal"): SIGNAL_ID,
+#                 Optional("copy_count_from_input"): bool,
+#             },
+#             # Constant Combinators
+#             Optional("filters"): SIGNAL_FILTERS,
+#             # Programmable Speakers
+#             Optional("circuit_parameters"): {
+#                 Optional("signal_value_is_pitch"): bool,
+#                 Optional("instrument_id"): int,
+#                 Optional("note_id"): int,
+#             },
+#             # Accumulators
+#             Optional("output_signal"): SIGNAL_ID,
+#         },
+#     )
+# )
+
+ACCUMULATOR_CONTROL_BEHAVIOR = Schema(
     And(
         Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
         {
-            # Circuit condition
-            Optional("circuit_enable_disable"): bool,
-            Optional("circuit_condition"): CONDITION,
-            # Logistic condition
-            Optional("connect_to_logistic_network"): bool,
-            Optional("logistic_condition"): CONDITION,
-            # Transport Belts + Inserters
-            Optional("circuit_read_hand_contents"): bool,
-            # Mining Drills
-            Optional("circuit_read_resources"): bool,
-            # Inserters
-            Optional("circuit_hand_read_mode"): int,
-            # Transport belts
-            Optional("circuit_contents_read_mode"): int,
-            # Filter inserters
-            Optional("circuit_mode_of_operation"): int,
-            Optional("circuit_set_stack_size"): bool,
-            Optional("stack_control_input_signal"): SIGNAL_ID,
-            # Train Stops
-            Optional("read_from_train"): bool,
-            Optional("read_stopped_train"): bool,
-            Optional("train_stopped_signal"): SIGNAL_ID,
-            Optional("set_trains_limit"): bool,
-            Optional("trains_limit_signal"): SIGNAL_ID,
-            Optional("read_trains_count"): bool,
-            Optional("trains_count_signal"): SIGNAL_ID,
-            Optional("send_to_train"): bool,
-            # Rail signals
-            Optional("red_output_signal"): SIGNAL_ID,
-            Optional("yellow_output_signal"): SIGNAL_ID,
-            Optional("green_output_signal"): SIGNAL_ID,
-            Optional("blue_output_signal"): SIGNAL_ID,
-            # Roboports
-            Optional("read_logistics"): bool,
-            Optional("read_robot_stats"): bool,
-            Optional("available_logistic_output_signal"): SIGNAL_ID,
-            Optional("total_logistic_output_signal"): SIGNAL_ID,
-            Optional("available_construction_output_signal"): SIGNAL_ID,
-            Optional("total_construction_output_signal"): SIGNAL_ID,
-            # Lamps
-            Optional("use_colors"): bool,
-            # Arithmetic Combinators
+            Optional("output_signal"): SIGNAL_ID,
+        },
+    )
+)
+
+ARITHMETIC_COMBINATOR_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
             Optional("arithmetic_conditions"): {
                 Optional("first_constant"): int,
                 Optional("first_signal"): SIGNAL_ID,
@@ -319,7 +364,23 @@ CONTROL_BEHAVIOR = Schema(
                 Optional("second_signal"): SIGNAL_ID,
                 Optional("output_signal"): SIGNAL_ID,
             },
-            # Decider Combinators
+        },
+    )
+)
+
+CONSTANT_COMBINATOR_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            Optional("filters"): SIGNAL_FILTERS,
+        },
+    )
+)
+
+DECIDER_COMBINATOR_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
             Optional("decider_conditions"): {
                 Optional("constant"): int,
                 Optional("first_constant"): int,
@@ -330,24 +391,247 @@ CONTROL_BEHAVIOR = Schema(
                 Optional("output_signal"): SIGNAL_ID,
                 Optional("copy_count_from_input"): bool,
             },
-            # Constant Combinators
-            Optional("filters"): SIGNAL_FILTERS,
-            # Programmable Speakers
+        },
+    )
+)
+
+FILTER_INSERTER_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            # Circuit condition
+            Optional("circuit_enable_disable"): bool,
+            Optional("circuit_condition"): CONDITION,
+            # Logistic condition
+            Optional("connect_to_logistic_network"): bool,
+            Optional("logistic_condition"): CONDITION,
+            # Inserter
+            Optional("circuit_read_hand_contents"): bool,
+            Optional("circuit_hand_read_mode"): int,
+            # Filter Inserter
+            Optional("circuit_mode_of_operation"): int,
+            Optional("circuit_set_stack_size"): bool,
+            Optional("stack_control_input_signal"): SIGNAL_ID,
+        },
+    )
+)
+
+INSERTER_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            # Circuit condition
+            Optional("circuit_enable_disable"): bool,
+            Optional("circuit_condition"): CONDITION,
+            # Logistic condition
+            Optional("connect_to_logistic_network"): bool,
+            Optional("logistic_condition"): CONDITION,
+            # Inserter
+            Optional("circuit_read_hand_contents"): bool,
+            Optional("circuit_hand_read_mode"): int,
+            Optional("circuit_set_stack_size"): bool,
+            Optional("stack_control_input_signal"): SIGNAL_ID,
+        },
+    )
+)
+
+LAMP_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            Optional("use_colors"): bool,
+        },
+    )
+)
+
+LOGISTIC_BUFFER_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            # Circuit condition
+            Optional("circuit_enable_disable"): bool,
+            Optional("circuit_condition"): CONDITION,
+            # Logistic condition
+            Optional("connect_to_logistic_network"): bool,
+            Optional("logistic_condition"): CONDITION,
+        },
+    )
+)
+
+LOGISTIC_REQUESTER_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            # Circuit condition
+            Optional("circuit_enable_disable"): bool,
+            Optional("circuit_condition"): CONDITION,
+            # Logistic condition
+            Optional("connect_to_logistic_network"): bool,
+            Optional("logistic_condition"): CONDITION,
+        },
+    )
+)
+
+MINING_DRILL_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            # Circuit condition
+            Optional("circuit_enable_disable"): bool,
+            Optional("circuit_condition"): CONDITION,
+            # Logistic condition
+            Optional("connect_to_logistic_network"): bool,
+            Optional("logistic_condition"): CONDITION,
+            # Mining Drills
+            Optional("circuit_read_resources"): bool,
+        },
+    )
+)
+
+OFFSHORE_PUMP_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            # Circuit condition
+            Optional("circuit_enable_disable"): bool,
+            Optional("circuit_condition"): CONDITION,
+            # Logistic condition
+            Optional("connect_to_logistic_network"): bool,
+            Optional("logistic_condition"): CONDITION,
+        },
+    )
+)
+
+POWER_SWITCH_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            # Circuit condition
+            Optional("circuit_enable_disable"): bool,
+            Optional("circuit_condition"): CONDITION,
+            # Logistic condition
+            Optional("connect_to_logistic_network"): bool,
+            Optional("logistic_condition"): CONDITION,
+        },
+    )
+)
+
+PROGRAMMABLE_SPEAKER_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            # Circuit condition
+            Optional("circuit_enable_disable"): bool,
+            Optional("circuit_condition"): CONDITION,
+            # Programmable Speaker
             Optional("circuit_parameters"): {
                 Optional("signal_value_is_pitch"): bool,
                 Optional("instrument_id"): int,
                 Optional("note_id"): int,
             },
-            # Accumulators
-            Optional("output_signal"): SIGNAL_ID,
         },
     )
 )
 
-# TRANSPORT_BELT_CONTROL_BEHAVIOR = Schema({})
-# INSERTER_CONTROL_BEHAVIOR = Schema({})
-# LAMP_CONTROL_BEHAVIOR = Schema({})
-# # TODO: every one
+PUMP_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            # Circuit condition
+            Optional("circuit_enable_disable"): bool,
+            Optional("circuit_condition"): CONDITION,
+        },
+    )
+)
+
+RAIL_SIGNAL_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            Optional("red_output_signal"): SIGNAL_ID,
+            Optional("yellow_output_signal"): SIGNAL_ID,
+            Optional("green_output_signal"): SIGNAL_ID,
+        },
+    )
+)
+
+RAIL_CHAIN_SIGNAL_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            Optional("red_output_signal"): SIGNAL_ID,
+            Optional("yellow_output_signal"): SIGNAL_ID,
+            Optional("green_output_signal"): SIGNAL_ID,
+            Optional("blue_output_signal"): SIGNAL_ID,
+        },
+    )
+)
+
+ROBOPORT_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            # Roboport
+            Optional("read_logistics"): bool,
+            Optional("read_robot_stats"): bool,
+            Optional("available_logistic_output_signal"): SIGNAL_ID,
+            Optional("total_logistic_output_signal"): SIGNAL_ID,
+            Optional("available_construction_output_signal"): SIGNAL_ID,
+            Optional("total_construction_output_signal"): SIGNAL_ID,
+        },
+    )
+)
+
+TRAIN_STOP_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            # Circuit condition
+            Optional("circuit_enable_disable"): bool,
+            Optional("circuit_condition"): CONDITION,
+            # Logistic condition
+            Optional("connect_to_logistic_network"): bool,
+            Optional("logistic_condition"): CONDITION,
+            # Train Stop
+            Optional("read_from_train"): bool,
+            Optional("read_stopped_train"): bool,
+            Optional("train_stopped_signal"): SIGNAL_ID,
+            Optional("set_trains_limit"): bool,
+            Optional("trains_limit_signal"): SIGNAL_ID,
+            Optional("read_trains_count"): bool,
+            Optional("trains_count_signal"): SIGNAL_ID,
+            Optional("send_to_train"): bool,
+        },
+    )
+)
+
+TRANSPORT_BELT_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            # Circuit condition
+            Optional("circuit_enable_disable"): bool,
+            Optional("circuit_condition"): CONDITION,
+            # Logistic condition
+            Optional("connect_to_logistic_network"): bool,
+            Optional("logistic_condition"): CONDITION,
+            # Transport Belts
+            Optional("circuit_read_hand_contents"): bool,
+            Optional("circuit_contents_read_mode"): int,
+        },
+    )
+)
+
+WALL_CONTROL_BEHAVIOR = Schema(
+    And(
+        Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
+        {
+            # Circuit condition
+            Optional("circuit_enable_disable"): bool,
+            Optional("circuit_condition"): CONDITION,
+        },
+    )
+)
 
 
 def normalize_inventory(filters):

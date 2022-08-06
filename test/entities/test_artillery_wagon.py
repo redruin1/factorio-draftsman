@@ -7,8 +7,6 @@ from draftsman.entity import ArtilleryWagon, artillery_wagons
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -42,3 +40,24 @@ class ArtilleryWagonTesting(unittest.TestCase):
             ArtilleryWagon("this is not an artillery wagon")
         with self.assertRaises(TypeError):
             ArtilleryWagon("artillery-wagon", orientation="wrong")
+
+    def test_mergable_with(self):
+        wagon1 = ArtilleryWagon("artillery-wagon")
+        wagon2 = ArtilleryWagon("artillery-wagon")
+
+        self.assertTrue(wagon1.mergable_with(wagon2))
+        self.assertTrue(wagon2.mergable_with(wagon1))
+
+        wagon1.orientation = 0.5
+        self.assertFalse(wagon1.mergable_with(wagon2))
+
+    def test_merge(self):
+        wagon1 = ArtilleryWagon("artillery-wagon")
+        wagon2 = ArtilleryWagon("artillery-wagon")
+        wagon2.tags = {"some": "stuff"}
+
+        wagon1.merge(wagon2)
+        self.assertEqual(wagon1.tags, {"some": "stuff"})
+        # Ensure wagon1's data remains valid even if wagon2 gets destroyed
+        del wagon2
+        self.assertEqual(wagon1.tags, {"some": "stuff"})

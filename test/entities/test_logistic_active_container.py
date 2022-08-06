@@ -7,8 +7,6 @@ from draftsman.entity import LogisticActiveContainer, logistic_active_containers
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -100,3 +98,29 @@ class ContainerTesting(unittest.TestCase):
             self.assertEqual(container.dual_power_connectable, False)
             self.assertEqual(container.circuit_connectable, True)
             self.assertEqual(container.dual_circuit_connectable, False)
+
+    def test_mergable_with(self):
+        container1 = LogisticActiveContainer("logistic-chest-active-provider")
+        container2 = LogisticActiveContainer(
+            "logistic-chest-active-provider", bar=10, tags={"some": "stuff"}
+        )
+
+        self.assertTrue(container1.mergable_with(container1))
+
+        self.assertTrue(container1.mergable_with(container2))
+        self.assertTrue(container2.mergable_with(container1))
+
+        container2.tile_position = (1, 1)
+        self.assertFalse(container1.mergable_with(container2))
+
+    def test_merge(self):
+        container1 = LogisticActiveContainer("logistic-chest-active-provider")
+        container2 = LogisticActiveContainer(
+            "logistic-chest-active-provider", bar=10, tags={"some": "stuff"}
+        )
+
+        container1.merge(container2)
+        del container2
+
+        self.assertEqual(container1.bar, 10)
+        self.assertEqual(container1.tags, {"some": "stuff"})

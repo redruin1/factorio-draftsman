@@ -3,10 +3,15 @@
 
 from __future__ import unicode_literals
 
+from draftsman.blueprintable import Blueprint
 from draftsman.constants import Direction
 from draftsman.entity import StraightRail, straight_rails
 from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning, RailAlignmentWarning
+from draftsman.warning import (
+    DraftsmanWarning,
+    RailAlignmentWarning,
+    OverlappingObjectsWarning,
+)
 
 import sys
 
@@ -49,3 +54,34 @@ class StraightRailTesting(unittest.TestCase):  # Hoo boy
         # Errors
         with self.assertRaises(InvalidEntityError):
             StraightRail("this is not a straight rail")
+
+    def test_overlapping(self):
+        blueprint = Blueprint()
+        blueprint.entities.append("straight-rail")
+        # This shouldn't raise a warning
+        blueprint.entities.append("straight-rail", direction=Direction.EAST)
+
+        # But this should
+        with self.assertWarns(OverlappingObjectsWarning):
+            blueprint.entities.append("straight-rail")
+
+    def test_mergable_with(self):
+        rail1 = StraightRail("straight-rail")
+        rail2 = StraightRail("straight-rail", tags={"some": "stuff"})
+
+        self.assertTrue(rail1.mergable_with(rail1))
+
+        self.assertTrue(rail1.mergable_with(rail2))
+        self.assertTrue(rail2.mergable_with(rail1))
+
+        rail2.tile_position = (2, 2)
+        self.assertFalse(rail1.mergable_with(rail2))
+
+    def test_merge(self):
+        rail1 = StraightRail("straight-rail")
+        rail2 = StraightRail("straight-rail", tags={"some": "stuff"})
+
+        rail1.merge(rail2)
+        del rail2
+
+        self.assertEqual(rail1.tags, {"some": "stuff"})

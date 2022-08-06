@@ -8,8 +8,6 @@ from draftsman.entity import StorageTank, storage_tanks
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -93,3 +91,24 @@ class StorageTankTesting(unittest.TestCase):
             self.assertEqual(container.dual_power_connectable, False)
             self.assertEqual(container.circuit_connectable, True)
             self.assertEqual(container.dual_circuit_connectable, False)
+
+    def test_mergable_with(self):
+        tank1 = StorageTank("storage-tank")
+        tank2 = StorageTank("storage-tank", tags={"some": "stuff"})
+
+        self.assertTrue(tank1.mergable_with(tank1))
+
+        self.assertTrue(tank1.mergable_with(tank2))
+        self.assertTrue(tank2.mergable_with(tank1))
+
+        tank2.tile_position = (1, 1)
+        self.assertFalse(tank1.mergable_with(tank2))
+
+    def test_merge(self):
+        tank1 = StorageTank("storage-tank")
+        tank2 = StorageTank("storage-tank", tags={"some": "stuff"})
+
+        tank1.merge(tank2)
+        del tank2
+
+        self.assertEqual(tank1.tags, {"some": "stuff"})

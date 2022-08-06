@@ -17,7 +17,7 @@ else:  # pragma: no coverage
 
 class BoilerTesting(unittest.TestCase):
     def test_constructor_init(self):
-        boiler = Boiler()
+        boiler = Boiler("boiler")
 
         # Warnings
         with self.assertWarns(DraftsmanWarning):
@@ -26,3 +26,22 @@ class BoilerTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             Boiler("not a boiler")
+
+    def test_mergable_with(self):
+        boiler1 = Boiler("boiler")
+        boiler2 = Boiler("boiler", tags={"some": "stuff"})
+
+        self.assertTrue(boiler1.mergable_with(boiler2))
+        self.assertTrue(boiler2.mergable_with(boiler1))
+
+        boiler2.tile_position = [-10, -10]
+        self.assertFalse(boiler1.mergable_with(boiler2))
+
+    def test_merge(self):
+        boiler1 = Boiler("boiler")
+        boiler2 = Boiler("boiler", tags={"some": "stuff"})
+
+        boiler1.merge(boiler2)
+        del boiler2
+
+        self.assertEqual(boiler1.tags, {"some": "stuff"})

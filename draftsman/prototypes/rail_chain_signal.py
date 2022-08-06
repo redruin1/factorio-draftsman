@@ -10,6 +10,7 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     EightWayDirectionalMixin,
 )
+from draftsman.error import DataFormatError
 from draftsman import signatures
 from draftsman.warning import DraftsmanWarning
 
@@ -31,12 +32,18 @@ class RailChainSignal(
     Entity,
 ):
     """
-    A rail signal that allows determines access of a current rail block based on
-    a forward rail block.
+    A rail signal that determines access of a current rail block based on a
+    forward rail block.
     """
 
     def __init__(self, name=rail_chain_signals[0], **kwargs):
         # type: (str, **dict) -> None
+
+        # Set a (private) flag to indicate to the constructor to not generate
+        # rotations, and rather just use the same collision set regardless of
+        # rotation
+        self._disable_collision_set_rotation = True
+
         super(RailChainSignal, self).__init__(name, rail_chain_signals, **kwargs)
 
         if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
@@ -50,6 +57,18 @@ class RailChainSignal(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+    # =========================================================================
+
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = (
+                signatures.RAIL_CHAIN_SIGNAL_CONTROL_BEHAVIOR.validate(value)
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 

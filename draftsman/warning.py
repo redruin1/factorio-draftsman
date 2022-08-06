@@ -1,13 +1,15 @@
 # warning.py
 
 """
-Draftsman warnings. Used to enforce "Factorio-correctness".
+Draftsman warnings. Used to enforce "Factorio-correctness", or the belief that
+operations in Draftsman that are unorthodox or ignored on import to Factorio 
+should be mentioned to the user.
 """
 
 
 class DraftsmanWarning(UserWarning):
     """
-    Root warning class for ``draftsman``. Useful if you want to easily ignore
+    Root warning class for Draftsman. Useful if you want to easily ignore
     all warnings issued from the module without getting rid of warnings entirely;
     simply filter this class. This is a subclass of ``UserWarning``, and all
     other Draftsman warnings are subclasses of this.
@@ -28,7 +30,8 @@ class ValueWarning(DraftsmanWarning):
 class DirectionWarning(DraftsmanWarning):
     """
     Raised when the direction does not match the rotation type, e.g. setting
-    a 4-way rotatable Entity's direction to :py:data:`Direction.NORTHWEST`.
+    a 4-way rotatable Entity's direction to :py:data:`.Direction.NORTHWEST` (an
+    8-way directional value).
     """
 
     pass
@@ -37,17 +40,17 @@ class DirectionWarning(DraftsmanWarning):
 class FlippingWarning(DraftsmanWarning):
     """
     Raised when attempting to flip an entity that may or not be able to be
-    flipped. This is only raised when flipping an :py:class:`EntityCollection`
+    flipped. This is only raised when flipping an :py:class:`.EntityCollection`
     with modded entities.
     """
 
-    pass
+    pass  # TODO: remove
 
 
 class IndexWarning(DraftsmanWarning):
     """
     Raised when the index of some element is out of expected range, though not
-    to the point of failing import.
+    to the point of failing import into Factorio.
     """
 
     pass
@@ -83,7 +86,7 @@ class TooManyConnectionsWarning(DraftsmanWarning):
 class RailAlignmentWarning(DraftsmanWarning):
     """
     Raised when an Entity is placed on odd coordinates when it's type restricts
-    its placement to the rail grid.
+    it's placement to the rail grid (even coordinates).
     """
 
     pass
@@ -91,8 +94,9 @@ class RailAlignmentWarning(DraftsmanWarning):
 
 class ItemLimitationWarning(DraftsmanWarning):
     """
-    Raised when an item request does not match the :py:class:`.AssemblingMachine`'s
-    recipe inputs.
+    Raised when an item request does not match the particular entities valid
+    item-types, such as incorrect ingredients for an :py:class:`.AssemblingMachine`
+    with a recipe, or a :py:class:`.Lab` with non-science pack inputs.
     """
 
     pass
@@ -100,8 +104,8 @@ class ItemLimitationWarning(DraftsmanWarning):
 
 class ItemCapacityWarning(DraftsmanWarning):
     """
-    Raised when an item request exeeds the number of inventory slots of the
-    entity.
+    Raised when the volume of item requests exeeds the number of inventory slots
+    of the entity, such as requesting 10,000 iron plate to a ``"wooden-chest"``.
     """
 
     pass
@@ -153,10 +157,11 @@ class HiddenEntityWarning(DraftsmanWarning):
 
 class OverlappingObjectsWarning(DraftsmanWarning):
     """
-    Raised when the area returned by :py:meth:`~.SpatialLike.get_area()` for an
-    object overlaps another object or objects already placed inside a
-    :py:class:`.SpatialHashMap`. This warning is raised for both entities and
-    tiles.
+    Raised when the :py:class:`.CollisionSet` of a :py:class:`.SpatialLike`
+    object overlaps the :py:class:`.CollisionSet` of another object, and that
+    their :py:attr:`~.Entity.collision_mask` s intersect. In layman's terms, if
+    two or more tiles or entities are placed on top of each other such that they
+    would not be able to be placed in-game, this warning is raised.
     """
 
     pass
@@ -165,8 +170,7 @@ class OverlappingObjectsWarning(DraftsmanWarning):
 class UselessConnectionWarning(DraftsmanWarning):
     """
     Raised when a circuit connection is functionally useless, such as when a
-    wall is connected with a circuit wire without an adjacent gate (which *is*
-    possible).
+    wall is connected with a circuit wire without an adjacent :py:class:`.Gate`.
     """
 
     pass

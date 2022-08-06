@@ -3,11 +3,10 @@
 
 from __future__ import unicode_literals
 
+from draftsman.classes.vector import Vector
 from draftsman.entity import Accumulator, accumulators, Container
 from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatError
 from draftsman.warning import DraftsmanWarning
-
-from schema import SchemaError
 
 import sys
 
@@ -24,7 +23,7 @@ class AccumulatorTesting(unittest.TestCase):
             accumulator.to_dict(),
             {
                 "name": accumulators[0],
-                "position": accumulator.position,
+                "position": accumulator.position.to_dict(),
                 "control_behavior": {
                     "output_signal": {"name": "signal-A", "type": "virtual"}
                 },
@@ -37,7 +36,7 @@ class AccumulatorTesting(unittest.TestCase):
             accumulator.to_dict(),
             {
                 "name": accumulators[0],
-                "position": accumulator.position,
+                "position": accumulator.position.to_dict(),
                 "control_behavior": {
                     "output_signal": {"name": "signal-A", "type": "virtual"}
                 },
@@ -83,15 +82,9 @@ class AccumulatorTesting(unittest.TestCase):
             accumulator.output_signal = {"incorrectly": "formatted"}
 
     def test_mergable(self):
-        accumulatorA = Accumulator(
-            "accumulator", 
-            tile_position = (0, 0)
-        )
-        accumulatorB = Accumulator(
-            "accumulator",
-            tile_position = (0, 0)
-        )
-        
+        accumulatorA = Accumulator("accumulator", tile_position=(0, 0))
+        accumulatorB = Accumulator("accumulator", tile_position=(0, 0))
+
         # Compatible
         self.assertEqual(accumulatorA.mergable_with(accumulatorB), True)
 
@@ -109,19 +102,14 @@ class AccumulatorTesting(unittest.TestCase):
         self.assertEqual(accumulatorA.mergable_with(accumulatorB), False)
 
     def test_merge(self):
-        accumulatorA = Accumulator(
-            "accumulator", 
-            tile_position = (0, 0)
-        )
-        accumulatorB = Accumulator(
-            "accumulator",
-            tile_position = (0, 0)
-        )
+        accumulatorA = Accumulator("accumulator", tile_position=(0, 0))
+        accumulatorB = Accumulator("accumulator", tile_position=(0, 0))
         accumulatorB.output_signal = "signal-A"
 
         accumulatorA.merge(accumulatorB)
         self.assertEqual(accumulatorA.name, "accumulator")
-        self.assertEqual(accumulatorA.tile_position, {"x": 0, "y": 0})
+        self.assertEqual(accumulatorA.tile_position, Vector(0, 0))
+        self.assertEqual(accumulatorA.tile_position.to_dict(), {"x": 0, "y": 0})
         self.assertEqual(
             accumulatorA.output_signal, {"name": "signal-A", "type": "virtual"}
         )

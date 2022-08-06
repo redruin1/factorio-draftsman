@@ -12,12 +12,15 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     EightWayDirectionalMixin,
 )
-import draftsman.signatures as signatures
+from draftsman.error import DataFormatError
+from draftsman import signatures
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import rail_signals
 from draftsman.data import entities
 
+from schema import SchemaError
+import six
 import warnings
 
 
@@ -37,6 +40,15 @@ class RailSignal(
 
     def __init__(self, name=rail_signals[0], **kwargs):
         # type: (str, **dict) -> None
+        """
+        TODO
+        """
+
+        # Set a (private) flag to indicate to the constructor to not generate
+        # rotations, and rather just use the same collision set regardless of
+        # rotation
+        self._disable_collision_set_rotation = True
+
         super(RailSignal, self).__init__(name, rail_signals, **kwargs)
 
         if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
@@ -50,6 +62,18 @@ class RailSignal(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+    # =========================================================================
+
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = signatures.RAIL_SIGNAL_CONTROL_BEHAVIOR.validate(
+                value
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 

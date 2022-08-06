@@ -17,7 +17,8 @@ import six
 import warnings
 
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
+
+if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
@@ -239,4 +240,4 @@ class InventoryFilterMixin(object):
 
         self.inventory = {}
         self.bar = other.bar
-        self.set_inventory_filters(other.filters)
+        self.set_inventory_filters(other.inventory.get("filters", None))

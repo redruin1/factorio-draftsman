@@ -13,7 +13,6 @@ from draftsman.error import (
 from draftsman.warning import DraftsmanWarning, ItemCapacityWarning
 
 import sys
-import warnings
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -130,3 +129,23 @@ class ContainerTesting(unittest.TestCase):
 
         self.assertEqual(container.items, {})
         self.assertEqual(container.inventory_slots_occupied, 0)
+
+    def test_mergable_with(self):
+        container1 = Container("wooden-chest")
+        container2 = Container("wooden-chest", bar=10, items={"copper-plate": 100})
+
+        self.assertTrue(container1.mergable_with(container2))
+        self.assertTrue(container2.mergable_with(container1))
+
+        container2.tile_position = (1, 1)
+        self.assertFalse(container1.mergable_with(container2))
+
+    def test_merge(self):
+        container1 = Container("wooden-chest")
+        container2 = Container("wooden-chest", bar=10, items={"copper-plate": 100})
+
+        container1.merge(container2)
+        del container2
+
+        self.assertEqual(container1.bar, 10)
+        self.assertEqual(container1.items, {"copper-plate": 100})

@@ -24,3 +24,24 @@ class LandMineTesting(unittest.TestCase):
 
         with self.assertRaises(InvalidEntityError):
             LandMine("this is not a rocket silo")
+
+    def test_mergable_with(self):
+        landmine1 = LandMine("land-mine")
+        landmine2 = LandMine("land-mine", tags={"some": "stuff"})
+
+        self.assertTrue(landmine1.mergable_with(landmine1))
+
+        self.assertTrue(landmine1.mergable_with(landmine2))
+        self.assertTrue(landmine2.mergable_with(landmine1))
+
+        landmine2.tile_position = (1, 1)
+        self.assertFalse(landmine1.mergable_with(landmine2))
+
+    def test_merge(self):
+        landmine1 = LandMine("land-mine")
+        landmine2 = LandMine("land-mine", tags={"some": "stuff"})
+
+        landmine1.merge(landmine2)
+        del landmine2
+
+        self.assertEqual(landmine1.tags, {"some": "stuff"})

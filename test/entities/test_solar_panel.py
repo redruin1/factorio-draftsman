@@ -26,3 +26,24 @@ class SolarPanelTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             SolarPanel("not a solar_panel")
+
+    def test_mergable_with(self):
+        panel1 = SolarPanel("solar-panel")
+        panel2 = SolarPanel("solar-panel", tags={"some": "stuff"})
+
+        self.assertTrue(panel1.mergable_with(panel1))
+
+        self.assertTrue(panel1.mergable_with(panel2))
+        self.assertTrue(panel2.mergable_with(panel1))
+
+        panel2.tile_position = (1, 1)
+        self.assertFalse(panel1.mergable_with(panel2))
+
+    def test_merge(self):
+        panel1 = SolarPanel("solar-panel")
+        panel2 = SolarPanel("solar-panel", tags={"some": "stuff"})
+
+        panel1.merge(panel2)
+        del panel2
+
+        self.assertEqual(panel1.tags, {"some": "stuff"})

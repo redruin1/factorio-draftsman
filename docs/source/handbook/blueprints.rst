@@ -8,10 +8,10 @@ Differences between a Blueprint object and a JSON dict
 
 Blueprint classes have 2 attributes that are different than a static blueprint dict:
 
-1. ``blueprint.entities``
-2. ``blueprint.tiles``
+1. :py:attr:`.Blueprint.entities`
+2. :py:attr:`.Blueprint.tiles`
 
-Both of these are a ``<EntityList>`` and ``<TileList>``, respectively.
+Both of these are a :py:class:`.EntityList` and :py:class:`.TileList`, respectively.
 Both lists have all of the normal methods you would expect from lists:
 
 .. code-block:: python
@@ -29,14 +29,14 @@ Both lists have all of the normal methods you would expect from lists:
     # etc...
 
 However, they also posess some extra functions. 
-Like most other blueprint attributes, they are type-checked to only accept ``EntityLike`` and ``Tile`` objects:
+Like most other blueprint attributes, they are type-checked to only accept :py:class:`.EntityLike` and :py:class:`.Tile` objects:
 
 .. code-block:: python
 
     blueprint.entities.append(20)   # TypeError: Entry in EntityList must be an EntityLike
     blueprint.tiles.append(30)      # TypeError: Entry in TileList must be a Tile
 
-Their ``append`` and ``insert`` functions allow for a special shorthand, where you can specify the name of the entity you want to make followed by any keyword arguments (similar to ``new_entity()``). 
+Their :py:meth:`~.EntityList.append` and :py:meth:`~.EntityList.insert` functions allow for a special shorthand, where you can specify the name of the entity you want to make followed by any keyword arguments (similar to :py:func:`.new_entity`). 
 This works on both ``EntityList`` and ``TileList``:
 
 .. code-block:: python
@@ -69,6 +69,19 @@ The ``append`` and ``insert`` functions also have an optional ``copy`` parameter
     assert blueprint.entities[-1].stack_size_override == 1
 
 Note that this only works for the non-shorthand version; the shorthand always creates a new entity instance.
+
+``append`` and ``insert`` also have another optional parameter, ``merge``, which indicates whether or not to try and merge entities placed inside a :py:class:`.EntityCollection`:
+
+.. code-block:: python
+
+    inserter = Inserter("fast-inserter")
+
+    blueprint.entities.append(inserter)
+    blueprint.entities.append(inserter, merge=True) # This entity gets merged with the one above
+
+    assert len(blueprint.entities) == 1
+
+For more info on entity merging, see :ref:`handbook.entities.entity-merging`.
 
 EntityLists can also be indexed by string if there is a matching entity with that ID inside of the EntityList:
 

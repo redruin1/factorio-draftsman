@@ -8,8 +8,6 @@ from draftsman.entity import Splitter, splitters
 from draftsman.error import InvalidEntityError, InvalidSideError, InvalidItemError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -85,3 +83,39 @@ class SplitterTesting(unittest.TestCase):
             self.assertEqual(splitter.dual_power_connectable, False)
             self.assertEqual(splitter.circuit_connectable, False)
             self.assertEqual(splitter.dual_circuit_connectable, False)
+
+    def test_mergable_with(self):
+        splitter1 = Splitter("splitter")
+        splitter2 = Splitter(
+            "splitter",
+            input_priority="left",
+            output_priority="right",
+            filter="small-lamp",
+            tags={"some": "stuff"},
+        )
+
+        self.assertTrue(splitter1.mergable_with(splitter1))
+
+        self.assertTrue(splitter1.mergable_with(splitter2))
+        self.assertTrue(splitter2.mergable_with(splitter1))
+
+        splitter2.tile_position = (1, 1)
+        self.assertFalse(splitter1.mergable_with(splitter2))
+
+    def test_merge(self):
+        splitter1 = Splitter("splitter")
+        splitter2 = Splitter(
+            "splitter",
+            input_priority="left",
+            output_priority="right",
+            filter="small-lamp",
+            tags={"some": "stuff"},
+        )
+
+        splitter1.merge(splitter2)
+        del splitter2
+
+        self.assertEqual(splitter1.input_priority, "left")
+        self.assertEqual(splitter1.output_priority, "right")
+        self.assertEqual(splitter1.filter, "small-lamp")
+        self.assertEqual(splitter1.tags, {"some": "stuff"})

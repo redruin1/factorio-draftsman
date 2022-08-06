@@ -1,4 +1,5 @@
 # recipes.py
+# -*- encoding: utf-8 -*-
 
 import os
 import pickle

@@ -14,7 +14,8 @@ from draftsman.classes.mixins import (
     DoubleGridAlignedMixin,
     DirectionalMixin,
 )
-import draftsman.signatures as signatures
+from draftsman.error import DataFormatError
+from draftsman import signatures
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import train_stops
@@ -63,6 +64,18 @@ class TrainStop(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+    # =========================================================================
+
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = signatures.TRAIN_STOP_CONTROL_BEHAVIOR.validate(
+                value
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -262,3 +275,12 @@ class TrainStop(
                 self.control_behavior["trains_count_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")
+
+    # =========================================================================
+
+    def merge(self, other):
+        # type: (TrainStop) -> None
+        super(TrainStop, self).merge(other)
+
+        self.station = other.station
+        self.manual_trains_limit = other.manual_trains_limit

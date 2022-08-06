@@ -28,11 +28,11 @@ class EntityLike(SpatialLike):
     * `name`
     * `type`
     * `id`
-    * `position`
-    * `collision_box`
-    * `collision_mask`
     * `tile_width`
     * `tile_height`
+    * `position`
+    * `collision_set`
+    * `collision_mask`
     """
 
     def __init__(self):
@@ -41,30 +41,26 @@ class EntityLike(SpatialLike):
         # Overwritten if the EntityLike is placed inside a Blueprint or Group
         self._parent = None
 
-        # Power connectable? (Internal) (Overwritten if applicable)
+        # Default attributes (Overwritten on a per-Entity basis)
         self._power_connectable = False
-        # Dual power connectable? (Internal) (Overwritten if applicable)
         self._dual_power_connectable = False
-        # Circuit connectable? (Interal) (Overwritten if applicable)
         self._circuit_connectable = False
-        # Dual circuit connectable? (Internal) (Overwritten if applicable)
         self._dual_circuit_connectable = False
-        # Double grid aligned? (Internal) (Overwritten if applicable)
         self._double_grid_aligned = False
-        # Rotatable? (Internal) (Overwritten if applicable)
         self._rotatable = False
-        # Flippable? (Internal) (Overwritten if applicable)
         self._flippable = True
 
+    # =========================================================================
+    # Properties
     # =========================================================================
 
     @property
     def parent(self):
         # type: () -> EntityCollection
         """
-        The parent EntityCollection object that contains the entity, or
-        ``None`` if the entity does not currently exist within an
-        EntityCollection. Not exported; read only.
+        The parent :py:class:`.EntityCollection` object that contains the entity,
+        or ``None`` if the entity does not currently exist within an
+        :py:class:`.EntityCollection`. Not exported; read only.
 
         :type: ``EntityCollection``
         """
@@ -143,9 +139,9 @@ class EntityLike(SpatialLike):
         """
         Whether or not this EntityLike can be rotated. Note that this does not
         mean that the entity will prevent a blueprint from rotating; more, that
-        this blueprint does not have a concept of different rotation angles. For
-        example, any :py:class:`.Reactor` entity will always return ``rotatable``
-        as ``False`` when queried. Not exported; read only.
+        this EntityLike does not have a concept of different rotation angles.
+        For example, any :py:class:`.Reactor` entity will always return
+        ``rotatable`` as ``False`` when queried. Not exported; read only.
 
         :type: ``bool``
         """
@@ -169,51 +165,75 @@ class EntityLike(SpatialLike):
 
     @abc.abstractproperty
     def tile_width(self):  # pragma: no coverage
-        pass
+        pass  # TODO: do we need this?
 
     @abc.abstractproperty
     def tile_height(self):  # pragma: no coverage
+        pass  # TODO: do we need this?
+
+    # =========================================================================
+    # Abstract Methods
+    # =========================================================================
+
+    def on_insert(self, parent):  # pragma: no coverage
+        # type: (EntityCollection) -> None
+        """
+        TODO
+        """
         pass
 
-    def on_insert(self):  # pragma: no coverage
-        # type: () -> None
+    def on_remove(self, parent):  # pragma: no coverage
+        # type: (EntityCollection) -> None
+        """
+        TODO
+        """
         pass
-
-    def on_remove(self):  # pragma: no coverage
-        # type: () -> None
-        pass
-
-    def get(self):
-        # type: () -> Union[Entity, list[Entity]]
-        return self
 
     @abc.abstractmethod
-    def mergable_with(self, other):
+    def mergable_with(self, other):  # pragma: no coverage
         # type: (EntityLike) -> bool
         """
         Checks to see if an entity is "mergable" with another entity. This means
-        that if a certain set of criteria is met, the attributes of ``other`` 
-        will be combined to the attributes of this entity. This is useful for 
-        mimicking cases where entities of the same name and type are placed on 
-        top of each other, merging them together into a single entity with 
+        that if a certain set of criteria is met, the attributes of ``other``
+        will be combined to the attributes of this entity. This is useful for
+        mimicking cases where entities of the same name and type are placed on
+        top of each other, merging them together into a single entity with
         shared attributes.
 
         For the full list of all merging rules, see (TODO).
+
+        .. NOTE::
+            This function does *not* actually merge the two, it simply checks
+            to see if such a merge is considered valid. To actually merge two
+            entities use :py:meth:`merge`.
+
+        :param other: The other :py:class:`EntityLike` to check against.
+
+        :returns: ``True`` if they can be merged, ``False`` otherwise.
         """
         pass
 
     @abc.abstractmethod
-    def merge(self, other):
+    def merge(self, other):  # pragma: no coverage
         # type: (EntityLike) -> None
         """
         Changes the attributes of the calling entity with the attributes of the
         passed in entity. The attributes of ``other`` take precedence over the
-        attributes of the calling entity. They can be either copied or merged 
+        attributes of the calling entity. They can be either copied or merged
         together, depending on the specific attribute being merged.
 
         For the full list of all merging rules, see (TODO).
+
+        :param other: The other :py:class:`EntityLike` to merge with.
         """
         pass
+
+    def get(self):
+        # type: () -> Union[Entity, list[Entity]]
+        """
+        TODO
+        """
+        return self
 
     def __deepcopy__(self, memo):
         # type: (dict) -> EntityLike
@@ -228,6 +248,11 @@ class EntityLike(SpatialLike):
         EntityCollection, and will have to be added manually. If instead the
         *entire* EntityCollection is deepcopied, then the parent will be the
         copied EntityCollection and everything *should* work.
+
+        See `here <https://github.com/redruin1/factorio-draftsman/issues/22>`
+        for more information.
+
+        :returns: A copy of the EntityLike.
         """
         cls = self.__class__
         result = cls.__new__(cls)

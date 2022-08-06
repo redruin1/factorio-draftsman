@@ -2,15 +2,15 @@
 schema >= 0.7.5
 lupa >= 1.10
 six >= 1.16.0
-# Development
+# Compatibility
+typing; python_version < '3.8' # The module uses Literals
+importlib-resources; python_version < '3.7'
+enum34; python_version < '3.4'
+future; python_version < '3.0'
+# Development libraries
 unittest2
 coverage
 tox
 black
 gitpython
 build
-# Compatibility
-typing; python_version < '3.8' # The module uses Literals
-importlib-resources; python_version < '3.7'
-enum34; python_version < '3.4'
-future; python_version < '3.0'

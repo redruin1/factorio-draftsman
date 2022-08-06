@@ -7,9 +7,11 @@ from draftsman._factorio_version import __factorio_version__, __factorio_version
 from draftsman.blueprintable import Blueprint, get_blueprintable_from_string
 from draftsman.classes.association import Association
 from draftsman.classes.blueprint import TileList
+from draftsman.classes.collisionset import CollisionSet
 from draftsman.classes.entitylike import EntityLike
 from draftsman.classes.entitylist import EntityList
 from draftsman.classes.group import Group
+from draftsman.classes.vector import Vector
 from draftsman.constants import Direction
 from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.tile import Tile
@@ -26,7 +28,7 @@ from draftsman.error import (
     DataFormatError,
     InvalidAssociationError,
 )
-from draftsman.utils import encode_version
+from draftsman.utils import encode_version, AABB
 from draftsman.warning import (
     DraftsmanWarning,
     RailAlignmentWarning,
@@ -529,7 +531,23 @@ class BlueprintTesting(unittest.TestCase):
     def test_add_entity(self):
         blueprint = Blueprint()
 
+        # Test merging
+        blueprint.entities.append("accumulator")
+        blueprint.entities.append("accumulator", merge=True)
+        self.assertEqual(len(blueprint.entities), 1)
+        self.assertEqual(
+            blueprint.entities[0].to_dict(),
+            {"name": "accumulator", "position": {"x": 1.0, "y": 1.0}},
+        )
+
+        # Test broadphase positive, but narrowphase negative
+        # TODO: catch warnings
+        blueprint = Blueprint()
+        blueprint.entities.append("rail-chain-signal")
+        blueprint.entities.append("straight-rail", direction=Direction.SOUTHEAST)
+
         # Unreasonable size
+        blueprint = Blueprint()
         blueprint.entities.append("inserter")
         with self.assertRaises(UnreasonablySizedBlueprintError):
             blueprint.entities.append("inserter", tile_position=(0, 100000))
@@ -839,8 +857,8 @@ class BlueprintTesting(unittest.TestCase):
                 return self.position
 
             @property
-            def collision_box(self):  # pragma: no coverage
-                return [[0, 0], [1, 1]]
+            def collision_set(self):  # pragma: no coverage
+                return CollisionSet([])
 
             @property
             def collision_mask(self):  # pragma: no coverage
@@ -854,17 +872,11 @@ class BlueprintTesting(unittest.TestCase):
             def tile_height(self):  # pragma: no coverage
                 return 1
 
-            def get_area(self):  # pragma: no coverage
-                return [
-                    [
-                        self.collision_box[0][0] + self.position["x"],
-                        self.collision_box[0][1] + self.position["y"],
-                    ],
-                    [
-                        self.collision_box[1][0] + self.position["x"],
-                        self.collision_box[1][1] + self.position["y"],
-                    ],
-                ]
+            def mergable_with(self, other):  # pragma: no coverage
+                return False
+
+            def merge(self, other):  # pragma: no coverage
+                return self
 
             def to_dict(self):  # pragma: no coverage
                 return "incorrect"
@@ -1014,6 +1026,7 @@ class BlueprintTesting(unittest.TestCase):
     # =========================================================================
 
     def test_find_entity(self):
+        # Blueprint search case
         blueprint = Blueprint()
         blueprint.entities.append("wooden-chest", tile_position=(1, 1))
         blueprint.entities.append("iron-chest", tile_position=(5, 0))
@@ -1038,6 +1051,27 @@ class BlueprintTesting(unittest.TestCase):
 
     # =========================================================================
 
+    def test_find_entity_at_position(self):
+        # Blueprint search case
+        blueprint = Blueprint()
+        blueprint.entities.append("wooden-chest", tile_position=(1, 1))
+        blueprint.entities.append("iron-chest", tile_position=(5, 0))
+        blueprint.entities.append("steel-chest", tile_position=(10, 10))
+
+        found_entity = blueprint.find_entity_at_position((1.5, 1.5))
+        self.assertIs(found_entity, blueprint.entities[0])
+
+        # Group search case
+        group = Group("test", position=(-5, -5))
+        group.entities.append("wooden-chest", tile_position=(-5, -5))
+        blueprint.entities.append(group)
+        # Incorrect
+        found_entity = blueprint.find_entity_at_position((-4.5, -4.5))
+        self.assertIs(found_entity, None)
+        # Correct
+        found_entity = blueprint.find_entity_at_position((-9.5, -9.5))
+        self.assertIs(found_entity, blueprint.entities[("test", 0)])
+
     def test_find_entities(self):
         blueprint = Blueprint()
         blueprint.entities.append("wooden-chest", tile_position=(1, 1))
@@ -1047,8 +1081,12 @@ class BlueprintTesting(unittest.TestCase):
         found_entities = blueprint.find_entities()
         self.assertEqual(found_entities, blueprint.entities.data)
 
-        found_entities = blueprint.find_entities([[0, 0], [6, 6]])
+        # Explicit AABB
+        found_entities = blueprint.find_entities(AABB(0, 0, 6, 6))
         self.assertEqual(found_entities, [blueprint.entities[0], blueprint.entities[1]])
+
+        # Implicit AABB
+        found_entities = blueprint.find_entities([0, 0, 6, 6])
 
         # Group search case
         group = Group("test", position=(-5, -5))
@@ -1058,10 +1096,10 @@ class BlueprintTesting(unittest.TestCase):
         found_entities = blueprint.find_entities()
         self.assertEqual(found_entities, blueprint.entities.data)
         # Unchanged
-        found_entities = blueprint.find_entities([[0, 0], [6, 6]])
+        found_entities = blueprint.find_entities([0, 0, 6, 6])
         self.assertEqual(found_entities, [blueprint.entities[0], blueprint.entities[1]])
         # Entity group
-        found_entities = blueprint.find_entities([[-10, -10], [0, 0]])
+        found_entities = blueprint.find_entities([-10, -10, 0, 0])
         self.assertEqual(found_entities, [blueprint.entities[("test", 0)]])
 
     # =========================================================================
@@ -1096,7 +1134,7 @@ class BlueprintTesting(unittest.TestCase):
         )
 
         # Area
-        found = blueprint.find_entities_filtered(area=[[4, -1], [11, 11]])
+        found = blueprint.find_entities_filtered(area=[4, -1, 11, 11])
         self.assertEqual(
             found, [blueprint.entities[1], blueprint.entities[3], blueprint.entities[2]]
         )
@@ -1378,6 +1416,72 @@ class BlueprintTesting(unittest.TestCase):
             },
         )
 
+        # Test recursive power connections
+        blueprint = Blueprint()
+        group = Group("group")
+        group.entities.append("small-electric-pole")
+        group.entities.append("small-electric-pole", tile_position=(1, 1))
+        group.add_power_connection(0, 1)
+        blueprint.entities.append(group)
+        blueprint.entities.append(
+            "small-electric-pole", tile_position=(2, 2), id="root"
+        )
+        blueprint.add_power_connection("root", ("group", 1))
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "entity_number": 1,
+                        "name": "small-electric-pole",
+                        "position": {"x": 0.5, "y": 0.5},
+                        "neighbours": [2],
+                    },
+                    {
+                        "entity_number": 2,
+                        "name": "small-electric-pole",
+                        "position": {"x": 1.5, "y": 1.5},
+                        "neighbours": [1, 3],
+                    },
+                    {
+                        "entity_number": 3,
+                        "name": "small-electric-pole",
+                        "position": {"x": 2.5, "y": 2.5},
+                        "neighbours": [2],
+                    },
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+
+        blueprint.remove_power_connections()
+
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "entity_number": 1,
+                        "name": "small-electric-pole",
+                        "position": {"x": 0.5, "y": 0.5},
+                    },
+                    {
+                        "entity_number": 2,
+                        "name": "small-electric-pole",
+                        "position": {"x": 1.5, "y": 1.5},
+                    },
+                    {
+                        "entity_number": 3,
+                        "name": "small-electric-pole",
+                        "position": {"x": 2.5, "y": 2.5},
+                    },
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+
     # =========================================================================
 
     def test_generate_power_connections(self):
@@ -1566,6 +1670,13 @@ class BlueprintTesting(unittest.TestCase):
                 }
             },
         )
+
+        # Test too many power connections
+        blueprint.entities = None
+        for i in range(3):
+            blueprint.entities.append("medium-electric-pole", tile_position=(0, i))
+            blueprint.entities.append("medium-electric-pole", tile_position=(3, i))
+        blueprint.generate_power_connections()
 
     # =========================================================================
 
@@ -1775,6 +1886,75 @@ class BlueprintTesting(unittest.TestCase):
             },
         )
 
+        # Remove recursive circuit connections
+        blueprint = Blueprint()
+        group = Group("group")
+        group.entities.append("transport-belt")
+        group.entities.append("transport-belt", tile_position=(1, 1))
+        group.add_circuit_connection("red", 0, 1)
+        blueprint.entities.append(group)
+        blueprint.entities.append("transport-belt", tile_position=(2, 2), id="root")
+        blueprint.add_circuit_connection("green", "root", ("group", 1))
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "entity_number": 1,
+                        "name": "transport-belt",
+                        "position": {"x": 0.5, "y": 0.5},
+                        "connections": {"1": {"red": [{"entity_id": 2}]}},
+                    },
+                    {
+                        "entity_number": 2,
+                        "name": "transport-belt",
+                        "position": {"x": 1.5, "y": 1.5},
+                        "connections": {
+                            "1": {
+                                "red": [{"entity_id": 1}],
+                                "green": [{"entity_id": 3}],
+                            }
+                        },
+                    },
+                    {
+                        "entity_number": 3,
+                        "name": "transport-belt",
+                        "position": {"x": 2.5, "y": 2.5},
+                        "connections": {"1": {"green": [{"entity_id": 2}]}},
+                    },
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+
+        blueprint.remove_circuit_connections()
+
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "entity_number": 1,
+                        "name": "transport-belt",
+                        "position": {"x": 0.5, "y": 0.5},
+                    },
+                    {
+                        "entity_number": 2,
+                        "name": "transport-belt",
+                        "position": {"x": 1.5, "y": 1.5},
+                    },
+                    {
+                        "entity_number": 3,
+                        "name": "transport-belt",
+                        "position": {"x": 2.5, "y": 2.5},
+                    },
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+
     # =========================================================================
     # TileCollection
     # =========================================================================
@@ -1784,10 +1964,10 @@ class BlueprintTesting(unittest.TestCase):
         blueprint.tiles.append("refined-concrete", position=(0, 0))
         blueprint.tiles.append("landfill", position=(10, 10))
 
-        self.assertIs(blueprint.find_tile(0, 0), blueprint.tiles[0])
-        self.assertIs(blueprint.find_tile(10, 10), blueprint.tiles[1])
+        self.assertIs(blueprint.find_tile((0, 0)), blueprint.tiles[0])
+        self.assertIs(blueprint.find_tile((10, 10)), blueprint.tiles[1])
         with self.assertRaises(AttributeError):
-            blueprint.find_tile(5, 5).position = (15, 15)
+            blueprint.find_tile((5, 5)).position = (15, 15)
 
     # =========================================================================
 
@@ -1804,8 +1984,12 @@ class BlueprintTesting(unittest.TestCase):
         result = blueprint.find_tiles_filtered(position=(0, 0), radius=5)
         self.assertEqual(result, [blueprint.tiles[0]])
 
-        # Area
-        result = blueprint.find_tiles_filtered(area=[[0, 0], [11, 11]])
+        # Area (long)
+        result = blueprint.find_tiles_filtered(area=AABB(0, 0, 11, 11))
+        self.assertEqual(result, blueprint.tiles.data)
+
+        # Area (short)
+        result = blueprint.find_tiles_filtered(area=[0, 0, 11, 11])
         self.assertEqual(result, blueprint.tiles.data)
 
         # Name
@@ -1830,8 +2014,8 @@ class BlueprintTesting(unittest.TestCase):
 
         blueprint.translate(-5, -5)
 
-        self.assertEqual(blueprint.entities[0].tile_position, {"x": 5, "y": 5})
-        self.assertEqual(blueprint.tiles[0].position, {"x": -4, "y": -4})
+        self.assertEqual(blueprint.entities[0].tile_position, Vector(5, 5))
+        self.assertEqual(blueprint.tiles[0].position, Vector(-4, -4))
 
         blueprint.entities.append("straight-rail")
         self.assertEqual(blueprint.double_grid_aligned, True)
@@ -1852,12 +2036,12 @@ class BlueprintTesting(unittest.TestCase):
 
         blueprint.rotate(2)
 
-        self.assertEqual(blueprint.entities[0].tile_position, {"x": -1, "y": 0})
-        self.assertEqual(blueprint.entities[1].tile_position, {"x": -5, "y": 4})
-        self.assertEqual(blueprint.entities[2].tile_position, {"x": -3, "y": 1})
+        self.assertEqual(blueprint.entities[0].tile_position, Vector(-1, 0))
+        self.assertEqual(blueprint.entities[1].tile_position, Vector(-5, 4))
+        self.assertEqual(blueprint.entities[2].tile_position, Vector(-3, 1))
         self.assertEqual(blueprint.entities[2].direction, 2)
-        self.assertEqual(blueprint.tiles[0].position, {"x": -5, "y": 0})
-        self.assertEqual(blueprint.tiles[1].position, {"x": -1, "y": 4})
+        self.assertEqual(blueprint.tiles[0].position, Vector(-5, 0))
+        self.assertEqual(blueprint.tiles[1].position, Vector(-1, 4))
 
         with self.assertRaises(RotationError):
             blueprint.rotate(1)
@@ -1875,21 +2059,21 @@ class BlueprintTesting(unittest.TestCase):
 
         blueprint.flip()  # horizontal
 
-        self.assertEqual(blueprint.entities[0].tile_position, {"x": -1, "y": 0})
-        self.assertEqual(blueprint.entities[1].tile_position, {"x": -5, "y": 4})
-        self.assertEqual(blueprint.entities[2].tile_position, {"x": -4, "y": 1})
+        self.assertEqual(blueprint.entities[0].tile_position, Vector(-1, 0))
+        self.assertEqual(blueprint.entities[1].tile_position, Vector(-5, 4))
+        self.assertEqual(blueprint.entities[2].tile_position, Vector(-4, 1))
         self.assertEqual(blueprint.entities[2].direction, 0)
-        self.assertEqual(blueprint.tiles[0].position, {"x": -1, "y": 4})
-        self.assertEqual(blueprint.tiles[1].position, {"x": -5, "y": 0})
+        self.assertEqual(blueprint.tiles[0].position, Vector(-1, 4))
+        self.assertEqual(blueprint.tiles[1].position, Vector(-5, 0))
 
         blueprint.flip("vertical")
 
-        self.assertEqual(blueprint.entities[0].tile_position, {"x": -1, "y": -1})
-        self.assertEqual(blueprint.entities[1].tile_position, {"x": -5, "y": -5})
-        self.assertEqual(blueprint.entities[2].tile_position, {"x": -4, "y": -3})
+        self.assertEqual(blueprint.entities[0].tile_position, Vector(-1, -1))
+        self.assertEqual(blueprint.entities[1].tile_position, Vector(-5, -5))
+        self.assertEqual(blueprint.entities[2].tile_position, Vector(-4, -3))
         self.assertEqual(blueprint.entities[2].direction, 4)
-        self.assertEqual(blueprint.tiles[0].position, {"x": -1, "y": -5})
-        self.assertEqual(blueprint.tiles[1].position, {"x": -5, "y": -1})
+        self.assertEqual(blueprint.tiles[0].position, Vector(-1, -5))
+        self.assertEqual(blueprint.tiles[1].position, Vector(-5, -1))
 
         with self.assertRaises(ValueError):
             blueprint.flip("incorrectly")

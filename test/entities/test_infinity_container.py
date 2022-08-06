@@ -185,3 +185,51 @@ class InfinityContainerTesting(unittest.TestCase):
             container.set_infinity_filter(1000, "iron-ore", "exactly", 200)
         with self.assertRaises(ValueError):
             container.set_infinity_filter(1, "iron-ore", "exactly", -1)
+
+    def test_mergable_with(self):
+        container1 = InfinityContainer("infinity-chest")
+        container2 = InfinityContainer(
+            "infinity-chest",
+            items={"copper-plate": 100},
+            infinity_settings={
+                "remove_unfiltered_items": True,
+                "filters": [
+                    {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
+                ],
+            },
+        )
+
+        self.assertTrue(container1.mergable_with(container1))
+
+        self.assertTrue(container1.mergable_with(container2))
+        self.assertTrue(container2.mergable_with(container1))
+
+        container2.tile_position = (1, 1)
+        self.assertFalse(container1.mergable_with(container2))
+
+    def test_merge(self):
+        container1 = InfinityContainer("infinity-chest")
+        container2 = InfinityContainer(
+            "infinity-chest",
+            items={"copper-plate": 100},
+            infinity_settings={
+                "remove_unfiltered_items": True,
+                "filters": [
+                    {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
+                ],
+            },
+        )
+
+        container1.merge(container2)
+        del container2
+
+        self.assertEqual(container1.items, {"copper-plate": 100})
+        self.assertEqual(
+            container1.infinity_settings,
+            {
+                "remove_unfiltered_items": True,
+                "filters": [
+                    {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
+                ],
+            },
+        )

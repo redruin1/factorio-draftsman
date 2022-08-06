@@ -4,7 +4,12 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import ModulesMixin, RequestItemsMixin, RecipeMixin, DirectionalMixin
+from draftsman.classes.mixins import (
+    ModulesMixin,
+    RequestItemsMixin,
+    RecipeMixin,
+    DirectionalMixin,
+)
 from draftsman.error import InvalidItemError
 from draftsman import utils
 from draftsman.warning import (
@@ -20,7 +25,9 @@ from draftsman.data import recipes
 import warnings
 
 
-class AssemblingMachine(ModulesMixin, RequestItemsMixin, RecipeMixin, DirectionalMixin, Entity):
+class AssemblingMachine(
+    ModulesMixin, RequestItemsMixin, RecipeMixin, DirectionalMixin, Entity
+):
     """
     A machine that takes input items and produces output items. Includes
     assembling machines, chemical plants, oil refineries, and centrifuges, but
@@ -29,6 +36,10 @@ class AssemblingMachine(ModulesMixin, RequestItemsMixin, RecipeMixin, Directiona
 
     def __init__(self, name=assembling_machines[0], **kwargs):
         # type: (str, **dict) -> None
+        """
+        TODO
+        """
+
         super(AssemblingMachine, self).__init__(name, assembling_machines, **kwargs)
 
         for unused_arg in self.unused_args:

@@ -11,8 +11,6 @@ from draftsman.warning import (
     ItemLimitationWarning,
 )
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -23,15 +21,15 @@ else:  # pragma: no coverage
 
 class FurnaceTesting(unittest.TestCase):
     def test_constructor_init(self):
-        furance = Furnace()
+        furnace = Furnace("stone-furnace")
 
         # Warnings
         with self.assertWarns(DraftsmanWarning):
-            Furnace(unused_keyword="whatever")
+            Furnace("stone-furnace", unused_keyword="whatever")
 
         # Errors
         with self.assertRaises(InvalidEntityError):
-            Furnace("not a heat pipe")
+            Furnace("not a furnace")
 
     def test_set_item_request(self):
         furnace = Furnace("stone-furnace")
@@ -40,9 +38,9 @@ class FurnaceTesting(unittest.TestCase):
         with self.assertWarns(ModuleCapacityWarning):
             furnace.set_item_request("speed-module", 2)
 
-        # Fuel on electric furnace
+        # TODO: Fuel on electric furnace
         # furnace.set_item_request("coal", 100)
-        # self.assertEqual(furnace.items, {"productivity-module-3": 2, "coal": 100})
+        # self.assertEqual(furnace.items, {"speed-module": 2, "coal": 100})
 
         furnace = Furnace("electric-furnace")
         # Module on electric furnace
@@ -78,3 +76,32 @@ class FurnaceTesting(unittest.TestCase):
 
         self.assertEqual(furnace.items, {})
         self.assertEqual(furnace.module_slots_occupied, 0)
+
+    def test_mergable_with(self):
+        furnace1 = Furnace("stone-furnace")
+        furnace2 = Furnace(
+            "stone-furnace", items={"copper-ore": 100}, tags={"some": "stuff"}
+        )
+
+        self.assertTrue(furnace1.mergable_with(furnace1))
+
+        self.assertTrue(furnace1.mergable_with(furnace2))
+        self.assertTrue(furnace2.mergable_with(furnace1))
+
+        furnace2.tile_position = (5, 5)
+        self.assertFalse(furnace1.mergable_with(furnace2))
+
+        furnace2 = Furnace("electric-furnace")
+        self.assertFalse(furnace1.mergable_with(furnace2))
+
+    def test_merge(self):
+        furnace1 = Furnace("stone-furnace")
+        furnace2 = Furnace(
+            "stone-furnace", items={"copper-ore": 100}, tags={"some": "stuff"}
+        )
+
+        furnace1.merge(furnace2)
+        del furnace2
+
+        self.assertEqual(furnace1.items, {"copper-ore": 100})
+        self.assertEqual(furnace1.tags, {"some": "stuff"})

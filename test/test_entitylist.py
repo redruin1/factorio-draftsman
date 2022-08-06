@@ -3,11 +3,13 @@
 
 from __future__ import absolute_import, unicode_literals
 
+from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.entitylist import EntityList
 from draftsman.classes.group import Group
 from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.error import DuplicateIDError
+from draftsman.utils import encode_version
 from draftsman.warning import OverlappingObjectsWarning, HiddenEntityWarning
 
 import sys
@@ -62,6 +64,93 @@ class EntityListTesting(unittest.TestCase):
 
         with self.assertRaises(DuplicateIDError):
             test.insert(1, "steel-chest", id="test")
+
+        # Test poorly defined no-copy + merge
+        with self.assertRaises(ValueError):
+            blueprint.entities.append(Container(), copy=False, merge=True)
+
+    def test_remove(self):
+        pass  # TODO
+
+    def test_recursive_remove(self):
+        # Test regular remove functionality
+        blueprint = Blueprint()
+        entity_to_remove = new_entity("transport-belt")
+        blueprint.entities.append(entity_to_remove, copy=False)
+
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "entity_number": 1,
+                        "name": "transport-belt",
+                        "position": {"x": 0.5, "y": 0.5},
+                    }
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+
+        blueprint.entities.recursive_remove(entity_to_remove)
+
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+
+        # Test recursion
+        blueprint = Blueprint()
+        entity_to_remove = new_entity("transport-belt")
+        group = Group()
+        group.entities.append(entity_to_remove, copy=False)
+        blueprint.entities.append(group, copy=False)
+        blueprint.entities.append("transport-belt", tile_position=(2, 2))
+
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "entity_number": 1,
+                        "name": "transport-belt",
+                        "position": {"x": 0.5, "y": 0.5},
+                    },
+                    {
+                        "entity_number": 2,
+                        "name": "transport-belt",
+                        "position": {"x": 2.5, "y": 2.5},
+                    },
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+
+        blueprint.entities.recursive_remove(entity_to_remove)
+
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "entity_number": 1,
+                        "name": "transport-belt",
+                        "position": {"x": 2.5, "y": 2.5},
+                    }
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+
+        # Test ValueError
+        with self.assertRaises(ValueError):
+            blueprint.entities.recursive_remove(entity_to_remove)
 
     def test_getitem(self):
         blueprint = Blueprint()

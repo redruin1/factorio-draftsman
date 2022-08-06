@@ -8,8 +8,6 @@ from draftsman.entity import FilterInserter, filter_inserters
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -144,3 +142,44 @@ class FilterInserterTesting(unittest.TestCase):
         self.assertEqual(inserter.filter_mode, None)
         with self.assertRaises(ValueError):
             inserter.filter_mode = "incorrect"
+
+    def test_mergable_with(self):
+        inserter1 = FilterInserter("filter-inserter")
+        inserter2 = FilterInserter(
+            "filter-inserter",
+            filter_mode="whitelist",
+            override_stack_size=1,
+            filters=[{"name": "coal", "index": 1}],
+        )
+        self.assertTrue(inserter1.mergable_with(inserter1))
+
+        self.assertTrue(inserter1.mergable_with(inserter2))
+        self.assertTrue(inserter2.mergable_with(inserter1))
+
+        inserter2.tile_position = (1, 1)
+        self.assertFalse(inserter1.mergable_with(inserter2))
+
+        inserter2.tile_position = (0, 0)
+        inserter2.direction = Direction.EAST
+        self.assertFalse(inserter1.mergable_with(inserter2))
+
+        inserter2 = FilterInserter("stack-filter-inserter")
+        self.assertFalse(inserter1.mergable_with(inserter2))
+
+    def test_merge(self):
+        inserter1 = FilterInserter("filter-inserter")
+        inserter2 = FilterInserter(
+            "filter-inserter",
+            filter_mode="whitelist",
+            override_stack_size=1,
+            filters=[{"name": "coal", "index": 1}],
+            tags={"some": "stuff"},
+        )
+
+        inserter1.merge(inserter2)
+        del inserter2
+
+        self.assertEqual(inserter1.filter_mode, "whitelist")
+        self.assertEqual(inserter1.override_stack_size, 1)
+        self.assertEqual(inserter1.filters, [{"name": "coal", "index": 1}])
+        self.assertEqual(inserter1.tags, {"some": "stuff"})

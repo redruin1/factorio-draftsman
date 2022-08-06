@@ -24,6 +24,10 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
 
     def __init__(self, name=accumulators[0], **kwargs):
         # type: (str, **dict) -> None
+        """
+        TODO
+        """
+
         super(Accumulator, self).__init__(name, accumulators, **kwargs)
 
         for unused_arg in self.unused_args:
@@ -32,6 +36,18 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+    # =========================================================================
+
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = signatures.ACCUMULATOR_CONTROL_BEHAVIOR.validate(
+                value
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 

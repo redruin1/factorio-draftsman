@@ -104,6 +104,8 @@ class ConstantCombinatorTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             ConstantCombinator("this is not a constant combinator")
+        with self.assertRaises(DataFormatError):
+            ConstantCombinator(control_behavior={"unused_key": "something"})
 
     def test_flags(self):
         for name in constant_combinators:
@@ -306,3 +308,55 @@ class ConstantCombinatorTesting(unittest.TestCase):
         )
         signal = combinator.get_signal(50)
         self.assertEqual(signal, None)
+
+    def test_mergable_with(self):
+        comb1 = ConstantCombinator("constant-combinator")
+        comb2 = ConstantCombinator(
+            "constant-combinator",
+            control_behavior={
+                "filters": [
+                    {
+                        "index": 1,
+                        "signal": {"name": "signal-A", "type": "virtual"},
+                        "count": 100,
+                    }
+                ]
+            },
+        )
+
+        self.assertTrue(comb1.mergable_with(comb2))
+        self.assertTrue(comb2.mergable_with(comb1))
+
+        comb2.tile_position = (1, 1)
+        self.assertFalse(comb1.mergable_with(comb2))
+
+    def test_merge(self):
+        comb1 = ConstantCombinator("constant-combinator")
+        comb2 = ConstantCombinator(
+            "constant-combinator",
+            control_behavior={
+                "filters": [
+                    {
+                        "index": 1,
+                        "signal": {"name": "signal-A", "type": "virtual"},
+                        "count": 100,
+                    }
+                ]
+            },
+        )
+
+        comb1.merge(comb2)
+        del comb2
+
+        self.assertEqual(
+            comb1.control_behavior,
+            {
+                "filters": [
+                    {
+                        "index": 1,
+                        "signal": {"name": "signal-A", "type": "virtual"},
+                        "count": 100,
+                    }
+                ]
+            },
+        )

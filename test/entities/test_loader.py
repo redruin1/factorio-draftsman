@@ -26,3 +26,34 @@ class LoaderTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             Loader("this is not a loader")
+
+    def test_mergable_with(self):
+        container1 = Loader()
+        container2 = Loader(
+            filters=[{"name": "coal", "index": 1}],
+            io_type="input",
+            tags={"some": "stuff"},
+        )
+
+        self.assertTrue(container1.mergable_with(container1))
+
+        self.assertTrue(container1.mergable_with(container2))
+        self.assertTrue(container2.mergable_with(container1))
+
+        container2.tile_position = (1, 1)
+        self.assertFalse(container1.mergable_with(container2))
+
+    def test_merge(self):
+        container1 = Loader()
+        container2 = Loader(
+            filters=[{"name": "coal", "index": 1}],
+            io_type="input",
+            tags={"some": "stuff"},
+        )
+
+        container1.merge(container2)
+        del container2
+
+        self.assertEqual(container1.filters, [{"name": "coal", "index": 1}])
+        self.assertEqual(container1.io_type, "input")
+        self.assertEqual(container1.tags, {"some": "stuff"})

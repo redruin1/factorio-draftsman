@@ -9,11 +9,14 @@ from draftsman.classes.mixins import (
     ControlBehaviorMixin,
     CircuitConnectableMixin,
 )
+from draftsman.error import DataFormatError
 import draftsman.signatures as signatures
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import lamps
 
+from schema import SchemaError
+import six
 import warnings
 
 
@@ -34,6 +37,16 @@ class Lamp(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+    # =========================================================================
+
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = signatures.LAMP_CONTROL_BEHAVIOR.validate(value)
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 

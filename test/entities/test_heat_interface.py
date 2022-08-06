@@ -7,8 +7,6 @@ from draftsman.entity import HeatInterface, heat_interfaces
 from draftsman.error import InvalidEntityError, InvalidModeError
 from draftsman.warning import DraftsmanWarning, TemperatureRangeWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -63,3 +61,28 @@ class HeatInterfaceTesting(unittest.TestCase):
         self.assertEqual(interface.mode, None)
         with self.assertRaises(InvalidModeError):
             interface.mode = "incorrect"
+
+    def test_mergable_with(self):
+        interface1 = HeatInterface("heat-interface")
+        interface2 = HeatInterface("heat-interface", mode="at-most", temperature=100)
+
+        self.assertTrue(interface1.mergable_with(interface1))
+
+        self.assertTrue(interface1.mergable_with(interface2))
+        self.assertTrue(interface2.mergable_with(interface1))
+
+        interface2.tile_position = (10, 10)
+        self.assertFalse(interface1.mergable_with(interface2))
+
+    def test_merge(self):
+        interface1 = HeatInterface("heat-interface")
+        interface2 = HeatInterface(
+            "heat-interface", mode="at-most", temperature=100, tags={"some": "stuff"}
+        )
+
+        interface1.merge(interface2)
+        del interface2
+
+        self.assertEqual(interface1.temperature, 100)
+        self.assertEqual(interface1.mode, "at-most")
+        self.assertEqual(interface1.tags, {"some": "stuff"})

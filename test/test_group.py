@@ -6,8 +6,10 @@ from __future__ import unicode_literals
 from draftsman import __factorio_version_info__
 from draftsman.classes.association import Association
 from draftsman.classes.blueprint import Blueprint
+from draftsman.classes.collisionset import CollisionSet
 from draftsman.classes.entitylist import EntityList
 from draftsman.classes.group import Group
+from draftsman.classes.vector import Vector
 from draftsman.entity import *
 from draftsman.error import (
     DraftsmanError,
@@ -20,7 +22,7 @@ from draftsman.error import (
     MalformedBlueprintStringError,
     IncorrectBlueprintTypeError,
 )
-from draftsman.utils import encode_version
+from draftsman.utils import encode_version, AABB
 from draftsman.warning import (
     ConnectionSideWarning,
     ConnectionDistanceWarning,
@@ -62,7 +64,7 @@ class GroupTesting(unittest.TestCase):
         self.assertEqual(group.name, "groupA")
         self.assertEqual(group.type, "custom_type")
         self.assertEqual(group.id, "test_group")
-        self.assertEqual(group.position, {"x": 124.4, "y": 1.645})
+        self.assertEqual(group.position, Vector(124.4, 1.645))
 
         # Initialize from string with entities
         test_string = "0eNqdkttqwzAMht9F187IwVk23/YxSig5aK0gcYLtLAvB7z45ZaW0gbHdGNn6/euT0Ap1N+FoSDtQK1AzaAvquIKls6668OaWEUEBOexBgK76cDNVWxnwAki3+AUq8aUA1I4c4dVguywnPfU1GhY8fBUwDpbVgw412CHNXnIBC6iIA+/Fk0N6cxiHGU1kZ3LNZc9os4kZjrvR2IScDcnDFN+jUQuKtTMZ3OI49HCYkl807HstfbKucszzUXUWd4CzG3CPLU19hB3DGGqicehwBzz9mUDCE3iiT8JhsH3Ek4zEao10vtTDZML4ZbnDI//Kk/2LJ9vhycow222F1N3GCfhEY7eK6Vsii/e0yHMp8+LV+2+Mw9xY"
@@ -70,7 +72,7 @@ class GroupTesting(unittest.TestCase):
         self.assertEqual(group.name, "test")
         self.assertEqual(group.type, "group")
         self.assertEqual(group.id, None)
-        self.assertEqual(group.position, {"x": 1.0, "y": 1.0})
+        self.assertEqual(group.position, Vector(1.0, 1.0))
         # Verify contents
         self.assertEqual(len(group.entities), 4)
         self.assertIsInstance(group.entities[0], Radar)
@@ -170,9 +172,9 @@ class GroupTesting(unittest.TestCase):
     def test_set_position(self):
         group = Group("test")
         group.position = (10, 10)
-        self.assertEqual(group.position, {"x": 10, "y": 10})
+        self.assertEqual(group.position, Vector(10.0, 10.0))
         group.position = {"x": 1.5, "y": 2.5}
-        self.assertEqual(group.position, {"x": 1.5, "y": 2.5})
+        self.assertEqual(group.position, Vector(1.5, 2.5))
 
         blueprint = Blueprint()
         blueprint.entities.append(group)
@@ -778,34 +780,39 @@ class GroupTesting(unittest.TestCase):
     def test_global_position(self):
         group = Group("test")
         group.entities.append("transport-belt")
-        self.assertEqual(group.position, {"x": 0, "y": 0})
-        self.assertEqual(group.entities[0].position, {"x": 0.5, "y": 0.5})
-        self.assertEqual(group.entities[0].global_position, {"x": 0.5, "y": 0.5})
+        self.assertEqual(group.position, Vector(0, 0))
+        self.assertEqual(group.position.to_dict(), {"x": 0, "y": 0})
+        self.assertEqual(group.entities[0].position, Vector(0.5, 0.5))
+        self.assertEqual(group.entities[0].position.to_dict(), {"x": 0.5, "y": 0.5})
+        self.assertEqual(group.entities[0].global_position, Vector(0.5, 0.5))
+        self.assertEqual(
+            group.entities[0].global_position.to_dict(), {"x": 0.5, "y": 0.5}
+        )
         group.position = (4, 4)
-        self.assertEqual(group.position, {"x": 4, "y": 4})
-        self.assertEqual(group.entities[0].position, {"x": 0.5, "y": 0.5})
-        self.assertEqual(group.entities[0].global_position, {"x": 4.5, "y": 4.5})
+        self.assertEqual(group.position, Vector(4, 4))
+        self.assertEqual(group.entities[0].position, Vector(0.5, 0.5))
+        self.assertEqual(group.entities[0].global_position, Vector(4.5, 4.5))
 
-    def test_get_area(self):
+    def test_get_world_bounding_box(self):
         group = Group("test")
         group.entities.append("transport-belt")
         group.entities.append("transport-belt", tile_position=(5, 5))
-        self.assertAlmostEqual(group.get_area()[0][0], 0.1)
-        self.assertAlmostEqual(group.get_area()[0][1], 0.1)
-        self.assertAlmostEqual(group.get_area()[1][0], 5.9)
-        self.assertAlmostEqual(group.get_area()[1][1], 5.9)
+        bounding_box = group.get_world_bounding_box()
+        self.assertAlmostEqual(bounding_box.top_left[0], 0.1)
+        self.assertAlmostEqual(bounding_box.top_left[1], 0.1)
+        self.assertAlmostEqual(bounding_box.bot_right[0], 5.9)
+        self.assertAlmostEqual(bounding_box.bot_right[1], 5.9)
         group.entities.pop()
         group.position = (3, 3)
-        self.assertAlmostEqual(group.get_area()[0][0], 3.1)
-        self.assertAlmostEqual(group.get_area()[0][1], 3.1)
-        self.assertAlmostEqual(group.get_area()[1][0], 3.9)
-        self.assertAlmostEqual(group.get_area()[1][1], 3.9)
+        bounding_box = group.get_world_bounding_box()
+        self.assertAlmostEqual(bounding_box.top_left[0], 3.1)
+        self.assertAlmostEqual(bounding_box.top_left[1], 3.1)
+        self.assertAlmostEqual(bounding_box.bot_right[0], 3.9)
+        self.assertAlmostEqual(bounding_box.bot_right[1], 3.9)
         group.entities.pop()
-        self.assertEqual(group.collision_box, None)
-        self.assertAlmostEqual(group.get_area()[0][0], 3)
-        self.assertAlmostEqual(group.get_area()[0][1], 3)
-        self.assertAlmostEqual(group.get_area()[1][0], 3)
-        self.assertAlmostEqual(group.get_area()[1][1], 3)
+        bounding_box = group.get_world_bounding_box()
+        self.assertEqual(group.collision_set, CollisionSet([]))
+        self.assertAlmostEqual(bounding_box, None)
 
     def test_entity_overlapping(self):
         group = Group("test")
@@ -853,6 +860,82 @@ class GroupTesting(unittest.TestCase):
         # TODO
         # group.entities.append("pumpjack", tile_position = (10, 10))
         # self.assertEqual(group.flippable, False)
+
+    def test_mergable_with(self):
+        group1 = Group()
+        group2 = Group()
+        self.assertFalse(group1.mergable_with(group2))  # Always false
+
+    def test_merge(self):
+        # Test group merging
+        group1 = Group()
+        group2 = Group()
+        group1.merge(group2)  # Should do nothing
+
+        # Test subentity merging
+        group = Group()
+        group.entities.append("accumulator")
+        group.entities.append("accumulator", merge=True)
+        self.assertEqual(len(group.entities), 1)
+        self.assertEqual(
+            group.entities[0].to_dict(),
+            {"name": "accumulator", "position": {"x": 1.0, "y": 1.0}},
+        )
+
+        # Single entity in group overlap case
+        blueprint = Blueprint()
+        group = Group()
+        group.entities.append("accumulator")
+        blueprint.entities.append(group)
+
+        self.assertEqual(len(group.entities), 1)
+        self.assertEqual(group.entities.data, [group.entities[0]])
+        self.assertEqual(len(blueprint.entities), 1)
+        self.assertEqual(blueprint.entities.data, [blueprint.entities[0]])
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "entity_number": 1,
+                        "name": "accumulator",
+                        "position": {"x": 1.0, "y": 1.0},
+                    }
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
+
+        blueprint.entities.append(group, merge=True)
+        self.assertEqual(len(blueprint.entities), 2)
+        self.assertEqual(
+            blueprint.area, AABB(0.09999999999999998, 0.09999999999999998, 1.9, 1.9)
+        )
+        self.assertIsInstance(blueprint.entities[0], Group)
+        self.assertEqual(len(blueprint.entities[0].entities), 1)
+        self.assertEqual(
+            blueprint.entities[0].get_world_bounding_box(),
+            AABB(0.09999999999999998, 0.09999999999999998, 1.9, 1.9),
+        )
+        self.assertIsInstance(blueprint.entities[1], Group)
+        self.assertEqual(len(blueprint.entities[1].entities), 0)
+        self.assertEqual(blueprint.entities[1].get_world_bounding_box(), None)
+
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"],
+            {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "entity_number": 1,
+                        "name": "accumulator",
+                        "position": {"x": 1.0, "y": 1.0},
+                    }
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        )
 
     def test_get(self):
         # Regular case
@@ -923,7 +1006,7 @@ class GroupTesting(unittest.TestCase):
         # Make sure parent of the copied group is reset to None
         self.assertIs(group_copy.parent, None)
         # Make sure the hashmap was copied properly and are not equivalent
-        self.assertIsNot(group.entity_hashmap, group_copy.entity_hashmap)
+        self.assertIsNot(group.entity_map, group_copy.entity_map)
 
         # Test invalid association
         blueprint.entities.append("steel-chest", tile_position=(5, 5))
@@ -975,7 +1058,7 @@ class GroupTesting(unittest.TestCase):
 
         group.translate(-5, -5)
 
-        self.assertEqual(group.entities[0].tile_position, {"x": 5, "y": 5})
+        self.assertEqual(group.entities[0].tile_position, Vector(5, 5))
 
         group.entities.append("straight-rail")
         self.assertEqual(group.double_grid_aligned, True)
@@ -991,9 +1074,9 @@ class GroupTesting(unittest.TestCase):
 
         group.rotate(2)
 
-        self.assertEqual(group.entities[0].tile_position, {"x": -1, "y": 0})
-        self.assertEqual(group.entities[1].tile_position, {"x": -5, "y": 4})
-        self.assertEqual(group.entities[2].tile_position, {"x": -3, "y": 1})
+        self.assertEqual(group.entities[0].tile_position, Vector(-1, 0))
+        self.assertEqual(group.entities[1].tile_position, Vector(-5, 4))
+        self.assertEqual(group.entities[2].tile_position, Vector(-3, 1))
         self.assertEqual(group.entities[2].direction, 2)
 
         with self.assertRaises(RotationError):
@@ -1007,16 +1090,16 @@ class GroupTesting(unittest.TestCase):
 
         group.flip()  # horizontal
 
-        self.assertEqual(group.entities[0].tile_position, {"x": -1, "y": 0})
-        self.assertEqual(group.entities[1].tile_position, {"x": -5, "y": 4})
-        self.assertEqual(group.entities[2].tile_position, {"x": -4, "y": 1})
+        self.assertEqual(group.entities[0].tile_position, Vector(-1, 0))
+        self.assertEqual(group.entities[1].tile_position, Vector(-5, 4))
+        self.assertEqual(group.entities[2].tile_position, Vector(-4, 1))
         self.assertEqual(group.entities[2].direction, 0)
 
         group.flip("vertical")
 
-        self.assertEqual(group.entities[0].tile_position, {"x": -1, "y": -1})
-        self.assertEqual(group.entities[1].tile_position, {"x": -5, "y": -5})
-        self.assertEqual(group.entities[2].tile_position, {"x": -4, "y": -3})
+        self.assertEqual(group.entities[0].tile_position, Vector(-1, -1))
+        self.assertEqual(group.entities[1].tile_position, Vector(-5, -5))
+        self.assertEqual(group.entities[2].tile_position, Vector(-4, -3))
         self.assertEqual(group.entities[2].direction, 4)
 
         with self.assertRaises(ValueError):

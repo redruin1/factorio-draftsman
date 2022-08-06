@@ -53,6 +53,18 @@ class DeciderCombinator(
 
     # =========================================================================
 
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = (
+                signatures.DECIDER_COMBINATOR_CONTROL_BEHAVIOR.validate(value)
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
+
+    # =========================================================================
+
     @property
     def first_operand(self):
         # type: () -> Union[str, int]

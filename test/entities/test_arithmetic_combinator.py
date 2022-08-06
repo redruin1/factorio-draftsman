@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.blueprint import Blueprint
+from draftsman.classes.group import Group
 from draftsman.constants import Direction
 from draftsman.entity import ArithmeticCombinator, arithmetic_combinators, Container
 from draftsman.error import (
@@ -13,8 +14,6 @@ from draftsman.error import (
     DraftsmanError,
 )
 from draftsman.warning import DraftsmanWarning
-
-from schema import SchemaError
 
 import sys
 
@@ -118,6 +117,8 @@ class ArithmeticCombinatorTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             ArithmeticCombinator("this is not an arithmetic combinator")
+        with self.assertRaises(DataFormatError):
+            ArithmeticCombinator(control_behavior={"unused_key": "something"})
 
     def test_flags(self):
         for name in arithmetic_combinators:
@@ -517,9 +518,9 @@ class ArithmeticCombinatorTesting(unittest.TestCase):
                     "first_signal": {"name": "signal-A", "type": "virtual"},
                     "operation": "+",
                     "second_signal": {"name": "signal-B", "type": "virtual"},
-                    "output_signal": {"name": "signal-C", "type": "virtual"}
+                    "output_signal": {"name": "signal-C", "type": "virtual"},
                 }
-            }
+            },
         )
 
         # Test blueprint merging
@@ -527,7 +528,9 @@ class ArithmeticCombinatorTesting(unittest.TestCase):
         blueprint.entities.append("arithmetic-combinator")
 
         entity_to_merge = ArithmeticCombinator("arithmetic-combinator")
-        entity_to_merge.set_arithmetic_conditions("signal-A", "+", "signal-B", "signal-C")
+        entity_to_merge.set_arithmetic_conditions(
+            "signal-A", "+", "signal-B", "signal-C"
+        )
 
         blueprint.entities.append(entity_to_merge, merge=True)
 
@@ -539,7 +542,33 @@ class ArithmeticCombinatorTesting(unittest.TestCase):
                     "first_signal": {"name": "signal-A", "type": "virtual"},
                     "operation": "+",
                     "second_signal": {"name": "signal-B", "type": "virtual"},
-                    "output_signal": {"name": "signal-C", "type": "virtual"}
+                    "output_signal": {"name": "signal-C", "type": "virtual"},
                 }
-            }
+            },
+        )
+
+        # Test dual-circuit-connections as well as self-reference
+        group = Group()
+        group.entities.append("arithmetic-combinator")
+        group.add_circuit_connection("green", 0, 0, 1, 2)
+
+        blueprint = Blueprint()
+        blueprint.entities.append("arithmetic-combinator")
+        blueprint.entities.append(group, merge=True)
+
+        self.assertEqual(len(blueprint.entities), 2)
+        self.assertEqual(len(blueprint.entities[1].entities), 0)
+        self.assertEqual(
+            blueprint.to_dict()["blueprint"]["entities"],
+            [
+                {
+                    "entity_number": 1,
+                    "name": "arithmetic-combinator",
+                    "position": {"x": 0.5, "y": 1.0},
+                    "connections": {
+                        "1": {"green": [{"entity_id": 1, "circuit_id": 2}]},
+                        "2": {"green": [{"entity_id": 1, "circuit_id": 1}]},
+                    },
+                }
+            ],
         )

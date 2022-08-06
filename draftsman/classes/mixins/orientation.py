@@ -8,7 +8,8 @@ from draftsman.warning import ValueWarning
 import warnings
 
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
+
+if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
@@ -72,4 +73,4 @@ class OrientationMixin(object):
     def mergable_with(self, other):
         # type: (Entity) -> bool
         base_mergable = super(OrientationMixin, self).mergable_with(other)
-        return (base_mergable and self.direction == other.direction)
+        return base_mergable and self.orientation == other.orientation

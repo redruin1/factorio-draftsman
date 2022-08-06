@@ -15,10 +15,14 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.constants import InserterModeOfOperation
+from draftsman.error import DataFormatError
+from draftsman import signatures
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import inserters
 
+from schema import SchemaError
+import six
 import warnings
 
 
@@ -53,3 +57,15 @@ class Inserter(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+    # =========================================================================
+
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = signatures.INSERTER_CONTROL_BEHAVIOR.validate(
+                value
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)

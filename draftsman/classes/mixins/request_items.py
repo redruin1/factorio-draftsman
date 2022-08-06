@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 from draftsman import signatures
 from draftsman.data import entities, modules, items
 from draftsman.error import InvalidItemError
+from draftsman.utils import reissue_warnings
 from draftsman.warning import ModuleCapacityWarning
 
 from schema import SchemaError
@@ -13,7 +14,8 @@ import six
 import warnings
 
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
+
+if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
@@ -39,6 +41,7 @@ class RequestItemsMixin(object):
 
     # =========================================================================
 
+    @reissue_warnings
     def set_item_request(self, item, count):
         # type: (str, int) -> None
         """
@@ -74,6 +77,7 @@ class RequestItemsMixin(object):
         else:
             self.items[item] = count
 
+    @reissue_warnings
     def set_item_requests(self, items):
         # type: (dict) -> None
         """
@@ -108,4 +112,5 @@ class RequestItemsMixin(object):
         # type: (Entity) -> None
         super(RequestItemsMixin, self).merge(other)
 
-        self.items = other.request_filters
+        # self.items = other.items
+        self.set_item_requests(other.items)

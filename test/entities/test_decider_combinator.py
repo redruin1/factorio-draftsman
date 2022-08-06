@@ -7,15 +7,11 @@ from draftsman.constants import Direction
 from draftsman.entity import DeciderCombinator, decider_combinators
 from draftsman.error import (
     InvalidEntityError,
-    InvalidSignalError,
-    InvalidOperationError,
     DataFormatError,
     DraftsmanError,
 )
 from draftsman.warning import DraftsmanWarning
 from draftsman.data import signals
-
-from schema import SchemaError
 
 import sys
 
@@ -111,6 +107,8 @@ class DeciderCombinatorTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             DeciderCombinator("this is not an arithmetic combinator")
+        with self.assertRaises(DataFormatError):
+            DeciderCombinator(control_behavior={"unused_key": "something"})
 
     def test_flags(self):
         for name in decider_combinators:
@@ -474,3 +472,75 @@ class DeciderCombinatorTesting(unittest.TestCase):
         # Error
         with self.assertRaises(TypeError):
             combinator.copy_count_from_input = "incorrect"
+
+    def test_mergable_with(self):
+        comb1 = DeciderCombinator("decider-combinator", direction=Direction.SOUTH)
+        comb2 = DeciderCombinator(
+            "decider-combinator",
+            direction=Direction.SOUTH,
+            control_behavior={
+                "decider_conditions": {
+                    "first_signal": {"name": "signal-D", "type": "virtual"},
+                    "comparator": "<",
+                    "constant": 10,
+                    "output_signal": {"name": "signal-E", "type": "virtual"},
+                    "copy_count_from_input": False,
+                }
+            },
+            tags={"some": "stuff"},
+        )
+
+        self.assertTrue(comb1.mergable_with(comb2))
+        self.assertTrue(comb2.mergable_with(comb1))
+
+        comb2.first_operand = "signal-A"
+        comb2.operation = ">="
+        self.assertTrue(comb1.mergable_with(comb2))
+
+        comb2.direction = Direction.NORTH
+        self.assertFalse(comb1.mergable_with(comb2))
+
+    def test_merge(self):
+        comb1 = DeciderCombinator(
+            "decider-combinator",
+            direction=Direction.SOUTH,
+            control_behavior={
+                "decider_conditions": {
+                    "first_signal": {"name": "signal-A", "type": "virtual"},
+                    "comparator": "=",
+                    "second_signal": {"name": "copper-ore", "type": "item"},
+                    "output_signal": {"name": "signal-B", "type": "virtual"},
+                }
+            },
+            tags={"original": "tags"},
+        )
+        comb2 = DeciderCombinator(
+            "decider-combinator",
+            direction=Direction.SOUTH,
+            control_behavior={
+                "decider_conditions": {
+                    "first_signal": {"name": "signal-D", "type": "virtual"},
+                    "comparator": "<",
+                    "constant": 10,
+                    "output_signal": {"name": "signal-E", "type": "virtual"},
+                    "copy_count_from_input": False,
+                }
+            },
+        )
+
+        comb1.merge(comb2)
+        del comb2
+
+        self.assertEqual(
+            comb1.control_behavior,
+            {
+                "decider_conditions": {
+                    "first_signal": {"name": "signal-D", "type": "virtual"},
+                    "comparator": "<",
+                    "constant": 10,
+                    "output_signal": {"name": "signal-E", "type": "virtual"},
+                    "copy_count_from_input": False,
+                }
+            },
+        )
+        self.assertEqual(comb1.tags, {})  # Overwritten by comb2

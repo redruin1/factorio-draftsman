@@ -7,8 +7,6 @@ from draftsman.entity import LogisticStorageContainer, logistic_storage_containe
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -70,12 +68,18 @@ class LogisticStorageContainerTesting(unittest.TestCase):
                 "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
             },
         )
-        # TODO
-        # storage_chest = LogisticStorageContainer(
-        #     request_filters = [
-        #         {"index": 1, "name": "iron-ore", "count": 100}
-        #     ]
-        # )
+
+        storage_chest = LogisticStorageContainer(
+            request_filters=[{"index": 1, "name": "iron-ore", "count": 100}]
+        )
+        self.assertEqual(
+            storage_chest.to_dict(),
+            {
+                "name": "logistic-chest-storage",
+                "position": {"x": 0.5, "y": 0.5},
+                "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
+            },
+        )
 
         # Warnings
         with self.assertWarns(DraftsmanWarning):
@@ -115,3 +119,39 @@ class LogisticStorageContainerTesting(unittest.TestCase):
             self.assertEqual(container.dual_power_connectable, False)
             self.assertEqual(container.circuit_connectable, True)
             self.assertEqual(container.dual_circuit_connectable, False)
+
+    def test_mergable_with(self):
+        container1 = LogisticStorageContainer("logistic-chest-storage")
+        container2 = LogisticStorageContainer(
+            "logistic-chest-storage",
+            bar=10,
+            request_filters=[{"name": "utility-science-pack", "index": 1, "count": 0}],
+            tags={"some": "stuff"},
+        )
+
+        self.assertTrue(container1.mergable_with(container1))
+
+        self.assertTrue(container1.mergable_with(container2))
+        self.assertTrue(container2.mergable_with(container1))
+
+        container2.tile_position = (1, 1)
+        self.assertFalse(container1.mergable_with(container2))
+
+    def test_merge(self):
+        container1 = LogisticStorageContainer("logistic-chest-storage")
+        container2 = LogisticStorageContainer(
+            "logistic-chest-storage",
+            bar=10,
+            request_filters=[{"name": "utility-science-pack", "index": 1, "count": 0}],
+            tags={"some": "stuff"},
+        )
+
+        container1.merge(container2)
+        del container2
+
+        self.assertEqual(container1.bar, 10)
+        self.assertEqual(
+            container1.request_filters,
+            [{"name": "utility-science-pack", "index": 1, "count": 0}],
+        )
+        self.assertEqual(container1.tags, {"some": "stuff"})

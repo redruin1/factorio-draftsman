@@ -2,14 +2,12 @@
 # -*- encoding: utf-8 -*-
 
 from __future__ import unicode_literals
-from tkinter import W
 
+from draftsman.classes.vector import Vector
 from draftsman.constants import *
 from draftsman.entity import *
 from draftsman.error import *
 from draftsman.warning import *
-
-from schema import SchemaError
 
 import sys
 
@@ -285,13 +283,13 @@ class DirectionalMixinTesting(unittest.TestCase):
         self.assertEqual(storage_tank.direction, Direction.NORTH)
         self.assertEqual(
             storage_tank.to_dict(),
-            {"name": storage_tank.name, "position": storage_tank.position},
+            {"name": storage_tank.name, "position": storage_tank.position.to_dict()},
         )
         storage_tank.direction = None
         self.assertEqual(storage_tank.direction, 0)
         self.assertEqual(
             storage_tank.to_dict(),
-            {"name": storage_tank.name, "position": storage_tank.position},
+            {"name": storage_tank.name, "position": storage_tank.position.to_dict()},
         )
         # Warnings
         with self.assertWarns(DirectionWarning):
@@ -303,22 +301,24 @@ class DirectionalMixinTesting(unittest.TestCase):
     def test_set_position(self):
         storage_tank = StorageTank()
         storage_tank.position = (1.23, 1.34)
-        self.assertEqual(storage_tank.position, {"x": 1.23, "y": 1.34})
-        target_pos = {
-            "x": round(storage_tank.position["x"] - storage_tank.tile_width / 2.0),
-            "y": round(storage_tank.position["y"] - storage_tank.tile_height / 2.0),
-        }
+        self.assertEqual(storage_tank.position, Vector(1.23, 1.34))
+        self.assertEqual(storage_tank.position.to_dict(), {"x": 1.23, "y": 1.34})
+        target_pos = Vector(
+            round(storage_tank.position.x - storage_tank.tile_width / 2.0),
+            round(storage_tank.position.y - storage_tank.tile_height / 2.0),
+        )
         self.assertEqual(storage_tank.tile_position, target_pos)
 
         with self.assertRaises(ValueError):
             storage_tank.position = ("fish", 10)
 
         storage_tank.tile_position = (10, 10.1)  # should cast float to int
-        self.assertEqual(storage_tank.tile_position, {"x": 10, "y": 10})
-        target_pos = {
-            "x": storage_tank.tile_position["x"] + storage_tank.tile_width / 2.0,
-            "y": storage_tank.tile_position["y"] + storage_tank.tile_height / 2.0,
-        }
+        self.assertEqual(storage_tank.tile_position, Vector(10, 10))
+        self.assertEqual(storage_tank.tile_position.to_dict(), {"x": 10, "y": 10})
+        target_pos = Vector(
+            storage_tank.tile_position.x + storage_tank.tile_width / 2.0,
+            storage_tank.tile_position.y + storage_tank.tile_height / 2.0,
+        )
         self.assertEqual(storage_tank.position, target_pos)
 
         with self.assertRaises(ValueError):
@@ -331,8 +331,10 @@ class DirectionalMixinTesting(unittest.TestCase):
 class DoubleGridAlignedMixinTesting(unittest.TestCase):
     def test_set_absolute_position(self):
         rail = StraightRail()
-        self.assertEqual(rail.position, {"x": 1.0, "y": 1.0})
-        self.assertEqual(rail.tile_position, {"x": 0, "y": 0})
+        self.assertEqual(rail.position, Vector(1.0, 1.0))
+        self.assertEqual(rail.position.to_dict(), {"x": 1.0, "y": 1.0})
+        self.assertEqual(rail.tile_position, Vector(0, 0))
+        self.assertEqual(rail.tile_position.to_dict(), {"x": 0, "y": 0})
         self.assertEqual(rail.double_grid_aligned, True)
         with self.assertWarns(RailAlignmentWarning):
             rail.position = (2.0, 2.0)

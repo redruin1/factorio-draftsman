@@ -15,6 +15,8 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     DirectionalMixin,
 )
+from draftsman.error import DataFormatError
+from draftsman import signatures
 from draftsman import utils
 from draftsman.warning import DraftsmanWarning, ItemLimitationWarning
 
@@ -22,6 +24,8 @@ from draftsman.data.entities import mining_drills
 from draftsman.data import modules
 from draftsman.data import items
 
+from schema import SchemaError
+import six
 import warnings
 
 
@@ -51,6 +55,20 @@ class MiningDrill(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+    # =========================================================================
+
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = signatures.MINING_DRILL_CONTROL_BEHAVIOR.validate(
+                value
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
+
+    # =========================================================================
 
     @utils.reissue_warnings
     def set_item_request(self, item, amount):

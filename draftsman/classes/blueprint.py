@@ -13,7 +13,8 @@ from draftsman.classes.entitylist import EntityList
 from draftsman.classes.tilelist import TileList
 from draftsman.classes.transformable import Transformable
 from draftsman.classes.collection import EntityCollection, TileCollection
-from draftsman.classes.spatialhashmap import SpatialHashMap
+from draftsman.classes.spatial_data_structure import SpatialDataStructure
+from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.error import (
     DraftsmanError,
     IncorrectBlueprintTypeError,
@@ -165,8 +166,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         ### DATA ###
 
         # Create spatial hashing objects to make spatial queries much quicker
-        self._tile_hashmap = SpatialHashMap()
-        self._entity_hashmap = SpatialHashMap()
+        self._tile_map = SpatialHashMap()
+        self._entity_map = SpatialHashMap()
 
         # Data lists
         if "entities" in kwargs:
@@ -586,7 +587,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     @entities.setter
     def entities(self, value):
         # type: (list[EntityLike]) -> None
-        self._entity_hashmap.clear()
+        self._entity_map.clear()
 
         if value is None:
             self.root["entities"].clear()
@@ -601,27 +602,46 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         self.recalculate_area()
 
     def on_entity_insert(self, entitylike, merge):
-        # type: (EntityLike, bool) -> None
+        # type: (EntityLike, bool) -> EntityLike
         """
         Callback function for when an ``EntityLike`` is added to this
         Blueprint's ``entities`` list. Handles the addition of the entity into
         the  Blueprint's ``SpatialHashMap``, and recalculates it's dimensions.
         """
-        # Add to hashmap (as well as any children)
-        self.entity_hashmap.recursively_add(entitylike, merge)
+        # Check for overlapping entities(?)
+        # self.entity_map.check_for_overlapping(entitylike)
 
-        # Update dimensions
-        self._area = utils.extend_aabb(self._area, entitylike.get_area())
+        # If merging is allowed, we want to take care of deleting duplicate/
+        # modifying existing entities *before* we get to inputting them into the
+        # data list or spatial structure
+
+        # Here we issue warnings for overlapping entities, modify existing
+        # entities if merging is enabled and delete excess entities in entitylike
+        entitylike = self.entity_map.handle_overlapping(entitylike, merge)
+
+        if entitylike is None:  # the entity has been entirely merged
+            return entitylike  # early exit
+
+        # Issue entity-specific warnings/errors if any exist for this entitylike
+        entitylike.on_insert(self)
+
+        # If no errors, add this to hashmap (as well as any of it's children)
+        self.entity_map.recursive_add(entitylike)
+
+        # Update dimensions of Blueprint
+        self._area = utils.extend_aabb(self._area, entitylike.get_world_bounding_box())
         (
             self._tile_width,
             self._tile_height,
-        ) = utils.aabb_to_dimensions(self.area)
+        ) = utils.aabb_to_dimensions(self._area)
         # Check the blueprint for unreasonable size
-        if self.tile_width > 10000 or self.tile_height > 10000:
+        if self._tile_width > 10000 or self._tile_height > 10000:
             raise UnreasonablySizedBlueprintError(
                 "Current blueprint dimensions ({}, {}) exceeds the maximum size"
-                " (10,000 x 10,000)".format(self.tile_width, self.tile_height)
+                " (10,000 x 10,000)".format(self._tile_width, self._tile_height)
             )
+
+        return entitylike
 
     def on_entity_set(self, old_entitylike, new_entitylike):
         # type: (EntityLike, EntityLike) -> None
@@ -631,29 +651,52 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         the ``SpatialHashMap`` and adds the new one in it's stead.
         """
         # Remove the entity and its children
-        self.entity_hashmap.recursively_remove(old_entitylike)
+        self.entity_map.recursive_remove(old_entitylike)
+
+        # Perform any remove checks on per entity basis
+        old_entitylike.on_remove(self)
+
+        # Check for overlapping entities
+        self.entity_map.handle_overlapping(new_entitylike, False)
+
+        # Issue entity-specific warnings/errors if any exist for this entitylike
+        new_entitylike.on_insert(self)
+
         # Add the new entity and its children
-        self.entity_hashmap.recursively_add(new_entitylike)
+        self.entity_map.recursive_add(new_entitylike)
+
+        # Disdain
+        # self.recalculate_area()
 
     def on_entity_remove(self, entitylike):
         # type: (EntityLike) -> None
         """
         Callback function for when an entity is removed from a Blueprint's
         ``entities`` list. Handles the removal of the ``EntityLike`` from the
-        ``SpatialHashMap``.
+        ``Blueprint``.
         """
+        # Handle entity specific
+        entitylike.on_remove(self)
+
         # Remove the entity and its children
-        self.entity_hashmap.recursively_remove(entitylike)
+        self.entity_map.recursive_remove(entitylike)
+
+        # Perform any remove checks on per entity basis
+        entitylike.on_remove(self)
+
+        # This sucks lmao
+        # self.recalculate_area()
 
     # =========================================================================
 
     @property
-    def entity_hashmap(self):
-        # type: () -> SpatialHashMap
+    def entity_map(self):
+        # type: () -> SpatialDataStructure
         """
-        The ``SpatialHashMap`` for ``entities``. Not exported; read only.
+        An implementation of :py:class:`.SpatialDataStructure` for ``entities``.
+        Not exported; read only.
         """
-        return self._entity_hashmap
+        return self._entity_map
 
     # =========================================================================
 
@@ -684,7 +727,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     @tiles.setter
     def tiles(self, value):
         # type: (list[Tile]) -> None
-        self.tile_hashmap.clear()
+        self.tile_map.clear()
 
         if value is None:
             self.root["tiles"] = TileList(self)
@@ -697,15 +740,60 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
         self.recalculate_area()
 
+    def on_tile_insert(self, tile, merge):
+        # type: (Tile, bool) -> None
+        # Handle overlapping and merging
+        tile = self.tile_map.handle_overlapping(tile, merge)
+
+        if tile is None:  # Tile was merged
+            return tile  # early exit
+
+        # Add to tile map
+        self.tile_map.add(tile)
+
+        # Update dimensions
+        self._area = utils.extend_aabb(self._area, tile.get_world_bounding_box())
+        (
+            self._tile_width,
+            self._tile_height,
+        ) = utils.aabb_to_dimensions(self.area)
+
+        # Check the blueprint for unreasonable size
+        if self._tile_width > 10000 or self._tile_height > 10000:
+            raise UnreasonablySizedBlueprintError(
+                "Current blueprint dimensions ({}, {}) exceeds the maximum size"
+                " (10,000 x 10,000)".format(self._tile_width, self._tile_height)
+            )
+
+        return tile
+
+    def on_tile_set(self, old_tile, new_tile):
+        # type: (Tile, Tile) -> None
+        self.tile_map.remove(old_tile)
+        self.tile_map.handle_overlapping(new_tile, False)
+        self.tile_map.add(new_tile)
+
+        # Unfortunately, this can't be here because we need to recalculate after
+        # modifying the base list, which happens *after* this function finishes
+        # self.recalculate_area()
+
+    def on_tile_remove(self, tile):
+        # type: (Tile) -> None
+        self.tile_map.remove(tile)
+
+        # Disdain...
+        # self.recalculate_area()
+
     # =========================================================================
 
     @property
-    def tile_hashmap(self):
-        # type: () -> SpatialHashMap
+    def tile_map(self):
+        # type: () -> SpatialDataStructure
         """
-        The ``SpatialHashMap`` for ``entities``. Not exported; read only.
+        An implementation of :py:class:`.SpatialDataStructure` for ``tiles``.
+        Not exported; read only.
         """
-        return self._tile_hashmap
+        return self._tile_map
 
     # =========================================================================
 
@@ -842,10 +930,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         """
         self._area = None
         for entity in self.entities:
-            self._area = utils.extend_aabb(self._area, entity.get_area())
+            self._area = utils.extend_aabb(self._area, entity.get_world_bounding_box())
 
         for tile in self.tiles:
-            self._area = utils.extend_aabb(self._area, tile.get_area())
+            self._area = utils.extend_aabb(self._area, tile.get_world_bounding_box())
 
         self._tile_width, self._tile_height = utils.aabb_to_dimensions(self._area)
 
@@ -863,7 +951,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         precursor to a Factorio blueprint string before encoding and compression
         takes place.
 
-        :returns: The dict representation of the Blueprint.
+        :returns: The ``dict`` representation of the Blueprint.
         """
         # Create a new dict to return without modifying the original Blueprint
         # (We exclude "entities" and "tiles" because these objects are not
@@ -1001,15 +1089,15 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
         # Make sure we copy "_entity_hashmap" first so we don't get
         # OverlappingEntitiesWarnings
-        v = getattr(self, "_entity_hashmap")
-        setattr(result, "_entity_hashmap", copy.deepcopy(v, memo))
-        result.entity_hashmap.clear()
+        v = getattr(self, "_entity_map")
+        setattr(result, "_entity_map", copy.deepcopy(v, memo))
+        result.entity_map.clear()
 
         # We copy everything else, save for the 'root' dictionary, because
         # deepcopying those depend on some of the other attributes, so we load
         # those first
         for k, v in self.__dict__.items():
-            if k == "_entity_hashmap" or k == "root":
+            if k == "_entity_map" or k == "root":
                 continue
             else:
                 setattr(result, k, copy.deepcopy(v, memo))

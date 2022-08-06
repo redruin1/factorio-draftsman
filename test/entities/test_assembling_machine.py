@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 
+from draftsman.constants import Direction
 from draftsman.entity import AssemblingMachine, assembling_machines
 from draftsman.error import InvalidEntityError, InvalidRecipeError, InvalidItemError
 from draftsman.warning import (
@@ -11,7 +12,6 @@ from draftsman.warning import (
     ItemLimitationWarning,
 )
 
-from schema import SchemaError
 import warnings
 
 import sys
@@ -97,3 +97,39 @@ class AssemblingMachineTesting(unittest.TestCase):
             machine.set_item_request("speed-module-2", "nonsense")
         with self.assertRaises(ValueError):
             machine.set_item_request("speed-module-2", -1)
+
+    def test_mergable_with(self):
+        machine1 = AssemblingMachine("assembling-machine-1")
+        machine2 = AssemblingMachine("assembling-machine-1")
+
+        self.assertTrue(machine1.mergable_with(machine2))
+        self.assertTrue(machine2.mergable_with(machine1))
+
+        machine2 = AssemblingMachine("assembling-machine-1", tags={"some": "stuff"})
+        self.assertTrue(machine1.mergable_with(machine2))
+
+        machine2.recipe = "copper-cable"
+        machine2.set_item_request("copper-plate", 100)
+        self.assertTrue(machine1.mergable_with(machine2))
+
+        machine2 = AssemblingMachine("assembling-machine-2")
+        self.assertFalse(machine1.mergable_with(machine2))
+
+        machine2 = AssemblingMachine("assembling-machine-1", tile_position=(1, 1))
+        self.assertFalse(machine1.mergable_with(machine2))
+
+        machine2 = AssemblingMachine("assembling-machine-1", direction=Direction.EAST)
+        self.assertFalse(machine1.mergable_with(machine2))
+
+    def test_merge(self):
+        machine1 = AssemblingMachine("assembling-machine-1")
+        machine2 = AssemblingMachine("assembling-machine-1", tags={"some": "stuff"})
+        machine2.recipe = "copper-cable"
+        machine2.set_item_request("copper-plate", 100)
+
+        machine1.merge(machine2)
+        del machine2
+
+        self.assertEqual(machine1.tags, {"some": "stuff"})
+        self.assertEqual(machine1.recipe, "copper-cable")
+        self.assertEqual(machine1.items, {"copper-plate": 100})

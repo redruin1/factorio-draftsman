@@ -28,3 +28,24 @@ class LinkedBeltTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             LinkedBelt("this is not a linked belt")
+
+    def test_mergable_with(self):
+        belt1 = LinkedBelt()
+        belt2 = LinkedBelt(tags={"some": "stuff"})
+
+        self.assertTrue(belt1.mergable_with(belt1))
+
+        self.assertTrue(belt1.mergable_with(belt2))
+        self.assertTrue(belt2.mergable_with(belt1))
+
+        belt2.tile_position = (1, 1)
+        self.assertFalse(belt1.mergable_with(belt2))
+
+    def test_merge(self):
+        belt1 = LinkedBelt()
+        belt2 = LinkedBelt(tags={"some": "stuff"})
+
+        belt1.merge(belt2)
+        del belt2
+
+        self.assertEqual(belt1.tags, {"some": "stuff"})

@@ -71,7 +71,7 @@ blueprint_book = BlueprintBook()
 blueprint_book.blueprints = [blueprint]
 
 print(blueprint_book)  # Pretty printing using json
-print(blueprint_book.to_string())  # Blueprint string
+print(blueprint_book.to_string())  # Blueprint string to import into Factorio
 ```
 --------------------------------------------------------------------------------
 
@@ -83,7 +83,7 @@ For a user-friendly timeline of how this project came about, as well as some pre
 
 For more information on what exactly Draftsman is and does, as well as its intended purpose and philosophy, [you can read the documentation here](https://factorio-draftsman.readthedocs.io/en/latest/index.html).
 
-For more examples on what exactly you can do with draftsman, take a look at the [examples folder](https://github.com/redruin1/factorio-draftsman/tree/main/examples).
+For more examples on what exactly you can do with Draftsman, take a look at the [examples folder](https://github.com/redruin1/factorio-draftsman/tree/main/examples).
 
 ### Features
 * Compatible with the latest versions of Python 2 and 3
@@ -111,7 +111,7 @@ Then, to perform first time setup run
 ```
 draftsman-update
 ```
-Note that the `draftsman-update` command must be run at least once before use to ensure the module is properly setup.
+Note that the `draftsman-update` command *must* be run at least once before use to ensure the module is properly setup.
 Currently I'm looking into solutions to have this command automatically run on install, but for now it must be manually run.
 
 --------------------------------------------------------------------------------
@@ -147,14 +147,13 @@ can also just change the settings in either of those and the loading process
 will adjust as well.
 
 ## TODO
-* Revamp `SpatialHashMap` so that it can handle rotated collision boxes
-* Create a `Position` vector structure to make location modifying easier
-* Change positions of `EntityLike` and `Entity` to be more error consistent
-* Maybe switch to `setup.cfg` instead of `setup.py`?
+* Figure out a way to optimize certain routines
+  * `EntityList.insert()`
+* Reevaluate the diamond diagrams for inherited `Entity` subclass
 * Figure out exactly what determines if an `Entity` is flip-able or not
-* Maybe add interface so that mods can include files that can be loaded with Draftsman?
+* Maybe add interface so that mods can include files that can be loaded with Draftsman? (this would be neat)
 * Split documentation from docstrings so that each function has a more readable example
 * RailPlanner (specify rail paths via turtle-like commands)
 * Custom `data.raw` extraction and formatting?
 * Maybe integrate defaults for more succinct blueprint strings?
-* Look into Lua bindings via backport to C
+* Look into Lua (or other language) bindings via backport to C

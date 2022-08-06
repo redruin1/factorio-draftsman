@@ -14,13 +14,16 @@ Some of which are aliased at the root level of the package, such as :py:mod:`~dr
     blueprint.rst
     blueprintbook.rst
     collection.rst
+    collisionset.rst
     entity.rst
     entitylike.rst
     entitylist.rst
     group.rst
-    spatialhashmap.rst
+    spatial_data_structure.rst
+    spatial_hashmap.rst
     spatiallike.rst
     tile.rst
     tilelist.rst
     transformable.rst
+    vector.rst
     mixins/index.rst

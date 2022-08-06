@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import OffshorePump, offshore_pumps
-from draftsman.error import InvalidEntityError
+from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 import sys
@@ -26,3 +26,26 @@ class OffshorePumpTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             OffshorePump("not a heat pipe")
+        with self.assertRaises(DataFormatError):
+            OffshorePump(control_behavior={"unused_key": "something"})
+
+    def test_mergable_with(self):
+        pump1 = OffshorePump("offshore-pump")
+        pump2 = OffshorePump("offshore-pump", tags={"some": "stuff"})
+
+        self.assertTrue(pump1.mergable_with(pump1))
+
+        self.assertTrue(pump1.mergable_with(pump2))
+        self.assertTrue(pump2.mergable_with(pump1))
+
+        pump2.tile_position = (1, 1)
+        self.assertFalse(pump1.mergable_with(pump2))
+
+    def test_merge(self):
+        pump1 = OffshorePump("offshore-pump")
+        pump2 = OffshorePump("offshore-pump", tags={"some": "stuff"})
+
+        pump1.merge(pump2)
+        del pump2
+
+        self.assertEqual(pump1.tags, {"some": "stuff"})

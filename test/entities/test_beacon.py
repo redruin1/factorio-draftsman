@@ -11,8 +11,6 @@ from draftsman.warning import (
     ItemLimitationWarning,
 )
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -49,3 +47,22 @@ class BeaconTesting(unittest.TestCase):
             beacon.set_item_request("incorrect", 100)
         with self.assertRaises(TypeError):
             beacon.set_item_request("speed-module-2", "nonsense")
+
+    def test_mergable_with(self):
+        beacon1 = Beacon("beacon")
+        beacon2 = Beacon("beacon", items={"speed-module-2": 2})
+
+        self.assertTrue(beacon1.mergable_with(beacon2))
+        self.assertTrue(beacon2.mergable_with(beacon1))
+
+        beacon2.tile_position = (1, 1)
+        self.assertFalse(beacon1.mergable_with(beacon2))
+
+    def test_merge(self):
+        beacon1 = Beacon("beacon")
+        beacon2 = Beacon("beacon", items={"speed-module-2": 2})
+
+        beacon1.merge(beacon2)
+        del beacon2
+
+        self.assertEqual(beacon1.items, {"speed-module-2": 2})

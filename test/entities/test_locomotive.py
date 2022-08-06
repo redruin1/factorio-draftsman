@@ -7,8 +7,6 @@ from draftsman.entity import Locomotive, locomotives
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -48,3 +46,25 @@ class LocomotiveTesting(unittest.TestCase):
             Locomotive("locomotive", orientation="wrong")
         with self.assertRaises(DataFormatError):
             Locomotive("locomotive", color="also wrong")
+
+    def test_mergable_with(self):
+        train1 = Locomotive("locomotive")
+        train2 = Locomotive("locomotive", color=(100, 100, 100), tags={"some": "stuff"})
+
+        self.assertTrue(train1.mergable_with(train1))
+
+        self.assertTrue(train1.mergable_with(train2))
+        self.assertTrue(train2.mergable_with(train1))
+
+        train2.orientation = 0.5
+        self.assertFalse(train1.mergable_with(train2))
+
+    def test_merge(self):
+        train1 = Locomotive("locomotive")
+        train2 = Locomotive("locomotive", color=(100, 100, 100), tags={"some": "stuff"})
+
+        train1.merge(train2)
+        del train2
+
+        self.assertEqual(train1.color, {"r": 100, "g": 100, "b": 100})
+        self.assertEqual(train1.tags, {"some": "stuff"})

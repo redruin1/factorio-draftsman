@@ -59,3 +59,11 @@ class RocketSilo(RequestItemsMixin, Entity):
             self._auto_launch = value
         else:
             raise TypeError("'auto_launch' must be a bool or None")
+
+    # =========================================================================
+
+    def merge(self, other):
+        # type: (RocketSilo) -> None
+        super(RocketSilo, self).merge(other)
+
+        self.auto_launch = other.auto_launch

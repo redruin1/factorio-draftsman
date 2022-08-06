@@ -3,17 +3,18 @@
 
 from __future__ import unicode_literals
 
-from draftsman import signatures
+# from draftsman.classes.vector import Vector
 from draftsman.constants import Direction
 from draftsman.error import DraftsmanError
+from draftsman import utils
 from draftsman.warning import DirectionWarning
 
-from schema import SchemaError
 from typing import Union
 import warnings
 
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
+
+if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
@@ -34,15 +35,29 @@ class DirectionalMixin(object):
         self._rotatable = True
 
         # Keep track of the entities width and height regardless of rotation
-        self.static_tile_width = self.tile_width
-        self.static_tile_height = self.tile_height
-        self.static_collision_box = self.collision_box
+        self._static_tile_width = self.tile_width
+        self._static_tile_height = self.tile_height
+        self._static_collision_set = self.collision_set
+
+        # Technically this check is not necessary, but we include it for
+        # completeness
+        if not hasattr(self, "_overwritten_collision_set"):  # pragma: no branch
+            self._collision_set_rotation = {}
+            # if hasattr(self, "_disable_collision_set_rotation"):
+            #     # Set every collision orientation to the single collision_set
+            #     for i in {0, 2, 4, 6}:
+            #         self._collision_set_rotation[i] = self.collision_set
+            # else:
+            # Automatically generate a set of rotated collision sets for every
+            # orientation
+            for i in {0, 2, 4, 6}:
+                self._collision_set_rotation[i] = self._collision_set.rotate(i)
 
         self.direction = 0
         if "direction" in kwargs:
             self.direction = kwargs["direction"]
             self.unused_args.pop("direction")
-        self._add_export("direction", lambda x: x != 0)
+        self._add_export("direction", lambda x: x != 0, lambda k, v: (k, int(v)))
 
         # Technically redundant, but we reset the position if the direction has
         # changed to reflect its changes
@@ -65,7 +80,8 @@ class DirectionalMixin(object):
         the machine has a fluid input or output.
 
         Raises :py:class:`~draftsman.warning.DirectionWarning` if set to a
-        diagonal direction.
+        diagonal direction. For 8-way rotations, ensure that the Entity inherits
+        :py:class:`.EightwayDirectionalMixin`.
 
         :getter: Gets the direction that the Entity is facing.
         :setter: Sets the direction of the Entity. Defaults to ``Direction.NORTH``
@@ -99,28 +115,35 @@ class DirectionalMixin(object):
                 DirectionWarning,
                 stacklevel=2,
             )
+            return
+
+        # if self._direction == Direction.EAST or self._direction == Direction.WEST:
+        #     self._tile_width = self.static_tile_height
+        #     self._tile_height = self.static_tile_width
+        #     self._collision_set = self.static_collision_set.rotate(self._direction)
+        # else:
+        #     self._tile_width = self.static_tile_width
+        #     self._tile_height = self.static_tile_height
+        #     self._collision_set = self.static_collision_set
+
+        # Get the precalulated orientations
+        self._collision_set = self._collision_set_rotation[self._direction]
+        # TODO: do this better
         if self._direction == Direction.EAST or self._direction == Direction.WEST:
-            self._tile_width = self.static_tile_height
-            self._tile_height = self.static_tile_width
-            self._collision_box[0] = [
-                self.static_collision_box[0][1],
-                self.static_collision_box[0][0],
-            ]
-            self._collision_box[1] = [
-                self.static_collision_box[1][1],
-                self.static_collision_box[1][0],
-            ]
+            self._tile_width = self._static_tile_height
+            self._tile_height = self._static_tile_width
         else:
-            self._tile_width = self.static_tile_width
-            self._tile_height = self.static_tile_height
-            self._collision_box = self.static_collision_box
+            self._tile_width = self._static_tile_width
+            self._tile_height = self._static_tile_height
+        # bounding_box = self._collision_set.get_bounding_box()
+        # self._tile_width, self._tile_height = utils.aabb_to_dimensions(bounding_box)
 
         # Reset the grid/absolute positions in case the direction changed
-        self.tile_position = (self.tile_position["x"], self.tile_position["y"])
+        self.tile_position = (self.tile_position.x, self.tile_position.y)
 
     # =========================================================================
 
     def mergable_with(self, other):
         # type: (Entity) -> bool
         base_mergable = super(DirectionalMixin, self).mergable_with(other)
-        return (base_mergable and self.direction == other.direction)
+        return base_mergable and self.direction == other.direction

@@ -5,14 +5,12 @@ from __future__ import unicode_literals
 
 from draftsman.constants import MiningDrillReadMode
 from draftsman.entity import MiningDrill, mining_drills
-from draftsman.error import InvalidEntityError, InvalidItemError
+from draftsman.error import InvalidEntityError, InvalidItemError, DataFormatError
 from draftsman.warning import (
     DraftsmanWarning,
     ModuleCapacityWarning,
     ItemLimitationWarning,
 )
-
-from schema import SchemaError
 
 import sys
 
@@ -38,6 +36,8 @@ class MiningDrillTesting(unittest.TestCase):
         # Errors
         with self.assertRaises(InvalidEntityError):
             MiningDrill("not a mining drill")
+        with self.assertRaises(DataFormatError):
+            MiningDrill(control_behavior={"unused_key": "something"})
 
     def test_set_item_request(self):
         mining_drill = MiningDrill("electric-mining-drill")
@@ -96,3 +96,35 @@ class MiningDrillTesting(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             mining_drill.read_mode = "incorrect"
+
+    def test_mergable_with(self):
+        drill1 = MiningDrill("electric-mining-drill")
+        drill2 = MiningDrill(
+            "electric-mining-drill",
+            items={"productivity-module": 1, "productivity-module-2": 1},
+            tags={"some": "stuff"},
+        )
+
+        self.assertTrue(drill1.mergable_with(drill1))
+
+        self.assertTrue(drill1.mergable_with(drill2))
+        self.assertTrue(drill2.mergable_with(drill1))
+
+        drill2.tile_position = (1, 1)
+        self.assertFalse(drill1.mergable_with(drill2))
+
+    def test_merge(self):
+        drill1 = MiningDrill("electric-mining-drill")
+        drill2 = MiningDrill(
+            "electric-mining-drill",
+            items={"productivity-module": 1, "productivity-module-2": 1},
+            tags={"some": "stuff"},
+        )
+
+        drill1.merge(drill2)
+        del drill2
+
+        self.assertEqual(
+            drill1.items, {"productivity-module": 1, "productivity-module-2": 1}
+        )
+        self.assertEqual(drill1.tags, {"some": "stuff"})

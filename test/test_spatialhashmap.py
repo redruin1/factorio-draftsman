@@ -3,7 +3,7 @@
 
 from draftsman.classes.blueprint import SpatialHashMap
 from draftsman.tile import Tile
-from draftsman.warning import OverlappingObjectsWarning
+from draftsman import utils
 
 import sys
 
@@ -19,7 +19,7 @@ class SpatialHashMapTesting(unittest.TestCase):
         self.assertEqual(map.map, {})
         self.assertEqual(map.cell_size, 8)
 
-        self.assertEqual(map.map_coords(10, 10), (1, 1))
+        self.assertEqual(map._map_coords((10, 10)), (1, 1))
 
     def test_add(self):
         map = SpatialHashMap()
@@ -43,14 +43,14 @@ class SpatialHashMapTesting(unittest.TestCase):
         map.remove(Tile("landfill", (0, 0)))
         self.assertEqual(map.map, {})
 
-    def test_get_all(self):
+    def test_get_all_entities(self):
         map = SpatialHashMap()
         tile_to_add = Tile("refined-concrete", (0, 0))
         map.add(tile_to_add)
         other_tile_to_add = Tile("landfill", (1, 1))
         map.add(other_tile_to_add)
 
-        self.assertEqual(map.get_all(), [tile_to_add, other_tile_to_add])
+        self.assertEqual(map.get_all_entities(), [tile_to_add, other_tile_to_add])
 
     def test_get_in_radius(self):
         map = SpatialHashMap()
@@ -74,8 +74,8 @@ class SpatialHashMapTesting(unittest.TestCase):
         results = map.get_on_point((0, 0))
         self.assertEqual(results, [tile_to_add])
         other_tile_to_add = Tile("landfill", (0, 0))
-        with self.assertWarns(OverlappingObjectsWarning):
-            map.add(other_tile_to_add)
+        # with self.assertWarns(OverlappingObjectsWarning):
+        map.add(other_tile_to_add)
         results = map.get_on_point((0, 0))
         self.assertEqual(results, [tile_to_add, other_tile_to_add])
         results = map.get_on_point((0, 0), limit=1)
@@ -92,11 +92,11 @@ class SpatialHashMapTesting(unittest.TestCase):
         map.add(other_tile_to_add)
         another_tile_to_add = Tile("refined-hazard-concrete-left", (7, 7))
         map.add(another_tile_to_add)
-        results = map.get_in_area([[0, 0], [4, 4]])
+        results = map.get_in_area(utils.AABB(0, 0, 4, 4))
         self.assertEqual(results, [tile_to_add])
-        results = map.get_in_area([[0, 0], [8, 8]])
+        results = map.get_in_area(utils.AABB(0, 0, 8, 8))
         self.assertEqual(results, [tile_to_add, another_tile_to_add])
-        results = map.get_in_area([[-100, -100], [100, 100]])
+        results = map.get_in_area(utils.AABB(-100, -100, 100, 100))
         self.assertEqual(results, [tile_to_add, another_tile_to_add, other_tile_to_add])
-        results = map.get_in_area([[-100, -100], [100, 100]], limit=1)
+        results = map.get_in_area(utils.AABB(-100, -100, 100, 100), limit=1)
         self.assertEqual(results, [tile_to_add])

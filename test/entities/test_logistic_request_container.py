@@ -7,8 +7,6 @@ from draftsman.entity import LogisticRequestContainer, logistic_request_containe
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -76,12 +74,18 @@ class LogisticRequestContainerTesting(unittest.TestCase):
                 "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
             },
         )
-        # TODO
-        # storage_chest = LogisticStorageContainer(
-        #     request_filters = [
-        #         {"index": 1, "name": "iron-ore", "count": 100}
-        #     ]
-        # )
+
+        request_chest = LogisticRequestContainer(
+            request_filters=[{"index": 1, "name": "iron-ore", "count": 100}]
+        )
+        self.assertEqual(
+            request_chest.to_dict(),
+            {
+                "name": "logistic-chest-requester",
+                "position": {"x": 0.5, "y": 0.5},
+                "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
+            },
+        )
 
         # Warnings
         with self.assertWarns(DraftsmanWarning):
@@ -120,6 +124,9 @@ class LogisticRequestContainerTesting(unittest.TestCase):
                 "logistic-chest-requester", request_from_buffers="invalid"
             )
 
+        with self.assertRaises(DataFormatError):
+            LogisticRequestContainer(control_behavior={"unused_key": "something"})
+
     def test_power_and_circuit_flags(self):
         for name in logistic_request_containers:
             container = LogisticRequestContainer(name)
@@ -127,3 +134,39 @@ class LogisticRequestContainerTesting(unittest.TestCase):
             self.assertEqual(container.dual_power_connectable, False)
             self.assertEqual(container.circuit_connectable, True)
             self.assertEqual(container.dual_circuit_connectable, False)
+
+    def test_mergable_with(self):
+        container1 = LogisticRequestContainer("logistic-chest-requester")
+        container2 = LogisticRequestContainer(
+            "logistic-chest-requester",
+            bar=10,
+            request_filters=[{"name": "utility-science-pack", "index": 1, "count": 10}],
+            tags={"some": "stuff"},
+        )
+
+        self.assertTrue(container1.mergable_with(container1))
+
+        self.assertTrue(container1.mergable_with(container2))
+        self.assertTrue(container2.mergable_with(container1))
+
+        container2.tile_position = (1, 1)
+        self.assertFalse(container1.mergable_with(container2))
+
+    def test_merge(self):
+        container1 = LogisticRequestContainer("logistic-chest-requester")
+        container2 = LogisticRequestContainer(
+            "logistic-chest-requester",
+            bar=10,
+            request_filters=[{"name": "utility-science-pack", "index": 1, "count": 10}],
+            tags={"some": "stuff"},
+        )
+
+        container1.merge(container2)
+        del container2
+
+        self.assertEqual(container1.bar, 10)
+        self.assertEqual(
+            container1.request_filters,
+            [{"name": "utility-science-pack", "index": 1, "count": 10}],
+        )
+        self.assertEqual(container1.tags, {"some": "stuff"})

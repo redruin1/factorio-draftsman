@@ -90,6 +90,7 @@ class BlueprintBook(object):
     Factorio Blueprint Book class. Contains a list of Blueprints as well as some
     of it's own metadata.
     """
+
     @utils.reissue_warnings
     def __init__(self, blueprint_book=None):
         # type: (str, Union[str, dict]) -> None

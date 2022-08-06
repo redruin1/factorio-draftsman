@@ -17,12 +17,33 @@ else:  # pragma: no coverage
 
 class GeneratorTesting(unittest.TestCase):
     def test_constructor_init(self):
-        generator = Generator()
+        generator = Generator("steam-engine")
 
         # Warnings
         with self.assertWarns(DraftsmanWarning):
-            Generator(unused_keyword="whatever")
+            Generator("steam-engine", unused_keyword="whatever")
 
         # Errors
         with self.assertRaises(InvalidEntityError):
-            Generator("not a boiler")
+            Generator("not a generator")
+
+    def test_mergable_with(self):
+        gen1 = Generator("steam-engine")
+        gen2 = Generator("steam-engine", tags={"some": "stuff"})
+
+        self.assertTrue(gen1.mergable_with(gen1))
+
+        self.assertTrue(gen1.mergable_with(gen2))
+        self.assertTrue(gen2.mergable_with(gen1))
+
+        gen2.tile_position = (10, 10)
+        self.assertFalse(gen1.mergable_with(gen2))
+
+    def test_merge(self):
+        gen1 = Generator("steam-engine")
+        gen2 = Generator("steam-engine", tags={"some": "stuff"})
+
+        gen1.merge(gen2)
+        del gen2
+
+        self.assertEqual(gen1.tags, {"some": "stuff"})

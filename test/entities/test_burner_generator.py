@@ -17,10 +17,29 @@ else:  # pragma: no coverage
 
 class BurnerGeneratorTesting(unittest.TestCase):
     def test_contstructor_init(self):
-        generator = BurnerGenerator()
+        generator = BurnerGenerator("burner-generator")
 
         with self.assertWarns(DraftsmanWarning):
             BurnerGenerator(unused_keyword="whatever")
 
         with self.assertRaises(InvalidEntityError):
             BurnerGenerator("this is not a burner generator")
+
+    def test_mergable_with(self):
+        generator1 = BurnerGenerator("burner-generator")
+        generator2 = BurnerGenerator("burner-generator", tags={"some": "stuff"})
+
+        self.assertTrue(generator1.mergable_with(generator2))
+        self.assertTrue(generator2.mergable_with(generator1))
+
+        generator2.tile_position = [-10, -10]
+        self.assertFalse(generator1.mergable_with(generator2))
+
+    def test_merge(self):
+        generator1 = BurnerGenerator("burner-generator")
+        generator2 = BurnerGenerator("burner-generator", tags={"some": "stuff"})
+
+        generator1.merge(generator2)
+        del generator2
+
+        self.assertEqual(generator1.tags, {"some": "stuff"})

@@ -7,8 +7,6 @@ from draftsman.entity import CargoWagon, cargo_wagons
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -100,3 +98,38 @@ class CargoWagonTesting(unittest.TestCase):
             CargoWagon("cargo-wagon", orientation="wrong")
         with self.assertRaises(DataFormatError):
             CargoWagon("cargo-wagon", inventory="incorrect")
+
+    def test_mergable_with(self):
+        wagon1 = CargoWagon("cargo-wagon")
+        wagon2 = CargoWagon(
+            "cargo-wagon",
+            tags={"some": "stuff"},
+            inventory={"bar": 1, "filters": [{"index": 1, "name": "transport-belt"}]},
+        )
+
+        self.assertTrue(wagon1.mergable_with(wagon2))
+        self.assertTrue(wagon2.mergable_with(wagon1))
+
+        wagon2.tile_position = [-10, -10]
+        self.assertFalse(wagon1.mergable_with(wagon2))
+
+        wagon2.tile_position = (0, 0)
+        wagon2.orientation = 0.1
+        self.assertFalse(wagon1.mergable_with(wagon2))
+
+    def test_merge(self):
+        wagon1 = CargoWagon("cargo-wagon")
+        wagon2 = CargoWagon(
+            "cargo-wagon",
+            tags={"some": "stuff"},
+            inventory={"bar": 1, "filters": [{"index": 1, "name": "transport-belt"}]},
+        )
+
+        wagon1.merge(wagon2)
+        del wagon2
+
+        self.assertEqual(wagon1.tags, {"some": "stuff"})
+        self.assertEqual(wagon1.bar, 1)
+        self.assertEqual(
+            wagon1.inventory["filters"], [{"index": 1, "name": "transport-belt"}]
+        )

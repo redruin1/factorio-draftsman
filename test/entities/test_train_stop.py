@@ -8,8 +8,6 @@ from draftsman.entity import TrainStop, train_stops
 from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatError
 from draftsman.warning import DraftsmanWarning, RailAlignmentWarning, DirectionWarning
 
-from schema import SchemaError
-
 import sys
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -123,6 +121,8 @@ class TrainStopTesting(unittest.TestCase):
             TrainStop(station=100)
         with self.assertRaises(DataFormatError):
             TrainStop(color="wrong")
+        with self.assertRaises(DataFormatError):
+            TrainStop(control_behavior={"unused_key": "something"})
 
     def test_set_manual_trains_limit(self):
         train_stop = TrainStop()
@@ -253,3 +253,55 @@ class TrainStopTesting(unittest.TestCase):
             train_stop.trains_count_signal = TypeError
         with self.assertRaises(InvalidSignalError):
             train_stop.trains_count_signal = "wrong signal"
+
+    def test_mergable_with(self):
+        stop1 = TrainStop("train-stop")
+        stop2 = TrainStop(
+            "train-stop",
+            station="Station name",
+            manual_trains_limit=3,
+            color=[0.5, 0.5, 0.5],
+            control_behavior={
+                "read_from_train": True,
+                "read_stopped_train": True,
+                "train_stopped_signal": "signal-A",
+                "set_trains_limit": True,
+                "trains_limit_signal": "signal-B",
+                "read_trains_count": True,
+                "trains_count_signal": "signal-C",
+            },
+            tags={"some": "stuff"},
+        )
+
+        self.assertTrue(stop1.mergable_with(stop1))
+
+        self.assertTrue(stop1.mergable_with(stop2))
+        self.assertTrue(stop2.mergable_with(stop1))
+
+        stop2.tile_position = (2, 2)
+        self.assertFalse(stop1.mergable_with(stop2))
+
+    def test_merge(self):
+        stop1 = TrainStop("train-stop")
+        stop2 = TrainStop(
+            "train-stop",
+            station="Station name",
+            manual_trains_limit=3,
+            color=[0.5, 0.5, 0.5],
+            control_behavior={
+                "read_from_train": True,
+                "read_stopped_train": True,
+                "train_stopped_signal": "signal-A",
+                "set_trains_limit": True,
+                "trains_limit_signal": "signal-B",
+                "read_trains_count": True,
+                "trains_count_signal": "signal-C",
+            },
+            tags={"some": "stuff"},
+        )
+
+        stop1.merge(stop2)
+        del stop2
+
+        self.assertEqual(stop1.station, "Station name")
+        self.assertEqual(stop1.tags, {"some": "stuff"})

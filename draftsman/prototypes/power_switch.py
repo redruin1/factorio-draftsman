@@ -12,11 +12,14 @@ from draftsman.classes.mixins import (
     PowerConnectableMixin,
     DirectionalMixin,
 )
-import draftsman.signatures as signatures
+from draftsman.error import DataFormatError
+from draftsman import signatures
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import power_switches
 
+from schema import SchemaError
+import six
 import warnings
 
 
@@ -55,6 +58,18 @@ class PowerSwitch(
 
     # =========================================================================
 
+    @ControlBehaviorMixin.control_behavior.setter
+    def control_behavior(self, value):
+        # type: (dict) -> None
+        try:
+            self._control_behavior = signatures.POWER_SWITCH_CONTROL_BEHAVIOR.validate(
+                value
+            )
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
+
+    # =========================================================================
+
     @property
     def switch_state(self):
         # type: () -> bool
@@ -77,3 +92,9 @@ class PowerSwitch(
             self._switch_state = value
         else:
             raise TypeError("'switch_state' must be a bool or None")
+
+    def merge(self, other):
+        # type: (PowerSwitch) -> None
+        super(PowerSwitch, self).merge(other)
+
+        self.switch_state = other.switch_state
