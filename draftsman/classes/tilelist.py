@@ -25,7 +25,13 @@ class TileList(MutableSequence):
         self._parent = parent
         if initlist is not None:
             for elem in initlist:
-                self.append(elem)
+                if isinstance(elem, Tile):
+                    self.append(elem)
+                elif isinstance(elem, dict):
+                    name = elem.pop("name")
+                    self.append(name, **elem)
+                else:
+                    raise TypeError("Constructor either takes Tile or dict entries")
 
     def append(self, tile, copy=True, merge=False, **kwargs):
         # type: (Tile, bool, bool, **dict) -> None
@@ -57,9 +63,6 @@ class TileList(MutableSequence):
 
         # Keep a reference of the parent blueprint in the tile
         tile._parent = self._parent
-
-        # TODO: this sucks, but it has to be like this
-        self._parent.recalculate_area()
 
     def __getitem__(self, idx):
         return self.data[idx]

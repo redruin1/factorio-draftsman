@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+* Updated `factorio-data` to version `1.1.65`
+* Fixed #38 and #39
+
 ## 1.0.0
 * Updated `factorio-data` to version `1.1.61`
 * Added a `Vector` class to represent 2d positions, and changed most of the code to reflect this change

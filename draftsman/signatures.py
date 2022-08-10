@@ -408,7 +408,6 @@ FILTER_INSERTER_CONTROL_BEHAVIOR = Schema(
             # Inserter
             Optional("circuit_read_hand_contents"): bool,
             Optional("circuit_hand_read_mode"): int,
-            # Filter Inserter
             Optional("circuit_mode_of_operation"): int,
             Optional("circuit_set_stack_size"): bool,
             Optional("stack_control_input_signal"): SIGNAL_ID,
@@ -429,6 +428,7 @@ INSERTER_CONTROL_BEHAVIOR = Schema(
             # Inserter
             Optional("circuit_read_hand_contents"): bool,
             Optional("circuit_hand_read_mode"): int,
+            Optional("circuit_mode_of_operation"): int,
             Optional("circuit_set_stack_size"): bool,
             Optional("stack_control_input_signal"): SIGNAL_ID,
         },
@@ -439,6 +439,7 @@ LAMP_CONTROL_BEHAVIOR = Schema(
     And(
         Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
         {
+            Optional("circuit_condition"): CONDITION,
             Optional("use_colors"): bool,
         },
     )

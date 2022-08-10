@@ -132,7 +132,7 @@ class BlueprintBook(object):
         root = utils.string_to_JSON(blueprint_string)
         # Ensure that the blueprint string actually points to a blueprint
         if "blueprint_book" not in root:
-            raise IncorrectBlueprintTypeError
+            raise IncorrectBlueprintTypeError("Expected 'blueprint_book")
 
         self.setup(**root["blueprint_book"])
 
