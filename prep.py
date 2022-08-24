@@ -53,6 +53,8 @@ def main():
     # But this does
     os.system("python -m build .")
 
+    # twine upload dist/*
+
 
 if __name__ == "__main__":
     main()

@@ -369,7 +369,7 @@ class Blueprintable(object):
         """
         pass
 
-    def to_string(self):
+    def to_string(self):  # pragma: no coverage
         # type: () -> str
         """
         Returns this object as an encoded Factorio blueprint string.
