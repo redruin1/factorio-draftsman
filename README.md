@@ -1,7 +1,8 @@
 # factorio-draftsman
 
-![A logo generated with 'examples/draftsman_logo.py'](https://github.com/redruin1/factorio-draftsman/blob/main/docs/img/logo.png)
+![A logo generated with 'examples/draftsman_logo.py'](https://github.com/redruin1/factorio-draftsman/raw/main/docs/img/logo.png)
 
+[![PyPI version](https://badge.fury.io/py/factorio-draftsman.svg)](https://badge.fury.io/py/factorio-draftsman)
 [![Documentation Status](https://readthedocs.org/projects/factorio-draftsman/badge/?version=latest)](https://factorio-draftsman.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/redruin1/factorio-draftsman/branch/main/graph/badge.svg?token=UERAOXVTO1)](https://codecov.io/gh/redruin1/factorio-draftsman)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)

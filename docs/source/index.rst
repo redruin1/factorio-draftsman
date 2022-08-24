@@ -8,6 +8,10 @@ factorio-draftsman
 .. image:: ../img/logo.png
    :alt: The Draftsman logo created by an example script.
 
+.. image:: https://badge.fury.io/py/factorio-draftsman.svg
+   :target: https://badge.fury.io/py/factorio-draftsman
+   :alt: PyPI Version
+
 .. image:: https://readthedocs.org/projects/factorio-draftsman/badge/?version=latest
    :target: https://factorio-draftsman.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
