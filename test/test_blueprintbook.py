@@ -1,8 +1,12 @@
 # test_blueprintbook.py
 # -*- encoding: utf-8 -*-
 
+from __future__ import unicode_literals
+
 from draftsman._factorio_version import __factorio_version_info__, __factorio_version__
 from draftsman.classes.blueprint import Blueprint
+from draftsman.classes.deconstruction_planner import DeconstructionPlanner
+from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.classes.blueprintbook import BlueprintableList, BlueprintBook
 from draftsman.error import (
     InvalidSignalError,
@@ -25,24 +29,39 @@ class BlueprintableListTesting(unittest.TestCase):
         # Test initializer conversion
         bp_string = "0eNpNjl0KgzAQhO8yz1EwmNrmKqUUfxYb0I0ksa1I7t7EQunTMsPMt7Ojm1ZanOEAvcP0lj30dYc3I7dT9sK2EDRMoBkC3M5ZrTyQG51Nt+hoCogCJnlv6CreBIiDCYa+rENsd17njlwK/Cgvawfion+QD4m9WJ9KlvPXBJKyVAIbdFGVKmbqsUH/TRZ4kvNHRZ6rurnIRqm6Vs0pxg8hIEgA"
 
+        dp_string = "0eNqrVkpJTc7PKy4pKk0uyczPiy/ISczLSy1SsqpWKk4tKcnMSy9WssorzcnRUcosSc1VskLToAvToKNUllpUDBRRsjKyMDQxtzQyNzUDIhOL2loAsN4j2w=="
+
+        up_string = "0eNqrViotSC9KTEmNL8hJzMtLLVKyqlYqTi0pycxLL1ayyivNydFRyixJzVWygqnUhanUUSpLLSrOzM9TsjKyMDQxtzQyNzUDIhOL2loAhpkdww=="
+
         bpb_string = "0eNqrVkrKKU0tKMrMK4lPys/PVrKqRogUK1lFI3FBcpklqblKVkhiOkplqUXFmfl5SlZGFoYm5pZG5qamJiam5ma1OkqZeSmpFUpWBrWxOhg6dcHW6SglJpdklqXGw5TiMa8WAEeOOPY="
 
         initlist = [
-            Blueprint(),  # Blueprint object
-            BlueprintBook(),  # BlueprintBook object
-            string_to_JSON(bp_string),  # Blueprint dict
-            string_to_JSON(bpb_string),  # BlueprintBook dict
+            Blueprint(),  # object
+            DeconstructionPlanner(),  # object
+            UpgradePlanner(),  # object
+            BlueprintBook(),  # object
+            string_to_JSON(bp_string),  # dict
+            string_to_JSON(dp_string),  # dict
+            string_to_JSON(up_string),  # dict
+            string_to_JSON(bpb_string),  # dict
         ]
 
         blueprintable_list = BlueprintableList(initlist)
         self.assertIsInstance(blueprintable_list[0], Blueprint)
-        self.assertIsInstance(blueprintable_list[1], BlueprintBook)
-        self.assertIsInstance(blueprintable_list[2], Blueprint)
+        self.assertIsInstance(blueprintable_list[1], DeconstructionPlanner)
+        self.assertIsInstance(blueprintable_list[2], UpgradePlanner)
         self.assertIsInstance(blueprintable_list[3], BlueprintBook)
+        self.assertIsInstance(blueprintable_list[4], Blueprint)
+        self.assertIsInstance(blueprintable_list[5], DeconstructionPlanner)
+        self.assertIsInstance(blueprintable_list[6], UpgradePlanner)
+        self.assertIsInstance(blueprintable_list[7], BlueprintBook)
 
         # Errors
         with self.assertRaises(TypeError):
             BlueprintableList(["incorrect"])
+
+        with self.assertRaises(TypeError):
+            BlueprintableList([{"incorrect": "thing"}])
 
     def test_setitem(self):
         blueprint_book = BlueprintBook()
@@ -121,6 +140,24 @@ class BlueprintBookTesting(unittest.TestCase):
                     "item": "blueprint-book",
                     "icons": [{"index": 1, "signal": {"name": "wood", "type": "item"}}],
                     "version": encode_version(1, 1, 59, 0),
+                }
+            },
+        )
+
+        # Test description
+        blueprint_book = BlueprintBook(
+            "0eNpNys0KgCAQBOBXiT1bVPTrrScJrT0smYaZBNG7Z14K5jLzzQVSHbhZ0m6UxizALyCHK/AP0ggMlJCoAgyJFitmYZlxnyxtjoyO+6+/LCZHHkfSM57AcwYe7R6/ZVdUbV+2dRNSdff9AJD5LO0="
+        )
+        self.assertEqual(
+            blueprint_book.to_dict(),
+            blueprint_book.to_dict(),
+            {
+                "blueprint_book": {
+                    "active_index": 0,
+                    "item": "blueprint-book",
+                    "label": "A name.",
+                    "description": "A description.",
+                    "version": encode_version(1, 1, 65, 0),
                 }
             },
         )
@@ -413,19 +450,20 @@ class BlueprintBookTesting(unittest.TestCase):
     def test_to_dict(self):
         pass
 
-    # def test_to_string(self):
-    #     blueprint = BlueprintBook()
-    #     blueprint.version = (1, 1, 53, 0)
-    #     self.assertEqual(
-    #         blueprint.to_string(),
-    #         "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTQ1NDY3NDGprAVVBHPY="
-    #     )
-    #     self.assertIs(blueprint.blueprints,  blueprint.root["blueprints"])
+    def test_to_string(self):
+        blueprint_book = BlueprintBook()
+        blueprint_book.version = (1, 1, 53, 0)
+        # self.assertEqual(
+        #     blueprint_book.to_string(),
+        #     "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTQ1NDY3NDGprAVVBHPY="
+        # )
+        self.assertIs(blueprint_book.blueprints, blueprint_book._root["blueprints"])
+        self.assertIs(blueprint_book.blueprints, blueprint_book["blueprints"])
 
     def test_setitem(self):
         blueprint_book = BlueprintBook()
         blueprint_book["label"] = "whatever"
-        self.assertIs(blueprint_book.root["label"], blueprint_book.label)
+        self.assertIs(blueprint_book._root["label"], blueprint_book.label)
         self.assertEqual(blueprint_book["label"], "whatever")
 
     def test_getitem(self):

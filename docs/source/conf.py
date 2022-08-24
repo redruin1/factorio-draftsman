@@ -77,7 +77,7 @@ html_static_path = ["_static"]
 # html_logo = "something" # TODO
 
 # html_css_files = [
-#     'css/custom.css'
+#     'css/style.css'
 # ]
 
 highlight_language = "python"

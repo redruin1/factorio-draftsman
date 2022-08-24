@@ -12,7 +12,7 @@ class Direction(IntEnum):
     Factorio direction enum. Encompasses all 8 cardinal directions and diagonals
     where north is 0 and increments clockwise.
 
-    * ``NORTH``
+    * ``NORTH`` (Default)
     * ``NORTHEAST``
     * ``EAST``
     * ``SOUTHEAST``
@@ -36,7 +36,7 @@ class ReadMode(IntEnum):
     """
     Determines what manner belts and inserters should send their content signal.
 
-    * ``PULSE``: Pulse the signal for one tick when first detected.
+    * ``PULSE``: Pulse the signal for one tick when first detected. (Default)
     * ``HOLD``: Hold the signal for as long as the item is present.
     """
 
@@ -52,8 +52,9 @@ class MiningDrillReadMode(IntEnum):
     Determines the manner in which a mining drill reads the resources beneath it.
 
     * ``UNDER_DRILL``: Only return the resources directly minable by this drill.
+        (Default)
     * ``TOTAL_PATCH``: Return the entire contents of the ore patches the drill
-      is over.
+        is over.
     """
 
     UNDER_DRILL = 0
@@ -66,13 +67,13 @@ class InserterModeOfOperation(IntEnum):
     when connected to a circuit network.
 
     * ``ENABLE_DISABLE``: Turns the inserter on or off depending on the circuit
-      condition. (Default)
+        condition. (Default)
     * ``SET_FILTERS``: Sets the inserter's filter signals based on read signals.
     * ``READ_HAND_CONTENTS``: Reads the contents of the inserter's hand and
-      sends it to the connected wire(s).
+        sends it to the connected wire(s).
     * ``NONE``: Does nothing.
     * ``SET_STACK_SIZE``: Sets the stack size override to the value of an input
-      signal.
+        signal.
     """
 
     ENABLE_DISABLE = 0
@@ -88,10 +89,38 @@ class LogisticModeOfOperation(IntEnum):
     should behave when connected to a circuit network.
 
     * ``SEND_CONTENTS``: Reads the inventory of the container and sends it to
-      the connected circuit network.
+      the connected circuit network. (Default)
     * ``SET_REQUESTS``: Sets the item requests based on the input signals to the
       container.
     """
 
     SEND_CONTENTS = 0
     SET_REQUESTS = 1
+
+
+class FilterMode(IntEnum):
+    """
+    Filter mode constant.
+
+    * ``WHITELIST``: Include only the listed items. (Default)
+    * ``BLACKLIST``: Exclude only the listed items.
+    """
+
+    WHITELIST = 0
+    BLACKLIST = 1
+
+
+class TileSelectionMode(IntEnum):
+    """
+    Tile selection mode for :py:class:`.UpgradePlanner`.
+
+    * ``NORMAL`` (Default)
+    * ``ALWAYS``
+    * ``NEVER``
+    * ``ONLY``
+    """
+
+    NORMAL = 0
+    ALWAYS = 1
+    NEVER = 2
+    ONLY = 3

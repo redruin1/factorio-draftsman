@@ -902,12 +902,12 @@ class ReadRailSignalMixinTesting(unittest.TestCase):
         )
         self.assertEqual(
             rail_signal.control_behavior,
-            {"yellow_output_signal": {"name": "signal-A", "type": "virtual"}},
+            {"orange_output_signal": {"name": "signal-A", "type": "virtual"}},
         )
         rail_signal.yellow_output_signal = {"name": "signal-A", "type": "virtual"}
         self.assertEqual(
             rail_signal.control_behavior,
-            {"yellow_output_signal": {"name": "signal-A", "type": "virtual"}},
+            {"orange_output_signal": {"name": "signal-A", "type": "virtual"}},
         )
         rail_signal.yellow_output_signal = None
         self.assertEqual(rail_signal.control_behavior, {})

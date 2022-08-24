@@ -1,29 +1,75 @@
 # blueprintbook.py
 # -*- encoding: utf-8 -*-
 
+"""
+.. code-block:: python
+
+    {
+        "blueprint_book": {
+            "item": "blueprint-book", # The associated item with this structure
+            "label": str, # A user given name for this deconstruction planner
+            "label_color": { # The overall color of the label
+                "r": float[0.0, 1.0] or int[0, 255], # red
+                "g": float[0.0, 1.0] or int[0, 255], # green
+                "b": float[0.0, 1.0] or int[0, 255], # blue
+                "a": float[0.0, 1.0] or int[0, 255]  # alpha (optional)
+            }
+            "icons": [ # A set of signals to act as visual identification
+                {
+                    "signal": {"name": str, "type": str}, # Name and type of signal
+                    "index": int, # In range [1, 4], starting top-left and moving across
+                },
+                ... # Up to 4 icons total
+            ],
+            "description": str, # A user given description for this blueprint book
+            "version": int, # The encoded version of Factorio this planner was created 
+                            # with/designed for (64 bits)
+            "active_index": int, # The currently selected blueprint in "blueprints"
+            "blueprints": [ # A list of all Blueprintable objects this book contains
+                {
+                    "item": "blueprint",
+                    ... # Any associated Blueprint key/values
+                }, # or
+                {
+                    "item": "deconstruction-planner",
+                    ... # Any associated DeconstructionPlanner key/values
+                }, # or
+                {
+                    "item": "upgrade-planner",
+                    ... # Any associated UpgradePlanner key/values
+                }, # or
+                {
+                    "item": "blueprint-book",
+                    ... # Any above key/values
+                }
+            ]
+        }
+    }
+"""
 
 from __future__ import unicode_literals
 
 from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.blueprint import Blueprint
-from draftsman.error import IncorrectBlueprintTypeError, DataFormatError
+from draftsman.classes.blueprintable import Blueprintable
+from draftsman.classes.deconstruction_planner import DeconstructionPlanner
+from draftsman.classes.upgrade_planner import UpgradePlanner
+from draftsman.error import DataFormatError
 from draftsman import signatures
 from draftsman import utils
 from draftsman.warning import DraftsmanWarning, IndexWarning
 
-from draftsman.data.signals import signal_dict
+from builtins import int
+import copy
+from schema import SchemaError
+import six
+from typing import Union
+import warnings
 
 try:  # pragma: no coverage
     from collections.abc import MutableSequence
 except ImportError:  # pragma: no coverage
     from collections import MutableSequence
-from builtins import int
-import copy
-from schema import SchemaError
-import six
-from typing import Union, Sequence
-import json
-import warnings
 
 
 class BlueprintableList(MutableSequence):
@@ -38,19 +84,23 @@ class BlueprintableList(MutableSequence):
         self.data = []
         if initlist is not None:
             for elem in initlist:
-                if isinstance(elem, Blueprint):
-                    self.append(elem)
-                elif isinstance(elem, BlueprintBook):
-                    self.append(elem)
-                elif "blueprint" in elem:
-                    self.append(Blueprint(elem["blueprint"]))
-                elif "blueprint_book" in elem:
-                    self.append(BlueprintBook(elem["blueprint_book"]))
+                if isinstance(elem, dict):
+                    # fmt: off
+                    if "blueprint" in elem:
+                        self.append(Blueprint(elem["blueprint"]))
+                    elif "deconstruction_planner" in elem:
+                        self.append(DeconstructionPlanner(elem["deconstruction_planner"]))
+                    elif "upgrade_planner" in elem:
+                        self.append(UpgradePlanner(elem["upgrade_planner"]))
+                    elif "blueprint_book" in elem:
+                        self.append(BlueprintBook(elem["blueprint_book"]))
+                    else:
+                        raise TypeError(
+                            "Dictionary input cannot be resolve to a blueprintable"
+                        )
+                    # fmt: on
                 else:
-                    raise TypeError(
-                        "Element of blueprint book is not blueprint or \
-                        blueprint book object nor is it blueprint dictionary"
-                    )
+                    self.append(elem)
 
     def insert(self, idx, value):
         # type: (int, Union[Blueprint, BlueprintBook]) -> None
@@ -76,19 +126,20 @@ class BlueprintableList(MutableSequence):
         return len(self.data)
 
     def check_blueprintable(self, blueprintable):
-        if not isinstance(blueprintable, Blueprint) and not isinstance(
-            blueprintable, BlueprintBook
+        if not isinstance(
+            blueprintable,
+            (Blueprint, DeconstructionPlanner, UpgradePlanner, BlueprintBook),
         ):
             raise TypeError(
-                "Entry into BlueprintableList must be either a Blueprint or a "
-                "BlueprintBook"
+                "Entry into BlueprintableList must be one of (Blueprint, "
+                "DeconstructionPlanner, UpgradePlanner, BlueprintBook)"
             )
 
 
-class BlueprintBook(object):
+class BlueprintBook(Blueprintable):
     """
-    Factorio Blueprint Book class. Contains a list of Blueprints as well as some
-    of it's own metadata.
+    Factorio Blueprint Book class. Contains a list of :py:class:`.Blueprintable`
+    objects as well as some of it's own metadata.
     """
 
     @utils.reissue_warnings
@@ -96,82 +147,27 @@ class BlueprintBook(object):
         # type: (str, Union[str, dict]) -> None
         """
         Creates a ``BlueprintBook`` class. Will load the data from
-        ``blueprint_string`` if provided, otherwise initializes with defaults.
+        ``blueprint_book`` if provided, otherwise initializes with defaults.
 
-        :param blueprint_string: Either a Factorio-format blueprint string or a
+        :param blueprint_book: Either a Factorio-format blueprint string or a
             ``dict`` object with the desired keys in the correct format.
         """
-
-        if blueprint_book is None:
-            self.setup()
-        elif isinstance(blueprint_book, str):
-            self.load_from_string(blueprint_book)
-        elif isinstance(blueprint_book, dict):
-            self.setup(**blueprint_book)
-        else:
-            raise TypeError(
-                "'blueprint_book' must be a factorio blueprint "
-                "string, a file object, a dictionary, or None"
-            )
-
-    @utils.reissue_warnings
-    def load_from_string(self, blueprint_string):
-        # type: (str) -> None
-        """
-        Load the BlueprintBook with the contents of `blueprint_string`. Raises
-        ``draftsman.warning.DraftsmanWarning`` if there are any unrecognized
-        keywords in the blueprint string.
-
-        :param blueprint_string: Factorio-encoded blueprint string.
-
-        :exception MalformedBlueprintStringError: If the input string is not
-            decodable to a JSON object.
-        :exception IncorrectBlueprintTypeError: If the input string is of a
-            different type than the base class, such as a BlueprintBook.
-        """
-        root = utils.string_to_JSON(blueprint_string)
-        # Ensure that the blueprint string actually points to a blueprint
-        if "blueprint_book" not in root:
-            raise IncorrectBlueprintTypeError("Expected 'blueprint_book")
-
-        self.setup(**root["blueprint_book"])
+        super(BlueprintBook, self).__init__(
+            root_item="blueprint_book", item="blueprint-book", init_data=blueprint_book
+        )
 
     @utils.reissue_warnings
     def setup(self, **kwargs):
-        # type: (**dict) -> None
-        """
-        Setup the BlueprintBook's parameters with the input keywords as values.
-        Raises ``draftsman.warning.DraftsmanWarning`` if any of the input
-        keywords are unrecognized.
+        self._root = {}
 
-        :param kwargs: The dict of all keywords to set in the blueprint.
-
-        :Example:
-
-        .. code-block:: python
-
-            blueprint = Blueprint()
-            blueprint.setup(label="test", description="testing...")
-            assert blueprint.label == "test"
-            assert blueprint.description == "testing..."
-        """
-        self.root = dict()
-
-        self.root["item"] = "blueprint-book"
+        self._root["item"] = "blueprint-book"
         kwargs.pop("item", None)
 
-        if "label" in kwargs:
-            self.label = kwargs.pop("label")
-
-        if "label_color" in kwargs:
-            self.label_color = kwargs.pop("label_color")
-
-        if "icons" in kwargs:
-            self.icons = kwargs.pop("icons")
-
-        self.active_index = 0
-        if "active_index" in kwargs:
-            self.active_index = kwargs.pop("active_index")
+        self.label = kwargs.pop("label", None)
+        self.label_color = kwargs.pop("label_color", None)
+        self.description = kwargs.pop("description", None)
+        self.icons = kwargs.pop("icons", None)
+        self.active_index = kwargs.pop("active_index", 0)
 
         if "version" in kwargs:
             self.version = kwargs.pop("version")
@@ -179,9 +175,9 @@ class BlueprintBook(object):
             self.version = utils.encode_version(*__factorio_version_info__)
 
         if "blueprints" in kwargs:
-            self.root["blueprints"] = BlueprintableList(kwargs.pop("blueprints"))
+            self._root["blueprints"] = BlueprintableList(kwargs.pop("blueprints"))
         else:
-            self.root["blueprints"] = BlueprintableList()
+            self._root["blueprints"] = BlueprintableList()
 
         # Issue warnings for any keyword not recognized by BlueprintBook
         for unused_arg in kwargs:
@@ -193,33 +189,6 @@ class BlueprintBook(object):
 
     # =========================================================================
     # BlueprintBook properties
-    # =========================================================================
-
-    @property
-    def label(self):
-        # type: () -> None
-        """
-        The BlueprintBook's label (title).
-
-        :getter: Gets the label, or ``None`` if not set.
-        :setter: Sets the label of the BlueprintBook.
-        :type: ``str``
-
-        :exception TypeError: When setting ``label`` to something other than
-            ``str`` or ``None``.
-        """
-        return self.root.get("label", None)
-
-    @label.setter
-    def label(self, value):
-        # type: (str) -> None
-        if value is None:
-            self.root.pop("label", None)
-        elif isinstance(value, str):
-            self.root["label"] = value
-        else:
-            raise TypeError("`label` must be a string")
-
     # =========================================================================
 
     @property
@@ -254,55 +223,16 @@ class BlueprintBook(object):
             print(blueprint.label_color)
             # {'r': 127.0, 'g': 127.0, 'b': 127.0}
         """
-        return self.root.get("label_color", None)
+        return self._root.get("label_color", None)
 
     @label_color.setter
     def label_color(self, value):
         # type: (dict) -> None
         if value is None:
-            self.root.pop("label_color", None)
+            self._root.pop("label_color", None)
             return
         try:
-            self.root["label_color"] = signatures.COLOR.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
-
-    # =========================================================================
-
-    @property
-    def icons(self):
-        # type: () -> list
-        """
-        The icons of the BlueprintBook.
-
-        Stored as a list of ``ICON`` objects, which are dicts that contain a
-        ``SIGNAL_ID`` and an ``index`` key. Icons can be specified in this
-        format, or they can be specified more succinctly with a simple list of
-        signal names as strings.
-
-        All signal entries must be a valid signal id. If the input format is a
-        list of strings, the index of each item will be it's place in the list
-        + 1. The number of entries cannot exceed 4, or else a
-        ``DataFormatError`` is raised.
-
-        :getter: Gets the list if icons, or ``None`` if not set.
-        :setter: Sets the icons of the BlueprintBook. Removes the attribute if
-            set to ``None``.
-        :type: ``dict{"index": int, "signal": {"name": str, "type": str}}``
-
-        :exception DataFormatError: If the set value does not match the
-            specification above.
-        """
-        return self.root.get("icons", None)
-
-    @icons.setter
-    def icons(self, value):
-        # type: (list[str]) -> None
-        if value is None:
-            self.root.pop("icons", None)
-            return
-        try:
-            self.root["icons"] = signatures.ICONS.validate(value)
+            self._root["label_color"] = signatures.COLOR.validate(value)
         except SchemaError as e:
             six.raise_from(DataFormatError(e), None)
 
@@ -312,7 +242,7 @@ class BlueprintBook(object):
     def active_index(self):
         # type: () -> int
         """
-        The currently selected Blueprint in the BlueprintBook. Zero-indexed,
+        The currently selected Blueprintable in the BlueprintBook. Zero-indexed,
         from ``0`` to ``len(blueprint_book.blueprints) - 1``.
 
         :getter: Gets the index of the currently selected blueprint or blueprint
@@ -324,14 +254,13 @@ class BlueprintBook(object):
         :exception TypeError: If set to anything other than an ``int`` or
             ``None``.
         """
-        return self.root.get("active_index", None)
+        return self._root.get("active_index", None)
 
     @active_index.setter
     def active_index(self, value):
         # type: (int) -> None
         if value is None:
-            # self.root.pop("active_index", None)
-            self.root["active_index"] = 0
+            self._root["active_index"] = 0
         elif isinstance(value, int):
             if not 0 <= value < 65536:
                 raise IndexError(
@@ -345,65 +274,9 @@ class BlueprintBook(object):
                     IndexWarning,
                     stacklevel=2,
                 )
-            self.root["active_index"] = value
+            self._root["active_index"] = value
         else:
             raise TypeError("'active_index' must be a int or None")
-
-    # =========================================================================
-
-    @property
-    def version(self):
-        # type: () -> int
-        """
-        The version of Factorio the BlueprintBook was created in/intended for.
-
-        The Blueprint ``version`` is a 64-bit integer, which is a bitwise-OR
-        of four 16-bit numbers. You can interpret this number more clearly by
-        decoding it with :py:func:`draftsman.utils.decode_version`, or you can
-        use the functions :py:func:`version_tuple` or :py:func:`version_string`
-        which will give you a more readable output. This version number defaults
-        to the version of Factorio that Draftsman is currently initialized with.
-
-        The version can be set either as said 64-bit int, or a sequence of
-        ints, usually a list or tuple, which is then encoded into the combined
-        representation. The sequence is defined as:
-        ``[major_version, minor_version, patch, development_release]``
-        with ``patch`` and ``development_release`` defaulting to 0.
-
-        .. seealso::
-
-            `<https://wiki.factorio.com/Version_string_format>`_
-
-        :getter: Gets the version, or ``None`` if not set.
-        :setter: Sets the version of the Blueprint. Removes the attribute if set
-            to ``None``.
-        :type: ``int``
-
-        :exception TypeError: If set to anything other than an ``int``, sequence
-            of ``ints``, or ``None``.
-
-        :example:
-
-        .. code-block:: python
-
-            blueprint.version = (1, 0) # version 1.0.0.0
-            assert blueprint.version == 281474976710656
-            assert blueprint.version_tuple() == (1, 0, 0, 0)
-            assert blueprint.version_string() == "1.0.0.0"
-        """
-        return self.root.get("version", None)
-
-    @version.setter
-    def version(self, value):
-        # type: (Union[int, Sequence[int]]) -> None
-        if value is None:
-            self.root.pop("version", None)
-        elif isinstance(value, int):
-            self.root["version"] = value
-        elif isinstance(value, Sequence):
-            self.root["version"] = utils.encode_version(*value)
-        else:
-            raise TypeError("'version' must be an int, sequence of ints or None")
 
     # =========================================================================
 
@@ -422,39 +295,20 @@ class BlueprintBook(object):
         :exception TypeError: If set to anything other than ``list`` or
             ``None``.
         """
-        return self.root.get("blueprints", None)
+        return self._root.get("blueprints", None)
 
     @blueprints.setter
     def blueprints(self, value):
         if value is None:
-            self.root["blueprints"] = BlueprintableList()
+            self._root["blueprints"] = BlueprintableList()
         elif isinstance(value, list):
-            self.root["blueprints"] = BlueprintableList(value)
+            self._root["blueprints"] = BlueprintableList(value)
         else:
             raise TypeError("'blueprints' must be a list or None")
 
     # =========================================================================
     # Utility functions
     # =========================================================================
-
-    def version_tuple(self):
-        # type: () -> tuple(int, int, int, int)
-        """
-        Returns the version of the Blueprint as a 4-length tuple.
-
-        :returns: a 4 length tuple in the format ``(major, minor, patch, dev_ver)``.
-        """
-        return utils.decode_version(self.root["version"])
-
-    def version_string(self):
-        # type: () -> str
-        """
-        Returns the version of the Blueprint in human-readable string.
-
-        :returns: a ``str`` of 4 version numbers joined by a '.' character.
-        """
-        version_tuple = utils.decode_version(self.root["version"])
-        return utils.version_tuple_to_string(version_tuple)
 
     def to_dict(self):
         # type: () -> dict
@@ -466,7 +320,7 @@ class BlueprintBook(object):
         :returns: The dict representation of the BlueprintBook.
         """
         # Get the root dicts from each blueprint and insert them into blueprints
-        out_dict = copy.deepcopy(self.root)
+        out_dict = copy.deepcopy(self._root)
 
         out_dict["blueprints"] = []
         for i, blueprintable in enumerate(self.blueprints):
@@ -478,26 +332,3 @@ class BlueprintBook(object):
             del out_dict["blueprints"]
 
         return {"blueprint_book": out_dict}
-
-    def to_string(self):  # pragma: no coverage
-        # type: () -> str
-        """
-        Returns the Blueprint as an encoded Factorio blueprint string.
-
-        :returns: The zlib-compressed, base-64 encoded string.
-        """
-        return utils.JSON_to_string(self.to_dict())
-
-    def __setitem__(self, key, value):
-        self.root[key] = value
-
-    def __getitem__(self, key):
-        return self.root[key]
-
-    def __str__(self):  # pragma: no coverage
-        return "<BlueprintBook>" + json.dumps(
-            self.to_dict()["blueprint_book"], indent=2
-        )
-
-    # def __repr__(self):  # pragma: no coverage
-    #     return "<BlueprintBook>" + json.dumps(self.root, indent=2)

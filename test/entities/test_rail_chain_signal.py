@@ -30,7 +30,7 @@ class RailChainSignalTesting(unittest.TestCase):
             "rail-chain-signal",
             control_behavior={
                 "red_output_signal": "signal-A",
-                "yellow_output_signal": "signal-B",
+                "orange_output_signal": "signal-B",
                 "green_output_signal": "signal-C",
                 "blue_output_signal": "signal-D",
             },
@@ -42,7 +42,7 @@ class RailChainSignalTesting(unittest.TestCase):
                 "position": {"x": 0.5, "y": 0.5},
                 "control_behavior": {
                     "red_output_signal": {"name": "signal-A", "type": "virtual"},
-                    "yellow_output_signal": {"name": "signal-B", "type": "virtual"},
+                    "orange_output_signal": {"name": "signal-B", "type": "virtual"},
                     "green_output_signal": {"name": "signal-C", "type": "virtual"},
                     "blue_output_signal": {"name": "signal-D", "type": "virtual"},
                 },
@@ -53,7 +53,7 @@ class RailChainSignalTesting(unittest.TestCase):
             "rail-chain-signal",
             control_behavior={
                 "red_output_signal": {"name": "signal-A", "type": "virtual"},
-                "yellow_output_signal": {"name": "signal-B", "type": "virtual"},
+                "orange_output_signal": {"name": "signal-B", "type": "virtual"},
                 "green_output_signal": {"name": "signal-C", "type": "virtual"},
                 "blue_output_signal": {"name": "signal-D", "type": "virtual"},
             },
@@ -65,7 +65,7 @@ class RailChainSignalTesting(unittest.TestCase):
                 "position": {"x": 0.5, "y": 0.5},
                 "control_behavior": {
                     "red_output_signal": {"name": "signal-A", "type": "virtual"},
-                    "yellow_output_signal": {"name": "signal-B", "type": "virtual"},
+                    "orange_output_signal": {"name": "signal-B", "type": "virtual"},
                     "green_output_signal": {"name": "signal-C", "type": "virtual"},
                     "blue_output_signal": {"name": "signal-D", "type": "virtual"},
                 },
@@ -113,7 +113,7 @@ class RailChainSignalTesting(unittest.TestCase):
             "rail-chain-signal",
             control_behavior={
                 "red_output_signal": "signal-A",
-                "yellow_output_signal": "signal-B",
+                "orange_output_signal": "signal-B",
                 "green_output_signal": "signal-C",
                 "blue_output_signal": "signal-D",
             },
@@ -134,7 +134,7 @@ class RailChainSignalTesting(unittest.TestCase):
             "rail-chain-signal",
             control_behavior={
                 "red_output_signal": "signal-A",
-                "yellow_output_signal": "signal-B",
+                "orange_output_signal": "signal-B",
                 "green_output_signal": "signal-C",
                 "blue_output_signal": "signal-D",
             },
@@ -148,7 +148,7 @@ class RailChainSignalTesting(unittest.TestCase):
             signal1.control_behavior,
             {
                 "red_output_signal": {"name": "signal-A", "type": "virtual"},
-                "yellow_output_signal": {"name": "signal-B", "type": "virtual"},
+                "orange_output_signal": {"name": "signal-B", "type": "virtual"},
                 "green_output_signal": {"name": "signal-C", "type": "virtual"},
                 "blue_output_signal": {"name": "signal-D", "type": "virtual"},
             },

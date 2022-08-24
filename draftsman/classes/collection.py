@@ -92,30 +92,31 @@ class EntityCollection(object):
     def on_entity_insert(self, entitylike, merge):  # pragma: no coverage
         # type: (EntityLike, bool) -> EntityLike
         """
-        Function called when an ``EntityLike`` is inserted into this object's
-        ``entities`` list (assuming that the ``entities`` list is a
-        ``EntityList``). By default, this function does nothing, but any
-        child class can customize it's functionality by overriding it.
+        Function called when an :py:class:`.EntityLike` is inserted into this
+        object's :py:attr:`entities` list (assuming that the ``entities`` list
+        is a :py:class:`.EntityList`). By default, this function does nothing,
+        but any child class can customize it's functionality by overriding it.
         """
         pass
 
     def on_entity_set(self, old_entitylike, new_entitylike):  # pragma: no coverage
         # type: (EntityLike, EntityLike) -> None
         """
-        Function called when an ``EntityLike`` is replaced with another in this
-        object's ``entities`` list (assuming that the ``entities`` list is a
-        ``EntityList``). By default, this function does nothing, but any
-        child class can customize it's functionality by overriding it.
+        Function called when an :py:class:`.EntityLike` is replaced with another
+        in this object's :py:attr:`entities` list (assuming that the ``entities``
+        list is a :py:class:`.EntityList`). By default, this function does
+        nothing, but any child class can customize it's functionality by
+        overriding it.
         """
         pass
 
     def on_entity_remove(self, entitylike):  # pragma: no coverage
         # type: (EntityLike) -> None
         """
-        Function called when an ``EntityLike`` is removed from this object's
-        ``entities`` list (assuming that the ``entities`` list is a
-        ``EntityList``). By default, this function does nothing, but any
-        child class can customize it's functionality by overriding it.
+        Function called when an :py:class:`.EntityLike` is removed from this
+        object's :py:attr:`entities` list (assuming that the ``entities`` list
+        is a :py:class:`.EntityList`). By default, this function does nothing,
+        but any child class can customize it's functionality by overriding it.
         """
         pass
 
@@ -898,21 +899,30 @@ class TileCollection(object):
     def on_tile_insert(self, tile, merge):  # pragma: no coverage
         # type: (Tile, bool) -> Tile
         """
-        TODO
+        Function called when an :py:class:`.Tile` is inserted into this object's
+        :py:attr:`tiles` list (assuming that the ``tiles`` list is a
+        :py:class:`.TileList`). By default, this function does nothing, but any
+        child class can customize it's functionality by overriding it.
         """
         pass
 
     def on_tile_set(self, old_tile, new_tile):  # pragma: no coverage
         # type: (Tile, bool) -> None
         """
-        TODO
+        Function called when an :py:class:`.Tile` is replaced with another in
+        this object's :py:attr:`tiles` list (assuming that the ``tiles`` list is
+        a :py:class:`.TileList`). By default, this function does nothing, but
+        any child class can customize it's functionality by overriding it.
         """
         pass
 
     def on_tile_remove(self, tile):  # pragma: no coverage
         # type: (Tile) -> None
         """
-        TODO
+        Function called when an :py:class:`.Tile` is removed from this object's
+        :py:attr:`tiles` list (assuming that the ``entities`` list is a
+        :py:class:`.TileList`). By default, this function does nothing, but any
+        child class can customize it's functionality by overriding it.
         """
         pass
 

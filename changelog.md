@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.2
+* Added `UpgradePlanner` and `DeconstructionPlanner` (#40)
+* Created an abstract class `Blueprintable` which now implements `Blueprint`, `BlueprintBook`, `UpgradePlanner`, and `DeconstructionPlanner` to increase code reuse
+* Added `description` attribute to `Blueprint` and `BlueprintBook` (#41)
+* Changed the behavior of `draftsman-update` to normalize all mod names to have no spaces (probably not perfect, but should work for now) (#49)
+* Added a `--path` argument to `draftsman-update` so you can specify exactly where to load mods from instead of only the installation directory (#49)
+* Draftsman now distributes with a vanilla set of pickle data files, so you no longer need to run `draftsman-update` on first install (suggestion from rpdelaney)
+* Rolling Stock (Locomotives and Wagons) should now have proper collisions that are based on their `orientation` and issue correct warnings (#47)
+* Updated the documentation around `draftsman-update` to make it more clear and reflect recent changes
+* Updated all `Blueprintable` documentation files such that they now include a plaintext representation of their JSON structure
+
 ## 1.0.1
 * Updated `factorio-data` to version `1.1.65`
 * Fixed #38 and #39

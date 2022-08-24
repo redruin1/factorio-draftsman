@@ -1,4 +1,4 @@
-global-exclude *.pkl
+global-include *.pkl
 global-exclude *.zip
 
 exclude draftsman/factorio-mods/mod-settings.dat

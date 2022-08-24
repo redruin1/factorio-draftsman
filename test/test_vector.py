@@ -1,4 +1,5 @@
 # test_vector.py
+# -*- encoding: utf-8 -*-
 
 from draftsman.classes.vector import Vector
 

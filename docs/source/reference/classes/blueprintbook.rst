@@ -13,5 +13,10 @@ Factorio BlueprintBooks.
 
 --------------------------------------------------------------------------------
 
+.. automodule:: draftsman.classes.blueprintbook
+    :noindex:
+
 .. autoclass:: BlueprintBook
     :members:
+    :show-inheritance:
+    :inherited-members:

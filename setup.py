@@ -53,7 +53,7 @@ setup(
         'draftsman.prototypes'
     ],
     package_data = {
-        'draftsman': package_files("draftsman/factorio-data", "draftsman/compatibility")
+        'draftsman': package_files("draftsman/factorio-data", "draftsman/compatibility", "draftsman/data")
     },
     include_package_data = True,
     install_requires = [

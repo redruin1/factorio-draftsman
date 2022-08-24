@@ -12,6 +12,9 @@ Contains the ``Blueprint`` class for easily creating and exporting blueprints.
 
 --------------------------------------------------------------------------------
 
+.. automodule:: draftsman.classes.blueprint
+    :noindex:
+
 .. autoclass:: Blueprint
     :members:
     :show-inheritance:

@@ -12,9 +12,11 @@ Some of which are aliased at the root level of the package, such as :py:mod:`~dr
 
     association.rst
     blueprint.rst
+    blueprintable.rst
     blueprintbook.rst
     collection.rst
     collisionset.rst
+    deconstruction_planner.rst
     entity.rst
     entitylike.rst
     entitylist.rst
@@ -25,5 +27,6 @@ Some of which are aliased at the root level of the package, such as :py:mod:`~dr
     tile.rst
     tilelist.rst
     transformable.rst
+    upgrade_planner.rst
     vector.rst
     mixins/index.rst

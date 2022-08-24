@@ -4,31 +4,23 @@ Quickstart
 Installation
 ------------
 
-Like many Python modules, Draftsman is easy to install. 
-First, install the module from PyPI:
+Like many Python modules, Draftsman is easy to install:
 
 .. code-block:: console
 
     (.venv) $ pip install factorio-draftsman
 
-Once that's complete, we need to initialize the modules data.
-Draftsman comes pre-packaged with the latest version of Factorio's data, which needs to be initialized once on startup.
-Draftsman has the console command ``draftsman-update`` to do exactly this:
+From there you should be able to open an interpreter and check the version of Draftsman and the version of Factorio's data it ships with:
 
-.. code-block:: console
+.. doctest::
 
-    (.venv) $ draftsman-update
+    >>> import draftsman
+    >>> print(draftsman.__version__)
+    1.0.2
+    >>> print(draftsman.__factorio_version__)
+    1.1.61.0
 
-Once this command finishes, if you see the output ``hella slick; nothing broke!`` then you can be sure that the process went smoothly.
-
-.. NOTE::
-    
-    **In order for the module to be set up correctly, both of the above commands must be run.**
-
-.. NOTE::
-
-    ``draftsman-update`` comes with a number of options, which you can view with ``draftsman-update -h`` or ``draftsman-update --help``.
-    One such option is ``-v`` or ``--verbose``, which displays more detailed information on the process.
+If you see an output like above, then Draftsman should have installed correctly.
 
 Creating a Blueprint
 --------------------
@@ -37,6 +29,7 @@ In order to show off how to use Draftsman, let's create a blueprint to play arou
 
 .. image:: ../img/quickstart/starter_blueprint.png
     :alt: A small, but standard blueprint featuring a belt, some inserters, a power pole, and an electric furnace.
+    :align: center
 
 And here's it's blueprint string:
 
@@ -68,6 +61,8 @@ Let's start off simple by doing just that:
 When we import this string into Factorio, we get the same blueprint again but with it's name changed to "Hello, Draftsman!"
 
 .. image:: ../img/quickstart/starter_name_altered.png
+    :alt: The same blueprint, but with it's name altered.
+    :align: center
 
 For some users, these two functions `and this page <https://wiki.factorio.com/Blueprint_string_format>`_ are all they need to complete their Factorio blueprint related project. 
 Technically, that's all you need; blueprint strings are just JSON dicts after all. 
@@ -206,6 +201,8 @@ This feature also works for all other entities as well, not just singletons:
     This is the order that you see when you look in the crafting menu in-game:
 
     .. image:: ../img/quickstart/crafting_menu.png
+        :alt: A screenshot of Factorio's in-game crafting menu.
+        :align: center
 
     You can see that because "wooden-chest" is to the left of "iron-chest", "wooden-chest" will always be before "iron-chest" in ``entities.containers`` (Unless some mod messes with their order strings!)
     
@@ -356,6 +353,8 @@ Since we now know that the center of the furnace is at (176.5, -93.5), we can si
 And presto!
 
 .. image:: ../img/quickstart/final_blueprint.png
+    :alt: The final created blueprint.
+    :align: center
 
 Specifying the blueprint in absolute coordinates can feel somewhat clunky though.
 It might be slicker to move the entire blueprint from its absolute position to a normalized position, such as around the origin.
@@ -387,6 +386,8 @@ Lets change one more of the Container's attributes to illustrate one more concep
 Suppose we want to set the limiting bar to limit half the inventory:
 
 .. image:: ../img/quickstart/steel_chest_inventory.png
+    :alt: A steel chest with it's bar covering half it's contents.
+    :align: center
 
 .. code-block:: python
 
@@ -411,6 +412,8 @@ Instead, we can write something like this:
 which works with every Container (even modded ones!):
 
 .. image:: ../img/quickstart/all_default_container_inventories.png
+    :alt: A side-by-side of all 3 default chests with their inventories half restricted.
+    :align: center
 
 Being *"Factorio-safe"* also applies to entities. 
 If we were to set the bar to be anything other than an unsigned short, Factorio would throw a fit. 

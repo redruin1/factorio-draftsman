@@ -495,7 +495,7 @@ def version_tuple_to_string(version_tuple):
 
     :returns: A str of the format ``"a.b.c"`` from ``(a, b, c)``
     """
-    return ".".join(str(x) for x in version_tuple)
+    return ".".join(six.text_type(x) for x in version_tuple)
 
 
 # =============================================================================

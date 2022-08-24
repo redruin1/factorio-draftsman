@@ -89,21 +89,21 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
         :exception DataFormatError: If set to a dict that does not match the
             dict format specified above.
         """
-        return self.control_behavior.get("yellow_output_signal", None)
+        return self.control_behavior.get("orange_output_signal", None)
 
     @yellow_output_signal.setter
     def yellow_output_signal(self, value):
         # type: (str) -> None
         if value is None:
-            self.control_behavior.pop("yellow_output_signal", None)
+            self.control_behavior.pop("orange_output_signal", None)
         elif isinstance(value, six.string_types):
             # Make sure this is a unicode string
             value = six.text_type(value)
-            self.control_behavior["yellow_output_signal"] = signal_dict(value)
+            self.control_behavior["orange_output_signal"] = signal_dict(value)
         else:  # dict or other
             try:
                 value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["yellow_output_signal"] = value
+                self.control_behavior["orange_output_signal"] = value
             except SchemaError as e:
                 six.raise_from(DataFormatError(e), None)
 

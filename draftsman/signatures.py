@@ -95,7 +95,7 @@ def normalize_signal_id(name):
 SIGNAL_ID = Schema(
     And(
         Use(normalize_signal_id, error="unknown input signal id"),
-        {"name": six.text_type, "type": six.text_type},
+        {Optional("name"): six.text_type, "type": six.text_type},
     )
 )
 
@@ -549,8 +549,13 @@ RAIL_SIGNAL_CONTROL_BEHAVIOR = Schema(
     And(
         Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
         {
+            # Circuit condition
+            Optional("circuit_close_signal"): bool,
+            Optional("circuit_read_signal"): bool,
+            Optional("circuit_condition"): CONDITION,
+            # Rail Signal
             Optional("red_output_signal"): SIGNAL_ID,
-            Optional("yellow_output_signal"): SIGNAL_ID,
+            Optional("orange_output_signal"): SIGNAL_ID,
             Optional("green_output_signal"): SIGNAL_ID,
         },
     )
@@ -561,7 +566,7 @@ RAIL_CHAIN_SIGNAL_CONTROL_BEHAVIOR = Schema(
         Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
         {
             Optional("red_output_signal"): SIGNAL_ID,
-            Optional("yellow_output_signal"): SIGNAL_ID,
+            Optional("orange_output_signal"): SIGNAL_ID,
             Optional("green_output_signal"): SIGNAL_ID,
             Optional("blue_output_signal"): SIGNAL_ID,
         },
@@ -630,6 +635,10 @@ WALL_CONTROL_BEHAVIOR = Schema(
             # Circuit condition
             Optional("circuit_enable_disable"): bool,
             Optional("circuit_condition"): CONDITION,
+            # Wall
+            Optional("circuit_open_gate"): bool,
+            Optional("circuit_read_sensor"): bool,
+            Optional("output_signal"): SIGNAL_ID,
         },
     )
 )
@@ -694,3 +703,24 @@ SCHEDULE = Schema(
     }
 )
 SCHEDULES = Schema([SCHEDULE])
+
+
+# def normalize_mappers(mappers):
+#     for i, mapper in enumerate(mappers):
+#         if isinstance(mapper, (tuple, list)):
+#             mappers[i] = {"index": i}
+#             if mapper[0]:
+#                 mappers[i]["from"] = signal_dict(mapper[0])
+#             if mapper[1]:
+#                 mappers[i]["to"] = signal_dict(mapper[1])
+
+
+# MAPPERS = Schema(
+#     And(
+#         Use(normalize_mappers),
+#         Or(
+#             [{Optional("from"): SIGNAL_ID, Optional("to"): SIGNAL_ID, "index": int}],
+#             None,
+#         ),
+#     )
+# )

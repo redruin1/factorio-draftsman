@@ -18,7 +18,7 @@ import warnings
 
 try:
     from typing import Literal
-except ImportError:
+except ImportError:  # pragma: no coverage
     from typing_extensions import Literal
 
 

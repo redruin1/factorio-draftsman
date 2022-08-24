@@ -103,52 +103,48 @@ For more examples on what exactly you can do with Draftsman, take a look at the 
 ## Usage
 
 ### Installation:
-To install the module from PyPI:
 ```
 pip install factorio-draftsman
 ```
-Then, to perform first time setup run
-```
-draftsman-update
-```
-Note that the `draftsman-update` command *must* be run at least once before use to ensure the module is properly setup.
-Currently I'm looking into solutions to have this command automatically run on install, but for now it must be manually run.
 
---------------------------------------------------------------------------------
+This will install the latest version of Draftsman with a set of pre-generated data from the latest version of vanilla Factorio.
+
+If you want to have the same data validation that Draftsman provides for vanilla data with mods as well, you can re-generate this data with the command line tool `draftsman-update`, which is described in detail [here](TODO).
+
 ### Testing with [unittest](https://docs.python.org/3/library/unittest.html):
 ```
 python -m unittest discover
 ```
 
+Note that testing currently is only *guaranteed* to work with a vanilla install.
+
 ### Coverage with [coverage](https://coverage.readthedocs.io/en/6.3.2/):
 ```
 coverage run
 ```
-
-Note that testing currently is only *guaranteed* to work with a vanilla install
-(no mods).
-
 --------------------------------------------------------------------------------
-### How to use mods:
+### How to use mods with Draftsman:
 
-1. Navigate to the package's installation location
-2. Drop the mods you want into the `factorio-mods` folder
-3. Run `draftsman-update` to reflect any changes made
+Determine where your mods are installed; you can either copy the mods you want into the local `site-packages/draftsman/factorio-mods` folder where Draftsman is installed (which it looks in by default), or you can specify an external path with the `-p` or `--path` argument which can point to your Factorio mods folder or anywhere else convenient.
+Then, simply call `draftsman-update` or `draftsman-update --path some/path/to/mods` to automatically update the data associated with that Draftsman installation.
 
 `draftsman-update` can also be called in script via the method `draftsman.env:update()` if you want to change the mod list on the fly:
 ```python
 # my_update_script.py
 from draftsman.env import update
-update() # equivalent to calling 'draftsman-update' from the command line
+update(verbose=True, path="some/path") # equivalent to 'draftsman-update -v -p some/path'
 ```
 
-Both `mod-info.json` and `mod-settings.dat` are recognized by the script, so you
-can also just change the settings in either of those and the loading process 
-will adjust as well.
+Both `mod-info.json` and `mod-settings.dat` are recognized by `draftsman-update`, so you can also just change the settings in either of those and the loading process will adjust as well.
 
 ## TODO
-* Figure out a way to optimize certain routines
-  * `EntityList.insert()`
+* Investigate `deal` and improve user experience with errors and warnings
+* Add warnings for placement constraints on rails, rail signals and train stops
+* Add constraints on `UpgradePlanner` and `DeconstructionPlanner`
+* `Blueprint.schedules` convenience functions
+* More doctests
+* Add plaintext representations of Entity JSON objects for all entities in addition to blueprintables
+* Update modding documentation guide to reflect 2.0 changes
 * Reevaluate the diamond diagrams for inherited `Entity` subclass
 * Figure out exactly what determines if an `Entity` is flip-able or not
 * Maybe add interface so that mods can include files that can be loaded with Draftsman? (this would be neat)
@@ -156,4 +152,4 @@ will adjust as well.
 * RailPlanner (specify rail paths via turtle-like commands)
 * Custom `data.raw` extraction and formatting?
 * Maybe integrate defaults for more succinct blueprint strings?
-* Look into Lua (or other language) bindings via backport to C
+* Look into Lua (or other language) bindings via backport to C/Cython

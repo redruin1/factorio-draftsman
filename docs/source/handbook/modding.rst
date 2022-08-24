@@ -1,6 +1,44 @@
 How to use mods with Draftsman
 ==============================
 
+How does Draftsman use mods?
+----------------------------
+
+One of the motivations for creating Draftsman was creating a tool for blueprint strings that would be robust to user error, since Factorio itself lacks in this department.
+Factorio gives errors (sometimes), though making them readable was never very high on Wube's list, since 99 percent of the time blueprint strings are modified and generated internally.
+Additionally, there are some operations you can perform on blueprint strings that import fine, but are incorrect from a gameplay standpoint that a user might want to be notified if they set accidentally.
+Draftsman was designed with the intention of making these user errors unlikely and easy to fix, but doing so requires a lot of information on the the actual mechanics of the game itself.
+Information on entities, tiles, instruments, items, signals, and more all need to be known in order to give the user meaningful validation, so Draftsman can know when they go "out-of-bounds".
+
+In order to collect this data in an accurate and robust way, Draftsman tries to emulate the data portion of the Factorio data lifecycle as accurately as possible, and then extracts the needed information from the loaded Lua tables. This makes the data perpetually up to date with every Factorio release, and meaning there is only one location where Factorio's data is actually specified (Wube themselves). This allows us to now know that a "filter-inserter" is a :py:class:`.FilterInserter`, that it is rotatable, circuit connectable, and that it has 5 unique filter slots, all of which we dynamically determined from this load process.
+
+Of course, because we're emulating the game's loading process directly, there's nothing stopping us from including mods into this process as well! 
+Doing so allows us to get the same level of validation that we get on vanilla entities as with modded ones; we can tell if a AAI warehouse's inventory bar exceeds it's inventory size, or if the wire connection distance between a Space Exploration pylon is too great for Factorio to connect, or that the entity ``"ltn-train-sotp"`` does not exist (and should be ``"ltn-train-stop"`` instead).
+
+This process is usually done with the script entry-point named ``draftsman-update``, which can be called from the command line when you install Draftsman:
+
+.. code-block:: console
+
+    (.venv) $ draftsman-update --help
+    usage: draftsman-update [-h] [-v] [-p PATH] [-l] [--no-mods]
+
+    options:
+    -h, --help            show this help message and exit
+    -v, --verbose         Show extra information during the update
+    -p PATH, --path PATH  The path to search for mods; defaults to `python_install/site-packages/draftsman/factorio-mods`
+    -l, --log             Display any 'log()' messages to stdout; any logged messages will be ignored if this argument is not set
+    --no-mods             Only load the 'base' mod and ignore all others; simulates no mods
+
+When you run ``draftsman-update``, the Factorio settings and data stage is run, and then the data is extracted to a set of pickle files, located in the ``draftsman/data`` folder in the installation directory. This data is cached, which means that you only need to run ``draftsman-update`` once every time you change the mod list you're working with.
+
+``draftsman-update`` can also be called in script via the method ``draftsman.env:update()`` if you want to change the mod list on the fly:
+
+.. code-block:: python
+
+    # my_update_script.py
+    from draftsman.env import update
+    update(verbose=True, path="some/path") # equivalent to 'draftsman-update -v -p some/path'
+
 Installing mods
 ---------------
 
@@ -23,9 +61,12 @@ For example, on Windows your mods should be located in ``C:\Users\your_name\AppD
 .. image:: ../../img/handbook/modding/factorio_mods_folder.png
     :alt: The local mods folder for Factorio.
 
-Next, determine where your Draftsman installation is located.
+There are two ways of letting Draftsman know where to look for mods.
+One way is to copy the mods you want to the local ``draftsman/factorio-mods`` folder located in the Draftsman installation location.
+This method is convenient if you want to develop scripts for a particular version of a mod or mods, your actual Factorio modlist changes frequently, or just want to isolate the Draftsman environment from your base Factorio one.
+
 If you installed Draftsman in a virtual environment it should be located in a ``Lib/site-packages`` folder somewhere in your development directory.
-If you installed it to your computer's python installation, check to see where that's installed (depending on your OS) and look for the same ``site-packages`` folder.
+If you installed it to your computer's Python installation, check to see where that's installed (depending on your OS) and look for the same ``site-packages`` folder.
 You should make sure that the version of Draftsman that you're using corresponds the the installation location you put the mods, if you have multiple instances of Draftsman installed.
 
 In that folder you should find a folder titled ``draftsman``, and inside that a folder named ``factorio-mods``:
@@ -37,16 +78,11 @@ Copy and paste the contents from your Factorio mods folder to the ``factorio-mod
 You should include the ``mod-settings.dat`` and ``mod-list.json`` files, as they hold the mod configuration settings you specified in Factorio.
 Any other file that does not end with ``.zip`` will be ignored.
 
-.. NOTE::
+However, it might be more convenient to just associate your Factorio mod folder with Draftsman, where you want to keep a close link between the scripts you're writing and the Factorio mods you're playing. 
+In this case, instead of copying the mods you can specify a ``-p`` or ``--path`` argument to ``draftsman-update`` which changes the search location for mods to that path.
 
-    In Factorio, mods can be loaded as either a zip file, or as a folder.
-    Currently, Draftsman can only properly load zip files, though it will be able to load mod folders as well in the future.
-    A workaround for now is to simply wrap the mod folder in a zip file, according the the `mod naming conventions <https://wiki.factorio.com/Tutorial:Mod_structure#Mod_folder_and_file_structure>`_.
-
-Then, to resolve these changes simply run ``draftsman-update``.
-Again, make sure you're running the correct ``draftsman-update`` for the version of Draftsman that you installed the mods into.
-You can use the ``--verbose`` or ``-v`` flag to get more information about the load process.
-The following is the verbose output of the modlist above:
+Then, to load these changes into Draftsman simply run ``draftsman-update`` if you copied the mods, or ``draftsman-update -p some/path/to/your/mods`` if the mods are located somewhere else.
+You can use the ``--verbose`` or ``-v`` flag to get more information about the load process; the following is something like the verbose output of the modlist above:
 
 .. code-block:: console
 
@@ -360,6 +396,11 @@ The following is the verbose output of the modlist above:
     Update finished.
     hella slick; nothing broke!
 
+.. NOTE::
+
+    In Factorio, mods can be loaded as either a zip file or a folder.
+    Currently, Draftsman can only properly load zip files, though it will be able to load mod folders as well in the future.
+    A workaround for now is to simply wrap the mod folder in a zip file, according the the `mod naming conventions <https://wiki.factorio.com/Tutorial:Mod_structure#Mod_folder_and_file_structure>`_.
 
 Writing scripts with mods
 -------------------------
@@ -454,6 +495,11 @@ This includes custom hooks for placing entities, removing entities, on game load
 A good example of this is the Cargo Rocket Launchpad from the `Space Exploration <https://mods.factorio.com/mod/space-exploration>`_ modpack; This entity has a set of metadata associated with its ``tags`` attribute that is generated when it is placed in the world. 
 This behavior has to be manually mimicked by a script writer in order to get the intended functionality of the entity; there is currently no mechanism to "query" what should happen to the entity when it's placed in the world, or, harder yet, integrate these attributes as part of the structure of the class. 
 It would be convenient to be able to specify a ``destination_location`` attribute for rocket launchpad, but at the moment this relies on the user to implement a custom ``Container`` entity with this behavior, and is not something to be expected to be automatically generated by Draftsman.
+
+.. Importing mods
+.. --------------
+
+.. TODO
 
 Potential Errors
 ----------------

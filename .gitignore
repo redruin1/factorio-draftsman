@@ -27,7 +27,7 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
-*.pkl
+# *.pkl
 .pypirc
 
 # PyInstaller

@@ -1,13 +1,92 @@
 # blueprint.py
 # -*- encoding: utf-8 -*-
 
-# TODO: Add warnings for placement constraints on rails, rail signals and train stops
+# TODO: convert to Vectors
+
+"""
+.. code-block:: python
+
+    {
+        "blueprint": {
+            "item": "blueprint", # The associated item with this structure
+            "label": str, # A user given name for this blueprint
+            "label_color": { # The overall color of the label
+                "r": float[0.0, 1.0] or int[0, 255], # red
+                "g": float[0.0, 1.0] or int[0, 255], # green
+                "b": float[0.0, 1.0] or int[0, 255], # blue
+                "a": float[0.0, 1.0] or int[0, 255]  # alpha (optional)
+            },
+            "icons": [ # A set of signals to act as visual identification
+                {
+                    "signal": {"name": str, "type": str}, # Name and type of signal
+                    "index": int, # In range [1, 4], starting top-left and moving across
+                },
+                ... # Up to 4 icons total
+            ],
+            "description": str, # A user given description for this blueprint
+            "version": int, # The encoded version of Factorio this planner was created 
+                            # with/designed for (64 bits)
+            "snap-to-grid": { # The size of the grid to snap this blueprint to
+                "x": int, # X dimension in units
+                "y": int, # Y dimension in units
+            }
+            "absolute-snapping": bool, # Whether or not to use absolute placement 
+                                       # (defaults to True)
+            "position-relative-to-grid": { # The offset of the grid if using absolute
+                                           # placement
+                "x": int, # X offset in units
+                "y": int, # Y offset in units
+            }
+            "entities": [ # A list of entities in this blueprint
+                {
+                    "name": str, # Name of the entity,
+                    "entity_number": int, # Unique number associated with this entity 
+                    "position": {"x": float, "y": float}, # Position of the entity
+                    ... # Any associated Entity key/value
+                },
+                ...
+            ]
+            "tiles": [ # A list of tiles in this blueprint
+                {
+                    "name": str, # Name of the tile
+                    "position": {"x": int, "y": int}, # Position of the tile
+                },
+                ...
+            ],
+            "schedules": [ # A list of the train schedules in this blueprint
+                {
+                    "schedule": [ # A list of schedule records
+                        {
+                            "station": str, # Name of the stop associated with these
+                                            # conditions
+                            "wait_conditions": [
+                                {
+                                    "type": str, # Name of the type of condition
+                                    "compare_type": "and" or "or",
+                                    "ticks": int, # If using "time" or "inactivity"
+                                    "condition": CONDITION, # If a circuit condition is 
+                                                            # needed
+                                }
+                            ],
+                        },
+                        ...
+                    ]
+                    "locomotives": [int, ...] # A list of ints, corresponding to
+                                              # "entity_number" in "entities"
+                },
+                ...
+            ]
+            
+        }
+    }
+"""
 
 
 from __future__ import unicode_literals
 
 from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.association import Association
+from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.entitylike import EntityLike
 from draftsman.classes.entitylist import EntityList
 from draftsman.classes.tilelist import TileList
@@ -17,7 +96,6 @@ from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.error import (
     DraftsmanError,
-    IncorrectBlueprintTypeError,
     UnreasonablySizedBlueprintError,
     DataFormatError,
     InvalidAssociationError,
@@ -27,21 +105,16 @@ from draftsman.tile import Tile
 from draftsman import utils
 from draftsman.warning import DraftsmanWarning
 
-from draftsman.data.signals import signal_dict
-
 from builtins import int
 import copy
-import json
 import math
 from schema import SchemaError
 import six
 from typing import Sequence, Union
 import warnings
 
-# import weakref
 
-
-class Blueprint(Transformable, TileCollection, EntityCollection):
+class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     """
     Factorio Blueprint class. Contains and maintains a list of ``EntityLikes``
     and ``Tiles`` and a selection of other metadata. Inherits all the functions
@@ -64,88 +137,40 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         :param blueprint_string: Either a Factorio-format blueprint string or a
             ``dict`` object with the desired keys in the correct format.
         """
-        if blueprint is None:
-            self.setup()
-        elif isinstance(blueprint, six.string_types):
-            self.load_from_string(blueprint)
-        elif isinstance(blueprint, dict):
-            self.setup(**blueprint)
-        else:
-            raise TypeError("'blueprint' must be a str, dict, or None")
-
-    @utils.reissue_warnings
-    def load_from_string(self, blueprint_string):
-        # type: (str) -> None
-        """
-        Load the Blueprint with the contents of ``blueprint_string``. Raises
-        ``draftsman.warning.DraftsmanWarning`` if there are any unrecognized
-        keywords in the blueprint string.
-
-        :param blueprint_string: Factorio-encoded blueprint string.
-
-        :exception MalformedBlueprintStringError: If the input string is not
-            decodable to a JSON object.
-        :exception IncorrectBlueprintTypeError: If the input string is of a
-            different type than the base class, such as a ``BlueprintBook``.
-        """
-        root = utils.string_to_JSON(blueprint_string)
-        # Ensure that the blueprint string actually points to a blueprint
-        if "blueprint" not in root:
-            raise IncorrectBlueprintTypeError(
-                "Root element of Blueprint string not 'blueprint'"
-            )
-
-        self.setup(**root["blueprint"])
+        super(Blueprint, self).__init__(
+            root_item="blueprint", item="blueprint", init_data=blueprint
+        )
 
     @utils.reissue_warnings
     def setup(self, **kwargs):
-        """
-        Setup the Blueprint's parameters with the input keywords as values.
-        Raises ``draftsman.warning.DraftsmanWarning`` if any of the input
-        keywords are unrecognized.
-
-        :param kwargs: The dict of all keywords to set in the blueprint.
-
-        :Example:
-
-        .. code-block:: python
-
-            blueprint = Blueprint()
-            blueprint.setup(label="test", description="testing...")
-            assert blueprint.label == "test"
-            assert blueprint.description == "testing..."
-        """
-        self.root = dict()
+        self._root = {}
 
         # Item (type identifier)
-        self.root["item"] = "blueprint"
+        self._root["item"] = "blueprint"
         kwargs.pop("item", None)
 
         ### METADATA ###
-
-        if "label" in kwargs:
-            self.label = kwargs.pop("label")
-
-        if "label_color" in kwargs:
-            self.label_color = kwargs.pop("label_color")
-
-        if "icons" in kwargs:
-            self.icons = kwargs.pop("icons")
+        self.label = kwargs.pop("label", None)
+        self.label_color = kwargs.pop("label_color", None)
+        self.description = kwargs.pop("description", None)
+        self.icons = kwargs.pop("icons", None)
 
         if "version" in kwargs:
             self.version = kwargs.pop("version")
         else:
             self.version = utils.encode_version(*__factorio_version_info__)
 
-        # Snapping grid
+        # Snapping grid parameters
+        # Handle their true keys, as well as the Pythonic attribute label
         if "snap-to-grid" in kwargs:
             self.snapping_grid_size = kwargs.pop("snap-to-grid")
         elif "snapping_grid_size" in kwargs:
             self.snapping_grid_size = kwargs.pop("snapping_grid_size")
 
-        self.snapping_grid_position = None
         if "snapping_grid_position" in kwargs:
             self.snapping_grid_position = kwargs.pop("snapping_grid_position")
+        else:
+            self.snapping_grid_position = None
 
         if "absolute-snapping" in kwargs:
             self.absolute_snapping = kwargs.pop("absolute-snapping")
@@ -158,38 +183,30 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
             self.position_relative_to_grid = kwargs.pop("position_relative_to_grid")
 
         ### INTERNAL ###
-
         self._area = None
         self._tile_width = 0
         self._tile_height = 0
 
         ### DATA ###
-
         # Create spatial hashing objects to make spatial queries much quicker
         self._tile_map = SpatialHashMap()
         self._entity_map = SpatialHashMap()
 
         # Data lists
         if "entities" in kwargs:
-            self.root["entities"] = EntityList(self, kwargs.pop("entities"))
-            # self.entities = EntityList(self, kwargs.pop("entities"))
+            self._root["entities"] = EntityList(self, kwargs.pop("entities"))
         else:
-            self.root["entities"] = EntityList(self)
-            # self.entities = EntityList(self)
+            self._root["entities"] = EntityList(self)
 
         if "tiles" in kwargs:
-            self.root["tiles"] = TileList(self, kwargs.pop("tiles"))
-            # self.tiles = TileList(self, kwargs.pop("tiles"))
+            self._root["tiles"] = TileList(self, kwargs.pop("tiles"))
         else:
-            self.root["tiles"] = TileList(self)
-            # self.tiles = TileList(self)
+            self._root["tiles"] = TileList(self)
 
         if "schedules" in kwargs:
-            # self.root["schedules"] = kwargs.pop("schedules")
-            self.schedules = kwargs.pop("schedules")
+            self._root["schedules"] = kwargs.pop("schedules")
         else:
-            # self.root["schedules"] = []
-            self.schedules = []
+            self._root["schedules"] = []
 
         # Issue warnings for any keyword not recognized by Blueprint
         for unused_arg in kwargs:
@@ -232,33 +249,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     # =========================================================================
 
     @property
-    def label(self):
-        # type: () -> str
-        """
-        The Blueprint's label (title).
-
-        :getter: Gets the label, or ``None`` if not set.
-        :setter: Sets the label of the ``Blueprint``.
-        :type: ``str``
-
-        :exception TypeError: When setting ``label`` to something other than
-            ``str`` or ``None``.
-        """
-        return self.root.get("label", None)
-
-    @label.setter
-    def label(self, value):
-        # type: (str) -> None
-        if value is None:
-            self.root.pop("label", None)
-        elif isinstance(value, six.string_types):
-            self.root["label"] = six.text_type(value)
-        else:
-            raise TypeError("`label` must be a string or None")
-
-    # =========================================================================
-
-    @property
     def label_color(self):
         # type: () -> dict
         """
@@ -290,143 +280,19 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
             print(blueprint.label_color)
             # {'r': 127.0, 'g': 127.0, 'b': 127.0}
         """
-        return self.root.get("label_color", None)
+        return self._root.get("label_color", None)
 
     @label_color.setter
     def label_color(self, value):
         # type: (dict) -> None
         if value is None:
-            self.root.pop("label_color", None)
+            self._root.pop("label_color", None)
             return
 
         try:
-            self.root["label_color"] = signatures.COLOR.validate(value)
+            self._root["label_color"] = signatures.COLOR.validate(value)
         except SchemaError as e:
             six.raise_from(DataFormatError(e), None)
-
-    # =========================================================================
-
-    @property
-    def icons(self):
-        # type: () -> list
-        """
-        The icons of the Blueprint.
-
-        Stored as a list of ``ICON`` objects, which are dicts that contain a
-        ``SIGNAL_ID`` and an ``index`` key. Icons can be specified in this
-        format, or they can be specified more succinctly with a simple list of
-        signal names as strings.
-
-        All signal entries must be a valid signal id. If the input format is a
-        list of strings, the index of each item will be it's place in the list
-        + 1. The number of entries cannot exceed 4, or else a
-        ``DataFormatError`` is raised.
-
-        :getter: Gets the list if icons, or ``None`` if not set.
-        :setter: Sets the icons of the Blueprint. Removes the attribute if set
-            to ``None``.
-        :type: ``dict{"index": int, "signal": {"name": str, "type": str}}``
-
-        :exception DataFormatError: If the set value does not match the
-            specification above.
-        """
-        return self.root.get("icons", None)
-
-    @icons.setter
-    def icons(self, value):
-        # type: (list[Union[dict, str]]) -> None
-        if value is None:
-            self.root.pop("icons", None)
-            return
-        try:
-            self.root["icons"] = signatures.ICONS.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
-
-    # =========================================================================
-
-    @property
-    def description(self):
-        # type: () -> str
-        """
-        The description of the Blueprint. Visible when hovering over it when
-        inside someone's inventory.
-
-        :getter: Gets the description, or ``None`` if not set.
-        :setter: Sets the description of the Blueprint. Removes the attribute if
-            set to ``None``.
-        :type: ``str``
-
-        :exception TypeError: If setting to anything other than a ``str`` or
-            ``None``.
-        """
-        return self.root.get("description", None)
-
-    @description.setter
-    def description(self, value):
-        # type: (str) -> None
-        if value is None:
-            self.root.pop("description", None)
-        elif isinstance(value, six.string_types):
-            self.root["description"] = six.text_type(value)
-        else:
-            raise TypeError("'description' must be a string or None")
-
-    # =========================================================================
-
-    @property
-    def version(self):
-        # type: () -> int
-        """
-        The version of Factorio the Blueprint was created in/intended for.
-
-        The Blueprint ``version`` is a 64-bit integer, which is a bitwise-OR
-        of four 16-bit numbers. You can interpret this number more clearly by
-        decoding it with :py:func:`draftsman.utils.decode_version`, or you can
-        use the functions :py:func:`version_tuple` or :py:func:`version_string`
-        which will give you a more readable output. This version number defaults
-        to the version of Factorio that Draftsman is currently initialized with.
-
-        The version can be set either as said 64-bit int, or a sequence of
-        ints, usually a list or tuple, which is then encoded into the combined
-        representation. The sequence is defined as:
-        ``[major_version, minor_version, patch, development_release]``
-        with ``patch`` and ``development_release`` defaulting to 0.
-
-        .. seealso::
-
-            `<https://wiki.factorio.com/Version_string_format>`_
-
-        :getter: Gets the version, or ``None`` if not set.
-        :setter: Sets the version of the Blueprint. Removes the attribute if set
-            to ``None``.
-        :type: ``int``
-
-        :exception TypeError: If set to anything other than an ``int``, sequence
-            of ``ints``, or ``None``.
-
-        :example:
-
-        .. code-block:: python
-
-            blueprint.version = (1, 0) # version 1.0.0.0
-            assert blueprint.version == 281474976710656
-            assert blueprint.version_tuple() == (1, 0, 0, 0)
-            assert blueprint.version_string() == "1.0.0.0"
-        """
-        return self.root.get("version", None)
-
-    @version.setter
-    def version(self, value):
-        # type: (Union[int, Sequence[int]]) -> None
-        if value is None:
-            self.root.pop("version", None)
-        elif isinstance(value, int):
-            self.root["version"] = value
-        elif isinstance(value, Sequence):
-            self.root["version"] = utils.encode_version(*value)
-        else:
-            raise TypeError("'version' must be an int, sequence of ints or None")
 
     # =========================================================================
 
@@ -446,22 +312,22 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
             set to ``None``
         :type: ``dict{"x": int, "y": int}``
         """
-        return self.root.get("snap-to-grid", None)
+        return self._root.get("snap-to-grid", None)
 
     @snapping_grid_size.setter
     def snapping_grid_size(self, value):
         # type: (Union[dict, Sequence]) -> None
         if value is None:
-            self.root.pop("snap-to-grid", None)
+            self._root.pop("snap-to-grid", None)
             return
 
         try:
-            self.root["snap-to-grid"] = {
+            self._root["snap-to-grid"] = {
                 "x": math.floor(value["x"]),
                 "y": math.floor(value["y"]),
             }
         except TypeError:
-            self.root["snap-to-grid"] = {
+            self._root["snap-to-grid"] = {
                 "x": math.floor(value[0]),
                 "y": math.floor(value[1]),
             }
@@ -525,15 +391,15 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.
         """
-        return self.root.get("absolute-snapping", None)
+        return self._root.get("absolute-snapping", None)
 
     @absolute_snapping.setter
     def absolute_snapping(self, value):
         # type: (bool) -> None
         if value is None:
-            self.root.pop("absolute-snapping", None)
+            self._root.pop("absolute-snapping", None)
         elif isinstance(value, bool):
-            self.root["absolute-snapping"] = value
+            self._root["absolute-snapping"] = value
         else:
             raise TypeError("'absolute_snapping' must be a bool or None")
 
@@ -550,22 +416,22 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         :setter: Sets the a
         :type: ``dict{"x": int, "y": int}``
         """
-        return self.root.get("position-relative-to-grid", None)
+        return self._root.get("position-relative-to-grid", None)
 
     @position_relative_to_grid.setter
     def position_relative_to_grid(self, value):
         # type: (Union[dict, Sequence]) -> None
         if value is None:
-            self.root.pop("position-relative-to-grid", None)
+            self._root.pop("position-relative-to-grid", None)
             return
 
         try:
-            self.root["position-relative-to-grid"] = {
+            self._root["position-relative-to-grid"] = {
                 "x": math.floor(value["x"]),
                 "y": math.floor(value["y"]),
             }
         except TypeError:
-            self.root["position-relative-to-grid"] = {
+            self._root["position-relative-to-grid"] = {
                 "x": math.floor(value[0]),
                 "y": math.floor(value[1]),
             }
@@ -577,12 +443,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         # type: () -> EntityList
         """
         The list of the Blueprint's entities. Internally the list is a custom
-        class named :py:class:`draftsman.classes.EntityList`, which has all the
-        normal properties of a regular list, as well as some extra features.
-        For more information on ``EntityList``, check out this writeup
+        class named :py:class:`.EntityList`, which has all the normal properties
+        of a regular list, as well as some extra features. For more information
+        on ``EntityList``, check out this writeup
         :ref:`here <handbook.blueprints.blueprint_differences>`.
         """
-        return self.root["entities"]
+        return self._root["entities"]
 
     @entities.setter
     def entities(self, value):
@@ -590,12 +456,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         self._entity_map.clear()
 
         if value is None:
-            self.root["entities"].clear()
+            self._root["entities"].clear()
         elif isinstance(value, list):
-            self.root["entities"] = EntityList(self, value)
+            self._root["entities"] = EntityList(self, value)
         elif isinstance(value, EntityList):
             # Just don't ask
-            self.root["entities"] = copy.deepcopy(value, memo={"new_parent": self})
+            self._root["entities"] = copy.deepcopy(value, memo={"new_parent": self})
         else:
             raise TypeError("'entities' must be an EntityList, list, or None")
 
@@ -604,17 +470,13 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def on_entity_insert(self, entitylike, merge):
         # type: (EntityLike, bool) -> EntityLike
         """
-        Callback function for when an ``EntityLike`` is added to this
-        Blueprint's ``entities`` list. Handles the addition of the entity into
-        the  Blueprint's ``SpatialHashMap``, and recalculates it's dimensions.
+        Callback function for when an :py:class:`.EntityLike` is added to this
+        Blueprint's :py:attr:`entities` list. Handles the addition of the entity
+        into :py:attr:`entity_map`, and recalculates it's dimensions.
+
+        :raises UnreasonablySizedBlueprintError: If inserting the new entity
+            causes the blueprint to exceed 10,000 x 10,000 tiles in dimension.
         """
-        # Check for overlapping entities(?)
-        # self.entity_map.check_for_overlapping(entitylike)
-
-        # If merging is allowed, we want to take care of deleting duplicate/
-        # modifying existing entities *before* we get to inputting them into the
-        # data list or spatial structure
-
         # Here we issue warnings for overlapping entities, modify existing
         # entities if merging is enabled and delete excess entities in entitylike
         entitylike = self.entity_map.handle_overlapping(entitylike, merge)
@@ -646,9 +508,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def on_entity_set(self, old_entitylike, new_entitylike):
         # type: (EntityLike, EntityLike) -> None
         """
-        Callback function for when an entity is overwritten in a Blueprint's
-        ``entities`` list. Handles the removal of the old ``EntityLike`` from
-        the ``SpatialHashMap`` and adds the new one in it's stead.
+        Callback function for when an :py:class:`.EntityLike` is overwritten in
+        a Blueprint's :py:attr:`entities` list. Handles the removal of the old
+        ``EntityLike`` from :py:attr:`entity_map` and adds the new one in it's
+        stead.
         """
         # Remove the entity and its children
         self.entity_map.recursive_remove(old_entitylike)
@@ -671,9 +534,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     def on_entity_remove(self, entitylike):
         # type: (EntityLike) -> None
         """
-        Callback function for when an entity is removed from a Blueprint's
-        ``entities`` list. Handles the removal of the ``EntityLike`` from the
-        ``Blueprint``.
+        Callback function for when an :py:class:`.EntityLike` is removed from a
+        Blueprint's :py:attr:`entities` list. Handles the removal of the
+        ``EntityLike`` from :py:attr:`entity_map`.
         """
         # Handle entity specific
         entitylike.on_remove(self)
@@ -722,7 +585,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
             blueprint.tiles = None
             assert len(blueprint.tiles) == 0
         """
-        return self.root["tiles"]
+        return self._root["tiles"]
 
     @tiles.setter
     def tiles(self, value):
@@ -730,11 +593,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         self.tile_map.clear()
 
         if value is None:
-            self.root["tiles"] = TileList(self)
+            self._root["tiles"] = TileList(self)
         elif isinstance(value, list):
-            self.root["tiles"] = TileList(self, value)
+            self._root["tiles"] = TileList(self, value)
         elif isinstance(value, TileList):
-            self.root["tiles"] = copy.deepcopy(value)
+            self._root["tiles"] = copy.deepcopy(value)
         else:
             raise TypeError("'tiles' must be a TileList, list, or None")
 
@@ -742,6 +605,14 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
     def on_tile_insert(self, tile, merge):
         # type: (Tile, bool) -> None
+        """
+        Callback function for when a :py:class:`.Tile` is added to this
+        Blueprint's :py:attr:`tiles` list. Handles the addition of the tile
+        into :py:attr:`tile_map`, and recalculates it's dimensions.
+
+        :raises UnreasonablySizedBlueprintError: If inserting the new tile
+            causes the blueprint to exceed 10,000 x 10,000 tiles in dimension.
+        """
         # Handle overlapping and merging
         tile = self.tile_map.handle_overlapping(tile, merge)
 
@@ -769,20 +640,30 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
     def on_tile_set(self, old_tile, new_tile):
         # type: (Tile, Tile) -> None
+        """
+        Callback function for when a :py:class:`.Tile` is overwritten in a
+        Blueprint's :py:attr:`tiles` list. Handles the removal of the old ``Tile``
+        from :py:attr:`tile_map` and adds the new one in it's stead.
+        """
         self.tile_map.remove(old_tile)
         self.tile_map.handle_overlapping(new_tile, False)
         self.tile_map.add(new_tile)
 
         # Unfortunately, this can't be here because we need to recalculate after
         # modifying the base list, which happens *after* this function finishes
-        # self.recalculate_area()
+        # self.recalculate_area() # TODO
 
     def on_tile_remove(self, tile):
         # type: (Tile) -> None
+        """
+        Callback function for when a :py:class:`.Tile` is removed from a
+        Blueprint's :py:attr:`tiles` list. Handles the removal of the ``Tile``
+        from the :py:attr:`tile_map`.
+        """
         self.tile_map.remove(tile)
 
         # Disdain...
-        # self.recalculate_area()
+        # self.recalculate_area() # TODO
 
     # =========================================================================
 
@@ -822,16 +703,16 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         :exception DataFormatError: If set to anything other than a ``list`` of
             :py:data:`.SCHEDULE`.
         """
-        return self.root["schedules"]
+        return self._root["schedules"]
 
     @schedules.setter
     def schedules(self, value):
         # type: (list) -> None
         if value is None:
-            self.root["schedules"] = []
+            self._root["schedules"] = []
             return
         try:
-            self.root["schedules"] = signatures.SCHEDULES.validate(value)
+            self._root["schedules"] = signatures.SCHEDULES.validate(value)
         except SchemaError as e:
             six.raise_from(DataFormatError(e), None)
 
@@ -902,25 +783,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
     # Utility functions
     # =========================================================================
 
-    def version_tuple(self):
-        # type: () -> tuple(int, int, int, int)
-        """
-        Returns the version of the Blueprint as a 4-length tuple.
-
-        :returns: a 4 length tuple in the format ``(major, minor, patch, dev_ver)``.
-        """
-        return utils.decode_version(self.root["version"])
-
-    def version_string(self):
-        # type: () -> str
-        """
-        Returns the version of the Blueprint in human-readable string.
-
-        :returns: a ``str`` of 4 version numbers joined by a '.' character.
-        """
-        version_tuple = utils.decode_version(self.root["version"])
-        return utils.version_tuple_to_string(version_tuple)
-
     def recalculate_area(self):
         # type: () -> None
         """
@@ -957,11 +819,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         # (We exclude "entities" and "tiles" because these objects are not
         # copyable for space and recursion depth reasons)
         out_dict = {
-            x: self.root[x] for x in self.root if x not in {"entities", "tiles"}
+            x: self._root[x] for x in self._root if x not in {"entities", "tiles"}
         }
 
         # This associates each entity with a numeric index, which we use later
-        flattened_list = utils.flatten_entities(self.root["entities"])
+        flattened_list = utils.flatten_entities(self._root["entities"])
 
         # Convert all Entities into dicts
         out_dict["entities"] = []
@@ -1057,27 +919,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
 
         return {"blueprint": out_dict}
 
-    def to_string(self):  # pragma: no coverage
-        # type: () -> str
-        """
-        Returns the Blueprint as an encoded Factorio blueprint string.
-
-        :returns: The zlib-compressed, base-64 encoded string.
-        """
-        return utils.JSON_to_string(self.to_dict())
-
-    def __setitem__(self, key, value):
-        self.root[key] = value
-
-    def __getitem__(self, key):
-        return self.root[key]
-
-    def __contains__(self, item):
-        return item in self.root
-
-    def __str__(self):  # pragma: no coverage
-        return "<Blueprint>" + json.dumps(self.to_dict()["blueprint"], indent=2)
-
     def __deepcopy__(self, memo):
         # type: (dict) -> Blueprint
         """
@@ -1097,13 +938,13 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
         # deepcopying those depend on some of the other attributes, so we load
         # those first
         for k, v in self.__dict__.items():
-            if k == "_entity_map" or k == "root":
+            if k == "_entity_map" or k == "_root":
                 continue
             else:
                 setattr(result, k, copy.deepcopy(v, memo))
 
         # Finally we can copy the root (most notably EntityList)
-        v = getattr(self, "root")
+        v = getattr(self, "_root")
         copied_dict = {}
         for rk, rv in v.items():
             if rk == "entities":
@@ -1114,6 +955,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection):
                 copied_dict[rk] = copy.deepcopy(rv, memo)
             else:
                 copied_dict[rk] = copy.deepcopy(rv, memo)
-        setattr(result, "root", copied_dict)
+        setattr(result, "_root", copied_dict)
 
         return result

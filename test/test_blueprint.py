@@ -70,6 +70,7 @@ class BlueprintTesting(unittest.TestCase):
             blueprint.to_dict()["blueprint"],
             {"item": "blueprint", "version": encode_version(1, 1, 54, 0)},
         )
+        # This doesn't work on Python 2 (I believe) because the order is not guaranteed
         # self.assertEqual(
         #     blueprint.to_string(),
         #     "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTI0s7A0q60FAHmRE1c="
@@ -84,7 +85,7 @@ class BlueprintTesting(unittest.TestCase):
         with self.assertRaises(TypeError):
             Blueprint(TypeError)
 
-        # Valid format, but blueprint book
+        # Valid format, but incorrect type
         with self.assertRaises(IncorrectBlueprintTypeError):
             blueprint = Blueprint(
                 "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
@@ -668,9 +669,9 @@ class BlueprintTesting(unittest.TestCase):
                 "version": encode_version(*__factorio_version_info__),
             },
         )
-        self.assertIs(blueprint.entities, blueprint.root["entities"])
-        self.assertIs(blueprint.tiles, blueprint.root["tiles"])
-        self.assertIs(blueprint.schedules, blueprint.root["schedules"])
+        self.assertIs(blueprint.entities, blueprint._root["entities"])
+        self.assertIs(blueprint.tiles, blueprint._root["tiles"])
+        self.assertIs(blueprint.schedules, blueprint._root["schedules"])
 
         # Copper wire connection case
         blueprint.entities.append("power-switch", id="a")
@@ -891,14 +892,14 @@ class BlueprintTesting(unittest.TestCase):
     def test_getitem(self):
         blueprint = Blueprint()
         blueprint.label = "testing"
-        self.assertIs(blueprint["label"], blueprint.root["label"])
+        self.assertIs(blueprint["label"], blueprint._root["label"])
 
     # =========================================================================
 
     def test_setitem(self):
         blueprint = Blueprint()
         blueprint["label"] = "testing"
-        self.assertEqual(blueprint["label"], blueprint.root["label"])
+        self.assertEqual(blueprint["label"], blueprint._root["label"])
 
     # =========================================================================
 

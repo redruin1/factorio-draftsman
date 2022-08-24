@@ -28,7 +28,6 @@ from draftsman._factorio_version import __factorio_version_info__
 
 import argparse
 from collections import OrderedDict
-import copy
 import json
 import lupa
 import os
@@ -36,6 +35,8 @@ import pickle
 import re
 import struct
 import zipfile
+
+# print(f"Using {lupa.LuaRuntime().lua_implementation} (compiled with {lupa.LUA_VERSION})")
 
 
 mod_archive_pattern = "([\\w\\D]+)_([\\d\\.]+)\\."
@@ -522,7 +523,7 @@ def extract_mods(loaded_mods, data_location, verbose):
         out_mods[mod] = version_string_to_tuple(loaded_mods[mod].version)
 
     with open(os.path.join(data_location, "mods.pkl"), "wb") as out:
-        pickle.dump(out_mods, out, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(out_mods, out, 2)
 
     if verbose:
         print("Extracted mods...")
@@ -927,7 +928,7 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     entities["flippable"] = is_flippable
 
     with open(os.path.join(data_location, "entities.pkl"), "wb") as out:
-        pickle.dump(entities, out, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(entities, out, 2)
 
     if verbose:
         print("Extracted entities...")
@@ -964,7 +965,7 @@ def extract_instruments(lua, data_location, verbose):
 
     with open(os.path.join(data_location, "instruments.pkl"), "wb") as out:
         instrument_data = [instrument_raw, instrument_index, instrument_names]
-        pickle.dump(instrument_data, out, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(instrument_data, out, 2)
 
     if verbose:
         print("Extracted instruments...")
@@ -980,7 +981,7 @@ def extract_items(lua, data_location, verbose, sort_tuple):
     sorted_items, sorted_subgroups, sorted_groups = sort_tuple
     with open(os.path.join(data_location, "items.pkl"), "wb") as out:
         items = [sorted_items, sorted_subgroups, sorted_groups]
-        pickle.dump(items, out, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(items, out, 2)
 
     if verbose:
         print("Extracted items...")
@@ -1014,7 +1015,7 @@ def extract_modules(lua, data_location, verbose, sort_tuple):
         modules_raw[name] = unsorted_modules_raw[name]
 
     with open(os.path.join(data_location, "modules.pkl"), "wb") as out:
-        pickle.dump([modules_raw, out_categories], out, pickle.HIGHEST_PROTOCOL)
+        pickle.dump([modules_raw, out_categories], out, 2)
 
     if verbose:
         print("Extracted modules...")
@@ -1059,7 +1060,7 @@ def extract_recipes(lua, data_location, verbose, sort_tuple):
 
     with open(os.path.join(data_location, "recipes.pkl"), "wb") as out:
         data = [recipes, out_categories, for_machine]
-        pickle.dump(data, out, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(data, out, 2)
 
     if verbose:
         print("Extracted recipes...")
@@ -1131,7 +1132,7 @@ def extract_signals(lua, data_location, verbose, sort_tuple):
             fluid_signals,
             virtual_signals,
         ]
-        pickle.dump(data, out, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(data, out, 2)
 
     if verbose:
         print("Extracted signals...")
@@ -1163,7 +1164,7 @@ def extract_tiles(lua, data_location, verbose):
         out_tiles[tile] = tiles[tile]
 
     with open(os.path.join(data_location, "tiles.pkl"), "wb") as out:
-        pickle.dump(out_tiles, out, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(out_tiles, out, 2)
 
     if verbose:
         print("Extracted tiles...")
@@ -1172,7 +1173,7 @@ def extract_tiles(lua, data_location, verbose):
 # =============================================================================
 
 
-def update(verbose=False, show_logs=False, no_mods=False):
+def update(verbose=False, path=None, show_logs=False, no_mods=False):
     """
     Updates the data in the :py:mod:`.draftsman.data` modules.
 
@@ -1185,8 +1186,11 @@ def update(verbose=False, show_logs=False, no_mods=False):
     env_dir = os.path.dirname(__file__)
     # Create some quick access folders
     factorio_data = os.path.join(env_dir, "factorio-data")
-    factorio_mods = os.path.join(env_dir, "factorio-mods")
     data_location = os.path.join(env_dir, "data")
+    if path is None:
+        factorio_mods = os.path.join(env_dir, "factorio-mods")
+    else:
+        factorio_mods = path
 
     if verbose:
         print("Reading mods from:", factorio_mods)
@@ -1252,8 +1256,12 @@ def update(verbose=False, show_logs=False, no_mods=False):
 
     # This shouldn't need to be done, but lets create the factorio-mod folder if
     # it doesn't exist in case the user deletes the whole thing accidently
-    if not os.path.isdir(factorio_mods):
+    if path is None and not os.path.isdir(factorio_mods):
         os.mkdir(factorio_mods)
+
+    # Check that our path actually exists (in case it was user specified)
+    if not os.path.isdir(factorio_mods):
+        raise OSError("Directory '{}' not found".format(factorio_mods))
 
     # Attempt to get the list of enabled mods from mod-list.json
     enabled_mod_list = {}
@@ -1261,13 +1269,15 @@ def update(verbose=False, show_logs=False, no_mods=False):
         with open(os.path.join(factorio_mods, "mod-list.json")) as mod_list_file:
             mod_json = json.load(mod_list_file)
             for mod in mod_json["mods"]:
-                enabled_mod_list[mod["name"]] = mod["enabled"] and not no_mods
+                enabled_mod_list[mod["name"].replace(" ", "")] = (
+                    mod["enabled"] and not no_mods
+                )
     except FileNotFoundError:  # If no such file is found
         # Every mod is enabled by default, unless `no_mods` is True
         enabled_mod_list["base"] = True
         for mod_obj in os.listdir(factorio_mods):
             if mod_obj.lower().endswith(".zip"):
-                mod_name = mod_archive_regex.match(mod_obj).group(1)
+                mod_name = mod_archive_regex.match(mod_obj).group(1).replace(" ", "")
                 enabled_mod_list[mod_name] = not no_mods
             elif os.path.isdir(os.path.join(factorio_mods, mod_obj)):
                 mod_name = mod_obj
@@ -1291,7 +1301,7 @@ def update(verbose=False, show_logs=False, no_mods=False):
         if mod_obj.lower().endswith(".zip"):
             # Zip file
             m = mod_archive_regex.match(mod_obj)
-            mod_name = m.group(1)
+            mod_name = m.group(1).replace(" ", "")
             external_mod_version = m.group(2)
             files = zipfile.ZipFile(mod_location, mode="r")
             # There is no restriction on the name of the folder, just that there
@@ -1462,13 +1472,13 @@ def update(verbose=False, show_logs=False, no_mods=False):
             internal_folder=internal_folder,
             version=mod_version,
             archive=archive,
-            location="./factorio-mods/" + mod_name,  # maybe absolute?
+            location="./factorio-mods/" + mod_name,  # maybe absolute?,
             info=mod_info,
             files=files,
             data=mod_data,
         )
         # If a mod with this name already exists
-        if mod_name in mods:
+        if mod_name in mods and verbose:
             # We also issue warnings regardless of verbosity, as this is likely
             # undesired behavior
             print(
@@ -1762,10 +1772,17 @@ def main():
         help="Show extra information during the update",
     )
     parser.add_argument(
+        "-p",
+        "--path",
+        type=str,
+        help="The path to search for mods; defaults to "
+        "`python_install/site-packages/draftsman/factorio-mods`",
+    )
+    parser.add_argument(
         "-l",
         "--log",
         action="store_true",
-        help="Display any 'log()' messages to stdout; any logged messages will"
+        help="Display any 'log()' messages to stdout; any logged messages will "
         "be ignored if this argument is not set",
     )
     parser.add_argument(
@@ -1774,5 +1791,7 @@ def main():
         help="Only load the 'base' mod and ignore all others; simulates no mods",
     )
     args = parser.parse_args()
-    update(verbose=args.verbose, show_logs=args.log, no_mods=args.no_mods)
+    update(
+        verbose=args.verbose, path=args.path, show_logs=args.log, no_mods=args.no_mods
+    )
     print("hella slick; nothing broke!")

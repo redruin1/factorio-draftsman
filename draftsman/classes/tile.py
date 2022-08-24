@@ -1,6 +1,14 @@
 # tile.py
 # -*- encoding: utf-8 -*-
 
+"""
+.. code-block:: python
+
+    {
+        "name": str, # Name of the tile
+        "position": {"x": int, "y": int} # Position of the tile
+    }
+"""
 
 from __future__ import unicode_literals
 

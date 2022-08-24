@@ -1,7 +1,5 @@
 # collisionobject.py
 
-# TODO: use some kind of point class
-
 from draftsman.classes.vector import Vector
 
 from draftsman.constants import Direction

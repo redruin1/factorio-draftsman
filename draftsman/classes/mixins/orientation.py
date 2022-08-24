@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.warning import ValueWarning
+from draftsman.utils import Rectangle
 
 import warnings
 
@@ -21,6 +22,11 @@ class OrientationMixin(object):
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(OrientationMixin, self).__init__(name, similar_entities, **kwargs)
+
+        old = self._collision_set.shapes[0]
+        width = old.bot_right[0] - old.top_left[0]
+        height = old.bot_right[1] - old.top_left[1]
+        self._collision_set.shapes[0] = Rectangle((0, 0), width, height, 0)
 
         self.orientation = 0.0
         if "orientation" in kwargs:
@@ -57,7 +63,10 @@ class OrientationMixin(object):
     @orientation.setter
     def orientation(self, value):
         # type: (float) -> None
-        if value is None or isinstance(value, float):
+        if value is None:
+            self._orientation = value
+            self._collision_set.shapes[0].angle = 0
+        elif isinstance(value, float):
             if value is not None and not 0.0 <= value < 1.0:
                 warnings.warn(
                     "Orientation not in range [0.0, 1.0); will be cast to {} on import".format(
@@ -67,6 +76,7 @@ class OrientationMixin(object):
                     stacklevel=2,
                 )
             self._orientation = value
+            self._collision_set.shapes[0].angle = (value % 1) * 360.0
         else:
             raise TypeError("'orientation' must be a float or None")
 
