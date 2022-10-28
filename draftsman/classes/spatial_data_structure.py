@@ -123,7 +123,7 @@ class SpatialDataStructure(object):
             ``[[float, float], [float, float]]``.
         :param limit: A maximum amount of entities to return.
 
-        :returns: A ``list`` of all entities that intersect the point. Can be
+        :returns: A ``list`` of all entities that intersect the area. Can be
             empty.
         """
         pass
