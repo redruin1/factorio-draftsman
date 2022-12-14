@@ -8,6 +8,7 @@ from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -20,24 +21,24 @@ class GeneratorTesting(unittest.TestCase):
         generator = Generator("steam-engine")
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             Generator("steam-engine", unused_keyword="whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             Generator("not a generator")
 
     def test_mergable_with(self):
         gen1 = Generator("steam-engine")
         gen2 = Generator("steam-engine", tags={"some": "stuff"})
 
-        self.assertTrue(gen1.mergable_with(gen1))
+        assert gen1.mergable_with(gen1)
 
-        self.assertTrue(gen1.mergable_with(gen2))
-        self.assertTrue(gen2.mergable_with(gen1))
+        assert gen1.mergable_with(gen2)
+        assert gen2.mergable_with(gen1)
 
         gen2.tile_position = (10, 10)
-        self.assertFalse(gen1.mergable_with(gen2))
+        assert not gen1.mergable_with(gen2)
 
     def test_merge(self):
         gen1 = Generator("steam-engine")
@@ -46,4 +47,4 @@ class GeneratorTesting(unittest.TestCase):
         gen1.merge(gen2)
         del gen2
 
-        self.assertEqual(gen1.tags, {"some": "stuff"})
+        assert gen1.tags == {"some": "stuff"}

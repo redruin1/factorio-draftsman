@@ -644,23 +644,49 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
 
         return True
 
-    def categorize_entity(entity_name, entity):
-        flags = entity.get("flags", {})  # Flags are common, but optional
-        if "not-blueprintable" in flags or "not-deconstructable" in flags:
-            # Ignore this entity from whatever structure we're adding it to
-            return False
-
-        # Check if an entity is flippable or not
-        is_flippable[entity_name] = is_entity_flippable(entity)
-        # maybe move this to get_order?
-        unordered_entities_raw[entity_name] = entity
-        return True
+    def set_default_collision_mask(entity):
+        # Specify the default collision mask if not provided 
+        # (simpler and better to do it here than anywhere else)
+        collision_mask = entity.get("collision_mask", set())
+        if not collision_mask:
+            if entity["type"] == "gate":
+                entity["collision_mask"] = {"item-layer", "object-layer", "player-layer", "water-tile", "train-layer"}
+            elif entity["type"] == "heat-pipe":
+                entity["collision_mask"] = {"object-layer", "floor-layer", "water-tile"}
+            elif entity["type"] == "land-mine":
+                entity["collision_mask"] = {"object-layer", "water-tile"}
+            elif entity["type"] == "linked-belt":
+                entity["collision_mask"] = {"object-layer", "item-layer", "transport-belt-layer", "water-tile"}
+            elif entity["type"] == "loader":
+                entity["collision_mask"] = {"object-layer", "item-layer", "transport-belt-layer", "water-tile"}
+            elif entity["type"] == "straight-rail" or entity["type"] == "curved-rail":
+                entity["collision_mask"] = {"item-layer", "object-layer", "rail-layer", "floor-layer", "water-tile"}
+            elif entity["type"] == "rail-signal" or entity["type"] == "rail-chain-signal":
+                entity["collision_mask"] = {"floor-layer", "rail-layer", "item-layer"}
+            elif entity["type"] == "locomotive" or entity["type"] == "cargo-wagon" or entity["type"] == "fluid-wagon" or entity["type"] == "artillery-wagon":
+                entity["collision_mask"] = {"train-layer"}
+            elif entity["type"] == "splitter":
+                entity["collision_mask"] = {"object-layer", "item-layer", "transport-belt-layer", "water-tile"}
+            elif entity["type"] == "transport-belt":
+                entity["collision_mask"] = {"object-layer", "floor-layer", "transport-belt-layer", "water-tile"}
+            elif entity["type"] == "underground-belt":
+                entity["collision_mask"] = {"object-layer", "item-layer", "transport-belt-layer", "water-tile"}
+            else: # true default
+                entity["collision_mask"] = {"item-layer", "object-layer", "player-layer", "water-tile"}
 
     def categorize_entities(entity_table, target_list):
         entity_dict = convert_table_to_dict(entity_table)
         for entity_name, entity in entity_dict.items():
-            if not categorize_entity(entity_name, entity):
+            flags = entity.get("flags", set())
+            if (
+                "not-blueprintable" in flags or "not-deconstructable" in flags
+            ):  # or "hidden" in flags
                 continue
+            set_default_collision_mask(entity)
+            # Check if an entity is flippable or not
+            is_flippable[entity_name] = is_entity_flippable(entity)
+            # maybe move this to get_order?
+            unordered_entities_raw[entity_name] = entity
             target_list.append(entity)
 
     def sort(target_list):
@@ -695,9 +721,8 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     # categorize_entities(data.raw["inserter"], inserters)
     temp_inserters = convert_table_to_dict(data.raw["inserter"])
     for inserter_name, inserter in temp_inserters.items():
-        if not categorize_entity(inserter_name, inserter):
-            continue
-        # Split
+        set_default_collision_mask(inserter)
+        unordered_entities_raw[inserter_name] = inserter
         if "filter_count" in inserter:
             entities["filter_inserters"].append(inserter)
         else:
@@ -771,9 +796,8 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     entities["logistic_request_containers"] = []
     logi_containers = convert_table_to_dict(data.raw["logistic-container"])
     for container_name, container in logi_containers.items():
-        if not categorize_entity(container_name, container):
-            continue
-        # Split
+        set_default_collision_mask(container)
+        unordered_entities_raw[container_name] = container
         container_type = container["logistic_mode"]
         if container_type == "passive-provider":
             entities["logistic_passive_containers"].append(container)
@@ -955,7 +979,7 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
 
     #  Linked belts
     entities["linked_belts"] = []
-    try:
+    try:  # Compatibility for Factorio 1.0
         categorize_entities(data.raw["linked-belt"], entities["linked_belts"])
         sort(entities["linked_belts"])
     except TypeError:
@@ -1665,18 +1689,19 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
                 raise MissingModError(dep_name)
 
             # Ensure the mod's version is correct
-            if version is not None:
-                assert op in ["==", ">=", "<=", ">", "<"], "incorrect operation"
-                actual_version_tuple = version_string_to_tuple(mods[dep_name].version)
-                target_version_tuple = version_string_to_tuple(version)
-                expr = str(actual_version_tuple) + op + str(target_version_tuple)
-                # print(expr)
-                if not eval(expr):
-                    raise IncorrectModVersionError(
-                        "mod '{}' version {} not {} {}".format(
-                            mod_name, actual_version_tuple, op, target_version_tuple
-                        )
-                    )
+            # TODO: re-implement (#51)
+            # if version is not None:
+            #     assert op in ["==", ">=", "<=", ">", "<"], "incorrect operation"
+            #     actual_version_tuple = version_string_to_tuple(mods[dep_name].version)
+            #     target_version_tuple = version_string_to_tuple(version)
+            #     expr = str(actual_version_tuple) + op + str(target_version_tuple)
+            #     # print(expr)
+            #     if not eval(expr):
+            #         raise IncorrectModVersionError(
+            #             "mod '{}' version {} not {} {}".format(
+            #                 mod_name, actual_version_tuple, op, target_version_tuple
+            #             )
+            #         )
 
             if flag == "~":
                 # The mod is needed and considered a dependency, but we don't

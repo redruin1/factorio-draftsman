@@ -14,6 +14,7 @@ from draftsman.warning import (
 )
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -26,33 +27,31 @@ class StraightRailTesting(unittest.TestCase):  # Hoo boy
         straight_rail = StraightRail(
             "straight-rail", tile_position=[0, 0], direction=Direction.NORTHWEST
         )
-        self.assertEqual(
-            straight_rail.to_dict(),
-            {"name": "straight-rail", "position": {"x": 1.0, "y": 1.0}, "direction": 7},
-        )
+        assert straight_rail.to_dict() == {
+            "name": "straight-rail",
+            "position": {"x": 1.0, "y": 1.0},
+            "direction": 7,
+        }
 
         straight_rail = StraightRail(
             "straight-rail", position={"x": 101, "y": 101}, direction=Direction.SOUTH
         )
-        self.assertEqual(
-            straight_rail.to_dict(),
-            {
-                "name": "straight-rail",
-                "position": {"x": 101.0, "y": 101.0},
-                "direction": 4,
-            },
-        )
+        assert straight_rail.to_dict() == {
+            "name": "straight-rail",
+            "position": {"x": 101.0, "y": 101.0},
+            "direction": 4,
+        }
 
         # Warnings:
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             StraightRail("straight-rail", invalid_keyword="whatever")
         # if entity is not on a grid pos / 2, then warn the user of the incoming
         # shift
-        with self.assertWarns(RailAlignmentWarning):
+        with pytest.warns(RailAlignmentWarning):
             StraightRail("straight-rail", tile_position=[1, 1])
 
         # Errors
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             StraightRail("this is not a straight rail")
 
     def test_overlapping(self):
@@ -62,7 +61,7 @@ class StraightRailTesting(unittest.TestCase):  # Hoo boy
         blueprint.entities.append("straight-rail", direction=Direction.EAST)
 
         # But this should
-        with self.assertWarns(OverlappingObjectsWarning):
+        with pytest.warns(OverlappingObjectsWarning):
             blueprint.entities.append("straight-rail")
 
         blueprint = Blueprint()
@@ -79,13 +78,13 @@ class StraightRailTesting(unittest.TestCase):  # Hoo boy
         rail1 = StraightRail("straight-rail")
         rail2 = StraightRail("straight-rail", tags={"some": "stuff"})
 
-        self.assertTrue(rail1.mergable_with(rail1))
+        assert rail1.mergable_with(rail1)
 
-        self.assertTrue(rail1.mergable_with(rail2))
-        self.assertTrue(rail2.mergable_with(rail1))
+        assert rail1.mergable_with(rail2)
+        assert rail2.mergable_with(rail1)
 
         rail2.tile_position = (2, 2)
-        self.assertFalse(rail1.mergable_with(rail2))
+        assert not rail1.mergable_with(rail2)
 
     def test_merge(self):
         rail1 = StraightRail("straight-rail")
@@ -94,4 +93,4 @@ class StraightRailTesting(unittest.TestCase):  # Hoo boy
         rail1.merge(rail2)
         del rail2
 
-        self.assertEqual(rail1.tags, {"some": "stuff"})
+        assert rail1.tags == {"some": "stuff"}

@@ -27,6 +27,7 @@ import abc
 import six
 from typing import Union
 import warnings
+import deal
 
 
 @six.add_metaclass(abc.ABCMeta)

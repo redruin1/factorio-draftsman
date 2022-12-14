@@ -21,24 +21,12 @@ class Association(weakref.ref):
 
     def __init__(self, item):
         # type: (Entity) -> None
-        # if not isinstance(item, Entity):
-        #     raise TypeError("cannot create association to a non-Entity")
 
         super(Association, self).__init__(item)
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, _):
+        # type: (dict) -> Association
         return self
-
-    # def __deepcopy__(self, memo):
-    #     # type: (dict) -> Association
-    #     entity = memo.get(id(self()), copy.deepcopy(self(), memo))
-    #     #print(entity.id)
-    #     if entity is None:
-    #         return None
-    #     else:
-    #         result = Association(entity)
-    #         memo[id(self)] = result
-    #         return result
 
     def __repr__(self):  # pragma: no coverage
         # type: () -> str

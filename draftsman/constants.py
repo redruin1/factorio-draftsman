@@ -114,10 +114,14 @@ class TileSelectionMode(IntEnum):
     """
     Tile selection mode for :py:class:`.UpgradePlanner`.
 
-    * ``NORMAL`` (Default)
-    * ``ALWAYS``
-    * ``NEVER``
-    * ``ONLY``
+    * ``NORMAL``: Constructed tiles are only removed if there are no entities in
+        the selected area (Default)
+    * ``ALWAYS``: Constructed tiles are always scheduled for deconstruction,
+        regardless of selection contents.
+    * ``NEVER``: Constructed tiles are never scheduled for deconstruction,
+        regardless of selection contents.
+    * ``ONLY``: Only tiles are selected for deconstruction; entities are
+        completely ignored when using this mode.
     """
 
     NORMAL = 0

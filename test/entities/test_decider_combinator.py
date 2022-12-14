@@ -14,6 +14,7 @@ from draftsman.warning import DraftsmanWarning
 from draftsman.data import signals
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -31,17 +32,14 @@ class DeciderCombinatorTesting(unittest.TestCase):
                 "decider_conditions": {"first_constant": 10, "second_constant": 10}
             },
         )
-        self.assertEqual(
-            combinator.to_dict(),
-            {
-                "name": "decider-combinator",
-                "position": {"x": 4.0, "y": 3.5},
-                "direction": 2,
-                "control_behavior": {
-                    "decider_conditions": {"first_constant": 10, "second_constant": 10}
-                },
+        assert combinator.to_dict() == {
+            "name": "decider-combinator",
+            "position": {"x": 4.0, "y": 3.5},
+            "direction": 2,
+            "control_behavior": {
+                "decider_conditions": {"first_constant": 10, "second_constant": 10}
             },
-        )
+        }
 
         combinator = DeciderCombinator(
             "decider-combinator",
@@ -55,21 +53,18 @@ class DeciderCombinatorTesting(unittest.TestCase):
                 }
             },
         )
-        self.assertEqual(
-            combinator.to_dict(),
-            {
-                "name": "decider-combinator",
-                "position": {"x": 4.0, "y": 3.5},
-                "direction": Direction.EAST,
-                "control_behavior": {
-                    "decider_conditions": {
-                        "first_signal": {"name": "signal-A", "type": "virtual"},
-                        "comparator": "≥",
-                        "second_signal": {"name": "signal-B", "type": "virtual"},
-                    }
-                },
+        assert combinator.to_dict() == {
+            "name": "decider-combinator",
+            "position": {"x": 4.0, "y": 3.5},
+            "direction": Direction.EAST,
+            "control_behavior": {
+                "decider_conditions": {
+                    "first_signal": {"name": "signal-A", "type": "virtual"},
+                    "comparator": "≥",
+                    "second_signal": {"name": "signal-B", "type": "virtual"},
+                }
             },
-        )
+        }
 
         combinator = DeciderCombinator(
             "decider-combinator",
@@ -84,393 +79,318 @@ class DeciderCombinatorTesting(unittest.TestCase):
             },
         )
         self.maxDiff = None
-        self.assertEqual(
-            combinator.to_dict(),
-            {
-                "name": "decider-combinator",
-                "position": {"x": 4.0, "y": 3.5},
-                "direction": 2,
-                "control_behavior": {
-                    "decider_conditions": {
-                        "first_signal": {"name": "signal-A", "type": "virtual"},
-                        "comparator": "≤",
-                        "second_signal": {"name": "signal-B", "type": "virtual"},
-                    }
-                },
+        assert combinator.to_dict() == {
+            "name": "decider-combinator",
+            "position": {"x": 4.0, "y": 3.5},
+            "direction": 2,
+            "control_behavior": {
+                "decider_conditions": {
+                    "first_signal": {"name": "signal-A", "type": "virtual"},
+                    "comparator": "≤",
+                    "second_signal": {"name": "signal-B", "type": "virtual"},
+                }
             },
-        )
+        }
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             DeciderCombinator(unused_keyword="whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             DeciderCombinator("this is not an arithmetic combinator")
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             DeciderCombinator(control_behavior={"unused_key": "something"})
 
     def test_flags(self):
         for name in decider_combinators:
             combinator = DeciderCombinator(name)
-            self.assertEqual(combinator.power_connectable, False)
-            self.assertEqual(combinator.dual_power_connectable, False)
-            self.assertEqual(combinator.circuit_connectable, True)
-            self.assertEqual(combinator.dual_circuit_connectable, True)
+            assert combinator.power_connectable == False
+            assert combinator.dual_power_connectable == False
+            assert combinator.circuit_connectable == True
+            assert combinator.dual_circuit_connectable == True
 
     def test_set_first_operand(self):
         combinator = DeciderCombinator("decider-combinator")
-        self.assertEqual(combinator.first_operand, None)
+        assert combinator.first_operand == None
         combinator.first_operand = "signal-A"
-        self.assertEqual(
-            combinator.first_operand, {"name": "signal-A", "type": "virtual"}
-        )
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "first_signal": {"name": "signal-A", "type": "virtual"}
-                }
-            },
-        )
+        assert combinator.first_operand == {"name": "signal-A", "type": "virtual"}
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "first_signal": {"name": "signal-A", "type": "virtual"}
+            }
+        }
 
         combinator.first_operand = {"name": "signal-B", "type": "virtual"}
-        self.assertEqual(
-            combinator.first_operand, {"name": "signal-B", "type": "virtual"}
-        )
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "first_signal": {"name": "signal-B", "type": "virtual"}
-                }
-            },
-        )
+        assert combinator.first_operand == {"name": "signal-B", "type": "virtual"}
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "first_signal": {"name": "signal-B", "type": "virtual"}
+            }
+        }
 
         combinator.first_operand = None
-        self.assertEqual(combinator.first_operand, None)
-        self.assertEqual(combinator.control_behavior, {"decider_conditions": {}})
+        assert combinator.first_operand == None
+        assert combinator.control_behavior == {"decider_conditions": {}}
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             combinator.first_operand = TypeError
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             combinator.first_operand = "incorrect"
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             combinator.first_operand = 10
 
         combinator.remove_decider_conditions()
         combinator.output_signal = "signal-everything"
         combinator.first_operand = "signal-everything"
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "first_signal": {"name": "signal-everything", "type": "virtual"},
-                    "output_signal": {"name": "signal-everything", "type": "virtual"},
-                }
-            },
-        )
-        with self.assertWarns(DraftsmanWarning):
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "first_signal": {"name": "signal-everything", "type": "virtual"},
+                "output_signal": {"name": "signal-everything", "type": "virtual"},
+            }
+        }
+        with pytest.warns(DraftsmanWarning):
             combinator.first_operand = "signal-each"
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "first_signal": {"name": "signal-each", "type": "virtual"}
-                }
-            },
-        )
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "first_signal": {"name": "signal-each", "type": "virtual"}
+            }
+        }
 
     def test_set_operation(self):
         combinator = DeciderCombinator("decider-combinator")
-        self.assertEqual(combinator.operation, None)
+        assert combinator.operation == None
         combinator.operation = "="
-        self.assertEqual(combinator.operation, "=")
-        self.assertEqual(
-            combinator.control_behavior, {"decider_conditions": {"comparator": "="}}
-        )
+        assert combinator.operation == "="
+        assert combinator.control_behavior == {
+            "decider_conditions": {"comparator": "="}
+        }
 
         combinator.operation = ">="
-        self.assertEqual(combinator.operation, "≥")
-        self.assertEqual(
-            combinator.control_behavior, {"decider_conditions": {"comparator": "≥"}}
-        )
+        assert combinator.operation == "≥"
+        assert combinator.control_behavior == {
+            "decider_conditions": {"comparator": "≥"}
+        }
 
         combinator.operation = None
-        self.assertEqual(combinator.operation, None)
-        self.assertEqual(combinator.control_behavior, {"decider_conditions": {}})
+        assert combinator.operation == None
+        assert combinator.control_behavior == {"decider_conditions": {}}
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             combinator.operation = TypeError
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             combinator.operation = "incorrect"
 
     def test_set_second_operand(self):
         combinator = DeciderCombinator("decider-combinator")
-        self.assertEqual(combinator.second_operand, None)
+        assert combinator.second_operand == None
         combinator.second_operand = "signal-A"
-        self.assertEqual(
-            combinator.second_operand, {"name": "signal-A", "type": "virtual"}
-        )
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "second_signal": {"name": "signal-A", "type": "virtual"}
-                }
-            },
-        )
+        assert combinator.second_operand == {"name": "signal-A", "type": "virtual"}
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "second_signal": {"name": "signal-A", "type": "virtual"}
+            }
+        }
 
         combinator.second_operand = {"name": "signal-B", "type": "virtual"}
-        self.assertEqual(
-            combinator.second_operand, {"name": "signal-B", "type": "virtual"}
-        )
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "second_signal": {"name": "signal-B", "type": "virtual"}
-                }
-            },
-        )
+        assert combinator.second_operand == {"name": "signal-B", "type": "virtual"}
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "second_signal": {"name": "signal-B", "type": "virtual"}
+            }
+        }
 
         combinator.second_operand = 100
-        self.assertEqual(combinator.second_operand, 100)
-        self.assertEqual(
-            combinator.control_behavior, {"decider_conditions": {"constant": 100}}
-        )
+        assert combinator.second_operand == 100
+        assert combinator.control_behavior == {"decider_conditions": {"constant": 100}}
 
         combinator.first_operand = "signal-A"
         combinator.second_operand = None
-        self.assertEqual(combinator.second_operand, None)
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "first_signal": {"name": "signal-A", "type": "virtual"}
-                }
-            },
-        )
+        assert combinator.second_operand == None
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "first_signal": {"name": "signal-A", "type": "virtual"}
+            }
+        }
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             combinator.second_operand = TypeError
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             combinator.second_operand = "incorrect"
         for pure_virtual_signal in signals.pure_virtual:
-            with self.assertRaises(DraftsmanError):
+            with pytest.raises(DraftsmanError):
                 combinator.second_operand = pure_virtual_signal
 
     def test_set_output_signal(self):
         combinator = DeciderCombinator("decider-combinator")
-        self.assertEqual(combinator.output_signal, None)
+        assert combinator.output_signal == None
         combinator.output_signal = "signal-A"
-        self.assertEqual(
-            combinator.output_signal, {"name": "signal-A", "type": "virtual"}
-        )
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "output_signal": {"name": "signal-A", "type": "virtual"}
-                }
-            },
-        )
+        assert combinator.output_signal == {"name": "signal-A", "type": "virtual"}
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "output_signal": {"name": "signal-A", "type": "virtual"}
+            }
+        }
 
         combinator.output_signal = {"name": "signal-B", "type": "virtual"}
-        self.assertEqual(
-            combinator.output_signal, {"name": "signal-B", "type": "virtual"}
-        )
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "output_signal": {"name": "signal-B", "type": "virtual"}
-                }
-            },
-        )
+        assert combinator.output_signal == {"name": "signal-B", "type": "virtual"}
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "output_signal": {"name": "signal-B", "type": "virtual"}
+            }
+        }
 
         combinator.output_signal = None
-        self.assertEqual(combinator.output_signal, None)
-        self.assertEqual(combinator.control_behavior, {"decider_conditions": {}})
+        assert combinator.output_signal == None
+        assert combinator.control_behavior == {"decider_conditions": {}}
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             combinator.output_signal = TypeError
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             combinator.output_signal = "incorrect"
 
         combinator.remove_decider_conditions()
         combinator.output_signal = "signal-everything"
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "output_signal": {"name": "signal-everything", "type": "virtual"}
-                }
-            },
-        )
-        with self.assertRaises(DraftsmanError):
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "output_signal": {"name": "signal-everything", "type": "virtual"}
+            }
+        }
+        with pytest.raises(DraftsmanError):
             combinator.output_signal = "signal-anything"
-        with self.assertRaises(DraftsmanError):
+        with pytest.raises(DraftsmanError):
             combinator.output_signal = "signal-each"
 
         combinator.first_operand = "signal-everything"
         combinator.output_signal = "signal-everything"
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "first_signal": {"name": "signal-everything", "type": "virtual"},
-                    "output_signal": {"name": "signal-everything", "type": "virtual"},
-                }
-            },
-        )
-        with self.assertRaises(DraftsmanError):
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "first_signal": {"name": "signal-everything", "type": "virtual"},
+                "output_signal": {"name": "signal-everything", "type": "virtual"},
+            }
+        }
+        with pytest.raises(DraftsmanError):
             combinator.output_signal = "signal-anything"
-        with self.assertRaises(DraftsmanError):
+        with pytest.raises(DraftsmanError):
             combinator.output_signal = "signal-each"
 
         combinator.first_operand = "signal-anything"
         combinator.output_signal = "signal-everything"
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "first_signal": {"name": "signal-anything", "type": "virtual"},
-                    "output_signal": {"name": "signal-everything", "type": "virtual"},
-                }
-            },
-        )
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "first_signal": {"name": "signal-anything", "type": "virtual"},
+                "output_signal": {"name": "signal-everything", "type": "virtual"},
+            }
+        }
         combinator.output_signal = "signal-anything"
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "first_signal": {"name": "signal-anything", "type": "virtual"},
-                    "output_signal": {"name": "signal-anything", "type": "virtual"},
-                }
-            },
-        )
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "first_signal": {"name": "signal-anything", "type": "virtual"},
+                "output_signal": {"name": "signal-anything", "type": "virtual"},
+            }
+        }
 
-        with self.assertRaises(DraftsmanError):
+        with pytest.raises(DraftsmanError):
             combinator.output_signal = "signal-each"
 
         combinator.remove_decider_conditions()
         combinator.first_operand = "signal-each"
         combinator.output_signal = "signal-each"
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "first_signal": {"name": "signal-each", "type": "virtual"},
-                    "output_signal": {"name": "signal-each", "type": "virtual"},
-                }
-            },
-        )
-        with self.assertRaises(DraftsmanError):
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "first_signal": {"name": "signal-each", "type": "virtual"},
+                "output_signal": {"name": "signal-each", "type": "virtual"},
+            }
+        }
+        with pytest.raises(DraftsmanError):
             combinator.output_signal = "signal-everything"
-        with self.assertRaises(DraftsmanError):
+        with pytest.raises(DraftsmanError):
             combinator.output_signal = "signal-anything"
 
     def test_set_decider_conditions(self):
         combinator = DeciderCombinator()
         combinator.set_decider_conditions("signal-A", ">", "iron-ore")
         self.maxDiff = None
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "first_signal": {"name": "signal-A", "type": "virtual"},
-                    "comparator": ">",
-                    "second_signal": {"name": "iron-ore", "type": "item"},
-                }
-            },
-        )
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "first_signal": {"name": "signal-A", "type": "virtual"},
+                "comparator": ">",
+                "second_signal": {"name": "iron-ore", "type": "item"},
+            }
+        }
         combinator.set_decider_conditions("signal-A", "=", "copper-ore", "signal-B")
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "first_signal": {"name": "signal-A", "type": "virtual"},
-                    "comparator": "=",
-                    "second_signal": {"name": "copper-ore", "type": "item"},
-                    "output_signal": {"name": "signal-B", "type": "virtual"},
-                }
-            },
-        )
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "first_signal": {"name": "signal-A", "type": "virtual"},
+                "comparator": "=",
+                "second_signal": {"name": "copper-ore", "type": "item"},
+                "output_signal": {"name": "signal-B", "type": "virtual"},
+            }
+        }
 
         combinator.set_decider_conditions("signal-D", "<", 10, "signal-E")
-        self.assertEqual(
-            combinator.control_behavior,
-            {
-                "decider_conditions": {
-                    "first_signal": {"name": "signal-D", "type": "virtual"},
-                    "comparator": "<",
-                    "constant": 10,
-                    "output_signal": {"name": "signal-E", "type": "virtual"},
-                }
-            },
-        )
+        assert combinator.control_behavior == {
+            "decider_conditions": {
+                "first_signal": {"name": "signal-D", "type": "virtual"},
+                "comparator": "<",
+                "constant": 10,
+                "output_signal": {"name": "signal-E", "type": "virtual"},
+            }
+        }
 
         combinator.set_decider_conditions(None, ">", 10)
-        self.assertEqual(
-            combinator.control_behavior,
-            {"decider_conditions": {"constant": 10, "comparator": ">"}},
-        )
+        assert combinator.control_behavior == {
+            "decider_conditions": {"constant": 10, "comparator": ">"}
+        }
 
         combinator.set_decider_conditions(None, None, None, None)
-        self.assertEqual(combinator.control_behavior, {"decider_conditions": {}})
+        assert combinator.control_behavior == {"decider_conditions": {}}
 
         combinator.set_decider_conditions()
-        self.assertEqual(
-            combinator.control_behavior,
-            {"decider_conditions": {"comparator": "<", "constant": 0}},
-        )
+        assert combinator.control_behavior == {
+            "decider_conditions": {"comparator": "<", "constant": 0}
+        }
 
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             combinator.set_decider_conditions(TypeError)
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             combinator.set_decider_conditions("incorrect")
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             combinator.set_decider_conditions("signal-A", "incorrect", "signal-D")
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             combinator.set_decider_conditions("signal-A", "<", TypeError)
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             combinator.set_decider_conditions("signal-A", "<", "incorrect")
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             combinator.set_decider_conditions("signal-A", "<", "signal-D", TypeError)
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             combinator.set_decider_conditions("signal-A", "<", "signal-D", "incorrect")
 
         # TODO:
-        self.assertEqual(
-            combinator.control_behavior,
-            {"decider_conditions": {"comparator": "<", "constant": 0}},
-        )
+        assert combinator.control_behavior == {
+            "decider_conditions": {"comparator": "<", "constant": 0}
+        }
 
         # Test Remove conditions
         combinator.remove_decider_conditions()
-        self.assertEqual(combinator.control_behavior, {})
+        assert combinator.control_behavior == {}
 
         # Test set_copy_count
-        self.assertEqual(combinator.copy_count_from_input, None)
+        assert combinator.copy_count_from_input == None
         combinator.copy_count_from_input = True
-        self.assertEqual(combinator.copy_count_from_input, True)
-        self.assertEqual(
-            combinator.control_behavior,
-            {"decider_conditions": {"copy_count_from_input": True}},
-        )
+        assert combinator.copy_count_from_input == True
+        assert combinator.control_behavior == {
+            "decider_conditions": {"copy_count_from_input": True}
+        }
         combinator.copy_count_from_input = False
-        self.assertEqual(
-            combinator.control_behavior,
-            {"decider_conditions": {"copy_count_from_input": False}},
-        )
+        assert combinator.control_behavior == {
+            "decider_conditions": {"copy_count_from_input": False}
+        }
         combinator.copy_count_from_input = None
-        self.assertEqual(  # maybe should be == {}?
-            combinator.control_behavior, {"decider_conditions": {}}
-        )
+        assert combinator.control_behavior == {"decider_conditions": {}}
 
         # Error
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             combinator.copy_count_from_input = "incorrect"
 
     def test_mergable_with(self):
@@ -490,15 +410,15 @@ class DeciderCombinatorTesting(unittest.TestCase):
             tags={"some": "stuff"},
         )
 
-        self.assertTrue(comb1.mergable_with(comb2))
-        self.assertTrue(comb2.mergable_with(comb1))
+        assert comb1.mergable_with(comb2)
+        assert comb2.mergable_with(comb1)
 
         comb2.first_operand = "signal-A"
         comb2.operation = ">="
-        self.assertTrue(comb1.mergable_with(comb2))
+        assert comb1.mergable_with(comb2)
 
         comb2.direction = Direction.NORTH
-        self.assertFalse(comb1.mergable_with(comb2))
+        assert not comb1.mergable_with(comb2)
 
     def test_merge(self):
         comb1 = DeciderCombinator(
@@ -531,16 +451,13 @@ class DeciderCombinatorTesting(unittest.TestCase):
         comb1.merge(comb2)
         del comb2
 
-        self.assertEqual(
-            comb1.control_behavior,
-            {
-                "decider_conditions": {
-                    "first_signal": {"name": "signal-D", "type": "virtual"},
-                    "comparator": "<",
-                    "constant": 10,
-                    "output_signal": {"name": "signal-E", "type": "virtual"},
-                    "copy_count_from_input": False,
-                }
-            },
-        )
-        self.assertEqual(comb1.tags, {})  # Overwritten by comb2
+        assert comb1.control_behavior == {
+            "decider_conditions": {
+                "first_signal": {"name": "signal-D", "type": "virtual"},
+                "comparator": "<",
+                "constant": 10,
+                "output_signal": {"name": "signal-E", "type": "virtual"},
+                "copy_count_from_input": False,
+            }
+        }
+        assert comb1.tags == {}  # Overwritten by comb2

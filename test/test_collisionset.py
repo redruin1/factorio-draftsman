@@ -16,17 +16,15 @@ class CollisionSetTesting(unittest.TestCase):
     def test_constructor(self):
         # Empty constructor
         cs = CollisionSet([])
-        self.assertEqual(cs.shapes, [])
+        assert cs.shapes == []
 
         # Test regular contents
         cs = CollisionSet([AABB(0, 0, 1, 1), Rectangle((10, 10), 1, 1, 45)])
-        self.assertEqual(cs.shapes, [AABB(0, 0, 1, 1), Rectangle((10, 10), 1, 1, 45)])
+        assert cs.shapes == [AABB(0, 0, 1, 1), Rectangle((10, 10), 1, 1, 45)]
 
         # Test position offset
         cs = CollisionSet([AABB(0, 0, 1, 1), Rectangle((10, 10), 1, 1, 45)], (-5, -5))
-        self.assertEqual(
-            cs.shapes, [AABB(0, 0, 1, 1, (-5, -5)), Rectangle((5, 5), 1, 1, 45)]
-        )
+        assert cs.shapes == [AABB(0, 0, 1, 1, (-5, -5)), Rectangle((5, 5), 1, 1, 45)]
 
     def test_rotate(self):
         pass  # TODO
@@ -37,12 +35,12 @@ class CollisionSetTesting(unittest.TestCase):
         cs3 = CollisionSet([AABB(0, 0, 1, 1)], (2, 2))
 
         # Identity case / early-out optimization
-        self.assertTrue(cs2.overlaps(cs2))
+        assert cs2.overlaps(cs2)
         # Reciprocal
-        self.assertTrue(cs1.overlaps(cs2))
-        self.assertTrue(cs2.overlaps(cs1))
+        assert cs1.overlaps(cs2)
+        assert cs2.overlaps(cs1)
         # Test position offset
-        self.assertFalse(cs1.overlaps(cs3))
+        assert not cs1.overlaps(cs3)
 
     def test_get_bounding_box(self):
         pass  # TODO

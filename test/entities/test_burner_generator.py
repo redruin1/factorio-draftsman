@@ -8,6 +8,7 @@ from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -19,21 +20,21 @@ class BurnerGeneratorTesting(unittest.TestCase):
     def test_contstructor_init(self):
         generator = BurnerGenerator("burner-generator")
 
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             BurnerGenerator(unused_keyword="whatever")
 
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             BurnerGenerator("this is not a burner generator")
 
     def test_mergable_with(self):
         generator1 = BurnerGenerator("burner-generator")
         generator2 = BurnerGenerator("burner-generator", tags={"some": "stuff"})
 
-        self.assertTrue(generator1.mergable_with(generator2))
-        self.assertTrue(generator2.mergable_with(generator1))
+        assert generator1.mergable_with(generator2)
+        assert generator2.mergable_with(generator1)
 
         generator2.tile_position = [-10, -10]
-        self.assertFalse(generator1.mergable_with(generator2))
+        assert not generator1.mergable_with(generator2)
 
     def test_merge(self):
         generator1 = BurnerGenerator("burner-generator")
@@ -42,4 +43,4 @@ class BurnerGeneratorTesting(unittest.TestCase):
         generator1.merge(generator2)
         del generator2
 
-        self.assertEqual(generator1.tags, {"some": "stuff"})
+        assert generator1.tags == {"some": "stuff"}

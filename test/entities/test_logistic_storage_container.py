@@ -8,6 +8,7 @@ from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -30,84 +31,72 @@ class LogisticStorageContainerTesting(unittest.TestCase):
                 }
             },
         )
-        self.assertEqual(
-            storage_chest.to_dict(),
-            {
-                "name": "logistic-chest-storage",
-                "position": {"x": 15.5, "y": 3.5},
-                "bar": 5,
-                "connections": {
-                    "1": {
-                        "red": [
-                            {"entity_id": 2},
-                            {"entity_id": 2, "circuit_id": 1},
-                        ]
-                    }
-                },
+        assert storage_chest.to_dict() == {
+            "name": "logistic-chest-storage",
+            "position": {"x": 15.5, "y": 3.5},
+            "bar": 5,
+            "connections": {
+                "1": {
+                    "red": [
+                        {"entity_id": 2},
+                        {"entity_id": 2, "circuit_id": 1},
+                    ]
+                }
             },
-        )
+        }
         storage_chest = LogisticStorageContainer(
             "logistic-chest-storage", position=[15.5, 1.5], bar=5, tags={"A": "B"}
         )
-        self.assertEqual(
-            storage_chest.to_dict(),
-            {
-                "name": "logistic-chest-storage",
-                "position": {"x": 15.5, "y": 1.5},
-                "bar": 5,
-                "tags": {"A": "B"},
-            },
-        )
+        assert storage_chest.to_dict() == {
+            "name": "logistic-chest-storage",
+            "position": {"x": 15.5, "y": 1.5},
+            "bar": 5,
+            "tags": {"A": "B"},
+        }
 
         storage_chest = LogisticStorageContainer(request_filters=[("iron-ore", 100)])
-        self.assertEqual(
-            storage_chest.to_dict(),
-            {
-                "name": "logistic-chest-storage",
-                "position": {"x": 0.5, "y": 0.5},
-                "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
-            },
-        )
+        assert storage_chest.to_dict() == {
+            "name": "logistic-chest-storage",
+            "position": {"x": 0.5, "y": 0.5},
+            "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
+        }
 
         storage_chest = LogisticStorageContainer(
             request_filters=[{"index": 1, "name": "iron-ore", "count": 100}]
         )
-        self.assertEqual(
-            storage_chest.to_dict(),
-            {
-                "name": "logistic-chest-storage",
-                "position": {"x": 0.5, "y": 0.5},
-                "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
-            },
-        )
+        assert storage_chest.to_dict() == {
+            "name": "logistic-chest-storage",
+            "position": {"x": 0.5, "y": 0.5},
+            "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
+        }
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             LogisticStorageContainer(
                 "logistic-chest-storage", position=[0, 0], invalid_keyword="100"
             )
 
         # Errors
         # Raises InvalidEntityID when not in containers
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             LogisticStorageContainer("this is not a logistics storage chest")
 
         # Raises schema errors when any of the associated data is incorrect
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             LogisticStorageContainer("logistic-chest-storage", id=25)
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             LogisticStorageContainer("logistic-chest-storage", position=TypeError)
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             LogisticStorageContainer("logistic-chest-storage", bar="not even trying")
 
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             LogisticStorageContainer(
                 "logistic-chest-storage", connections={"this is": ["very", "wrong"]}
             )
 
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             LogisticStorageContainer(
                 "logistic-chest-storage", request_filters={"this is": ["very", "wrong"]}
             )
@@ -115,10 +104,10 @@ class LogisticStorageContainerTesting(unittest.TestCase):
     def test_power_and_circuit_flags(self):
         for name in logistic_storage_containers:
             container = LogisticStorageContainer(name)
-            self.assertEqual(container.power_connectable, False)
-            self.assertEqual(container.dual_power_connectable, False)
-            self.assertEqual(container.circuit_connectable, True)
-            self.assertEqual(container.dual_circuit_connectable, False)
+            assert container.power_connectable == False
+            assert container.dual_power_connectable == False
+            assert container.circuit_connectable == True
+            assert container.dual_circuit_connectable == False
 
     def test_mergable_with(self):
         container1 = LogisticStorageContainer("logistic-chest-storage")
@@ -129,13 +118,13 @@ class LogisticStorageContainerTesting(unittest.TestCase):
             tags={"some": "stuff"},
         )
 
-        self.assertTrue(container1.mergable_with(container1))
+        assert container1.mergable_with(container1)
 
-        self.assertTrue(container1.mergable_with(container2))
-        self.assertTrue(container2.mergable_with(container1))
+        assert container1.mergable_with(container2)
+        assert container2.mergable_with(container1)
 
         container2.tile_position = (1, 1)
-        self.assertFalse(container1.mergable_with(container2))
+        assert not container1.mergable_with(container2)
 
     def test_merge(self):
         container1 = LogisticStorageContainer("logistic-chest-storage")
@@ -149,9 +138,8 @@ class LogisticStorageContainerTesting(unittest.TestCase):
         container1.merge(container2)
         del container2
 
-        self.assertEqual(container1.bar, 10)
-        self.assertEqual(
-            container1.request_filters,
-            [{"name": "utility-science-pack", "index": 1, "count": 0}],
-        )
-        self.assertEqual(container1.tags, {"some": "stuff"})
+        assert container1.bar == 10
+        assert container1.request_filters == [
+            {"name": "utility-science-pack", "index": 1, "count": 0}
+        ]
+        assert container1.tags == {"some": "stuff"}

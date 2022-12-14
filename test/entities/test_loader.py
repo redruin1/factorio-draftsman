@@ -8,6 +8,7 @@ from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -20,11 +21,11 @@ class LoaderTesting(unittest.TestCase):
         # loader = Loader()
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             Loader("loader", unused_keyword=10)
 
         # Errors
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             Loader("this is not a loader")
 
     def test_mergable_with(self):
@@ -35,13 +36,13 @@ class LoaderTesting(unittest.TestCase):
             tags={"some": "stuff"},
         )
 
-        self.assertTrue(container1.mergable_with(container1))
+        assert container1.mergable_with(container1)
 
-        self.assertTrue(container1.mergable_with(container2))
-        self.assertTrue(container2.mergable_with(container1))
+        assert container1.mergable_with(container2)
+        assert container2.mergable_with(container1)
 
         container2.tile_position = (1, 1)
-        self.assertFalse(container1.mergable_with(container2))
+        assert not container1.mergable_with(container2)
 
     def test_merge(self):
         container1 = Loader()
@@ -54,6 +55,6 @@ class LoaderTesting(unittest.TestCase):
         container1.merge(container2)
         del container2
 
-        self.assertEqual(container1.filters, [{"name": "coal", "index": 1}])
-        self.assertEqual(container1.io_type, "input")
-        self.assertEqual(container1.tags, {"some": "stuff"})
+        assert container1.filters == [{"name": "coal", "index": 1}]
+        assert container1.io_type == "input"
+        assert container1.tags == {"some": "stuff"}

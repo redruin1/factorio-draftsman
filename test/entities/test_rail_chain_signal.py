@@ -8,6 +8,7 @@ from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatEr
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -18,13 +19,10 @@ else:  # pragma: no coverage
 class RailChainSignalTesting(unittest.TestCase):
     def test_constructor_init(self):
         rail_signal = RailChainSignal("rail-chain-signal", control_behavior={})
-        self.assertEqual(
-            rail_signal.to_dict(),
-            {
-                "name": "rail-chain-signal",
-                "position": {"x": 0.5, "y": 0.5},
-            },
-        )
+        assert rail_signal.to_dict() == {
+            "name": "rail-chain-signal",
+            "position": {"x": 0.5, "y": 0.5},
+        }
 
         rail_signal = RailChainSignal(
             "rail-chain-signal",
@@ -35,19 +33,16 @@ class RailChainSignalTesting(unittest.TestCase):
                 "blue_output_signal": "signal-D",
             },
         )
-        self.assertEqual(
-            rail_signal.to_dict(),
-            {
-                "name": "rail-chain-signal",
-                "position": {"x": 0.5, "y": 0.5},
-                "control_behavior": {
-                    "red_output_signal": {"name": "signal-A", "type": "virtual"},
-                    "orange_output_signal": {"name": "signal-B", "type": "virtual"},
-                    "green_output_signal": {"name": "signal-C", "type": "virtual"},
-                    "blue_output_signal": {"name": "signal-D", "type": "virtual"},
-                },
+        assert rail_signal.to_dict() == {
+            "name": "rail-chain-signal",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {
+                "red_output_signal": {"name": "signal-A", "type": "virtual"},
+                "orange_output_signal": {"name": "signal-B", "type": "virtual"},
+                "green_output_signal": {"name": "signal-C", "type": "virtual"},
+                "blue_output_signal": {"name": "signal-D", "type": "virtual"},
             },
-        )
+        }
 
         rail_signal = RailChainSignal(
             "rail-chain-signal",
@@ -58,53 +53,46 @@ class RailChainSignalTesting(unittest.TestCase):
                 "blue_output_signal": {"name": "signal-D", "type": "virtual"},
             },
         )
-        self.assertEqual(
-            rail_signal.to_dict(),
-            {
-                "name": "rail-chain-signal",
-                "position": {"x": 0.5, "y": 0.5},
-                "control_behavior": {
-                    "red_output_signal": {"name": "signal-A", "type": "virtual"},
-                    "orange_output_signal": {"name": "signal-B", "type": "virtual"},
-                    "green_output_signal": {"name": "signal-C", "type": "virtual"},
-                    "blue_output_signal": {"name": "signal-D", "type": "virtual"},
-                },
+        assert rail_signal.to_dict() == {
+            "name": "rail-chain-signal",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {
+                "red_output_signal": {"name": "signal-A", "type": "virtual"},
+                "orange_output_signal": {"name": "signal-B", "type": "virtual"},
+                "green_output_signal": {"name": "signal-C", "type": "virtual"},
+                "blue_output_signal": {"name": "signal-D", "type": "virtual"},
             },
-        )
+        }
 
         # Warnings:
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             RailChainSignal("rail-chain-signal", invalid_keyword="whatever")
 
         # Warn if the rail signal is not placed next to rail
         # TODO (Complex)
 
         # Errors:
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             RailChainSignal("this is not a rail chain signal")
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             RailChainSignal(control_behavior={"unused_key": "something"})
 
     def test_set_blue_output_signal(self):
         rail_signal = RailChainSignal()
         rail_signal.blue_output_signal = "signal-A"
-        self.assertEqual(
-            rail_signal.blue_output_signal, {"name": "signal-A", "type": "virtual"}
-        )
-        self.assertEqual(
-            rail_signal.control_behavior,
-            {"blue_output_signal": {"name": "signal-A", "type": "virtual"}},
-        )
+        assert rail_signal.blue_output_signal == {"name": "signal-A", "type": "virtual"}
+        assert rail_signal.control_behavior == {
+            "blue_output_signal": {"name": "signal-A", "type": "virtual"}
+        }
         rail_signal.blue_output_signal = {"name": "signal-A", "type": "virtual"}
-        self.assertEqual(
-            rail_signal.control_behavior,
-            {"blue_output_signal": {"name": "signal-A", "type": "virtual"}},
-        )
+        assert rail_signal.control_behavior == {
+            "blue_output_signal": {"name": "signal-A", "type": "virtual"}
+        }
         rail_signal.blue_output_signal = None
-        self.assertEqual(rail_signal.control_behavior, {})
-        with self.assertRaises(TypeError):
+        assert rail_signal.control_behavior == {}
+        with pytest.raises(TypeError):
             rail_signal.blue_output_signal = TypeError
-        with self.assertRaises(InvalidSignalError):
+        with pytest.raises(InvalidSignalError):
             rail_signal.blue_output_signal = "incorrect"
 
     def test_mergable_with(self):
@@ -120,13 +108,13 @@ class RailChainSignalTesting(unittest.TestCase):
             tags={"some": "stuff"},
         )
 
-        self.assertTrue(signal1.mergable_with(signal1))
+        assert signal1.mergable_with(signal1)
 
-        self.assertTrue(signal1.mergable_with(signal2))
-        self.assertTrue(signal2.mergable_with(signal1))
+        assert signal1.mergable_with(signal2)
+        assert signal2.mergable_with(signal1)
 
         signal2.tile_position = (1, 1)
-        self.assertFalse(signal1.mergable_with(signal2))
+        assert not signal1.mergable_with(signal2)
 
     def test_merge(self):
         signal1 = RailChainSignal("rail-chain-signal")
@@ -144,13 +132,10 @@ class RailChainSignalTesting(unittest.TestCase):
         signal1.merge(signal2)
         del signal2
 
-        self.assertEqual(
-            signal1.control_behavior,
-            {
-                "red_output_signal": {"name": "signal-A", "type": "virtual"},
-                "orange_output_signal": {"name": "signal-B", "type": "virtual"},
-                "green_output_signal": {"name": "signal-C", "type": "virtual"},
-                "blue_output_signal": {"name": "signal-D", "type": "virtual"},
-            },
-        )
-        self.assertEqual(signal1.tags, {"some": "stuff"})
+        assert signal1.control_behavior == {
+            "red_output_signal": {"name": "signal-A", "type": "virtual"},
+            "orange_output_signal": {"name": "signal-B", "type": "virtual"},
+            "green_output_signal": {"name": "signal-C", "type": "virtual"},
+            "blue_output_signal": {"name": "signal-D", "type": "virtual"},
+        }
+        assert signal1.tags == {"some": "stuff"}

@@ -8,6 +8,7 @@ from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -23,48 +24,45 @@ class ElectricEnergyInterfaceTesting(unittest.TestCase):
             power_production=10000,
             power_usage=0,
         )
-        self.assertEqual(
-            interface.to_dict(),
-            {
-                "name": "electric-energy-interface",
-                "position": {"x": 1.0, "y": 1.0},
-                "buffer_size": 10000,
-                "power_production": 10000,
-                "power_usage": 0,
-            },
-        )
+        assert interface.to_dict() == {
+            "name": "electric-energy-interface",
+            "position": {"x": 1.0, "y": 1.0},
+            "buffer_size": 10000,
+            "power_production": 10000,
+            "power_usage": 0,
+        }
 
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             ElectricEnergyInterface(unused_keyword="whatever")
 
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             ElectricEnergyInterface("this is not an electric energy interface")
 
     def test_set_buffer_size(self):
         interface = ElectricEnergyInterface()
         interface.buffer_size = 100
-        self.assertEqual(interface.buffer_size, 100)
+        assert interface.buffer_size == 100
         interface.buffer_size = None
-        self.assertEqual(interface.buffer_size, None)
-        with self.assertRaises(TypeError):
+        assert interface.buffer_size == None
+        with pytest.raises(TypeError):
             interface.buffer_size = "incorrect"
 
     def test_set_power_production(self):
         interface = ElectricEnergyInterface()
         interface.power_production = 100
-        self.assertEqual(interface.power_production, 100)
+        assert interface.power_production == 100
         interface.power_production = None
-        self.assertEqual(interface.power_production, None)
-        with self.assertRaises(TypeError):
+        assert interface.power_production == None
+        with pytest.raises(TypeError):
             interface.power_production = "incorrect"
 
     def test_set_power_usage(self):
         interface = ElectricEnergyInterface()
         interface.power_usage = 100
-        self.assertEqual(interface.power_usage, 100)
+        assert interface.power_usage == 100
         interface.power_usage = None
-        self.assertEqual(interface.power_usage, None)
-        with self.assertRaises(TypeError):
+        assert interface.power_usage == None
+        with pytest.raises(TypeError):
             interface.power_usage = "incorrect"
 
     def test_mergable_with(self):
@@ -77,14 +75,14 @@ class ElectricEnergyInterfaceTesting(unittest.TestCase):
             power_usage=100,
         )
 
-        self.assertTrue(interface1.mergable_with(interface2))
-        self.assertTrue(interface2.mergable_with(interface1))
+        assert interface1.mergable_with(interface2)
+        assert interface2.mergable_with(interface1)
 
         interface1.tile_position = (2, 2)
-        self.assertFalse(interface1.mergable_with(interface2))
+        assert not interface1.mergable_with(interface2)
 
         interface2 = InvalidEntityError()
-        self.assertFalse(interface1.mergable_with(interface2))
+        assert not interface1.mergable_with(interface2)
 
     def test_merge(self):
         interface1 = ElectricEnergyInterface(
@@ -100,7 +98,7 @@ class ElectricEnergyInterfaceTesting(unittest.TestCase):
         interface1.merge(interface2)
         del interface2
 
-        self.assertEqual(interface1.buffer_size, None)
-        self.assertEqual(interface1.power_production, 10000)
-        self.assertEqual(interface1.power_usage, 100)
-        self.assertEqual(interface1.tags, {"some": "stuff"})
+        assert interface1.buffer_size == None
+        assert interface1.power_production == 10000
+        assert interface1.power_usage == 100
+        assert interface1.tags == {"some": "stuff"}

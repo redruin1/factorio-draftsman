@@ -440,6 +440,7 @@ LAMP_CONTROL_BEHAVIOR = Schema(
         Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
         {
             Optional("circuit_condition"): CONDITION,
+            Optional("logistic_condition"): CONDITION,
             Optional("use_colors"): bool,
         },
     )

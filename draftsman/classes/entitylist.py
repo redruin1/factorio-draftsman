@@ -4,7 +4,11 @@
 from draftsman.classes.association import Association
 from draftsman.classes.entitylike import EntityLike
 from draftsman.entity import new_entity
-from draftsman.error import DuplicateIDError, InvalidAssociationError
+from draftsman.error import (
+    DuplicateIDError,
+    InvalidAssociationError,
+    InvalidEntityError,
+)
 from draftsman import utils
 from draftsman.warning import HiddenEntityWarning
 
@@ -399,10 +403,12 @@ class EntityList(MutableSequence):
         # First, we make a copy of all entities in self.data and assign them to
         # a new entity list while keeping track of which new entity corresponds
         # to which old entity
+        memo["old_to_new"] = {}
         for entity in self.data:
             entity_copy = memo.get(id(entity), deepcopy(entity, memo))
             new.append(entity_copy, copy=False)
             memo[id(entity)] = entity_copy
+            memo["old_to_new"][entity] = entity_copy
 
         def try_to_replace_association(old):
             try:
@@ -466,7 +472,7 @@ class EntityList(MutableSequence):
         # Warn if the placed entity is hidden
         if getattr(entitylike, "hidden", False):
             warnings.warn(
-                "Attempting to add hidden entity '{}'".format(type(entitylike)),
+                "Attempting to add hidden entity '{}'".format(entitylike.name),
                 HiddenEntityWarning,
                 stacklevel=2,
             )

@@ -8,6 +8,7 @@ from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -22,24 +23,24 @@ class LinkedBeltTesting(unittest.TestCase):
         linked_belt = LinkedBelt()
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             LinkedBelt(unused_keyword="whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             LinkedBelt("this is not a linked belt")
 
     def test_mergable_with(self):
         belt1 = LinkedBelt()
         belt2 = LinkedBelt(tags={"some": "stuff"})
 
-        self.assertTrue(belt1.mergable_with(belt1))
+        assert belt1.mergable_with(belt1)
 
-        self.assertTrue(belt1.mergable_with(belt2))
-        self.assertTrue(belt2.mergable_with(belt1))
+        assert belt1.mergable_with(belt2)
+        assert belt2.mergable_with(belt1)
 
         belt2.tile_position = (1, 1)
-        self.assertFalse(belt1.mergable_with(belt2))
+        assert not belt1.mergable_with(belt2)
 
     def test_merge(self):
         belt1 = LinkedBelt()
@@ -48,4 +49,4 @@ class LinkedBeltTesting(unittest.TestCase):
         belt1.merge(belt2)
         del belt2
 
-        self.assertEqual(belt1.tags, {"some": "stuff"})
+        assert belt1.tags == {"some": "stuff"}

@@ -9,6 +9,7 @@ from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -20,23 +21,23 @@ class GateTesting(unittest.TestCase):
     def test_contstructor_init(self):
         gate = Gate("gate")
 
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             Gate("gate", unused_keyword="whatever")
 
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             Gate("this is not a gate")
 
     def test_mergable_with(self):
         gate1 = Gate("gate", tile_position=(1, 1))
         gate2 = Gate("gate", position=(1.5, 1.5), tags={"some": "stuff"})
 
-        self.assertTrue(gate1.mergable_with(gate1))
+        assert gate1.mergable_with(gate1)
 
-        self.assertTrue(gate1.mergable_with(gate2))
-        self.assertTrue(gate2.mergable_with(gate1))
+        assert gate1.mergable_with(gate2)
+        assert gate2.mergable_with(gate1)
 
         gate2.direction = Direction.EAST
-        self.assertFalse(gate1.mergable_with(gate2))
+        assert not gate1.mergable_with(gate2)
 
     def test_merge(self):
         gate1 = Gate("gate", tile_position=(1, 1))
@@ -45,4 +46,4 @@ class GateTesting(unittest.TestCase):
         gate1.merge(gate2)
         del gate2
 
-        self.assertEqual(gate1.tags, {"some": "stuff"})
+        assert gate1.tags == {"some": "stuff"}

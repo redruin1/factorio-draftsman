@@ -178,14 +178,29 @@ class EntityLike(SpatialLike):
     def on_insert(self, parent):  # pragma: no coverage
         # type: (EntityCollection) -> None
         """
-        TODO
+        A callback function called when this entity is inserted into an
+        EntityCollection.
         """
         pass
 
     def on_remove(self, parent):  # pragma: no coverage
         # type: (EntityCollection) -> None
         """
-        TODO
+        A callback function called when this entity is removed from an
+        EntityCollection.
+        """
+        pass
+
+    @abc.abstractmethod
+    def inspect(self):  # pragma: no coverage
+        # type: () -> list[Exception]
+        """
+        Checks the :py:class:`.EntityLike` and returns any errors that Draftsman
+        thinks will cause errors if imported into Factorio. Can be used to query
+        if a entity is completely in order, such as when importing data from an
+        external source.
+
+        :returns: A list of Python ``Exception``s.
         """
         pass
 
@@ -204,8 +219,8 @@ class EntityLike(SpatialLike):
 
         .. NOTE::
             This function does *not* actually merge the two, it simply checks
-            to see if such a merge is considered valid. To actually merge two
-            entities use :py:meth:`merge`.
+            to see if such a merge is considered valid. To actually merge the
+            two entities use :py:meth:`merge`.
 
         :param other: The other :py:class:`EntityLike` to check against.
 
@@ -231,7 +246,12 @@ class EntityLike(SpatialLike):
     def get(self):
         # type: () -> Union[Entity, list[Entity]]
         """
-        TODO
+        Gets this :py:class:`.Entity`. Redundant for regular
+        :py:class:`.Entity`s, but is needed for :py:class:`.EntityCollections`
+        like :py:class:`.Group`.
+
+        :returns: This :py:class:`.EntityLike` minimum :py:class:`.Entity`
+            representation.
         """
         return self
 
@@ -247,7 +267,7 @@ class EntityLike(SpatialLike):
         an EntityCollection, that copied entity will *not* be inside of that
         EntityCollection, and will have to be added manually. If instead the
         *entire* EntityCollection is deepcopied, then the parent will be the
-        copied EntityCollection and everything *should* work.
+        copied EntityCollection and everything *should* remain correct.
 
         See `here <https://github.com/redruin1/factorio-draftsman/issues/22>`
         for more information.

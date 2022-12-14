@@ -8,6 +8,7 @@ from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -20,14 +21,11 @@ class CargoWagonTesting(unittest.TestCase):
         cargo_wagon = CargoWagon(
             "cargo-wagon", tile_position=[0, 0], inventory={"bar": 0}
         )
-        self.assertEqual(
-            cargo_wagon.to_dict(),
-            {
-                "name": "cargo-wagon",
-                "position": {"x": 1.0, "y": 2.5},
-                "inventory": {"bar": 0},
-            },
-        )
+        assert cargo_wagon.to_dict() == {
+            "name": "cargo-wagon",
+            "position": {"x": 1.0, "y": 2.5},
+            "inventory": {"bar": 0},
+        }
 
         cargo_wagon = CargoWagon(
             "cargo-wagon",
@@ -38,22 +36,19 @@ class CargoWagonTesting(unittest.TestCase):
                 "filters": ["transport-belt", "transport-belt", "transport-belt"],
             },
         )
-        self.assertEqual(
-            cargo_wagon.to_dict(),
-            {
-                "name": "cargo-wagon",
-                "position": {"x": 1.0, "y": 1.0},
-                "orientation": 0.75,
-                "inventory": {
-                    "bar": 10,
-                    "filters": [
-                        {"index": 1, "name": "transport-belt"},
-                        {"index": 2, "name": "transport-belt"},
-                        {"index": 3, "name": "transport-belt"},
-                    ],
-                },
+        assert cargo_wagon.to_dict() == {
+            "name": "cargo-wagon",
+            "position": {"x": 1.0, "y": 1.0},
+            "orientation": 0.75,
+            "inventory": {
+                "bar": 10,
+                "filters": [
+                    {"index": 1, "name": "transport-belt"},
+                    {"index": 2, "name": "transport-belt"},
+                    {"index": 3, "name": "transport-belt"},
+                ],
             },
-        )
+        }
 
         cargo_wagon = CargoWagon(
             "cargo-wagon",
@@ -68,35 +63,32 @@ class CargoWagonTesting(unittest.TestCase):
                 ],
             },
         )
-        self.assertEqual(
-            cargo_wagon.to_dict(),
-            {
-                "name": "cargo-wagon",
-                "position": {"x": 1.0, "y": 1.0},
-                "orientation": 0.75,
-                "inventory": {
-                    "bar": 10,
-                    "filters": [
-                        {"index": 1, "name": "transport-belt"},
-                        {"index": 2, "name": "transport-belt"},
-                        {"index": 3, "name": "transport-belt"},
-                    ],
-                },
+        assert cargo_wagon.to_dict() == {
+            "name": "cargo-wagon",
+            "position": {"x": 1.0, "y": 1.0},
+            "orientation": 0.75,
+            "inventory": {
+                "bar": 10,
+                "filters": [
+                    {"index": 1, "name": "transport-belt"},
+                    {"index": 2, "name": "transport-belt"},
+                    {"index": 3, "name": "transport-belt"},
+                ],
             },
-        )
+        }
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             CargoWagon("cargo-wagon", unused_keyword="whatever")
         # Warn if the cargo wagon is not on a rail (close enough to one?)
         # TODO (Complex)
 
         # Errors
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             CargoWagon("this is not a cargo-wagon")
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             CargoWagon("cargo-wagon", orientation="wrong")
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             CargoWagon("cargo-wagon", inventory="incorrect")
 
     def test_mergable_with(self):
@@ -107,15 +99,15 @@ class CargoWagonTesting(unittest.TestCase):
             inventory={"bar": 1, "filters": [{"index": 1, "name": "transport-belt"}]},
         )
 
-        self.assertTrue(wagon1.mergable_with(wagon2))
-        self.assertTrue(wagon2.mergable_with(wagon1))
+        assert wagon1.mergable_with(wagon2)
+        assert wagon2.mergable_with(wagon1)
 
         wagon2.tile_position = [-10, -10]
-        self.assertFalse(wagon1.mergable_with(wagon2))
+        assert not wagon1.mergable_with(wagon2)
 
         wagon2.tile_position = (0, 0)
         wagon2.orientation = 0.1
-        self.assertFalse(wagon1.mergable_with(wagon2))
+        assert not wagon1.mergable_with(wagon2)
 
     def test_merge(self):
         wagon1 = CargoWagon("cargo-wagon")
@@ -128,8 +120,6 @@ class CargoWagonTesting(unittest.TestCase):
         wagon1.merge(wagon2)
         del wagon2
 
-        self.assertEqual(wagon1.tags, {"some": "stuff"})
-        self.assertEqual(wagon1.bar, 1)
-        self.assertEqual(
-            wagon1.inventory["filters"], [{"index": 1, "name": "transport-belt"}]
-        )
+        assert wagon1.tags == {"some": "stuff"}
+        assert wagon1.bar == 1
+        assert wagon1.inventory["filters"] == [{"index": 1, "name": "transport-belt"}]

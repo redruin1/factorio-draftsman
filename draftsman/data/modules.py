@@ -16,3 +16,8 @@ with pkg_resources.open_binary(data, "modules.pkl") as inp:
     _data = pickle.load(inp)
     raw = _data[0]
     categories = _data[1]
+
+
+def add_module(name, category):
+    # type: (str, str) -> None
+    raise NotImplementedError

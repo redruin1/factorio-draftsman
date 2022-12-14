@@ -8,6 +8,7 @@ from draftsman.error import UnreasonablySizedBlueprintError
 from draftsman.warning import OverlappingObjectsWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -20,15 +21,12 @@ class TileListTesting(unittest.TestCase):
         # test load from blueprint string
         bp_string = "0eNp9j8EOgjAQRP9lzuUAVoH+ivEAuNGNsG1oNRLSf7fFizHGZC67k3m7s6If7+RmlgCzggcrHua4wvNFujHvwuIIBhxogoJ0U558sEJFP/NwQ1RgOdMTpownhcAjvRnOeg5sJVOSW7U7hQWm0GX8ArkuXBPnR0T/j6R722Pmo4fCg2a/Qaqm1HVb1ftDkm5ifAFGbk0H"
         blueprint = Blueprint(bp_string)
-        self.assertEqual(
-            blueprint.to_dict()["blueprint"]["tiles"],
-            [
-                {"name": "stone-path", "position": {"x": 293, "y": -41}},
-                {"name": "stone-path", "position": {"x": 294, "y": -41}},
-            ],
-        )
+        assert blueprint.to_dict()["blueprint"]["tiles"] == [
+            {"name": "stone-path", "position": {"x": 293, "y": -41}},
+            {"name": "stone-path", "position": {"x": 294, "y": -41}},
+        ]
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             blueprint.setup(tiles=["not", "a", "tile"])
 
     def test_insert(self):
@@ -36,19 +34,19 @@ class TileListTesting(unittest.TestCase):
 
         blueprint.tiles.insert(0, "landfill")
         blueprint.tiles.insert(1, "refined-concrete", position=(1, 1))
-        self.assertEqual(blueprint.tiles.data, [blueprint.tiles[0], blueprint.tiles[1]])
+        assert blueprint.tiles.data == [blueprint.tiles[0], blueprint.tiles[1]]
 
         # Test merging
         blueprint.tiles.insert(2, "landfill", merge=True)
-        self.assertEqual(blueprint.tiles.data, [blueprint.tiles[0], blueprint.tiles[1]])
+        assert blueprint.tiles.data == [blueprint.tiles[0], blueprint.tiles[1]]
 
-        with self.assertWarns(OverlappingObjectsWarning):
+        with pytest.warns(OverlappingObjectsWarning):
             blueprint.tiles.insert(2, "landfill")
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             blueprint.tiles.insert(0, TypeError)
 
-        with self.assertRaises(UnreasonablySizedBlueprintError):
+        with pytest.raises(UnreasonablySizedBlueprintError):
             blueprint.tiles.insert(0, "landfill", position=(-15000, 0))
 
         # Test no copy
@@ -56,11 +54,11 @@ class TileListTesting(unittest.TestCase):
         local_tile = Tile("landfill", position=[1, 1])
         blueprint.tiles.append(local_tile, copy=False)
         local_tile.name = "concrete"
-        self.assertIs(local_tile, blueprint.tiles[0])
-        self.assertEqual(
-            blueprint.tiles[0].to_dict(),
-            {"name": "concrete", "position": {"x": 1, "y": 1}},
-        )
+        assert local_tile is blueprint.tiles[0]
+        assert blueprint.tiles[0].to_dict() == {
+            "name": "concrete",
+            "position": {"x": 1, "y": 1},
+        }
 
     def test_getitem(self):
         pass
@@ -73,8 +71,8 @@ class TileListTesting(unittest.TestCase):
 
         blueprint.tiles[0] = Tile("refined-concrete")
 
-        self.assertEqual(blueprint.tiles[0].name, "refined-concrete")
-        self.assertEqual(blueprint.tiles[1].name, "refined-concrete")
+        assert blueprint.tiles[0].name == "refined-concrete"
+        assert blueprint.tiles[1].name == "refined-concrete"
 
     def test_delitem(self):
         blueprint = Blueprint()
@@ -85,9 +83,9 @@ class TileListTesting(unittest.TestCase):
         # Int
         del blueprint.tiles[0]
 
-        self.assertEqual(blueprint.tiles[0].name, "refined-concrete")
+        assert blueprint.tiles[0].name == "refined-concrete"
 
         # Slice
         del blueprint.tiles[:]
 
-        self.assertEqual(blueprint.tiles.data, [])
+        assert blueprint.tiles.data == []

@@ -9,6 +9,7 @@ from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -42,58 +43,55 @@ class TransportBeltTesting(unittest.TestCase):
             },
         )
         self.maxDiff = None
-        self.assertEqual(
-            fast_belt.to_dict(),
-            {
-                "name": "fast-transport-belt",
-                "direction": 2,
-                "position": {"x": 0.5, "y": 0.5},
-                "connections": {"1": {"green": [{"entity_id": 1}]}},
-                "control_behavior": {
-                    "circuit_enable_disable": True,
-                    "circuit_condition": {
-                        "first_signal": {"name": "signal-blue", "type": "virtual"},
-                        "comparator": "=",
-                        "second_signal": {"name": "signal-blue", "type": "virtual"},
-                    },
-                    "connect_to_logistic_network": True,
-                    "logistic_condition": {
-                        "first_signal": {
-                            "name": "fast-underground-belt",
-                            "type": "item",
-                        },
-                        "comparator": "≥",
-                        "constant": 0,
-                    },
-                    "circuit_read_hand_contents": False,
-                    "circuit_contents_read_mode": ReadMode.HOLD,
+        assert fast_belt.to_dict() == {
+            "name": "fast-transport-belt",
+            "direction": 2,
+            "position": {"x": 0.5, "y": 0.5},
+            "connections": {"1": {"green": [{"entity_id": 1}]}},
+            "control_behavior": {
+                "circuit_enable_disable": True,
+                "circuit_condition": {
+                    "first_signal": {"name": "signal-blue", "type": "virtual"},
+                    "comparator": "=",
+                    "second_signal": {"name": "signal-blue", "type": "virtual"},
                 },
+                "connect_to_logistic_network": True,
+                "logistic_condition": {
+                    "first_signal": {
+                        "name": "fast-underground-belt",
+                        "type": "item",
+                    },
+                    "comparator": "≥",
+                    "constant": 0,
+                },
+                "circuit_read_hand_contents": False,
+                "circuit_contents_read_mode": ReadMode.HOLD,
             },
-        )
+        }
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             temp = TransportBelt("fast-transport-belt", invalid_param=100)
 
         # Errors
         # Raises InvalidEntityID when not in transport_belts
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             TransportBelt("this is not a storage tank")
 
         # Raises schema errors when any of the associated data is incorrect
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             TransportBelt("transport-belt", id=25)
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             TransportBelt("transport-belt", position=TypeError)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             TransportBelt("transport-belt", direction="incorrect")
 
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             TransportBelt("transport-belt", connections={"this is": ["very", "wrong"]})
 
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             TransportBelt(
                 "transport-belt",
                 control_behavior={"this is": ["also", "very", "wrong"]},
@@ -102,10 +100,10 @@ class TransportBeltTesting(unittest.TestCase):
     def test_power_and_circuit_flags(self):
         for transport_belt in transport_belts:
             belt = TransportBelt(transport_belt)
-            self.assertEqual(belt.power_connectable, False)
-            self.assertEqual(belt.dual_power_connectable, False)
-            self.assertEqual(belt.circuit_connectable, True)
-            self.assertEqual(belt.dual_circuit_connectable, False)
+            assert belt.power_connectable == False
+            assert belt.dual_power_connectable == False
+            assert belt.circuit_connectable == True
+            assert belt.dual_circuit_connectable == False
 
     def test_mergable_with(self):
         belt1 = TransportBelt("fast-transport-belt")
@@ -130,13 +128,13 @@ class TransportBeltTesting(unittest.TestCase):
             tags={"some": "stuff"},
         )
 
-        self.assertTrue(belt1.mergable_with(belt1))
+        assert belt1.mergable_with(belt1)
 
-        self.assertTrue(belt1.mergable_with(belt2))
-        self.assertTrue(belt2.mergable_with(belt1))
+        assert belt1.mergable_with(belt2)
+        assert belt2.mergable_with(belt1)
 
         belt2.tile_position = (1, 1)
-        self.assertFalse(belt1.mergable_with(belt2))
+        assert not belt1.mergable_with(belt2)
 
     def test_merge(self):
         belt1 = TransportBelt("fast-transport-belt")
@@ -164,26 +162,23 @@ class TransportBeltTesting(unittest.TestCase):
         belt1.merge(belt2)
         del belt2
 
-        self.assertEqual(
-            belt1.control_behavior,
-            {
-                "circuit_enable_disable": True,
-                "circuit_condition": {
-                    "first_signal": {"name": "signal-blue", "type": "virtual"},
-                    "comparator": "=",
-                    "second_signal": {"name": "signal-blue", "type": "virtual"},
-                },
-                "connect_to_logistic_network": True,
-                "logistic_condition": {
-                    "first_signal": {
-                        "name": "fast-underground-belt",
-                        "type": "item",
-                    },
-                    "comparator": "≥",
-                    "constant": 0,
-                },
-                "circuit_read_hand_contents": False,
-                "circuit_contents_read_mode": ReadMode.HOLD,
+        assert belt1.control_behavior == {
+            "circuit_enable_disable": True,
+            "circuit_condition": {
+                "first_signal": {"name": "signal-blue", "type": "virtual"},
+                "comparator": "=",
+                "second_signal": {"name": "signal-blue", "type": "virtual"},
             },
-        )
-        self.assertEqual(belt1.tags, {"some": "stuff"})
+            "connect_to_logistic_network": True,
+            "logistic_condition": {
+                "first_signal": {
+                    "name": "fast-underground-belt",
+                    "type": "item",
+                },
+                "comparator": "≥",
+                "constant": 0,
+            },
+            "circuit_read_hand_contents": False,
+            "circuit_contents_read_mode": ReadMode.HOLD,
+        }
+        assert belt1.tags == {"some": "stuff"}

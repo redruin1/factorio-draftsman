@@ -21,6 +21,10 @@ with pkg_resources.open_binary(data, "recipes.pkl") as inp:
     for_machine = _data[2]
 
 
+def add_recipe(name, ingredients, result):
+    raise NotImplementedError
+
+
 def get_recipe_ingredients(recipe_name, expensive=False):
     # type: (str, bool) -> set[str]
     """

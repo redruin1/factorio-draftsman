@@ -42,7 +42,7 @@ from __future__ import unicode_literals
 
 from draftsman import __factorio_version_info__
 from draftsman.classes.blueprintable import Blueprintable
-from draftsman.data import items
+from draftsman.data import entities, items
 from draftsman.error import DataFormatError
 from draftsman import signatures
 from draftsman import utils
@@ -50,28 +50,10 @@ from draftsman.warning import ItemLimitationWarning, ValueWarning, DraftsmanWarn
 
 import copy
 
-# import deal # TODO
 from schema import SchemaError
 import six
 from typing import Union, Sequence
 import warnings
-
-
-# def get_allowed_items():
-#     """
-#     TODO
-#     """
-#     result = set()
-
-#     return result
-
-# _allowed_items = get_allowed_items()
-
-# def equivalent_upgrade_types(a, b):
-#     """
-#     TODO
-#     """
-#     return True
 
 
 class UpgradePlanner(Blueprintable):
@@ -94,6 +76,9 @@ class UpgradePlanner(Blueprintable):
             item="upgrade-planner",
             init_data=upgrade_planner,
         )
+
+        # The max number of mappings that this item can have
+        self._mapper_count = items.raw["upgrade-planner"]["mapper_count"]
 
     @utils.reissue_warnings
     def setup(self, **kwargs):
@@ -128,10 +113,17 @@ class UpgradePlanner(Blueprintable):
     # Properties
     # =========================================================================
 
-    # TODO
-    # @property
-    # def allowed_items(self):
-    #     return _allowed_items
+    @property
+    def mapper_count(self):
+        # type: () -> int
+        """
+        The total number of unique mappings that this entity can have. Read only.
+
+        :type: int
+        """
+        return self._mapper_count
+
+    # =========================================================================
 
     @property
     def mappers(self):
@@ -145,7 +137,7 @@ class UpgradePlanner(Blueprintable):
 
         :getter:
         :setter:
-        :type: TODO
+        :type: ``[{"from": {...}, "to": {...}, "index": int}]``
         """
         return self._root["settings"].get("mappers", None)
 
@@ -169,22 +161,8 @@ class UpgradePlanner(Blueprintable):
                     "{} cannot be resolved to a UpgradePlanner Mapping"
                 )
 
-    # @deal.pre(
-    #     lambda _: signatures.SIGNAL_ID_OR_NONE.is_valid(_.from_obj),
-    #     message="'from_obj' cannot be resolved to a valid SIGNAL_ID"
-    # )
-    # @deal.pre(
-    #     lambda _: signatures.SIGNAL_ID_OR_NONE.is_valid(_.to_obj),
-    #     message="'from_obj' cannot be resolved to a valid SIGNAL_ID"
-    # )
-    # @deal.pre(
-    #     lambda _: isinstance(_.index, int),
-    #     message="'index' is not an integer"
-    # )
-    # @deal.pre(
-    #     lambda _: 0 <= _.index < 24,
-    #     message="'index' must be in range [0, 24)"
-    # )
+    # =========================================================================
+
     @utils.reissue_warnings
     def set_mapping(self, from_obj, to_obj, index):
         # type: (Union[str, dict], Union[str, dict], int) -> None
@@ -233,10 +211,10 @@ class UpgradePlanner(Blueprintable):
         #     )
 
         # Check that the index picked is within the correct range
-        if not 0 <= index < 24:
-            warnings.warn(
-                "'index' must be in range [0, 24)", ValueWarning, stacklevel=2
-            )
+        # if not 0 <= index < 24:
+        #     warnings.warn(
+        #         "'index' must be in range [0, 24)", ValueWarning, stacklevel=2
+        #     )
 
         if self.mappers is None:
             self.mappers = []
@@ -266,28 +244,79 @@ class UpgradePlanner(Blueprintable):
             six.raise_from(DataFormatError, e)
 
         if index is None:
-            # Remove the first occurence of the
+            # Remove the first occurence of the mapping, if there are multiple
             for i, mapping in enumerate(self.mappers):
                 if mapping["from"] == from_obj and mapping["to"] == to_obj:
                     self.mappers.pop(i)
         else:
-            # Check that the index picked is within the correct range
-            if not 0 <= index < 24:
-                warnings.warn(
-                    "'index' not in range [0, 24)", ValueWarning, stacklevel=2
-                )
-
             mapper = {"from": from_obj, "to": to_obj, "index": index}
             try:
                 self.mappers.remove(mapper)
             except ValueError:
                 pass
 
+    def inspect(self):
+        # type: () -> list[Exception]
+        result = []
+        # result = super(Blueprintable, self).inspect() # TODO: implement
+        # Check each mappers
+        for mapper in self.mappers:
+            # Ensure that "from" and "to" are a valid pair
+            if mapper["from"]["name"] == mapper["to"]["name"]:
+                result.append(
+                    DraftsmanWarning(
+                        "Cannot map entity/item '{}' to itself".format(mapper["from"]["name"])
+                    )
+                )
+            else:
+                # To quote prototype documentation for the "next_upgrade" key:
+                # > "This entity may not have 'not-upgradable' flag set and must be
+                # > minable. This entity mining result must not contain item product
+                # > with "hidden" flag set. Mining results with no item products are
+                # > allowed. The entity may not be a Prototype/RollingStock. The
+                # > upgrade target entity needs to have the same bounding box,
+                # > collision mask, and fast replaceable group as this entity. The
+                # > upgrade target entity must have least 1 item that builds it that
+                # > isn't hidden."
+                from_entity = entities.raw[mapper["from"]["name"]]
+                to_entity = entities.raw[mapper["to"]["name"]]
+                from_box = from_entity["collision_box"]
+                to_box = to_entity["collision_box"]
+                from_mask = from_entity["collision_mask"]
+                to_mask = from_entity["collision_mask"]
+                from_group = from_entity.get("fast_replaceable_group", None)
+                to_group = to_entity.get("fast_replaceable_group", None)
+                if (
+                    from_box != to_box
+                    or from_mask != to_mask
+                    or from_group != to_group
+                    or from_group == None
+                ):
+                    result.append(
+                        DraftsmanWarning(
+                            "Cannot upgrade '{}' to '{}'; differing "
+                            "fast-replacable-group ({} vs {})".format(
+                                mapper["from"], mapper["to"], from_group, to_group
+                            )
+                        )
+                    )
+            # Ensure that the index is within the mapping range of this entity
+            if not 0 <= mapper["index"] < 24:
+                result.append(
+                    ValueWarning(
+                        "'index' must be in range [0, 24) for mapping between '{}' and '{}'".format(
+                            mapper["from"], mapper["to"]
+                        )
+                    )
+                )
+
+        return result
+
     def to_dict(self):
         # type: () -> dict
         out_dict = copy.deepcopy(self._root)
 
         if out_dict["settings"] == {}:
-            out_dict["settings"] = None  # null
+            out_dict["settings"] = None  # JSON null
 
         return {"upgrade_planner": out_dict}

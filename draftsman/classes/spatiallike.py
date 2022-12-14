@@ -1,4 +1,4 @@
-# spatial_like.py
+# spatiallike.py
 # -*- encoding: utf-8 -*-
 
 from draftsman.classes.collisionset import CollisionSet

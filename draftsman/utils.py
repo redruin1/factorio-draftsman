@@ -18,7 +18,6 @@ import json
 import math
 from functools import wraps
 import six
-import sys
 from typing import Any, Union
 import warnings
 import zlib
@@ -394,8 +393,8 @@ def string_to_JSON(string):
     """
     try:
         return json.loads(zlib.decompress(base64.b64decode(string[1:])))
-    except Exception:
-        raise MalformedBlueprintStringError
+    except Exception as e:
+        raise MalformedBlueprintStringError(e)
 
 
 def JSON_to_string(JSON):

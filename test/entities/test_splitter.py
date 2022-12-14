@@ -9,6 +9,7 @@ from draftsman.error import InvalidEntityError, InvalidSideError, InvalidItemErr
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -27,62 +28,59 @@ class SplitterTesting(unittest.TestCase):
             output_priority="right",
             filter="small-lamp",
         )
-        self.assertEqual(
-            splitter.to_dict(),
-            {
-                "name": "splitter",
-                "position": {"x": 1.5, "y": 2.0},
-                "direction": 2,
-                "input_priority": "left",
-                "output_priority": "right",
-                "filter": "small-lamp",
-            },
-        )
+        assert splitter.to_dict() == {
+            "name": "splitter",
+            "position": {"x": 1.5, "y": 2.0},
+            "direction": 2,
+            "input_priority": "left",
+            "output_priority": "right",
+            "filter": "small-lamp",
+        }
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             Splitter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5)
 
         # Errors
         # Raises InvalidEntityID when not in containers
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             Splitter("this is not a splitter")
 
         # Raises errors when any of the associated data is incorrect
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             Splitter("splitter", id=25)
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             Splitter("splitter", position=TypeError)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             Splitter("splitter", direction="incorrect")
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             Splitter("splitter", input_priority=TypeError)
 
-        with self.assertRaises(InvalidSideError):
+        with pytest.raises(InvalidSideError):
             Splitter("splitter", input_priority="wrong")
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             Splitter("splitter", output_priority=TypeError)
 
-        with self.assertRaises(InvalidSideError):
+        with pytest.raises(InvalidSideError):
             Splitter("splitter", output_priority="wrong")
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             Splitter("splitter", filter=TypeError)
 
-        with self.assertRaises(InvalidItemError):
+        with pytest.raises(InvalidItemError):
             Splitter("splitter", filter="wrong")
 
     def test_power_and_circuit_flags(self):
         for name in splitters:
             splitter = Splitter(name)
-            self.assertEqual(splitter.power_connectable, False)
-            self.assertEqual(splitter.dual_power_connectable, False)
-            self.assertEqual(splitter.circuit_connectable, False)
-            self.assertEqual(splitter.dual_circuit_connectable, False)
+            assert splitter.power_connectable == False
+            assert splitter.dual_power_connectable == False
+            assert splitter.circuit_connectable == False
+            assert splitter.dual_circuit_connectable == False
 
     def test_mergable_with(self):
         splitter1 = Splitter("splitter")
@@ -94,13 +92,13 @@ class SplitterTesting(unittest.TestCase):
             tags={"some": "stuff"},
         )
 
-        self.assertTrue(splitter1.mergable_with(splitter1))
+        assert splitter1.mergable_with(splitter1)
 
-        self.assertTrue(splitter1.mergable_with(splitter2))
-        self.assertTrue(splitter2.mergable_with(splitter1))
+        assert splitter1.mergable_with(splitter2)
+        assert splitter2.mergable_with(splitter1)
 
         splitter2.tile_position = (1, 1)
-        self.assertFalse(splitter1.mergable_with(splitter2))
+        assert not splitter1.mergable_with(splitter2)
 
     def test_merge(self):
         splitter1 = Splitter("splitter")
@@ -115,7 +113,7 @@ class SplitterTesting(unittest.TestCase):
         splitter1.merge(splitter2)
         del splitter2
 
-        self.assertEqual(splitter1.input_priority, "left")
-        self.assertEqual(splitter1.output_priority, "right")
-        self.assertEqual(splitter1.filter, "small-lamp")
-        self.assertEqual(splitter1.tags, {"some": "stuff"})
+        assert splitter1.input_priority == "left"
+        assert splitter1.output_priority == "right"
+        assert splitter1.filter == "small-lamp"
+        assert splitter1.tags == {"some": "stuff"}

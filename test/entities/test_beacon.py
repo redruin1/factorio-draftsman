@@ -12,6 +12,7 @@ from draftsman.warning import (
 )
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -23,40 +24,40 @@ class BeaconTesting(unittest.TestCase):
     def test_contstructor_init(self):
         beacon = Beacon()
 
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             Beacon(unused_keyword="whatever")
 
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             Beacon("this is not a beacon")
 
     def test_set_item_request(self):
         beacon = Beacon()
         beacon.set_item_request("speed-module-3", 1)
-        self.assertEqual(beacon.items, {"speed-module-3": 1})
-        with self.assertWarns(ModuleLimitationWarning):
+        assert beacon.items == {"speed-module-3": 1}
+        with pytest.warns(ModuleLimitationWarning):
             beacon.set_item_request("productivity-module-3", 1)
 
         beacon.set_item_requests(None)
-        with self.assertWarns(ItemLimitationWarning):
+        with pytest.warns(ItemLimitationWarning):
             beacon.set_item_request("steel-plate", 2)
 
         # Errors
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             beacon.set_item_request("incorrect", "nonsense")
-        with self.assertRaises(InvalidItemError):
+        with pytest.raises(InvalidItemError):
             beacon.set_item_request("incorrect", 100)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             beacon.set_item_request("speed-module-2", "nonsense")
 
     def test_mergable_with(self):
         beacon1 = Beacon("beacon")
         beacon2 = Beacon("beacon", items={"speed-module-2": 2})
 
-        self.assertTrue(beacon1.mergable_with(beacon2))
-        self.assertTrue(beacon2.mergable_with(beacon1))
+        assert beacon1.mergable_with(beacon2)
+        assert beacon2.mergable_with(beacon1)
 
         beacon2.tile_position = (1, 1)
-        self.assertFalse(beacon1.mergable_with(beacon2))
+        assert not beacon1.mergable_with(beacon2)
 
     def test_merge(self):
         beacon1 = Beacon("beacon")
@@ -65,4 +66,4 @@ class BeaconTesting(unittest.TestCase):
         beacon1.merge(beacon2)
         del beacon2
 
-        self.assertEqual(beacon1.items, {"speed-module-2": 2})
+        assert beacon1.items == {"speed-module-2": 2}

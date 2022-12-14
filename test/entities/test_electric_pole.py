@@ -10,6 +10,7 @@ from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -22,11 +23,11 @@ class ElectricPoleTesting(unittest.TestCase):
         electric_pole = ElectricPole("substation", position=[1, 1], neighbours=[1, 2])
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             ElectricPole("small-electric-pole", unused_keyword=10)
 
         # Errors
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             ElectricPole("this is not an electric pole")
 
     def test_mergable_with(self):
@@ -44,14 +45,14 @@ class ElectricPoleTesting(unittest.TestCase):
         group1_entity = blueprint.entities[(0, 1)]
         group2_entity = group.entities[0]
 
-        self.assertTrue(group1_entity.mergable_with(group2_entity))
-        self.assertTrue(group2_entity.mergable_with(group1_entity))
+        assert group1_entity.mergable_with(group2_entity)
+        assert group2_entity.mergable_with(group1_entity)
 
         group.position = (5, 5)
-        self.assertFalse(group1_entity.mergable_with(group2_entity))
+        assert not group1_entity.mergable_with(group2_entity)
 
         group2_entity = ElectricPole("medium-electric-pole", tile_position=(5, 0))
-        self.assertFalse(group1_entity.mergable_with(group2_entity))
+        assert not group1_entity.mergable_with(group2_entity)
 
     def test_merge(self):
         group = Group()
@@ -68,44 +69,41 @@ class ElectricPoleTesting(unittest.TestCase):
         blueprint.add_power_connection((0, 0), (1, 0))
 
         self.maxDiff = None
-        self.assertEqual(len(blueprint.entities), 2)
-        self.assertEqual(len(blueprint.entities[0].entities), 2)
-        self.assertEqual(len(blueprint.entities[1].entities), 1)
-        self.assertEqual(
-            blueprint.to_dict()["blueprint"]["entities"],
-            [
-                {
-                    "entity_number": 1,
-                    "name": "small-electric-pole",
-                    "position": {"x": 0.5, "y": 0.5},
-                    "neighbours": [2, 3],
-                    "connections": {
-                        "1": {"red": [{"entity_id": 2}], "green": [{"entity_id": 2}]}
-                    },
+        assert len(blueprint.entities) == 2
+        assert len(blueprint.entities[0].entities) == 2
+        assert len(blueprint.entities[1].entities) == 1
+        assert blueprint.to_dict()["blueprint"]["entities"] == [
+            {
+                "entity_number": 1,
+                "name": "small-electric-pole",
+                "position": {"x": 0.5, "y": 0.5},
+                "neighbours": [2, 3],
+                "connections": {
+                    "1": {"red": [{"entity_id": 2}], "green": [{"entity_id": 2}]}
                 },
-                {
-                    "entity_number": 2,
-                    "name": "small-electric-pole",
-                    "position": {"x": 2.5, "y": 0.5},
-                    "neighbours": [1, 3],
-                    "connections": {
-                        "1": {
-                            "red": [{"entity_id": 1}, {"entity_id": 3}],
-                            "green": [{"entity_id": 1}, {"entity_id": 3}],
-                        }
-                    },
+            },
+            {
+                "entity_number": 2,
+                "name": "small-electric-pole",
+                "position": {"x": 2.5, "y": 0.5},
+                "neighbours": [1, 3],
+                "connections": {
+                    "1": {
+                        "red": [{"entity_id": 1}, {"entity_id": 3}],
+                        "green": [{"entity_id": 1}, {"entity_id": 3}],
+                    }
                 },
-                {
-                    "entity_number": 3,
-                    "name": "small-electric-pole",
-                    "position": {"x": 4.5, "y": 0.5},
-                    "neighbours": [2, 1],
-                    "connections": {
-                        "1": {"red": [{"entity_id": 2}], "green": [{"entity_id": 2}]}
-                    },
+            },
+            {
+                "entity_number": 3,
+                "name": "small-electric-pole",
+                "position": {"x": 4.5, "y": 0.5},
+                "neighbours": [2, 1],
+                "connections": {
+                    "1": {"red": [{"entity_id": 2}], "green": [{"entity_id": 2}]}
                 },
-            ],
-        )
+            },
+        ]
 
         # Exceeding max number of neighbours
         group = Group("triangle")
@@ -126,62 +124,59 @@ class ElectricPoleTesting(unittest.TestCase):
         blueprint.entities.append(group2, merge=True)
         blueprint.add_power_connection((0, 3), (1, 0))
 
-        self.assertEqual(len(blueprint.entities), 2)
-        self.assertEqual(len(blueprint.entities[0].entities), 6)
-        self.assertEqual(len(blueprint.entities[1].entities), 2)
-        self.assertEqual(
-            blueprint.to_dict()["blueprint"]["entities"],
-            [
-                {
-                    "entity_number": 1,
-                    "name": "small-electric-pole",
-                    "position": {"x": 0.5, "y": 0.5},
-                    "neighbours": [2, 3, 4, 5, 6],
-                },
-                {
-                    "entity_number": 2,
-                    "name": "small-electric-pole",
-                    "position": {"x": -1.5, "y": -1.5},
-                    "neighbours": [1],
-                },
-                {
-                    "entity_number": 3,
-                    "name": "small-electric-pole",
-                    "position": {"x": -1.5, "y": -0.5},
-                    "neighbours": [1],
-                },
-                {
-                    "entity_number": 4,
-                    "name": "small-electric-pole",
-                    "position": {"x": -1.5, "y": 0.5},
-                    "neighbours": [1, 7],
-                },
-                {
-                    "entity_number": 5,
-                    "name": "small-electric-pole",
-                    "position": {"x": -1.5, "y": 1.5},
-                    "neighbours": [1],
-                },
-                {
-                    "entity_number": 6,
-                    "name": "small-electric-pole",
-                    "position": {"x": -1.5, "y": 2.5},
-                    "neighbours": [1],
-                },
-                {
-                    "entity_number": 7,
-                    "name": "small-electric-pole",
-                    "position": {"x": 2.5, "y": 0.5},
-                    "neighbours": [8, 4],
-                },
-                {
-                    "entity_number": 8,
-                    "name": "small-electric-pole",
-                    "position": {"x": 4.5, "y": 0.5},
-                    "neighbours": [7],
-                },
-            ],
-        )
+        assert len(blueprint.entities) == 2
+        assert len(blueprint.entities[0].entities) == 6
+        assert len(blueprint.entities[1].entities) == 2
+        assert blueprint.to_dict()["blueprint"]["entities"] == [
+            {
+                "entity_number": 1,
+                "name": "small-electric-pole",
+                "position": {"x": 0.5, "y": 0.5},
+                "neighbours": [2, 3, 4, 5, 6],
+            },
+            {
+                "entity_number": 2,
+                "name": "small-electric-pole",
+                "position": {"x": -1.5, "y": -1.5},
+                "neighbours": [1],
+            },
+            {
+                "entity_number": 3,
+                "name": "small-electric-pole",
+                "position": {"x": -1.5, "y": -0.5},
+                "neighbours": [1],
+            },
+            {
+                "entity_number": 4,
+                "name": "small-electric-pole",
+                "position": {"x": -1.5, "y": 0.5},
+                "neighbours": [1, 7],
+            },
+            {
+                "entity_number": 5,
+                "name": "small-electric-pole",
+                "position": {"x": -1.5, "y": 1.5},
+                "neighbours": [1],
+            },
+            {
+                "entity_number": 6,
+                "name": "small-electric-pole",
+                "position": {"x": -1.5, "y": 2.5},
+                "neighbours": [1],
+            },
+            {
+                "entity_number": 7,
+                "name": "small-electric-pole",
+                "position": {"x": 2.5, "y": 0.5},
+                "neighbours": [8, 4],
+            },
+            {
+                "entity_number": 8,
+                "name": "small-electric-pole",
+                "position": {"x": 4.5, "y": 0.5},
+                "neighbours": [7],
+            },
+        ]
 
         group = Group()
         group.entities.append("small-electric-pole")
@@ -193,28 +188,25 @@ class ElectricPoleTesting(unittest.TestCase):
         blueprint.entities.append(group)
         blueprint.entities.append(group, merge=True)
 
-        self.assertEqual(len(blueprint.entities), 2)
-        self.assertEqual(len(blueprint.entities[0].entities), 2)
-        self.assertEqual(len(blueprint.entities[1].entities), 0)
-        self.assertEqual(
-            blueprint.to_dict()["blueprint"]["entities"],
-            [
-                {
-                    "entity_number": 1,
-                    "name": "small-electric-pole",
-                    "position": {"x": 0.5, "y": 0.5},
-                    "neighbours": [2],
-                    "connections": {"1": {"red": [{"entity_id": 2}]}},
-                },
-                {
-                    "entity_number": 2,
-                    "name": "small-electric-pole",
-                    "position": {"x": 2.5, "y": 0.5},
-                    "neighbours": [1],
-                    "connections": {"1": {"red": [{"entity_id": 1}]}},
-                },
-            ],
-        )
+        assert len(blueprint.entities) == 2
+        assert len(blueprint.entities[0].entities) == 2
+        assert len(blueprint.entities[1].entities) == 0
+        assert blueprint.to_dict()["blueprint"]["entities"] == [
+            {
+                "entity_number": 1,
+                "name": "small-electric-pole",
+                "position": {"x": 0.5, "y": 0.5},
+                "neighbours": [2],
+                "connections": {"1": {"red": [{"entity_id": 2}]}},
+            },
+            {
+                "entity_number": 2,
+                "name": "small-electric-pole",
+                "position": {"x": 2.5, "y": 0.5},
+                "neighbours": [1],
+                "connections": {"1": {"red": [{"entity_id": 1}]}},
+            },
+        ]
 
         # Test wire connections
         group = Group()
@@ -226,22 +218,19 @@ class ElectricPoleTesting(unittest.TestCase):
         blueprint.entities.append("small-electric-pole")
         blueprint.entities.append(group, merge=True)
 
-        self.assertEqual(len(blueprint.entities), 2)
-        self.assertEqual(len(blueprint.entities[1].entities), 1)
-        self.assertEqual(
-            blueprint.to_dict()["blueprint"]["entities"],
-            [
-                {
-                    "entity_number": 1,
-                    "name": "small-electric-pole",
-                    "position": {"x": 0.5, "y": 0.5},
-                    "connections": {"1": {"red": [{"entity_id": 2}]}},
-                },
-                {
-                    "entity_number": 2,
-                    "name": "small-electric-pole",
-                    "position": {"x": 2.5, "y": 0.5},
-                    "connections": {"1": {"red": [{"entity_id": 1}]}},
-                },
-            ],
-        )
+        assert len(blueprint.entities) == 2
+        assert len(blueprint.entities[1].entities) == 1
+        assert blueprint.to_dict()["blueprint"]["entities"] == [
+            {
+                "entity_number": 1,
+                "name": "small-electric-pole",
+                "position": {"x": 0.5, "y": 0.5},
+                "connections": {"1": {"red": [{"entity_id": 2}]}},
+            },
+            {
+                "entity_number": 2,
+                "name": "small-electric-pole",
+                "position": {"x": 2.5, "y": 0.5},
+                "connections": {"1": {"red": [{"entity_id": 1}]}},
+            },
+        ]

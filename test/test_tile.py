@@ -5,6 +5,7 @@ from draftsman.tile import Tile
 from draftsman.error import InvalidTileError
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -16,42 +17,62 @@ class TileTesting(unittest.TestCase):
     def test_constructor(self):
         # Specific position
         tile = Tile("hazard-concrete-right", (100, -100))
-        self.assertEqual(tile.name, "hazard-concrete-right")
-        self.assertEqual(tile.position.x, 100)
-        self.assertEqual(tile.position.y, -100)
+        assert tile.name == "hazard-concrete-right"
+        assert tile.position.x == 100
+        assert tile.position.y == -100
         # Default position
         tile = Tile("hazard-concrete-right")
-        self.assertEqual(tile.name, "hazard-concrete-right")
-        self.assertEqual(tile.position.x, 0)
-        self.assertEqual(tile.position.y, 0)
+        assert tile.name == "hazard-concrete-right"
+        assert tile.position.x == 0
+        assert tile.position.y == 0
+
         # Invalid name
-        with self.assertRaises(InvalidTileError):
+        with pytest.raises(InvalidTileError):
             tile = Tile("weeeeee")
+            issues = tile.inspect()
+            for error in issues:
+                raise error
+
+        # TODO: test closure
+        # with self.assertRaises(InvalidTileError):
+        #     tile = Tile("incorrect")
+        #     with tile.validate() as issues:
+        #         for error in issues:
+        #             raise error
 
     def test_set_name(self):
         tile = Tile("hazard-concrete-left")
-        self.assertEqual(tile.name, "hazard-concrete-left")
-        self.assertEqual(tile.position.x, 0)
-        self.assertEqual(tile.position.y, 0)
+        assert tile.name == "hazard-concrete-left"
+        assert tile.position.x == 0
+        assert tile.position.y == 0
         tile.name = "refined-hazard-concrete-left"
-        self.assertEqual(tile.name, "refined-hazard-concrete-left")
-        self.assertEqual(tile.position.x, 0)
-        self.assertEqual(tile.position.y, 0)
+        assert tile.name == "refined-hazard-concrete-left"
+        assert tile.position.x == 0
+        assert tile.position.y == 0
+
         # Invalid name
-        with self.assertRaises(InvalidTileError):
+        with pytest.raises(InvalidTileError):
             tile.name = "weeeeee"
+            issues = tile.inspect()
+            for error in issues:
+                raise error
+
+        # TODO: test closure
+        # with self.assertRaises(InvalidTileError):
+        #     tile.name = "incorrect"
+        #     with tile.validate() as issues:
+        #         for error in issues:
+        #             raise error
 
     def test_set_position(self):
         tile = Tile("landfill", (0, 0))
         tile.position = (-123, 123)
-        self.assertEqual(tile.position.x, -123)
-        self.assertEqual(tile.position.y, 123)
+        assert tile.position.x == -123
+        assert tile.position.y == 123
 
     def test_to_dict(self):
         tile = Tile("landfill", position=(123, 123))
-        self.assertEqual(
-            tile.to_dict(), {"name": "landfill", "position": {"x": 123, "y": 123}}
-        )
+        assert tile.to_dict() == {"name": "landfill", "position": {"x": 123, "y": 123}}
 
     # def test_repr(self):
     #     tile = Tile("concrete", (0, 0))

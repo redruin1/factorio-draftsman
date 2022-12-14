@@ -8,6 +8,7 @@ from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -20,24 +21,24 @@ class SolarPanelTesting(unittest.TestCase):
         solar_panel = SolarPanel()
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             SolarPanel(unused_keyword="whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             SolarPanel("not a solar_panel")
 
     def test_mergable_with(self):
         panel1 = SolarPanel("solar-panel")
         panel2 = SolarPanel("solar-panel", tags={"some": "stuff"})
 
-        self.assertTrue(panel1.mergable_with(panel1))
+        assert panel1.mergable_with(panel1)
 
-        self.assertTrue(panel1.mergable_with(panel2))
-        self.assertTrue(panel2.mergable_with(panel1))
+        assert panel1.mergable_with(panel2)
+        assert panel2.mergable_with(panel1)
 
         panel2.tile_position = (1, 1)
-        self.assertFalse(panel1.mergable_with(panel2))
+        assert not panel1.mergable_with(panel2)
 
     def test_merge(self):
         panel1 = SolarPanel("solar-panel")
@@ -46,4 +47,4 @@ class SolarPanelTesting(unittest.TestCase):
         panel1.merge(panel2)
         del panel2
 
-        self.assertEqual(panel1.tags, {"some": "stuff"})
+        assert panel1.tags == {"some": "stuff"}

@@ -75,16 +75,6 @@ class Splitter(DirectionalMixin, Entity):
         # type: (str, **dict) -> None
         super(Splitter, self).__init__(name, splitters, **kwargs)
 
-        if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
-            self._collision_mask = set(entities.raw[self.name]["collision_mask"])
-        else:  # pragma: no coverage
-            self._collision_mask = {
-                "object-layer",
-                "item-layer",
-                "transport-belt-layer",
-                "water-tile",
-            }
-
         self.input_priority = None
         if "input_priority" in kwargs:
             self.input_priority = kwargs["input_priority"]
