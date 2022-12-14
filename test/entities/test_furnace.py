@@ -12,6 +12,7 @@ from draftsman.warning import (
 )
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -24,18 +25,18 @@ class FurnaceTesting(unittest.TestCase):
         furnace = Furnace("stone-furnace")
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             Furnace("stone-furnace", unused_keyword="whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             Furnace("not a furnace")
 
     def test_set_item_request(self):
         furnace = Furnace("stone-furnace")
 
         # Module on stone furnace
-        with self.assertWarns(ModuleCapacityWarning):
+        with pytest.warns(ModuleCapacityWarning):
             furnace.set_item_request("speed-module", 2)
 
         # TODO: Fuel on electric furnace
@@ -45,37 +46,37 @@ class FurnaceTesting(unittest.TestCase):
         furnace = Furnace("electric-furnace")
         # Module on electric furnace
         furnace.set_item_request("productivity-module-3", 2)
-        self.assertEqual(furnace.items, {"productivity-module-3": 2})
-        self.assertEqual(furnace.module_slots_occupied, 2)
+        assert furnace.items == {"productivity-module-3": 2}
+        assert furnace.module_slots_occupied == 2
 
         # Fuel on electric furnace
-        with self.assertWarns(ItemLimitationWarning):
+        with pytest.warns(ItemLimitationWarning):
             furnace.set_item_request("coal", 100)
-        self.assertEqual(furnace.items, {"productivity-module-3": 2, "coal": 100})
+        assert furnace.items == {"productivity-module-3": 2, "coal": 100}
 
         # Non smeltable item and not fuel
         furnace.set_item_requests(None)
-        with self.assertWarns(ItemLimitationWarning):
+        with pytest.warns(ItemLimitationWarning):
             furnace.set_item_request("copper-plate", 100)
-        self.assertEqual(furnace.items, {"copper-plate": 100})
-        self.assertEqual(furnace.module_slots_occupied, 0)
+        assert furnace.items == {"copper-plate": 100}
+        assert furnace.module_slots_occupied == 0
 
         furnace.set_item_requests(None)
-        self.assertEqual(furnace.items, {})
-        self.assertEqual(furnace.module_slots_occupied, 0)
+        assert furnace.items == {}
+        assert furnace.module_slots_occupied == 0
 
         # Errors
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             furnace.set_item_request("incorrect", "nonsense")
-        with self.assertRaises(InvalidItemError):
+        with pytest.raises(InvalidItemError):
             furnace.set_item_request("incorrect", 100)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             furnace.set_item_request("speed-module-2", TypeError)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             furnace.set_item_request("speed-module-2", -1)
 
-        self.assertEqual(furnace.items, {})
-        self.assertEqual(furnace.module_slots_occupied, 0)
+        assert furnace.items == {}
+        assert furnace.module_slots_occupied == 0
 
     def test_mergable_with(self):
         furnace1 = Furnace("stone-furnace")
@@ -83,16 +84,16 @@ class FurnaceTesting(unittest.TestCase):
             "stone-furnace", items={"copper-ore": 100}, tags={"some": "stuff"}
         )
 
-        self.assertTrue(furnace1.mergable_with(furnace1))
+        assert furnace1.mergable_with(furnace1)
 
-        self.assertTrue(furnace1.mergable_with(furnace2))
-        self.assertTrue(furnace2.mergable_with(furnace1))
+        assert furnace1.mergable_with(furnace2)
+        assert furnace2.mergable_with(furnace1)
 
         furnace2.tile_position = (5, 5)
-        self.assertFalse(furnace1.mergable_with(furnace2))
+        assert not furnace1.mergable_with(furnace2)
 
         furnace2 = Furnace("electric-furnace")
-        self.assertFalse(furnace1.mergable_with(furnace2))
+        assert not furnace1.mergable_with(furnace2)
 
     def test_merge(self):
         furnace1 = Furnace("stone-furnace")
@@ -103,5 +104,5 @@ class FurnaceTesting(unittest.TestCase):
         furnace1.merge(furnace2)
         del furnace2
 
-        self.assertEqual(furnace1.items, {"copper-ore": 100})
-        self.assertEqual(furnace1.tags, {"some": "stuff"})
+        assert furnace1.items == {"copper-ore": 100}
+        assert furnace1.tags == {"some": "stuff"}

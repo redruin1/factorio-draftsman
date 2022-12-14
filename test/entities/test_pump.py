@@ -8,6 +8,7 @@ from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -20,26 +21,26 @@ class PumpTesting(unittest.TestCase):
         # pump = Pump("pump")
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             Pump("pump", unused_keyword=10)
 
         # Errors
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             Pump("this is not a pump")
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             Pump(control_behavior={"unused_key": "something"})
 
     def test_mergable_with(self):
         pump1 = Pump("pump")
         pump2 = Pump("pump", tags={"some": "stuff"})
 
-        self.assertTrue(pump1.mergable_with(pump1))
+        assert pump1.mergable_with(pump1)
 
-        self.assertTrue(pump1.mergable_with(pump2))
-        self.assertTrue(pump2.mergable_with(pump1))
+        assert pump1.mergable_with(pump2)
+        assert pump2.mergable_with(pump1)
 
         pump2.tile_position = (1, 1)
-        self.assertFalse(pump1.mergable_with(pump2))
+        assert not pump1.mergable_with(pump2)
 
     def test_merge(self):
         pump1 = Pump("pump")
@@ -48,4 +49,4 @@ class PumpTesting(unittest.TestCase):
         pump1.merge(pump2)
         del pump2
 
-        self.assertEqual(pump1.tags, {"some": "stuff"})
+        assert pump1.tags == {"some": "stuff"}

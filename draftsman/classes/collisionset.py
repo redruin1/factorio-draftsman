@@ -1,3 +1,5 @@
+import deal
+
 # collisionobject.py
 
 from draftsman.classes.vector import Vector

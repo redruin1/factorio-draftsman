@@ -12,6 +12,7 @@ from draftsman.warning import (
 )
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -23,88 +24,80 @@ class LabTesting(unittest.TestCase):
     def test_contstructor_init(self):
         lab = Lab()
 
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             Lab(unused_keyword="whatever")
 
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             Lab("this is not a lab")
 
     def test_inputs(self):
         lab = Lab("lab")
 
-        self.assertEqual(
-            lab.inputs,
-            [
-                "automation-science-pack",
-                "logistic-science-pack",
-                "military-science-pack",
-                "chemical-science-pack",
-                "production-science-pack",
-                "utility-science-pack",
-                "space-science-pack",
-            ],
-        )
+        assert lab.inputs == [
+            "automation-science-pack",
+            "logistic-science-pack",
+            "military-science-pack",
+            "chemical-science-pack",
+            "production-science-pack",
+            "utility-science-pack",
+            "space-science-pack",
+        ]
 
     def test_set_item_request(self):
         lab = Lab("lab")
 
         lab.set_item_request("productivity-module-3", 2)
-        self.assertEqual(lab.items, {"productivity-module-3": 2})
-        self.assertEqual(lab.module_slots_occupied, 2)
+        assert lab.items == {"productivity-module-3": 2}
+        assert lab.module_slots_occupied == 2
 
         # Warnings
-        with self.assertWarns(ModuleCapacityWarning):
+        with pytest.warns(ModuleCapacityWarning):
             lab.set_item_request("speed-module-2", 2)
-        self.assertEqual(lab.items, {"productivity-module-3": 2, "speed-module-2": 2})
-        self.assertEqual(lab.module_slots_occupied, 4)
+        assert lab.items == {"productivity-module-3": 2, "speed-module-2": 2}
+        assert lab.module_slots_occupied == 4
 
         lab.set_item_request("speed-module-2", None)
-        self.assertEqual(lab.items, {"productivity-module-3": 2})
+        assert lab.items == {"productivity-module-3": 2}
 
         lab.set_item_request("automation-science-pack", 10)
-        self.assertEqual(
-            lab.items, {"productivity-module-3": 2, "automation-science-pack": 10}
-        )
-        self.assertEqual(lab.module_slots_occupied, 2)
+        assert lab.items == {"productivity-module-3": 2, "automation-science-pack": 10}
+        assert lab.module_slots_occupied == 2
 
-        with self.assertWarns(ItemLimitationWarning):
+        with pytest.warns(ItemLimitationWarning):
             lab.set_item_request("iron-plate", 100)
-        self.assertEqual(
-            lab.items,
-            {
-                "productivity-module-3": 2,
-                "automation-science-pack": 10,
-                "iron-plate": 100,
-            },
-        )
+        assert lab.items == {
+            "productivity-module-3": 2,
+            "automation-science-pack": 10,
+            "iron-plate": 100,
+        }
 
         # Errors
         lab.set_item_requests(None)
-        self.assertEqual(lab.module_slots_occupied, 0)
+        assert lab.module_slots_occupied == 0
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             lab.set_item_request(TypeError, 100)
-        with self.assertRaises(InvalidItemError):
+        with pytest.raises(InvalidItemError):
             lab.set_item_request("incorrect", 100)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             lab.set_item_request("logistic-science-pack", TypeError)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             lab.set_item_request("logistic-science-pack", -1)
 
-        self.assertEqual(lab.items, {})
-        self.assertEqual(lab.module_slots_occupied, 0)
+        assert lab.items == {}
+        assert lab.module_slots_occupied == 0
 
     def test_mergable_with(self):
         lab1 = Lab("lab")
         lab2 = Lab("lab", tags={"some": "stuff"})
 
-        self.assertTrue(lab1.mergable_with(lab1))
+        assert lab1.mergable_with(lab1)
 
-        self.assertTrue(lab1.mergable_with(lab2))
-        self.assertTrue(lab2.mergable_with(lab1))
+        assert lab1.mergable_with(lab2)
+        assert lab2.mergable_with(lab1)
 
         lab2.tile_position = (1, 1)
-        self.assertFalse(lab1.mergable_with(lab2))
+        assert not lab1.mergable_with(lab2)
 
     def test_merge(self):
         lab1 = Lab("lab")
@@ -113,4 +106,4 @@ class LabTesting(unittest.TestCase):
         lab1.merge(lab2)
         del lab2
 
-        self.assertEqual(lab1.tags, {"some": "stuff"})
+        assert lab1.tags == {"some": "stuff"}

@@ -17,3 +17,7 @@ with pkg_resources.open_binary(data, "instruments.pkl") as inp:
     raw = _data[0]
     index = _data[1]
     names = _data[2]
+
+
+def add_instrument(name, notes):
+    raise NotImplementedError

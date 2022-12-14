@@ -26,6 +26,38 @@ with pkg_resources.open_binary(data, "signals.pkl") as inp:
     pure_virtual = ["signal-everything", "signal-anything", "signal-each"]
 
 
+def add_signal(name, type, order_string=None, subgroup=None):
+    # type: (str, str, str, str) -> None
+    """
+    Temporarily adds a signal to :py:mod:`draftsman.data.signals`. This allows
+    the user to specify custom signals so that Draftsman can deduce their type
+    without having to install a corresponding mod. More specifically, it
+    populates :py:data:`raw` and :py:data:`type_of` with the correct values,
+    and adds the name to either :py:data:`item`, :py:data:`fluid`, or
+    :py:data:`virtual` depending on ``type``.
+
+    Note that this is not intended to be used extensively; You're much better
+    off using `draftsman-update` with the mods you're working with which is much
+    easier and less prone to user error. However, if you want to be able to
+    write a single modded signal without actually resolving the mod in Draftsman,
+    then this is the function for you.
+
+    :param name: The in-game string ID of the signal.
+    :param type: The signal-dict type of the signal; should be one of ``"item"``,
+        ``"fluid"`` or ``"virtual"``.
+    :param order_string: Currently unimplemented. TODO
+    :param subgroup: Currently unimplemented. TODO
+    """
+    raw[name] = {"name": name, "type": type}
+    type_of[name] = type
+    if type == "item":
+        item.append(name)
+    elif type == "fluid":
+        fluid.append(name)
+    elif type == "virtual":
+        virtual.append(name)
+
+
 def get_signal_type(signal_name):
     # type: (str) -> str
     """

@@ -8,6 +8,7 @@ from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -30,40 +31,34 @@ class LogisticPassiveContainerTesting(unittest.TestCase):
                 }
             },
         )
-        self.assertEqual(
-            passive_chest.to_dict(),
-            {
-                "name": "logistic-chest-passive-provider",
-                "position": {"x": 15.5, "y": 3.5},
-                "bar": 5,
-                "connections": {
-                    "1": {
-                        "red": [
-                            {"entity_id": 2},
-                            {"entity_id": 2, "circuit_id": 1},
-                        ]
-                    }
-                },
+        assert passive_chest.to_dict() == {
+            "name": "logistic-chest-passive-provider",
+            "position": {"x": 15.5, "y": 3.5},
+            "bar": 5,
+            "connections": {
+                "1": {
+                    "red": [
+                        {"entity_id": 2},
+                        {"entity_id": 2, "circuit_id": 1},
+                    ]
+                }
             },
-        )
+        }
         passive_chest = LogisticPassiveContainer(
             "logistic-chest-passive-provider",
             position={"x": 15.5, "y": 1.5},
             bar=5,
             tags={"A": "B"},
         )
-        self.assertEqual(
-            passive_chest.to_dict(),
-            {
-                "name": "logistic-chest-passive-provider",
-                "position": {"x": 15.5, "y": 1.5},
-                "bar": 5,
-                "tags": {"A": "B"},
-            },
-        )
+        assert passive_chest.to_dict() == {
+            "name": "logistic-chest-passive-provider",
+            "position": {"x": 15.5, "y": 1.5},
+            "bar": 5,
+            "tags": {"A": "B"},
+        }
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider",
                 position=[0, 0],
@@ -72,24 +67,24 @@ class LogisticPassiveContainerTesting(unittest.TestCase):
 
         # Errors
         # Raises InvalidEntityID when not in containers
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             LogisticPassiveContainer("this is not a logistics passive chest")
 
         # Raises schema errors when any of the associated data is incorrect
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             LogisticPassiveContainer("logistic-chest-passive-provider", id=25)
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider", position=TypeError
             )
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider", bar="not even trying"
             )
 
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider",
                 connections={"this is": ["very", "wrong"]},
@@ -98,10 +93,10 @@ class LogisticPassiveContainerTesting(unittest.TestCase):
     def test_power_and_circuit_flags(self):
         for name in logistic_passive_containers:
             container = LogisticPassiveContainer(name)
-            self.assertEqual(container.power_connectable, False)
-            self.assertEqual(container.dual_power_connectable, False)
-            self.assertEqual(container.circuit_connectable, True)
-            self.assertEqual(container.dual_circuit_connectable, False)
+            assert container.power_connectable == False
+            assert container.dual_power_connectable == False
+            assert container.circuit_connectable == True
+            assert container.dual_circuit_connectable == False
 
     def test_mergable_with(self):
         container1 = LogisticPassiveContainer("logistic-chest-passive-provider")
@@ -109,13 +104,13 @@ class LogisticPassiveContainerTesting(unittest.TestCase):
             "logistic-chest-passive-provider", bar=10, tags={"some": "stuff"}
         )
 
-        self.assertTrue(container1.mergable_with(container1))
+        assert container1.mergable_with(container1)
 
-        self.assertTrue(container1.mergable_with(container2))
-        self.assertTrue(container2.mergable_with(container1))
+        assert container1.mergable_with(container2)
+        assert container2.mergable_with(container1)
 
         container2.tile_position = (1, 1)
-        self.assertFalse(container1.mergable_with(container2))
+        assert not container1.mergable_with(container2)
 
     def test_merge(self):
         container1 = LogisticPassiveContainer("logistic-chest-passive-provider")
@@ -126,5 +121,5 @@ class LogisticPassiveContainerTesting(unittest.TestCase):
         container1.merge(container2)
         del container2
 
-        self.assertEqual(container1.bar, 10)
-        self.assertEqual(container1.tags, {"some": "stuff"})
+        assert container1.bar == 10
+        assert container1.tags == {"some": "stuff"}

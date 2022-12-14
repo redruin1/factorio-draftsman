@@ -10,6 +10,7 @@ from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -20,53 +21,50 @@ else:  # pragma: no coverage
 class PowerSwitchTesting(unittest.TestCase):
     def test_constructor_init(self):
         switch = PowerSwitch("power-switch", tile_position=[0, 0], switch_state=True)
-        self.assertEqual(
-            switch.to_dict(),
-            {
-                "name": "power-switch",
-                "position": {"x": 1.0, "y": 1.0},
-                "switch_state": True,
-            },
-        )
+        assert switch.to_dict() == {
+            "name": "power-switch",
+            "position": {"x": 1.0, "y": 1.0},
+            "switch_state": True,
+        }
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             PowerSwitch(unused_keyword="whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             PowerSwitch("this is not a power switch")
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             PowerSwitch(control_behavior={"unused_key": "something"})
 
     def test_flags(self):
         for name in power_switches:
             power_switch = PowerSwitch(name)
-            self.assertEqual(power_switch.power_connectable, True)
-            self.assertEqual(power_switch.dual_power_connectable, True)
-            self.assertEqual(power_switch.circuit_connectable, True)
-            self.assertEqual(power_switch.dual_circuit_connectable, False)
+            assert power_switch.power_connectable == True
+            assert power_switch.dual_power_connectable == True
+            assert power_switch.circuit_connectable == True
+            assert power_switch.dual_circuit_connectable == False
 
     def test_switch_state(self):
         power_switch = PowerSwitch()
         power_switch.switch_state = False
-        self.assertEqual(power_switch.switch_state, False)
+        assert power_switch.switch_state == False
         power_switch.switch_state = None
-        self.assertEqual(power_switch.switch_state, None)
-        with self.assertRaises(TypeError):
+        assert power_switch.switch_state == None
+        with pytest.raises(TypeError):
             power_switch.switch_state = TypeError
 
     def test_mergable_with(self):
         switch1 = PowerSwitch("power-switch")
         switch2 = PowerSwitch("power-switch", switch_state=True, tags={"some": "stuff"})
 
-        self.assertTrue(switch1.mergable_with(switch1))
+        assert switch1.mergable_with(switch1)
 
-        self.assertTrue(switch1.mergable_with(switch2))
-        self.assertTrue(switch2.mergable_with(switch1))
+        assert switch1.mergable_with(switch2)
+        assert switch2.mergable_with(switch1)
 
         switch2.tile_position = (1, 1)
-        self.assertFalse(switch1.mergable_with(switch2))
+        assert not switch1.mergable_with(switch2)
 
     def test_merge(self):
         switch1 = PowerSwitch("power-switch")
@@ -75,8 +73,8 @@ class PowerSwitchTesting(unittest.TestCase):
         switch1.merge(switch2)
         del switch2
 
-        self.assertEqual(switch1.switch_state, True)
-        self.assertEqual(switch1.tags, {"some": "stuff"})
+        assert switch1.switch_state == True
+        assert switch1.tags == {"some": "stuff"}
 
         # Test power switch connections
         group_left = Group("left")
@@ -91,9 +89,10 @@ class PowerSwitchTesting(unittest.TestCase):
 
         blueprint = Blueprint()
         blueprint.entities.append(group_left)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             blueprint.entities.append(group_right, merge=True)
 
+        # TODO
         # self.maxDiff = None
         # self.assertEqual(len(blueprint.entities), 2)
         # self.assertEqual(len(blueprint.entities[0].entities), 2)

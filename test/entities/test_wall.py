@@ -8,6 +8,7 @@ from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatEr
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -19,65 +20,63 @@ class WallTesting(unittest.TestCase):
     def test_contstructor_init(self):
         wall = Wall()
 
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             Wall(unused_keyword="whatever")
 
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             Wall("this is not a wall")
-        with self.assertRaises(DataFormatError):
+        with pytest.raises(DataFormatError):
             Wall(control_behavior={"unused_key": "something"})
 
     def test_set_enable_disable(self):
         wall = Wall()
         wall.enable_disable = True
-        self.assertEqual(wall.enable_disable, True)
-        self.assertEqual(wall.control_behavior, {"circuit_open_gate": True})
+        assert wall.enable_disable == True
+        assert wall.control_behavior == {"circuit_open_gate": True}
         wall.enable_disable = None
-        self.assertEqual(wall.control_behavior, {})
-        with self.assertRaises(TypeError):
+        assert wall.control_behavior == {}
+        with pytest.raises(TypeError):
             wall.enable_disable = "incorrect"
 
     def test_set_read_gate(self):
         wall = Wall()
         wall.read_gate = True
-        self.assertEqual(wall.read_gate, True)
-        self.assertEqual(wall.control_behavior, {"circuit_read_sensor": True})
+        assert wall.read_gate == True
+        assert wall.control_behavior == {"circuit_read_sensor": True}
         wall.read_gate = None
-        self.assertEqual(wall.control_behavior, {})
-        with self.assertRaises(TypeError):
+        assert wall.control_behavior == {}
+        with pytest.raises(TypeError):
             wall.read_gate = "incorrect"
 
     def test_set_output_signal(self):
         wall = Wall()
         wall.output_signal = "signal-A"
-        self.assertEqual(wall.output_signal, {"name": "signal-A", "type": "virtual"})
-        self.assertEqual(
-            wall.control_behavior,
-            {"output_signal": {"name": "signal-A", "type": "virtual"}},
-        )
+        assert wall.output_signal == {"name": "signal-A", "type": "virtual"}
+        assert wall.control_behavior == {
+            "output_signal": {"name": "signal-A", "type": "virtual"}
+        }
         wall.output_signal = {"name": "signal-A", "type": "virtual"}
-        self.assertEqual(
-            wall.control_behavior,
-            {"output_signal": {"name": "signal-A", "type": "virtual"}},
-        )
+        assert wall.control_behavior == {
+            "output_signal": {"name": "signal-A", "type": "virtual"}
+        }
         wall.output_signal = None
-        self.assertEqual(wall.control_behavior, {})
-        with self.assertRaises(TypeError):
+        assert wall.control_behavior == {}
+        with pytest.raises(TypeError):
             wall.output_signal = TypeError
-        with self.assertRaises(InvalidSignalError):
+        with pytest.raises(InvalidSignalError):
             wall.output_signal = "incorrect"
 
     def test_mergable_with(self):
         wall1 = Wall("stone-wall")
         wall2 = Wall("stone-wall", tags={"some": "stuff"})
 
-        self.assertTrue(wall1.mergable_with(wall1))
+        assert wall1.mergable_with(wall1)
 
-        self.assertTrue(wall1.mergable_with(wall2))
-        self.assertTrue(wall2.mergable_with(wall1))
+        assert wall1.mergable_with(wall2)
+        assert wall2.mergable_with(wall1)
 
         wall2.tile_position = (1, 1)
-        self.assertFalse(wall1.mergable_with(wall2))
+        assert not wall1.mergable_with(wall2)
 
     def test_merge(self):
         wall1 = Wall("stone-wall")
@@ -86,4 +85,4 @@ class WallTesting(unittest.TestCase):
         wall1.merge(wall2)
         del wall2
 
-        self.assertEqual(wall1.tags, {"some": "stuff"})
+        assert wall1.tags == {"some": "stuff"}

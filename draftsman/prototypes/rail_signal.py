@@ -72,11 +72,6 @@ class RailSignal(
 
         super(RailSignal, self).__init__(name, rail_signals, **kwargs)
 
-        if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
-            self._collision_mask = set(entities.raw[self.name]["collision_mask"])
-        else:  # pragma: no coverage
-            self._collision_mask = {"floor-layer", "rail-layer", "item-layer"}
-
         for unused_arg in self.unused_args:
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),

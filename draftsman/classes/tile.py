@@ -54,11 +54,13 @@ class Tile(SpatialLike):
         self.position = position
 
         # Tile AABB for SpatialHashMap
-        # self._collision_box = [[0, 0], [1, 1]]
         self._collision_set = CollisionSet([AABB(0, 0, 1, 1)])
 
         # Tile mask for SpatialHashMap
-        self._collision_mask = set(tiles.raw[self.name]["collision_mask"])
+        try:
+            self._collision_mask = set(tiles.raw[self.name]["collision_mask"])
+        except KeyError:
+            self._collision_mask = set()
 
     # =========================================================================
 
@@ -75,8 +77,9 @@ class Tile(SpatialLike):
         """
         The name of the Tile.
 
-        Must be one of the entries in :py:data:`draftsman.data.tiles.raw` in
-        order for the tile to be recognized as valid.
+        Must be a string representing the name of a valid Factorio tile. If the
+        name is not recognized in :py:data:`.draftsman.data.tiles.raw`, then
+        ``Tile().validate()`` will return errors.
 
         :getter: Gets the name of the Tile.
         :setter: Sest the name of the Tile.
@@ -90,10 +93,8 @@ class Tile(SpatialLike):
     @name.setter
     def name(self, value):
         # type: (str) -> None
-        if value in tiles.raw:
-            self._name = value
-        else:
-            raise InvalidTileError("'{}'".format(value))
+        # TODO: validate that name is string using deal
+        self._name = value
 
     # =========================================================================
 
@@ -128,14 +129,6 @@ class Tile(SpatialLike):
 
         self._position = Vector.from_other(value, int)
 
-        # if isinstance(value, Vector):
-        #     self._position = Vector(int(value.x), int(value.y))
-        # else:
-        #     try:
-        #         self._position = Vector(int(value["x"]), int(value["y"]))
-        #     except TypeError:
-        #         self._position = Vector(int(value[0]), int(value[1]))
-
     # =========================================================================
 
     @property
@@ -159,6 +152,35 @@ class Tile(SpatialLike):
 
     # =========================================================================
 
+    def inspect(self):
+        # type: () -> list[Exception]
+        """
+        Checks the tile to see if Draftsman thinks that it can be loaded in game,
+        and returns a list of all potential issues that Draftsman cannot fix on
+        it's own. Also performs any data normalization steps, if needed.
+        Returns an empty list if there are no issues.
+
+        :raises InvalidTileError: If :py:attr:`name` is not recognized by
+            Draftsman to be a valid tile name.
+
+        :example:
+
+        .. code-block:: python
+
+            tile = Tile("unknown-name")
+            for issue in tile.valdiate():
+                if type(issue) is InvalidTileError:
+                    tile = Tile("concrete")  # swap the tile to a known one
+                else:  # some other error
+                    raise issue
+        """
+        issues = []
+
+        if self.name not in tiles.raw:
+            issues.append(InvalidTileError("'{}'".format(self.name)))
+
+        return issues
+
     def mergable_with(self, other):
         # type: (Tile) -> bool
         """
@@ -180,10 +202,11 @@ class Tile(SpatialLike):
         # type: (Tile) -> None
         """
         Merges this tile with another one. Due to the simplicity of tiles, this
-        does nothing, and is simply added for compatibility with entity merging.
+        does nothing as long as the merged tiles are of the same name. Allows
+        you to overlap areas of concrete and landfill without issuing
+        :py:class:`.OverlappingObjectsWarning`s.
 
-        :param other: The other tile to inherit data from, if such a thing were
-            to happen.
+        :param other: The other tile underneath this one.
         """
         pass
 

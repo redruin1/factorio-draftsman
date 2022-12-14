@@ -15,6 +15,7 @@ from draftsman.warning import DraftsmanWarning
 from schema import SchemaError
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -32,31 +33,28 @@ class InfinityContainerTesting(unittest.TestCase):
                 ],
             }
         )
-        self.assertEqual(
-            container.to_dict(),
-            {
-                "name": "infinity-chest",
-                "position": {"x": 0.5, "y": 0.5},
-                "infinity_settings": {
-                    "remove_unfiltered_items": True,
-                    "filters": [
-                        {
-                            "index": 1,
-                            "name": "iron-ore",
-                            "count": 100,
-                            "mode": "at-least",
-                        }
-                    ],
-                },
+        assert container.to_dict() == {
+            "name": "infinity-chest",
+            "position": {"x": 0.5, "y": 0.5},
+            "infinity_settings": {
+                "remove_unfiltered_items": True,
+                "filters": [
+                    {
+                        "index": 1,
+                        "name": "iron-ore",
+                        "count": 100,
+                        "mode": "at-least",
+                    }
+                ],
             },
-        )
+        }
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             InfinityContainer(unused_keyword="whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             InfinityContainer("this is not an infinity container")
 
     def test_set_infinity_settings(self):
@@ -67,28 +65,25 @@ class InfinityContainerTesting(unittest.TestCase):
                 {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
             ],
         }
-        self.assertEqual(
-            container.infinity_settings,
-            {
-                "remove_unfiltered_items": True,
-                "filters": [
-                    {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
-                ],
-            },
-        )
+        assert container.infinity_settings == {
+            "remove_unfiltered_items": True,
+            "filters": [
+                {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
+            ],
+        }
         container.infinity_settings = None
-        self.assertEqual(container.infinity_settings, {})
-        with self.assertRaises(DataFormatError):
+        assert container.infinity_settings == {}
+        with pytest.raises(DataFormatError):
             container.infinity_settings = {"this is": ["incorrect", "for", "sure"]}
 
     def test_set_remove_unfiltered_items(self):
         container = InfinityContainer()
         container.remove_unfiltered_items = True
-        self.assertEqual(container.remove_unfiltered_items, True)
-        self.assertEqual(container.infinity_settings, {"remove_unfiltered_items": True})
+        assert container.remove_unfiltered_items == True
+        assert container.infinity_settings == {"remove_unfiltered_items": True}
         container.remove_unfiltered_items = None
-        self.assertEqual(container.infinity_settings, {})
-        with self.assertRaises(TypeError):
+        assert container.infinity_settings == {}
+        with pytest.raises(TypeError):
             container.remove_unfiltered_items = "incorrect"
 
     def test_set_infinity_filters(self):
@@ -96,94 +91,76 @@ class InfinityContainerTesting(unittest.TestCase):
         container.set_infinity_filters(
             [{"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}]
         )
-        self.assertEqual(
-            container.infinity_settings,
-            {
-                "filters": [
-                    {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
-                ]
-            },
-        )
+        assert container.infinity_settings == {
+            "filters": [
+                {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
+            ]
+        }
         container.set_infinity_filters(None)
-        self.assertEqual(container.infinity_settings, {})
-        with self.assertRaises(DataFormatError):
+        assert container.infinity_settings == {}
+        with pytest.raises(DataFormatError):
             container.set_infinity_filters("incorrect")
 
     def test_set_infinity_filter(self):
         container = InfinityContainer()
         container.set_infinity_filter(0, "iron-ore", "at-least", 100)
-        self.assertEqual(
-            container.infinity_settings,
-            {
-                "filters": [
-                    {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
-                ]
-            },
-        )
+        assert container.infinity_settings == {
+            "filters": [
+                {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
+            ]
+        }
         container.set_infinity_filter(1, "copper-ore", "exactly", 200)
-        self.assertEqual(
-            container.infinity_settings,
-            {
-                "filters": [
-                    {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"},
-                    {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"},
-                ]
-            },
-        )
+        assert container.infinity_settings == {
+            "filters": [
+                {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"},
+                {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"},
+            ]
+        }
         container.set_infinity_filter(0, "uranium-ore", "at-least", 1000)
-        self.assertEqual(
-            container.infinity_settings,
-            {
-                "filters": [
-                    {
-                        "index": 1,
-                        "name": "uranium-ore",
-                        "count": 1000,
-                        "mode": "at-least",
-                    },
-                    {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"},
-                ]
-            },
-        )
+        assert container.infinity_settings == {
+            "filters": [
+                {
+                    "index": 1,
+                    "name": "uranium-ore",
+                    "count": 1000,
+                    "mode": "at-least",
+                },
+                {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"},
+            ]
+        }
         container.set_infinity_filter(0, None)
-        self.assertEqual(
-            container.infinity_settings,
-            {
-                "filters": [
-                    {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}
-                ]
-            },
-        )
+        assert container.infinity_settings == {
+            "filters": [
+                {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}
+            ]
+        }
 
         # Default count
         container.set_infinity_filter(0, "iron-ore", "at-least")
-        self.assertEqual(
-            container.infinity_settings,
-            {
-                "filters": [
-                    {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"},
-                    {"index": 1, "name": "iron-ore", "count": 50, "mode": "at-least"},
-                ]
-            },
-        )
+        assert container.infinity_settings == {
+            "filters": [
+                {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"},
+                {"index": 1, "name": "iron-ore", "count": 50, "mode": "at-least"},
+            ]
+        }
 
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             container.set_infinity_filter("incorrect", "iron-ore")
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             container.set_infinity_filter(0, SchemaError)
-        with self.assertRaises(InvalidItemError):
+        with pytest.raises(InvalidItemError):
             container.set_infinity_filter(0, "signal-A")
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             container.set_infinity_filter(0, "iron-ore", SchemaError)
-        with self.assertRaises(InvalidModeError):
+        with pytest.raises(InvalidModeError):
             container.set_infinity_filter(0, "iron-ore", "incorrect")
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             container.set_infinity_filter(0, "iron-ore", "exactly", "incorrect")
-        with self.assertRaises(IndexError):
+        with pytest.raises(IndexError):
             container.set_infinity_filter(-1, "iron-ore", "exactly", 200)
-        with self.assertRaises(IndexError):
+        with pytest.raises(IndexError):
             container.set_infinity_filter(1000, "iron-ore", "exactly", 200)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             container.set_infinity_filter(1, "iron-ore", "exactly", -1)
 
     def test_mergable_with(self):
@@ -199,13 +176,13 @@ class InfinityContainerTesting(unittest.TestCase):
             },
         )
 
-        self.assertTrue(container1.mergable_with(container1))
+        assert container1.mergable_with(container1)
 
-        self.assertTrue(container1.mergable_with(container2))
-        self.assertTrue(container2.mergable_with(container1))
+        assert container1.mergable_with(container2)
+        assert container2.mergable_with(container1)
 
         container2.tile_position = (1, 1)
-        self.assertFalse(container1.mergable_with(container2))
+        assert not container1.mergable_with(container2)
 
     def test_merge(self):
         container1 = InfinityContainer("infinity-chest")
@@ -223,13 +200,10 @@ class InfinityContainerTesting(unittest.TestCase):
         container1.merge(container2)
         del container2
 
-        self.assertEqual(container1.items, {"copper-plate": 100})
-        self.assertEqual(
-            container1.infinity_settings,
-            {
-                "remove_unfiltered_items": True,
-                "filters": [
-                    {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
-                ],
-            },
-        )
+        assert container1.items == {"copper-plate": 100}
+        assert container1.infinity_settings == {
+            "remove_unfiltered_items": True,
+            "filters": [
+                {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
+            ],
+        }

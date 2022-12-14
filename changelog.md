@@ -1,5 +1,11 @@
 # Changelog
 
+* Switched from `unittest` to `pytest`
+* Finished up documentation on `DeconstructionPlanner`
+* Patched InvalidModVersionError for now (#51)
+* Added data functions `signals.add_signal()`, `tiles.add_tile()`, `entities.add_entity()`, etc.
+* Made it so that default `collision_mask` keys are resolved at once at the data level when you call `draftsman-update`, so you can query `entities.raw` for the correct default value
+
 ## 1.0.6
 * Updated `factorio-data` to version `1.1.88`
 * Updated `compatibility/defines.lua` to `1.1.88`

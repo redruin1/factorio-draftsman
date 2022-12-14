@@ -49,7 +49,10 @@ class ConstantCombinator(
         # type: (str, **dict) -> None
         super(ConstantCombinator, self).__init__(name, constant_combinators, **kwargs)
 
-        self._item_slot_count = entities.raw[self.name]["item_slot_count"]
+        try:
+            self._item_slot_count = entities.raw[self.name]["item_slot_count"]
+        except KeyError:
+            self._item_slot_count = 0
 
         for unused_arg in self.unused_args:
             warnings.warn(

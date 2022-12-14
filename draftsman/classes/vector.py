@@ -157,6 +157,14 @@ class Vector(object):
         # type: (Vector) -> bool
         return isinstance(other, Vector) and self.x == other.x and self.y == other.y
 
+    def __abs__(self):
+        # type: () -> Vector
+        return Vector(abs(self[0]), abs(self[1]))
+
+    def __round__(self, precision=0):
+        # type: (int) -> Vector
+        return Vector(round(self[0], precision), round(self[1], precision))
+
     def __str__(self):  # pragma: no coverage
         # type: () -> str
         return "({}, {})".format(self.data[0], self.data[1])

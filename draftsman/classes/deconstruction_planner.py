@@ -127,7 +127,15 @@ class DeconstructionPlanner(Blueprintable):
     def entity_filter_mode(self):
         # type: () -> FilterMode
         """
-        TODO
+        The method of filtering entities for deconstruction. Can be either ``0``
+        (whitelist) or ``1`` (blacklist).
+
+        :getter: Gets the entity filter mode, or ``None`` if not set.
+        :setter: Sets the entity filter mode. Deletes the key if set to ``None``.
+        :type: :py:data:`.FilterMode`
+
+        :raises ValueError: If not set to an valid :py:data:`.FilterMode` or
+            ``None``.
         """
         return self._root["settings"].get("entity_filter_mode", None)
 
@@ -145,6 +153,7 @@ class DeconstructionPlanner(Blueprintable):
     def entity_filters(self):
         # type: () -> list[dict]
         """
+        The list of entity filters.
         TODO
         """
         return self._root["settings"].get("entity_filters", None)
@@ -168,7 +177,14 @@ class DeconstructionPlanner(Blueprintable):
     def trees_and_rocks_only(self):
         # type: () -> bool
         """
-        TODO
+        Whether or not to only deconstruct natural entities, such as trees and
+        rocks.
+
+        :getter: Gets the flag, or returns ``None`` if not set.
+        :setter: Sets the flag, or deletes the key if set to ``None``.
+        :type: ``bool``
+
+        :raises TypeError: If set to anything other than a ``bool`` or ``None``.
         """
         return self._root["settings"].get("trees_and_rocks_only", None)
 
@@ -188,7 +204,15 @@ class DeconstructionPlanner(Blueprintable):
     def tile_filter_mode(self):
         # type: () -> FilterMode
         """
-        TODO
+        The method of filtering tiles for deconstruction. Can be either ``0``
+        (whitelist) or ``1`` (blacklist).
+
+        :getter: Gets the tile filter mode, or ``None`` if not set.
+        :setter: Sets the tile filter mode. Deletes the key if set to ``None``.
+        :type: :py:data:`.FilterMode`
+
+        :raises ValueError: If not set to an valid :py:data:`.FilterMode` or
+            ``None``.
         """
         return self._root["settings"].get("tile_filter_mode", None)
 
@@ -206,6 +230,7 @@ class DeconstructionPlanner(Blueprintable):
     def tile_filters(self):
         # type: () -> list[dict]
         """
+        The list of tile filters.
         TODO
         """
         return self._root["settings"].get("tile_filters", None)
@@ -228,7 +253,19 @@ class DeconstructionPlanner(Blueprintable):
     def tile_selection_mode(self):
         # type: () -> TileSelectionMode
         """
-        TODO
+        The method of filtering entities for deconstruction. Valid modes are:
+
+        0. ``NORMAL`` (default)
+        1. ``ALWAYS``
+        2. ``NEVER``
+        3. ``ONLY``
+
+        :getter: Gets the entity filter mode, or ``None`` if not set.
+        :setter: Sets the entity filter mode. Deletes the key if set to ``None``.
+        :type: :py:data:`.TileSelectionMode`
+
+        :raises ValueError: If not set to a valid :py:data:`.TileSelectionMode`
+            or ``None``.
         """
         return self._root["settings"].get("tile_selection_mode", None)
 
@@ -247,7 +284,14 @@ class DeconstructionPlanner(Blueprintable):
     def set_entity_filter(self, index, name):
         # type: (int, str) -> None
         """
-        TODO
+        Sets an entity filter in the list of entity filters. Appends the new one
+        to the end of the list regardless of the ``index``. If ``index`` is
+        already occupied with a different filter it is overwritten with the new
+        one; does nothing if the exact filter already exists within
+        :py:attr:`.entity_filters`.
+
+        :param index: The index to set the new filter at.
+        :param name: The name of the entity to filter for deconstruction.
         """
         if self.entity_filters is None:
             self.entity_filters = []
@@ -278,7 +322,14 @@ class DeconstructionPlanner(Blueprintable):
     def set_tile_filter(self, index, name):
         # type: (int, str) -> None
         """
-        TODO
+        Sets a tile filter in the list of tile filters. Appends the new one
+        to the end of the list regardless of the ``index``. If ``index`` is
+        already occupied with a different filter it is overwritten with the new
+        one; does nothing if the exact filter already exists within
+        :py:attr:`.tile_filters`.
+
+        :param index: The index to set the new filter at.
+        :param name: The name of the tile to filter for deconstruction.
         """
         if self.tile_filters is None:
             self.tile_filters = []

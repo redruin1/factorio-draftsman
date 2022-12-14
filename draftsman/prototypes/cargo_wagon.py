@@ -35,11 +35,6 @@ class CargoWagon(InventoryFilterMixin, OrientationMixin, Entity):
         # type: (str, **dict) -> None
         super(CargoWagon, self).__init__(name, cargo_wagons, **kwargs)
 
-        if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
-            self._collision_mask = set(entities.raw[self.name]["collision_mask"])
-        else:  # pragma: no coverage
-            self._collision_mask = {"train-layer"}
-
         for unused_arg in self.unused_args:
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),

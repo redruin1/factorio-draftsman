@@ -147,6 +147,7 @@ Both `mod-info.json` and `mod-settings.dat` are recognized by `draftsman-update`
 * Write test cases for `dump_format`
 * Add plaintext representations of Entity JSON objects for all entities in addition to blueprintables
 * Update modding documentation guide to reflect 2.0 changes
+* Add warnings for placement constraints on rails, rail signals and train stops
 * Reevaluate the diamond diagrams for inherited `Entity` subclass
 * Figure out exactly what determines if an `Entity` is flip-able or not
 * Maybe add interface so that mods can include files that can be loaded with Draftsman? (this would be neat)

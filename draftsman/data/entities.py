@@ -10,6 +10,7 @@ except ImportError:  # pragma: no coverage
     import importlib_resources as pkg_resources  # type: ignore
 
 from draftsman import data
+from draftsman.utils import PrimitiveAABB
 
 
 with pkg_resources.open_binary(data, "entities.pkl") as inp:
@@ -82,3 +83,55 @@ with pkg_resources.open_binary(data, "entities.pkl") as inp:
     infinity_containers = _data["infinity_containers"]
     infinity_pipes = _data["infinity_pipes"]
     burner_generators = _data["burner_generators"]
+
+
+def add_entity(
+    name, entity_type, collision_box, collision_mask=None, hidden=False, **kwargs
+):
+    # type: (str, str, PrimitiveAABB, set[str], bool, **dict) -> None
+    """
+    Temporarily adds an entity to :py:mod:`draftsman.data.entities`.
+
+    This is useful if you want to temporarily add an entity to the load process
+    to quickly simulate a mod being present when it currently isn't. For example,
+    you might want to be able to load a blueprint with modded entities in order
+    to replace them with regular ones, but want the benefit of error checking
+    without having to install the associated mods.
+
+    :param name: The Factorio ID of the entity to add.
+    :param entity_type: The string type of the entity.
+    :param collision_box: The AABB of the entity, to check for collisions.
+    :param collision_mask: The collision layers that this entity uses, to check
+        for collisions.
+    :param kwargs: Any other entity specific data that you want to populate the
+        new entity with.
+    """
+    raw[name] = {
+        "name": name,
+        "type": entity_type,
+        "collision_box": collision_box,
+        "flags": set(),
+    }
+
+    if collision_mask is not None:
+        raw[name]["collision_mask"] = collision_mask
+
+    if hidden:
+        raw[name]["flags"].add("hidden")
+
+    raw[name].update(kwargs)
+
+    if entity_type == "container":
+        containers.append(name)
+    elif entity_type == "storage-tank":
+        storage_tanks.append(name)
+    elif entity_type == "constant-combinator":
+        constant_combinators.append(name)
+    elif entity_type == "lamp":
+        lamps.append(name)
+    elif entity_type == "decider-combinator":
+        decider_combinators.append(name)
+    elif entity_type == "train-stop":
+        train_stops.append(name)
+    else:
+        raise NotImplementedError  # TODO

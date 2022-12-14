@@ -8,6 +8,7 @@ from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -20,22 +21,22 @@ class BoilerTesting(unittest.TestCase):
         boiler = Boiler("boiler")
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             Boiler(unused_keyword="whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             Boiler("not a boiler")
 
     def test_mergable_with(self):
         boiler1 = Boiler("boiler")
         boiler2 = Boiler("boiler", tags={"some": "stuff"})
 
-        self.assertTrue(boiler1.mergable_with(boiler2))
-        self.assertTrue(boiler2.mergable_with(boiler1))
+        assert boiler1.mergable_with(boiler2)
+        assert boiler2.mergable_with(boiler1)
 
         boiler2.tile_position = [-10, -10]
-        self.assertFalse(boiler1.mergable_with(boiler2))
+        assert not boiler1.mergable_with(boiler2)
 
     def test_merge(self):
         boiler1 = Boiler("boiler")
@@ -44,4 +45,4 @@ class BoilerTesting(unittest.TestCase):
         boiler1.merge(boiler2)
         del boiler2
 
-        self.assertEqual(boiler1.tags, {"some": "stuff"})
+        assert boiler1.tags == {"some": "stuff"}

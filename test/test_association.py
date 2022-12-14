@@ -7,6 +7,7 @@ from draftsman.entity import Container
 from draftsman.error import InvalidAssociationError
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -36,5 +37,5 @@ class AssociationTesting(unittest.TestCase):
 
         del blueprint.entities[1]
 
-        with self.assertRaises(InvalidAssociationError):
+        with pytest.raises(InvalidAssociationError):
             blueprint.to_dict()

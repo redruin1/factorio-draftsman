@@ -1,3 +1,5 @@
+import deal
+
 # blueprint.py
 # -*- encoding: utf-8 -*-
 
@@ -7,7 +9,7 @@ under the namespace ``draftsman``.
 """
 
 from draftsman import utils
-from draftsman.error import IncorrectBlueprintTypeError
+from draftsman.error import IncorrectBlueprintTypeError, MalformedBlueprintStringError
 from typing import Union
 
 

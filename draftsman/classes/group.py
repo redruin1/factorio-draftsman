@@ -12,7 +12,13 @@ from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.classes.transformable import Transformable
 from draftsman.classes.vector import Vector
-from draftsman.error import DraftsmanError, IncorrectBlueprintTypeError
+from draftsman.error import (
+    DraftsmanError,
+    IncorrectBlueprintTypeError,
+    DataFormatError,
+    MalformedBlueprintStringError,
+)
+from draftsman import signatures
 from draftsman.utils import (
     reissue_warnings,
     string_to_JSON,
@@ -23,6 +29,7 @@ from draftsman.utils import (
 
 import copy
 from typing import Union
+from schema import SchemaError
 import six
 
 
@@ -85,6 +92,9 @@ class Group(Transformable, EntityCollection, EntityLike):
         string=None,
     ):
         # type: (str, str, str, Union[dict, list, tuple], list, str) -> None
+        """
+        TODO
+        """
         super(Group, self).__init__()  # EntityLike
 
         self.id = id
@@ -107,6 +117,7 @@ class Group(Transformable, EntityCollection, EntityLike):
             self.load_from_string(string)
         else:
             self.entities = entities
+            self.schedules = []
 
         # TODO: the position of this shouldn't matter, but in practice it does,
         # investigate
@@ -159,17 +170,28 @@ class Group(Transformable, EntityCollection, EntityLike):
                 for i, neighbour in enumerate(neighbours):
                     neighbours[i] = Association(self.entities[neighbour - 1])
 
+        # Change all locomotive numbers to use Associations
+        for schedule in self.schedules:
+            for i, locomotive in enumerate(schedule["locomotives"]):
+                schedule["locomotives"][i] = Association(self.entities[locomotive - 1])
+
     @reissue_warnings
     def setup(self, **kwargs):
         # type: (dict) -> None
         """
         Sets up a Group using a blueprint JSON dict. Currently only reads the
-        ``"entities"`` key and loads them into ``Group.entities``.
+        ``"entities"`` and ``"schedules"`` keys and loads them into
+        :py:attr:`Group.entities` and :py:attr:`Group.schedules`.
         """
         if "entities" in kwargs:
             self._entities = EntityList(self, kwargs.pop("entities"))
         else:
             self._entities = EntityList(self)
+
+        if "schedules" in kwargs:
+            self._schedules = kwargs.pop("schedules")
+        else:
+            self._schedules = []
 
     # =========================================================================
 
@@ -556,6 +578,48 @@ class Group(Transformable, EntityCollection, EntityLike):
 
     # =========================================================================
 
+    @property
+    def schedules(self):
+        # type: () -> list
+        """
+        A list of the Blueprint's train schedules.
+
+        .. NOTE::
+
+            Currently there is no framework around creating schedules by script;
+            It can still be done by manipulating the contents of this list, but
+            an easier way to manipulate trains and their schedules is still
+            under development.
+
+        .. seealso::
+
+            `<https://wiki.factorio.com/Blueprint_string_format#Schedule_object>`_
+
+        :getter: Gets the schedules of the Blueprint.
+        :setter: Sets the schedules of the Blueprint. Defaults to ``[]`` if set
+            to ``None``.
+        :type: ``list[SCHEDULE]``
+
+        :exception DataFormatError: If set to anything other than a ``list`` of
+            :py:data:`.SCHEDULE`.
+        """
+        return self._schedules
+
+    # @deal.has()
+    # @deal.raises(DataFormatError)
+    @schedules.setter
+    def schedules(self, value):
+        # type: (list) -> None
+        if value is None:
+            self._schedules = []
+            return
+        try:
+            self._schedules = signatures.SCHEDULES.validate(value)
+        except SchemaError as e:
+            six.raise_from(DataFormatError(e), None)
+
+    # =========================================================================
+
     def get(self):
         """
         Gets all the child-most ``Entity`` instances in this ``Group`` and
@@ -581,33 +645,6 @@ class Group(Transformable, EntityCollection, EntityLike):
             self._collision_set.get_bounding_box()
         )
 
-    # def get_area(self):
-    #     # type: () -> AABB
-    #     """
-    #     Gets the area that this ``Group`` takes up, or the minimum AABB.
-    #     TODO
-    #     """
-    #     collision_box = (
-    #         [[0, 0], [0, 0]] if self.collision_box is None else self.collision_box
-    #     )
-    #     return [
-    #         [
-    #             collision_box[0][0] + self.position["x"],
-    #             collision_box[0][1] + self.position["y"],
-    #         ],
-    #         [
-    #             collision_box[1][0] + self.position["x"],
-    #             collision_box[1][1] + self.position["y"],
-    #         ],
-    #     ]
-
-    # def get_world_collision_set(self):
-    #     # type: () -> CollisionSet
-    #     """
-    #     TODO
-    #     """
-    #     return self.
-
     def get_world_bounding_box(self):
         # type: () -> AABB
         """
@@ -625,6 +662,15 @@ class Group(Transformable, EntityCollection, EntityLike):
             bounding_box.bot_right[1] += self.global_position.y
 
         return bounding_box
+
+    def inspect(self):
+        # type: () -> list[Exception]
+        issues = []
+
+        for entity in self.entities:
+            issues += entity.inspect()
+
+        return issues
 
     def mergable_with(self, other):
         # type: (Group) -> bool
@@ -678,5 +724,14 @@ class Group(Transformable, EntityCollection, EntityLike):
                 setattr(result, k, copy.deepcopy(v, memo))
             else:
                 setattr(result, k, copy.deepcopy(v, memo))
+
+        # Iterate over each locomotive in each schedule
+        # (which still point to the old locomotives in each list)
+        for i, schedule in enumerate(self.schedules):
+            for j, locomotive in enumerate(schedule["locomotives"]):
+                # Replace the old one with the copied one
+                result.schedules[i]["locomotives"][j] = Association(
+                    memo[id(locomotive())]
+                )
 
         return result

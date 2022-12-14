@@ -71,17 +71,6 @@ class StraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
 
         super(StraightRail, self).__init__(name, straight_rails, **kwargs)
 
-        if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
-            self._collision_mask = set(entities.raw[self.name]["collision_mask"])
-        else:  # pragma: no coverage
-            self._collision_mask = {
-                "item-layer",
-                "object-layer",
-                "rail-layer",
-                "floor-layer",
-                "water-tile",
-            }
-
         for unused_arg in self.unused_args:
             warnings.warn(
                 "{} has no attribute '{}'".format(type(self), unused_arg),

@@ -42,6 +42,8 @@ class CircuitConnectableMixin(object):
             self._circuit_wire_max_distance = entities.raw[self.name][
                 "wire_max_distance"
             ]
+        else:
+            self._circuit_wire_max_distance = None
 
         self.connections = {}
         if "connections" in kwargs:

@@ -8,6 +8,7 @@ from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
 import sys
+import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -22,34 +23,31 @@ class ArtilleryWagonTesting(unittest.TestCase):
             position={"x": 1.0, "y": 1.0},
             orientation=0.75,
         )
-        self.assertEqual(
-            artillery_wagon.to_dict(),
-            {
-                "name": "artillery-wagon",
-                "position": {"x": 1.0, "y": 1.0},
-                "orientation": 0.75,
-            },
-        )
+        assert artillery_wagon.to_dict() == {
+            "name": "artillery-wagon",
+            "position": {"x": 1.0, "y": 1.0},
+            "orientation": 0.75,
+        }
 
         # Warnings
-        with self.assertWarns(DraftsmanWarning):
+        with pytest.warns(DraftsmanWarning):
             ArtilleryWagon("artillery-wagon", unused_keyword="whatever")
 
         # Errors
-        with self.assertRaises(InvalidEntityError):
+        with pytest.raises(InvalidEntityError):
             ArtilleryWagon("this is not an artillery wagon")
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             ArtilleryWagon("artillery-wagon", orientation="wrong")
 
     def test_mergable_with(self):
         wagon1 = ArtilleryWagon("artillery-wagon")
         wagon2 = ArtilleryWagon("artillery-wagon")
 
-        self.assertTrue(wagon1.mergable_with(wagon2))
-        self.assertTrue(wagon2.mergable_with(wagon1))
+        assert wagon1.mergable_with(wagon2)
+        assert wagon2.mergable_with(wagon1)
 
         wagon1.orientation = 0.5
-        self.assertFalse(wagon1.mergable_with(wagon2))
+        assert not wagon1.mergable_with(wagon2)
 
     def test_merge(self):
         wagon1 = ArtilleryWagon("artillery-wagon")
@@ -57,7 +55,7 @@ class ArtilleryWagonTesting(unittest.TestCase):
         wagon2.tags = {"some": "stuff"}
 
         wagon1.merge(wagon2)
-        self.assertEqual(wagon1.tags, {"some": "stuff"})
+        assert wagon1.tags == {"some": "stuff"}
         # Ensure wagon1's data remains valid even if wagon2 gets destroyed
         del wagon2
-        self.assertEqual(wagon1.tags, {"some": "stuff"})
+        assert wagon1.tags == {"some": "stuff"}

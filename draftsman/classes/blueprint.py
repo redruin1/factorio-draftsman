@@ -1,8 +1,6 @@
 # blueprint.py
 # -*- encoding: utf-8 -*-
 
-# TODO: convert to Vectors
-
 """
 .. code-block:: python
 
@@ -94,11 +92,14 @@ from draftsman.classes.transformable import Transformable
 from draftsman.classes.collection import EntityCollection, TileCollection
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.spatial_hashmap import SpatialHashMap
+from draftsman.classes.vector import Vector
 from draftsman.error import (
     DraftsmanError,
     UnreasonablySizedBlueprintError,
     DataFormatError,
     InvalidAssociationError,
+    IncorrectBlueprintTypeError,
+    MalformedBlueprintStringError,
 )
 from draftsman import signatures
 from draftsman.tile import Tile
@@ -107,7 +108,6 @@ from draftsman.warning import DraftsmanWarning
 
 from builtins import int
 import copy
-import math
 from schema import SchemaError
 import six
 from typing import Sequence, Union
@@ -293,6 +293,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             self._root["label_color"] = signatures.COLOR.validate(value)
         except SchemaError as e:
             six.raise_from(DataFormatError(e), None)
+        # if value is None:
+        #     self._root.pop("label_color", None)
+        # else:
+        #     self._root["label_color"] = signatures.COLOR.validate(value) # ?
 
     # =========================================================================
 
@@ -321,16 +325,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             self._root.pop("snap-to-grid", None)
             return
 
-        try:
-            self._root["snap-to-grid"] = {
-                "x": math.floor(value["x"]),
-                "y": math.floor(value["y"]),
-            }
-        except TypeError:
-            self._root["snap-to-grid"] = {
-                "x": math.floor(value[0]),
-                "y": math.floor(value[1]),
-            }
+        self._root["snap-to-grid"] = Vector.from_other(value, int)
+        # if value is None:
+        #     self._root.pop("snap-to-grid", None)
+        # else:
+        #     self._root["snap-to-grid"] = Vector.from_other(value, int)
 
     # =========================================================================
 
@@ -361,16 +360,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             self._snapping_grid_position = value
             return
 
-        try:
-            self._snapping_grid_position = {
-                "x": math.floor(value["x"]),
-                "y": math.floor(value["y"]),
-            }
-        except TypeError:
-            self._snapping_grid_position = {
-                "x": math.floor(value[0]),
-                "y": math.floor(value[1]),
-            }
+        self._snapping_grid_position = Vector.from_other(value, int)
 
     # =========================================================================
 
@@ -425,16 +415,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             self._root.pop("position-relative-to-grid", None)
             return
 
-        try:
-            self._root["position-relative-to-grid"] = {
-                "x": math.floor(value["x"]),
-                "y": math.floor(value["y"]),
-            }
-        except TypeError:
-            self._root["position-relative-to-grid"] = {
-                "x": math.floor(value[0]),
-                "y": math.floor(value[1]),
-            }
+        self._root["position-relative-to-grid"] = Vector.from_other(value, int)
 
     # =========================================================================
 
@@ -821,6 +802,28 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         out_dict = {
             x: self._root[x] for x in self._root if x not in {"entities", "tiles"}
         }
+        out_dict["schedules"] = copy.deepcopy(self._root["schedules"])
+
+        if "snap-to-grid" in out_dict:
+            out_dict["snap-to-grid"] = out_dict["snap-to-grid"].to_dict()
+        if "position-relative-to-grid" in out_dict:
+            out_dict["position-relative-to-grid"] = out_dict[
+                "position-relative-to-grid"
+            ].to_dict()
+
+        # We also need to process any schedules that any subgroup might have, so
+        # we recursively traverse the nested entitylike tree and append each
+        # schedule to the output list
+        def recurse_schedules(entitylike_list):
+            for entitylike in entitylike_list:
+                if hasattr(entitylike, "schedules"):  # if a group
+                    # Add the schedules of this group
+                    out_dict["schedules"] += copy.deepcopy(entitylike.schedules)
+                    # Check through this groups entities to see if they have
+                    # schedules:
+                    recurse_schedules(entitylike.entities)
+
+        recurse_schedules(self._root["entities"])
 
         # This associates each entity with a numeric index, which we use later
         flattened_list = utils.flatten_entities(self._root["entities"])
@@ -854,12 +857,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         if self.snapping_grid_position is not None:
             # Offset Entities
             for entity in out_dict["entities"]:
-                entity["position"]["x"] -= self.snapping_grid_position["x"]
-                entity["position"]["y"] -= self.snapping_grid_position["y"]
+                entity["position"]["x"] -= self.snapping_grid_position.x
+                entity["position"]["y"] -= self.snapping_grid_position.y
             # Offset Tiles
             for tile in out_dict["tiles"]:
-                tile["position"]["x"] -= self.snapping_grid_position["x"]
-                tile["position"]["y"] -= self.snapping_grid_position["y"]
+                tile["position"]["x"] -= self.snapping_grid_position.x
+                tile["position"]["y"] -= self.snapping_grid_position.y
 
         def throw_invalid_connection(entity):
             raise InvalidAssociationError(
