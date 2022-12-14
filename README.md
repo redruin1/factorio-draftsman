@@ -139,7 +139,6 @@ update(verbose=True, path="some/path") # equivalent to 'draftsman-update -v -p s
 Both `mod-info.json` and `mod-settings.dat` are recognized by `draftsman-update`, so you can also just change the settings in either of those and the loading process will adjust as well.
 
 ## TODO
-* Add warnings for placement constraints on rails, rail signals and train stops
 * Add constraints on `UpgradePlanner` and `DeconstructionPlanner`
 * `Blueprint.schedules` convenience functions
 * More doctests
