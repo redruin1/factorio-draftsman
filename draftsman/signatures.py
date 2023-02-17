@@ -264,6 +264,8 @@ ALERT_PARAMETERS = Schema(
     )
 )
 
+LOGISTIC_MODE_OF_OPERATION = Schema(Or(0, 1))
+
 # CONTROL_BEHAVIOR = Schema(
 #     And(
 #         Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
@@ -450,11 +452,7 @@ LOGISTIC_BUFFER_CONTROL_BEHAVIOR = Schema(
         Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
         {
             # Circuit condition
-            Optional("circuit_enable_disable"): bool,
-            Optional("circuit_condition"): CONDITION,
-            # Logistic condition
-            Optional("connect_to_logistic_network"): bool,
-            Optional("logistic_condition"): CONDITION,
+            Optional("circuit_mode_of_operation"): LOGISTIC_MODE_OF_OPERATION,
         },
     )
 )
@@ -464,11 +462,7 @@ LOGISTIC_REQUESTER_CONTROL_BEHAVIOR = Schema(
         Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
         {
             # Circuit condition
-            Optional("circuit_enable_disable"): bool,
-            Optional("circuit_condition"): CONDITION,
-            # Logistic condition
-            Optional("connect_to_logistic_network"): bool,
-            Optional("logistic_condition"): CONDITION,
+            Optional("circuit_mode_of_operation"): LOGISTIC_MODE_OF_OPERATION,
         },
     )
 )
