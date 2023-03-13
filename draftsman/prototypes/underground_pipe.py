@@ -17,6 +17,17 @@ class UndergroundPipe(DirectionalMixin, Entity):
     A pipe that transports fluids underneath other entities.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
+
     def __init__(self, name=underground_pipes[0], **kwargs):
         # type: (str, **dict) -> None
         super(UndergroundPipe, self).__init__(name, underground_pipes, **kwargs)

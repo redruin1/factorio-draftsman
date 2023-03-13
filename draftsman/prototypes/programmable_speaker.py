@@ -36,6 +36,45 @@ class ProgrammableSpeaker(
     signals.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    #     "parameters": {
+    #         "format": "TODO",
+    #         "description": "Parameters related to sound playback",
+    #         "required": lambda x: x is not None and len(x) != 0,
+    #     },
+    #     "alert_parameters": {
+    #         "format": "TODO",
+    #         "description": "Parameters related to alert notifications",
+    #         "required": lambda x: x is not None and len(x) != 0,
+    #     },
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(CircuitConnectableMixin._exports)
+    _exports.update(ControlBehaviorMixin._exports)
+    _exports.update(CircuitConditionMixin._exports)
+    _exports.update(
+        {
+            "parameters": {
+                "format": "TODO",
+                "description": "Parameters related to sound playback",
+                "required": lambda x: x is not None and len(x) != 0,
+            },
+            "alert_parameters": {
+                "format": "TODO",
+                "description": "Parameters related to alert notifications",
+                "required": lambda x: x is not None and len(x) != 0,
+            },
+        }
+    )
+
     def __init__(self, name=programmable_speakers[0], **kwargs):
         # type: (str, **dict) -> None
         super(ProgrammableSpeaker, self).__init__(name, programmable_speakers, **kwargs)
@@ -72,13 +111,13 @@ class ProgrammableSpeaker(
         if "parameters" in kwargs:
             self.parameters = kwargs["parameters"]
             self.unused_args.pop("parameters")
-        self._add_export("parameters", lambda x: x is not None and len(x) != 0)
+        # self._add_export("parameters", lambda x: x is not None and len(x) != 0)
 
         self.alert_parameters = {}
         if "alert_parameters" in kwargs:
             self.alert_parameters = kwargs["alert_parameters"]
             self.unused_args.pop("alert_parameters")
-        self._add_export("alert_parameters", lambda x: x is not None and len(x) != 0)
+        # self._add_export("alert_parameters", lambda x: x is not None and len(x) != 0)
 
         # if "control_behavior" in kwargs:
         #     self._normalize_circuit_parameters()

@@ -139,11 +139,11 @@ update(verbose=True, path="some/path") # equivalent to 'draftsman-update -v -p s
 Both `mod-info.json` and `mod-settings.dat` are recognized by `draftsman-update`, so you can also just change the settings in either of those and the loading process will adjust as well.
 
 ## TODO
-* Investigate `deal` and improve user experience with errors and warnings
 * Add warnings for placement constraints on rails, rail signals and train stops
 * Add constraints on `UpgradePlanner` and `DeconstructionPlanner`
 * `Blueprint.schedules` convenience functions
 * More doctests
+* Write test cases for `dump_format`
 * Add plaintext representations of Entity JSON objects for all entities in addition to blueprintables
 * Update modding documentation guide to reflect 2.0 changes
 * Reevaluate the diamond diagrams for inherited `Entity` subclass
@@ -153,4 +153,6 @@ Both `mod-info.json` and `mod-settings.dat` are recognized by `draftsman-update`
 * RailPlanner (specify rail paths via turtle-like commands)
 * Custom `data.raw` extraction and formatting?
 * Maybe integrate defaults for more succinct blueprint strings?
+* Unify entity validation into one monolithic thing
+* Investigate more performant alternatives to `schema` (validir? requires cython, currently we're pure python)
 * Look into Lua (or other language) bindings via backport to C/Cython

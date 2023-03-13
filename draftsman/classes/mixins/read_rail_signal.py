@@ -23,6 +23,8 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
     Allows the Entity to set red, yellow, and green circuit output signals.
     """
 
+    _exports = {}
+
     @property
     def red_output_signal(self):
         # type: () -> dict

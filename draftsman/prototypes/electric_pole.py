@@ -17,6 +17,19 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
     An entity used to distribute electrical energy as a network.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **PowerConnectableMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(PowerConnectableMixin._exports)
+    _exports.update(CircuitConnectableMixin._exports)
+
     def __init__(self, name=electric_poles[0], **kwargs):
         # type: (str, **dict) -> None
         super(ElectricPole, self).__init__(name, electric_poles, **kwargs)

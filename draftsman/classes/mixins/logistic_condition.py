@@ -14,6 +14,8 @@ class LogisticConditionMixin(object):  # (ControlBehaviorMixin)
     amount of some item in the logistic network exceeds some constant.
     """
 
+    _exports = {}
+
     @property
     def connect_to_logistic_network(self):
         # type: () -> str

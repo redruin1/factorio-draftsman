@@ -30,6 +30,21 @@ class ConstantCombinator(
     the circuit network.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
+    _exports.update(CircuitConnectableMixin._exports)
+    _exports.update(ControlBehaviorMixin._exports)
+
     def __init__(self, name=constant_combinators[0], **kwargs):
         # type: (str, **dict) -> None
         super(ConstantCombinator, self).__init__(name, constant_combinators, **kwargs)

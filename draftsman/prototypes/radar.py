@@ -16,6 +16,15 @@ class Radar(Entity):
     An entity that scans neighbouring chunks periodically.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+
     def __init__(self, name=radars[0], **kwargs):
         # type: (str, **dict) -> None
         super(Radar, self).__init__(name, radars, **kwargs)

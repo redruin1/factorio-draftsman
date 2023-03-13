@@ -19,6 +19,19 @@ class Furnace(ModulesMixin, RequestItemsMixin, Entity):
     An entity that takes a fuel and an input item and creates an output item.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **RequestItemsMixin._exports,
+    #     **ModulesMixin._exports,
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(RequestItemsMixin._exports)
+    _exports.update(ModulesMixin._exports)
+
     def __init__(self, name=furnaces[0], **kwargs):
         # type: (str, **dict) -> None
 

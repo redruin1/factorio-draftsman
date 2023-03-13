@@ -27,6 +27,14 @@ class InventoryFilterMixin(object):
     Allows an Entity to set inventory filters. Only used on :py:class:`.CargoWagon`.
     """
 
+    _exports = {
+        "inventory": {
+            "format": "TODO",
+            "description": "Inventory filters",
+            "required": lambda x: len(x) != 0,
+        }
+    }
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(InventoryFilterMixin, self).__init__(name, similar_entities, **kwargs)
@@ -37,7 +45,7 @@ class InventoryFilterMixin(object):
         if "inventory" in kwargs:
             self.inventory = kwargs["inventory"]
             self.unused_args.pop("inventory")
-        self._add_export("inventory", lambda x: len(x) != 0)
+        # self._add_export("inventory", lambda x: len(x) != 0)
 
     # =========================================================================
 

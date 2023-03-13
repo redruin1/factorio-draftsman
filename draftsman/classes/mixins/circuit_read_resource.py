@@ -19,6 +19,8 @@ class CircuitReadResourceMixin(object):  # (ControlBehaviorMixin)
         | :py:class:`~draftsman.classes.mixins.circuit_read_hand.CircuitReadHandMixin`
     """
 
+    _exports = {}
+
     @property
     def read_resources(self):
         # type: () -> bool

@@ -18,6 +18,17 @@ class FluidWagon(OrientationMixin, Entity):
     A train wagon that holds a fluid as cargo.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **OrientationMixin._exports
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(OrientationMixin._exports)
+
     def __init__(self, name=fluid_wagons[0], **kwargs):
         # type: (str, **dict) -> None
         super(FluidWagon, self).__init__(name, fluid_wagons, **kwargs)

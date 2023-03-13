@@ -27,8 +27,8 @@ import warnings
 
 class TransportBelt(
     CircuitReadContentsMixin,
-    LogisticConditionMixin,
     CircuitConditionMixin,
+    LogisticConditionMixin,
     EnableDisableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
@@ -38,6 +38,29 @@ class TransportBelt(
     """
     An entity that transports items.
     """
+
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **EnableDisableMixin._exports,
+    #     **LogisticConditionMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    #     **CircuitReadContentsMixin._exports,
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
+    _exports.update(CircuitConnectableMixin._exports)
+    _exports.update(ControlBehaviorMixin._exports)
+    _exports.update(EnableDisableMixin._exports)
+    _exports.update(LogisticConditionMixin._exports)
+    _exports.update(CircuitConditionMixin._exports)
+    _exports.update(CircuitReadContentsMixin._exports)
 
     def __init__(self, name=transport_belts[0], **kwargs):
         # type: (str, **dict) -> None

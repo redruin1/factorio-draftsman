@@ -18,6 +18,31 @@ class RocketSilo(RequestItemsMixin, Entity):
     An entity that produces rockets, usually used in research.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **RequestItemsMixin._exports,
+    #     "auto_launch": {
+    #         "format": "bool",
+    #         "description": "Whether the silo should launch on rocket completion",
+    #         "required": lambda x: x is not None,
+    #     },
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(RequestItemsMixin._exports)
+    _exports.update(
+        {
+            "auto_launch": {
+                "format": "bool",
+                "description": "Whether the silo should launch on rocket completion",
+                "required": lambda x: x is not None,
+            },
+        }
+    )
+
     def __init__(self, name=rocket_silos[0], **kwargs):
         # type: (str, **dict) -> None
         super(RocketSilo, self).__init__(name, rocket_silos, **kwargs)
@@ -26,7 +51,7 @@ class RocketSilo(RequestItemsMixin, Entity):
         if "auto_launch" in kwargs:
             self.auto_launch = kwargs["auto_launch"]
             self.unused_args.pop("auto_launch")
-        self._add_export("auto_launch", lambda x: x is not None)
+        # self._add_export("auto_launch", lambda x: x is not None)
 
         for unused_arg in self.unused_args:
             warnings.warn(

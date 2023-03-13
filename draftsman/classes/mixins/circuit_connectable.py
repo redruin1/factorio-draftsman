@@ -16,6 +16,14 @@ class CircuitConnectableMixin(object):
     Enables the Entity to be connected to circuit networks.
     """
 
+    _exports = {
+        "connections": {
+            "format": "TODO",
+            "description": "All circuit and copper wire connections",
+            "required": lambda x: len(x) != 0,
+        }
+    }
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(CircuitConnectableMixin, self).__init__(name, similar_entities, **kwargs)
@@ -39,7 +47,7 @@ class CircuitConnectableMixin(object):
         if "connections" in kwargs:
             self.connections = kwargs["connections"]
             self.unused_args.pop("connections")
-        self._add_export("connections", lambda x: len(x) != 0)
+        # self._add_export("connections", lambda x: len(x) != 0)
 
     # =========================================================================
 

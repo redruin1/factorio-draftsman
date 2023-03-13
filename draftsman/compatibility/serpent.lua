@@ -125,10 +125,11 @@ local function deserialize(data, opts)
         __index = function(t,k) return t end,
         __call = function(t,...) error("cannot call functions") end
       })
-  local f, res = (loadstring or load)('return '..data, nil, nil, env)
-  if not f then f, res = (loadstring or load)(data, nil, nil, env) end
+
+  local f, res = (loadstring or load)('return '..data, nil, nil, env)   ---@diagnostic disable-line: deprecated, redundant-parameter
+  if not f then f, res = (loadstring or load)(data, nil, nil, env) end  ---@diagnostic disable-line: deprecated, redundant-parameter
   if not f then return f, res end
-  if setfenv then setfenv(f, env) end
+  if setfenv then setfenv(f, env) end                                   ---@diagnostic disable-line: deprecated, redundant-parameter
   return pcall(f)
 end
 

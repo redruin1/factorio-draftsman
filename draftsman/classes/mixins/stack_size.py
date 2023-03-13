@@ -24,6 +24,14 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
     overridden stack size and a circuit-set stack size.
     """
 
+    _exports = {
+        "override_stack_size": {
+            "format": "int",
+            "description": "The stack size override to use (if enabled)",
+            "required": lambda x: x is not None,
+        }
+    }
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(StackSizeMixin, self).__init__(name, similar_entities, **kwargs)
@@ -33,7 +41,7 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
             # self.set_stack_size_override(kwargs["override_stack_size"])
             self.override_stack_size = kwargs["override_stack_size"]
             self.unused_args.pop("override_stack_size")
-        self._add_export("override_stack_size", lambda x: x is not None)
+        # self._add_export("override_stack_size", lambda x: x is not None)
 
     # =========================================================================
 

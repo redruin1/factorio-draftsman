@@ -21,6 +21,14 @@ class ColorMixin(object):
     Gives the entity an editable color.
     """
 
+    _exports = {
+        "color": {
+            "format": "{'r': r, 'g': g, 'b': b, 'a': a}",
+            "description": "The color property of the entity if colorable",
+            "required": lambda x: x is not None,
+        }
+    }
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(ColorMixin, self).__init__(name, similar_entities, **kwargs)
@@ -29,7 +37,7 @@ class ColorMixin(object):
         if "color" in kwargs:
             self.color = kwargs["color"]
             self.unused_args.pop("color")
-        self._add_export("color", lambda x: x is not None)
+        # self._add_export("color", lambda x: x is not None)
 
     @property
     def color(self):

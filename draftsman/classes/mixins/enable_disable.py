@@ -14,6 +14,8 @@ class EnableDisableMixin(object):  # (ControlBehaviorMixin)
     its operation.
     """
 
+    _exports = {}
+
     @property
     def enable_disable(self):
         # type: () -> bool

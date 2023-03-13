@@ -20,6 +20,33 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
     with the same ``link_id``.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **RequestItemsMixin._exports,
+    #     **InventoryMixin._exports,
+    #     "link_id": {
+    #         "format": "int32",
+    #         "description": "The current 'channel' that this container uses",
+    #         "required": lambda x: x != 0,
+    #     },
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(RequestItemsMixin._exports)
+    _exports.update(InventoryMixin._exports)
+    _exports.update(
+        {
+            "link_id": {
+                "format": "int32",
+                "description": "The current 'channel' that this container uses",
+                "required": lambda x: x != 0,
+            }
+        }
+    )
+
     def __init__(self, name=linked_containers[0], **kwargs):
         # type: (str, **dict) -> None
         super(LinkedContainer, self).__init__(name, linked_containers, **kwargs)
@@ -28,7 +55,7 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
         if "link_id" in kwargs:
             self.link_id = kwargs["link_id"]
             self.unused_args.pop("link_id")
-        self._add_export("link_id", lambda x: x != 0)
+        # self._add_export("link_id", lambda x: x != 0)
 
         for unused_arg in self.unused_args:
             warnings.warn(

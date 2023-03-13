@@ -13,6 +13,8 @@ class InserterModeOfOperationMixin(object):  # (ControlBehaviorMixin)
     Gives the Inserter a mode of operation constant.
     """
 
+    _exports = {}
+
     @property
     def mode_of_operation(self):
         # type: () -> InserterModeOfOperation
@@ -45,6 +47,8 @@ class LogisticModeOfOperationMixin(object):  # (ControlBehaviorMixin)
 
     Gives the Logistics container a mode of operation constant.
     """
+
+    _exports = {}
 
     @property
     def mode_of_operation(self):

@@ -29,6 +29,14 @@ class RequestItemsMixin(object):
     machines.
     """
 
+    _exports = {
+        "items": {
+            "format": "{'item_name': count, ...}",
+            "description": "List of construction item requests (such as modules for beacons)",
+            "required": lambda x: len(x) != 0,
+        }
+    }
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(RequestItemsMixin, self).__init__(name, similar_entities, **kwargs)
@@ -37,7 +45,7 @@ class RequestItemsMixin(object):
         if "items" in kwargs:
             self.set_item_requests(kwargs["items"])
             self.unused_args.pop("items")
-        self._add_export("items", lambda x: len(x) != 0)
+        # self._add_export("items", lambda x: len(x) != 0)
 
     # =========================================================================
 

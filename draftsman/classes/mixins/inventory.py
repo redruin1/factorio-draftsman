@@ -23,6 +23,14 @@ class InventoryMixin(object):
     amount exceeds the inventory size of the entity.
     """
 
+    _exports = {
+        "bar": {
+            "format": "int",
+            "description": "Limiting bar on the inventory",
+            "required": lambda x: x is not None,
+        }
+    }
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         # TODO: fix this hack
@@ -41,7 +49,7 @@ class InventoryMixin(object):
         if "bar" in kwargs:
             self.bar = kwargs["bar"]
             self.unused_args.pop("bar")
-        self._add_export("bar", lambda x: x is not None)
+        # self._add_export("bar", lambda x: x is not None)
 
     # =========================================================================
 

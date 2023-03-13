@@ -30,8 +30,8 @@ import warnings
 class TrainStop(
     ColorMixin,
     CircuitConditionMixin,
-    EnableDisableMixin,
     LogisticConditionMixin,
+    EnableDisableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DoubleGridAlignedMixin,
@@ -42,6 +42,55 @@ class TrainStop(
     A stop for making train schedules for locomotives.
     """
 
+    # fmt: on
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **DoubleGridAlignedMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **EnableDisableMixin._exports,
+    #     **LogisticConditionMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    #     **ColorMixin._exports,
+    #     "station": {
+    #         "format": "str",
+    #         "description": "The name for this station",
+    #         "required": lambda x: x is not None,
+    #     },
+    #     "manual_trains_limit": {
+    #         "format": "int",
+    #         "description": "Manual train limit for this stop (overwritten by logistics or circuit condition)",
+    #         "required": lambda x: x is not None,
+    #     },
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
+    _exports.update(DoubleGridAlignedMixin._exports)
+    _exports.update(CircuitConnectableMixin._exports)
+    _exports.update(ControlBehaviorMixin._exports)
+    _exports.update(EnableDisableMixin._exports)
+    _exports.update(LogisticConditionMixin._exports)
+    _exports.update(CircuitConditionMixin._exports)
+    _exports.update(ColorMixin._exports)
+    _exports.update(
+        {
+            "station": {
+                "format": "str",
+                "description": "The name for this station",
+                "required": lambda x: x is not None,
+            },
+            "manual_trains_limit": {
+                "format": "int",
+                "description": "Manual train limit for this stop (overwritten by logistics or circuit condition)",
+                "required": lambda x: x is not None,
+            },
+        }
+    )
+
     def __init__(self, name=train_stops[0], similar_entities=train_stops, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(TrainStop, self).__init__(name, similar_entities, **kwargs)
@@ -50,13 +99,13 @@ class TrainStop(
         if "station" in kwargs:
             self.station = kwargs["station"]
             self.unused_args.pop("station")
-        self._add_export("station", lambda x: x is not None)
+        # self._add_export("station", lambda x: x is not None)
 
         self.manual_trains_limit = None
         if "manual_trains_limit" in kwargs:
             self.manual_trains_limit = kwargs["manual_trains_limit"]
             self.unused_args.pop("manual_trains_limit")
-        self._add_export("manual_trains_limit", lambda x: x is not None)
+        # self._add_export("manual_trains_limit", lambda x: x is not None)
 
         for unused_arg in self.unused_args:
             warnings.warn(

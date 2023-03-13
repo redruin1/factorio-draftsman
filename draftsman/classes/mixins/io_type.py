@@ -25,6 +25,15 @@ class IOTypeMixin(object):
     Gives an entity a Input/Output type.
     """
 
+    _exports = {
+        "type": {
+            "format": "'input' or 'output'",
+            "description": "The IO type of the entity",
+            "required": lambda x: x is not None and x != "input",
+            "transform": lambda self, _: getattr(self, "io_type"),
+        }
+    }
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(IOTypeMixin, self).__init__(name, similar_entities, **kwargs)
@@ -39,11 +48,11 @@ class IOTypeMixin(object):
             self.io_type = kwargs["io_type"]
             self.unused_args.pop("io_type")
 
-        self._add_export(
-            "io_type",
-            lambda x: x is not None and x != "input",
-            lambda k, v: ("type", v),
-        )
+        # self._add_export(
+        #     "io_type",
+        #     lambda x: x is not None and x != "input",
+        #     lambda k, v: ("type", v),
+        # )
 
     # =========================================================================
 

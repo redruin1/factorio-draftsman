@@ -17,7 +17,9 @@ from draftsman.error import InvalidEntityError, DraftsmanError
 from draftsman import utils
 
 import copy
+import json
 from typing import Union, Callable
+from schema import Schema
 import six
 
 
@@ -27,6 +29,67 @@ class Entity(EntityLike):
     Categorizes entities into "types" based on their class, each of which is
     implemented in :py:mod:`draftsman.prototypes`.
     """
+
+    # A dictionary containing all of the valid keys used in exported blueprint
+    # strings.
+    # Updated on a per Entity and Mixin basis; so ``Entity._exports`` will
+    # differ from ``ConstantCombinator._exports``.
+    # TODO: this needs to be some kind of recursive structure so that the data
+    # for things like "control_behavior" aren't displayed flat
+    _exports = {
+        "name": {
+            "format": "str",
+            "description": "Name of the entity",
+            "required": True,
+        },
+        "position": {
+            "format": "{'x': float, 'y': float}",
+            "description": "Position of the entity in the blueprint/world",
+            "required": True,
+            "transform": (lambda self, _: getattr(self, "global_position").to_dict()),
+        },
+        "tags": {
+            "format": "{...}",
+            "description": (
+                "Any custom data associated with the entity; used for modded data "
+                "primarily"
+            ),
+            "required": lambda x: x,  # Only optional if empty
+        },
+    }
+
+    @classmethod
+    def dump_format(cls):
+        # type: () -> dict
+        """
+        Dumps a JSON-serializable representation of the Entity's ``exports``
+        dictionary, primarily for user interpretation.
+
+        :returns: A JSON dictionary containing the names of each valid key, a
+            short description of their purpose, and whether or not they're
+            considered optional.
+        """
+        return {
+            name: {
+                "format": export["format"],
+                "description": export["description"],
+                "optional": False if export["required"] is True else True,
+            }
+            for name, export in cls._exports.items()
+        }  # pragma: no coverage
+
+    @classmethod
+    def get_format(cls):
+        # type: () -> str
+        """
+        Produces a pretty string representation of ``meth:dump_format``. Work in
+        progress.
+
+        :returns: A formatted string that can be output to stdout or file.
+        """
+        return json.dumps(cls.dump_format(), indent=4)  # pragma: no coverage
+
+    # =========================================================================
 
     def __init__(self, name, similar_entities, tile_position=[0, 0], **kwargs):
         # type: (str, list[str], Union[list, dict], **dict) -> None
@@ -50,9 +113,7 @@ class Entity(EntityLike):
         """
         # Init EntityLike
         super(Entity, self).__init__()
-        # Create a set of keywords that transfer in to_dict function
-        # Since some things we want to keep internal without sending to to_dict
-        self.exports = dict()
+
         # For user convinience, keep track of all the unused arguments, and
         # issue a warning if the user provided one that was not used.
         self.unused_args = kwargs
@@ -68,7 +129,6 @@ class Entity(EntityLike):
                 )
             )
         self._name = six.text_type(name)
-        self._add_export("name")
 
         # Entity type
         self._type = entities.raw[self.name]["type"]
@@ -131,16 +191,12 @@ class Entity(EntityLike):
             self.unused_args.pop("position")
         else:
             self.tile_position = tile_position
-        self._add_export(
-            "global_position", None, lambda k, v: ("position", v.to_dict())
-        )
 
         # Entity tags
         self.tags = {}
         if "tags" in kwargs:
             self.tags = kwargs["tags"]
             self.unused_args.pop("tags")
-        self._add_export("tags", lambda x: x)
 
         # Remove entity_number if we're importing from a dict
         self.unused_args.pop("entity_number", None)
@@ -513,20 +569,34 @@ class Entity(EntityLike):
 
         :returns: The exported JSON-dict representation of the Entity.
         """
-        # Only add the keys in the exports dictionary
+        # out = {}
+        # for name, funcs in self.exports.items():
+        #     value = getattr(self, name)
+        #     criterion = funcs[0]
+        #     formatter = funcs[1]
+        #     # Does the value match the criteria to be included?
+        #     if criterion is None or criterion(value):
+        #         if formatter is not None:
+        #             # Normalize key/value pair
+        #             k, v = formatter(name, value)
+        #         else:
+        #             k, v = name, value
+        #         out[k] = v
+
+        # return out
+
         out = {}
-        for name, funcs in self.exports.items():
-            value = getattr(self, name)
-            criterion = funcs[0]
-            formatter = funcs[1]
-            # Does the value match the criteria to be included?
-            if criterion is None or criterion(value):
-                if formatter is not None:
-                    # Normalize key/value pair
-                    k, v = formatter(name, value)
-                else:
-                    k, v = name, value
-                out[k] = v
+        for name, export in self.__class__._exports.items():
+            transform = export.get("transform", None)
+            if transform is not None:
+                value = transform(self, name)
+            else:
+                value = getattr(self, name)
+
+            required = export.get("required", None)
+            # print(required)
+            if required is True or required and required(value):
+                out[name] = value
 
         return out
 
@@ -662,36 +732,36 @@ class Entity(EntityLike):
         # (make sure to make a copy in case the original data gets deleted)
         self.tags = copy.deepcopy(other.tags)
 
-    def _add_export(self, name, criterion=None, formatter=None):
-        # type: (str, Callable, Callable) -> None
-        """
-        Adds a key to ``exports`` with an optional criteria and formatting
-        function.
+    # def _add_export(self, name, criterion=None, formatter=None):
+    #     # type: (str, Callable, Callable) -> None
+    #     """
+    #     Adds a key to ``exports`` with an optional criteria and formatting
+    #     function.
 
-        We can't just convert the entire entity to a dict, because there are a
-        number of keys (for technical or space reasons) that we dont want to
-        add to the dictionary. Instead, we keep track of the keys we do want
-        (``exports``) and add those if they're present in the Entity object.
+    #     We can't just convert the entire entity to a dict, because there are a
+    #     number of keys (for technical or space reasons) that we dont want to
+    #     add to the dictionary. Instead, we keep track of the keys we do want
+    #     (``exports``) and add those if they're present in the Entity object.
 
-        However, some items that are present in Entity might be initialized to
-        ``None`` or otherwise redundant values, which would just take up space
-        in the output dict. Hence, we can also provide a criteria function that
-        takes a single argument, the value of the element in the `Entity`. If
-        the function returns ``True``, the key is added to the output dictionary.
-        If the function is ``None``, the key is always added.
+    #     However, some items that are present in Entity might be initialized to
+    #     ``None`` or otherwise redundant values, which would just take up space
+    #     in the output dict. Hence, we can also provide a criteria function that
+    #     takes a single argument, the value of the element in the `Entity`. If
+    #     the function returns ``True``, the key is added to the output dictionary.
+    #     If the function is ``None``, the key is always added.
 
-        This function also supports an optional ``formatter`` function that
-        takes two arguments, the ``key`` and ``value`` pair and returns a tuple
-        of the two in the same order. This allows to perform any modification to
-        the key or value before being added to the output dict.
+    #     This function also supports an optional ``formatter`` function that
+    #     takes two arguments, the ``key`` and ``value`` pair and returns a tuple
+    #     of the two in the same order. This allows to perform any modification to
+    #     the key or value before being added to the output dict.
 
-        :param name: The name of the attribute that you would like to keep.
-        :param criterion: Function that determines whether or not the attribute
-            should be added.
-        :param formatter: Function that determines the output format of the
-            key-value pair in the output dictionary.
-        """
-        self.exports[name] = [criterion, formatter]
+    #     :param name: The name of the attribute that you would like to keep.
+    #     :param criterion: Function that determines whether or not the attribute
+    #         should be added.
+    #     :param formatter: Function that determines the output format of the
+    #         key-value pair in the output dictionary.
+    #     """
+    #     self.exports[name] = [criterion, formatter]
 
     def __repr__(self):  # pragma: no coverage
         # type: () -> str

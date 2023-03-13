@@ -18,6 +18,39 @@ class HeatInterface(Entity):
     An entity that interacts with a heat network.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     "temperature": {
+    #         "format": "int[0, 1000]",
+    #         "description": "Temperature of the heat interface in degrees Celcius",
+    #         "required": lambda x: x is not None and x != 0,
+    #     },
+    #     "mode": {
+    #         "format": "'at-least' or 'at-most' or 'exactly' or 'add' or 'remove'",
+    #         "description": "How the interface should affect it's temperature",
+    #         "required": lambda x: x is not None and x != "at-least",
+    #     },
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(
+        {
+            "temperature": {
+                "format": "int[0, 1000]",
+                "description": "Temperature of the heat interface in degrees Celcius",
+                "required": lambda x: x is not None and x != 0,
+            },
+            "mode": {
+                "format": "'at-least' or 'at-most' or 'exactly' or 'add' or 'remove'",
+                "description": "How the interface should affect it's temperature",
+                "required": lambda x: x is not None and x != "at-least",
+            },
+        }
+    )
+
     def __init__(self, name=heat_interfaces[0], **kwargs):
         # type: (str, **dict) -> None
         super(HeatInterface, self).__init__(name, heat_interfaces, **kwargs)
@@ -26,13 +59,13 @@ class HeatInterface(Entity):
         if "temperature" in kwargs:
             self.temperature = kwargs["temperature"]
             self.unused_args.pop("temperature")
-        self._add_export("temperature", lambda x: x is not None and x != 0)
+        # self._add_export("temperature", lambda x: x is not None and x != 0)
 
         self.mode = "at-least"
         if "mode" in kwargs:
             self.mode = kwargs["mode"]
             self.unused_args.pop("mode")
-        self._add_export("mode", lambda x: x is not None and x != "at-least")
+        # self._add_export("mode", lambda x: x is not None and x != "at-least")
 
         for unused_arg in self.unused_args:
             warnings.warn(

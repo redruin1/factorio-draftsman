@@ -30,10 +30,23 @@ class LinkedBelt(DirectionalMixin, Entity):
         entity, as I can't seem to figure out the example one in the game.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
+
     def __init__(self, name=default_linked_belt, **kwargs):
         # type: (str, **dict) -> None
         if len(linked_belts) == 0:  # pragma: no coverage
-            raise DraftsmanError("There is no LinkedBelt to create")
+            raise DraftsmanError(
+                "There is no LinkedBelt to create; check your Factorio version"
+            )
 
         super(LinkedBelt, self).__init__(name, linked_belts, **kwargs)
 

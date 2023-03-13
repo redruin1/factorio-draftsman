@@ -17,6 +17,49 @@ class ElectricEnergyInterface(Entity):
     An entity that interfaces with an electrical grid.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     "buffer_size": {
+    #         "format": "int",
+    #         "description": "How much energy this interface can store",
+    #         "required": lambda x: x is not None,
+    #     },
+    #     "power_production": {
+    #         "format": "int",
+    #         "description": "How much energy this interface produces per tick",
+    #         "required": lambda x: x is not None,
+    #     },
+    #     "power_usage": {
+    #         "format": "int",
+    #         "description": "How much energy this interface consumes per tick",
+    #         "required": lambda x: x is not None,
+    #     },
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(
+        {
+            "buffer_size": {
+                "format": "int",
+                "description": "How much energy this interface can store",
+                "required": lambda x: x is not None,
+            },
+            "power_production": {
+                "format": "int",
+                "description": "How much energy this interface produces per tick",
+                "required": lambda x: x is not None,
+            },
+            "power_usage": {
+                "format": "int",
+                "description": "How much energy this interface consumes per tick",
+                "required": lambda x: x is not None,
+            },
+        }
+    )
+
     def __init__(self, name=electric_energy_interfaces[0], **kwargs):
         # type: (str, **dict) -> None
         super(ElectricEnergyInterface, self).__init__(
@@ -27,19 +70,19 @@ class ElectricEnergyInterface(Entity):
         if "buffer_size" in kwargs:
             self.buffer_size = kwargs["buffer_size"]
             self.unused_args.pop("buffer_size")
-        self._add_export("buffer_size", lambda x: x is not None)
+        # self._add_export("buffer_size", lambda x: x is not None)
 
         self.power_production = None  # TODO: default
         if "power_production" in kwargs:
             self.power_production = kwargs["power_production"]
             self.unused_args.pop("power_production")
-        self._add_export("power_production", lambda x: x is not None)
+        # self._add_export("power_production", lambda x: x is not None)
 
         self.power_usage = None  # TODO: default
         if "power_usage" in kwargs:
             self.power_usage = kwargs["power_usage"]
             self.unused_args.pop("power_usage")
-        self._add_export("power_usage", lambda x: x is not None)
+        # self._add_export("power_usage", lambda x: x is not None)
 
         for unused_arg in self.unused_args:
             warnings.warn(

@@ -21,6 +21,19 @@ class StraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     A straight rail entity.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **EightWayDirectionalMixin._exports,
+    #     **DoubleGridAlignedMixin._exports,
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(EightWayDirectionalMixin._exports)
+    _exports.update(DoubleGridAlignedMixin._exports)
+
     def __init__(self, name=straight_rails[0], **kwargs):
         # type: (str, **dict) -> None
         """

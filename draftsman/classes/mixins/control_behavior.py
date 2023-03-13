@@ -38,6 +38,14 @@ class ControlBehaviorMixin(six.with_metaclass(ABCMeta, object)):
     * :py:class:`.mixins.stack_size.StackSizeMixin`
     """
 
+    _exports = {
+        "control_behavior": {
+            "format": "TODO",
+            "description": "The control behavior of the entity",
+            "required": lambda x: x is not None and len(x) != 0,
+        }
+    }
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(ControlBehaviorMixin, self).__init__(name, similar_entities, **kwargs)
@@ -46,7 +54,7 @@ class ControlBehaviorMixin(six.with_metaclass(ABCMeta, object)):
         if "control_behavior" in kwargs:
             self.control_behavior = kwargs["control_behavior"]
             self.unused_args.pop("control_behavior")
-        self._add_export("control_behavior", lambda x: x is not None and len(x) != 0)
+        # self._add_export("control_behavior", lambda x: x is not None and len(x) != 0)
 
     # =========================================================================
 

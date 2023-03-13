@@ -49,6 +49,47 @@ class FilterInserter(
         :py:class:`~.Inserter` and :py:class:`~.FilterInserter`
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **LogisticConditionMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    #     **InserterModeOfOperationMixin._exports,
+    #     **CircuitReadHandMixin._exports,
+    #     **StackSizeMixin._exports,
+    #     **FiltersMixin._exports,
+    #     "filter_mode": {
+    #         "format": "'whitelist' or 'blacklist'",
+    #         "description": "Whether or not to invert the item filters specified",
+    #         "required": lambda x: x is not None,
+    #     },
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
+    _exports.update(CircuitConnectableMixin._exports)
+    _exports.update(ControlBehaviorMixin._exports)
+    _exports.update(LogisticConditionMixin._exports)
+    _exports.update(CircuitConditionMixin._exports)
+    _exports.update(InserterModeOfOperationMixin._exports)
+    _exports.update(CircuitReadHandMixin._exports)
+    _exports.update(StackSizeMixin._exports)
+    _exports.update(FiltersMixin._exports)
+    _exports.update(
+        {
+            "filter_mode": {
+                "format": "'whitelist' or 'blacklist'",
+                "description": "Whether or not to invert the item filters specified",
+                "required": lambda x: x is not None,
+            }
+        }
+    )
+
     def __init__(self, name=filter_inserters[0], **kwargs):
         # type: (str, **dict) -> None
         super(FilterInserter, self).__init__(name, filter_inserters, **kwargs)
@@ -57,7 +98,7 @@ class FilterInserter(
         if "filter_mode" in kwargs:
             self.filter_mode = kwargs["filter_mode"]
             self.unused_args.pop("filter_mode")
-        self._add_export("filter_mode", lambda x: x is not None)
+        # self._add_export("filter_mode", lambda x: x is not None)
 
         for unused_arg in self.unused_args:
             warnings.warn(

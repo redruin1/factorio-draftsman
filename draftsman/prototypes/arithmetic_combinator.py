@@ -30,6 +30,21 @@ class ArithmeticCombinator(
     circuit signals.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
+    _exports.update(CircuitConnectableMixin._exports)
+    _exports.update(ControlBehaviorMixin._exports)
+
     def __init__(self, name=arithmetic_combinators[0], **kwargs):
         # type: (str, **dict) -> None
         """

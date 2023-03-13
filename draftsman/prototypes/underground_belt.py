@@ -18,6 +18,19 @@ class UndergroundBelt(IOTypeMixin, DirectionalMixin, Entity):
     A transport belt that transfers items underneath other entities.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **IOTypeMixin._exports
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
+    _exports.update(IOTypeMixin._exports)
+
     def __init__(self, name=underground_belts[0], **kwargs):
         # type: (str, **dict) -> None
         super(UndergroundBelt, self).__init__(name, underground_belts, **kwargs)

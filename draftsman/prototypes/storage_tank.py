@@ -17,6 +17,19 @@ class StorageTank(CircuitConnectableMixin, DirectionalMixin, Entity):
     An entity that stores a fluid.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
+    _exports.update(CircuitConnectableMixin._exports)
+
     def __init__(self, name=storage_tanks[0], **kwargs):
         # type: (str, **dict) -> None
         super(StorageTank, self).__init__(name, storage_tanks, **kwargs)

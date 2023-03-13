@@ -7,7 +7,7 @@
     {
         "blueprint_book": {
             "item": "blueprint-book", # The associated item with this structure
-            "label": str, # A user given name for this deconstruction planner
+            "label": str, # A user given name for this blueprint book planner
             "label_color": { # The overall color of the label
                 "r": float[0.0, 1.0] or int[0, 255], # red
                 "g": float[0.0, 1.0] or int[0, 255], # green

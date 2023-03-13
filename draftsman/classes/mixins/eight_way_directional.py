@@ -26,6 +26,14 @@ class EightWayDirectionalMixin(object):
         :py:class:`~.mixins.directional.DirectionalMixin`
     """
 
+    _exports = {
+        "direction": {
+            "format": "int",
+            "description": "The direction this entity is facing",
+            "required": lambda x: x != 0,
+        }
+    }
+
     def __init__(self, name, similar_entities, tile_position=[0, 0], **kwargs):
         # type: (str, list[str], Union[list, dict], **dict) -> None
         super(EightWayDirectionalMixin, self).__init__(name, similar_entities, **kwargs)
@@ -53,7 +61,7 @@ class EightWayDirectionalMixin(object):
         if "direction" in kwargs:
             self.direction = kwargs["direction"]
             self.unused_args.pop("direction")
-        self._add_export("direction", lambda x: x != 0, lambda k, v: (k, int(v)))
+        # self._add_export("direction", lambda x: x != 0, lambda k, v: (k, int(v)))
 
         # Technically redundant, but we reset the position if the direction has
         # changed to reflect its changes

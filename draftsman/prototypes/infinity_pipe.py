@@ -21,6 +21,29 @@ class InfinityPipe(Entity):
     An entity used to create an infinite amount of any fluid at any temperature.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     "infinity_settings": {
+    #         "format": "TODO",
+    #         "description": "Fluid filters for infinite spawning/deletion",
+    #         "required": lambda x: len(x) != 0,
+    #     }
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(
+        {
+            "infinity_settings": {
+                "format": "TODO",
+                "description": "Fluid filters for infinite spawning/deletion",
+                "required": lambda x: len(x) != 0,
+            }
+        }
+    )
+
     def __init__(self, name=infinity_pipes[0], **kwargs):
         # type: (str, **dict) -> None
         super(InfinityPipe, self).__init__(name, infinity_pipes, **kwargs)
@@ -29,7 +52,7 @@ class InfinityPipe(Entity):
         if "infinity_settings" in kwargs:
             self.infinity_settings = kwargs["infinity_settings"]
             self.unused_args.pop("infinity_settings")
-        self._add_export("infinity_settings", lambda x: len(x) != 0)
+        # self._add_export("infinity_settings", lambda x: len(x) != 0)
 
         for unused_arg in self.unused_args:
             warnings.warn(

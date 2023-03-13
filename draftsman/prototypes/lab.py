@@ -19,6 +19,19 @@ class Lab(ModulesMixin, RequestItemsMixin, Entity):
     An entity that consumes items and produces research.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **RequestItemsMixin._exports,
+    #     **ModulesMixin._exports,
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(RequestItemsMixin._exports)
+    _exports.update(ModulesMixin._exports)
+
     def __init__(self, name=labs[0], **kwargs):
         # type: (str, **dict) -> None
         super(Lab, self).__init__(name, labs, **kwargs)

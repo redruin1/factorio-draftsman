@@ -14,6 +14,8 @@ class ModulesMixin(object):  # (RequestItemsMixin)
     currently inside the entity.
     """
 
+    _exports = {}
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
 

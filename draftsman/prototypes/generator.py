@@ -17,6 +17,17 @@ class Generator(DirectionalMixin, Entity):
     An entity that converts a fluid (usually steam) to electricity.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
+
     def __init__(self, name=generators[0], **kwargs):
         # type: (str, **dict) -> None
         super(Generator, self).__init__(name, generators, **kwargs)

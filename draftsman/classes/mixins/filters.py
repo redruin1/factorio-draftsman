@@ -16,6 +16,14 @@ class FiltersMixin(object):
     Allows the entity to specify item filters.
     """
 
+    _exports = {
+        "filters": {
+            "format": "[{'index': int, 'name': item_name_1}, ...]",
+            "description": "Any item filters that this entity has",
+            "required": lambda x: x is not None and len(x) != 0,
+        }
+    }
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(FiltersMixin, self).__init__(name, similar_entities, **kwargs)
@@ -27,7 +35,7 @@ class FiltersMixin(object):
         if "filters" in kwargs:
             self.set_item_filters(kwargs["filters"])
             self.unused_args.pop("filters")
-        self._add_export("filters", lambda x: x is not None and len(x) != 0)
+        # self._add_export("filters", lambda x: x is not None and len(x) != 0)
 
     # =========================================================================
 

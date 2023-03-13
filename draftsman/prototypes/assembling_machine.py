@@ -34,6 +34,23 @@ class AssemblingMachine(
     does not include :py:class:`.RocketSilo`.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **RecipeMixin._exports,
+    #     **RequestItemsMixin._exports,
+    #     **ModulesMixin._exports,
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
+    _exports.update(RecipeMixin._exports)
+    _exports.update(RequestItemsMixin._exports)
+    _exports.update(ModulesMixin._exports)
+
     def __init__(self, name=assembling_machines[0], **kwargs):
         # type: (str, **dict) -> None
         """

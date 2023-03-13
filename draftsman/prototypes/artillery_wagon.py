@@ -18,6 +18,17 @@ class ArtilleryWagon(OrientationMixin, Entity):
     An artillery train car.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **OrientationMixin._exports
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(OrientationMixin._exports)
+
     def __init__(self, name=artillery_wagons[0], **kwargs):
         # type: (str, **dict) -> None
         """

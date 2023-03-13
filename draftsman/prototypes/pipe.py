@@ -16,6 +16,15 @@ class Pipe(Entity):
     An entity that transports a fluid.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+
     def __init__(self, name=pipes[0], **kwargs):
         # type: (str, **dict) -> None
         super(Pipe, self).__init__(name, pipes, **kwargs)

@@ -58,7 +58,8 @@ setup(
     include_package_data = True,
     install_requires = [
         "schema >= 0.7.5",
-        "lupa >= 1.10",
+        "lupa >= 1.14.1",
+        #"lupa @ git+https://github.com/scoder/lupa.git#egg=lupa",
         "six >= 1.16.0",
         "typing",
         "typing_extensions; python_version < '3.8'",

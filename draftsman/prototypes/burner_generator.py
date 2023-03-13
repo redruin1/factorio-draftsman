@@ -17,6 +17,17 @@ class BurnerGenerator(DirectionalMixin, Entity):
     A electrical generator that only requires fuel in order to function.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
+
     def __init__(self, name=burner_generators[0], **kwargs):
         # type: (str, **dict) -> None
         super(BurnerGenerator, self).__init__(name, burner_generators, **kwargs)

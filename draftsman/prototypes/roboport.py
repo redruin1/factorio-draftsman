@@ -23,6 +23,19 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     An entity that acts as a node in a logistics network.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(CircuitConnectableMixin._exports)
+    _exports.update(ControlBehaviorMixin._exports)
+
     def __init__(self, name=roboports[0], **kwargs):
         # type: (str, **dict) -> None
         super(Roboport, self).__init__(name, roboports, **kwargs)

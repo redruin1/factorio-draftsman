@@ -16,6 +16,14 @@ class PowerConnectableMixin(object):
     Enables the Entity to be connected to power networks.
     """
 
+    _exports = {
+        "neighbours": {
+            "format": "[int, ...]",
+            "description": "List of entity_ids of power poles connected to this entity",
+            "required": lambda x: x is not None and len(x) != 0,
+        }
+    }
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(PowerConnectableMixin, self).__init__(name, similar_entities, **kwargs)
@@ -33,7 +41,7 @@ class PowerConnectableMixin(object):
         if "neighbours" in kwargs:
             self.neighbours = kwargs["neighbours"]
             self.unused_args.pop("neighbours")
-        self._add_export("neighbours", lambda x: x is not None and len(x) != 0)
+        # self._add_export("neighbours", lambda x: x is not None and len(x) != 0)
 
     # =========================================================================
 

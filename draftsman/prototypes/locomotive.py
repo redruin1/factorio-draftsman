@@ -18,6 +18,19 @@ class Locomotive(ColorMixin, OrientationMixin, Entity):
     A train car that moves other wagons around using a fuel.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **OrientationMixin._exports,
+    #     **ColorMixin._exports
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(OrientationMixin._exports)
+    _exports.update(ColorMixin._exports)
+
     def __init__(self, name=locomotives[0], **kwargs):
         # type: (str, **dict) -> None
         super(Locomotive, self).__init__(name, locomotives, **kwargs)

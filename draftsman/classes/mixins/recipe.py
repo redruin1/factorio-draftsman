@@ -24,6 +24,14 @@ class RecipeMixin(object):
     recipes that it can make.
     """
 
+    _exports = {
+        "recipe": {
+            "format": "str",
+            "description": "The name of the entity's selected recipe",
+            "required": lambda x: x is not None,
+        }
+    }
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(RecipeMixin, self).__init__(name, similar_entities, **kwargs)
@@ -36,7 +44,7 @@ class RecipeMixin(object):
         if "recipe" in kwargs:
             self.recipe = kwargs["recipe"]
             self.unused_args.pop("recipe")
-        self._add_export("recipe", lambda x: x is not None)
+        # self._add_export("recipe", lambda x: x is not None)
 
     # =========================================================================
 

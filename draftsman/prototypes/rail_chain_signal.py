@@ -36,6 +36,23 @@ class RailChainSignal(
     forward rail block.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **EightWayDirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **ReadRailSignalMixin._exports,
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(EightWayDirectionalMixin._exports)
+    _exports.update(CircuitConnectableMixin._exports)
+    _exports.update(ControlBehaviorMixin._exports)
+    _exports.update(ReadRailSignalMixin._exports)
+
     def __init__(self, name=rail_chain_signals[0], **kwargs):
         # type: (str, **dict) -> None
 

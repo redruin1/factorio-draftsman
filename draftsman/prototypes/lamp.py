@@ -27,6 +27,21 @@ class Lamp(
     An entity that illuminates an area.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(CircuitConnectableMixin._exports)
+    _exports.update(ControlBehaviorMixin._exports)
+    _exports.update(CircuitConditionMixin._exports)
+
     def __init__(self, name=lamps[0], **kwargs):
         # type: (str, **dict) -> None
         super(Lamp, self).__init__(name, lamps, **kwargs)

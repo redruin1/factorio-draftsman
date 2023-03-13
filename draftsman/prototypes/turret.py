@@ -17,6 +17,19 @@ class Turret(RequestItemsMixin, DirectionalMixin, Entity):
     An entity that automatically targets and attacks other forces in range.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **RequestItemsMixin._exports,
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
+    _exports.update(RequestItemsMixin._exports)
+
     def __init__(self, name=turrets[0], **kwargs):
         # type: (str, **dict) -> None
         super(Turret, self).__init__(name, turrets, **kwargs)

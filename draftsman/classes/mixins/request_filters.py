@@ -22,6 +22,14 @@ class RequestFiltersMixin(object):
     network.
     """
 
+    _exports = {
+        "request_filters": {
+            "format": "TODO",
+            "description": "A list of all items requested by this entity",
+            "required": lambda x: x is not None,
+        }
+    }
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(RequestFiltersMixin, self).__init__(name, similar_entities, **kwargs)
@@ -31,7 +39,7 @@ class RequestFiltersMixin(object):
         if "request_filters" in kwargs:
             self.set_request_filters(kwargs["request_filters"])
             self.unused_args.pop("request_filters")
-        self._add_export("request_filters", lambda x: x is not None)
+        # self._add_export("request_filters", lambda x: x is not None)
 
     # =========================================================================
 

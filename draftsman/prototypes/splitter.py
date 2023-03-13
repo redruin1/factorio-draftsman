@@ -28,6 +28,49 @@ class Splitter(DirectionalMixin, Entity):
     belts.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     "input_priority": {
+    #         "format": "'left' or 'right'",
+    #         "description": "Which side takes input priority",
+    #         "required": lambda x: x is not None,
+    #     },
+    #     "output_priority": {
+    #         "format": "'left' or 'right'",
+    #         "description": "Which side takes output priority",
+    #         "required": lambda x: x is not None,
+    #     },
+    #     "filter": {
+    #         "format": "str",
+    #         "description": "Name of the item being filtered",
+    #         "required": lambda x: x is not None,
+    #     },
+    # }
+    # fmt: off
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
+    _exports.update({
+        "input_priority": {
+            "format": "'left' or 'right'",
+            "description": "Which side takes input priority",
+            "required": lambda x: x is not None,
+        },
+        "output_priority": {
+            "format": "'left' or 'right'",
+            "description": "Which side takes output priority",
+            "required": lambda x: x is not None,
+        },
+        "filter": {
+            "format": "str",
+            "description": "Name of the item being filtered",
+            "required": lambda x: x is not None,
+        },
+    })
+
     def __init__(self, name=splitters[0], **kwargs):
         # type: (str, **dict) -> None
         super(Splitter, self).__init__(name, splitters, **kwargs)
@@ -46,19 +89,19 @@ class Splitter(DirectionalMixin, Entity):
         if "input_priority" in kwargs:
             self.input_priority = kwargs["input_priority"]
             self.unused_args.pop("input_priority")
-        self._add_export("input_priority", lambda x: x is not None)
+        # self._add_export("input_priority", lambda x: x is not None)
 
         self.output_priority = None
         if "output_priority" in kwargs:
             self.output_priority = kwargs["output_priority"]
             self.unused_args.pop("output_priority")
-        self._add_export("output_priority", lambda x: x is not None)
+        # self._add_export("output_priority", lambda x: x is not None)
 
         self.filter = None
         if "filter" in kwargs:
             self.filter = kwargs["filter"]
             self.unused_args.pop("filter")
-        self._add_export("filter", lambda x: x is not None)
+        # self._add_export("filter", lambda x: x is not None)
 
         for unused_arg in self.unused_args:
             warnings.warn(

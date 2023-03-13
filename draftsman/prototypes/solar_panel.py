@@ -16,6 +16,15 @@ class SolarPanel(Entity):
     An entity that produces electricity depending on the presence of the sun.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+
     def __init__(self, name=solar_panels[0], **kwargs):
         # type: (str, **dict) -> None
         super(SolarPanel, self).__init__(name, solar_panels, **kwargs)

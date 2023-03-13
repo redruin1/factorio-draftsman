@@ -18,6 +18,19 @@ class CargoWagon(InventoryFilterMixin, OrientationMixin, Entity):
     A train wagon that holds items as cargo.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports,
+    #     **OrientationMixin._exports,
+    #     **InventoryFilterMixin._exports,
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+    _exports.update(OrientationMixin._exports)
+    _exports.update(InventoryFilterMixin._exports)
+
     def __init__(self, name=cargo_wagons[0], **kwargs):
         # type: (str, **dict) -> None
         super(CargoWagon, self).__init__(name, cargo_wagons, **kwargs)

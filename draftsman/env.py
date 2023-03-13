@@ -7,7 +7,10 @@ which runs through the Factorio data lifecycle and updates the data in
 """
 
 # TODO:
-# Make sure everything uses OrderedDict for backwards compatability
+# * Make sure everything uses OrderedDict for backwards compatability
+# * Treat `core` and `base` as mods to unify their loading
+# * In a similar vein, `normalize_module_names()` could also be simplified if
+#   they were in mods list
 
 from __future__ import print_function
 
@@ -26,10 +29,14 @@ from draftsman.error import (
 from draftsman.utils import decode_version, version_string_to_tuple
 from draftsman._factorio_version import __factorio_version_info__
 
+try:
+    import lupa.lua52 as lupa
+except ImportError:
+    import lupa
+
 import argparse
 from collections import OrderedDict
 import json
-import lupa
 import os
 import pickle
 import re
@@ -39,7 +46,7 @@ import zipfile
 # print(f"Using {lupa.LuaRuntime().lua_implementation} (compiled with {lupa.LUA_VERSION})")
 
 
-mod_archive_pattern = "([\\w\\D]+)_([\\d\\.]+)\\."
+mod_archive_pattern = "(([\\w\\D]+)_([\\d\\.]+))\\.zip"
 mod_archive_regex = re.compile(mod_archive_pattern)
 
 dependency_string_pattern = (
@@ -616,7 +623,7 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     def categorize_entities(entity_table, target_list):
         entity_dict = convert_table_to_dict(entity_table)
         for entity_name, entity in entity_dict.items():
-            flags = entity["flags"]
+            flags = entity.get("flags", {})  # Flags are common, but optional
             if (
                 "not-blueprintable" in flags or "not-deconstructable" in flags
             ):  # or "hidden" in flags
@@ -1301,34 +1308,47 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
         if mod_obj.lower().endswith(".zip"):
             # Zip file
             m = mod_archive_regex.match(mod_obj)
-            mod_name = m.group(1).replace(" ", "")
-            external_mod_version = m.group(2)
+            folder_name = m.group(1)
+            mod_name = m.group(2).replace(" ", "")
+            external_mod_version = m.group(3)
             files = zipfile.ZipFile(mod_location, mode="r")
+
             # There is no restriction on the name of the folder, just that there
             # is only one at the root of the archive
             # All the mods I've seen use the same "mod-name_mod-version", but
             # the wiki says this is not enforced
-            # Hence, we use this scuffed code to check the root-most directory
+            # Hence, we use this scuffed code to actually get a list of all the
+            # root-most directories
             topdirs = set()
             for file in files.namelist():
-                # Get the left-most folder of all files, ignoring duplicates
                 basename = None  # guards against UnboundLocalError
                 while file:
                     file, basename = os.path.split(file)
                 topdirs.add(basename)
 
-            # Make sure there's only one root directory
-            if len(topdirs) != 1:
+            # REVISION: sometimes there are multiple folders in a single archive
+            # (even though the wiki says only one); eg: "__MACOSX" in
+            # "Mining Drones Harder" mod (seems to be reserved file when
+            # compressing on Mac)
+            if len(topdirs) == 1:
+                # If there's one folder, use that
+                mod_folder = topdirs.pop()
+            elif folder_name in topdirs:
+                # If there's multiple, but one matches exactly, use that
+                mod_folder = folder_name
+            else:
+                # Otherwise, who knows! Fix your mods or update the wiki!
+                # Why do I always get the short end of the stick!?
                 raise IncorrectModFormatError(
-                    "Mod '{}' has more than one root folder in it's archive".format(
+                    "Mod archive '{}' has more than one internal folder, and "
+                    "none of the internal folders match it's external name".format(
                         mod_name
                     )
                 )
 
-            internal_folder = topdirs.pop()
             try:
                 # Zipfiles don't like backslashes, so we manually concatenate
-                mod_info = json.loads(files.read(internal_folder + "/info.json"))
+                mod_info = json.loads(files.read(mod_folder + "/info.json"))
             except KeyError:
                 raise IncorrectModFormatError(
                     "Mod '{}' has no 'info.json' file in its root folder".format(
@@ -1358,7 +1378,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
                     )
                 )
 
-            internal_folder = mod_location
+            mod_folder = mod_location
             mod_version = mod_info["version"]
             archive = False
 
@@ -1390,68 +1410,66 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
         if archive:
             # Attempt to load setting files
             try:
-                settings = files.read(internal_folder + "/settings.lua")
+                settings = files.read(mod_folder + "/settings.lua")
                 mod_data["settings.lua"] = settings
             except KeyError:
                 pass
             try:
-                settings = files.read(internal_folder + "/settings-updates.lua")
+                settings = files.read(mod_folder + "/settings-updates.lua")
                 mod_data["settings-updates.lua"] = settings
             except KeyError:
                 pass
             try:
-                settings = files.read(internal_folder + "/settings-final-fixes.lua")
+                settings = files.read(mod_folder + "/settings-final-fixes.lua")
                 mod_data["settings-final-fixes.lua"] = settings
             except KeyError:
                 pass
             # Attempt to load data files
             try:
-                data = files.read(internal_folder + "/data.lua")
+                data = files.read(mod_folder + "/data.lua")
                 mod_data["data.lua"] = data
             except KeyError:
                 pass
             try:
-                data_updates = files.read(internal_folder + "/data-updates.lua")
+                data_updates = files.read(mod_folder + "/data-updates.lua")
                 mod_data["data-updates.lua"] = data_updates
             except KeyError:
                 pass
             try:
-                data_final_fixes = files.read(internal_folder + "/data-final-fixes.lua")
+                data_final_fixes = files.read(mod_folder + "/data-final-fixes.lua")
                 mod_data["data-final-fixes.lua"] = data_final_fixes
             except KeyError:
                 pass
         else:  # folder
             # Attempt to load setting files
             try:
-                settings = file_to_string(internal_folder + "/settings.lua")
+                settings = file_to_string(mod_folder + "/settings.lua")
                 mod_data["settings.lua"] = settings
             except FileNotFoundError:
                 pass
             try:
-                settings = file_to_string(internal_folder + "/settings-updates.lua")
+                settings = file_to_string(mod_folder + "/settings-updates.lua")
                 mod_data["settings-updates.lua"] = settings
             except FileNotFoundError:
                 pass
             try:
-                settings = file_to_string(internal_folder + "/settings-final-fixes.lua")
+                settings = file_to_string(mod_folder + "/settings-final-fixes.lua")
                 mod_data["settings-final-fixes.lua"] = settings
             except FileNotFoundError:
                 pass
             # Attempt to load data files
             try:
-                data = file_to_string(internal_folder + "/data.lua")
+                data = file_to_string(mod_folder + "/data.lua")
                 mod_data["data.lua"] = data
             except FileNotFoundError:
                 pass
             try:
-                data_updates = file_to_string(internal_folder + "/data-updates.lua")
+                data_updates = file_to_string(mod_folder + "/data-updates.lua")
                 mod_data["data-updates.lua"] = data_updates
             except FileNotFoundError:
                 pass
             try:
-                data_final_fixes = file_to_string(
-                    internal_folder + "/data-final-fixes.lua"
-                )
+                data_final_fixes = file_to_string(mod_folder + "/data-final-fixes.lua")
                 mod_data["data-final-fixes.lua"] = data_final_fixes
             except FileNotFoundError:
                 pass
@@ -1469,7 +1487,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
 
         new_mod = Mod(
             name=mod_name,
-            internal_folder=internal_folder,
+            internal_folder=mod_folder,
             version=mod_version,
             archive=archive,
             location="./factorio-mods/" + mod_name,  # maybe absolute?,

@@ -19,6 +19,14 @@ class OrientationMixin(object):
     Used in trains and wagons to specify their direction.
     """
 
+    _exports = {
+        "orientation": {
+            "format": "float[0.0, 1.0]",
+            "description": "The floating point rotation of the entity",
+            "required": lambda x: x is not None and x != 0,
+        }
+    }
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(OrientationMixin, self).__init__(name, similar_entities, **kwargs)
@@ -32,7 +40,7 @@ class OrientationMixin(object):
         if "orientation" in kwargs:
             self.orientation = kwargs["orientation"]
             self.unused_args.pop("orientation")
-        self._add_export("orientation", lambda x: x is not None and x != 0)
+        # self._add_export("orientation", lambda x: x is not None and x != 0)
 
     # =========================================================================
 

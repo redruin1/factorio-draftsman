@@ -17,6 +17,15 @@ class LandMine(Entity):
     An entity that explodes when in proximity to another force.
     """
 
+    # fmt: off
+    # _exports = {
+    #     **Entity._exports
+    # }
+    # fmt: on
+
+    _exports = {}
+    _exports.update(Entity._exports)
+
     def __init__(self, name=land_mines[0], **kwargs):
         # type: (str, **dict) -> None
         super(LandMine, self).__init__(name, land_mines, **kwargs)

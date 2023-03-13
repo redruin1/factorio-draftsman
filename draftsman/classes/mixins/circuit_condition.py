@@ -14,6 +14,8 @@ class CircuitConditionMixin(object):  # (ControlBehaviorMixin)
     value of some signal exceeds some constant.
     """
 
+    _exports = {}
+
     def set_circuit_condition(self, a=None, cmp="<", b=0):
         # type: (str, str, Union[str, int]) -> None
         """

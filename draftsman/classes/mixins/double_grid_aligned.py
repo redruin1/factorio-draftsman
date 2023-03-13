@@ -17,6 +17,8 @@ class DoubleGridAlignedMixin(object):
     Sets the ``double_grid_aligned`` attribute to ``True``.
     """
 
+    _exports = {}
+
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(DoubleGridAlignedMixin, self).__init__(name, similar_entities, **kwargs)
