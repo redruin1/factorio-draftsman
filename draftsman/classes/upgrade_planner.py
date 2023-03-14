@@ -265,7 +265,9 @@ class UpgradePlanner(Blueprintable):
             if mapper["from"]["name"] == mapper["to"]["name"]:
                 result.append(
                     DraftsmanWarning(
-                        "Cannot map entity/item '{}' to itself".format(mapper["from"]["name"])
+                        "Cannot map entity/item '{}' to itself".format(
+                            mapper["from"]["name"]
+                        )
                     )
                 )
             else:

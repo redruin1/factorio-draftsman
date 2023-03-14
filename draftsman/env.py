@@ -32,6 +32,13 @@ from draftsman._factorio_version import __factorio_version_info__
 try:
     import lupa.lua52 as lupa
 except ImportError:
+    import warnings
+
+    warnings.warn(
+        "Could not find Lua version 5.2; 'draftsman-update' may or may not work depending on mod configuration",
+        ImportWarning,
+    )
+    del warnings
     import lupa
 
 import argparse
@@ -633,34 +640,83 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
         return True
 
     def set_default_collision_mask(entity):
-        # Specify the default collision mask if not provided 
+        # Specify the default collision mask if not provided
         # (simpler and better to do it here than anywhere else)
         collision_mask = entity.get("collision_mask", set())
         if not collision_mask:
             if entity["type"] == "gate":
-                entity["collision_mask"] = {"item-layer", "object-layer", "player-layer", "water-tile", "train-layer"}
+                entity["collision_mask"] = {
+                    "item-layer",
+                    "object-layer",
+                    "player-layer",
+                    "water-tile",
+                    "train-layer",
+                }
             elif entity["type"] == "heat-pipe":
                 entity["collision_mask"] = {"object-layer", "floor-layer", "water-tile"}
             elif entity["type"] == "land-mine":
                 entity["collision_mask"] = {"object-layer", "water-tile"}
             elif entity["type"] == "linked-belt":
-                entity["collision_mask"] = {"object-layer", "item-layer", "transport-belt-layer", "water-tile"}
+                entity["collision_mask"] = {
+                    "object-layer",
+                    "item-layer",
+                    "transport-belt-layer",
+                    "water-tile",
+                }
             elif entity["type"] == "loader":
-                entity["collision_mask"] = {"object-layer", "item-layer", "transport-belt-layer", "water-tile"}
+                entity["collision_mask"] = {
+                    "object-layer",
+                    "item-layer",
+                    "transport-belt-layer",
+                    "water-tile",
+                }
             elif entity["type"] == "straight-rail" or entity["type"] == "curved-rail":
-                entity["collision_mask"] = {"item-layer", "object-layer", "rail-layer", "floor-layer", "water-tile"}
-            elif entity["type"] == "rail-signal" or entity["type"] == "rail-chain-signal":
+                entity["collision_mask"] = {
+                    "item-layer",
+                    "object-layer",
+                    "rail-layer",
+                    "floor-layer",
+                    "water-tile",
+                }
+            elif (
+                entity["type"] == "rail-signal" or entity["type"] == "rail-chain-signal"
+            ):
                 entity["collision_mask"] = {"floor-layer", "rail-layer", "item-layer"}
-            elif entity["type"] == "locomotive" or entity["type"] == "cargo-wagon" or entity["type"] == "fluid-wagon" or entity["type"] == "artillery-wagon":
+            elif (
+                entity["type"] == "locomotive"
+                or entity["type"] == "cargo-wagon"
+                or entity["type"] == "fluid-wagon"
+                or entity["type"] == "artillery-wagon"
+            ):
                 entity["collision_mask"] = {"train-layer"}
             elif entity["type"] == "splitter":
-                entity["collision_mask"] = {"object-layer", "item-layer", "transport-belt-layer", "water-tile"}
+                entity["collision_mask"] = {
+                    "object-layer",
+                    "item-layer",
+                    "transport-belt-layer",
+                    "water-tile",
+                }
             elif entity["type"] == "transport-belt":
-                entity["collision_mask"] = {"object-layer", "floor-layer", "transport-belt-layer", "water-tile"}
+                entity["collision_mask"] = {
+                    "object-layer",
+                    "floor-layer",
+                    "transport-belt-layer",
+                    "water-tile",
+                }
             elif entity["type"] == "underground-belt":
-                entity["collision_mask"] = {"object-layer", "item-layer", "transport-belt-layer", "water-tile"}
-            else: # true default
-                entity["collision_mask"] = {"item-layer", "object-layer", "player-layer", "water-tile"}
+                entity["collision_mask"] = {
+                    "object-layer",
+                    "item-layer",
+                    "transport-belt-layer",
+                    "water-tile",
+                }
+            else:  # true default
+                entity["collision_mask"] = {
+                    "item-layer",
+                    "object-layer",
+                    "player-layer",
+                    "water-tile",
+                }
 
     def categorize_entities(entity_table, target_list):
         entity_dict = convert_table_to_dict(entity_table)

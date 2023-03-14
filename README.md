@@ -101,6 +101,7 @@ For more examples on what exactly you can do with Draftsman, take a look at the 
 * Expansive and rigorous test suite
 
 --------------------------------------------------------------------------------
+
 ## Usage
 
 ### Installation:
@@ -123,7 +124,9 @@ Note that testing currently is only *guaranteed* to work with a vanilla install.
 ```
 coverage run
 ```
+
 --------------------------------------------------------------------------------
+
 ### How to use mods with Draftsman:
 
 Determine where your mods are installed; you can either copy the mods you want into the local `site-packages/draftsman/factorio-mods` folder where Draftsman is installed (which it looks in by default), or you can specify an external path with the `-p` or `--path` argument which can point to your Factorio mods folder or anywhere else convenient.
@@ -136,7 +139,22 @@ from draftsman.env import update
 update(verbose=True, path="some/path") # equivalent to 'draftsman-update -v -p some/path'
 ```
 
-Both `mod-info.json` and `mod-settings.dat` are recognized by `draftsman-update`, so you can also just change the settings in either of those and the loading process will adjust as well.
+Both `mod-info.json` and `mod-settings.dat` are recognized by `draftsman-update`, so you can change the settings in either of those and the loading process will adjust as well.
+
+--------------------------------------------------------------------------------
+
+## Experimental Features
+
+### Lupa 2.0 (beta)
+
+Allows `draftsman-update` to run on Lua 5.2 instead of Lua 5.4 (which fixes some mod compatibility issues):
+
+```
+> pip uninstall lupa    # (if already installed)
+> pip install -e git+https://github.com/scoder/lupa.git#egg=lupa
+```
+
+--------------------------------------------------------------------------------
 
 ## TODO
 * Add constraints on `UpgradePlanner` and `DeconstructionPlanner`

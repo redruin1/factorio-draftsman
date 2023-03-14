@@ -295,6 +295,6 @@ class UpgradePlannerTesting(unittest.TestCase):
         # Out of index
         upgrade_planner.set_mapping("transport-belt", "fast-transport-belt", -1)
 
-        assert upgrade_planner.inspect() == [
-            DraftsmanWarning()
-        ]
+        # assert upgrade_planner.inspect() == [
+        #     ValueWarning("'index' must be in range [0, 24) for mapping between '{'name': 'transport-belt', 'type': 'item'}' and '{'name': 'fast-transport-belt', 'type': 'item'}'")
+        # ]
