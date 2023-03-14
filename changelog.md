@@ -1,6 +1,6 @@
 # Changelog
 
-* Switched from `unittest` to `pytest`
+* Switched from `unittest` to `pytest` (more features with similar syntax)
 * Finished up documentation on `DeconstructionPlanner`
 * Patched InvalidModVersionError for now (#51)
 * Added data functions `signals.add_signal()`, `tiles.add_tile()`, `entities.add_entity()`, etc.

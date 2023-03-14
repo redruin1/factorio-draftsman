@@ -1,6 +1,7 @@
 # Requirements
 schema >= 0.7.5
-lupa >= 1.14
+#lupa >= 1.14
+-e git+https://github.com/scoder/lupa.git#egg=lupa
 six >= 1.16.0
 # Compatibility
 typing; python_version < '3.8' # The module uses Literals

@@ -17,7 +17,7 @@ else:  # pragma: no coverage
 
 
 class WallTesting(unittest.TestCase):
-    def test_contstructor_init(self):
+    def test_constructor_init(self):
         wall = Wall()
 
         with pytest.warns(DraftsmanWarning):

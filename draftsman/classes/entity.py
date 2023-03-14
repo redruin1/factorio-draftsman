@@ -161,7 +161,7 @@ class Entity(EntityLike):
             )
 
         # Collision mask (Internal)
-        # We guarantee that the "collision_mask" key will exist during 
+        # We guarantee that the "collision_mask" key will exist during
         # `draftsman-update`, and that it will have it's proper default based
         # on it's type
         self._collision_mask = entities.raw[self.name]["collision_mask"]
