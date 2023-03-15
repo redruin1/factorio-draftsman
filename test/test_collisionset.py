@@ -1,4 +1,5 @@
 # test_collisionset.py
+# -*- encoding: utf-8 -*-
 
 from draftsman.classes.collisionset import CollisionSet
 from draftsman.utils import AABB, Rectangle

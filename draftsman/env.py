@@ -620,18 +620,23 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
 
         return True
 
+    def categorize_entity(entity_name, entity):
+        flags = entity.get("flags", {})  # Flags are common, but optional
+        if "not-blueprintable" in flags or "not-deconstructable" in flags:
+            # Ignore this entity from whatever structure we're adding it to
+            return False
+
+        # Check if an entity is flippable or not
+        is_flippable[entity_name] = is_entity_flippable(entity)
+        # maybe move this to get_order?
+        unordered_entities_raw[entity_name] = entity
+        return True
+
     def categorize_entities(entity_table, target_list):
         entity_dict = convert_table_to_dict(entity_table)
         for entity_name, entity in entity_dict.items():
-            flags = entity.get("flags", {})  # Flags are common, but optional
-            if (
-                "not-blueprintable" in flags or "not-deconstructable" in flags
-            ):  # or "hidden" in flags
+            if not categorize_entity(entity_name, entity):
                 continue
-            # Check if an entity is flippable or not
-            is_flippable[entity_name] = is_entity_flippable(entity)
-            # maybe move this to get_order?
-            unordered_entities_raw[entity_name] = entity
             target_list.append(entity)
 
     def sort(target_list):
@@ -666,7 +671,9 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     # categorize_entities(data.raw["inserter"], inserters)
     temp_inserters = convert_table_to_dict(data.raw["inserter"])
     for inserter_name, inserter in temp_inserters.items():
-        unordered_entities_raw[inserter_name] = inserter
+        if not categorize_entity(inserter_name, inserter):
+            continue
+        # Split
         if "filter_count" in inserter:
             entities["filter_inserters"].append(inserter)
         else:
@@ -740,7 +747,9 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     entities["logistic_request_containers"] = []
     logi_containers = convert_table_to_dict(data.raw["logistic-container"])
     for container_name, container in logi_containers.items():
-        unordered_entities_raw[container_name] = container
+        if not categorize_entity(container_name, container):
+            continue
+        # Split
         container_type = container["logistic_mode"]
         if container_type == "passive-provider":
             entities["logistic_passive_containers"].append(container)
@@ -894,6 +903,8 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     #  Linked Containers
     entities["linked_containers"] = []
     try:
+        # Early versions of Factorio 1.0 didn't have linked containers yet; this
+        # checks for that outcome
         categorize_entities(data.raw["linked-container"], entities["linked_containers"])
         sort(entities["linked_containers"])
     except TypeError:

@@ -1,5 +1,7 @@
 # Changelog
 
+* Fixed an issue where not all entities were being assigned to `entities.flippable` (#61)
+
 ## 1.0.3
 * Updated `factorio-data` to version `1.1.76` (latest stable)
 * Updated `compatibility/defines.lua` to `1.1.76` (latest stable)
