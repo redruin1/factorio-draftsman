@@ -26,7 +26,8 @@ from draftsman.error import (
     IncorrectModVersionError,
     IncorrectModFormatError,
 )
-from draftsman.utils import decode_version, version_string_to_tuple
+from draftsman.classes.collision_set import CollisionSet
+from draftsman.utils import decode_version, version_string_to_tuple, AABB
 from draftsman._factorio_version import __factorio_version_info__
 
 try:
@@ -537,6 +538,91 @@ def get_items(lua):
     return sorted_items, sorted_subgroups, sorted_groups
 
 
+def get_default_collision_mask(entity_type):
+    """
+    Determine the default collision mask based on the string entity type.
+
+    :param entity_type: A string containing what type of entity we're getting
+        a collision mask for. (e.g. ``"container"``, ``"gate"``, ``"heat-pipe"``,
+        etc.)
+
+    :returns: A ``set()`` containing the default collision layers for that 
+        object.
+    """
+    if entity_type == "gate":
+        return {
+            "item-layer",
+            "object-layer",
+            "player-layer",
+            "water-tile",
+            "train-layer",
+        }
+    elif entity_type == "heat-pipe":
+        return {"object-layer", "floor-layer", "water-tile"}
+    elif entity_type == "land-mine":
+        return {"object-layer", "water-tile"}
+    elif entity_type == "linked-belt":
+        return {
+            "object-layer",
+            "item-layer",
+            "transport-belt-layer",
+            "water-tile",
+        }
+    elif entity_type == "loader":
+        return {
+            "object-layer",
+            "item-layer",
+            "transport-belt-layer",
+            "water-tile",
+        }
+    elif entity_type == "straight-rail" or entity_type == "curved-rail":
+        return {
+            "item-layer",
+            "object-layer",
+            "rail-layer",
+            "floor-layer",
+            "water-tile",
+        }
+    elif (
+        entity_type == "rail-signal" or entity_type == "rail-chain-signal"
+    ):
+        return {"floor-layer", "rail-layer", "item-layer"}
+    elif (
+        entity_type == "locomotive"
+        or entity_type == "cargo-wagon"
+        or entity_type == "fluid-wagon"
+        or entity_type == "artillery-wagon"
+    ):
+        return {"train-layer"}
+    elif entity_type == "splitter":
+        return {
+            "object-layer",
+            "item-layer",
+            "transport-belt-layer",
+            "water-tile",
+        }
+    elif entity_type == "transport-belt":
+        return {
+            "object-layer",
+            "floor-layer",
+            "transport-belt-layer",
+            "water-tile",
+        }
+    elif entity_type == "underground-belt":
+        return {
+            "object-layer",
+            "item-layer",
+            "transport-belt-layer",
+            "water-tile",
+        }
+    else:  # true default
+        return {
+            "item-layer",
+            "object-layer",
+            "player-layer",
+            "water-tile",
+        }
+
 # =============================================================================
 
 
@@ -565,6 +651,7 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     entities = {}
     unordered_entities_raw = {}
     is_flippable = {}
+    collision_sets = {}
 
     def is_entity_flippable(entity):
         """
@@ -638,99 +725,31 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
             return False
 
         return True
-
-    def set_default_collision_mask(entity):
-        # Specify the default collision mask if not provided
-        # (simpler and better to do it here than anywhere else)
-        collision_mask = entity.get("collision_mask", set())
+    
+    def categorize_entity(entity_name, entity):
+        flags = entity.get("flags", set())
+        if (
+            "not-blueprintable" in flags or "not-deconstructable" in flags
+        ):  # or "hidden" in flags
+            return False
+        
+        collision_mask = entity.get("collision_mask", None)
         if not collision_mask:
-            if entity["type"] == "gate":
-                entity["collision_mask"] = {
-                    "item-layer",
-                    "object-layer",
-                    "player-layer",
-                    "water-tile",
-                    "train-layer",
-                }
-            elif entity["type"] == "heat-pipe":
-                entity["collision_mask"] = {"object-layer", "floor-layer", "water-tile"}
-            elif entity["type"] == "land-mine":
-                entity["collision_mask"] = {"object-layer", "water-tile"}
-            elif entity["type"] == "linked-belt":
-                entity["collision_mask"] = {
-                    "object-layer",
-                    "item-layer",
-                    "transport-belt-layer",
-                    "water-tile",
-                }
-            elif entity["type"] == "loader":
-                entity["collision_mask"] = {
-                    "object-layer",
-                    "item-layer",
-                    "transport-belt-layer",
-                    "water-tile",
-                }
-            elif entity["type"] == "straight-rail" or entity["type"] == "curved-rail":
-                entity["collision_mask"] = {
-                    "item-layer",
-                    "object-layer",
-                    "rail-layer",
-                    "floor-layer",
-                    "water-tile",
-                }
-            elif (
-                entity["type"] == "rail-signal" or entity["type"] == "rail-chain-signal"
-            ):
-                entity["collision_mask"] = {"floor-layer", "rail-layer", "item-layer"}
-            elif (
-                entity["type"] == "locomotive"
-                or entity["type"] == "cargo-wagon"
-                or entity["type"] == "fluid-wagon"
-                or entity["type"] == "artillery-wagon"
-            ):
-                entity["collision_mask"] = {"train-layer"}
-            elif entity["type"] == "splitter":
-                entity["collision_mask"] = {
-                    "object-layer",
-                    "item-layer",
-                    "transport-belt-layer",
-                    "water-tile",
-                }
-            elif entity["type"] == "transport-belt":
-                entity["collision_mask"] = {
-                    "object-layer",
-                    "floor-layer",
-                    "transport-belt-layer",
-                    "water-tile",
-                }
-            elif entity["type"] == "underground-belt":
-                entity["collision_mask"] = {
-                    "object-layer",
-                    "item-layer",
-                    "transport-belt-layer",
-                    "water-tile",
-                }
-            else:  # true default
-                entity["collision_mask"] = {
-                    "item-layer",
-                    "object-layer",
-                    "player-layer",
-                    "water-tile",
-                }
+            entity["collision_mask"] = get_default_collision_mask(entity["type"])
+
+        # Check if an entity is flippable or not
+        is_flippable[entity_name] = is_entity_flippable(entity)
+        
+        # maybe move this to get_order?
+        unordered_entities_raw[entity_name] = entity
+        return True
 
     def categorize_entities(entity_table, target_list):
         entity_dict = convert_table_to_dict(entity_table)
         for entity_name, entity in entity_dict.items():
-            flags = entity.get("flags", set())
-            if (
-                "not-blueprintable" in flags or "not-deconstructable" in flags
-            ):  # or "hidden" in flags
+            if not categorize_entity(entity_name, entity):
                 continue
-            set_default_collision_mask(entity)
-            # Check if an entity is flippable or not
-            is_flippable[entity_name] = is_entity_flippable(entity)
-            # maybe move this to get_order?
-            unordered_entities_raw[entity_name] = entity
+
             target_list.append(entity)
 
     def sort(target_list):
@@ -765,7 +784,8 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     # categorize_entities(data.raw["inserter"], inserters)
     temp_inserters = convert_table_to_dict(data.raw["inserter"])
     for inserter_name, inserter in temp_inserters.items():
-        set_default_collision_mask(inserter)
+        if not categorize_entity(inserter_name, inserter):
+            continue
         unordered_entities_raw[inserter_name] = inserter
         if "filter_count" in inserter:
             entities["filter_inserters"].append(inserter)
@@ -840,7 +860,8 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     entities["logistic_request_containers"] = []
     logi_containers = convert_table_to_dict(data.raw["logistic-container"])
     for container_name, container in logi_containers.items():
-        set_default_collision_mask(container)
+        if not categorize_entity(container_name, container):
+            continue
         unordered_entities_raw[container_name] = container
         container_type = container["logistic_mode"]
         if container_type == "passive-provider":
@@ -1035,7 +1056,21 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     for name in raw_order:
         entities["raw"][name] = unordered_entities_raw[name]
 
+    for name in raw_order:
+        collision_box = entities["raw"][name]["collision_box"]
+        collision_sets[name] = CollisionSet(
+            [
+                AABB(
+                    collision_box[0][0],
+                    collision_box[0][1],
+                    collision_box[1][0],
+                    collision_box[1][1],
+                )
+            ]
+        )
+
     entities["flippable"] = is_flippable
+    entities["collision_sets"] = collision_sets
 
     with open(os.path.join(data_location, "entities.pkl"), "wb") as out:
         pickle.dump(entities, out, 2)
@@ -1261,6 +1296,7 @@ def extract_tiles(lua, data_location, verbose):
 
     tile_list = []
     for tile in tiles:
+        tiles[tile]["collision_mask"] = set(tiles[tile]["collision_mask"])
         tile_order = tiles[tile].get("order", None)
         tile_list.append((tile_order is None, tile_order, tile))
 

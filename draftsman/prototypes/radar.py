@@ -17,13 +17,10 @@ class Radar(Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports
-    # }
+    _exports = {
+        **Entity._exports
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
 
     def __init__(self, name=radars[0], **kwargs):
         # type: (str, **dict) -> None
@@ -35,3 +32,5 @@ class Radar(Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args

@@ -9,8 +9,8 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.association import Association
-from draftsman.classes.collisionset import CollisionSet
-from draftsman.classes.entitylike import EntityLike
+from draftsman.classes.collision_set import CollisionSet
+from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.vector import Vector
 from draftsman.data import entities
 from draftsman.error import InvalidEntityError, DraftsmanError
@@ -21,6 +21,40 @@ import json
 from typing import Union, Callable
 from schema import Schema
 import six
+import weakref
+
+
+class _PosVector(Vector):
+    def __init__(self, x, y, entity):
+        super().__init__(x, y)
+        self.entity = weakref.ref(entity)
+
+    @Vector.x.setter
+    def x(self, value):
+        self._data[0] = float(value)
+        self.entity()._tile_position._data[0] = round(value - self.entity().tile_width / 2)
+
+    @Vector.y.setter
+    def y(self, value):
+        self._data[1] = float(value)
+        self.entity()._tile_position._data[1] = round(value - self.entity().tile_height / 2)
+
+
+class _TileVector(Vector):
+    def __init__(self, x, y, entity):
+        super().__init__(x, y)
+        self.entity = weakref.ref(entity)
+
+    @Vector.x.setter
+    def x(self, value):
+        self._data[0] = int(value)
+        self.entity()._position._data[0] = value + self.entity().tile_width / 2
+
+    @Vector.y.setter
+    def y(self, value):
+        self._data[1] = int(value)
+        self.entity()._position._data[1] = value + self.entity().tile_height / 2
+        
 
 
 class Entity(EntityLike):
@@ -148,28 +182,30 @@ class Entity(EntityLike):
         # Collision set (Internal)
         # Check to see if we have overwritten this value with the better ones
         if not hasattr(self, "_overwritten_collision_set"):
-            collision_box = entities.raw[self.name]["collision_box"]
-            self._collision_set = CollisionSet(
-                [
-                    utils.AABB(
-                        collision_box[0][0],
-                        collision_box[0][1],
-                        collision_box[1][0],
-                        collision_box[1][1],
-                    )
-                ]
-            )
+            # collision_box = entities.raw[self.name]["collision_box"]
+            # self._collision_set = CollisionSet(
+            #     [
+            #         utils.AABB(
+            #             collision_box[0][0],
+            #             collision_box[0][1],
+            #             collision_box[1][0],
+            #             collision_box[1][1],
+            #         )
+            #     ]
+            # )
+            self._collision_set = entities.collision_sets[self.name]
 
         # Collision mask (Internal)
         # We guarantee that the "collision_mask" key will exist during
         # `draftsman-update`, and that it will have it's proper default based
         # on it's type
-        self._collision_mask = entities.raw[self.name]["collision_mask"]
+        # self._collision_mask = entities.raw[self.name]["collision_mask"]
 
         # Tile Width and Height (Internal)
         # Usually tile dimensions are implicitly based on the collision box
+        # When not, they're overwritten later on in a particular subclass
         self._tile_width, self._tile_height = utils.aabb_to_dimensions(
-            self._collision_set.get_bounding_box()
+            self.collision_set.get_bounding_box()
         )
         # But sometimes it can be overrided in special cases (rails)
         if "tile_width" in entities.raw[self.name]:
@@ -180,7 +216,11 @@ class Entity(EntityLike):
         # Hidden? (Internal)
         self._hidden = "hidden" in entities.raw[self.name]["flags"]
 
-        # Position
+        # Position and Tile position
+        self._position = _PosVector(0, 0, self)
+        self._tile_position = _TileVector(0, 0, self)
+
+        # Set both depending on passed in args
         if "position" in kwargs:
             self.position = kwargs["position"]
             self.unused_args.pop("position")
@@ -188,7 +228,7 @@ class Entity(EntityLike):
             self.tile_position = tile_position
 
         # Entity tags
-        self.tags = {}
+        self.tags = None
         if "tags" in kwargs:
             self.tags = kwargs["tags"]
             self.unused_args.pop("tags")
@@ -320,17 +360,10 @@ class Entity(EntityLike):
                 "Cannot change position of entity while it's inside another object"
             )
 
-        self._position = Vector.from_other(value, float)
-
-        # try:
-        #     self._position = Vector.from_other({"x": float(value["x"]), "y": float(value["y"])})
-        # except TypeError:
-        #     self._position = {"x": float(value[0]), "y": float(value[1])}
-
-        grid_x = round(self._position.x - self.tile_width / 2.0)
-        grid_y = round(self._position.y - self.tile_height / 2.0)
-        # self._tile_position = {"x": grid_x, "y": grid_y}
-        self._tile_position = Vector(grid_x, grid_y)
+        # self._position = Vector.from_other(value, float)
+        self._position.update_from_other(value, float)
+        self._tile_position.update(round(self._position.x - self.tile_width / 2), 
+                                   round(self._position.y - self.tile_height / 2))
 
     # =========================================================================
 
@@ -369,20 +402,10 @@ class Entity(EntityLike):
                 "Cannot change position of entity while it's inside another object"
             )
 
-        self._tile_position = Vector.from_other(value, int)
-
-        # try:
-        #     self._tile_position = {
-        #         "x": math.floor(value["x"]),
-        #         "y": math.floor(value["y"]),
-        #     }
-        # except TypeError:
-        #     self._tile_position = {"x": math.floor(value[0]), "y": math.floor(value[1])}
-
-        absolute_x = self._tile_position.x + self.tile_width / 2.0
-        absolute_y = self._tile_position.y + self.tile_height / 2.0
-        # self._position = {"x": absolute_x, "y": absolute_y}
-        self._position = Vector(absolute_x, absolute_y)
+        # self._tile_position.update_from_other(value, int)
+        self._tile_position.update_from_other(value, int)
+        self._position.update(self._tile_position.x + self.tile_width / 2, 
+                              self._tile_position.y + self.tile_height / 2)
 
     # =========================================================================
 
@@ -403,7 +426,7 @@ class Entity(EntityLike):
         entity by region. This attribute is always exported, but renamed to
         "position"; read only.
 
-        :type: ``dict{"x": float, "y": float}``
+        :type: ``Vector``
         """
         if self.parent and hasattr(self.parent, "global_position"):
             return self.parent.global_position + self.position
@@ -418,6 +441,9 @@ class Entity(EntityLike):
         """
         TODO
         """
+        # We use a proxy variable instead of pointing directly to `entities.
+        # collision_sets` in case entities actually require per-instance values
+        # (Locomotive, for example)
         return self._collision_set
 
     # =========================================================================
@@ -432,7 +458,10 @@ class Entity(EntityLike):
 
         :type: ``set{str}``
         """
-        return self._collision_mask
+        # We guarantee that the "collision_mask" key will exist during
+        # `draftsman-update`, and that it will have it's proper default based
+        # on it's type
+        return entities.raw[self.name]["collision_mask"]
 
     # =========================================================================
 
@@ -716,7 +745,7 @@ class Entity(EntityLike):
                     )
 
         # Tags (overwrite self with other)
-        # (make sure to make a copy in case the original data gets deleted)
+        # (Make sure to make a copy in case the original data gets deleted)
         self.tags = copy.deepcopy(other.tags)
 
     # def _add_export(self, name, criterion=None, formatter=None):
@@ -749,6 +778,13 @@ class Entity(EntityLike):
     #         key-value pair in the output dictionary.
     #     """
     #     self.exports[name] = [criterion, formatter]
+
+    # def __del__(self):
+    #     del self._position._entity
+    #     del self._tile_position._entity
+    #     del self._position
+    #     del self._tile_position
+    #     del self
 
     def __repr__(self):  # pragma: no coverage
         # type: () -> str

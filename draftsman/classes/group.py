@@ -4,10 +4,10 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.association import Association
-from draftsman.classes.collisionset import CollisionSet
-from draftsman.classes.entitylist import EntityList
+from draftsman.classes.collision_set import CollisionSet
+from draftsman.classes.entity_list import EntityList
 from draftsman.classes.collection import EntityCollection
-from draftsman.classes.entitylike import EntityLike
+from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.classes.transformable import Transformable

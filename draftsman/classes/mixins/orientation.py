@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 
+from draftsman.classes.collision_set import CollisionSet
 from draftsman.warning import ValueWarning
 from draftsman.utils import Rectangle
 
@@ -34,7 +35,9 @@ class OrientationMixin(object):
         old = self._collision_set.shapes[0]
         width = old.bot_right[0] - old.top_left[0]
         height = old.bot_right[1] - old.top_left[1]
-        self._collision_set.shapes[0] = Rectangle((0, 0), width, height, 0)
+
+        # Need to make a per-instance copy
+        self._collision_set = CollisionSet([Rectangle((0, 0), width, height, 0)])
 
         self.orientation = 0.0
         if "orientation" in kwargs:
@@ -85,6 +88,8 @@ class OrientationMixin(object):
                 )
             self._orientation = value
             self._collision_set.shapes[0].angle = (value % 1) * 360.0
+            # TODO: what if orientation changes when inside a EntityCollection? 
+            # Might end up intersecting neigbouring entities
         else:
             raise TypeError("'orientation' must be a float or None")
 

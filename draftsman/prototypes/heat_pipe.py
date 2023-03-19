@@ -18,13 +18,10 @@ class HeatPipe(Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports
-    # }
+    _exports = {
+        **Entity._exports
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
 
     def __init__(self, name=heat_pipes[0], **kwargs):
         # type: (str, **dict) -> None
@@ -36,3 +33,5 @@ class HeatPipe(Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args

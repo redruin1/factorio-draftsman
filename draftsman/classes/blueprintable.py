@@ -7,18 +7,15 @@ import re
 from draftsman.error import (
     IncorrectBlueprintTypeError,
     DataFormatError,
-    MalformedBlueprintStringError,
 )
 from draftsman import signatures
 from draftsman import utils
 
 from abc import ABCMeta, abstractmethod
 
-# import deal # TODO
 import json
 from schema import SchemaError
 import six
-import deal
 from typing import Any, Sequence, Union
 
 
@@ -34,8 +31,8 @@ class Blueprintable(object):
     """
 
     @utils.reissue_warnings
-    def __init__(self, root_item, item, init_data=None):
-        # type: (str, str, Union[str, dict]) -> None
+    def __init__(self, root_item, item, init_data, unknown):
+        # type: (str, str, Union[str, dict], str) -> None
         """
         Initializes the private ``_root`` data dictionary, as well as setting
         the ``item`` name.
@@ -51,9 +48,9 @@ class Blueprintable(object):
         if init_data is None:
             self.setup()
         elif isinstance(init_data, six.string_types):
-            self.load_from_string(init_data)
+            self.load_from_string(init_data, unknown=unknown)
         elif isinstance(init_data, dict):
-            self.setup(**init_data[self._root_item])
+            self.setup(**init_data[self._root_item], unknown=unknown)
         else:
             raise TypeError(
                 "'{}' must be a factorio blueprint string, a dictionary, or None".format(
@@ -62,8 +59,8 @@ class Blueprintable(object):
             )
 
     @utils.reissue_warnings
-    def load_from_string(self, string):
-        # type: (str) -> None
+    def load_from_string(self, string, unknown="error"):
+        # type: (str, str) -> None
         """
         Load the :py:class:`.Blueprintable` with the contents of ``string``.
 
@@ -71,6 +68,7 @@ class Blueprintable(object):
         keywords in the blueprint string for this particular blueprintable.
 
         :param string: Factorio-encoded blueprint string.
+        :param unknown: TODO
 
         :exception MalformedBlueprintStringError: If the input string is not
             decodable to a JSON object.
@@ -90,11 +88,11 @@ class Blueprintable(object):
                 )
             )
 
-        self.setup(**root[self._root_item])
+        self.setup(**root[self._root_item], unknown=unknown)
 
     @abstractmethod
-    def setup(**kwargs):  # pragma: no coverage
-        # type: (**dict) -> None
+    def setup(unknown="error", **kwargs):  # pragma: no coverage
+        # type: (str, **dict) -> None
         """
         Setup the Blueprintable's parameters with the input keywords as values.
         Primarily used by the constructor, but can be used at any time to set
@@ -103,6 +101,7 @@ class Blueprintable(object):
         Raises :py:class:`.DraftsmanWarning` if any of the input keywords are
         unrecognized.
 
+        :param unknown: TODO
         :param kwargs: The dict of all keywords to set in the blueprint.
 
         .. NOTE::

@@ -7,7 +7,7 @@ import six
 from typing import Sequence, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.spatiallike import SpatialLike
+    from draftsman.classes.spatial_like import SpatialLike
     from draftsman.utils import Point, AABB
 
 

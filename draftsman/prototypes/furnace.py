@@ -20,22 +20,17 @@ class Furnace(ModulesMixin, RequestItemsMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **RequestItemsMixin._exports,
-    #     **ModulesMixin._exports,
-    # }
+    _exports = {
+        **Entity._exports,
+        **RequestItemsMixin._exports,
+        **ModulesMixin._exports,
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(RequestItemsMixin._exports)
-    _exports.update(ModulesMixin._exports)
 
     def __init__(self, name=furnaces[0], **kwargs):
         # type: (str, **dict) -> None
 
-        # FIXME: the following
+        # FIXME: memory optimization, move to env.py
         # Create a set of valid ingredients for this entity
         try:
             crafting_categories = raw[name]["crafting_categories"]
@@ -65,6 +60,8 @@ class Furnace(ModulesMixin, RequestItemsMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

@@ -24,4 +24,4 @@ def add_tile(name, collision_mask=set()):
     :param collision_mask: A set of strings, where each string represents a
         collision layer that this tile collides with.
     """
-    raw[name] = {"collision_mask": collision_mask}
+    raw[name] = {"name": name, "collision_mask": collision_mask}

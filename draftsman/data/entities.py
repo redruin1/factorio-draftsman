@@ -10,7 +10,9 @@ except ImportError:  # pragma: no coverage
     import importlib_resources as pkg_resources  # type: ignore
 
 from draftsman import data
-from draftsman.utils import PrimitiveAABB
+from draftsman.classes.collision_set import CollisionSet
+from draftsman.env import get_default_collision_mask
+from draftsman.utils import PrimitiveAABB, AABB
 
 
 with pkg_resources.open_binary(data, "entities.pkl") as inp:
@@ -22,6 +24,7 @@ with pkg_resources.open_binary(data, "entities.pkl") as inp:
 
     # Whether or not each entity is flippable, indexed by their name.
     flippable = _data["flippable"]
+    collision_sets = _data["collision_sets"]
 
     # Ordered lists of strings, each containing a valid name for that entity
     # type, sorted by their Factorio order strings.
@@ -106,6 +109,7 @@ def add_entity(
     :param kwargs: Any other entity specific data that you want to populate the
         new entity with.
     """
+    # TODO: assert that `entity_type` is a valid entity_type
     raw[name] = {
         "name": name,
         "type": entity_type,
@@ -115,11 +119,26 @@ def add_entity(
 
     if collision_mask is not None:
         raw[name]["collision_mask"] = collision_mask
+    else:
+        raw[name]["collision_mask"] = get_default_collision_mask(entity_type)
 
     if hidden:
         raw[name]["flags"].add("hidden")
 
+    # Add everything else
     raw[name].update(kwargs)
+
+    # Update others
+    collision_sets[name] = CollisionSet(
+        [
+            AABB(
+                collision_box[0][0],
+                collision_box[0][1],
+                collision_box[1][0],
+                collision_box[1][1],
+            )
+        ]
+    )
 
     if entity_type == "container":
         containers.append(name)

@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.collection import EntityCollection
-from draftsman.classes.spatiallike import SpatialLike
+from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.prototypes.straight_rail import StraightRail
 from draftsman.prototypes.curved_rail import CurvedRail

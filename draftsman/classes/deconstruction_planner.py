@@ -71,8 +71,8 @@ class DeconstructionPlanner(Blueprintable):
     """
 
     @utils.reissue_warnings
-    def __init__(self, deconstruction_planner=None):
-        # type: (Union[str, dict]) -> None
+    def __init__(self, deconstruction_planner=None, unknown="error"):
+        # type: (Union[str, dict], str) -> None
         """
         TODO
         """
@@ -80,10 +80,11 @@ class DeconstructionPlanner(Blueprintable):
             root_item="deconstruction_planner",
             item="deconstruction-planner",
             init_data=deconstruction_planner,
+            unknown=unknown
         )
 
     @utils.reissue_warnings
-    def setup(self, **kwargs):
+    def setup(self, unknown="error", **kwargs):
         self._root = {}
         self._root["settings"] = {}
 

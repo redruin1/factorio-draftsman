@@ -22,27 +22,15 @@ class InfinityPipe(Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     "infinity_settings": {
-    #         "format": "TODO",
-    #         "description": "Fluid filters for infinite spawning/deletion",
-    #         "required": lambda x: len(x) != 0,
-    #     }
-    # }
-    # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(
-        {
-            "infinity_settings": {
-                "format": "TODO",
-                "description": "Fluid filters for infinite spawning/deletion",
-                "required": lambda x: len(x) != 0,
-            }
+    _exports = {
+        **Entity._exports,
+        "infinity_settings": {
+            "format": "TODO",
+            "description": "Fluid filters for infinite spawning/deletion",
+            "required": lambda x: len(x) != 0,
         }
-    )
+    }
+    # fmt: on
 
     def __init__(self, name=infinity_pipes[0], **kwargs):
         # type: (str, **dict) -> None
@@ -60,6 +48,8 @@ class InfinityPipe(Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

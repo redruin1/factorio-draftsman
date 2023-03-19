@@ -18,13 +18,10 @@ class LandMine(Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports
-    # }
+    _exports = {
+        **Entity._exports
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
 
     def __init__(self, name=land_mines[0], **kwargs):
         # type: (str, **dict) -> None
@@ -36,3 +33,5 @@ class LandMine(Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args

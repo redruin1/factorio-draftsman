@@ -37,49 +37,30 @@ class ProgrammableSpeaker(
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    #     **CircuitConditionMixin._exports,
-    #     "parameters": {
-    #         "format": "TODO",
-    #         "description": "Parameters related to sound playback",
-    #         "required": lambda x: x is not None and len(x) != 0,
-    #     },
-    #     "alert_parameters": {
-    #         "format": "TODO",
-    #         "description": "Parameters related to alert notifications",
-    #         "required": lambda x: x is not None and len(x) != 0,
-    #     },
-    # }
+    _exports = {
+        **Entity._exports,
+        **CircuitConnectableMixin._exports,
+        **ControlBehaviorMixin._exports,
+        **CircuitConditionMixin._exports,
+        "parameters": {
+            "format": "TODO",
+            "description": "Parameters related to sound playback",
+            "required": lambda x: x is not None and len(x) != 0,
+        },
+        "alert_parameters": {
+            "format": "TODO",
+            "description": "Parameters related to alert notifications",
+            "required": lambda x: x is not None and len(x) != 0,
+        },
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(ControlBehaviorMixin._exports)
-    _exports.update(CircuitConditionMixin._exports)
-    _exports.update(
-        {
-            "parameters": {
-                "format": "TODO",
-                "description": "Parameters related to sound playback",
-                "required": lambda x: x is not None and len(x) != 0,
-            },
-            "alert_parameters": {
-                "format": "TODO",
-                "description": "Parameters related to alert notifications",
-                "required": lambda x: x is not None and len(x) != 0,
-            },
-        }
-    )
 
     def __init__(self, name=programmable_speakers[0], **kwargs):
         # type: (str, **dict) -> None
         super(ProgrammableSpeaker, self).__init__(name, programmable_speakers, **kwargs)
 
         # Name translations for all of the instruments and their notes
+        # FIXME: the following memory inefficient
         self._instrument_ids = instruments_data.index[self.name]
         self._instrument_names = instruments_data.names[self.name]
         # self.instruments = entities.raw[self.name]["instruments"]
@@ -128,6 +109,8 @@ class ProgrammableSpeaker(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
+_rotated_collision_sets = {}
 
 class DirectionalMixin(object):
     """
@@ -50,7 +51,6 @@ class DirectionalMixin(object):
         # Technically this check is not necessary, but we include it for
         # completeness
         if not hasattr(self, "_overwritten_collision_set"):  # pragma: no branch
-            self._collision_set_rotation = {}
             # if hasattr(self, "_disable_collision_set_rotation"):
             #     # Set every collision orientation to the single collision_set
             #     for i in {0, 2, 4, 6}:
@@ -58,8 +58,15 @@ class DirectionalMixin(object):
             # else:
             # Automatically generate a set of rotated collision sets for every
             # orientation
-            for i in {0, 2, 4, 6}:
-                self._collision_set_rotation[i] = self._collision_set.rotate(i)
+            try: 
+                self._collision_set_rotation = _rotated_collision_sets[self.name]
+            except KeyError:
+                # Cache it so we only need one
+                # TODO: would probably be better to do this in env.py, but how?
+                _rotated_collision_sets[self.name] = {}
+                for i in {0, 2, 4, 6}:
+                    _rotated_collision_sets[self.name][i] = self.collision_set.rotate(i)
+                self._collision_set_rotation = _rotated_collision_sets[self.name]
 
         self.direction = 0
         if "direction" in kwargs:

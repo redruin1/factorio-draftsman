@@ -20,19 +20,13 @@ class Loader(FiltersMixin, IOTypeMixin, DirectionalMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **IOTypeMixin._exports,
-    #     **FiltersMixin._exports,
-    # }
+    _exports = {
+        **Entity._exports,
+        **DirectionalMixin._exports,
+        **IOTypeMixin._exports,
+        **FiltersMixin._exports,
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(DirectionalMixin._exports)
-    _exports.update(IOTypeMixin._exports)
-    _exports.update(FiltersMixin._exports)
 
     def __init__(self, name=loaders[0], **kwargs):
         # type: (str, **dict) -> None
@@ -44,3 +38,5 @@ class Loader(FiltersMixin, IOTypeMixin, DirectionalMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args

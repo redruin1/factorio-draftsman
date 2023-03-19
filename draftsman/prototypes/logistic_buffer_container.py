@@ -38,25 +38,16 @@ class LogisticBufferContainer(
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **RequestFiltersMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    #     **LogisticModeOfOperationMixin._exports,
-    #     **RequestItemsMixin._exports,
-    #     **InventoryMixin._exports,
-    # }
+    _exports = {
+        **Entity._exports,
+        **RequestFiltersMixin._exports,
+        **CircuitConnectableMixin._exports,
+        **ControlBehaviorMixin._exports,
+        **LogisticModeOfOperationMixin._exports,
+        **RequestItemsMixin._exports,
+        **InventoryMixin._exports,
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(RequestFiltersMixin._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(ControlBehaviorMixin._exports)
-    _exports.update(LogisticModeOfOperationMixin._exports)
-    _exports.update(RequestItemsMixin._exports)
-    _exports.update(InventoryMixin._exports)
 
     def __init__(self, name=logistic_buffer_containers[0], **kwargs):
         # type: (str, **dict) -> None
@@ -73,6 +64,8 @@ class LogisticBufferContainer(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

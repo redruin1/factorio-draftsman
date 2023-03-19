@@ -87,12 +87,15 @@ class EntityTesting(unittest.TestCase):
         with pytest.raises(ValueError):
             iron_chest.tile_position = (1.0, "raw-fish")
 
-    # def test_modify_position_attribute(self):
-    #     # TODO: this would be nice
-    #     iron_chest = Container("iron-chest")
-    #     iron_chest.position.x += 1
-    #     self.assertEqual(iron_chest.position, Vector(1.5, 0.5))
-    #     self.assertEqual(iron_chest.tile_position, Vector(1, 0))
+    def test_modify_position_attribute(self):
+        iron_chest = Container("iron-chest")
+
+        iron_chest.position.x += 1
+        assert iron_chest.position == Vector(1.5, 0.5)
+        assert iron_chest.tile_position == Vector(1, 0)
+        
+        iron_chest.position.y += 1
+        assert iron_chest.position == Vector(1.5, 1.5)
 
     def test_change_name_in_blueprint(self):
         blueprint = Blueprint()

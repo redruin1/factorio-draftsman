@@ -21,31 +21,17 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **RequestItemsMixin._exports,
-    #     **InventoryMixin._exports,
-    #     "link_id": {
-    #         "format": "int32",
-    #         "description": "The current 'channel' that this container uses",
-    #         "required": lambda x: x != 0,
-    #     },
-    # }
+    _exports = {
+        **Entity._exports,
+        **RequestItemsMixin._exports,
+        **InventoryMixin._exports,
+        "link_id": {
+            "format": "int32",
+            "description": "The current 'channel' that this container uses",
+            "required": lambda x: x != 0,
+        },
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(RequestItemsMixin._exports)
-    _exports.update(InventoryMixin._exports)
-    _exports.update(
-        {
-            "link_id": {
-                "format": "int32",
-                "description": "The current 'channel' that this container uses",
-                "required": lambda x: x != 0,
-            }
-        }
-    )
 
     def __init__(self, name=linked_containers[0], **kwargs):
         # type: (str, **dict) -> None
@@ -63,6 +49,8 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

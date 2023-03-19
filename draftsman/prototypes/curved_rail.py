@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes.collisionset import CollisionSet
+from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DoubleGridAlignedMixin, EightWayDirectionalMixin
 from draftsman.constants import Direction
@@ -15,6 +15,21 @@ from draftsman.data import entities
 
 import warnings
 
+_left_turn = CollisionSet(
+    [AABB(0.25, 1.8, 1.75, 3.9), Rectangle((-0.375, -0.7175), 1.4, 5.45, -35)]
+)
+_right_turn = CollisionSet(
+    [AABB(-1.75, 1.8, -0.25, 3.9), Rectangle((0.375, -0.7175), 1.4, 5.45, 35)]
+)
+_collision_set_rotation = {}
+_collision_set_rotation[Direction.NORTH] = _left_turn
+_collision_set_rotation[Direction.NORTHEAST] = _right_turn
+_collision_set_rotation[Direction.EAST] = _left_turn.rotate(2)
+_collision_set_rotation[Direction.SOUTHEAST] = _right_turn.rotate(2)
+_collision_set_rotation[Direction.SOUTH] = _left_turn.rotate(4)
+_collision_set_rotation[Direction.SOUTHWEST] = _right_turn.rotate(4)
+_collision_set_rotation[Direction.WEST] = _left_turn.rotate(6)
+_collision_set_rotation[Direction.NORTHWEST] = _right_turn.rotate(6)
 
 class CurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     """
@@ -22,17 +37,12 @@ class CurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **EightWayDirectionalMixin._exports,
-    #     **DoubleGridAlignedMixin._exports,
-    # }
+    _exports = {
+        **Entity._exports,
+        **EightWayDirectionalMixin._exports,
+        **DoubleGridAlignedMixin._exports,
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(EightWayDirectionalMixin._exports)
-    _exports.update(DoubleGridAlignedMixin._exports)
 
     def __init__(self, name=curved_rails[0], **kwargs):
         # type: (str, **dict) -> None
@@ -49,23 +59,10 @@ class CurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
         # We set a (private) flag to ignore the dummy collision box that
         # Factorio provides
         self._overwritten_collision_set = True
+        
         # We then provide a list of all the custom rotations
-        left_turn = CollisionSet(
-            [AABB(0.25, 1.8, 1.75, 3.9), Rectangle((-0.375, -0.7175), 1.4, 5.45, -35)]
-        )
-        right_turn = CollisionSet(
-            [AABB(-1.75, 1.8, -0.25, 3.9), Rectangle((0.375, -0.7175), 1.4, 5.45, 35)]
-        )
-        self._collision_set = left_turn
-        self._collision_set_rotation = {}
-        self._collision_set_rotation[Direction.NORTH] = left_turn
-        self._collision_set_rotation[Direction.NORTHEAST] = right_turn
-        self._collision_set_rotation[Direction.EAST] = left_turn.rotate(2)
-        self._collision_set_rotation[Direction.SOUTHEAST] = right_turn.rotate(2)
-        self._collision_set_rotation[Direction.SOUTH] = left_turn.rotate(4)
-        self._collision_set_rotation[Direction.SOUTHWEST] = right_turn.rotate(4)
-        self._collision_set_rotation[Direction.WEST] = left_turn.rotate(6)
-        self._collision_set_rotation[Direction.NORTHWEST] = right_turn.rotate(6)
+        self._collision_set = _left_turn
+        self._collision_set_rotation = _collision_set_rotation
 
         super(CurvedRail, self).__init__(name, curved_rails, **kwargs)
 
@@ -75,3 +72,5 @@ class CurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args

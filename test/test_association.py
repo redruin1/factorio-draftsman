@@ -8,6 +8,7 @@ from draftsman.error import InvalidAssociationError
 
 import sys
 import pytest
+import weakref
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
@@ -18,6 +19,7 @@ else:  # pragma: no coverage
 class AssociationTesting(unittest.TestCase):
     def test_constructor(self):
         test = Container("wooden-chest")
+        Association(test) # No fail
 
         # Damn cyclic imports
         # TODO: return this code
@@ -26,7 +28,7 @@ class AssociationTesting(unittest.TestCase):
         #     pass
 
         # with self.assertRaises(TypeError):
-        #     Association(NonEntity())
+        #     Association(NonEntity()) # Fail
 
     def test_deepcopy(self):
         blueprint = Blueprint()
@@ -35,7 +37,15 @@ class AssociationTesting(unittest.TestCase):
         blueprint.entities.append("wooden-chest", tile_position=(1, 0))
         blueprint.add_circuit_connection("red", 0, 1)
 
+        print(weakref.getweakrefcount(blueprint.entities[0]))
+        print(weakref.getweakrefcount(blueprint.entities[1]))
+
         del blueprint.entities[1]
+
+        print(weakref.getweakrefcount(blueprint.entities[0]))
+
+        print(len(blueprint.entities))
+        print(blueprint.entities.data)
 
         with pytest.raises(InvalidAssociationError):
             blueprint.to_dict()

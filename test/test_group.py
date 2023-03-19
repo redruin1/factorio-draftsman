@@ -6,8 +6,8 @@ from __future__ import unicode_literals
 from draftsman import __factorio_version_info__
 from draftsman.classes.association import Association
 from draftsman.classes.blueprint import Blueprint
-from draftsman.classes.collisionset import CollisionSet
-from draftsman.classes.entitylist import EntityList
+from draftsman.classes.collision_set import CollisionSet
+from draftsman.classes.entity_list import EntityList
 from draftsman.classes.group import Group
 from draftsman.classes.vector import Vector
 from draftsman.entity import *

@@ -29,31 +29,9 @@ class Splitter(DirectionalMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     "input_priority": {
-    #         "format": "'left' or 'right'",
-    #         "description": "Which side takes input priority",
-    #         "required": lambda x: x is not None,
-    #     },
-    #     "output_priority": {
-    #         "format": "'left' or 'right'",
-    #         "description": "Which side takes output priority",
-    #         "required": lambda x: x is not None,
-    #     },
-    #     "filter": {
-    #         "format": "str",
-    #         "description": "Name of the item being filtered",
-    #         "required": lambda x: x is not None,
-    #     },
-    # }
-    # fmt: off
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(DirectionalMixin._exports)
-    _exports.update({
+    _exports = {
+        **Entity._exports,
+        **DirectionalMixin._exports,
         "input_priority": {
             "format": "'left' or 'right'",
             "description": "Which side takes input priority",
@@ -69,7 +47,8 @@ class Splitter(DirectionalMixin, Entity):
             "description": "Name of the item being filtered",
             "required": lambda x: x is not None,
         },
-    })
+    }
+    # fmt: off
 
     def __init__(self, name=splitters[0], **kwargs):
         # type: (str, **dict) -> None
@@ -99,6 +78,8 @@ class Splitter(DirectionalMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

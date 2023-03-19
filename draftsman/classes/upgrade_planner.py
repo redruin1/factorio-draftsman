@@ -63,8 +63,8 @@ class UpgradePlanner(Blueprintable):
     """
 
     @utils.reissue_warnings
-    def __init__(self, upgrade_planner=None):
-        # type: (Union[str, dict]) -> None
+    def __init__(self, upgrade_planner=None, unknown="error"):
+        # type: (Union[str, dict], str) -> None
         """
         Constructs a new :py:class:`.UpgradePlanner`.
 
@@ -75,13 +75,11 @@ class UpgradePlanner(Blueprintable):
             root_item="upgrade_planner",
             item="upgrade-planner",
             init_data=upgrade_planner,
+            unknown=unknown
         )
 
-        # The max number of mappings that this item can have
-        self._mapper_count = items.raw["upgrade-planner"]["mapper_count"]
-
     @utils.reissue_warnings
-    def setup(self, **kwargs):
+    def setup(self, unknown="error", **kwargs):
         self._root = {}
         self._root["settings"] = {}
 
@@ -121,7 +119,7 @@ class UpgradePlanner(Blueprintable):
 
         :type: int
         """
-        return self._mapper_count
+        return items.raw["upgrade-planner"]["mapper_count"]
 
     # =========================================================================
 
@@ -135,8 +133,9 @@ class UpgradePlanner(Blueprintable):
         :raises DataFormatError: If setting this attribute and any of the
             entries in the list do not match the format specified above.
 
-        :getter:
-        :setter:
+        :getter: Gets the mappers dictionary, or ``None`` if not set.
+        :setter: Sets the mappers dictionary, or deletes the dictionary if set 
+            to ``None``
         :type: ``[{"from": {...}, "to": {...}, "index": int}]``
         """
         return self._root["settings"].get("mappers", None)
@@ -181,40 +180,39 @@ class UpgradePlanner(Blueprintable):
         except SchemaError as e:
             six.raise_from(DataFormatError, e)
 
-        # TODO
         # Check both from_obj and to_obj to make sure that both are valid inputs
         # in the context of an upgrade planner
-        # if from_obj["name"] not in _allowed_items:
-        #     warnings.warn(
-        #         "'{}' is not an allowed upgradable item".format(from_obj["name"]),
-        #         ItemLimitationWarning,
-        #         stacklevel=2,
-        #     )
-        # if to_obj["name"] not in _allowed_items:
-        #     warnings.warn(
-        #         "'{}' is not an allowed upgradable item".format(to_obj["name"]),
-        #         ItemLimitationWarning,
-        #         stacklevel=2,
-        #     )
+        if from_obj["name"] not in _allowed_items:
+            warnings.warn(
+                "'{}' is not an allowed upgradable item".format(from_obj["name"]),
+                ItemLimitationWarning,
+                stacklevel=2,
+            )
+        if to_obj["name"] not in _allowed_items:
+            warnings.warn(
+                "'{}' is not an allowed upgradable item".format(to_obj["name"]),
+                ItemLimitationWarning,
+                stacklevel=2,
+            )
 
         # TODO
         # Check that from_obj matches the upgrade type to to_obj
-        # if not equivalent_upgrade_types(from_obj["name"], to_obj["name"]):
-        #     warnings.warn(
-        #         "'{}' ({}) cannot be upgraded to '{}' ({}); differing types"
-        #         .format(
-        #             from_obj["name"], from_obj["type"],
-        #             to_obj["name"],   to_obj["type"]
-        #         ),
-        #         ItemLimitationWarning,
-        #         stacklevel=2,
-        #     )
+        if not equivalent_upgrade_types(from_obj["name"], to_obj["name"]):
+            warnings.warn(
+                "'{}' ({}) cannot be upgraded to '{}' ({}); differing types"
+                .format(
+                    from_obj["name"], from_obj["type"],
+                    to_obj["name"],   to_obj["type"]
+                ),
+                ItemLimitationWarning,
+                stacklevel=2,
+            )
 
         # Check that the index picked is within the correct range
-        # if not 0 <= index < 24:
-        #     warnings.warn(
-        #         "'index' must be in range [0, 24)", ValueWarning, stacklevel=2
-        #     )
+        if not 0 <= index < 24:
+            warnings.warn(
+                "'index' must be in range [0, 24)", ValueWarning, stacklevel=2
+            )
 
         if self.mappers is None:
             self.mappers = []

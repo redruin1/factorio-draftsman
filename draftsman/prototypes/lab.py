@@ -20,17 +20,12 @@ class Lab(ModulesMixin, RequestItemsMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **RequestItemsMixin._exports,
-    #     **ModulesMixin._exports,
-    # }
+    _exports = {
+        **Entity._exports,
+        **RequestItemsMixin._exports,
+        **ModulesMixin._exports,
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(RequestItemsMixin._exports)
-    _exports.update(ModulesMixin._exports)
 
     def __init__(self, name=labs[0], **kwargs):
         # type: (str, **dict) -> None
@@ -45,6 +40,8 @@ class Lab(ModulesMixin, RequestItemsMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

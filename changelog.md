@@ -1,8 +1,12 @@
 # Changelog
 
-* Switched from `unittest` to `pytest` (more features with similar syntax)
+* Added the ability to modify `x` and `y` attributes of both `position` and `tile_position` and have each update in tandem
+* Normalized all import filenames to use underscores consistently (breaking change!)
+* Changed the code to be primarily python3 compatible
+* Switched from `unittest` to `pytest` (more features with similar syntax; `coverage run` still works)
 * Finished up documentation on `DeconstructionPlanner`
 * Patched InvalidModVersionError for now (#51)
+* [PERF] Reduced memory consumption by ~80 percent on average(!)
 * Added data functions `signals.add_signal()`, `tiles.add_tile()`, `entities.add_entity()`, etc.
 * Made it so that default `collision_mask` keys are resolved at once at the data level when you call `draftsman-update`, so you can query `entities.raw` for the correct default value
 

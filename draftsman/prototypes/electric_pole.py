@@ -18,17 +18,12 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **PowerConnectableMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    # }
+    _exports = {
+        **Entity._exports,
+        **PowerConnectableMixin._exports,
+        **CircuitConnectableMixin._exports,
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(PowerConnectableMixin._exports)
-    _exports.update(CircuitConnectableMixin._exports)
 
     def __init__(self, name=electric_poles[0], **kwargs):
         # type: (str, **dict) -> None
@@ -40,3 +35,5 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args

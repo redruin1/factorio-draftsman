@@ -35,21 +35,14 @@ class AssemblingMachine(
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **RecipeMixin._exports,
-    #     **RequestItemsMixin._exports,
-    #     **ModulesMixin._exports,
-    # }
+    _exports = {
+        **Entity._exports,
+        **DirectionalMixin._exports,
+        **RecipeMixin._exports,
+        **RequestItemsMixin._exports,
+        **ModulesMixin._exports,
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(DirectionalMixin._exports)
-    _exports.update(RecipeMixin._exports)
-    _exports.update(RequestItemsMixin._exports)
-    _exports.update(ModulesMixin._exports)
 
     def __init__(self, name=assembling_machines[0], **kwargs):
         # type: (str, **dict) -> None
@@ -65,6 +58,8 @@ class AssemblingMachine(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     @utils.reissue_warnings
     def set_item_request(self, item, count):

@@ -16,6 +16,9 @@ if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
+_rotated_collision_sets = {}
+
+
 class EightWayDirectionalMixin(object):
     """
     Allows the Entity to be rotated in the 8 cardinal directions and diagonals.
@@ -49,8 +52,17 @@ class EightWayDirectionalMixin(object):
             self._collision_set_rotation = {}
             if hasattr(self, "_disable_collision_set_rotation"):  # pragma: no branch
                 # Set every collision orientation to the single collision_set
-                for i in range(8):
-                    self._collision_set_rotation[i] = self.collision_set
+                # for i in range(8):
+                #     self._collision_set_rotation[i] = self.collision_set
+                try: 
+                    self._collision_set_rotation = _rotated_collision_sets[self.name]
+                except KeyError:
+                    # Cache it so we only need one
+                    # TODO: would probably be better to do this in env.py, but how?
+                    _rotated_collision_sets[self.name] = {}
+                    for i in range(8):
+                        _rotated_collision_sets[self.name][i] = self.collision_set.rotate(i)
+                    self._collision_set_rotation = _rotated_collision_sets[self.name]
             # else:
             #     # Automatically generate a set of rotated collision sets for every
             #     # orientation
