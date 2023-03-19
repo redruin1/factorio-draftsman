@@ -33,13 +33,13 @@ class Pump(
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    #     **CircuitConditionMixin._exports,
-    # }
+    _exports = {
+        **Entity._exports,
+        **DirectionalMixin._exports,
+        **CircuitConnectableMixin._exports,
+        **ControlBehaviorMixin._exports,
+        **CircuitConditionMixin._exports,
+    }
     # fmt: on
 
     _exports = {}
@@ -59,6 +59,8 @@ class Pump(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

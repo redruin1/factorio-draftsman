@@ -1,6 +1,4 @@
-import deal
-
-# blueprint.py
+# blueprintable.py
 # -*- encoding: utf-8 -*-
 
 """
@@ -17,7 +15,7 @@ from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.deconstruction_planner import DeconstructionPlanner
 from draftsman.classes.upgrade_planner import UpgradePlanner
-from draftsman.classes.blueprintbook import BlueprintBook
+from draftsman.classes.blueprint_book import BlueprintBook
 
 
 @utils.reissue_warnings

@@ -7,9 +7,9 @@ from draftsman._factorio_version import __factorio_version__, __factorio_version
 from draftsman.blueprintable import Blueprint, get_blueprintable_from_string
 from draftsman.classes.association import Association
 from draftsman.classes.blueprint import TileList
-from draftsman.classes.collisionset import CollisionSet
-from draftsman.classes.entitylike import EntityLike
-from draftsman.classes.entitylist import EntityList
+from draftsman.classes.collision_set import CollisionSet
+from draftsman.classes.entity_like import EntityLike
+from draftsman.classes.entity_list import EntityList
 from draftsman.classes.group import Group
 from draftsman.classes.vector import Vector
 from draftsman.constants import Direction

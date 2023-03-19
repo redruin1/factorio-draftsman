@@ -85,9 +85,9 @@ from __future__ import unicode_literals
 from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.association import Association
 from draftsman.classes.blueprintable import Blueprintable
-from draftsman.classes.entitylike import EntityLike
-from draftsman.classes.entitylist import EntityList
-from draftsman.classes.tilelist import TileList
+from draftsman.classes.entity_like import EntityLike
+from draftsman.classes.entity_list import EntityList
+from draftsman.classes.tile_list import TileList
 from draftsman.classes.transformable import Transformable
 from draftsman.classes.collection import EntityCollection, TileCollection
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
@@ -126,7 +126,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     # =========================================================================
 
     @utils.reissue_warnings
-    def __init__(self, blueprint=None):
+    def __init__(self, blueprint=None, unknown="error"):
         # type: (Union[str, dict]) -> None
         """
         Creates a ``Blueprint`` class. Will load the data from ``blueprint`` if
@@ -138,11 +138,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             ``dict`` object with the desired keys in the correct format.
         """
         super(Blueprint, self).__init__(
-            root_item="blueprint", item="blueprint", init_data=blueprint
+            root_item="blueprint", item="blueprint", init_data=blueprint, unknown=unknown
         )
 
     @utils.reissue_warnings
-    def setup(self, **kwargs):
+    def setup(self, unknown="error", **kwargs):
         self._root = {}
 
         # Item (type identifier)
@@ -194,12 +194,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
         # Data lists
         if "entities" in kwargs:
-            self._root["entities"] = EntityList(self, kwargs.pop("entities"))
+            self._root["entities"] = EntityList(self, kwargs.pop("entities"), unknown)
         else:
             self._root["entities"] = EntityList(self)
 
         if "tiles" in kwargs:
-            self._root["tiles"] = TileList(self, kwargs.pop("tiles"))
+            self._root["tiles"] = TileList(self, kwargs.pop("tiles"), unknown=unknown)
         else:
             self._root["tiles"] = TileList(self)
 
@@ -882,6 +882,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                             connection_points = connections[side][color]
                             for point in connection_points:
                                 old = point["entity_id"]
+                                print(old())
                                 if old() is None:  # pragma: no coverage
                                     throw_invalid_connection(entity)
                                 else:  # Association

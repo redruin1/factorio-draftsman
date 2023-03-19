@@ -23,29 +23,16 @@ class InfinityContainer(RequestItemsMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **RequestItemsMixin._exports,
-    #     "infinity_settings": {
-    #         "format": "TODO",
-    #         "description": "Item filters for infinite spawning/deletion",
-    #         "required": lambda x: len(x) != 0,
-    #     },
-    # }
+    _exports = {
+        **Entity._exports,
+        **RequestItemsMixin._exports,
+        "infinity_settings": {
+            "format": "TODO",
+            "description": "Item filters for infinite spawning/deletion",
+            "required": lambda x: len(x) != 0,
+        },
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(RequestItemsMixin._exports)
-    _exports.update(
-        {
-            "infinity_settings": {
-                "format": "TODO",
-                "description": "Item filters for infinite spawning/deletion",
-                "required": lambda x: len(x) != 0,
-            },
-        }
-    )
 
     def __init__(self, name=infinity_containers[0], **kwargs):
         # type: (str, **dict) -> None
@@ -63,6 +50,8 @@ class InfinityContainer(RequestItemsMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

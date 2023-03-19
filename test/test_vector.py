@@ -20,37 +20,37 @@ class VectorTesting(unittest.TestCase):
     def test_setters(self):
         point = Vector(1, 2)
         point.x = 100
-        assert point.data[0] == 100
+        assert point._data[0] == 100
         assert point.x == 100
         assert point[0] == 100
         assert point["x"] == 100
 
         point[0] = 200
-        assert point.data[0] == 200
+        assert point._data[0] == 200
         assert point.x == 200
         assert point[0] == 200
         assert point["x"] == 200
 
         point["x"] = 300
-        assert point.data[0] == 300
+        assert point._data[0] == 300
         assert point.x == 300
         assert point[0] == 300
         assert point["x"] == 300
 
         point.y = 100
-        assert point.data[1] == 100
+        assert point._data[1] == 100
         assert point.y == 100
         assert point[1] == 100
         assert point["y"] == 100
 
         point[1] = 200
-        assert point.data[1] == 200
+        assert point._data[1] == 200
         assert point.y == 200
         assert point[1] == 200
         assert point["y"] == 200
 
         point["y"] = 300
-        assert point.data[1] == 300
+        assert point._data[1] == 300
         assert point.y == 300
         assert point[1] == 300
         assert point["y"] == 300

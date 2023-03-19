@@ -19,15 +19,11 @@ class Gate(DirectionalMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports
-    # }
+    _exports = {
+        **Entity._exports,
+        **DirectionalMixin._exports
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(DirectionalMixin._exports)
 
     def __init__(self, name=gates[0], **kwargs):
         # type: (str, **dict) -> None
@@ -39,3 +35,5 @@ class Gate(DirectionalMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args

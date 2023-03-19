@@ -26,17 +26,12 @@ class Beacon(ModulesMixin, RequestItemsMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **RequestItemsMixin._exports,
-    #     **ModulesMixin._exports,
-    # }
+    _exports = {
+        **Entity._exports,
+        **RequestItemsMixin._exports,
+        **ModulesMixin._exports,
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(RequestItemsMixin._exports)
-    _exports.update(ModulesMixin._exports)
 
     def __init__(self, name=beacons[0], **kwargs):
         # type: (str, **dict) -> None
@@ -52,6 +47,8 @@ class Beacon(ModulesMixin, RequestItemsMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     @utils.reissue_warnings
     def set_item_request(self, item, count):

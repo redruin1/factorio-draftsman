@@ -19,17 +19,12 @@ class Locomotive(ColorMixin, OrientationMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **OrientationMixin._exports,
-    #     **ColorMixin._exports
-    # }
+    _exports = {
+        **Entity._exports,
+        **OrientationMixin._exports,
+        **ColorMixin._exports
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(OrientationMixin._exports)
-    _exports.update(ColorMixin._exports)
 
     def __init__(self, name=locomotives[0], **kwargs):
         # type: (str, **dict) -> None
@@ -41,3 +36,5 @@ class Locomotive(ColorMixin, OrientationMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args

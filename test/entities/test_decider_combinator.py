@@ -460,4 +460,4 @@ class DeciderCombinatorTesting(unittest.TestCase):
                 "copy_count_from_input": False,
             }
         }
-        assert comb1.tags == {}  # Overwritten by comb2
+        assert comb1.tags == None  # Overwritten by comb2

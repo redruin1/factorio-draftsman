@@ -19,29 +19,16 @@ class RocketSilo(RequestItemsMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **RequestItemsMixin._exports,
-    #     "auto_launch": {
-    #         "format": "bool",
-    #         "description": "Whether the silo should launch on rocket completion",
-    #         "required": lambda x: x is not None,
-    #     },
-    # }
+    _exports = {
+        **Entity._exports,
+        **RequestItemsMixin._exports,
+        "auto_launch": {
+            "format": "bool",
+            "description": "Whether the silo should launch on rocket completion",
+            "required": lambda x: x is not None,
+        },
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(RequestItemsMixin._exports)
-    _exports.update(
-        {
-            "auto_launch": {
-                "format": "bool",
-                "description": "Whether the silo should launch on rocket completion",
-                "required": lambda x: x is not None,
-            },
-        }
-    )
 
     def __init__(self, name=rocket_silos[0], **kwargs):
         # type: (str, **dict) -> None
@@ -59,6 +46,8 @@ class RocketSilo(RequestItemsMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

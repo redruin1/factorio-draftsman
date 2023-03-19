@@ -54,6 +54,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
+# Performace outputs
+mprofile_*
+
 # Translations
 *.mo
 *.pot

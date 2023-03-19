@@ -19,11 +19,11 @@ class CargoWagon(InventoryFilterMixin, OrientationMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **OrientationMixin._exports,
-    #     **InventoryFilterMixin._exports,
-    # }
+    _exports = {
+        **Entity._exports,
+        **OrientationMixin._exports,
+        **InventoryFilterMixin._exports,
+    }
     # fmt: on
 
     _exports = {}
@@ -41,3 +41,5 @@ class CargoWagon(InventoryFilterMixin, OrientationMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args

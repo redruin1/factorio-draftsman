@@ -23,17 +23,12 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    # }
+    _exports = {
+        **Entity._exports,
+        **CircuitConnectableMixin._exports,
+        **ControlBehaviorMixin._exports,
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(ControlBehaviorMixin._exports)
 
     def __init__(self, name=accumulators[0], **kwargs):
         # type: (str, **dict) -> None
@@ -49,6 +44,8 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

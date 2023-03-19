@@ -12,8 +12,8 @@
 
 from __future__ import unicode_literals
 
-from draftsman.classes.collisionset import CollisionSet
-from draftsman.classes.spatiallike import SpatialLike
+from draftsman.classes.collision_set import CollisionSet
+from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.vector import Vector
 from draftsman.error import InvalidTileError, DraftsmanError
 from draftsman.utils import AABB
@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, Union, Tuple
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.blueprint import Blueprint
 
+_TILE_COLLISION_SET = CollisionSet([AABB(0, 0, 1, 1)])
 
 class Tile(SpatialLike):
     """
@@ -48,19 +49,25 @@ class Tile(SpatialLike):
         self._parent = None
 
         # Tile name
-        self.name = name
+        self.name = name # TODO: optional error checking
 
         # Tile positions are in grid coordinates
         self.position = position
 
         # Tile AABB for SpatialHashMap
-        self._collision_set = CollisionSet([AABB(0, 0, 1, 1)])
+        # self._collision_set = _TILE_COLLISION_SET
 
         # Tile mask for SpatialHashMap
-        try:
-            self._collision_mask = set(tiles.raw[self.name]["collision_mask"])
-        except KeyError:
-            self._collision_mask = set()
+        # TODO: extract this to generic data to save memory like entity
+        # try:
+        #     self._collision_mask = set(tiles.raw[self.name]["collision_mask"])
+        #     self._collision_mask = tiles.collision_masks[self.name]
+        # except KeyError:
+        #     # Maybe add a new entry?
+        #     # tiles.raw[self.name] = {"name": self.name, "collision_mask": set()}
+        #     self._collision_mask = set()
+        # if self.name not in tiles.raw:
+        #     tiles.add_tile(self.name)
 
     # =========================================================================
 
@@ -142,13 +149,18 @@ class Tile(SpatialLike):
 
     @property
     def collision_set(self):
-        return self._collision_set
+        # type: () -> CollisionSet
+        return _TILE_COLLISION_SET
 
     # =========================================================================
 
     @property
     def collision_mask(self):
-        return self._collision_mask
+        # type: () -> set
+        try:
+            return tiles.raw[self.name]["collision_mask"]
+        except KeyError:
+            return set()
 
     # =========================================================================
 

@@ -19,37 +19,20 @@ class HeatInterface(Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     "temperature": {
-    #         "format": "int[0, 1000]",
-    #         "description": "Temperature of the heat interface in degrees Celcius",
-    #         "required": lambda x: x is not None and x != 0,
-    #     },
-    #     "mode": {
-    #         "format": "'at-least' or 'at-most' or 'exactly' or 'add' or 'remove'",
-    #         "description": "How the interface should affect it's temperature",
-    #         "required": lambda x: x is not None and x != "at-least",
-    #     },
-    # }
+    _exports = {
+        **Entity._exports,
+        "temperature": {
+            "format": "int[0, 1000]",
+            "description": "Temperature of the heat interface in degrees Celcius",
+            "required": lambda x: x is not None and x != 0,
+        },
+        "mode": {
+            "format": "'at-least' or 'at-most' or 'exactly' or 'add' or 'remove'",
+            "description": "How the interface should affect it's temperature",
+            "required": lambda x: x is not None and x != "at-least",
+        },
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(
-        {
-            "temperature": {
-                "format": "int[0, 1000]",
-                "description": "Temperature of the heat interface in degrees Celcius",
-                "required": lambda x: x is not None and x != 0,
-            },
-            "mode": {
-                "format": "'at-least' or 'at-most' or 'exactly' or 'add' or 'remove'",
-                "description": "How the interface should affect it's temperature",
-                "required": lambda x: x is not None and x != "at-least",
-            },
-        }
-    )
 
     def __init__(self, name=heat_interfaces[0], **kwargs):
         # type: (str, **dict) -> None
@@ -73,6 +56,8 @@ class HeatInterface(Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

@@ -23,6 +23,15 @@ from typing import Union
 import warnings
 
 
+# Matrix of values, where keys are the name of the first_operand and
+# the values are sets of signals that cannot be set as output_signal
+_signal_blacklist = {
+    "signal-everything": {"signal-anything", "signal-each"},
+    "signal-anything": {"signal-each"},
+    "signal-each": {"signal-everything", "signal-anything"},
+}
+
+
 class DeciderCombinator(
     ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
 ):
@@ -31,19 +40,13 @@ class DeciderCombinator(
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    # }
+    _exports = {
+        **Entity._exports,
+        **DirectionalMixin._exports,
+        **CircuitConnectableMixin._exports,
+        **ControlBehaviorMixin._exports,
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(DirectionalMixin._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(ControlBehaviorMixin._exports)
 
     def __init__(self, name=decider_combinators[0], **kwargs):
         # type: (str, **dict) -> None
@@ -58,13 +61,7 @@ class DeciderCombinator(
                 stacklevel=2,
             )
 
-        # Matrix of values, where keys are the name of the first_operand and
-        # the values are sets of signals that cannot be set as output_signal
-        self.signal_blacklist = {
-            "signal-everything": {"signal-anything", "signal-each"},
-            "signal-anything": {"signal-each"},
-            "signal-each": {"signal-everything", "signal-anything"},
-        }
+        del self.unused_args
 
     # =========================================================================
 
@@ -155,7 +152,7 @@ class DeciderCombinator(
         else:
             value_name = None
 
-        current_blacklist = self.signal_blacklist.get(
+        current_blacklist = _signal_blacklist.get(
             value_name, {"signal-anything", "signal-each"}
         )
         if output_signal_name in current_blacklist:
@@ -325,7 +322,7 @@ class DeciderCombinator(
             else:
                 first_operand_name = None
 
-            current_blacklist = self.signal_blacklist.get(
+            current_blacklist = _signal_blacklist.get(
                 first_operand_name, {"signal-anything", "signal-each"}
             )
             if value["name"] in current_blacklist:

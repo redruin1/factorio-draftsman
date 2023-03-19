@@ -48,29 +48,18 @@ class Inserter(
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    #     **LogisticConditionMixin._exports,
-    #     **CircuitConditionMixin._exports,
-    #     **InserterModeOfOperationMixin._exports,
-    #     **CircuitReadHandMixin._exports,
-    #     **StackSizeMixin._exports,
-    # }
+    _exports = {
+        **Entity._exports,
+        **DirectionalMixin._exports,
+        **CircuitConnectableMixin._exports,
+        **ControlBehaviorMixin._exports,
+        **LogisticConditionMixin._exports,
+        **CircuitConditionMixin._exports,
+        **InserterModeOfOperationMixin._exports,
+        **CircuitReadHandMixin._exports,
+        **StackSizeMixin._exports,
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(DirectionalMixin._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(ControlBehaviorMixin._exports)
-    _exports.update(LogisticConditionMixin._exports)
-    _exports.update(CircuitConditionMixin._exports)
-    _exports.update(InserterModeOfOperationMixin._exports)
-    _exports.update(CircuitReadHandMixin._exports)
-    _exports.update(StackSizeMixin._exports)
 
     def __init__(self, name=inserters[0], **kwargs):
         # type: (str, **dict) -> None
@@ -82,6 +71,8 @@ class Inserter(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

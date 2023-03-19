@@ -74,13 +74,13 @@ from draftsman.prototypes.player_port import PlayerPort, player_ports
 # fmt: on
 
 
-def new_entity(name, **kwargs):
-    # type: (str, **dict) -> Entity
+def new_entity(name, unknown="error", **kwargs):
+    # type: (str, str, **dict) -> Entity
     """
-    Factory function for creating a new ``Entity``. The class used will be based
-    on the entity's name, so ``new_entity("wooden-chest")`` will return a
-    ``Container`` instance. Useful if you know the name of the Entity you want
-    to make, but don't know what type it is.
+    Factory function for creating a new :py:cls:`Entity`. The class used will be
+    based on the entity's name, so ``new_entity("wooden-chest")`` will return a
+    :py:mod:`Container` instance. Useful if you know the name of the Entity you 
+    want to make, but don't know what type it is.
 
     Any additional keyword arguments are passed to the entity's constructor,
     allowing you to specify the entity's position, ID, or any other relevant
@@ -90,11 +90,17 @@ def new_entity(name, **kwargs):
     in is not recognized by that Entity's class constructor.
 
     :param name: The string name of an Entity.
+    :param unknown: TODO
     :param kwargs: A dict of all the keyword arguments to pass to the
         constructor.
 
+    :returns: A new :py:cls:`Entity` subclass, or ``None`` if none could be 
+        found and ``unknown`` was ``"ignore"``
+
     :exception InvalidEntityID: If the name passed in is not recognized as any
         valid entity name.
+    :exception ValueError: If ``unknown`` is set to a string that is not 
+        ``"error"``, ``"ignore"``, nor ``"pass"``.
     """
     if name in containers:
         return Container(name, **kwargs)
@@ -219,4 +225,11 @@ def new_entity(name, **kwargs):
     if name in player_ports:
         return PlayerPort(name, **kwargs)
 
-    raise InvalidEntityError("'{}'".format(name))
+    if unknown == "ignore":
+        return None
+    elif unknown == "error":
+        raise InvalidEntityError("'{}'".format(name))
+    elif unknown == "pass":
+        pass # TODO
+    else:
+        raise ValueError("Invalid value for keyword 'unknown' ({})".format(unknown))

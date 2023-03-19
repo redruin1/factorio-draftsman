@@ -22,19 +22,13 @@ class Container(InventoryMixin, RequestItemsMixin, CircuitConnectableMixin, Enti
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **RequestItemsMixin._exports,
-    #     **InventoryMixin._exports,
-    # }
+    _exports = {
+        **Entity._exports,
+        **CircuitConnectableMixin._exports,
+        **RequestItemsMixin._exports,
+        **InventoryMixin._exports,
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(RequestItemsMixin._exports)
-    _exports.update(InventoryMixin._exports)
 
     def __init__(self, name=containers[0], **kwargs):
         # type: (str, **dict) -> None
@@ -46,3 +40,5 @@ class Container(InventoryMixin, RequestItemsMixin, CircuitConnectableMixin, Enti
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args

@@ -18,15 +18,11 @@ class Reactor(RequestItemsMixin, Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **RequestItemsMixin._exports
-    # }
+    _exports = {
+        **Entity._exports,
+        **RequestItemsMixin._exports
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(RequestItemsMixin._exports)
 
     def __init__(self, name=reactors[0], **kwargs):
         # type: (str, **dict) -> None
@@ -38,3 +34,5 @@ class Reactor(RequestItemsMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args

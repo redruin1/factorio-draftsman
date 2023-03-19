@@ -38,39 +38,21 @@ class PowerSwitch(
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **PowerConnectableMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    #     **LogisticConditionMixin._exports,
-    #     **CircuitConditionMixin._exports,
-    #     "switch_state": {
-    #         "format": "bool",
-    #         "description": "The 'default' state of the switch (overridden by logistic or circuit conditions)",
-    #         "required": lambda x: x is not None,
-    #     },
-    # }
+    _exports = {
+        **Entity._exports,
+        **DirectionalMixin._exports,
+        **PowerConnectableMixin._exports,
+        **CircuitConnectableMixin._exports,
+        **ControlBehaviorMixin._exports,
+        **LogisticConditionMixin._exports,
+        **CircuitConditionMixin._exports,
+        "switch_state": {
+            "format": "bool",
+            "description": "The 'default' state of the switch (overridden by logistic or circuit conditions)",
+            "required": lambda x: x is not None,
+        },
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(DirectionalMixin._exports)
-    _exports.update(PowerConnectableMixin._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(ControlBehaviorMixin._exports)
-    _exports.update(LogisticConditionMixin._exports)
-    _exports.update(CircuitConditionMixin._exports)
-    _exports.update(
-        {
-            "switch_state": {
-                "format": "bool",
-                "description": "The 'default' state of the switch (overridden by logistic or circuit conditions)",
-                "required": lambda x: x is not None,
-            }
-        }
-    )
 
     def __init__(self, name=power_switches[0], **kwargs):
         # type: (str, **dict) -> None
@@ -90,6 +72,8 @@ class PowerSwitch(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

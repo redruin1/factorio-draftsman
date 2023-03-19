@@ -43,53 +43,28 @@ class TrainStop(
     """
 
     # fmt: on
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **DoubleGridAlignedMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    #     **EnableDisableMixin._exports,
-    #     **LogisticConditionMixin._exports,
-    #     **CircuitConditionMixin._exports,
-    #     **ColorMixin._exports,
-    #     "station": {
-    #         "format": "str",
-    #         "description": "The name for this station",
-    #         "required": lambda x: x is not None,
-    #     },
-    #     "manual_trains_limit": {
-    #         "format": "int",
-    #         "description": "Manual train limit for this stop (overwritten by logistics or circuit condition)",
-    #         "required": lambda x: x is not None,
-    #     },
-    # }
+    _exports = {
+        **Entity._exports,
+        **DirectionalMixin._exports,
+        **DoubleGridAlignedMixin._exports,
+        **CircuitConnectableMixin._exports,
+        **ControlBehaviorMixin._exports,
+        **EnableDisableMixin._exports,
+        **LogisticConditionMixin._exports,
+        **CircuitConditionMixin._exports,
+        **ColorMixin._exports,
+        "station": {
+            "format": "str",
+            "description": "The name for this station",
+            "required": lambda x: x is not None,
+        },
+        "manual_trains_limit": {
+            "format": "int",
+            "description": "Manual train limit for this stop (overwritten by logistics or circuit condition)",
+            "required": lambda x: x is not None,
+        },
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(DirectionalMixin._exports)
-    _exports.update(DoubleGridAlignedMixin._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(ControlBehaviorMixin._exports)
-    _exports.update(EnableDisableMixin._exports)
-    _exports.update(LogisticConditionMixin._exports)
-    _exports.update(CircuitConditionMixin._exports)
-    _exports.update(ColorMixin._exports)
-    _exports.update(
-        {
-            "station": {
-                "format": "str",
-                "description": "The name for this station",
-                "required": lambda x: x is not None,
-            },
-            "manual_trains_limit": {
-                "format": "int",
-                "description": "Manual train limit for this stop (overwritten by logistics or circuit condition)",
-                "required": lambda x: x is not None,
-            },
-        }
-    )
 
     def __init__(self, name=train_stops[0], similar_entities=train_stops, **kwargs):
         # type: (str, list[str], **dict) -> None
@@ -113,6 +88,8 @@ class TrainStop(
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

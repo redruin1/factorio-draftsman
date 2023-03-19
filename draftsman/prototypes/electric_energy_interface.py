@@ -18,47 +18,25 @@ class ElectricEnergyInterface(Entity):
     """
 
     # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     "buffer_size": {
-    #         "format": "int",
-    #         "description": "How much energy this interface can store",
-    #         "required": lambda x: x is not None,
-    #     },
-    #     "power_production": {
-    #         "format": "int",
-    #         "description": "How much energy this interface produces per tick",
-    #         "required": lambda x: x is not None,
-    #     },
-    #     "power_usage": {
-    #         "format": "int",
-    #         "description": "How much energy this interface consumes per tick",
-    #         "required": lambda x: x is not None,
-    #     },
-    # }
+    _exports = {
+        **Entity._exports,
+        "buffer_size": {
+            "format": "int",
+            "description": "How much energy this interface can store",
+            "required": lambda x: x is not None,
+        },
+        "power_production": {
+            "format": "int",
+            "description": "How much energy this interface produces per tick",
+            "required": lambda x: x is not None,
+        },
+        "power_usage": {
+            "format": "int",
+            "description": "How much energy this interface consumes per tick",
+            "required": lambda x: x is not None,
+        },
+    }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(
-        {
-            "buffer_size": {
-                "format": "int",
-                "description": "How much energy this interface can store",
-                "required": lambda x: x is not None,
-            },
-            "power_production": {
-                "format": "int",
-                "description": "How much energy this interface produces per tick",
-                "required": lambda x: x is not None,
-            },
-            "power_usage": {
-                "format": "int",
-                "description": "How much energy this interface consumes per tick",
-                "required": lambda x: x is not None,
-            },
-        }
-    )
 
     def __init__(self, name=electric_energy_interfaces[0], **kwargs):
         # type: (str, **dict) -> None
@@ -90,6 +68,8 @@ class ElectricEnergyInterface(Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
+
+        del self.unused_args
 
     # =========================================================================
 

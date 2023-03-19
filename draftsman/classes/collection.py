@@ -2,9 +2,9 @@
 # -*- encoding: utf-8 -*-
 
 from draftsman.classes.association import Association
-from draftsman.classes.entitylike import EntityLike
-from draftsman.classes.entitylist import EntityList
-from draftsman.classes.tilelist import TileList
+from draftsman.classes.entity_like import EntityLike
+from draftsman.classes.entity_list import EntityList
+from draftsman.classes.tile_list import TileList
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.tile import Tile
 from draftsman.classes.vector import Vector, PrimitiveVector
@@ -27,7 +27,6 @@ import abc
 import six
 from typing import Union
 import warnings
-import deal
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -389,7 +388,7 @@ class EntityCollection(object):
         # Issue a warning if the entities being connected are too far apart
         min_dist = min(entity_1.maximum_wire_distance, entity_2.maximum_wire_distance)
         real_dist = distance(
-            entity_1.global_position.data, entity_2.global_position.data
+            entity_1.global_position._data, entity_2.global_position._data
         )
         if real_dist > min_dist:
             warnings.warn(
@@ -581,7 +580,7 @@ class EntityCollection(object):
                 # Only return poles that are less than the max power pole
                 # distance
                 dist = distance(
-                    cur_pole.global_position.data, other.global_position.data
+                    cur_pole.global_position._data, other.global_position._data
                 )
                 min_dist = min(
                     cur_pole.maximum_wire_distance, other.maximum_wire_distance
@@ -592,7 +591,7 @@ class EntityCollection(object):
             # Sort the power poles by distance
             potential_neighbours.sort(
                 key=lambda x: distance(
-                    x.global_position.data, cur_pole.global_position.data
+                    x.global_position._data, cur_pole.global_position._data
                 )
             )
 
@@ -703,7 +702,7 @@ class EntityCollection(object):
             entity_1.circuit_wire_max_distance, entity_2.circuit_wire_max_distance
         )
         real_dist = distance(
-            entity_1.global_position.data, entity_2.global_position.data
+            entity_1.global_position._data, entity_2.global_position._data
         )
         if real_dist > min_dist:
             warnings.warn(
