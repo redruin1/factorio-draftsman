@@ -285,8 +285,8 @@ class Group(Transformable, EntityCollection, EntityLike):
 
             # Modify parent EntityList key_map
             if self.parent:
-                self.parent.entities.remove_key(old_id)
-                self.parent.entities.set_key(self.id, self)
+                self.parent.entities._remove_key(old_id)
+                self.parent.entities._set_key(self.id, self)
         else:
             raise TypeError("'id' must be a str or None")
 
@@ -681,6 +681,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     def merge(self, other):
         # type: (Group) -> None
         # For now, we assume that Groups themselves are not mergable
+        # TODO: is this the case?
         # print("group.merge")
         return  # Do nothing
 

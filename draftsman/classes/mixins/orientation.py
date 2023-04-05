@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.collision_set import CollisionSet
+from draftsman.constants import Orientation
 from draftsman.warning import ValueWarning
 from draftsman.utils import Rectangle
 
@@ -52,7 +53,8 @@ class OrientationMixin(object):
         # type: () -> float
         """
         The angle that the current Entity is facing, expressed as a ``float``
-        in the range ``[0.0, 1.0]``, where ``0.0`` is North.
+        in the range ``[0.0, 1.0)``, where ``0.0`` is North and increases 
+        clockwise.
 
         Raises :py:class:`.ValueWarning` if set to a value not in the range
         ``[0.0, 1.0)``.
@@ -78,17 +80,9 @@ class OrientationMixin(object):
             self._orientation = value
             self._collision_set.shapes[0].angle = 0
         elif isinstance(value, float):
-            if value is not None and not 0.0 <= value < 1.0:
-                warnings.warn(
-                    "Orientation not in range [0.0, 1.0); will be cast to {} on import".format(
-                        value % 1.0
-                    ),
-                    ValueWarning,
-                    stacklevel=2,
-                )
-            self._orientation = value
-            self._collision_set.shapes[0].angle = (value % 1) * 360.0
-            # TODO: what if orientation changes when inside a EntityCollection? 
+            self._orientation = Orientation(value % 1.0)
+            self._collision_set.shapes[0].angle = (value % 1.0) * 360.0
+            # TODO: what if orientation changes when inside a EntityCollection?
             # Might end up intersecting neigbouring entities
         else:
             raise TypeError("'orientation' must be a float or None")

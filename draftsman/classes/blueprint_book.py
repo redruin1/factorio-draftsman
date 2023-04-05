@@ -173,7 +173,10 @@ class BlueprintBook(Blueprintable):
             ``dict`` object with the desired keys in the correct format.
         """
         super(BlueprintBook, self).__init__(
-            root_item="blueprint_book", item="blueprint-book", init_data=blueprint_book, unknown=unknown
+            root_item="blueprint_book",
+            item="blueprint-book",
+            init_data=blueprint_book,
+            unknown=unknown,
         )
 
     @utils.reissue_warnings
@@ -195,7 +198,9 @@ class BlueprintBook(Blueprintable):
             self.version = utils.encode_version(*__factorio_version_info__)
 
         if "blueprints" in kwargs:
-            self._root["blueprints"] = BlueprintableList(kwargs.pop("blueprints"), unknown=unknown)
+            self._root["blueprints"] = BlueprintableList(
+                kwargs.pop("blueprints"), unknown=unknown
+            )
         else:
             self._root["blueprints"] = BlueprintableList()
 

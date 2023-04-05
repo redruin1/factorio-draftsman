@@ -24,6 +24,25 @@ class Association(weakref.ref):
 
         super(Association, self).__init__(item)
 
+    def __eq__(self, other):
+        # type: (Association) -> bool
+        """
+        Checking the equality of two associations checks to make sure that they
+        point to the exact same entity in memory, which is important for entity
+        resolution. However, entity comparisons themselves are on a per value
+        basis. For example:
+
+        .. code-block:: python
+
+            entity1 = Container()
+            entity2 = Container
+            # Both entities are "value-equivalent"
+            assert entity1 == entity2
+            # But they exist in different places in memory (entity1 is not entity2)
+            assert Association(entity1) != Association(entity2)
+        """
+        return self() is other()
+
     def __deepcopy__(self, _):
         # type: (dict) -> Association
         return self

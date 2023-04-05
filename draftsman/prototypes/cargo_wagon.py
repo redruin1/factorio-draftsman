@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import InventoryFilterMixin, OrientationMixin
+from draftsman.classes.mixins import RequestItemsMixin, InventoryFilterMixin, OrientationMixin
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import cargo_wagons
@@ -13,7 +13,7 @@ from draftsman.data import entities
 import warnings
 
 
-class CargoWagon(InventoryFilterMixin, OrientationMixin, Entity):
+class CargoWagon(RequestItemsMixin, InventoryFilterMixin, OrientationMixin, Entity):
     """
     A train wagon that holds items as cargo.
     """
@@ -23,13 +23,9 @@ class CargoWagon(InventoryFilterMixin, OrientationMixin, Entity):
         **Entity._exports,
         **OrientationMixin._exports,
         **InventoryFilterMixin._exports,
+        **RequestItemsMixin._exports,
     }
     # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(OrientationMixin._exports)
-    _exports.update(InventoryFilterMixin._exports)
 
     def __init__(self, name=cargo_wagons[0], **kwargs):
         # type: (str, **dict) -> None
@@ -43,3 +39,5 @@ class CargoWagon(InventoryFilterMixin, OrientationMixin, Entity):
             )
 
         del self.unused_args
+
+    # TODO: check for item requests exceeding cargo capacity

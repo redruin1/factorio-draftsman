@@ -127,7 +127,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     @utils.reissue_warnings
     def __init__(self, blueprint=None, unknown="error"):
-        # type: (Union[str, dict]) -> None
+        # type: (Union[str, dict], str) -> None
         """
         Creates a ``Blueprint`` class. Will load the data from ``blueprint`` if
         provided, and otherwise initializes itself with defaults. ``blueprint``
@@ -138,7 +138,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             ``dict`` object with the desired keys in the correct format.
         """
         super(Blueprint, self).__init__(
-            root_item="blueprint", item="blueprint", init_data=blueprint, unknown=unknown
+            root_item="blueprint",
+            item="blueprint",
+            init_data=blueprint,
+            unknown=unknown,
         )
 
     @utils.reissue_warnings
@@ -293,10 +296,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             self._root["label_color"] = signatures.COLOR.validate(value)
         except SchemaError as e:
             six.raise_from(DataFormatError(e), None)
-        # if value is None:
-        #     self._root.pop("label_color", None)
-        # else:
-        #     self._root["label_color"] = signatures.COLOR.validate(value) # ?
 
     # =========================================================================
 
@@ -326,10 +325,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             return
 
         self._root["snap-to-grid"] = Vector.from_other(value, int)
-        # if value is None:
-        #     self._root.pop("snap-to-grid", None)
-        # else:
-        #     self._root["snap-to-grid"] = Vector.from_other(value, int)
 
     # =========================================================================
 
@@ -442,7 +437,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             self._root["entities"] = EntityList(self, value)
         elif isinstance(value, EntityList):
             # Just don't ask
-            self._root["entities"] = copy.deepcopy(value, memo={"new_parent": self})
+            # self._root["entities"] = copy.deepcopy(value, memo={"new_parent": self})
+            self._root["entities"] = EntityList(self, value.data)
         else:
             raise TypeError("'entities' must be an EntityList, list, or None")
 
@@ -478,6 +474,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             self._tile_height,
         ) = utils.aabb_to_dimensions(self._area)
         # Check the blueprint for unreasonable size
+        # TODO: change this for warning
         if self._tile_width > 10000 or self._tile_height > 10000:
             raise UnreasonablySizedBlueprintError(
                 "Current blueprint dimensions ({}, {}) exceeds the maximum size"
@@ -800,7 +797,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         # (We exclude "entities" and "tiles" because these objects are not
         # copyable for space and recursion depth reasons)
         out_dict = {
-            x: self._root[x] for x in self._root if x not in {"entities", "tiles"}
+            x: self._root[x] for x in self._root if x not in {"entities", "tiles", "schedules"}
         }
         out_dict["schedules"] = copy.deepcopy(self._root["schedules"])
 
@@ -851,7 +848,13 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             out_dict["tiles"].append(copy.deepcopy(tile.to_dict()))
 
         # Convert all schedules into dicts
-        # TODO
+        for i, schedule in enumerate(out_dict["schedules"]):
+            print(schedule)
+            print(schedule.stops)
+            # out_dict["schedule"].append(copy.deepcopy(schedule.to_dict()))
+            out_dict["schedules"][i] = schedule.to_dict()
+
+        print(out_dict["schedules"])
 
         # Offset coordinate objects by snapping grid
         if self.snapping_grid_position is not None:
@@ -882,7 +885,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                             connection_points = connections[side][color]
                             for point in connection_points:
                                 old = point["entity_id"]
-                                print(old())
                                 if old() is None:  # pragma: no coverage
                                     throw_invalid_connection(entity)
                                 else:  # Association
@@ -923,11 +925,30 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
         return {"blueprint": out_dict}
 
+    # =========================================================================
+
+    def __eq__(self, other):
+        # type: (Blueprint) -> bool
+        if not isinstance(other, Blueprint):
+            return False
+
+        return (
+            self.label == other.label
+            and self.label_color == other.label_color
+            and self.description == other.description
+            and self.icons == other.icons
+            and self.version == other.version
+            and self.snapping_grid_size == other.snapping_grid_size
+            and self.snapping_grid_position == other.snapping_grid_position
+            and self.absolute_snapping == other.absolute_snapping
+            and self.position_relative_to_grid == other.position_relative_to_grid
+            and self.entities == other.entities
+            and self.tiles == other.tiles
+            and self.schedules == other.schedules
+        )
+
     def __deepcopy__(self, memo):
         # type: (dict) -> Blueprint
-        """
-        TODO
-        """
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result

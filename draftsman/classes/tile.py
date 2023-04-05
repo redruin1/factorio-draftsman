@@ -27,6 +27,7 @@ if TYPE_CHECKING:  # pragma: no coverage
 
 _TILE_COLLISION_SET = CollisionSet([AABB(0, 0, 1, 1)])
 
+
 class Tile(SpatialLike):
     """
     Tile class. Used for keeping track of tiles in Blueprints.
@@ -49,7 +50,7 @@ class Tile(SpatialLike):
         self._parent = None
 
         # Tile name
-        self.name = name # TODO: optional error checking
+        self.name = name  # TODO: optional error checking
 
         # Tile positions are in grid coordinates
         self.position = position

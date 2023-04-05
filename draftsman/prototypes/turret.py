@@ -35,5 +35,5 @@ class Turret(RequestItemsMixin, DirectionalMixin, Entity):
                 DraftsmanWarning,
                 stacklevel=2,
             )
-        
+
         del self.unused_args

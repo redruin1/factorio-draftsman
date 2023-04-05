@@ -36,7 +36,6 @@ from draftsman.warning import (
 )
 
 import sys
-import deal
 import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -561,13 +560,27 @@ class BlueprintTesting(unittest.TestCase):
 
     def test_rotate_entity(self):
         blueprint = Blueprint()
+        # Inline rotating is permitted when the object is square
         blueprint.entities.append("inserter")
-        with pytest.raises(DraftsmanError):
-            blueprint.entities[0].direction = 4
+        blueprint.entities[0].direction = Direction.SOUTH
+        assert blueprint.entities[0].direction == Direction.SOUTH
 
+        # Setting a 4-way directional object with an 8-way direction results in
+        # a warning
+        with pytest.warns(DraftsmanWarning):
+            blueprint.entities[0].direction = Direction.SOUTHEAST
+
+        # Inline is permitted on non-square objects ONLY when the transformation
+        # does not change the apparent tile_width or tile_height
+        blueprint.entities[0] = new_entity("splitter", direction=Direction.NORTH)
+        blueprint.entities[0].direction = Direction.SOUTH # equal to flipping
+        assert blueprint.entities[0].direction == Direction.SOUTH
+
+        # Inline rotating is not permitted on 8-way rotational objects
+        # (similar to how the game handles it)
         blueprint.entities[0] = new_entity("straight-rail")
         with pytest.raises(DraftsmanError):
-            blueprint.entities[0].direction = 4
+            blueprint.entities[0].direction = Direction.SOUTHEAST
 
     def test_add_tile(self):
         blueprint = Blueprint()

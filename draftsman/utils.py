@@ -36,7 +36,7 @@ class Shape:
 
     def __init__(self, position):
         # type: (Vector) -> None
-        self.position = [position[0], position[1]]
+        self.position = Vector.from_other(position)
 
     @abstractmethod
     def overlaps(self, other):  # pragma: no coverage
@@ -52,6 +52,7 @@ class Shape:
         pass
 
 
+# TODO: remove position attribute (less memory needed)
 class AABB(Shape):
     """
     Axis-Aligned Bounding-Box abstraction class. Contains a :py:attr:`top_left`
@@ -237,6 +238,11 @@ class AABB(Shape):
             and self.top_left == other.top_left
             and self.bot_right == other.bot_right
         )
+
+    def __add__(self, other):
+        # type: (Union[PrimitiveVector, Vector]) -> AABB
+        other = Vector.from_other(other)
+        return AABB(*self.top_left, *self.bot_right, self.position + other)
 
     def __repr__(self):  # pragma: no coverage
         return "<AABB>({}, {}, {}, {}) at {}".format(
