@@ -118,7 +118,7 @@ def add_entity(
     }
 
     if collision_mask is not None:
-        raw[name]["collision_mask"] = collision_mask
+        raw[name]["collision_mask"] = set(collision_mask)
     else:
         raw[name]["collision_mask"] = get_default_collision_mask(entity_type)
 

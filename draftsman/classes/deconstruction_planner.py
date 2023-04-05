@@ -80,7 +80,7 @@ class DeconstructionPlanner(Blueprintable):
             root_item="deconstruction_planner",
             item="deconstruction-planner",
             init_data=deconstruction_planner,
-            unknown=unknown
+            unknown=unknown,
         )
 
     @utils.reissue_warnings

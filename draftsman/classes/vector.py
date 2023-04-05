@@ -75,17 +75,17 @@ class Vector(object):
         """
         Calculates the value to set the linked vector's x coordinate with. Used
         to transform a change in the parent vector into a different change in
-        the linked vector. Defaults to just setting the x value of the linked 
+        the linked vector. Defaults to just setting the x value of the linked
         vector to the x value of the parent.
         """
         return x
-    
+
     def transform_y(self, y):
         # type: (float) -> float
         """
         Calculates the value to set the linked vector's y coordinate with. Used
         to transform a change in the parent vector into a different change in
-        the linked vector. Defaults to just setting the y value of the linked 
+        the linked vector. Defaults to just setting the y value of the linked
         vector to the y value of the parent.
         """
         return y
@@ -131,7 +131,7 @@ class Vector(object):
     def update_from_other(self, other, type_cast=float):
         # type: (Union[Vector, PrimitiveVector], Callable) -> None
         """
-        Updates the data of the existing vector in-place from a variable input 
+        Updates the data of the existing vector in-place from a variable input
         format.
 
         :param other: The object to get the new set of data from

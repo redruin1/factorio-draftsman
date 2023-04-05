@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import OrientationMixin
+from draftsman.classes.mixins import RequestItemsMixin, OrientationMixin
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import artillery_wagons
@@ -13,7 +13,7 @@ from draftsman.data import entities
 import warnings
 
 
-class ArtilleryWagon(OrientationMixin, Entity):
+class ArtilleryWagon(RequestItemsMixin, OrientationMixin, Entity):
     """
     An artillery train car.
     """
@@ -21,7 +21,8 @@ class ArtilleryWagon(OrientationMixin, Entity):
     # fmt: off
     _exports = {
         **Entity._exports,
-        **OrientationMixin._exports
+        **OrientationMixin._exports,
+        **RequestItemsMixin._exports,
     }
     # fmt: on
 
@@ -41,3 +42,6 @@ class ArtilleryWagon(OrientationMixin, Entity):
             )
 
         del self.unused_args
+
+    # TODO: ensure that only artillery shells can be loaded
+    # Though what about mods?

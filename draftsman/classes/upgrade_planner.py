@@ -75,7 +75,7 @@ class UpgradePlanner(Blueprintable):
             root_item="upgrade_planner",
             item="upgrade-planner",
             init_data=upgrade_planner,
-            unknown=unknown
+            unknown=unknown,
         )
 
     @utils.reissue_warnings
@@ -134,7 +134,7 @@ class UpgradePlanner(Blueprintable):
             entries in the list do not match the format specified above.
 
         :getter: Gets the mappers dictionary, or ``None`` if not set.
-        :setter: Sets the mappers dictionary, or deletes the dictionary if set 
+        :setter: Sets the mappers dictionary, or deletes the dictionary if set
             to ``None``
         :type: ``[{"from": {...}, "to": {...}, "index": int}]``
         """
@@ -180,33 +180,31 @@ class UpgradePlanner(Blueprintable):
         except SchemaError as e:
             six.raise_from(DataFormatError, e)
 
-        # Check both from_obj and to_obj to make sure that both are valid inputs
-        # in the context of an upgrade planner
-        if from_obj["name"] not in _allowed_items:
-            warnings.warn(
-                "'{}' is not an allowed upgradable item".format(from_obj["name"]),
-                ItemLimitationWarning,
-                stacklevel=2,
-            )
-        if to_obj["name"] not in _allowed_items:
-            warnings.warn(
-                "'{}' is not an allowed upgradable item".format(to_obj["name"]),
-                ItemLimitationWarning,
-                stacklevel=2,
-            )
+        # # Check both from_obj and to_obj to make sure that both are valid inputs
+        # # in the context of an upgrade planner
+        # if from_obj["name"] not in _allowed_items:
+        #     warnings.warn(
+        #         "'{}' is not an allowed upgradable item".format(from_obj["name"]),
+        #         ItemLimitationWarning,
+        #         stacklevel=2,
+        #     )
+        # if to_obj["name"] not in _allowed_items:
+        #     warnings.warn(
+        #         "'{}' is not an allowed upgradable item".format(to_obj["name"]),
+        #         ItemLimitationWarning,
+        #         stacklevel=2,
+        #     )
 
-        # TODO
-        # Check that from_obj matches the upgrade type to to_obj
-        if not equivalent_upgrade_types(from_obj["name"], to_obj["name"]):
-            warnings.warn(
-                "'{}' ({}) cannot be upgraded to '{}' ({}); differing types"
-                .format(
-                    from_obj["name"], from_obj["type"],
-                    to_obj["name"],   to_obj["type"]
-                ),
-                ItemLimitationWarning,
-                stacklevel=2,
-            )
+        # # TODO
+        # # Check that from_obj matches the upgrade type to to_obj
+        # if not equivalent_upgrade_types(from_obj["name"], to_obj["name"]):
+        #     warnings.warn(
+        #         "'{}' ({}) cannot be upgraded to '{}' ({}); differing types".format(
+        #             from_obj["name"], from_obj["type"], to_obj["name"], to_obj["type"]
+        #         ),
+        #         ItemLimitationWarning,
+        #         stacklevel=2,
+        #     )
 
         # Check that the index picked is within the correct range
         if not 0 <= index < 24:

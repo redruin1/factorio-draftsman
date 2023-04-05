@@ -5,9 +5,12 @@ from draftsman.classes.association import Association
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.entity_list import EntityList
 from draftsman.classes.tile_list import TileList
+from draftsman.classes.train_configuration import TrainConfiguration
+from draftsman.classes.schedule import Schedule
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.tile import Tile
 from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, Orientation
 from draftsman.error import (
     DraftsmanError,
     EntityNotPowerConnectableError,
@@ -121,7 +124,7 @@ class EntityCollection(object):
         pass
 
     # =========================================================================
-    # Queries
+    # Entity Queries
     # =========================================================================
 
     def find_entity(self, name, position):
@@ -184,8 +187,8 @@ class EntityCollection(object):
 
         return self.entity_map.get_in_area(aabb)
 
-    def find_entities_filtered(self, **kwargs):
-        # type: (**dict) -> list[EntityLike]
+    def find_entities_filtered(self, position=None, radius=None, area=None, name=None, type=None, direction=None, invert=False, limit=None):
+        # type: (Vector, float, AABB, Union[str, set[str]], Union[str, set[str]], Union[Direction, set[Direction]], bool, int) -> list[EntityLike]
         """
         Returns a filtered list of entities within the ``Collection``. Works
         similarly to `LuaSurface.find_entities_filtered
@@ -209,6 +212,10 @@ class EntityCollection(object):
             * - ``area``
               - ``AABB`` or ``PrimitiveAABB``
               - AABB to search in.
+
+        If none of the above are specified, then the search area becomes the 
+        entire Collection. If ``radius`` is specified but ``position`` is not,
+        the search area also becomes the entire Collection.
 
         .. list-table:: Criteria keywords
             :header-rows: 1
@@ -235,44 +242,64 @@ class EntityCollection(object):
               - | Whether or not to return the inverse of the search.
                 | False by default.
 
-        ``position`` and ``radius`` take precidence over ``aabb`` if all are
-        specified. If no region keywords are specified, the entire Collection is
-        searched.
+        :param position: The global position to search the source Collection.
+            Can be used in conjunction with ``radius`` to search a circle 
+            instead of a single point. Takes precedence over ``area``.
+        :param radius: The radius of the circle centered around ``position`` to
+            search. Must be defined alongside ``position`` in order to search in
+            a circular area.
+        :param aabb: The :py:class:`AABB` or (``PrimitiveAABB``) to search in.
+        :param name: Either a ``str``, or a ``set[str]`` where each entry is a 
+            name of an entity to be returned.
+        :param type: Either a ``str``, or a ``set[str]`` where each entry is a 
+            type of an entity to be returned.
+        :param direction: Either a :py:class:`Direction` enum (or corresponding
+            ``int``), or a ``set[Direction]`` where each entry is a valid
+            direction for each returned entity to match. Excludes entities that 
+            have no direction attribute.
+        :param invert: Whether or not to return the inversion of the search
+            criteria.
+        :param limit: The total number of matching entities to return. Unlimited
+            by default.
+
+        :returns: A list of entity references inside the searched collection 
+            that satisfy the search criteria.
         """
 
-        search_region = []
-        if "position" in kwargs:
-            if "radius" in kwargs:
+        if position is not None:
+            if radius is not None:
                 # Intersect entities with circle
                 search_region = self.entity_map.get_in_radius(
-                    kwargs["radius"], kwargs["position"]
+                    radius, position
                 )
             else:
                 # Intersect entities with point
-                search_region = self.entity_map.get_on_point(kwargs["position"])
-        elif "area" in kwargs:
+                search_region = self.entity_map.get_on_point(position)
+        elif area is not None:
             # Intersect entities with area
-            area = AABB.from_other(kwargs["area"])
+            area = AABB.from_other(area)
             search_region = self.entity_map.get_in_area(area)
         else:
             # Search all entities, but make sure it's a 1D list
             search_region = flatten_entities(self.entities)
 
-        if isinstance(kwargs.get("name", None), str):
-            names = {kwargs.pop("name", None)}
+        # Normalize inputs
+        if isinstance(name, str):
+            names = {name}
         else:
-            names = kwargs.pop("name", None)
-        if isinstance(kwargs.get("type", None), str):
-            types = {kwargs.pop("type", None)}
+            names = name
+        if isinstance(type, str):
+            types = {type}
         else:
-            types = kwargs.pop("type", None)
-        if isinstance(kwargs.get("direction", None), int):
-            directions = {kwargs.pop("direction", None)}
+            types = type
+        if isinstance(direction, int):
+            directions = {direction}
         else:
-            directions = kwargs.pop("direction", None)
+            directions = direction
 
         # Keep track of how many
-        limit = kwargs.pop("limit", len(search_region))
+        if limit is None:
+            limit = len(search_region)
 
         def test(entity):
             if names is not None and entity.name not in names:
@@ -286,7 +313,7 @@ class EntityCollection(object):
                 return False
             return True
 
-        if kwargs.get("invert", None):
+        if invert:
             return list(filter(lambda entity: not test(entity), search_region))[:limit]
         else:
             return list(filter(lambda entity: test(entity), search_region))[:limit]
@@ -862,6 +889,231 @@ class EntityCollection(object):
                         del entity.connections["1"]
                     if "2" in entity.connections:
                         del entity.connections["2"]
+
+    # =========================================================================
+    # Trains
+    # =========================================================================
+
+    def add_train_at_position(self, config, position, direction, schedule=None):
+        # type: (Vector, TrainConfiguration, Direction, Schedule, bool) -> None
+        """
+        Adds a train with a specified configuration and schedule at a position
+        facing a particular direction. Allows you to place a fully configured
+        train in a single function call.
+
+        .. NOTE:
+
+            Currently can only place trains in a straight line; horizontally,
+            vertically, or diagonally. Does not obey curved rails.
+
+        .. see-also:
+
+            :py:meth:`add_train_at_station`
+
+        :param config: The :py:class:`TrainConfiguration` to use as a template 
+            for the created train.
+        :param position: A :py:class:`Vector` specifying the center of the 
+            starting wagon.
+        :param direction: A :py:class:`Direction` enum or ``int`` specifying
+            which direction the train is "facing".
+        :param schedule: A :py:class:`Schedule` object specifying the schedule
+            that the newly created train should inherit.
+        """
+        current_pos = Vector.from_other(position)
+        for entity in config.cars:
+            orientation = (direction.to_orientation() + entity.orientation) % 1.0
+            self.entities.append(
+                entity, copy=True, position=current_pos, orientation=orientation
+            )
+            current_pos += direction.to_vector(-7) # 7 = distance between wagons
+
+        # TODO: schedule
+
+    def add_train_at_station(self, config, station, schedule=None):
+        # type: (TrainConfiguration, Union[EntityLike, str, int], Schedule, bool) -> None
+        """
+        Adds a train with a specified configuration and schedule behind a 
+        specified train stop.
+
+        .. NOTE:
+
+            Currently can only place trains in a straight line; horizontally,
+            vertically, or diagonally. Does not obey curved rails.
+
+        .. see-also:
+
+            :py:meth:`add_train`
+
+        :param config: The :py:class:`TrainConfiguration` to use as a template 
+            for the created train.
+        :param station: The ID or index of the train entity stop to spawn behind.
+        :param schedule: A :py:class:`Schedule` object specifying the schedule
+            that the newly created train should inherit.
+        """
+        if not isinstance(station, EntityLike):
+            station = self.entities[station]
+
+        # TODO: ensure that the specified station is actually a station
+        # if not isinstance(station, TrainStop):
+        #     raise ValueError("bruh moment")
+
+        shift_over = station.direction.previous().to_vector(3)
+        shift_back = station.direction.to_vector(4)
+        current_pos = station.tile_position - shift_back + shift_over
+        for entity in config.cars:
+            orientation = station.direction.to_orientation() + entity.orientation
+            self.entities.append(
+                entity, copy=True, position=current_pos, orientation=orientation 
+            )
+            current_pos += station.direction.to_vector(-7) # 7 = distance between wagons
+
+        # TODO: schedule
+
+    # =========================================================================
+    # Train Queries
+    # =========================================================================
+
+    def find_trains_filtered(self, train_length=None, num_type=None, orientation=None, config=None, invert=False, limit=None):
+        # type: (int, dict, Orientation, TrainConfiguration, bool, int) -> list[list[EntityLike]]
+        """
+        Finds a set of trains that match the passed in parameters. Formally, a 
+        "train" is a connected set of wagons consisting of at least one 
+        locomotive. Since blueprint strings contain no information regarding
+        train-connectivity, train connections are inferred from their relative
+        ``position`` and ``orientation``.
+
+        .. NOTE:
+
+            When using the ``config`` parameter, equality is strictly checked;
+            which means that if a returned train doesn't _exactly_ match the 
+            specified argument, the train is filtered from the result. This 
+            includes things like item fuel requests and cargo wagon item filters, 
+            so check these values in the blueprints you're searching and adjust
+            ``config`` accordingly.
+
+        :param train_length: Can either be specified as an ``int`` representing
+            the maximum length of trains to return (inclusive), or as a 
+            ``Sequence`` of 2 ``int``s representing the minimum and maximum 
+            length of trains to return (inclusive).
+        :param num_type: A ``dict`` of wagon types where each key is the ``str``
+            type of the wagon and the value is an ``int`` representing the
+            desired number of those wagons in the returned train. Allows to
+            search for trains of a particular composition without regards to
+            contents, order, or orientation.
+        :param orientation: A :py:class:`Orientation` (or equivalent ``float``)
+            that describes the orientation that every car in the returned train
+            list should have. Note that trains placed on curved rails will not
+            be returned by this parameter, as _all_ train cars must equal 
+            ``orientation``.
+        :param config: A :py:class:`TrainConfiguration` object to filter against.
+            Performs a strict equality check between each of the train 
+            configuration's cars and the cars in the returned trains.
+        :param invert: Whether or not to return the inversion of the search
+            criteria.
+        :param limit: A maximum number of unique trains to return. 
+
+        :returns: A ``list`` of ``list``s, where each sub-list represents a 
+            contiguous train. Trains are ordered such that the first index is 
+            the "front" of the train as chosen by the orientation of the first
+            found locomotive in that group. In cases where a train has 
+            locomotives in both directions, an arbitrary direction is selected.
+        """
+        locomotives = self.find_entities_filtered(type={"locomotive"})
+        trains = []
+        used_wagons = set() # Create a set of trains to check 
+
+        def traverse_neighbours(wagon, current_train, wagon_direction=1):
+            neighbours = self.find_entities_filtered(
+                position=wagon.position, 
+                radius=7.5, # Average distance is less than 7 tiles
+                type={"locomotive", "cargo-wagon", "fluid-wagon", "artillery-wagon"}
+            )
+            for neighbour in neighbours:
+                # Check to make sure we haven't already added this wagon to a
+                # train
+                if neighbour in used_wagons:
+                    continue
+
+                # Check the orientation
+                # If the orientation is +- 45 degrees in either direction:
+                if neighbour.orientation.in_range(
+                    wagon.orientation - 0.125,
+                    wagon.orientation + 0.125
+                ) or neighbour.orientation.in_range(
+                    wagon.orientation.opposite() - 0.125,
+                    wagon.orientation.opposite() + 0.125
+                ):
+                    # Determine the neighbour closest truck point
+                    a = neighbour.position + neighbour.orientation.to_vector(2)
+                    b = neighbour.position + neighbour.orientation.to_vector(-2)
+                    if distance(wagon.position, a) < distance(wagon.position, b):
+                        neighbour_truck = a
+                        direction = 1
+                    else:
+                        neighbour_truck = b
+                        direction = -1
+
+                    # Check front
+                    wagon_truck = wagon.position + wagon.orientation.to_vector(2) 
+                    if 2.9 < distance(wagon_truck, neighbour_truck) <= 3.1:
+                        # Add to beginning of train list
+                        used_wagons.add(neighbour)
+                        current_train.insert(0, neighbour)
+                        traverse_neighbours(neighbour, current_train, direction)
+
+                    # Check back
+                    wagon_truck = wagon.position + wagon.orientation.to_vector(-2)
+                    if 2.9 < distance(wagon_truck, neighbour_truck) <= 3.1:
+                        # Add to end of train list
+                        used_wagons.add(neighbour)
+                        current_train.append(neighbour)
+                        traverse_neighbours(neighbour, current_train)
+
+            return current_train
+
+        # Get all contiguous trains
+        # TODO: this could probably be more performant if we check train 
+        # validity as we iterate, meaning we could simply early exit if we 
+        # exceed `limit` for example
+        for locomotive in locomotives:
+            if locomotive in used_wagons:
+                continue
+            used_wagons.add(locomotive)
+            train = traverse_neighbours(locomotive, [locomotive])
+            trains.append(train)
+
+        # Normalize inputs
+        if isinstance(train_length, int):
+            train_length = [0, train_length]
+        if limit is None:
+            limit = len(trains)
+
+        # Filter based on parameters
+        def test(train):
+            if train_length is not None:
+                if len(train) < train_length[0] or len(train) > train_length[1]:
+                    return False
+            if num_type is not None:
+                for desired_type, desired_count in num_type.items():
+                    num_train_type = sum(x.type == desired_type for x in train)
+                    if num_train_type != desired_count:
+                        return False
+            if orientation is not None:
+                for train_car in train:
+                    if train_car.orientation != orientation:
+                        return False
+            if config is not None:
+                if len(train) != len(config.cars):
+                    return False
+                for i, config_car in enumerate(config.car):
+                    if train[i] != config_car:
+                        return False
+            return True
+
+        if invert:
+            return list(filter(lambda train: not test(train), trains))[:limit]
+        else:
+            return list(filter(lambda train: test(train), trains))[:limit]
 
 
 # =============================================================================

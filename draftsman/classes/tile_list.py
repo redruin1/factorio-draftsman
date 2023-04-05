@@ -64,6 +64,69 @@ class TileList(MutableSequence):
         # Keep a reference of the parent blueprint in the tile
         tile._parent = self._parent
 
+    def check_tile(self, tile):
+        # type: (Tile) -> None
+        if not isinstance(tile, Tile):
+            raise TypeError("Entry in TileList must be a Tile")
+
+    def union(self, other):
+        # type: (TileList) -> TileList
+        """
+        TODO
+        """
+        new_tile_list = TileList()
+
+        for tile in self.data:
+            new_tile_list.append(tile)
+            new_tile_list[-1]._parent = None
+
+        for other_tile in other.data:
+            already_in = False
+            for tile in self.data:
+                if tile == other_tile:
+                    already_in = True
+                    break
+            if not already_in:
+                new_tile_list.append()
+
+        return new_tile_list
+
+    def intersection(self, other):
+        # type: (TileList) -> TileList
+        """
+        TODO
+        """
+        new_tile_list = TileList()
+
+        for tile in self.data:
+            in_both = False
+            for other_tile in other.data:
+                if other_tile == tile:
+                    in_both = True
+                    break
+            if in_both:
+                new_tile_list.append(tile)
+
+        return new_tile_list
+
+    def difference(self, other):
+        # type: (TileList) -> TileList
+        """
+        TODO
+        """
+        new_tile_list = TileList()
+
+        for tile in self.data:
+            different = True
+            for other_tile in other.data:
+                if other_tile == tile:
+                    different = False
+                    break
+            if different:
+                new_tile_list.append(tile)
+
+        return new_tile_list
+
     def __getitem__(self, idx):
         return self.data[idx]
 
@@ -103,9 +166,40 @@ class TileList(MutableSequence):
         self._parent.recalculate_area()
 
     def __len__(self):
+        # type: () -> int
         return len(self.data)
+    
+    def __or__(self, other):
+        # type: (TileList) -> TileList
+        return self.union(other)
 
-    def check_tile(self, tile):
-        # type: (Tile) -> None
-        if not isinstance(tile, Tile):
-            raise TypeError("Entry in TileList must be a Tile")
+    # def __ior__(self, other):
+    #     # type: (TileList) -> None
+    #     self.union(other)
+
+    def __and__(self, other):
+        # type: (TileList) -> TileList
+        return self.intersection(other)
+
+    # def __iand__(self, other):
+    #     # type: (TileList) -> None
+    #     self.intersection(other)
+
+    def __sub__(self, other):
+        # type: (TileList) -> TileList
+        return self.difference(other)
+
+    # def __isub__(self, other):
+    #     # type: (TileList) -> None
+    #     self.difference(other)
+
+    def __eq__(self, other):
+        # type: (TileList) -> bool
+        if not isinstance(other, TileList):
+            return False
+
+        for i in range(len(self.data)):
+            if self.data[i] != other.data[i]:
+                return False
+
+        return True

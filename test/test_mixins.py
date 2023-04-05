@@ -679,8 +679,8 @@ class OrientationMixinTesting(unittest.TestCase):
         locomotive.orientation = None
         assert locomotive.orientation == None
 
-        with pytest.warns(ValueWarning):
-            locomotive.orientation = 2.0
+        locomotive.orientation = 2.5
+        assert locomotive.orientation == 0.5
 
         with pytest.raises(TypeError):
             locomotive.orientation = "incorrect"

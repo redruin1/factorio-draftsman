@@ -102,3 +102,14 @@ class AccumulatorTesting(unittest.TestCase):
         assert accumulatorA.tile_position == Vector(0, 0)
         assert accumulatorA.tile_position.to_dict() == {"x": 0, "y": 0}
         assert accumulatorA.output_signal == {"name": "signal-A", "type": "virtual"}
+
+    def test_eq(self):
+        accumulatorA = Accumulator("accumulator", tile_position=(0, 0))
+        accumulatorB = Accumulator("accumulator", tile_position=(0, 0))
+
+        assert accumulatorA == accumulatorB
+
+        accumulatorA.output_signal = "signal-A"
+
+        assert accumulatorA != accumulatorB
+

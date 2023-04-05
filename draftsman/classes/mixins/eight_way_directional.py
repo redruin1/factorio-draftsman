@@ -54,14 +54,15 @@ class EightWayDirectionalMixin(object):
                 # Set every collision orientation to the single collision_set
                 # for i in range(8):
                 #     self._collision_set_rotation[i] = self.collision_set
-                try: 
+                try:
                     self._collision_set_rotation = _rotated_collision_sets[self.name]
                 except KeyError:
                     # Cache it so we only need one
                     # TODO: would probably be better to do this in env.py, but how?
                     _rotated_collision_sets[self.name] = {}
                     for i in range(8):
-                        _rotated_collision_sets[self.name][i] = self.collision_set.rotate(i)
+                        _rotated_collision_sets[self.name][i] = self.collision_set
+                    
                     self._collision_set_rotation = _rotated_collision_sets[self.name]
             # else:
             #     # Automatically generate a set of rotated collision sets for every

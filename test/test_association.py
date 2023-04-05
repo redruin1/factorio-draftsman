@@ -37,15 +37,12 @@ class AssociationTesting(unittest.TestCase):
         blueprint.entities.append("wooden-chest", tile_position=(1, 0))
         blueprint.add_circuit_connection("red", 0, 1)
 
-        print(weakref.getweakrefcount(blueprint.entities[0]))
-        print(weakref.getweakrefcount(blueprint.entities[1]))
+        assert weakref.getweakrefcount(blueprint.entities[0]) == 2
+        assert weakref.getweakrefcount(blueprint.entities[1]) == 2
 
         del blueprint.entities[1]
 
-        print(weakref.getweakrefcount(blueprint.entities[0]))
-
-        print(len(blueprint.entities))
-        print(blueprint.entities.data)
+        assert weakref.getweakrefcount(blueprint.entities[0]) == 1
 
         with pytest.raises(InvalidAssociationError):
             blueprint.to_dict()

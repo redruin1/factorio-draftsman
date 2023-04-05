@@ -1,14 +1,37 @@
 # Changelog
-
+* Updated `factorio-data` to version `TODO` (latest stable)
+* Updated `compatibility/defines.lua` to `TODO` (latest stable)
 * Added the ability to modify `x` and `y` attributes of both `position` and `tile_position` and have each update in tandem
-* Normalized all import filenames to use underscores consistently (breaking change!)
+* Added `extras` module which implements some handy new features:
+    * Added `flip_belts(blueprint)` which flips all belt entities inside the blueprint (preserving continuity)
+* Added a bunch of equivalent functions from Factorio StdLib:
+    * Added `opposite()`, `next()`, `previous()`, `to_orientation()`, and `to_vector()` to `Direction`
+    * Added `Orientation` class, similar to `Direction`; comes with it's own suite of `__add__()`, `to_direction()`, and `to_vector()` helpers
+    * Added `constants.Ticks` enumeration which contains `SECONDS`, `MINUTES`, `HOURS`, etc. stored as quantities of Factorio ticks
+* Added `union`, `intersection`, and `difference` to `EntityList`, `TileList`, and `ScheduleList`
+* Added `__eq__` operators to many draftsman things (`Entity`, `EntityList`, `TileList`, `ScheduleList`, etc.)
+* Added `TrainConfiguration`, which allows you to specify entire trains with strings like `"1-4-1"` and customize them on a per-car basis
+* Added `WaitCondition` and `WaitConditions` objects which keep track of train station condition trees
+    * `WaitConditions` can be combined using bitwise `and` and `or` in order to collect them into a `WaitConditions` object:
+    * Added `WaitConditionType` and `WaitConditionCompareType` enumerations
+* Added `Collection.add_train_at_position()` and `Collection.add_train_at_station()` to make placing trains easier
+* Added `Collection.find_trains_filtered()` to allow users to search Blueprints/Groups for trains of particular types
+* Added data functions `signals.add_signal()`, `tiles.add_tile()`, `entities.add_entity()`, etc. which allow you to add entities on the fly (primarily for Factorio environment compatibility)
+* Added `RequestItemsMixin` to `Locomotive`, `CargoWagon`, and `ArtilleryWagon`
+* Added `unknown` keyword to all entity/tile creation constructs which allows the user to specify what should happen when draftsman encounters an entity it doesn't recognize
+* Added a bunch of new documentation to document the above
+* Added a bunch of new examples to test out the above new features
+* Added a README.md to the `examples` folder which provides short descriptions for all of the examples
+* Integrated aforementioned examples into the test suite
+* Normalized all import filenames to use underscores consistently (potentially breaking change!)
 * Changed the code to be primarily python3 compatible
 * Switched from `unittest` to `pytest` (more features with similar syntax; `coverage run` still works)
 * Finished up documentation on `DeconstructionPlanner`
-* Patched InvalidModVersionError for now (#51)
-* [PERF] Reduced memory consumption by ~80 percent on average(!)
-* Added data functions `signals.add_signal()`, `tiles.add_tile()`, `entities.add_entity()`, etc.
+* [PERF] Reduced memory consumption by up to ~80 percent(!) (This also made it quite a bit faster to boot)
 * Made it so that default `collision_mask` keys are resolved at once at the data level when you call `draftsman-update`, so you can query `entities.raw` for the correct default value
+* Bumped Lupa to 2.0 which allows me to specify Lua version 5.2 which Factorio uses (#50)
+    * `draftsman-update` will issue a warning if it cannot specify the correct Lua version: It'll still try to load and may still work anyway, but it's not guaranteed to
+* Patched InvalidModVersionError for now (#51)
 
 ## 1.0.6
 * Updated `factorio-data` to version `1.1.88`

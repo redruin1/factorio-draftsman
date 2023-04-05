@@ -14,7 +14,6 @@ from draftsman import utils
 from draftsman.warning import DraftsmanWarning, ValueWarning
 
 import sys
-import deal
 import pytest
 
 if sys.version_info >= (3, 3):  # pragma: no coverage
@@ -293,7 +292,8 @@ class UpgradePlannerTesting(unittest.TestCase):
         upgrade_planner = UpgradePlanner()
 
         # Out of index
-        upgrade_planner.set_mapping("transport-belt", "fast-transport-belt", -1)
+        with pytest.warns(ValueWarning):
+            upgrade_planner.set_mapping("transport-belt", "fast-transport-belt", -1)
 
         # assert upgrade_planner.inspect() == [
         #     ValueWarning("'index' must be in range [0, 24) for mapping between '{'name': 'transport-belt', 'type': 'item'}' and '{'name': 'fast-transport-belt', 'type': 'item'}'")

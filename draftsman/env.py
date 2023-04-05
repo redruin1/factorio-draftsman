@@ -31,12 +31,12 @@ from draftsman.utils import decode_version, version_string_to_tuple, AABB
 from draftsman._factorio_version import __factorio_version_info__
 
 try:
+    # Lupa 2.0 allows us to specify exact version!
     import lupa.lua52 as lupa
 except ImportError:
     import warnings
-
     warnings.warn(
-        "Could not find Lua version 5.2; 'draftsman-update' may or may not work depending on mod configuration",
+        "Could not import Lua version 5.2; 'draftsman-update' may or may not work depending on mod configuration",
         ImportWarning,
     )
     del warnings
@@ -155,54 +155,42 @@ def get_mod_settings(location):
     }
 
     def get_string(binary_stream):
-        # print("String")
         string_absent = bool(
             # int.from_bytes(binary_stream.read(1), "little", signed=False)
             struct.unpack("<?", binary_stream.read(1))[0]
         )
-        # print("string absent?", string_absent)
         if string_absent:
             return None
         # handle the Space Optimized length
-        # length = int.from_bytes(binary_stream.read(1), "little", signed=False)
         length = struct.unpack("<B", binary_stream.read(1))[0]
         if length == 255:  # length is actually longer
-            # length = int.from_bytes(binary_stream.read(4), "little", signed=False)
             length = struct.unpack("<I", binary_stream.read(4))[0]
-        # print(length)
         return binary_stream.read(length).decode()
 
     def get_data(binary_stream):
         data_type = struct.unpack("<B", binary_stream.read(1))[0]
-        # print("data_type:", data_type)
         binary_stream.read(1)  # any type flag, largely internal, ignore
         if data_type == PropertyTreeType["None"]:
-            # print("None")
             return None
         elif data_type == PropertyTreeType["Bool"]:
-            # print("Bool")
             return bool(struct.unpack("<?", binary_stream.read(1))[0])
         elif data_type == PropertyTreeType["Number"]:
-            # print("Number")
             value = struct.unpack("d", binary_stream.read(8))[0]
             return value
         elif data_type == PropertyTreeType["String"]:
             return get_string(binary_stream)
         elif data_type == PropertyTreeType["List"]:
-            # print("List")
             length = struct.unpack("<I", binary_stream.read(4))
             out = list()
             for i in range(length):
                 out.append(get_data(binary_stream))
             return out
         elif data_type == PropertyTreeType["Dictionary"]:
-            # print("Dict")
             length = struct.unpack("<I", binary_stream.read(4))[0]
             out = dict()
             for i in range(length):
                 name = get_string(binary_stream)
                 value = get_data(binary_stream)
-                # print(name, value)
                 out[name] = value
             return out
 
@@ -211,14 +199,10 @@ def get_mod_settings(location):
         os.path.join(location, "mod-settings.dat"), mode="rb"
     ) as mod_settings_dat:
         # header
-        # version_num = int.from_bytes(mod_settings_dat.read(8), "little")
         version_num = struct.unpack("<Q", mod_settings_dat.read(8))[0]
-        # print(version_num)
         version = decode_version(version_num)
-        # print(version)
-        # header_flag = bool(int.from_bytes(mod_settings_dat.read(1), "little", signed=False))
         header_flag = bool(struct.unpack("<?", mod_settings_dat.read(1))[0])
-        # print(header_flag)
+        # TODO: check the above?
         # assert version[::-1] >= __factorio_version_info__ and not header_flag
         mod_settings = get_data(mod_settings_dat)
 
@@ -293,16 +277,12 @@ def convert_table_to_dict(table):
     interprets Lua arrays as lists.
     """
     out = dict(table)
-    # print(out)
     is_list = True
     for key in out:
-        # print(key)
         if not isinstance(key, int):
             is_list = False
 
         if lupa.lua_type(out[key]) == "table":
-            # print(out[key])
-            # out[key] = convert_table_to_dict(out[key])
             out[key] = convert_table_to_dict(out[key])
             # check if its actually a dict and not a list
 
@@ -522,10 +502,6 @@ def get_items(lua):
         )
     group_list = sorted(group_list, key=lambda x: (x["order"], x["name"]))
 
-    # print(json.dumps(group_list[0]["subgroups"], indent=2))
-
-    # print(json.dumps(sorted_groups, indent=2))
-
     # Flatten into all_items dictionary
     sorted_items = OrderedDict()
     for group in group_list:
@@ -546,7 +522,7 @@ def get_default_collision_mask(entity_type):
         a collision mask for. (e.g. ``"container"``, ``"gate"``, ``"heat-pipe"``,
         etc.)
 
-    :returns: A ``set()`` containing the default collision layers for that 
+    :returns: A ``set()`` containing the default collision layers for that
         object.
     """
     if entity_type == "gate":
@@ -583,9 +559,7 @@ def get_default_collision_mask(entity_type):
             "floor-layer",
             "water-tile",
         }
-    elif (
-        entity_type == "rail-signal" or entity_type == "rail-chain-signal"
-    ):
+    elif entity_type == "rail-signal" or entity_type == "rail-chain-signal":
         return {"floor-layer", "rail-layer", "item-layer"}
     elif (
         entity_type == "locomotive"
@@ -622,6 +596,7 @@ def get_default_collision_mask(entity_type):
             "player-layer",
             "water-tile",
         }
+
 
 # =============================================================================
 
@@ -725,21 +700,23 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
             return False
 
         return True
-    
+
     def categorize_entity(entity_name, entity):
         flags = entity.get("flags", set())
         if (
             "not-blueprintable" in flags or "not-deconstructable" in flags
         ):  # or "hidden" in flags
             return False
-        
+
         collision_mask = entity.get("collision_mask", None)
         if not collision_mask:
             entity["collision_mask"] = get_default_collision_mask(entity["type"])
+        else:
+            entity["collision_mask"] = set(collision_mask)
 
         # Check if an entity is flippable or not
         is_flippable[entity_name] = is_entity_flippable(entity)
-        
+
         # maybe move this to get_order?
         unordered_entities_raw[entity_name] = entity
         return True
@@ -1057,17 +1034,20 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
         entities["raw"][name] = unordered_entities_raw[name]
 
     for name in raw_order:
-        collision_box = entities["raw"][name]["collision_box"]
-        collision_sets[name] = CollisionSet(
-            [
-                AABB(
-                    collision_box[0][0],
-                    collision_box[0][1],
-                    collision_box[1][0],
-                    collision_box[1][1],
-                )
-            ]
-        )
+        collision_box = entities["raw"][name].get("collision_box", None)
+        if collision_box:
+            collision_sets[name] = CollisionSet(
+                [
+                    AABB(
+                        collision_box[0][0],
+                        collision_box[0][1],
+                        collision_box[1][0],
+                        collision_box[1][1],
+                    )
+                ]
+            )
+        else:
+            collision_sets[name] = CollisionSet([])
 
     entities["flippable"] = is_flippable
     entities["collision_sets"] = collision_sets
@@ -1503,18 +1483,12 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
 
         elif os.path.isdir(mod_location):
             # Folder
-            print("folder", mod_obj)
-            # TODO: assert mod folder name matches either "name" or
-            # "name_version" format
-            m = mod_folder_regex.match(mod_obj)
-            if not m:
-                raise IncorrectModFormatError(
-                    "Mod folder '{}' does not fit the 'name' or 'name_version' format".format(
-                        mod_obj
-                    )
-                )
-            mod_name = m.group(1)
-            external_mod_version = m.group(2)
+            mod_name = mod_obj
+            # TODO: assert mod folder name matches either "name" or "name_version"
+            # format
+            # m = mod_archive_regex.match(mod_obj)
+            # mod_name = m.group(1)
+            # external_mod_version = m.group(2)
             try:
                 with open(os.path.join(mod_location, "info.json"), "r") as info_file:
                     mod_info = json.load(info_file)

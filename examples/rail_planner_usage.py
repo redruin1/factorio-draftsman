@@ -5,7 +5,7 @@ Illustation of the RailPlanner class, which is currently unimplemented.
 """
 
 from draftsman.classes.blueprint import Blueprint
-from draftsman.classes.railplanner import RailPlanner
+from draftsman.classes.rail_planner import RailPlanner
 from draftsman.constants import Direction
 
 

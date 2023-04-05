@@ -22,7 +22,7 @@ train stop every time they are modified. The sub-entities are accessable as
 """
 
 from draftsman.classes.blueprint import Blueprint, EntityList
-from draftsman.classes.entitylike import EntityLike
+from draftsman.classes.entity_like import EntityLike
 
 # from draftsman.classes.entitylist import EntityList
 from draftsman.constants import Direction

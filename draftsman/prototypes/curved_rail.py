@@ -31,6 +31,7 @@ _collision_set_rotation[Direction.SOUTHWEST] = _right_turn.rotate(4)
 _collision_set_rotation[Direction.WEST] = _left_turn.rotate(6)
 _collision_set_rotation[Direction.NORTHWEST] = _right_turn.rotate(6)
 
+
 class CurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     """
     A curved rail entity.
@@ -59,7 +60,7 @@ class CurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
         # We set a (private) flag to ignore the dummy collision box that
         # Factorio provides
         self._overwritten_collision_set = True
-        
+
         # We then provide a list of all the custom rotations
         self._collision_set = _left_turn
         self._collision_set_rotation = _collision_set_rotation

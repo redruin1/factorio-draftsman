@@ -92,3 +92,8 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
                 self.control_behavior["output_signal"] = value
             except SchemaError as e:
                 six.raise_from(DataFormatError(e), None)
+
+    def __eq__(self, other):
+        # type: (Accumulator) -> bool
+        base = super().__eq__(other)
+        return base and self.output_signal == other.output_signal

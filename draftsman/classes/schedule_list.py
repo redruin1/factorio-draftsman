@@ -15,17 +15,17 @@ class ScheduleList(MutableSequence):
 
         self.data.insert(index, schedule)
 
-    def __getitem__(self, item):
-        pass
+    def __getitem__(self, index):
+        return self.data[index]
 
     def __setitem__(self, index, item):
-        pass
+        self.data[index] = item
 
-    def __delitem__(self, item):
-        pass
+    def __delitem__(self, index):
+        del self.data[index]
 
     def __len__(self):
-        return self.data
+        return len(self.data)
 
-    def __deepcopy__(self, memo):
-        pass
+    # def __deepcopy__(self, memo):
+    #     pass

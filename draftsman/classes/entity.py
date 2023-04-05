@@ -32,12 +32,16 @@ class _PosVector(Vector):
     @Vector.x.setter
     def x(self, value):
         self._data[0] = float(value)
-        self.entity()._tile_position._data[0] = round(value - self.entity().tile_width / 2)
+        self.entity()._tile_position._data[0] = round(
+            value - self.entity().tile_width / 2
+        )
 
     @Vector.y.setter
     def y(self, value):
         self._data[1] = float(value)
-        self.entity()._tile_position._data[1] = round(value - self.entity().tile_height / 2)
+        self.entity()._tile_position._data[1] = round(
+            value - self.entity().tile_height / 2
+        )
 
 
 class _TileVector(Vector):
@@ -54,7 +58,6 @@ class _TileVector(Vector):
     def y(self, value):
         self._data[1] = int(value)
         self.entity()._position._data[1] = value + self.entity().tile_height / 2
-        
 
 
 class Entity(EntityLike):
@@ -310,14 +313,14 @@ class Entity(EntityLike):
         # type: (str) -> None
         if value is None:
             if self.parent:
-                self.parent.entities.remove_key(self._id)
+                self.parent.entities._remove_key(self._id)
             self._id = value
         elif isinstance(value, six.string_types):
             old_id = self._id
             self._id = six.text_type(value)
             if self.parent:
-                self.parent.entities.remove_key(old_id)
-                self.parent.entities.set_key(self._id, self)
+                self.parent.entities._remove_key(old_id)
+                self.parent.entities._set_key(self._id, self)
         else:
             raise TypeError("'id' must be a str or None")
 
@@ -362,8 +365,10 @@ class Entity(EntityLike):
 
         # self._position = Vector.from_other(value, float)
         self._position.update_from_other(value, float)
-        self._tile_position.update(round(self._position.x - self.tile_width / 2), 
-                                   round(self._position.y - self.tile_height / 2))
+        self._tile_position.update(
+            round(self._position.x - self.tile_width / 2),
+            round(self._position.y - self.tile_height / 2),
+        )
 
     # =========================================================================
 
@@ -404,8 +409,10 @@ class Entity(EntityLike):
 
         # self._tile_position.update_from_other(value, int)
         self._tile_position.update_from_other(value, int)
-        self._position.update(self._tile_position.x + self.tile_width / 2, 
-                              self._tile_position.y + self.tile_height / 2)
+        self._position.update(
+            self._tile_position.x + self.tile_width / 2,
+            self._tile_position.y + self.tile_height / 2,
+        )
 
     # =========================================================================
 
@@ -720,7 +727,7 @@ class Entity(EntityLike):
         #     association = point["entity_id"]
         #     associated_entity = association()
         #     if associated_entity:
-        #         print("what the fuck")
+        #         print("bruh")
 
         # Connections (union of the two sets)
         if hasattr(self, "connections") and hasattr(other, "connections"):
@@ -779,24 +786,31 @@ class Entity(EntityLike):
     #     """
     #     self.exports[name] = [criterion, formatter]
 
-    # def __del__(self):
-    #     del self._position._entity
-    #     del self._tile_position._entity
-    #     del self._position
-    #     del self._tile_position
-    #     del self
+    def __eq__(self, other):
+        # type: (Entity) -> bool
+        return (
+            type(self) == type(other)
+            and self.name == other.name
+            and self.global_position == other.global_position
+            and self.id == other.id
+            and self.tags == other.tags
+        )
+    
+    def __hash__(self):
+        # type: () -> int
+        return id(self) >> 4 # Apparently this is the default?
 
     def __repr__(self):  # pragma: no coverage
         # type: () -> str
-        return "<{0}{1}>{2}".format(
-            type(self).__name__,
-            " '{}'".format(self.id) if self.id is not None else "",
-            str(self.to_dict()),
-        )
-        # Association debug printing:
-        # return "<{0}{1} at 0x{2:016X}>{3}".format(
+        # return "<{0}{1}>{2}".format(
         #     type(self).__name__,
         #     " '{}'".format(self.id) if self.id is not None else "",
-        #     id(self),
         #     str(self.to_dict()),
         # )
+        # Association debug printing:
+        return "<{0}{1} at 0x{2:016X}>{3}".format(
+            type(self).__name__,
+            " '{}'".format(self.id) if self.id is not None else "",
+            id(self),
+            str(self.to_dict()),
+        )
