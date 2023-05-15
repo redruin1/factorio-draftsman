@@ -232,6 +232,13 @@ class Tile(SpatialLike):
         """
         return {"name": self.name, "position": self.position.to_dict()}
 
+    def __eq__(self, other):
+        return (
+            isinstance(other, Tile) and
+            self.name == other.name and
+            self.position == other.position
+        )
+
     def __repr__(self):  # pragma: no coverage
         # type: () -> str
         return "<Tile>{}".format(self.to_dict())

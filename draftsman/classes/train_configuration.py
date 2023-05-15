@@ -11,7 +11,7 @@ from typing import Union
 import re
 
 
-_digit_regex = re.compile("((\\d+)([<>CFA]))|((\\d+)())|(()([<>CFA]))")
+_digit_regex = re.compile("((\\d+)([^\\d]))|((\\d+)())|(()([^\\d]))")
 
 
 class TrainConfiguration:
@@ -28,9 +28,14 @@ class TrainConfiguration:
         "A": {"name": "artillery-wagon"}
     }
 
-    def __init__(self, config, direction="dual", wagons="cargo", mapping=default_mapping):
-        self.cars = [] # type: list[Union[Locomotive, CargoWagon, FluidWagon, ArtilleryWagon]]
-        if isinstance(config, str):
+    def __init__(self, config=None, direction="dual", wagons="cargo", mapping=default_mapping):
+        # type: (str, str, str, dict) -> None
+        """
+        TODO
+        """
+        if config is None:
+            self.cars = [] # type: list[Union[Locomotive, CargoWagon, FluidWagon, ArtilleryWagon]]
+        else:
             self.from_string(config, direction=direction, wagons=wagons, mapping=mapping)
 
     # =========================================================================
@@ -51,24 +56,20 @@ class TrainConfiguration:
         """
         TODO
         """
-
         # Normalize input
         format_string = format_string.upper()
         direction = direction.lower()
         wagons = wagons.lower()
 
         if direction not in {"dual", "forward"}:
-            raise ValueError(direction) # TODO
+            raise ValueError("Argument 'direction' must be one of 'dual' or 'forward'")
         
         if wagons not in {"cargo", "fluid", "artillery"}:
-            raise ValueError(wagons) # TODO
+            raise ValueError("Argument 'wagons' must be one of 'cargo', 'fluid', or 'artillery'") # TODO
         
         # Convert user-readable to explicit format
         wagon_symbols = {"cargo": "C", "fluid": "F", "artillery": "A"}
         wagons = wagon_symbols[wagons]
-
-        # TODO: Ensure the string does not contain any incorrect characters
-            # If it does, early error
 
         # Split the string by hyphens '-'
         # Hyphens indicate when the current_default_type should change from
@@ -100,11 +101,15 @@ class TrainConfiguration:
                 if match.group(7):
                     amt = match.group(8) or 1
                     car = match.group(9) or current_default_type
+
+                if car not in mapping:
+                    # TODO: maybe format the position of the unexpected character in
+                    # the input string?
+                    raise ValueError("Encountered unexpected character '{}'".format(car))
                 
                 # Construct a new string
                 replacement = car * int(amt)
 
-                # format_string = format_string.replace(hyphen_block, replacement, 1) # might break
                 result_string += replacement
         
 

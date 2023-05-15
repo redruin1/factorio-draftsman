@@ -43,11 +43,11 @@ class DirectionalMixin(object):
         super(DirectionalMixin, self).__init__(name, similar_entities, **kwargs)
 
         self._rotatable = True
-        self._square = self.tile_width == self.tile_height
+        self._square = self._tile_width == self._tile_height
 
         # Keep track of the entities width and height regardless of rotation
-        self._static_tile_width = self.tile_width
-        self._static_tile_height = self.tile_height
+        self._static_tile_width = self._tile_width
+        self._static_tile_height = self._tile_height
         self._static_collision_set = self.collision_set
 
         # Technically this check is not necessary, but we include it for
@@ -122,7 +122,6 @@ class DirectionalMixin(object):
         # type: (Direction) -> None
 
         # Check if the rotation would change the entity's tile width or height
-        # TODO: do this better
         if value == Direction.EAST or value == Direction.WEST:
             new_tile_width = self._static_tile_height
             new_tile_height = self._static_tile_width

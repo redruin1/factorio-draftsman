@@ -1,4 +1,4 @@
-# train_schedules.py
+# train_configuration_usage.py
 
 from draftsman.blueprintable import Blueprint
 from draftsman.classes.train_configuration import TrainConfiguration
@@ -30,8 +30,8 @@ def main():
     config = TrainConfiguration("<<<-FFFCCCAAA-<<<")  # Same as above; hyphens can be added for clarity
     # C is for cargo wagons, F is for fluid wagons, A for artillery
 
-    # With the syntax explained, let's create an final configuration, one loco
-    # with one of each cargo wagon
+    # With the syntax explained, let's create an final configuration, a dual-
+    # headed configuration with one of each wagon type
     config = TrainConfiguration("1-CFA-1")
 
     # `config` contains a list of rolling stock under the attribute `cars`:
@@ -46,8 +46,8 @@ def main():
     
     # Modifying position or orientation are redundant in this case, as they're
     # overwritten when they're added to a blueprint:
-    #blueprint.add_train((3, 0), Direction.WEST, config=config, schedule=None)
-    # For more information on the `schedule` parameter, see `train_schedules.py`
+    #blueprint.add_train_at_position((3, 0), Direction.WEST, config=config, schedule=None)
+    # For more information on the `schedule` parameter, see `train_schedule_usage.py`
 
     # Specifying by position is acceptable for some blueprints, but 90 percent
     # of the time users want to put their blueprints behind stations.
@@ -73,7 +73,7 @@ def main():
         id="station_A"
     )
 
-    blueprint.add_train_at_station("station_A", config)
+    blueprint.add_train_at_station(config, "station_A")
 
     # print(blueprint)
     print(blueprint.to_string())
@@ -113,14 +113,14 @@ def main():
             # point to different wagons of any type. Any symbol should work
             # provided that they're:
             #   * 1 character long, and
-            #   * they're the uppercase equivalent, as mentioned before
+            #   * they're the uppercase equivalent
         }
 
         # Now we can re-use the same string from earlier to get an upgraded
         # result:
         config.from_string("1-CFA-1", mapping=modded_mapping)
         mod_blueprint = Blueprint()
-        mod_blueprint.add_train((0, 0), Direction.WEST, config)
+        mod_blueprint.add_train_at_position((0, 0), Direction.WEST, config)
 
         # print(mod_blueprint)
         print(mod_blueprint.to_string())

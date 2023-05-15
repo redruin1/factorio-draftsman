@@ -35,13 +35,13 @@ class Association(weakref.ref):
         .. code-block:: python
 
             entity1 = Container()
-            entity2 = Container
+            entity2 = Container()
             # Both entities are "value-equivalent"
             assert entity1 == entity2
             # But they exist in different places in memory (entity1 is not entity2)
             assert Association(entity1) != Association(entity2)
         """
-        return self() is other()
+        return self() is other() # TODO: think about
 
     def __deepcopy__(self, _):
         # type: (dict) -> Association

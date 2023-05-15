@@ -17,6 +17,15 @@ else:  # pragma: no coverage
 
 
 class BlueprintableTesting(unittest.TestCase):
+    def test_init(self):
+        with pytest.raises(TypeError):
+            blueprint = Blueprint(["incorrect", "data"])
+
+    def test_load_from_string(self):
+        with pytest.raises(IncorrectBlueprintTypeError):
+            # Pass a BlueprintBook string into a Blueprint object
+            blueprint = Blueprint("0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY=")
+
     def test_item(self):
         blueprint = Blueprint()
         assert blueprint.item == "blueprint"
@@ -29,6 +38,14 @@ class BlueprintableTesting(unittest.TestCase):
 
         blueprint_book = BlueprintBook()
         assert blueprint_book.item == "blueprint-book"
+
+    # def test_formatted_label(self): # TODO
+    #     blueprint = Blueprint()
+        
+    #     # None case
+    #     assert blueprint.formatted_label() == None
+
+    #     pass
 
 
 class BlueprintUtilsTesting(unittest.TestCase):
@@ -61,7 +78,6 @@ class BlueprintUtilsTesting(unittest.TestCase):
         blueprintable = get_blueprintable_from_string(
             "0eNqllNuOozAMhl8lytWuBCOgnMqr7FRVAJdaCglKwnQ6Fe8+Tumy2i6jbTWICxLb/+fYxBdeyxEGg8rx6sJbsI3BwaFWvOInYPaoR9myDhw7CaNQdZaJWo+O/ZBwcMxpZrA7up/Vq3pVIRvVoE9goGU1iEYrdkJ3ZEqzXrejBLvm4/e+9r6zwOEAjWMGGsA3MFcXYS30tQSzeJEZB+ABR4q1vPp14RY7JaQ/pDuTqeLooCcPJXq/mjF8ohDVwjuv4mkXcFAOHcKscF2c92rsazDksMSCpJQMNiEoMN05pGKCOYjGJzBoi3M5L5xUwzzfBvxMH2WZEqwe6Txmb/GDhOJoeabgH17yJ1fswoU5aLnKKaLfnIQ4CqhL1Dfjj7LZrchvnpPPv5ZPgnQNkD4HSMvn8s/uW7miWcYv2U212L5k04pM/oBMUf4tE1z/JevtdgBow/n3DTfUtDVG8Qgj+m+q5QMyefS9VLcPMNJvliOOFsjtJtOYCXvRHFH5qDVkdled3Qz1eS7zLOBS1EBXnpMgjSqwfs8PjatUUsZpsU2KLKc3LafpExROpg4="
         )
-        self.maxDiff = None
         assert blueprintable.to_dict() == {
             "blueprint": {
                 "item": "blueprint",

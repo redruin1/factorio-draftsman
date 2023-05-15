@@ -56,13 +56,13 @@ class EntityTesting(unittest.TestCase):
         combinator = DeciderCombinator(tile_position=[3, 3], direction=Direction.EAST)
         assert combinator.get_world_bounding_box() == AABB(3.35, 3.15, 4.65, 3.85)
 
-    # def test_set_name(self):
-    #     iron_chest = Container("iron-chest")
-    #     iron_chest.name = "steel-chest"
-    #     self.assertEqual(iron_chest.name, "steel-chest")
+    def test_set_name(self):
+        iron_chest = Container("iron-chest")
+        iron_chest.name = "steel-chest"
+        self.assertEqual(iron_chest.name, "steel-chest")
 
-    #     with self.assertRaises(InvalidEntityError):
-    #         iron_chest.name = "incorrect"
+        with pytest.raises(InvalidEntityError):
+            iron_chest.name = "incorrect"
 
     def test_set_position(self):
         iron_chest = Container("iron-chest")
@@ -87,7 +87,7 @@ class EntityTesting(unittest.TestCase):
         with pytest.raises(ValueError):
             iron_chest.tile_position = (1.0, "raw-fish")
 
-    def test_modify_position_attribute(self):
+    def test_modify_position_attributes(self):
         iron_chest = Container("iron-chest")
 
         iron_chest.position.x += 1
@@ -96,6 +96,18 @@ class EntityTesting(unittest.TestCase):
         
         iron_chest.position.y += 1
         assert iron_chest.position == Vector(1.5, 1.5)
+        assert iron_chest.tile_position == Vector(1, 1)
+
+    def test_modify_tile_position_attributes(self):
+        iron_chest = Container("iron-chest")
+        
+        iron_chest.tile_position.x += 1
+        assert iron_chest.position == Vector(1.5, 0.5)
+        assert iron_chest.tile_position == Vector(1, 0)
+        
+        iron_chest.tile_position.y += 1
+        assert iron_chest.position == Vector(1.5, 1.5)
+        assert iron_chest.tile_position == Vector(1, 1)
 
     def test_change_name_in_blueprint(self):
         blueprint = Blueprint()
@@ -313,14 +325,14 @@ class EntityFactoryTesting(unittest.TestCase):
     def test_electric_energy_interface(self):
         assert isinstance(new_entity("electric-energy-interface"), ElectricEnergyInterface)
 
-    @unittest.skipIf(len(linked_containers) == 0, "No linked containers to test")
+    @pytest.mark.skipif(len(linked_containers) == 0, reason="No linked containers to test")
     def test_linked_container(self):
         assert isinstance(new_entity("linked-chest"), LinkedContainer)
 
     def test_heat_interface(self):
         assert isinstance(new_entity("heat-interface"), HeatInterface)
 
-    @unittest.skipIf(len(linked_belts) == 0, "No linked belts to test")
+    @pytest.mark.skipif(len(linked_belts) == 0, reason="No linked belts to test")
     def test_linked_belt(self):
         assert isinstance(new_entity("linked-belt"), LinkedBelt)
 

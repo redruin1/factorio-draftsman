@@ -53,7 +53,8 @@ class TileList(MutableSequence):
         # Check tile
         self.check_tile(tile)
 
-        tile = self._parent.on_tile_insert(tile, merge)
+        if self._parent:
+            tile = self._parent.on_tile_insert(tile, merge)
 
         if tile is None:  # Tile was merged
             return  # Don't add this tile to the list
@@ -74,7 +75,7 @@ class TileList(MutableSequence):
         """
         TODO
         """
-        new_tile_list = TileList()
+        new_tile_list = TileList(None)
 
         for tile in self.data:
             new_tile_list.append(tile)
@@ -87,7 +88,7 @@ class TileList(MutableSequence):
                     already_in = True
                     break
             if not already_in:
-                new_tile_list.append()
+                new_tile_list.append(other_tile)
 
         return new_tile_list
 
@@ -96,7 +97,7 @@ class TileList(MutableSequence):
         """
         TODO
         """
-        new_tile_list = TileList()
+        new_tile_list = TileList(None)
 
         for tile in self.data:
             in_both = False
@@ -114,7 +115,7 @@ class TileList(MutableSequence):
         """
         TODO
         """
-        new_tile_list = TileList()
+        new_tile_list = TileList(None)
 
         for tile in self.data:
             different = True
@@ -197,9 +198,9 @@ class TileList(MutableSequence):
         # type: (TileList) -> bool
         if not isinstance(other, TileList):
             return False
-
+        if len(self.data) != len(other.data):
+            return False
         for i in range(len(self.data)):
             if self.data[i] != other.data[i]:
                 return False
-
         return True

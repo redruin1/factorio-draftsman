@@ -895,7 +895,7 @@ class EntityCollection(object):
     # =========================================================================
 
     def add_train_at_position(self, config, position, direction, schedule=None):
-        # type: (Vector, TrainConfiguration, Direction, Schedule, bool) -> None
+        # type: (TrainConfiguration, Vector, Direction, Schedule) -> None
         """
         Adds a train with a specified configuration and schedule at a position
         facing a particular direction. Allows you to place a fully configured
@@ -928,6 +928,7 @@ class EntityCollection(object):
             current_pos += direction.to_vector(-7) # 7 = distance between wagons
 
         # TODO: schedule
+        
 
     def add_train_at_station(self, config, station, schedule=None):
         # type: (TrainConfiguration, Union[EntityLike, str, int], Schedule, bool) -> None
@@ -937,12 +938,12 @@ class EntityCollection(object):
 
         .. NOTE:
 
-            Currently can only place trains in a straight line; horizontally,
-            vertically, or diagonally. Does not obey curved rails.
+            Currently can only place trains in a straight line; horizontally or
+            vertically. Does not obey curved rails.
 
         .. see-also:
 
-            :py:meth:`add_train`
+            :py:meth:`add_train_at_position`
 
         :param config: The :py:class:`TrainConfiguration` to use as a template 
             for the created train.

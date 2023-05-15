@@ -157,9 +157,9 @@ Allows `draftsman-update` to run on Lua 5.2 instead of Lua 5.4 (which fixes some
 --------------------------------------------------------------------------------
 
 ## TODO
+* Add equality operators for all `Entity`s
 * Finish short descriptions of each example (should probably add more examples as well)
 * Add constraints on `UpgradePlanner` and `DeconstructionPlanner`
-* `Blueprint.schedules` convenience functions
 * Better type annotation for everything
 * More doctests
 * Add documentation on report and contributing

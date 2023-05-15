@@ -11,8 +11,10 @@ from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.entity_list import EntityList
 from draftsman.classes.group import Group
+from draftsman.classes.schedule import Schedule, WaitCondition
+from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.vector import Vector
-from draftsman.constants import Direction
+from draftsman.constants import Direction, WaitConditionType
 from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.tile import Tile
 from draftsman.error import (
@@ -435,28 +437,23 @@ class BlueprintTesting(unittest.TestCase):
         with pytest.raises(TypeError):
             blueprint.tiles = dict()
 
-    def test_set_schedules(self):  # TODO
+    # =========================================================================
+
+    def test_set_schedules(self):
+        # Regular list
         blueprint = Blueprint()
         blueprint.schedules = []
-        assert isinstance(blueprint.schedules, list)
+        assert isinstance(blueprint.schedules, ScheduleList)
 
         blueprint.entities.append("locomotive", id="test_train")
 
-        blueprint.schedules = [
-            {
-                "locomotives": [Association(blueprint.entities["test_train"])],
-                "schedule": [
-                    {
-                        "station": "station_name",
-                        "wait_conditions": [
-                            {"type": "inactivity", "compare_type": "or", "ticks": 600}
-                        ],
-                    }
-                ],
-            }
-        ]
-        assert blueprint.schedules[0]["locomotives"][0]() is blueprint.entities[0]
-        self.maxDiff = None
+        # ScheduleList
+        schedule = Schedule()
+        schedule.add_locomotive(blueprint.entities["test_train"])
+        schedule.append_stop("station_name", WaitCondition(WaitConditionType.INACTIVITY, ticks=600))
+        blueprint.schedules = ScheduleList([schedule])
+        assert isinstance(blueprint.schedules, ScheduleList)
+        assert blueprint.schedules[0].locomotives[0]() is blueprint.entities[0]
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "entities": [
@@ -486,14 +483,16 @@ class BlueprintTesting(unittest.TestCase):
             "version": encode_version(*__factorio_version_info__),
         }
 
+        # None
         blueprint.schedules = None
-        assert isinstance(blueprint.schedules, list)
-        assert blueprint.schedules == []
+        assert isinstance(blueprint.schedules, ScheduleList)
+        assert blueprint.schedules == ScheduleList()
+        assert len(blueprint.schedules) == 0
 
-        with pytest.raises(DataFormatError):
+        with pytest.raises(TypeError):
             blueprint.schedules = dict()
 
-        with pytest.raises(DataFormatError):
+        with pytest.raises(TypeError):
             blueprint.schedules = ["incorrect", "format"]
 
     # =========================================================================
@@ -1855,6 +1854,25 @@ class BlueprintTesting(unittest.TestCase):
         }
 
     # =========================================================================
+    # Trains
+    # =========================================================================
+
+    def test_add_train_at_position(self):
+        blueprint = Blueprint()
+
+    # =========================================================================
+
+    def test_add_train_at_station(self):
+        blueprint = Blueprint()
+
+    # =========================================================================
+    # Train Queries
+    # =========================================================================
+
+    def test_find_trains_filtered(self):
+        blueprint = Blueprint()
+
+    # =========================================================================
     # TileCollection
     # =========================================================================
 
@@ -1979,3 +1997,24 @@ class BlueprintTesting(unittest.TestCase):
         with pytest.raises(FlippingError):
             blueprint.entities.append("chemical-plant", tile_position=(4, 4))
             blueprint.flip()
+
+    # =========================================================================
+
+    def test_equals(self):
+        blueprint1 = Blueprint()
+
+        # Trivial case
+        assert blueprint1 == blueprint1
+
+        blueprint2 = Blueprint()
+
+        assert blueprint1 == blueprint2
+
+        blueprint2.label = "some label"
+
+        assert blueprint1 != blueprint2
+
+        # Non-blueprint
+        entity = Container("wooden-chest")
+
+        assert blueprint1 != entity

@@ -323,26 +323,29 @@ class Blueprintable(object):
     # Utility functions
     # =========================================================================
 
-    def formatted_label(self):
-        # type: () -> str
-        """
-        Returns a formatted string for the console that can be displayed with
-        the python module ``rich``.
-        """
-        if not self.label:
-            return self.label
+    # TODO
+    # def formatted_label(self):
+    #     # type: () -> str
+    #     """
+    #     Returns a formatted string for the console that can be displayed with
+    #     the python module ``rich``.
 
-        formatted_result = self.label
-        formatted_result = formatted_result.replace("[font=default-bold]", "[bold]")
-        formatted_result = formatted_result.replace("[/font]", "[/bold]")
 
-        formatted_result = re.sub(
-            r"\[color=(\w+)\](.*?)\[\/color\]", r"[\1]\2[/\1]", formatted_result
-        )
-        # formatted_result = re.sub(r"\[color=(\d+,\d+,\d+)\](.*?)\[\/color\]", r"\[/\]", formatted_result)
-        # re.sub("\\[[^\\]]+=([^\\]]+)\\]", "\\\\[\\1\\]", formatted_result)
+    #     """
+    #     if not self.label:
+    #         return self.label
 
-        return formatted_result
+    #     formatted_result = self.label
+    #     formatted_result = formatted_result.replace("[font=default-bold]", "[bold]")
+    #     formatted_result = formatted_result.replace("[/font]", "[/bold]")
+
+    #     formatted_result = re.sub(
+    #         r"\[color=(^\]+)\](.*?)\[\/color\]", r"[\1]\2[/\1]", formatted_result
+    #     )
+    #     # formatted_result = re.sub(r"\[color=(\d+,\d+,\d+)\](.*?)\[\/color\]", r"\[/\]", formatted_result)
+    #     # re.sub("\\[[^\\]]+=([^\\]]+)\\]", "\\\\[\\1\\]", formatted_result)
+
+    #     return formatted_result
 
     def version_tuple(self):
         # type: () -> tuple(int, int, int, int)
