@@ -36,11 +36,10 @@ def add_signal(name, type, order_string=None, subgroup=None):
     and adds the name to either :py:data:`item`, :py:data:`fluid`, or
     :py:data:`virtual` depending on ``type``.
 
-    Note that this is not intended to be used extensively; You're much better
-    off using `draftsman-update` with the mods you're working with which is much
-    easier and less prone to user error. However, if you want to be able to
-    write a single modded signal without actually resolving the mod in Draftsman,
-    then this is the function for you.
+    Note that this is not intended as a replacement for generating proper signal
+    data using ``draftsman-update``; instead it offers a fast mechanism for 
+    emulating a custom signal and being able to only specify it by it's string
+    shorthand, instead of it's full ``{"name": ..., "type": ...}`` format.
 
     :param name: The in-game string ID of the signal.
     :param type: The signal-dict type of the signal; should be one of ``"item"``,
@@ -69,9 +68,9 @@ def get_signal_type(signal_name):
     function conveniently gets the signal type from the signal's name.
 
     :param signal_name: The name of the signal.
-    :returns: ``"item"``, ``"fluid"``, or ``"virtual"``
+    :returns: One of ``"item"``, ``"fluid"``, or ``"virtual"``.
     :exception InvalidSignalError: If the signal name is not contained within
-        :py:mod:`draftsman.data.signals`.
+        :py:mod:`draftsman.data.signals`, and thus it's type cannot be deduced.
     """
     # if signal_name in signals.virtual:
     #     return "virtual"

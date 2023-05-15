@@ -100,3 +100,6 @@ class SpatialHashMapTesting(unittest.TestCase):
         assert results == [tile_to_add, another_tile_to_add, other_tile_to_add]
         results = map.get_in_area(utils.AABB(-100, -100, 100, 100), limit=1)
         assert results == [tile_to_add]
+
+    def test_handle_overlapping(self):
+        pass # TODO

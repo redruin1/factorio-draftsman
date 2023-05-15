@@ -14,11 +14,12 @@ from draftsman.error import MalformedBlueprintStringError
 
 from abc import ABCMeta, abstractmethod
 import base64
+from collections.abc import Callable
 import json
 import math
 from functools import wraps
 import six
-from typing import Any, Union
+from typing import Any, Union, ParamSpec, TypeVar
 import warnings
 import zlib
 
@@ -845,9 +846,10 @@ def flatten_entities(entities):
 #             raise ex
 #     return wrapper_ignore_exctb
 
+P = ParamSpec("P")
+R = TypeVar("R")
 
-def reissue_warnings(func):
-    # type: (Any) -> Any
+def reissue_warnings(func: Callable[P, R]) -> Callable[P, R]:
     """
     Function decorator that catches all warnings issued from a function and
     re-issues them to the calling function.
@@ -856,9 +858,8 @@ def reissue_warnings(func):
 
     :returns: The result of the function.
     """
-    # @ignore_traceback
     @wraps(func)
-    def inner(*args, **kwargs):
+    def inner(*args: P.args, **kwargs: P.kwargs) -> R:
         with warnings.catch_warnings(record=True) as warning_list:
             result = func(*args, **kwargs)
 

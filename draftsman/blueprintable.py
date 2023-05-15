@@ -19,8 +19,7 @@ from draftsman.classes.blueprint_book import BlueprintBook
 
 
 @utils.reissue_warnings
-def get_blueprintable_from_string(blueprintable_string):
-    # type: (str) -> Blueprintable
+def get_blueprintable_from_string(blueprintable_string: str) -> Blueprintable:
     """
     Returns a :py:class:`.Blueprint` or a :py:class:`.BlueprintBook` depending
     on the string passed in.

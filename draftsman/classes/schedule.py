@@ -5,7 +5,7 @@ from draftsman.prototypes.locomotive import Locomotive
 from draftsman.constants import Ticks, WaitConditionType, WaitConditionCompareType
 from draftsman.signatures import SIGNAL_ID_OR_NONE, COMPARATOR, SIGNAL_ID_OR_CONSTANT
 
-import json
+import copy
 from typing import Union
 
 # TODO: make dataclass?
@@ -18,7 +18,7 @@ class WaitCondition(object):
     operations.
 
     To make specifying :py:class:`WaitConditions` objects easier, they can be
-    created as a set of :py:class:`WaitCondition` objects combined with the 
+    created with a set of :py:class:`WaitCondition` objects combined with the 
     bitwise and (``&``) and or (``|``) operators:
 
     .. example: python
@@ -80,67 +80,100 @@ class WaitCondition(object):
 
     def __and__(self, other):
         # type: (Union[WaitCondition, WaitConditions]) -> WaitConditions
+        self_copy = copy.deepcopy(self)
+        other_copy = copy.deepcopy(other)
         if isinstance(other, WaitCondition):
-            other.compare_type = "and"
-            return WaitConditions([self, other])
+            other_copy.compare_type = "and"
+            return WaitConditions([self_copy, other_copy])
         elif isinstance(other, WaitConditions):
-            other._conditions[0].compare_type = "and"
-            return WaitConditions([self] + other._conditions)
+            other_copy._conditions[0].compare_type = "and"
+            return WaitConditions([self_copy] + other_copy._conditions)
         else:
-            raise ValueError("Can only perform this operation on 'WaitCondition' or 'WaitConditions' objects")
+            raise ValueError("Can only perform this operation on <WaitCondition> or <WaitConditions> objects")
     
     def __rand__(self, other):
-        # type: (Union[WaitCondition, WaitConditions]) -> WaitConditions
-        if isinstance(other, WaitCondition):
-            self.compare_type = "and"
-            return WaitConditions([other, self])
-        elif isinstance(other, WaitConditions):
-            self.compare_type = "and"
-            return WaitConditions(other._conditions + [self])
+        # type: (WaitConditions) -> WaitConditions
+        self_copy = copy.deepcopy(self)
+        other_copy = copy.deepcopy(other)
+        if isinstance(other, WaitConditions):
+            self_copy.compare_type = "and"
+            return WaitConditions(other_copy._conditions + [self_copy])
         else:
-            raise ValueError("Can only perform this operation on 'WaitCondition' or 'WaitConditions' objects")
+            raise ValueError("Can only perform this operation on <WaitCondition> or <WaitConditions> objects")
 
     def __or__(self, other):
         # type: (Union[WaitCondition, WaitConditions]) -> WaitConditions
+        self_copy = copy.deepcopy(self)
+        other_copy = copy.deepcopy(other)
         if isinstance(other, WaitCondition):
-            other.compare_type = "or"
-            return WaitConditions([self, other])
+            other_copy.compare_type = "or"
+            return WaitConditions([self_copy, other_copy])
         elif isinstance(other, WaitConditions):
-            other._conditions[0].compare_type = "or"
-            return WaitConditions([self] + other._conditions)
+            other_copy._conditions[0].compare_type = "or"
+            return WaitConditions([self_copy] + other_copy._conditions)
         else:
-            raise ValueError("Can only perform this operation on 'WaitCondition' or 'WaitConditions' objects")
+            raise ValueError("Can only perform this operation on <WaitCondition> or <WaitConditions> objects")
     
     def __ror__(self, other):
         # type: (Union[WaitCondition, WaitConditions]) -> WaitConditions
-        if isinstance(other, WaitCondition):
-            self.compare_type = "or"
-            return WaitConditions([other, self])
-        elif isinstance(other, WaitConditions):
-            self.compare_type = "or"
-            return WaitConditions(other._conditions + [self])
+        self_copy = copy.deepcopy(self)
+        other_copy = copy.deepcopy(other)
+        if isinstance(other, WaitConditions):
+            self_copy.compare_type = "or"
+            return WaitConditions(other_copy._conditions + [self_copy])
         else:
-            raise ValueError("Can only perform this operation on 'WaitCondition' or 'WaitConditions' objects")
+            raise ValueError("Can only perform this operation on <WaitCondition> or <WaitConditions> objects")
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, WaitCondition) and
+            self.type == other.type and
+            self.compare_type == other.compare_type and
+            self.ticks == other.ticks and
+            self.condition == other.condition
+        )
 
     def __repr__(self) -> str:
-        if self.type == WaitConditionType.TIME_PASSED:
-            optional = ", ticks='{}'".format(self.ticks)
+        if self.type in {WaitConditionType.TIME_PASSED, WaitConditionType.INACTIVITY}:
+            optional = ", ticks={}".format(self.ticks)
         elif self.type in {WaitConditionType.ITEM_COUNT, WaitConditionType.FLUID_COUNT, WaitConditionType.CIRCUIT_CONDITION}:
             optional = ", condition={}".format(self.condition)
         else:
             optional = ""
-        return "<WaitCondition>(type='{}', compare_type='{}'{})".format(self.type, self.compare_type, optional)
+        return "<WaitCondition>{{type='{}', compare_type='{}'{}}}".format(self.type, self.compare_type, optional)
 
 
 class WaitConditions(object):
     """
     A list of :py:class:`WaitCondition` objects.
+
+    TODO
     """
-    def __init__(self, conditions: list[WaitCondition]) -> None:
+    def __init__(self, conditions: list[WaitCondition] = []) -> None:
+        """
+        TODO
+        """
+        for i, condition in enumerate(conditions):
+            if not isinstance(condition, WaitCondition):
+                conditions[i] = WaitCondition(**condition)
+
         self._conditions: list[WaitCondition] = conditions
 
     def to_dict(self) -> list:
         return [condition.to_dict() for condition in self._conditions]
+
+    def __len__(self) -> int:
+        return len(self._conditions)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, WaitConditions):
+            return False
+        if len(self._conditions) != len(other._conditions):
+            return False
+        for i in range(len(self._conditions)):
+            if self._conditions[i] != other._conditions[i]:
+                return False
+        return True
 
     def __repr__(self) -> str:
         return "<WaitConditions>{}".format(repr(self._conditions))
@@ -153,9 +186,23 @@ class Schedule(object):
     the order of stops and their conditions.
     """
 
-    def __init__(self):
+    def __init__(self, locomotives=[], schedule=[]):
+        """
+        TODO
+        """
         self._locomotives: list[Association] = []
+        for locomotive in locomotives:
+            self._locomotives.append(locomotive)
         self._stops: list[dict] = []
+        for stop in schedule:
+            if not isinstance(stop["wait_conditions"], WaitConditions):
+                self._stops.append({
+                    "station": stop["station"],
+                    "wait_conditions": WaitConditions(stop["wait_conditions"])
+                })
+            else:
+                self._stops.append(stop)
+        
 
     # =========================================================================
 
@@ -210,8 +257,9 @@ class Schedule(object):
         if not isinstance(locomotive, Locomotive):
             raise TypeError("'locomotive' must be an instance of <Locomotive>")
 
-        if locomotive not in self._locomotives:
-            self._locomotives.append(Association(locomotive))
+        loco_association = Association(locomotive)
+        if loco_association not in self._locomotives:
+            self._locomotives.append(loco_association)
 
     def remove_locomotive(self, locomotive):
         # type: (Locomotive) -> None
@@ -247,15 +295,10 @@ class Schedule(object):
         :param name: The name of the station to add.
         :param wait_conditions: Either a :py:class:`WaitCondition` or a 
             :py:class:`WaitConditions` object of the station to add.
-        
-        :raises IndexError: If ``index`` is outside the valid range of this 
-            schedule's stops.
         """
         if wait_conditions is None:
             wait_conditions = WaitConditions([])
-        if isinstance(wait_conditions, list):
-            wait_conditions = WaitConditions(wait_conditions)
-        if isinstance(wait_conditions, WaitCondition):
+        elif isinstance(wait_conditions, WaitCondition):
             wait_conditions = WaitConditions([wait_conditions])
         
         self._stops.insert(index, {"station": name, "wait_conditions": wait_conditions})
@@ -274,14 +317,21 @@ class Schedule(object):
         :raises ValueError: If unable to find any stop matching the specified 
             criteria in this :py:class:`Schedule`.
         """
+        if isinstance(wait_conditions, WaitCondition):
+            wait_conditions = WaitConditions([wait_conditions])
+
         if wait_conditions is None:
             for i, stop in enumerate(self._stops):
-                if stop["name"] == name:
+                if stop["station"] == name:
                     self._stops.pop(i)
                     return
             raise ValueError("No station with name '{}' found in schedule".format(name))
         else:
-            self._stops.remove({"station": name, "wait_conditions": wait_conditions})
+            for i, stop in enumerate(self._stops):
+                if stop["station"] == name and stop["wait_conditions"] == wait_conditions:
+                    self._stops.pop(i)
+                    return
+            raise ValueError("No station with name '{}' and conditions '{}' found in schedule".format(name, wait_conditions))
 
     def to_dict(self):
         # type: () -> dict
@@ -308,5 +358,12 @@ class Schedule(object):
             "schedule": stop_list
         }
     
-    # def __repr__(self) -> str:
-    #     pass # TODO
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, Schedule) and
+            self.locomotives == other.locomotives and
+            self.stops == other.stops
+        )
+    
+    def __repr__(self) -> str:
+        return "<Schedule>{}".format(self.to_dict())

@@ -1,7 +1,6 @@
 # Changelog
 * Updated `factorio-data` to version `TODO` (latest stable)
 * Updated `compatibility/defines.lua` to `TODO` (latest stable)
-* Added the ability to modify `x` and `y` attributes of both `position` and `tile_position` and have each update in tandem
 * Added `extras` module which implements some handy new features:
     * Added `flip_belts(blueprint)` which flips all belt entities inside the blueprint (preserving continuity)
 * Added a bunch of equivalent functions from Factorio StdLib:
@@ -9,7 +8,6 @@
     * Added `Orientation` class, similar to `Direction`; comes with it's own suite of `__add__()`, `to_direction()`, and `to_vector()` helpers
     * Added `constants.Ticks` enumeration which contains `SECONDS`, `MINUTES`, `HOURS`, etc. stored as quantities of Factorio ticks
 * Added `union`, `intersection`, and `difference` to `EntityList`, `TileList`, and `ScheduleList`
-* Added `__eq__` operators to many draftsman things (`Entity`, `EntityList`, `TileList`, `ScheduleList`, etc.)
 * Added `TrainConfiguration`, which allows you to specify entire trains with strings like `"1-4-1"` and customize them on a per-car basis
 * Added `WaitCondition` and `WaitConditions` objects which keep track of train station condition trees
     * `WaitConditions` can be combined using bitwise `and` and `or` in order to collect them into a `WaitConditions` object:
@@ -17,6 +15,11 @@
 * Added `Collection.add_train_at_position()` and `Collection.add_train_at_station()` to make placing trains easier
 * Added `Collection.find_trains_filtered()` to allow users to search Blueprints/Groups for trains of particular types
 * Added data functions `signals.add_signal()`, `tiles.add_tile()`, `entities.add_entity()`, etc. which allow you to add entities on the fly (primarily for Factorio environment compatibility)
+* Fixed a bunch of warts in the API:
+    * Added the ability to modify `x` and `y` attributes of both `position` and `tile_position` and have each other update in tandem
+    * Made it possible to rotate objects in parent `Collections` as long as they're either square or rotated such that they preserve their original footprint (akin to Factorio)
+    * Added `__eq__` operators to pretty much all draftsman things (`Entity`, `EntityList`, `TileList`, `ScheduleList`, `Schedule`, `WaitConditions`, etc.)
+    * Added more professional `__repr__` functions to pretty much all draftsman things as well
 * Added `RequestItemsMixin` to `Locomotive`, `CargoWagon`, and `ArtilleryWagon`
 * Added `unknown` keyword to all entity/tile creation constructs which allows the user to specify what should happen when draftsman encounters an entity it doesn't recognize
 * Added a bunch of new documentation to document the above

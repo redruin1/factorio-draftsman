@@ -91,6 +91,10 @@ class UpgradePlannerTesting(unittest.TestCase):
         # with self.assertRaises(MalformedBlueprintStringError):
         #     UpgradePlanner("0lmaothisiswrong")
 
+    def test_upgrade_planner(self):
+        upgrade_planner = UpgradePlanner()
+        assert upgrade_planner.mapper_count == 24
+
     def test_set_mappers(self):
         upgrade_planner = UpgradePlanner()
 

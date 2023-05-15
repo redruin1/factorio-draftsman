@@ -4,6 +4,7 @@ from __future__ import absolute_import, unicode_literals
 
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.tile import Tile
+from draftsman.classes.tile_list import TileList
 from draftsman.error import UnreasonablySizedBlueprintError
 from draftsman.warning import OverlappingObjectsWarning
 
@@ -60,6 +61,72 @@ class TileListTesting(unittest.TestCase):
             "position": {"x": 1, "y": 1},
         }
 
+    def test_union(self):
+        blueprint1 = Blueprint()
+        blueprint1.tiles.append("landfill")
+        
+        blueprint2 = Blueprint()
+        blueprint2.tiles.append("landfill")
+        blueprint2.tiles.append("concrete", position=(1, 0))
+
+        union = Blueprint()
+        union.tiles = blueprint1.tiles | blueprint2.tiles
+
+        assert isinstance(union.tiles, TileList)
+        assert union.tiles._parent is union
+        assert len(union.tiles) == 2
+        assert union.tiles.data == [
+            Tile("landfill"),
+            Tile("concrete", position=(1, 0))
+        ]
+        assert union.tiles[0].parent is union
+        assert union.tiles[1].parent is union
+
+    def test_intersection(self):
+        blueprint1 = Blueprint()
+        blueprint1.tiles.append("landfill")
+        
+        blueprint2 = Blueprint()
+        blueprint2.tiles.append("landfill")
+        blueprint2.tiles.append("concrete", position=(1, 0))
+
+        intersection = Blueprint()
+        intersection.tiles = blueprint1.tiles & blueprint2.tiles
+
+        assert isinstance(intersection.tiles, TileList)
+        assert intersection.tiles._parent is intersection
+        assert len(intersection.tiles) == 1
+        assert intersection.tiles.data == [
+            Tile("landfill"),
+        ]
+        assert intersection.tiles[0].parent is intersection
+
+        # Intersection with no commonalities
+        blueprint3 = Blueprint()
+        blueprint3.tiles.append("concrete", position=(1, 1))
+
+        intersection.tiles = blueprint1.tiles & blueprint3.tiles
+        assert len(intersection.tiles) == 0
+
+    def test_difference(self):
+        blueprint1 = Blueprint()
+        blueprint1.tiles.append("landfill")
+        
+        blueprint2 = Blueprint()
+        blueprint2.tiles.append("landfill")
+        blueprint2.tiles.append("concrete", position=(1, 0))
+
+        difference = Blueprint()
+        difference.tiles = blueprint2.tiles - blueprint1.tiles
+
+        assert isinstance(difference.tiles, TileList)
+        assert difference.tiles._parent is difference
+        assert len(difference.tiles) == 1
+        assert difference.tiles.data == [
+            Tile("concrete", position=(1, 0))
+        ]
+        assert difference.tiles[0].parent is difference
+
     def test_getitem(self):
         pass
 
@@ -89,3 +156,22 @@ class TileListTesting(unittest.TestCase):
         del blueprint.tiles[:]
 
         assert blueprint.tiles.data == []
+
+    def test_equals(self):
+        blueprint = Blueprint()
+        
+        # Different types
+        assert blueprint.tiles != TypeError
+
+        # Different lengths
+        other_blueprint = Blueprint()
+        other_blueprint.tiles.append("landfill")
+        assert blueprint.tiles != other_blueprint.tiles
+
+        # Different components
+        blueprint.tiles.append("concrete")
+        assert blueprint.tiles != other_blueprint.tiles
+
+        # True equality
+        blueprint.tiles[0] = Tile("landfill")
+        assert blueprint.tiles == other_blueprint.tiles

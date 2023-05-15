@@ -90,6 +90,7 @@ from draftsman.classes.entity_list import EntityList
 from draftsman.classes.tile_list import TileList
 from draftsman.classes.transformable import Transformable
 from draftsman.classes.collection import EntityCollection, TileCollection
+from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.classes.vector import Vector
@@ -197,7 +198,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
         # Data lists
         if "entities" in kwargs:
-            self._root["entities"] = EntityList(self, kwargs.pop("entities"), unknown)
+            self._root["entities"] = EntityList(self, kwargs.pop("entities"), unknown=unknown)
         else:
             self._root["entities"] = EntityList(self)
 
@@ -207,9 +208,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             self._root["tiles"] = TileList(self)
 
         if "schedules" in kwargs:
-            self._root["schedules"] = kwargs.pop("schedules")
+            self._root["schedules"] = ScheduleList(kwargs.pop("schedules"))
         else:
-            self._root["schedules"] = []
+            self._root["schedules"] = ScheduleList()
 
         # Issue warnings for any keyword not recognized by Blueprint
         for unused_arg in kwargs:
@@ -244,8 +245,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
         # Change all locomotive numbers to use Associations
         for schedule in self.schedules:
-            for i, locomotive in enumerate(schedule["locomotives"]):
-                schedule["locomotives"][i] = Association(self.entities[locomotive - 1])
+            for i, locomotive in enumerate(schedule.locomotives):
+                schedule.locomotives[i] = Association(self.entities[locomotive - 1])
 
     # =========================================================================
     # Blueprint properties
@@ -575,7 +576,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         elif isinstance(value, list):
             self._root["tiles"] = TileList(self, value)
         elif isinstance(value, TileList):
-            self._root["tiles"] = copy.deepcopy(value)
+            self._root["tiles"] = TileList(self, value.data)
         else:
             raise TypeError("'tiles' must be a TileList, list, or None")
 
@@ -658,28 +659,21 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     @property
     def schedules(self):
-        # type: () -> list
+        # type: () -> ScheduleList
         """
         A list of the Blueprint's train schedules.
-
-        .. NOTE::
-
-            Currently there is no framework around creating schedules by script;
-            It can still be done by manipulating the contents of this list, but
-            an easier way to manipulate trains and their schedules is still
-            under development.
 
         .. seealso::
 
             `<https://wiki.factorio.com/Blueprint_string_format#Schedule_object>`_
 
         :getter: Gets the schedules of the Blueprint.
-        :setter: Sets the schedules of the Blueprint. Defaults to ``[]`` if set
-            to ``None``.
-        :type: ``list[SCHEDULE]``
+        :setter: Sets the schedules of the Blueprint. Defaults to an empty
+            :py:class:`.ScheduleList` if set to ``None``.
+        :type: ``list[Schedule]``
 
-        :exception DataFormatError: If set to anything other than a ``list`` of
-            :py:data:`.SCHEDULE`.
+        :exception ValueError: If set to anything other than a ``list`` of
+            :py:class:`.Schedule` or .
         """
         return self._root["schedules"]
 
@@ -687,12 +681,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     def schedules(self, value):
         # type: (list) -> None
         if value is None:
-            self._root["schedules"] = []
-            return
-        try:
-            self._root["schedules"] = signatures.SCHEDULES.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+            self._root["schedules"] = ScheduleList()
+        elif isinstance(value, ScheduleList):
+            self._root["schedules"] = value
+        else:
+            self._root["schedules"] = ScheduleList(value)
 
     # =========================================================================
 
@@ -799,7 +792,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         out_dict = {
             x: self._root[x] for x in self._root if x not in {"entities", "tiles", "schedules"}
         }
-        out_dict["schedules"] = copy.deepcopy(self._root["schedules"])
+        # out_dict["schedules"] = copy.deepcopy(self._root["schedules"])
 
         if "snap-to-grid" in out_dict:
             out_dict["snap-to-grid"] = out_dict["snap-to-grid"].to_dict()
@@ -811,16 +804,17 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         # We also need to process any schedules that any subgroup might have, so
         # we recursively traverse the nested entitylike tree and append each
         # schedule to the output list
-        def recurse_schedules(entitylike_list):
-            for entitylike in entitylike_list:
-                if hasattr(entitylike, "schedules"):  # if a group
-                    # Add the schedules of this group
-                    out_dict["schedules"] += copy.deepcopy(entitylike.schedules)
-                    # Check through this groups entities to see if they have
-                    # schedules:
-                    recurse_schedules(entitylike.entities)
+        # TODO: re-add the following
+        # def recurse_schedules(entitylike_list):
+        #     for entitylike in entitylike_list:
+        #         if hasattr(entitylike, "schedules"):  # if a group
+        #             # Add the schedules of this group
+        #             out_dict["schedules"] += copy.deepcopy(entitylike.schedules)
+        #             # Check through this groups entities to see if they have
+        #             # schedules:
+        #             recurse_schedules(entitylike.entities)
 
-        recurse_schedules(self._root["entities"])
+        # recurse_schedules(self._root["entities"])
 
         # This associates each entity with a numeric index, which we use later
         flattened_list = utils.flatten_entities(self._root["entities"])
@@ -848,13 +842,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             out_dict["tiles"].append(copy.deepcopy(tile.to_dict()))
 
         # Convert all schedules into dicts
-        for i, schedule in enumerate(out_dict["schedules"]):
-            print(schedule)
-            print(schedule.stops)
-            # out_dict["schedule"].append(copy.deepcopy(schedule.to_dict()))
-            out_dict["schedules"][i] = schedule.to_dict()
-
-        print(out_dict["schedules"])
+        out_dict["schedules"] = []
+        for i, schedule in enumerate(self._root["schedules"]):
+            out_dict["schedules"].append(copy.deepcopy(schedule.to_dict()))
+            # out_dict["schedules"][i] = schedule.to_dict()
 
         # Offset coordinate objects by snapping grid
         if self.snapping_grid_position is not None:

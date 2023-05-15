@@ -1,4 +1,5 @@
 # python coverage configuration file
 [run]
+omit = draftsman/env.py
 branch = True
 command_line = -m pytest test -vv

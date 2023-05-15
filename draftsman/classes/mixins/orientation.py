@@ -79,7 +79,7 @@ class OrientationMixin(object):
         if value is None:
             self._orientation = value
             self._collision_set.shapes[0].angle = 0
-        elif isinstance(value, float):
+        elif isinstance(value, (float, int)):
             self._orientation = Orientation(value % 1.0)
             self._collision_set.shapes[0].angle = (value % 1.0) * 360.0
             # TODO: what if orientation changes when inside a EntityCollection?

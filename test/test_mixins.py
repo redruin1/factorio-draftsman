@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 
+from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.vector import Vector
 from draftsman.constants import *
 from draftsman.entity import *
@@ -265,6 +266,11 @@ class DirectionalMixinTesting(unittest.TestCase):
         # Errors
         with pytest.raises(ValueError):
             storage_tank.direction = "1000"
+
+        blueprint = Blueprint()
+        blueprint.entities.append("flamethrower-turret")
+        with pytest.raises(DraftsmanError, match="Cannot set this direction of non-square entity while it's in another object; might intersect neighbours"):
+            blueprint.entities[0].direction = Direction.EAST
 
     def test_set_position(self):
         storage_tank = StorageTank()

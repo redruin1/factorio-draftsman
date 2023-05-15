@@ -8,6 +8,7 @@ from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_list import EntityList
 from draftsman.classes.collection import EntityCollection
 from draftsman.classes.entity_like import EntityLike
+from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.classes.transformable import Transformable
@@ -171,9 +172,9 @@ class Group(Transformable, EntityCollection, EntityLike):
                     neighbours[i] = Association(self.entities[neighbour - 1])
 
         # Change all locomotive numbers to use Associations
-        for schedule in self.schedules:
-            for i, locomotive in enumerate(schedule["locomotives"]):
-                schedule["locomotives"][i] = Association(self.entities[locomotive - 1])
+        for schedule in self._schedules:
+            for i, locomotive in enumerate(schedule.locomotives):
+                schedule.locomotives[i] = Association(self.entities[locomotive - 1])
 
     @reissue_warnings
     def setup(self, **kwargs):
@@ -189,9 +190,9 @@ class Group(Transformable, EntityCollection, EntityLike):
             self._entities = EntityList(self)
 
         if "schedules" in kwargs:
-            self._schedules = kwargs.pop("schedules")
+            self._schedules = ScheduleList(kwargs.pop("schedules")) # type: ScheduleList
         else:
-            self._schedules = []
+            self._schedules = ScheduleList() # type: ScheduleList
 
     # =========================================================================
 
@@ -605,18 +606,15 @@ class Group(Transformable, EntityCollection, EntityLike):
         """
         return self._schedules
 
-    # @deal.has()
-    # @deal.raises(DataFormatError)
     @schedules.setter
     def schedules(self, value):
         # type: (list) -> None
         if value is None:
-            self._schedules = []
-            return
-        try:
-            self._schedules = signatures.SCHEDULES.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+            self._schedules = ScheduleList()
+        elif isinstance(value, ScheduleList):
+            self._schedules = value
+        else:
+            self._schedules = ScheduleList(value)
 
     # =========================================================================
 
@@ -729,9 +727,9 @@ class Group(Transformable, EntityCollection, EntityLike):
         # Iterate over each locomotive in each schedule
         # (which still point to the old locomotives in each list)
         for i, schedule in enumerate(self.schedules):
-            for j, locomotive in enumerate(schedule["locomotives"]):
+            for j, locomotive in enumerate(schedule.locomotives):
                 # Replace the old one with the copied one
-                result.schedules[i]["locomotives"][j] = Association(
+                result.schedules[i].locomotives[j] = Association(
                     memo[id(locomotive())]
                 )
 
