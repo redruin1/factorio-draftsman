@@ -53,12 +53,6 @@ def get_recipe_ingredients(recipe_name):
 
     """
     if "ingredients" in raw[recipe_name]:
-        try:
-            return {x[0] for x in raw[recipe_name]["ingredients"]}
-        except KeyError:
-            return {x["name"] for x in raw[recipe_name]["ingredients"]}
+        return {x[0] if isinstance(x, list) else x["name"] for x in raw[recipe_name]["ingredients"]}
     else:  # "normal" in recipes.raw[recipe_name]:
-        try:
-            return {x[0] for x in raw[recipe_name]["normal"]["ingredients"]}
-        except KeyError:
-            return {x["name"] for x in raw[recipe_name]["normal"]["ingredients"]}
+        return {x[0] if isinstance(x, list) else x["name"] for x in raw[recipe_name]["normal"]["ingredients"]}
