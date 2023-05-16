@@ -43,8 +43,6 @@ import re
 import struct
 import zipfile
 
-# print(f"Using {lupa.LuaRuntime().lua_implementation} (compiled with {lupa.LUA_VERSION})")
-
 
 mod_archive_pattern = "(([\\w\\D]+)_([\\d\\.]+))\\.zip"
 mod_archive_regex = re.compile(mod_archive_pattern)
@@ -229,6 +227,8 @@ def python_require(mod_list, current_mod, module_name, package_path):
     # relay this information back to the Lua require function
     if not mod.archive:
         return None, "Current mod ({}) is not an archive".format(mod.name)
+
+    print(mod.files) # FIXME
 
     # We emulate lua filepath searching
     filepaths = package_path.split(";")
@@ -1791,7 +1791,7 @@ def main():
     """
     ``draftsman-update`` console script entry point. Runs ``update()`` with
     command line arguments passed through. Type ``draftsman-update -h`` for a
-    list of commands for ``draftsman-update``.
+    list of commands.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -1819,8 +1819,24 @@ def main():
         action="store_true",
         help="Only load the 'base' mod and ignore all others; simulates no mods",
     )
-    args = parser.parse_args()
-    update(
-        verbose=args.verbose, path=args.path, show_logs=args.log, no_mods=args.no_mods
+    parser.add_argument(
+        "--lua-version",
+        action="store_true",
+        help="Prints the version of Lua used when loading and exits"
     )
-    print("hella slick; nothing broke!")
+    args = parser.parse_args()
+    if args.lua_version:
+        print(
+            "Using {} (compiled with {})".format(
+                lupa.LuaRuntime().lua_implementation, 
+                lupa.LUA_VERSION
+            )
+        )
+    else:
+        update(
+            verbose=args.verbose, 
+            path=args.path, 
+            show_logs=args.log, 
+            no_mods=args.no_mods
+        )
+        print("hella slick; nothing broke!")

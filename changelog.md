@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4
+* Updated `factorio-data` to version `1.1.80`
+* Updated `compatibility/defines.lua` to `1.1.80`
+* Merged louga31's pull request:
+    * Fix recipes so that they correctly read either internal format
 * Fixed an issue where not all entities were being assigned to `entities.flippable` (#61)
 
 ## 1.0.3

@@ -137,7 +137,7 @@ function require(module_name)
     --print("\trequiring:", module_name)
     local absolute
     module_name, absolute = normalize_module_name(module_name)
-    --print("Normalized module name:", module_name, absolute)
+    print("Normalized module name:", module_name, absolute)
     --required_in_session[module_name] = true
     CURRENT_FILE = module_name
 

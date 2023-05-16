@@ -16,5 +16,5 @@ class EntitiesDataTesting(unittest.TestCase):
         for entity_name in entities.raw:
             try:
                 entities.flippable[entity_name]
-            except KeyError:
+            except KeyError: # pragma: no coverage
                 self.fail("'{}' had no entry in entities.flippable".format(entity_name))

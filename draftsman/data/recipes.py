@@ -21,8 +21,8 @@ with pkg_resources.open_binary(data, "recipes.pkl") as inp:
     for_machine = _data[2]
 
 
-def get_recipe_ingredients(recipe_name):
-    # type: (str) -> set[str]
+def get_recipe_ingredients(recipe_name, expensive=False):
+    # type: (str, bool) -> set[str]
     """
     Returns a ``set`` of all item types that ``recipe_name`` requires. Discards
     quantities.
@@ -39,6 +39,8 @@ def get_recipe_ingredients(recipe_name):
         mode the world save is in?
 
     :param recipe_name: The name of the recipe to get the ingredients of.
+    :param expensive: Whether or not to return the expensive recipe if available.
+        If not, defaults to the normal recipe requirements.
 
     :returns: A ``set`` of names of each Factorio item that the recipe requires.
 
@@ -54,5 +56,6 @@ def get_recipe_ingredients(recipe_name):
     """
     if "ingredients" in raw[recipe_name]:
         return {x[0] if isinstance(x, list) else x["name"] for x in raw[recipe_name]["ingredients"]}
-    else:  # "normal" in recipes.raw[recipe_name]:
-        return {x[0] if isinstance(x, list) else x["name"] for x in raw[recipe_name]["normal"]["ingredients"]}
+    else:  # recipe has two costs, "normal" and "expensive"
+        cost_type = "expensive" if expensive else "normal"
+        return {x[0] if isinstance(x, list) else x["name"] for x in raw[recipe_name][cost_type]["ingredients"]}
