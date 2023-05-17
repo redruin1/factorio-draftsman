@@ -7,12 +7,12 @@
 ---@diagnostic disable:undefined-global
 
 -- Meta globals: these are used to keep track of ourselves during the load
--- process
-MOD_LIST = nil
-MOD = nil
-MOD_DIR = nil
-CURRENT_FILE = nil
-CURRENT_DIR = ""
+-- process (since we have to do this manually due to reasons)
+MOD_LIST = nil      -- Total list of all mods; populated by Python
+MOD_TREE = {}       -- Stack of mods keeping track of where to require files
+MOD_DIR = nil       -- Path to the current mod (at the top of the mod tree)
+CURRENT_FILE = nil  -- String filepath to the file we're currently executing
+CURRENT_DIR = ""    -- Location of the filepath in some relative directory
 
 -- Menu simulations: can be empty, but cannot be nil; not included in factorio-
 -- data, so we supply dummy values
@@ -41,7 +41,8 @@ menu_simulations.brutal_defeat = {}
 menu_simulations.spider_ponds = {}
 
 -- math.pow deprecated in Lua > 5.3; Factorio uses 5.2. Simple to fix:
--- TODO: should be removed once we switch to lupa 2.0
+-- (Deprecated, but retained to help bridge compatibility if the user cant get a 
+-- copy of 5.2)
 math.pow = math.pow or function(value, power)
     return value ^ power
 end
@@ -56,6 +57,7 @@ end
 -- automatially displayed regardless of logging status.
 -- Note that no log file is actually generated, and outputs are lost if not run
 -- with parameter -l or --log
+-- TODO: make this actually useful
 function log(...)
     if LOG_ENABLED then
         print(...)
@@ -72,14 +74,12 @@ function table_size(t)
     return count
 end
 
--- keep track of all mods required in a particular session (do we need this?)
---required_in_session = {}
---paths_in_session = {}
-
 -- Standardizes the lua require paths to standardized paths. Removes ".lua" from
 -- the end, replaces all "." with "/", and changes "__modname__..." to
 -- "./factorio-mods/modname/...". Does the same with "__base__" and "__core__",
--- except they point to "factorio-data" instead of "factorio-mods".
+-- except they point to "factorio-data" instead of "factorio-mods". Also handles
+-- a number of other miscellaneous cases in order to get the paths as normal as
+-- possible.
 -- Also returns a boolean `absolute`, which indicates if the filepath is 
 -- considered absolute (from the root mods directory) or local (relative to
 -- CURRENT_FILE)
@@ -97,11 +97,16 @@ local function normalize_module_name(modname)
     end
     -- We do this because some slash paths can have dots in their folder names
     -- that should not be converted to path delimeters (Krastorio2)
+    
+    -- Some people like to specify their paths with a prepending dot to indicate
+    -- the current folder like 'require(".config")' (FreightForwarding)
+    -- In order to fix this, we check if the path starts with a slash, and then
+    -- remove it if it does
+    modname = modname:gsub("^/", "")
 
     -- Handle __mod-name__ format (alphanumeric + '-' + '_')
     local match, name = modname:match("(__([%w%-_]+)__)")
     --print(modname, match)
-
     local absolute = true
     if name == "core" or name == "base" then
         modname = string.gsub(modname, match, "./factorio-data/"..name)
@@ -110,14 +115,15 @@ local function normalize_module_name(modname)
         -- We need to do this because some people like to name their files
         -- "__init__.lua" or similar (FactorioExtended-Plus-Logistics)
         if mods[name] then
-            print(name)
+            --print(name)
             -- Change '-' to '%-' so the following gsub doesn't treat them
             -- as special characters
             local correct_match = string.gsub(match, "%-", "%%-")
             -- replace
             modname = string.gsub(modname, correct_match, "./factorio-mods/"..name)
         else
-            -- Don't change modname and use relative paths
+            -- Can't determine what modl; use relative paths instead
+            -- TODO: this should probably error with a better message
             absolute = false
         end
     else
@@ -137,8 +143,7 @@ function require(module_name)
     --print("\trequiring:", module_name)
     local absolute
     module_name, absolute = normalize_module_name(module_name)
-    print("Normalized module name:", module_name, absolute)
-    --required_in_session[module_name] = true
+    --print("Normalized module name:", module_name, absolute)
     CURRENT_FILE = module_name
 
     --print(package.path)
@@ -159,7 +164,6 @@ function require(module_name)
 
     PARENT_DIR = get_parent(module_name)
     --print("PARENT_DIR:", PARENT_DIR)
-    --print(paths_in_session[PARENT_DIR])
     local added = false
     if PARENT_DIR then
         local with_path = PARENT_DIR .. "/?.lua"
@@ -168,7 +172,6 @@ function require(module_name)
         --print("\tWITH_PATH: " .. with_path)
         lua_add_path(with_path)
         --print("added path:", with_path)
-        --paths_in_session[PARENT_DIR] = true
         added = true
     else -- God this whole thing is scuffed
         if not absolute then with_path = MOD_DIR .. CURRENT_DIR .. "/?.lua" end
@@ -176,10 +179,24 @@ function require(module_name)
         added = true
     end
 
+    -- Also check to see if mod context has changed
+    local mod_changed = false
+    local match = string.match(module_name, "%./factorio%-mods/([%a-_]+)/.+")
+    if absolute and match then
+        --print("pushing mod ", match)
+        lua_push_mod(MOD_LIST[match])
+        mod_changed = true
+    end
+
     result = old_require(module_name)
 
     if added then
         lua_remove_path()
+    end
+
+    if mod_changed then
+        --print("popping mod")
+        lua_pop_mod()
     end
 
     return result
@@ -194,11 +211,11 @@ local menu_simulations_searcher = function(module_name)
     end
 end
 
-
+-- Wrapper function for `python_require` on the env.py side of things. Attempts
+-- to read from the python zipfile archives first and continues with regular
+-- lua file loading afterwards.
 local archive_searcher = function(module_name)
-    --print("Attempting to find " .. module_name .. " in python:")
-
-    local contents, err = python_require(MOD_LIST, MOD, module_name, package.path)
+    local contents, err = python_require(MOD_TREE[#MOD_TREE], module_name, package.path)
     if contents then
         filepath = err
         CURRENT_DIR = filepath -- hacky patch
@@ -212,7 +229,7 @@ end
 table.insert(package.searchers, 1, menu_simulations_searcher)
 -- Then, zip archives are prioritized more than file folders
 table.insert(package.searchers, 2, archive_searcher)
--- Then the regular `reqiure` load process is followed, preloaded, files, etc.
+-- Then the regular `require` load process is followed, preloaded, files, etc.
 
 -- =================
 -- Interface Helpers
@@ -229,7 +246,7 @@ function lua_remove_path()
     package.path = package.path:sub(pos)
 end
 
--- (Re)set the package path
+-- (Re)set the package path to some known value
 function lua_set_path(path)
     package.path = path
 end
@@ -245,4 +262,20 @@ function lua_unload_cache()
     for k, _ in pairs(package.loaded) do
         package.loaded[k] = nil
     end
+end
+
+-- Push a mod to the stack of mods that the current require chain is using
+function lua_push_mod(mod)
+    table.insert(MOD_TREE, mod)
+end
+
+-- Pop a mod off the stack of mods that the current require chain is using
+function lua_pop_mod()
+    table.remove(MOD_TREE)
+end
+
+-- Wipe all mods from the mod tree to return it to a known state 
+-- (on stage change)
+function lua_wipe_mods()
+    MOD_TREE = {}
 end

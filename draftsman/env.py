@@ -198,7 +198,8 @@ def get_mod_settings(location):
     return mod_settings
 
 
-def python_require(mod_list, current_mod, module_name, package_path):
+def python_require(mod, module_name, package_path):
+    # type: (Mod, str, str) -> str
     """
     Function called from Lua that checks for a file in a ``zipfile`` archive,
     and returns the contents of the file if found.
@@ -208,27 +209,12 @@ def python_require(mod_list, current_mod, module_name, package_path):
     `normalize_module_name`, and expects the name to be it's result.
     """
 
-    # Determine the mod we need. Factorio mods can load files from other mods,
-    # so we check this value against a set of regex to extract the mod name from
-    # the beginning of the normalized module name
-    try:
-        mod_name = lua_module_regex.match(module_name)[1]
-    except TypeError:
-        mod_name = None
-
-    # If the name is found, then we change "contexts" to that mod; otherwise,
-    # the current context is assumed to be be the current mod archive
-    if mod_name:
-        mod = mod_list[mod_name]
-    else:
-        mod = current_mod
-
     # No sense searching the archive if the mod is not one to begin with; we
     # relay this information back to the Lua require function
     if not mod.archive:
         return None, "Current mod ({}) is not an archive".format(mod.name)
 
-    print(mod.files) # FIXME
+    # print(mod.files)
 
     # We emulate lua filepath searching
     filepaths = package_path.split(";")
@@ -257,8 +243,9 @@ def load_stage(lua, mod_list, mod, stage):
     """
     # Set meta stuff
     lua.globals().MOD_LIST = mod_list
-    lua.globals().MOD = mod
+    # lua.globals().MOD = mod
     lua.globals().MOD_DIR = mod.location
+    lua.globals().lua_push_mod(mod)
     lua.globals().CURRENT_FILE = os.path.join(mod.location, stage)
 
     # Add the base mod folder as a base path (in addition to base and core)
@@ -1671,6 +1658,11 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
     # To counteract this, we completly unload all files with this function,
     # which is called at the end of every load stage.
     lua_unload_cache = lua.globals()["lua_unload_cache"]
+    # In order to properly search archives, we need to keep track of which file
+    # and mod we're currently in. Due to a number of reasons, this needs to be
+    # done manually; this function empties the stack of mods that we've
+    # traversed through in preparation for loading the next mod's stage.
+    lua_wipe_mods = lua.globals()["lua_wipe_mods"]
 
     # Add Draftsman's root folder to Lua (to access the `compatibility` folder)
     root_path = os.path.join(env_dir, "?.lua")
@@ -1679,7 +1671,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
     # Add the path to and setup the `core` module
     # This should probably be part of the main load process in case more than
     # "data.lua" is added to the core module, but core is kinda special and
-    # would have to be integrated into the load order as a unique case
+    # would have to be integrated into the load order as a unique case anyway
     lualib_path = os.path.join(factorio_data, "core", "lualib", "?.lua")
     lua_add_path(lualib_path)
     load_stage(lua, mods, core_mod, "data.lua")
@@ -1759,6 +1751,9 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
                 # Reset the included modules
                 lua_unload_cache()
 
+                # Reset the MODS tree to an empty state
+                lua_wipe_mods()
+
     # At this point, `data.raw` and all other constructs should(!) be properly
     # initialized. Hence, we can now extract the data we wish:
 
@@ -1822,21 +1817,20 @@ def main():
     parser.add_argument(
         "--lua-version",
         action="store_true",
-        help="Prints the version of Lua used when loading and exits"
+        help="Prints the version of Lua used when loading and exits",
     )
     args = parser.parse_args()
     if args.lua_version:
         print(
             "Using {} (compiled with {})".format(
-                lupa.LuaRuntime().lua_implementation, 
-                lupa.LUA_VERSION
+                lupa.LuaRuntime().lua_implementation, lupa.LUA_VERSION
             )
         )
     else:
         update(
-            verbose=args.verbose, 
-            path=args.path, 
-            show_logs=args.log, 
-            no_mods=args.no_mods
+            verbose=args.verbose,
+            path=args.path,
+            show_logs=args.log,
+            no_mods=args.no_mods,
         )
         print("hella slick; nothing broke!")

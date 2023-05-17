@@ -55,7 +55,13 @@ def get_recipe_ingredients(recipe_name, expensive=False):
 
     """
     if "ingredients" in raw[recipe_name]:
-        return {x[0] if isinstance(x, list) else x["name"] for x in raw[recipe_name]["ingredients"]}
+        return {
+            x[0] if isinstance(x, list) else x["name"]
+            for x in raw[recipe_name]["ingredients"]
+        }
     else:  # recipe has two costs, "normal" and "expensive"
         cost_type = "expensive" if expensive else "normal"
-        return {x[0] if isinstance(x, list) else x["name"] for x in raw[recipe_name][cost_type]["ingredients"]}
+        return {
+            x[0] if isinstance(x, list) else x["name"]
+            for x in raw[recipe_name][cost_type]["ingredients"]
+        }

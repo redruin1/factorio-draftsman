@@ -6,6 +6,8 @@
 * Merged louga31's pull request:
     * Fix recipes so that they correctly read either internal format
 * Fixed an issue where not all entities were being assigned to `entities.flippable` (#61)
+* Fixed mod dependency loading (hopefully) so that it should actually handle recursive requires across an arbitrary number of different mods (#70)
+* Fixed an issue where required Lua files with a single prepended dot or slash would break the path resolution (#70)
 
 ## 1.0.3
 * Updated `factorio-data` to version `1.1.76` (latest stable)
