@@ -245,7 +245,7 @@ PARAMETERS = Schema(
     And(
         Use(lambda x: {} if x is None else x),
         {
-            Optional("playback_volume"): float,
+            Optional("playback_volume"): Use(float),
             Optional("playback_globally"): bool,
             Optional("allow_polyphony"): bool,
         },
