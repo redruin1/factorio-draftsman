@@ -1,5 +1,7 @@
 # Changelog
 
+Fixed issue where integer `playback_volume` values on programmable speakers wasn't getting coerced to a float and failing validation (#72)
+
 ## 1.0.4
 * Updated `factorio-data` to version `1.1.80`
 * Updated `compatibility/defines.lua` to `1.1.80`
