@@ -102,14 +102,73 @@ def add_entity(
     without having to install the associated mods.
 
     :param name: The Factorio ID of the entity to add.
-    :param entity_type: The string type of the entity.
+    :param entity_type: The type string of the entity.
     :param collision_box: The AABB of the entity, to check for collisions.
     :param collision_mask: The collision layers that this entity uses, to check
         for collisions.
     :param kwargs: Any other entity specific data that you want to populate the
         new entity with.
     """
-    # TODO: assert that `entity_type` is a valid entity_type
+    entity_map = {
+        "container": containers,
+        "storage-tank": storage_tanks,
+        "transport-belt": transport_belts,
+        "underground-belt": underground_belts,
+        "splitter": splitters,
+        "inserter": inserters,
+        "filter-inserter": filter_inserters,
+        "loader": loaders,
+        "electric-pole": electric_poles,
+        "pipe": pipes,
+        "pipe-to-ground": underground_pipes,
+        "pump": pumps,
+        "straight-rail": straight_rails,
+        "curved-rail": curved_rails,
+        "train-stop": train_stops,
+        "rail-signal": rail_signals,
+        "rail-chain-signal": rail_chain_signals,
+        "locomotive": locomotives,
+        "cargo-wagon": cargo_wagons,
+        "fluid-wagon": fluid_wagons,
+        "artillery-wagon": artillery_wagons,
+        "logistic-container": logistic_passive_containers,  # FIXME
+        "roboport": roboports,
+        "lamp": lamps,
+        "arithmetic-combinator": arithmetic_combinators,
+        "decider-combinator": decider_combinators,
+        "constant-combinator": constant_combinators,
+        "power-switch": power_switches,
+        "programmable-speaker": programmable_speakers,
+        "boiler": boilers,
+        "generator": generators,
+        "solar-panel": solar_panels,
+        "accumulator": accumulators,
+        "reactor": reactors,
+        "heat-pipe": heat_pipes,
+        "mining-drill": mining_drills,
+        "offshore-pump": offshore_pumps,
+        "furnace": furnaces,
+        "assembling-machine": assembling_machines,
+        "lab": labs,
+        "beacon": beacons,
+        "rocket-silo": rocket_silos,
+        "land-mine": land_mines,
+        "wall": walls,
+        "gate": gates,
+        "turret": turrets,  # FIXME
+        "radar": radars,
+        "electric-energy-interface": electric_energy_interfaces,
+        "linked-container": linked_containers,
+        "heat-interface": heat_interfaces,
+        "linked-belt": linked_belts,
+        "infinity-container": infinity_containers,
+        "infinity-pipe": infinity_pipes,
+        "burner-generator": burner_generators,
+    }
+
+    if entity_type not in entity_map:
+        raise ValueError("Unrecognized 'entity_type' '{}'".format(entity_type))
+
     raw[name] = {
         "name": name,
         "type": entity_type,
@@ -140,17 +199,4 @@ def add_entity(
         ]
     )
 
-    if entity_type == "container":
-        containers.append(name)
-    elif entity_type == "storage-tank":
-        storage_tanks.append(name)
-    elif entity_type == "constant-combinator":
-        constant_combinators.append(name)
-    elif entity_type == "lamp":
-        lamps.append(name)
-    elif entity_type == "decider-combinator":
-        decider_combinators.append(name)
-    elif entity_type == "train-stop":
-        train_stops.append(name)
-    else:
-        raise NotImplementedError  # TODO
+    entity_map[entity_type].append(name)

@@ -269,7 +269,10 @@ class DirectionalMixinTesting(unittest.TestCase):
 
         blueprint = Blueprint()
         blueprint.entities.append("flamethrower-turret")
-        with pytest.raises(DraftsmanError, match="Cannot set this direction of non-square entity while it's in another object; might intersect neighbours"):
+        with pytest.raises(
+            DraftsmanError,
+            match="Cannot set this direction of non-square entity while it's in another object; might intersect neighbours",
+        ):
             blueprint.entities[0].direction = Direction.EAST
 
     def test_set_position(self):

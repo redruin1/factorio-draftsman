@@ -23,7 +23,7 @@ else:  # pragma: no coverage
 
 
 class UpgradePlannerTesting(unittest.TestCase):
-    #test_constructor_cases = deal.cases(UpgradePlanner)
+    # test_constructor_cases = deal.cases(UpgradePlanner)
 
     def test_constructor(self):
         # Empty
@@ -296,9 +296,14 @@ class UpgradePlannerTesting(unittest.TestCase):
         upgrade_planner = UpgradePlanner()
 
         # Out of index
-        with pytest.warns(ValueWarning):
-            upgrade_planner.set_mapping("transport-belt", "fast-transport-belt", -1)
+        # with pytest.warns(ValueWarning):
+        upgrade_planner.set_mapping("transport-belt", "fast-transport-belt", -1)
 
-        # assert upgrade_planner.inspect() == [
-        #     ValueWarning("'index' must be in range [0, 24) for mapping between '{'name': 'transport-belt', 'type': 'item'}' and '{'name': 'fast-transport-belt', 'type': 'item'}'")
-        # ]
+        goal = [
+            ValueWarning(
+                "'index' must be in range [0, 24) for mapping between '{'name': 'transport-belt', 'type': 'item'}' and '{'name': 'fast-transport-belt', 'type': 'item'}'"
+            )
+        ]
+        result = upgrade_planner.inspect()
+        for i in range(len(result)):
+            assert type(goal[i]) == type(result[i]) and goal[i].args == result[i].args

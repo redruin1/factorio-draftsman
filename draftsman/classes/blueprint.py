@@ -198,7 +198,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
         # Data lists
         if "entities" in kwargs:
-            self._root["entities"] = EntityList(self, kwargs.pop("entities"), unknown=unknown)
+            self._root["entities"] = EntityList(
+                self, kwargs.pop("entities"), unknown=unknown
+            )
         else:
             self._root["entities"] = EntityList(self)
 
@@ -790,7 +792,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         # (We exclude "entities" and "tiles" because these objects are not
         # copyable for space and recursion depth reasons)
         out_dict = {
-            x: self._root[x] for x in self._root if x not in {"entities", "tiles", "schedules"}
+            x: self._root[x]
+            for x in self._root
+            if x not in {"entities", "tiles", "schedules"}
         }
         # out_dict["schedules"] = copy.deepcopy(self._root["schedules"])
 

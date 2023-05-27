@@ -14,6 +14,7 @@
     * Added `WaitConditionType` and `WaitConditionCompareType` enumerations
 * Added `Collection.add_train_at_position()` and `Collection.add_train_at_station()` to make placing trains easier
 * Added `Collection.find_trains_filtered()` to allow users to search Blueprints/Groups for trains of particular types
+* Added `RailPlanner` (finally)
 * Added data functions `signals.add_signal()`, `tiles.add_tile()`, `entities.add_entity()`, etc. which allow you to add entities on the fly (primarily for Factorio environment compatibility)
 * Fixed a bunch of warts in the API:
     * Added the ability to modify `x` and `y` attributes of both `position` and `tile_position` and have each other update in tandem
@@ -24,11 +25,12 @@
 * Added `unknown` keyword to all entity/tile creation constructs which allows the user to specify what should happen when draftsman encounters an entity it doesn't recognize
 * Added a bunch of new documentation to document the above
 * Added a bunch of new examples to test out the above new features
+* Added a fixture that ensures that Draftsman is running a vanilla configuration before running tests, and exits if it detects that it is not the case.
 * Added a README.md to the `examples` folder which provides short descriptions for all of the examples
 * Integrated aforementioned examples into the test suite
 * Normalized all import filenames to use underscores consistently (potentially breaking change!)
-* Changed the code to be primarily python3 compatible
-* Switched from `unittest` to `pytest` (more features with similar syntax; `coverage run` still works)
+* Changed the code to be primarily Python3 compatible
+* Switched from `unittest` to `pytest` (more features with similar syntax; `coverage run` still works the same)
 * Finished up documentation on `DeconstructionPlanner`
 * [PERF] Reduced memory consumption by up to ~80 percent(!) (This also made it quite a bit faster to boot)
 * Made it so that default `collision_mask` keys are resolved at once at the data level when you call `draftsman-update`, so you can query `entities.raw` for the correct default value

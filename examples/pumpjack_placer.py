@@ -4,9 +4,9 @@
 Creates a copy of the massive overlapping pumpjack blueprint found here:
 https://factorioprints.com/view/-LbygJLCDgaBJqsMPqUJ
 Can be expanded as much as you dare.
-
-TODO: speed this thing up, shouldn't take 10+ seconds
 """
+
+# TODO: speed this thing up, shouldn't take 10+ seconds
 
 import warnings
 from draftsman.blueprintable import Blueprint
@@ -27,7 +27,7 @@ def main():
             blueprint.entities.append("pumpjack", position=[x, y])
 
     # If you want to see all the OverlappingObjectsWarning, do this:
-    #for warning in blueprint.inspect():
+    # for warning in blueprint.inspect():
     #    warning.show()
 
     print(blueprint.to_string())

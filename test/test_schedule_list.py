@@ -11,11 +11,13 @@ import pytest
 class TestScheduleList:
     def test_insert(self):
         sl = ScheduleList()
-        with pytest.raises(TypeError, match="Entry in <ScheduleList> must be an instance of <Schedule>"):
+        with pytest.raises(
+            TypeError, match="Entry in <ScheduleList> must be an instance of <Schedule>"
+        ):
             sl.insert(0, TypeError)
 
     def test_getitem(self):
-        pass # TODO
+        pass  # TODO
 
     def test_setitem(self):
         sl = ScheduleList()
@@ -25,7 +27,9 @@ class TestScheduleList:
         sl[0] = Schedule()
         assert len(sl) == 1
 
-        with pytest.raises(TypeError, match="Entry in <ScheduleList> must be an instance of <Schedule>"):
+        with pytest.raises(
+            TypeError, match="Entry in <ScheduleList> must be an instance of <Schedule>"
+        ):
             sl[0] = TypeError
 
     def test_delitem(self):

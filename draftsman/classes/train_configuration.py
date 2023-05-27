@@ -25,18 +25,24 @@ class TrainConfiguration:
         ">": {"name": "locomotive", "orientation": 0.5},
         "C": {"name": "cargo-wagon"},
         "F": {"name": "fluid-wagon"},
-        "A": {"name": "artillery-wagon"}
+        "A": {"name": "artillery-wagon"},
     }
 
-    def __init__(self, config=None, direction="dual", wagons="cargo", mapping=default_mapping):
+    def __init__(
+        self, config=None, direction="dual", wagons="cargo", mapping=default_mapping
+    ):
         # type: (str, str, str, dict) -> None
         """
         TODO
         """
         if config is None:
-            self.cars = [] # type: list[Union[Locomotive, CargoWagon, FluidWagon, ArtilleryWagon]]
+            self.cars = (
+                []
+            )  # type: list[Union[Locomotive, CargoWagon, FluidWagon, ArtilleryWagon]]
         else:
-            self.from_string(config, direction=direction, wagons=wagons, mapping=mapping)
+            self.from_string(
+                config, direction=direction, wagons=wagons, mapping=mapping
+            )
 
     # =========================================================================
 
@@ -44,14 +50,16 @@ class TrainConfiguration:
     def rail_length(self):
         # type: () -> int
         """
-        TODO 
+        TODO
         Read only.
         """
         return ceil((len(self.cars) * 7) / 2)
 
     # =========================================================================
 
-    def from_string(self, format_string, direction="dual", wagons="cargo", mapping=default_mapping):
+    def from_string(
+        self, format_string, direction="dual", wagons="cargo", mapping=default_mapping
+    ):
         # type: (str, str, str, dict) -> None
         """
         TODO
@@ -63,10 +71,12 @@ class TrainConfiguration:
 
         if direction not in {"dual", "forward"}:
             raise ValueError("Argument 'direction' must be one of 'dual' or 'forward'")
-        
+
         if wagons not in {"cargo", "fluid", "artillery"}:
-            raise ValueError("Argument 'wagons' must be one of 'cargo', 'fluid', or 'artillery'") # TODO
-        
+            raise ValueError(
+                "Argument 'wagons' must be one of 'cargo', 'fluid', or 'artillery'"
+            )  # TODO
+
         # Convert user-readable to explicit format
         wagon_symbols = {"cargo": "C", "fluid": "F", "artillery": "A"}
         wagons = wagon_symbols[wagons]
@@ -74,10 +84,12 @@ class TrainConfiguration:
         # Split the string by hyphens '-'
         # Hyphens indicate when the current_default_type should change from
         # locomotives to wagons and back
-        hyphen_blocks = format_string.split('-')
+        hyphen_blocks = format_string.split("-")
 
         # Check to see if we have a special dual-headed train
-        if len(hyphen_blocks) == 3 and direction != "forward": # Special x-y-x dual-headed format
+        if (
+            len(hyphen_blocks) == 3 and direction != "forward"
+        ):  # Special x-y-x dual-headed format
             dual_headed = True
         else:
             dual_headed = False
@@ -105,13 +117,14 @@ class TrainConfiguration:
                 if car not in mapping:
                     # TODO: maybe format the position of the unexpected character in
                     # the input string?
-                    raise ValueError("Encountered unexpected character '{}'".format(car))
-                
+                    raise ValueError(
+                        "Encountered unexpected character '{}'".format(car)
+                    )
+
                 # Construct a new string
                 replacement = car * int(amt)
 
                 result_string += replacement
-        
 
         # The above converts the string into the explicit format
         # e.g. "<<CCFFAAAA>>"

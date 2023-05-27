@@ -4,7 +4,11 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import RequestItemsMixin, InventoryFilterMixin, OrientationMixin
+from draftsman.classes.mixins import (
+    RequestItemsMixin,
+    InventoryFilterMixin,
+    OrientationMixin,
+)
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import cargo_wagons

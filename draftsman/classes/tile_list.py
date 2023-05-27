@@ -169,7 +169,7 @@ class TileList(MutableSequence):
     def __len__(self):
         # type: () -> int
         return len(self.data)
-    
+
     def __or__(self, other):
         # type: (TileList) -> TileList
         return self.union(other)

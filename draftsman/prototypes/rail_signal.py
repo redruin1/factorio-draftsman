@@ -117,6 +117,9 @@ class RailSignal(
     @property
     def enable_disable(self):
         # type: () -> bool
+        """
+        TODO
+        """
         return self.control_behavior.get("circuit_close_signal", None)
 
     @enable_disable.setter

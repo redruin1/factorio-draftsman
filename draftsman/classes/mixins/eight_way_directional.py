@@ -62,7 +62,7 @@ class EightWayDirectionalMixin(object):
                     _rotated_collision_sets[self.name] = {}
                     for i in range(8):
                         _rotated_collision_sets[self.name][i] = self.collision_set
-                    
+
                     self._collision_set_rotation = _rotated_collision_sets[self.name]
             # else:
             #     # Automatically generate a set of rotated collision sets for every

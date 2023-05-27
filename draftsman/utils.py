@@ -89,10 +89,10 @@ class AABB(Shape):
             in world space.
         """
         super(AABB, self).__init__(position)
-        # self.top_left = Vector(x1, y1)
-        self.top_left = [x1, y1]
-        # self.bot_right = Vector(x2, y2)
-        self.bot_right = [x2, y2]
+        self.top_left = Vector(x1, y1)
+        # self.top_left = [x1, y1]
+        self.bot_right = Vector(x2, y2)
+        # self.bot_right = [x2, y2]
 
         # self.points = [Vector(x1, y1), Vector(x2, y1), Vector(x2, y2), Vector(x1, y2)]
         self.points = [[x1, y1], [x2, y1], [x2, y2], [x1, y2]]
@@ -849,6 +849,7 @@ def flatten_entities(entities):
 P = ParamSpec("P")
 R = TypeVar("R")
 
+
 def reissue_warnings(func: Callable[P, R]) -> Callable[P, R]:
     """
     Function decorator that catches all warnings issued from a function and
@@ -858,6 +859,7 @@ def reissue_warnings(func: Callable[P, R]) -> Callable[P, R]:
 
     :returns: The result of the function.
     """
+
     @wraps(func)
     def inner(*args: P.args, **kwargs: P.kwargs) -> R:
         with warnings.catch_warnings(record=True) as warning_list:
