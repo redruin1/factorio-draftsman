@@ -112,4 +112,3 @@ class AccumulatorTesting(unittest.TestCase):
         accumulatorA.output_signal = "signal-A"
 
         assert accumulatorA != accumulatorB
-

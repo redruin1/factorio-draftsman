@@ -795,10 +795,10 @@ class Entity(EntityLike):
             and self.id == other.id
             and self.tags == other.tags
         )
-    
+
     def __hash__(self):
         # type: () -> int
-        return id(self) >> 4 # Apparently this is the default?
+        return id(self) >> 4  # Apparently this is the default?
 
     def __repr__(self):  # pragma: no coverage
         # type: () -> str

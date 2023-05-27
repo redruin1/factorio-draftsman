@@ -234,9 +234,9 @@ class Tile(SpatialLike):
 
     def __eq__(self, other):
         return (
-            isinstance(other, Tile) and
-            self.name == other.name and
-            self.position == other.position
+            isinstance(other, Tile)
+            and self.name == other.name
+            and self.position == other.position
         )
 
     def __repr__(self):  # pragma: no coverage

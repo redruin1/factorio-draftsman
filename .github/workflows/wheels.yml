@@ -1,3 +1,0 @@
-name: Build wheels for release
-on: [release]
-# TODO

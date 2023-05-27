@@ -25,8 +25,6 @@ Technically there is a total data-space of 60 bits available, though utilizing
 this is left as an excercise to the reader, if desired.
 """
 
-# TODO: fix warnings
-
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.group import Group
 from draftsman.constants import Direction

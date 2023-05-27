@@ -53,7 +53,7 @@ class OrientationMixin(object):
         # type: () -> float
         """
         The angle that the current Entity is facing, expressed as a ``float``
-        in the range ``[0.0, 1.0)``, where ``0.0`` is North and increases 
+        in the range ``[0.0, 1.0)``, where ``0.0`` is North and increases
         clockwise.
 
         Raises :py:class:`.ValueWarning` if set to a value not in the range

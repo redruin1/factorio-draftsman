@@ -93,18 +93,18 @@ class EntityTesting(unittest.TestCase):
         iron_chest.position.x += 1
         assert iron_chest.position == Vector(1.5, 0.5)
         assert iron_chest.tile_position == Vector(1, 0)
-        
+
         iron_chest.position.y += 1
         assert iron_chest.position == Vector(1.5, 1.5)
         assert iron_chest.tile_position == Vector(1, 1)
 
     def test_modify_tile_position_attributes(self):
         iron_chest = Container("iron-chest")
-        
+
         iron_chest.tile_position.x += 1
         assert iron_chest.position == Vector(1.5, 0.5)
         assert iron_chest.tile_position == Vector(1, 0)
-        
+
         iron_chest.tile_position.y += 1
         assert iron_chest.position == Vector(1.5, 1.5)
         assert iron_chest.tile_position == Vector(1, 1)

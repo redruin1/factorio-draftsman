@@ -64,7 +64,7 @@ class TileListTesting(unittest.TestCase):
     def test_union(self):
         blueprint1 = Blueprint()
         blueprint1.tiles.append("landfill")
-        
+
         blueprint2 = Blueprint()
         blueprint2.tiles.append("landfill")
         blueprint2.tiles.append("concrete", position=(1, 0))
@@ -75,17 +75,14 @@ class TileListTesting(unittest.TestCase):
         assert isinstance(union.tiles, TileList)
         assert union.tiles._parent is union
         assert len(union.tiles) == 2
-        assert union.tiles.data == [
-            Tile("landfill"),
-            Tile("concrete", position=(1, 0))
-        ]
+        assert union.tiles.data == [Tile("landfill"), Tile("concrete", position=(1, 0))]
         assert union.tiles[0].parent is union
         assert union.tiles[1].parent is union
 
     def test_intersection(self):
         blueprint1 = Blueprint()
         blueprint1.tiles.append("landfill")
-        
+
         blueprint2 = Blueprint()
         blueprint2.tiles.append("landfill")
         blueprint2.tiles.append("concrete", position=(1, 0))
@@ -111,7 +108,7 @@ class TileListTesting(unittest.TestCase):
     def test_difference(self):
         blueprint1 = Blueprint()
         blueprint1.tiles.append("landfill")
-        
+
         blueprint2 = Blueprint()
         blueprint2.tiles.append("landfill")
         blueprint2.tiles.append("concrete", position=(1, 0))
@@ -122,9 +119,7 @@ class TileListTesting(unittest.TestCase):
         assert isinstance(difference.tiles, TileList)
         assert difference.tiles._parent is difference
         assert len(difference.tiles) == 1
-        assert difference.tiles.data == [
-            Tile("concrete", position=(1, 0))
-        ]
+        assert difference.tiles.data == [Tile("concrete", position=(1, 0))]
         assert difference.tiles[0].parent is difference
 
     def test_getitem(self):
@@ -159,7 +154,7 @@ class TileListTesting(unittest.TestCase):
 
     def test_equals(self):
         blueprint = Blueprint()
-        
+
         # Different types
         assert blueprint.tiles != TypeError
 

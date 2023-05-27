@@ -24,7 +24,9 @@ class BlueprintableTesting(unittest.TestCase):
     def test_load_from_string(self):
         with pytest.raises(IncorrectBlueprintTypeError):
             # Pass a BlueprintBook string into a Blueprint object
-            blueprint = Blueprint("0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY=")
+            blueprint = Blueprint(
+                "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
+            )
 
     def test_item(self):
         blueprint = Blueprint()
@@ -41,7 +43,7 @@ class BlueprintableTesting(unittest.TestCase):
 
     # def test_formatted_label(self): # TODO
     #     blueprint = Blueprint()
-        
+
     #     # None case
     #     assert blueprint.formatted_label() == None
 

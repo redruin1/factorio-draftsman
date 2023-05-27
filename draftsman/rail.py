@@ -1,7 +1,8 @@
 # rail.py
 
 """
-TODO
+Imports a bunch of helper classes for placing rails and train stations, as well
+as trains and their schedules.
 """
 
 from draftsman.classes.rail_planner import RailPlanner

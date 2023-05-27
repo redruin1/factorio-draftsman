@@ -330,7 +330,6 @@ class Blueprintable(object):
     #     Returns a formatted string for the console that can be displayed with
     #     the python module ``rich``.
 
-
     #     """
     #     if not self.label:
     #         return self.label

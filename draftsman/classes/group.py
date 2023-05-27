@@ -190,9 +190,11 @@ class Group(Transformable, EntityCollection, EntityLike):
             self._entities = EntityList(self)
 
         if "schedules" in kwargs:
-            self._schedules = ScheduleList(kwargs.pop("schedules")) # type: ScheduleList
+            self._schedules = ScheduleList(
+                kwargs.pop("schedules")
+            )  # type: ScheduleList
         else:
-            self._schedules = ScheduleList() # type: ScheduleList
+            self._schedules = ScheduleList()  # type: ScheduleList
 
     # =========================================================================
 
@@ -729,8 +731,6 @@ class Group(Transformable, EntityCollection, EntityLike):
         for i, schedule in enumerate(self.schedules):
             for j, locomotive in enumerate(schedule.locomotives):
                 # Replace the old one with the copied one
-                result.schedules[i].locomotives[j] = Association(
-                    memo[id(locomotive())]
-                )
+                result.schedules[i].locomotives[j] = Association(memo[id(locomotive())])
 
         return result

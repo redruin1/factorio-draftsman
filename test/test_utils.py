@@ -1,5 +1,4 @@
 # test_utils.py
-# -*- encoding: utf-8 -*-
 
 from collections import OrderedDict
 from draftsman import utils
@@ -7,51 +6,44 @@ from draftsman.classes.vector import Vector
 from draftsman.error import InvalidSignalError
 from draftsman.data import recipes, signals
 
-# import sys
-
-# if sys.version_info >= (3, 3):  # pragma: no coverage
-#     import unittest
-# else:  # pragma: no coverage
-#     import unittest2 as unittest
-
 import pytest
 import warnings
 
 
-class AABBTesting:
+class TestAABB:
     def test_constructor(self):
         aabb = utils.AABB(0, 0, 1, 1)
         # self.assertEqual(aabb.top_left, Vector(0, 0))
-        assert aabb.top_left == [0, 0]
+        assert aabb.top_left == Vector(0, 0)
         # self.assertEqual(aabb.bot_right, Vector(1, 1))
-        assert aabb.bot_right == [1, 1]
+        assert aabb.bot_right == Vector(1, 1)
         # self.assertEqual(aabb.position, Vector(0, 0))
-        assert aabb.position == [0, 0]
+        assert aabb.position == Vector(0, 0)
 
         aabb = utils.AABB(0, 0, 2, 2, (1, 1))
         # self.assertEqual(aabb.top_left, Vector(0, 0))
-        assert aabb.top_left == [0, 0]
+        assert aabb.top_left == Vector(0, 0)
         # self.assertEqual(aabb.bot_right, Vector(2, 2))
-        assert aabb.bot_right == [2, 2]
+        assert aabb.bot_right == Vector(2, 2)
         # self.assertEqual(aabb.position, Vector(1, 1))
-        assert aabb.position == [1, 1]
+        assert aabb.position == Vector(1, 1)
 
     def test_from_other(self):
         aabb = utils.AABB.from_other([0, 1, 2, 3])
         # self.assertEqual(aabb.top_left, Vector(0, 1))
-        assert aabb.top_left == [0, 1]
+        assert aabb.top_left == Vector(0, 1)
         # self.assertEqual(aabb.bot_right, Vector(2, 3))
-        assert aabb.bot_right == [2, 3]
+        assert aabb.bot_right == Vector(2, 3)
         # self.assertEqual(aabb.position, Vector(0, 0))
-        assert aabb.position == [0, 0]
+        assert aabb.position == Vector(0, 0)
 
         aabb = utils.AABB.from_other((0, 1, 2, 3))
         # self.assertEqual(aabb.top_left, Vector(0, 1))
-        assert aabb.top_left == [0, 1]
+        assert aabb.top_left == Vector(0, 1)
         # self.assertEqual(aabb.bot_right, Vector(2, 3))
-        assert aabb.bot_right == [2, 3]
+        assert aabb.bot_right == Vector(2, 3)
         # self.assertEqual(aabb.position, Vector(0, 0))
-        assert aabb.position == [0, 0]
+        assert aabb.position == Vector(0, 0)
 
         with pytest.raises(TypeError):
             utils.AABB.from_other(123.4)
@@ -111,7 +103,7 @@ class AABBTesting:
         assert utils.AABB(0, 0, 1, 1) != utils.AABB(1, 1, 2, 2)
 
 
-class RectangleTesting:
+class TestRectangle:
     def test_constructor(self):
         # TODO
         pass
@@ -127,13 +119,14 @@ class RectangleTesting:
         assert round(abs(bounding_box.top_left[1] - 3.292), 2) == 0
         assert round(abs(bounding_box.bot_right[0] - 4.707), 2) == 0
         assert round(abs(bounding_box.bot_right[1] - 4.707), 2) == 0
-        assert bounding_box.position == [0, 0]
+        assert bounding_box.position == Vector(0, 0)
 
     def test_rotate(self):
         pass
 
     def test_eq(self):
         pass
+
 
 class TestUtils:
     def test_string_to_JSON(self):

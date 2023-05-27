@@ -13,8 +13,14 @@ from draftsman.classes.entity_list import EntityList
 from draftsman.classes.group import Group
 from draftsman.classes.schedule import Schedule, WaitCondition
 from draftsman.classes.schedule_list import ScheduleList
+from draftsman.classes.train_configuration import TrainConfiguration
 from draftsman.classes.vector import Vector
-from draftsman.constants import Direction, WaitConditionType
+from draftsman.constants import (
+    Direction,
+    Orientation,
+    WaitConditionType,
+    WaitConditionCompareType,
+)
 from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.tile import Tile
 from draftsman.error import (
@@ -44,6 +50,7 @@ if sys.version_info >= (3, 3):  # pragma: no coverage
     import unittest
 else:  # pragma: no coverage
     import unittest2 as unittest
+
 
 class BlueprintTesting(unittest.TestCase):
 
@@ -450,7 +457,9 @@ class BlueprintTesting(unittest.TestCase):
         # ScheduleList
         schedule = Schedule()
         schedule.add_locomotive(blueprint.entities["test_train"])
-        schedule.append_stop("station_name", WaitCondition(WaitConditionType.INACTIVITY, ticks=600))
+        schedule.append_stop(
+            "station_name", WaitCondition(WaitConditionType.INACTIVITY, ticks=600)
+        )
         blueprint.schedules = ScheduleList([schedule])
         assert isinstance(blueprint.schedules, ScheduleList)
         assert blueprint.schedules[0].locomotives[0]() is blueprint.entities[0]
@@ -572,7 +581,7 @@ class BlueprintTesting(unittest.TestCase):
         # Inline is permitted on non-square objects ONLY when the transformation
         # does not change the apparent tile_width or tile_height
         blueprint.entities[0] = new_entity("splitter", direction=Direction.NORTH)
-        blueprint.entities[0].direction = Direction.SOUTH # equal to flipping
+        blueprint.entities[0].direction = Direction.SOUTH  # equal to flipping
         assert blueprint.entities[0].direction == Direction.SOUTH
 
         # Inline rotating is not permitted on 8-way rotational objects
@@ -1858,19 +1867,590 @@ class BlueprintTesting(unittest.TestCase):
     # =========================================================================
 
     def test_add_train_at_position(self):
+        # Without schedule
         blueprint = Blueprint()
+
+        config = TrainConfiguration("1-1")
+
+        blueprint.add_train_at_position(
+            config=config, position=(0, 0), direction=Direction.WEST
+        )
+
+        assert len(blueprint.entities) == 2
+        assert blueprint.to_dict()["blueprint"] == {
+            "item": "blueprint",
+            "entities": [
+                {
+                    "name": "locomotive",
+                    "orientation": Orientation.WEST,
+                    "position": {"x": 0.0, "y": 0.0},
+                    "entity_number": 1,
+                },
+                {
+                    "name": "cargo-wagon",
+                    "orientation": Orientation.WEST,
+                    "position": {"x": 7.0, "y": 0.0},
+                    "entity_number": 2,
+                },
+            ],
+            "version": encode_version(*__factorio_version_info__),
+        }
+
+        # With schedule
+        schedule = Schedule()
+        schedule.append_stop("Station 1", WaitCondition(WaitConditionType.FULL_CARGO))
+        schedule.append_stop("Station 2", WaitCondition(WaitConditionType.EMPTY_CARGO))
+
+        blueprint.add_train_at_position(
+            config=config, position=(0, 2), direction=Direction.EAST, schedule=schedule
+        )
+
+        assert len(blueprint.entities) == 4
+        assert blueprint.to_dict()["blueprint"] == {
+            "item": "blueprint",
+            "entities": [
+                {
+                    "name": "locomotive",
+                    "orientation": Orientation.WEST,
+                    "position": {"x": 0.0, "y": 0.0},
+                    "entity_number": 1,
+                },
+                {
+                    "name": "cargo-wagon",
+                    "orientation": Orientation.WEST,
+                    "position": {"x": 7.0, "y": 0.0},
+                    "entity_number": 2,
+                },
+                {
+                    "name": "locomotive",
+                    "orientation": Orientation.EAST,
+                    "position": {"x": 0.0, "y": 2.0},
+                    "entity_number": 3,
+                },
+                {
+                    "name": "cargo-wagon",
+                    "orientation": Orientation.EAST,
+                    "position": {"x": -7.0, "y": 2.0},
+                    "entity_number": 4,
+                },
+            ],
+            "schedules": [
+                {
+                    "locomotives": [3],
+                    "schedule": [
+                        {
+                            "station": "Station 1",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.FULL_CARGO,
+                                    "compare_type": WaitConditionCompareType.OR,
+                                }
+                            ],
+                        },
+                        {
+                            "station": "Station 2",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.EMPTY_CARGO,
+                                    "compare_type": WaitConditionCompareType.OR,
+                                }
+                            ],
+                        },
+                    ],
+                }
+            ],
+            "version": encode_version(*__factorio_version_info__),
+        }
+
+        # Ensure new trains with same schedule dont create duplicate schedules
+        blueprint.add_train_at_position(
+            config=config, position=(0, 4), direction=Direction.EAST, schedule=schedule
+        )
+        assert len(blueprint.entities) == 6
+        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+            {
+                "locomotives": [3, 5],
+                "schedule": [
+                    {
+                        "station": "Station 1",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.FULL_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    },
+                    {
+                        "station": "Station 2",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.EMPTY_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    },
+                ],
+            }
+        ]
+
+        # Ensure trains with different schedules actually create new schedules
+        schedule = Schedule()
+        schedule.append_stop("Station 3", WaitCondition(WaitConditionType.FULL_CARGO))
+        schedule.append_stop("Station 4", WaitCondition(WaitConditionType.EMPTY_CARGO))
+
+        blueprint.add_train_at_position(
+            config=config, position=(0, 6), direction=Direction.EAST, schedule=schedule
+        )
+        assert len(blueprint.entities) == 8
+        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+            {
+                "locomotives": [3, 5],
+                "schedule": [
+                    {
+                        "station": "Station 1",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.FULL_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    },
+                    {
+                        "station": "Station 2",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.EMPTY_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    },
+                ],
+            },
+            {
+                "locomotives": [7],
+                "schedule": [
+                    {
+                        "station": "Station 3",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.FULL_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    },
+                    {
+                        "station": "Station 4",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.EMPTY_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    },
+                ],
+            },
+        ]
 
     # =========================================================================
 
     def test_add_train_at_station(self):
+        # Without schedule
         blueprint = Blueprint()
+
+        blueprint.entities.append(
+            "train-stop", direction=Direction.WEST, station="Station 1", id="Station 1"
+        )
+
+        config = TrainConfiguration("1-1")
+
+        blueprint.add_train_at_station(config=config, station="Station 1")
+
+        assert len(blueprint.entities) == 3
+        assert blueprint.to_dict()["blueprint"] == {
+            "item": "blueprint",
+            "entities": [
+                {
+                    "name": "train-stop",
+                    "direction": Direction.WEST,
+                    "position": {"x": 1.0, "y": 1.0},
+                    "station": "Station 1",
+                    "entity_number": 1,
+                },
+                {
+                    "name": "locomotive",
+                    "orientation": Orientation.WEST,
+                    "position": {"x": 5.0, "y": 3.0},
+                    "entity_number": 2,
+                },
+                {
+                    "name": "cargo-wagon",
+                    "orientation": Orientation.WEST,
+                    "position": {"x": 12.0, "y": 3.0},
+                    "entity_number": 3,
+                },
+            ],
+            "version": encode_version(*__factorio_version_info__),
+        }
+
+        # With schedule
+        blueprint.entities.append(
+            "train-stop",
+            position=(1.0, 7.0),
+            direction=Direction.EAST,
+            station="Station 2",
+            id="Station 2",
+        )
+
+        schedule = Schedule()
+        schedule.append_stop("Station 1", WaitCondition(WaitConditionType.FULL_CARGO))
+        schedule.append_stop("Station 2", WaitCondition(WaitConditionType.EMPTY_CARGO))
+
+        # test direct reference
+        blueprint.add_train_at_station(
+            config=config, station=blueprint.entities[-1], schedule=schedule
+        )
+
+        assert len(blueprint.entities) == 6
+        assert blueprint.to_dict()["blueprint"] == {
+            "item": "blueprint",
+            "entities": [
+                {
+                    "name": "train-stop",
+                    "direction": Direction.WEST,
+                    "position": {"x": 1.0, "y": 1.0},
+                    "station": "Station 1",
+                    "entity_number": 1,
+                },
+                {
+                    "name": "locomotive",
+                    "orientation": Orientation.WEST,
+                    "position": {"x": 5.0, "y": 3.0},
+                    "entity_number": 2,
+                },
+                {
+                    "name": "cargo-wagon",
+                    "orientation": Orientation.WEST,
+                    "position": {"x": 12.0, "y": 3.0},
+                    "entity_number": 3,
+                },
+                {
+                    "name": "train-stop",
+                    "direction": Direction.EAST,
+                    "position": {"x": 1.0, "y": 7.0},
+                    "station": "Station 2",
+                    "entity_number": 4,
+                },
+                {
+                    "name": "locomotive",
+                    "orientation": Orientation.EAST,
+                    "position": {"x": -3.0, "y": 5.0},
+                    "entity_number": 5,
+                },
+                {
+                    "name": "cargo-wagon",
+                    "orientation": Orientation.EAST,
+                    "position": {"x": -10.0, "y": 5.0},
+                    "entity_number": 6,
+                },
+            ],
+            "schedules": [
+                {
+                    "locomotives": [5],
+                    "schedule": [
+                        {
+                            "station": "Station 1",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.FULL_CARGO,
+                                    "compare_type": WaitConditionCompareType.OR,
+                                }
+                            ],
+                        },
+                        {
+                            "station": "Station 2",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.EMPTY_CARGO,
+                                    "compare_type": WaitConditionCompareType.OR,
+                                }
+                            ],
+                        },
+                    ],
+                }
+            ],
+            "version": encode_version(*__factorio_version_info__),
+        }
+
+        # Ensure new trains with same schedule dont create duplicate schedules
+        blueprint.entities.append(
+            "train-stop",
+            direction=Direction.NORTH,
+            position=(9.0, 9.0),
+            station="Station 3",
+        )
+
+        blueprint.add_train_at_station(
+            config=config, station=blueprint.entities[-1], schedule=schedule
+        )
+        assert len(blueprint.entities) == 9
+        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+            {
+                "locomotives": [5, 8],
+                "schedule": [
+                    {
+                        "station": "Station 1",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.FULL_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    },
+                    {
+                        "station": "Station 2",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.EMPTY_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    },
+                ],
+            }
+        ]
+
+        # Ensure trains with different schedules actually create new schedules
+        schedule = Schedule()
+        schedule.append_stop("Station 3", WaitCondition(WaitConditionType.FULL_CARGO))
+        schedule.append_stop("Station 4", WaitCondition(WaitConditionType.EMPTY_CARGO))
+
+        blueprint.entities.append(
+            "train-stop",
+            direction=Direction.NORTH,
+            position=(19.0, 9.0),
+            station="Station 4",
+        )
+
+        blueprint.add_train_at_station(
+            config=config, station=blueprint.entities[-1], schedule=schedule
+        )
+        assert len(blueprint.entities) == 12
+        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+            {
+                "locomotives": [5, 8],
+                "schedule": [
+                    {
+                        "station": "Station 1",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.FULL_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    },
+                    {
+                        "station": "Station 2",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.EMPTY_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    },
+                ],
+            },
+            {
+                "locomotives": [11],
+                "schedule": [
+                    {
+                        "station": "Station 3",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.FULL_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    },
+                    {
+                        "station": "Station 4",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.EMPTY_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    },
+                ],
+            },
+        ]
+
+        # Ensure train stop is an actual train stop
+        blueprint.entities.append("transport-belt", tile_position=(-10, -10))
+        with pytest.raises(ValueError, match="'station' must be a TrainStop"):
+            blueprint.add_train_at_station(
+                config=config, station=blueprint.entities[-1]
+            )
+
+    # =========================================================================
+
+    def test_remove_train(self):
+        blueprint = Blueprint()
+
+        config = TrainConfiguration("1-1")
+        schedule1 = Schedule()
+        schedule1.append_stop("Station 1", WaitCondition(WaitConditionType.FULL_CARGO))
+
+        schedule2 = Schedule()
+        schedule2.append_stop("Station 2", WaitCondition(WaitConditionType.EMPTY_CARGO))
+
+        blueprint.add_train_at_position(config, (0, 0), Direction.NORTH, schedule1)
+        train1 = blueprint.find_train_from_wagon(blueprint.entities[-1])
+        blueprint.add_train_at_position(config, (10, 0), Direction.NORTH, schedule1)
+        train2 = blueprint.find_train_from_wagon(blueprint.entities[-1])
+        blueprint.add_train_at_position(config, (20, 0), Direction.NORTH, schedule2)
+        train3 = blueprint.find_train_from_wagon(blueprint.entities[-1])
+
+        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+            {
+                "locomotives": [1, 3],
+                "schedule": [
+                    {
+                        "station": "Station 1",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.FULL_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    }
+                ],
+            },
+            {
+                "locomotives": [5],
+                "schedule": [
+                    {
+                        "station": "Station 2",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.EMPTY_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    }
+                ],
+            },
+        ]
+
+        blueprint.remove_train(train2)
+        assert len(blueprint.entities) == 4
+        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+            {
+                "locomotives": [1],
+                "schedule": [
+                    {
+                        "station": "Station 1",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.FULL_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    }
+                ],
+            },
+            {
+                "locomotives": [3],
+                "schedule": [
+                    {
+                        "station": "Station 2",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.EMPTY_CARGO,
+                                "compare_type": WaitConditionCompareType.OR,
+                            }
+                        ],
+                    }
+                ],
+            },
+        ]
 
     # =========================================================================
     # Train Queries
     # =========================================================================
 
+    def test_find_train_from_wagon(self):
+        test_string = "0eNqVk9FuwyAMRf+F5xQ5BmLIr0zTlLasQqJQkaRbVOXfR9Mqm5R2yx5B9rn32nBhW9/bU3KhY/WFuV0MLatfLqx1h9D46103nCyrmevskRUsNMfrKTXOs7FgLuztJ6vL8bVgNnSuc/bWPx2Gt9AftzblgrnTx108xs6dbaadYptbYrjqZMwGJRVsYDUK5KbSpLJETC7DmlsZjMWCjSvZKHmFJRhB6i5CHEAYqHCpw0EbDSUprZBIKRIkQN4sLRyI2cG7791+89EcMuS3eGZ9PDnDd006xOdwNFyRLvGeTpacSqmleCDDS0IAFJCzA5ABCTmmkNNoXDjn0pgyJPTeP7CkVk5cEVfi25BY+ng4zmolXlQcDU6D/KcCzQpN6pz3Ng1/L01Wz5aWH//0Peofv6lgZ5vaqQB1KckgVQZBCxzHLxBxE5M="
+        blueprint = Blueprint(test_string)
+
+        assert blueprint.find_train_from_wagon(blueprint.entities[0]) == [
+            blueprint.entities[0],
+            blueprint.entities[2],
+            blueprint.entities[6],
+        ]
+
+        assert blueprint.find_train_from_wagon(blueprint.entities[3]) == [
+            blueprint.entities[1],
+            blueprint.entities[3],
+            blueprint.entities[5],
+        ]
+
+        test_string = "0eNqNktFqwzAMRf9Fz5mRZTu28ytjjLT1iiGxi5N0KyX/PiUtZawZ7FFG99wrWVfYdVM4lZhGaK4Q9zkN0LxeYYjH1HbL23g5BWggjqGHClLbL1VpYwdzBTEdwhc0cn6rIKQxjjHc9GtxeU9TvwuFGx7KLu9zn8d4Dkw75YElOS0+jHkh0qImiV5ZU8EFGlJWICqPNRm2yyUyuL1JUKDzDqU1zpC1xlhlFeraWW59SkCPBB/dFA8vn+2RIRsRtLo5axIkV9Yv2w24esD3bTnmv+HkhbFO0n06LYWV2mm1YSOkJURSyLMjWo8aeUyl19XEdObWXBiSpq7biKT/uXFVC/Lkl63dM6nnKByPP3g9gebHxVRwDmVYe8hJbT3Z2hM6RfP8Da2auHA="
+        blueprint = Blueprint(test_string)
+
+        assert blueprint.find_train_from_wagon(blueprint.entities[0]) == [
+            blueprint.entities[0],
+            blueprint.entities[2],
+            blueprint.entities[3],
+        ]
+
     def test_find_trains_filtered(self):
-        blueprint = Blueprint()
+        test_string = "0eNqVk9FuwyAMRf+F5xQ5BmLIr0zTlLasQqJQkaRbVOXfR9Mqm5R2yx5B9rn32nBhW9/bU3KhY/WFuV0MLatfLqx1h9D46103nCyrmevskRUsNMfrKTXOs7FgLuztJ6vL8bVgNnSuc/bWPx2Gt9AftzblgrnTx108xs6dbaadYptbYrjqZMwGJRVsYDUK5KbSpLJETC7DmlsZjMWCjSvZKHmFJRhB6i5CHEAYqHCpw0EbDSUprZBIKRIkQN4sLRyI2cG7791+89EcMuS3eGZ9PDnDd006xOdwNFyRLvGeTpacSqmleCDDS0IAFJCzA5ABCTmmkNNoXDjn0pgyJPTeP7CkVk5cEVfi25BY+ng4zmolXlQcDU6D/KcCzQpN6pz3Ng1/L01Wz5aWH//0Peofv6lgZ5vaqQB1KckgVQZBCxzHLxBxE5M="
+
+        blueprint = Blueprint(test_string)
+
+        # Return all trains:
+        assert blueprint.find_trains_filtered() == [
+            [blueprint.entities[0], blueprint.entities[2], blueprint.entities[6]],
+            [blueprint.entities[1], blueprint.entities[3], blueprint.entities[5]],
+            [blueprint.entities[4]],
+        ]
+
+        # Invert selection (return no trains)
+        assert blueprint.find_trains_filtered(invert=True) == []
+
+        # Test train length (int)
+        assert blueprint.find_trains_filtered(train_length=3) == [
+            [blueprint.entities[0], blueprint.entities[2], blueprint.entities[6]],
+            [blueprint.entities[1], blueprint.entities[3], blueprint.entities[5]],
+        ]
+
+        # Test train length (range)
+        assert blueprint.find_trains_filtered(train_length=(None, None)) == [
+            [blueprint.entities[0], blueprint.entities[2], blueprint.entities[6]],
+            [blueprint.entities[1], blueprint.entities[3], blueprint.entities[5]],
+            [blueprint.entities[4]],
+        ]
+
+        # Test num-type
+        assert blueprint.find_trains_filtered(
+            num_type={"locomotive": 2, "cargo-wagon": 1}
+        ) == [[blueprint.entities[1], blueprint.entities[3], blueprint.entities[5]]]
+
+        # Test orientation
+        assert blueprint.find_trains_filtered(orientation=Orientation.WEST) == [
+            [blueprint.entities[4]]
+        ]
+
+        # Test config
+        config = TrainConfiguration("1-FA")
+        assert blueprint.find_trains_filtered(config=config) == [
+            [blueprint.entities[0], blueprint.entities[2], blueprint.entities[6]]
+        ]
+
+        # Test limit
+        assert blueprint.find_trains_filtered(limit=1) == [
+            [blueprint.entities[0], blueprint.entities[2], blueprint.entities[6]]
+        ]
 
     # =========================================================================
     # TileCollection

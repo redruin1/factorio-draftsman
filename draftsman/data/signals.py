@@ -1,5 +1,4 @@
 # signals.py
-# -*- encoding: utf-8 -*-
 
 from __future__ import unicode_literals
 
@@ -26,8 +25,8 @@ with pkg_resources.open_binary(data, "signals.pkl") as inp:
     pure_virtual = ["signal-everything", "signal-anything", "signal-each"]
 
 
-def add_signal(name, type, order_string=None, subgroup=None):
-    # type: (str, str, str, str) -> None
+def add_signal(name, type):
+    # type: (str, str) -> None
     """
     Temporarily adds a signal to :py:mod:`draftsman.data.signals`. This allows
     the user to specify custom signals so that Draftsman can deduce their type
@@ -37,23 +36,26 @@ def add_signal(name, type, order_string=None, subgroup=None):
     :py:data:`virtual` depending on ``type``.
 
     Note that this is not intended as a replacement for generating proper signal
-    data using ``draftsman-update``; instead it offers a fast mechanism for 
+    data using ``draftsman-update``; instead it offers a fast mechanism for
     emulating a custom signal and being able to only specify it by it's string
     shorthand, instead of it's full ``{"name": ..., "type": ...}`` format.
 
+    :raises ValueError: If ``type`` is not set to one of ``"item"``, ``"fluid"``
+        or ``"virtual"``.
+
     :param name: The in-game string ID of the signal.
-    :param type: The signal-dict type of the signal; should be one of ``"item"``,
-        ``"fluid"`` or ``"virtual"``.
-    :param order_string: Currently unimplemented. TODO
-    :param subgroup: Currently unimplemented. TODO
+    :param type: The signal-dict type of the signal.
     """
+    if type not in {"item", "fluid", "virtual"}:
+        raise ValueError("Signal type must be one of 'item', 'fluid', or 'virtual'")
+
     raw[name] = {"name": name, "type": type}
     type_of[name] = type
     if type == "item":
         item.append(name)
     elif type == "fluid":
         fluid.append(name)
-    elif type == "virtual":
+    else:  # type == "virtual":
         virtual.append(name)
 
 

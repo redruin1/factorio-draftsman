@@ -102,24 +102,38 @@ class GroupTesting(unittest.TestCase):
         assert group.id == None
         assert group.position == Vector(2.0, 2.0)
         assert len(group.entities) == 6
-        assert group.entities == EntityList(initlist=[
-            Locomotive("locomotive", position=(-137.5625, 99.0), orientation=0.75),
-            StraightRail("straight-rail", position=(-141, 99), direction=Direction.EAST),
-            StraightRail("straight-rail", position=(-139, 99), direction=Direction.EAST),
-            StraightRail("straight-rail", position=(-137, 99), direction=Direction.EAST),
-            StraightRail("straight-rail", position=(-135, 99), direction=Direction.EAST),
-            StraightRail("straight-rail", position=(-133, 99), direction=Direction.EAST),
-        ])
+        assert group.entities == EntityList(
+            initlist=[
+                Locomotive("locomotive", position=(-137.5625, 99.0), orientation=0.75),
+                StraightRail(
+                    "straight-rail", position=(-141, 99), direction=Direction.EAST
+                ),
+                StraightRail(
+                    "straight-rail", position=(-139, 99), direction=Direction.EAST
+                ),
+                StraightRail(
+                    "straight-rail", position=(-137, 99), direction=Direction.EAST
+                ),
+                StraightRail(
+                    "straight-rail", position=(-135, 99), direction=Direction.EAST
+                ),
+                StraightRail(
+                    "straight-rail", position=(-133, 99), direction=Direction.EAST
+                ),
+            ]
+        )
         assert len(group.schedules) == 1
         assert group.schedules[0].locomotives[0]() is group.entities[0]
         assert group.schedules[0].stops == [
             {
                 "station": "AEnterprise",
-                "wait_conditions": WaitConditions([
-                    WaitCondition(type="time", compare_type="or", ticks=1800),
-                    WaitCondition(type="inactivity", compare_type="and"),
-                    WaitCondition(type="full", compare_type="and")
-                ])
+                "wait_conditions": WaitConditions(
+                    [
+                        WaitCondition(type="time", compare_type="or", ticks=1800),
+                        WaitCondition(type="inactivity", compare_type="and"),
+                        WaitCondition(type="full", compare_type="and"),
+                    ]
+                ),
             }
         ]
 
@@ -369,14 +383,18 @@ class GroupTesting(unittest.TestCase):
         # ScheduleList
         schedule = Schedule()
         schedule.add_locomotive(group.entities["test_train"])
-        schedule.append_stop("station_name", WaitCondition(WaitConditionType.INACTIVITY, ticks=600))
+        schedule.append_stop(
+            "station_name", WaitCondition(WaitConditionType.INACTIVITY, ticks=600)
+        )
         group.schedules = ScheduleList([schedule])
         assert isinstance(group.schedules, ScheduleList)
         assert group.schedules[0].locomotives[0]() is group.entities[0]
         assert group.schedules[0].stops == [
             {
                 "station": "station_name",
-                "wait_conditions": WaitConditions([WaitCondition(WaitConditionType.INACTIVITY, ticks=600)])
+                "wait_conditions": WaitConditions(
+                    [WaitCondition(WaitConditionType.INACTIVITY, ticks=600)]
+                ),
             }
         ]
 
@@ -915,7 +933,7 @@ class GroupTesting(unittest.TestCase):
         group.add_circuit_connection("red", 0, 1)
         group.entities.append("power-switch", tile_position=(1, 1))
         group.add_power_connection(2, 3, side=1)
-        group.entities.append("locomotive", id="loco", tile_position = (0, 0))
+        group.entities.append("locomotive", id="loco", tile_position=(0, 0))
         schedule = Schedule()
         schedule.add_locomotive(group.entities["loco"])
         schedule.append_stop("ore", WaitCondition("full"))
@@ -942,9 +960,7 @@ class GroupTesting(unittest.TestCase):
             group.entities[3].connections["Cu0"][0]["entity_id"]() is group.entities[2]
         )
         # Make sure schedule associations are preserved
-        assert (
-            group.schedules[0].locomotives[0]() is group.entities["loco"]
-        )
+        assert group.schedules[0].locomotives[0]() is group.entities["loco"]
         # Make sure the parent is correct
         assert group.parent is blueprint
 
@@ -970,9 +986,7 @@ class GroupTesting(unittest.TestCase):
             is group_copy.entities[2]
         )
         # Make sure schedule associations are preserved
-        assert (
-            group_copy.schedules[0].locomotives[0]() is group_copy.entities["loco"]
-        )
+        assert group_copy.schedules[0].locomotives[0]() is group_copy.entities["loco"]
         # Make sure parent of the copied group is reset to None
         assert group_copy.parent is None
         # Make sure the hashmap was copied properly and are not equivalent

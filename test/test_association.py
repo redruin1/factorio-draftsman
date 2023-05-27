@@ -19,7 +19,7 @@ else:  # pragma: no coverage
 class AssociationTesting(unittest.TestCase):
     def test_constructor(self):
         test = Container("wooden-chest")
-        Association(test) # No fail
+        Association(test)  # No fail
 
         # Damn cyclic imports
         # TODO: return this code

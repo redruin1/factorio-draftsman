@@ -160,8 +160,9 @@ Allows `draftsman-update` to run on Lua 5.2 instead of Lua 5.4 (which fixes some
 * Add equality operators for all `Entity`s
 * Finish short descriptions of each example (should probably add more examples as well)
 * Add constraints on `UpgradePlanner` and `DeconstructionPlanner`
-* Better type annotation for everything
+* Python3-ify everything
 * More doctests
+* Make draftsman's prototypes match Factorio's prototypes exactly (for consistency's sake)
 * Add documentation on report and contributing
 * Write test cases for `dump_format`
 * Change type annotations on all functions to follow py3

@@ -9,6 +9,7 @@ class ScheduleList(MutableSequence):
     """
     TODO
     """
+
     def __init__(self, initlist=None):
         """
         TODO
@@ -40,8 +41,19 @@ class ScheduleList(MutableSequence):
 
     def __setitem__(self, index, item):
         # type: (int, Schedule) -> None
-        if not isinstance(item, Schedule):
-            raise TypeError("Entry in <ScheduleList> must be an instance of <Schedule>")
+        if isinstance(index, slice):
+            start, stop, step = index.indices(len(self))
+            for i in range(start, stop, step):
+                if not isinstance(item[i], Schedule):
+                    raise TypeError(
+                        "Entry in <ScheduleList> must be an instance of <Schedule>"
+                    )
+        else:
+            if not isinstance(item, Schedule):
+                raise TypeError(
+                    "Entry in <ScheduleList> must be an instance of <Schedule>"
+                )
+
         self.data[index] = item
 
     def __delitem__(self, index):
@@ -51,7 +63,7 @@ class ScheduleList(MutableSequence):
     def __len__(self):
         # type: () -> int
         return len(self.data)
-    
+
     def __eq__(self, other):
         # type: (ScheduleList) -> bool
         if not isinstance(other, ScheduleList):
@@ -62,7 +74,7 @@ class ScheduleList(MutableSequence):
             if self.data[i] != other.data[i]:
                 return False
         return True
-    
+
     def __repr__(self):
         # type: () -> str
         return "<ScheduleList>{}".format(repr(self.data))

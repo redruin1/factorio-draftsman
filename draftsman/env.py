@@ -7,18 +7,9 @@ which runs through the Factorio data lifecycle and updates the data in
 """
 
 # TODO:
-# * Make sure everything uses OrderedDict for backwards compatability
 # * Treat `core` and `base` as mods to unify their loading
 # * In a similar vein, `normalize_module_names()` could also be simplified if
 #   they were in mods list
-
-from __future__ import print_function
-
-# Python 2 compat
-try:
-    FileNotFoundError
-except NameError:
-    FileNotFoundError = IOError
 
 from draftsman.error import (
     MissingModError,
@@ -35,6 +26,7 @@ try:
     import lupa.lua52 as lupa
 except ImportError:
     import warnings
+
     warnings.warn(
         "Could not import Lua version 5.2; 'draftsman-update' may or may not work depending on mod configuration",
         ImportWarning,
@@ -203,6 +195,8 @@ def get_mod_settings(location):
         version = decode_version(version_num)
         header_flag = bool(struct.unpack("<?", mod_settings_dat.read(1))[0])
         # TODO: check the above?
+        # probably best to treat this as a warning instead of an error now that
+        # I've turned a new leaf
         # assert version[::-1] >= __factorio_version_info__ and not header_flag
         mod_settings = get_data(mod_settings_dat)
 

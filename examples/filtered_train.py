@@ -24,7 +24,6 @@ from draftsman.entity import CargoWagon
 def main():
     # Train contents we want to filter
     # item name: amount of wagon slots
-    # TODO: make sure that this is ordered on prior Python versions
     contents = {
         "stone": 40,
         "coal": 40,
@@ -71,5 +70,5 @@ def main():
     print(blueprint.to_string())
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no coverage
     main()

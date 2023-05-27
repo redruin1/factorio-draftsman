@@ -8,6 +8,7 @@ from draftsman.prototypes.artillery_wagon import ArtilleryWagon
 
 import pytest
 
+
 class TestTrainConfiguration:
     def test_constructor(self):
         # Default
@@ -24,7 +25,7 @@ class TestTrainConfiguration:
             CargoWagon("cargo-wagon"),
             CargoWagon("cargo-wagon"),
             CargoWagon("cargo-wagon"),
-            Locomotive("locomotive", orientation=0.5)
+            Locomotive("locomotive", orientation=0.5),
         ]
 
         # Invalid string
@@ -51,9 +52,14 @@ class TestTrainConfiguration:
             tc.from_string("<CFAD")
 
         # Invalid direction
-        with pytest.raises(ValueError, match="Argument 'direction' must be one of 'dual' or 'forward'"):
+        with pytest.raises(
+            ValueError, match="Argument 'direction' must be one of 'dual' or 'forward'"
+        ):
             tc.from_string("2-4-2", direction="incorrect value")
 
         # Invalid wagons
-        with pytest.raises(ValueError, match="Argument 'wagons' must be one of 'cargo', 'fluid', or 'artillery'"):
+        with pytest.raises(
+            ValueError,
+            match="Argument 'wagons' must be one of 'cargo', 'fluid', or 'artillery'",
+        ):
             tc.from_string("2-4-2", wagons="incorrect value")

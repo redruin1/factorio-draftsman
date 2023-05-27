@@ -1,5 +1,4 @@
 # entitylist.py
-# -*- encoding: utf-8 -*-
 
 from draftsman.classes.association import Association
 from draftsman.classes.entity_like import EntityLike
@@ -47,7 +46,7 @@ class EntityList(MutableSequence):
         :exception TypeError: If any of the entries in ``initlist`` are neither
             a ``dict`` nor an ``EntityLike``.
         """
-        self.data = [] # type: list[EntityLike]
+        self.data = []  # type: list[EntityLike]
         self.key_map = {}
         self.key_to_idx = {}
         self.idx_to_key = {}
@@ -152,8 +151,8 @@ class EntityList(MutableSequence):
             same position. Merged entities share non-overlapping attributes and
             prefer the attributes of the last entity added. Useful for merging
             things like rails or power-poles on the edges of tiled blueprints.
-        :param kwargs: Any other keyword arguments to pass to overwrite the 
-            values in the newly-added entity. Only works when using string 
+        :param kwargs: Any other keyword arguments to pass to overwrite the
+            values in the newly-added entity. Only works when using string
             shorthand or when ``copy=True``.
 
         :example:
@@ -397,6 +396,7 @@ class EntityList(MutableSequence):
     @utils.reissue_warnings
     def __setitem__(self, item, value):
         # type: (Union[int, str], EntityLike) -> None
+        # TODO: handle slices
 
         # Get the key and index of the item
         idx, key = self.get_pair(item)
@@ -515,7 +515,7 @@ class EntityList(MutableSequence):
 
         if len(self.data) != len(other.data):
             return False
-        
+
         for i in range(len(self.data)):
             if self.data[i] != other.data[i]:
                 return False
@@ -593,7 +593,7 @@ class EntityList(MutableSequence):
                     neighbours[i] = try_to_replace_association(neighbour)
 
         return new
-    
+
     # =========================================================================
     # Internal functions
     # =========================================================================

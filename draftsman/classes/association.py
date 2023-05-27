@@ -41,7 +41,7 @@ class Association(weakref.ref):
             # But they exist in different places in memory (entity1 is not entity2)
             assert Association(entity1) != Association(entity2)
         """
-        return self() is other() # TODO: think about
+        return self() is other()  # TODO: think about
 
     def __deepcopy__(self, _):
         # type: (dict) -> Association
