@@ -46,14 +46,54 @@ def get_blueprintable_from_string(blueprintable_string):
     """
     blueprintable = utils.string_to_JSON(blueprintable_string)
     if "blueprint" in blueprintable:
-        return Blueprint(blueprintable_string)
+        return Blueprint(blueprintable)
     elif "deconstruction_planner" in blueprintable:
-        return DeconstructionPlanner(blueprintable_string)
+        return DeconstructionPlanner(blueprintable)
     elif "upgrade_planner" in blueprintable:
-        return UpgradePlanner(blueprintable_string)
+        return UpgradePlanner(blueprintable)
     elif "blueprint_book" in blueprintable:
-        return BlueprintBook(blueprintable_string)
+        return BlueprintBook(blueprintable)
     else:
         raise IncorrectBlueprintTypeError(
             "Unknown blueprintable '{}'".format(list(blueprintable.keys())[0])
+        )
+
+
+@utils.reissue_warnings
+def get_blueprintable_from_JSON(blueprintable_JSON):
+    # type: (dict) -> Blueprintable
+    """
+    Returns a :py:class:`.Blueprint` or a :py:class:`.BlueprintBook` depending
+    on the JSON dictionary passed in.
+
+    Gets a Blueprintable object based off of the ``blueprint_JSON``. A
+    "Blueprintable object" in this context means either a :py:class:`.Blueprint`,
+    :py:class:`.DeconstructionPlanner`, :py:class:`.UpgradePlanner`, or a
+    :py:class:`.BlueprintBook`, depending on the particular dict you passed in.
+    This function allows you generically accept any valid JSON structure of the
+    the above types and return the appropriate class instance.
+
+    :param blueprintable_JSON: The blueprint JSON to interpret.
+
+    :returns: A ``Blueprint``, ``DeconstructionPlanner``, ``UpgradePlanner``,
+        or ``BlueprintBook`` object.
+
+    :exception MalformedBlueprintStringError: If the ``blueprint_string`` cannot
+        be resolved due to an error with the zlib or JSON decompression.
+    :exception IncorrectBlueprintTypeError: If the root level of the
+        decompressed JSON object is neither ``"blueprint"``,
+        ``"deconstruction_planner"``, ``"upgrade_planner"``, nor
+        ``"blueprint_book"``.
+    """
+    if "blueprint" in blueprintable_JSON:
+        return Blueprint(blueprintable_JSON)
+    elif "deconstruction_planner" in blueprintable_JSON:
+        return DeconstructionPlanner(blueprintable_JSON)
+    elif "upgrade_planner" in blueprintable_JSON:
+        return UpgradePlanner(blueprintable_JSON)
+    elif "blueprint_book" in blueprintable_JSON:
+        return BlueprintBook(blueprintable_JSON)
+    else:
+        raise IncorrectBlueprintTypeError(
+            "Unknown blueprintable '{}'".format(list(blueprintable_JSON.keys())[0])
         )

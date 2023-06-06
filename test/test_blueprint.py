@@ -77,9 +77,11 @@ class BlueprintTesting(unittest.TestCase):
         # )
 
         # Dict
-        example = {"item": "blueprint", "version": encode_version(1, 1, 54, 0)}
+        example = {
+            "blueprint": {"item": "blueprint", "version": encode_version(1, 1, 54, 0)}
+        }
         blueprint = Blueprint(example)
-        self.assertEqual(blueprint.to_dict()["blueprint"], example)
+        self.assertEqual(blueprint.to_dict(), example)
 
         # TypeError
         with self.assertRaises(TypeError):

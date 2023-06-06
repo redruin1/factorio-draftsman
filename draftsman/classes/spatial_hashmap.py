@@ -8,6 +8,7 @@ from draftsman.classes.spatiallike import SpatialLike
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.prototypes.straight_rail import StraightRail
 from draftsman.prototypes.curved_rail import CurvedRail
+from draftsman.prototypes.gate import Gate
 from draftsman import utils
 from draftsman.warning import OverlappingObjectsWarning
 
@@ -137,6 +138,19 @@ class SpatialHashMap(SpatialDataStructure):
                         and item.global_position == overlapping_item.global_position
                     )
                     if not identical:
+                        continue
+
+                # StraightRails and Gates collide with each other ONLY IF the
+                # direction of the gate and rail are parallel
+                if (
+                    isinstance(item, StraightRail)
+                    and isinstance(overlapping_item, Gate)
+                    or isinstance(item, Gate)
+                    and isinstance(overlapping_item, StraightRail)
+                ):
+
+                    parallel = (item.direction - overlapping_item.direction) % 4 == 0
+                    if not parallel:
                         continue
 
                 if len(other_layers.intersection(item_layers)) > 0:

@@ -65,6 +65,16 @@ class StraightRailTesting(unittest.TestCase):  # Hoo boy
         with self.assertWarns(OverlappingObjectsWarning):
             blueprint.entities.append("straight-rail")
 
+        blueprint = Blueprint()
+        blueprint.entities.append("straight-rail", direction=Direction.NORTH)
+        # This shouldn't raise a warning
+        blueprint.entities.append("gate", direction=Direction.EAST)
+        blueprint.entities.pop()
+
+        # But this should
+        with self.assertWarns(OverlappingObjectsWarning):
+            blueprint.entities.append("gate", direction=Direction.NORTH)
+
     def test_mergable_with(self):
         rail1 = StraightRail("straight-rail")
         rail2 = StraightRail("straight-rail", tags={"some": "stuff"})

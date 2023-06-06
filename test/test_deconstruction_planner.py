@@ -46,9 +46,11 @@ class DeconstructionPlannerTesting(unittest.TestCase):
 
         # Dict
         test_planner = {
-            "settings": {
-                "tile_filter_mode": FilterMode.BLACKLIST,
-                "trees_and_rocks_only": True,
+            "deconstruction_planner": {
+                "settings": {
+                    "tile_filter_mode": FilterMode.BLACKLIST,
+                    "trees_and_rocks_only": True,
+                }
             }
         }
         decon_planner = DeconstructionPlanner(test_planner)
@@ -65,7 +67,9 @@ class DeconstructionPlannerTesting(unittest.TestCase):
         )
 
         with self.assertWarns(DraftsmanWarning):
-            DeconstructionPlanner({"something": "incorrect"})
+            DeconstructionPlanner(
+                {"deconstruction_planner": {"something": "incorrect"}}
+            )
 
     def test_set_entity_filter_mode(self):
         decon_planner = DeconstructionPlanner()

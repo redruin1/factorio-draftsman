@@ -141,3 +141,28 @@ class BlueprintUtilsTesting(unittest.TestCase):
         example = JSON_to_string({"incorrect": {}})
         with self.assertRaises(IncorrectBlueprintTypeError):
             get_blueprintable_from_string(example)
+
+    def test_get_blueprintable_from_JSON(self):
+        # Valid Format (Blueprint)
+        json_dict = {"blueprint": {"item": "blueprint"}}
+        blueprintable = get_blueprintable_from_JSON(json_dict)
+        self.assertIsInstance(blueprintable, Blueprint)
+
+        # Valid Format (DeconstructionPlanner)
+        json_dict = {"deconstruction_planner": {"item": "deconstruction-planner"}}
+        blueprintable = get_blueprintable_from_JSON(json_dict)
+        self.assertIsInstance(blueprintable, DeconstructionPlanner)
+
+        # Valid Format (UpgradePlanner)
+        json_dict = {"upgrade_planner": {"item": "upgrade-planner"}}
+        blueprintable = get_blueprintable_from_JSON(json_dict)
+        self.assertIsInstance(blueprintable, UpgradePlanner)
+
+        # Valid format (BlueprintBook)
+        json_dict = {"blueprint_book": {"item": "blueprint-book"}}
+        blueprintable = get_blueprintable_from_JSON(json_dict)
+        self.assertIsInstance(blueprintable, BlueprintBook)
+
+        example = {"incorrect": {}}
+        with self.assertRaises(IncorrectBlueprintTypeError):
+            get_blueprintable_from_JSON(example)

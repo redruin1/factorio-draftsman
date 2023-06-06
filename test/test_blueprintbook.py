@@ -98,9 +98,11 @@ class BlueprintBookTesting(unittest.TestCase):
         )
 
         example = {
-            "active_index": 0,
-            "item": "blueprint-book",
-            "version": encode_version(*__factorio_version_info__),
+            "blueprint_book": {
+                "active_index": 0,
+                "item": "blueprint-book",
+                "version": encode_version(*__factorio_version_info__),
+            }
         }
         blueprint_book = BlueprintBook(example)
         self.assertEqual(
@@ -384,9 +386,9 @@ class BlueprintBookTesting(unittest.TestCase):
         self.assertEqual(blueprint_book.blueprints.data, [])
 
         blueprints = [
-            Blueprint({"label": "A"}),
+            Blueprint({"blueprint": {"label": "A"}}),
             BlueprintBook(),
-            Blueprint({"label": "B"}),
+            Blueprint({"blueprint": {"label": "B"}}),
         ]
 
         blueprint_book.blueprints = blueprints

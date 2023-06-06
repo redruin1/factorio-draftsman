@@ -49,10 +49,16 @@ class UpgradePlannerTesting(unittest.TestCase):
 
         # Dict
         test_planner = {
-            "settings": {
-                "mappers": [
-                    {"from": "transport-belt", "to": "fast-transport-belt", "index": 0}
-                ]
+            "upgrade_planner": {
+                "settings": {
+                    "mappers": [
+                        {
+                            "from": "transport-belt",
+                            "to": "fast-transport-belt",
+                            "index": 0,
+                        }
+                    ]
+                }
             }
         }
         upgrade_planner = UpgradePlanner(test_planner)
@@ -75,7 +81,7 @@ class UpgradePlannerTesting(unittest.TestCase):
 
         # Warnings
         with self.assertWarns(DraftsmanWarning):
-            UpgradePlanner({"unused": "keyword"})
+            UpgradePlanner({"upgrade_planner": {"unused": "keyword"}})
 
         # TypeError
         with self.assertRaises(TypeError):

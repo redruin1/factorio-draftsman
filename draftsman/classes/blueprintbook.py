@@ -85,15 +85,17 @@ class BlueprintableList(MutableSequence):
         if initlist is not None:
             for elem in initlist:
                 if isinstance(elem, dict):
+                    # TODO: this would be way cleaner, but circuilar imports
+                    # self.append(get_blueprintable_from_JSON(elem))
                     # fmt: off
                     if "blueprint" in elem:
-                        self.append(Blueprint(elem["blueprint"]))
+                        self.append(Blueprint(elem))
                     elif "deconstruction_planner" in elem:
-                        self.append(DeconstructionPlanner(elem["deconstruction_planner"]))
+                        self.append(DeconstructionPlanner(elem))
                     elif "upgrade_planner" in elem:
-                        self.append(UpgradePlanner(elem["upgrade_planner"]))
+                        self.append(UpgradePlanner(elem))
                     elif "blueprint_book" in elem:
-                        self.append(BlueprintBook(elem["blueprint_book"]))
+                        self.append(BlueprintBook(elem))
                     else:
                         raise TypeError(
                             "Dictionary input cannot be resolve to a blueprintable"

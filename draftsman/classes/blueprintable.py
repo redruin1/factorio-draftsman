@@ -47,7 +47,7 @@ class Blueprintable(object):
         elif isinstance(init_data, six.string_types):
             self.load_from_string(init_data)
         elif isinstance(init_data, dict):
-            self.setup(**init_data)
+            self.setup(**init_data[self._root_item])
         else:
             raise TypeError(
                 "'{}' must be a factorio blueprint string, a dictionary, or None".format(
