@@ -153,7 +153,7 @@ class ConstantCombinator(
             not set.
         :setter: Sets whether or not this combinator is enabled. Removes the key
             if set to ``None``.
-        :type:``bool``
+        :type: ``bool``
         """
         return self.control_behavior.get("is_on", None)
 

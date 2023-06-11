@@ -19,11 +19,12 @@ sys.path.insert(0, os.path.abspath("../.."))
 # -- Project information -----------------------------------------------------
 
 project = "factorio-draftsman"
-copyright = "2022, redruin1"
+copyright = "2023, redruin1"
 author = "redruin1"
 
 # The full version, including alpha/beta/rc tags
-release = "0.3.5"
+import draftsman
+release = draftsman.__version__
 
 
 # -- General configuration ---------------------------------------------------
