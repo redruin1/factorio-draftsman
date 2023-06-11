@@ -109,7 +109,7 @@ class ConstantCombinator(
         :getter: Gets the signals of the combinators, or an empty list if not
             set.
         :setter: Sets the signals of the combinators. Removes the key if set to
-            None.
+            ``None``.
         :type: :py:data:`.SIGNAL_FILTERS`
 
         :exception DataFormatError: If set to anything that does not match the
@@ -140,6 +140,32 @@ class ConstantCombinator(
                 self.control_behavior["filters"] = value
             except SchemaError as e:
                 six.raise_from(DataFormatError(e), None)
+
+    # =========================================================================
+
+    @property
+    def is_on(self):
+        """
+        Whether or not this Constant combinator is "on" and currently outputting
+        it's contents to connected wires. Default state is enabled.
+
+        :getter: Gets whether or not this combinator is enabled, or ``None`` if
+            not set.
+        :setter: Sets whether or not this combinator is enabled. Removes the key
+            if set to ``None``.
+        :type:``bool``
+        """
+        return self.control_behavior.get("is_on", None)
+
+    @is_on.setter
+    def is_on(self, value):
+        if value is None:
+            self.control_behavior.pop("is_on", None)
+        elif isinstance(value, bool):
+            self.control_behavior["is_on"] = value
+        else:
+            raise TypeError("'is_on' must be a bool or None")
+
 
     # =========================================================================
 

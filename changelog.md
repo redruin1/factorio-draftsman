@@ -5,6 +5,7 @@
 * Fixed issue where integer `playback_volume` values on programmable speakers wasn't getting coerced to a float and failing validation (#72)
 * Fixed Blueprintable objects not being correctly initialized from their constructor when JSON dicts were passed as an argument (#75)
 * Fixed `OverlappingObjectsWarning` being incorrectly emitted when `Gates` overlap `StraightRails` (they now are only emitted if they're not perpendicular to each other) (#76)
+* Fixed `ConstantCombinator` not recognizing the `is_on` member (#77)
 
 ## 1.0.4
 * Updated `factorio-data` to version `1.1.80`

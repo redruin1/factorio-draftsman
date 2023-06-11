@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 
+from draftsman.constants import Direction
 from draftsman.entity import ConstantCombinator, constant_combinators
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
@@ -308,6 +309,59 @@ class ConstantCombinatorTesting(unittest.TestCase):
         )
         signal = combinator.get_signal(50)
         self.assertEqual(signal, None)
+
+    def test_is_on(self):
+        combinator = ConstantCombinator()
+        combinator.is_on = False
+        # assert combinator.is_on == False
+        self.assertEquals(combinator.is_on, False)
+        # assert "is_on" in combinator.control_behavior
+        self.assertIn("is_on", combinator.control_behavior)
+
+        combinator.is_on = True
+        # assert combinator.is_on == True
+        self.assertEquals(combinator.is_on, True)
+        # assert "is_on" in combinator.control_behavior
+        self.assertIn("is_on", combinator.control_behavior)
+
+        combinator.is_on = None
+        # assert combinator.is_on == None
+        self.assertEquals(combinator.is_on, None)
+        # assert "is_on" not in combinator.control_behavior
+        self.assertNotIn("is_on", combinator.control_behavior)
+
+        # Type error
+        with self.assertRaises(TypeError):
+            combinator.is_on = "wrong"
+
+        # Test fix for issue #77
+        test_json = {
+            "entity_number": 1,
+            "name": "constant-combinator",
+            "position": {
+            "x": 155.5,
+            "y": -108.5
+            },
+            "direction": 6,
+            "control_behavior": {
+                "filters": [
+                    {
+                    "signal": {
+                        "type": "item",
+                        "name": "stone"
+                    },
+                    "count": 1,
+                    "index": 1
+                    }
+                ],
+                "is_on": False
+            }
+        }
+        combinator = ConstantCombinator(**test_json)
+        assert combinator.position.x == 155.5
+        assert combinator.position.y == -108.5
+        assert combinator.direction == Direction.WEST
+        assert combinator.is_on == False
 
     def test_mergable_with(self):
         comb1 = ConstantCombinator("constant-combinator")
