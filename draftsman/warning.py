@@ -167,10 +167,33 @@ class OverlappingObjectsWarning(DraftsmanWarning):
     pass
 
 
-class UselessConnectionWarning(DraftsmanWarning):
+class UselessOperationWarning(DraftsmanWarning):
     """
-    Raised when a circuit connection is functionally useless, such as when a
+    Raised when an action of some kind is functionally useless, such as when a 
     wall is connected with a circuit wire without an adjacent :py:class:`.Gate`.
+    """
+
+    pass
+
+
+class RedundantOperationWarning(DraftsmanWarning):
+    """
+    Raised when an action is performed who's operation would not have any 
+    noticable change, making it's execution needless. For example, setting a
+    mapping in an upgrade planner to upgrade "transport-belt" to 
+    "transport-belt" is possible, but performs no upgrade operation when used.
+    """
+
+    pass
+
+
+class UnrecognizedElementWarning(DraftsmanWarning):
+    """
+    Raised when Draftsman detects a entity/item/signal/tile or any other 
+    Factorio construct that it cannot resolve under it's current data 
+    configuration. This is usually either because the identifier was mistyped, 
+    or because the element in question belongs to a mod that Draftsman has not 
+    been updated to recognize.
     """
 
     pass

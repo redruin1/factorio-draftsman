@@ -269,8 +269,17 @@ class InvalidTileError(DraftsmanError):
 
 class InvalidSignalError(DraftsmanError):
     """
-    Raised when a signal name does not match any valid entry in
-    :py:data:`draftsman.data.signals.raw`.
+    Raised when a signal name does not match any valid entry currently
+    recognized by Draftsman.
+    """
+
+    pass
+
+
+class InvalidMappingError(DraftsmanError):
+    """
+    Raised when a mapping name does not match any valid entry currently
+    recognized by Draftsman.
     """
 
     pass

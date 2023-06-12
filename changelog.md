@@ -26,6 +26,7 @@
 * Added a bunch of new documentation to document the above
 * Added a bunch of new examples to test out the above new features
 * Added a fixture that ensures that Draftsman is running a vanilla configuration before running tests, and exits if it detects that it is not the case.
+* Added a new command line option for `draftsman-update` `--lua-version`, which prints the version of Lua currently being used for debugging compat issues
 * Added a README.md to the `examples` folder which provides short descriptions for all of the examples
 * Integrated aforementioned examples into the test suite
 * Normalized all import filenames to use underscores consistently (potentially breaking change!)

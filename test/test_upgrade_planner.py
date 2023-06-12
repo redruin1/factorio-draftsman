@@ -296,8 +296,11 @@ class UpgradePlannerTesting(unittest.TestCase):
         upgrade_planner = UpgradePlanner()
 
         # Out of index
-        # with pytest.warns(ValueWarning):
-        upgrade_planner.set_mapping("transport-belt", "fast-transport-belt", -1)
+        with pytest.warns(ValueWarning):
+            upgrade_planner.set_mapping("transport-belt", "fast-transport-belt", -1)
+
+        with pytest.warns(ValueWarning):
+            upgrade_planner.set_mapping("fast-transport-belt", "express-transport-belt", 24)
 
         goal = [
             ValueWarning(

@@ -196,8 +196,8 @@ def main():
     # configurations and `train_schedule_usage.py` for more information on
     # train schedules.
 
-    print(rail_blueprints.to_string())
+    return rail_blueprints.to_string()
 
 
 if __name__ == "__main__":
-    main()
+    print(main())
