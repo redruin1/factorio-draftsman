@@ -314,19 +314,19 @@ class ConstantCombinatorTesting(unittest.TestCase):
         combinator = ConstantCombinator()
         combinator.is_on = False
         # assert combinator.is_on == False
-        self.assertEquals(combinator.is_on, False)
+        self.assertEqual(combinator.is_on, False)
         # assert "is_on" in combinator.control_behavior
         self.assertIn("is_on", combinator.control_behavior)
 
         combinator.is_on = True
         # assert combinator.is_on == True
-        self.assertEquals(combinator.is_on, True)
+        self.assertEqual(combinator.is_on, True)
         # assert "is_on" in combinator.control_behavior
         self.assertIn("is_on", combinator.control_behavior)
 
         combinator.is_on = None
         # assert combinator.is_on == None
-        self.assertEquals(combinator.is_on, None)
+        self.assertEqual(combinator.is_on, None)
         # assert "is_on" not in combinator.control_behavior
         self.assertNotIn("is_on", combinator.control_behavior)
 
@@ -338,24 +338,18 @@ class ConstantCombinatorTesting(unittest.TestCase):
         test_json = {
             "entity_number": 1,
             "name": "constant-combinator",
-            "position": {
-            "x": 155.5,
-            "y": -108.5
-            },
+            "position": {"x": 155.5, "y": -108.5},
             "direction": 6,
             "control_behavior": {
                 "filters": [
                     {
-                    "signal": {
-                        "type": "item",
-                        "name": "stone"
-                    },
-                    "count": 1,
-                    "index": 1
+                        "signal": {"type": "item", "name": "stone"},
+                        "count": 1,
+                        "index": 1,
                     }
                 ],
-                "is_on": False
-            }
+                "is_on": False,
+            },
         }
         combinator = ConstantCombinator(**test_json)
         assert combinator.position.x == 155.5

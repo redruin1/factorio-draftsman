@@ -166,7 +166,6 @@ class ConstantCombinator(
         else:
             raise TypeError("'is_on' must be a bool or None")
 
-
     # =========================================================================
 
     def set_signal(self, index, signal, count=0):

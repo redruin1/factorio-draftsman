@@ -373,10 +373,7 @@ ARITHMETIC_COMBINATOR_CONTROL_BEHAVIOR = Schema(
 CONSTANT_COMBINATOR_CONTROL_BEHAVIOR = Schema(
     And(
         Use(lambda x: {} if x is None else x),  # Convert to empty dict if None
-        {
-            Optional("filters"): SIGNAL_FILTERS,
-            Optional("is_on"): bool
-        }
+        {Optional("filters"): SIGNAL_FILTERS, Optional("is_on"): bool},
     )
 )
 
