@@ -3,7 +3,8 @@
 from __future__ import unicode_literals
 
 from draftsman import data
-from draftsman.error import InvalidSignalError
+from draftsman.data import entities, modules
+from draftsman.error import InvalidSignalError, InvalidMappingError
 
 import pickle
 import six
@@ -101,3 +102,27 @@ def signal_dict(signal_name):
     :returns: A dict with the ``"name"`` and ``"type"`` keys set.
     """
     return {"name": six.text_type(signal_name), "type": get_signal_type(signal_name)}
+
+
+def get_mapping_type(mapping_name):
+    # type: (str) -> str
+    """
+    TODO
+    """
+    # TODO: actually check that this is the case (particularly with modded entities/items)
+    if mapping_name in modules.raw:  # TODO: should probably change
+        return "item"
+    elif mapping_name in entities.raw:  # TODO: should probably change
+        return "entity"
+    else:
+        raise InvalidMappingError("'{}'".format(mapping_name))
+
+
+def mapping_dict(mapping_name):
+    # type: (str) -> dict
+    """
+    Creates a MappingID ``dict`` from  the given mapping name.
+
+    TODO
+    """
+    return {"name": six.text_type(mapping_name), "type": get_mapping_type(mapping_name)}

@@ -11,7 +11,7 @@ match the data format specified, which is usually wrapped with ``DraftsmanError`
 from __future__ import unicode_literals
 
 from draftsman.classes.association import Association
-from draftsman.data.signals import signal_dict
+from draftsman.data.signals import signal_dict, mapping_dict
 
 from builtins import int
 from schema import Schema, Use, Optional, Or, And
@@ -110,6 +110,21 @@ SIGNAL_ID_OR_CONSTANT = Schema(
     And(
         Use(normalize_signal_id, error="unknown input signal id"),
         Or({"name": six.text_type, "type": six.text_type}, int, None),
+    )
+)
+
+
+def normalize_mapping_id(input):
+    if isinstance(input, six.string_types):
+        return mapping_dict(input)
+    else:
+        return input
+
+
+MAPPING_ID_OR_NONE = Schema(
+    And(
+        Use(normalize_mapping_id, error="unknown input mapping id"),
+        Or({"name": six.text_type, "type": six.text_type}, None),
     )
 )
 
