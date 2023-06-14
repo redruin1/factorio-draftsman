@@ -20,11 +20,10 @@ from draftsman.utils import AABB
 
 import draftsman.data.tiles as tiles
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Tuple
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.blueprint import Blueprint
-    from typing import Tuple
 
 
 class Tile(SpatialLike):
