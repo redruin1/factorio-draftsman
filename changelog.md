@@ -1,5 +1,9 @@
 # Changelog
 
+* Merged SIGSTACKFAULT's pull requests:
+    * Fix type annotation of `Tile.__init__()`
+    * Fix type annotation of `BlueprintBook.insert()`
+
 ## 1.0.5
 * Added `get_blueprintable_from_JSON()` and patched `get_blueprintable_from_string()` so that it no longer converts the string twice (accidentally)
 * Fixed issue where integer `playback_volume` values on programmable speakers wasn't getting coerced to a float and failing validation (#72)
