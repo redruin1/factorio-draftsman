@@ -105,7 +105,7 @@ class BlueprintableList(MutableSequence):
                     self.append(elem)
 
     def insert(self, idx, value):
-        # type: (int, Union[Blueprint, BlueprintBook]) -> None
+        # type: (int, Blueprintable) -> None
         # Make sure the blueprintable is valid
         self.check_blueprintable(value)
 
