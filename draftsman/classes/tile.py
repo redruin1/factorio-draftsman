@@ -20,7 +20,7 @@ from draftsman.utils import AABB
 
 import draftsman.data.tiles as tiles
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Tuple
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.blueprint import Blueprint
@@ -32,7 +32,7 @@ class Tile(SpatialLike):
     """
 
     def __init__(self, name, position=(0, 0)):
-        # type: (str, int, int) -> None
+        # type: (str, Tuple[int, int]) -> None
         """
         Create a new Tile with ``name`` at ``position``. ``position`` defaults
         to ``(0, 0)``.
