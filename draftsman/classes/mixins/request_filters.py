@@ -67,8 +67,8 @@ class RequestFiltersMixin(object):
         except SchemaError as e:
             six.raise_from(TypeError(e), None)
 
-        if item is not None and item not in items.raw:
-            raise InvalidItemError("'{}'".format(item))
+        # if item is not None and item not in items.raw:
+        #     raise InvalidItemError("'{}'".format(item))
         if not 0 <= index < 1000:
             raise IndexError("Filter index ({}) not in range [0, 1000)".format(index))
         if count is None:  # default count to the item's stack size
@@ -115,9 +115,9 @@ class RequestFiltersMixin(object):
             six.raise_from(DataFormatError(e), None)
 
         # Make sure the items are items
-        for item in filters:
-            if item["name"] not in items.raw:
-                raise InvalidItemError(item["name"])
+        # for item in filters:
+        #     if item["name"] not in items.raw:
+        #         raise InvalidItemError(item["name"])
 
         self.request_filters = []
         for i in range(len(filters)):

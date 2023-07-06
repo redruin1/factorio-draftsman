@@ -163,10 +163,9 @@ Allows `draftsman-update` to run on Lua 5.2 instead of Lua 5.4 (which fixes some
 * Python3-ify everything
 * More doctests
 * Make draftsman's prototypes match Factorio's prototypes exactly (for consistency's sake)
-* Add documentation on report and contributing
-* Write test cases for `dump_format`
-* Change type annotations on all functions to follow py3
-* Add plaintext representations of Entity JSON objects for all entities in addition to blueprintables
+* Write `__repr__` function for everything
+* Write `dump_format` (and test_cases)
+    * Add plaintext representations of Entity JSON objects for all entities in addition to blueprintables
 * Update modding documentation guide to reflect 2.0 changes
 * Add warnings for placement constraints on rails, rail signals and train stops
 * Reevaluate the diamond diagrams for inherited `Entity` subclass

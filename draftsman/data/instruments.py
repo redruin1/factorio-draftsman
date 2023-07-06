@@ -1,5 +1,4 @@
 # instruments.py
-# -*- encoding: utf-8 -*-
 
 import pickle
 
@@ -13,11 +12,11 @@ from draftsman import data
 
 
 with pkg_resources.open_binary(data, "instruments.pkl") as inp:
-    _data = pickle.load(inp)
-    raw = _data[0]
-    index = _data[1]
-    names = _data[2]
+    _data: list = pickle.load(inp)
+    raw: dict[str, list[dict]] = _data[0]
+    index: dict[str, dict[str, dict[str, int]]] = _data[1]
+    names: dict[str, dict[str, dict[int, str]]] = _data[2]
 
 
-def add_instrument(name, notes):
+def add_instrument(entity: str, name: str, notes: list[str]):
     raise NotImplementedError

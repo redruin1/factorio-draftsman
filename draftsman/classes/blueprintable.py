@@ -4,6 +4,8 @@
 from __future__ import unicode_literals
 import re
 
+from draftsman.classes.exportable import Exportable
+from draftsman.data.signals import signal_dict
 from draftsman.error import (
     IncorrectBlueprintTypeError,
     DataFormatError,
@@ -13,14 +15,14 @@ from draftsman import utils
 
 from abc import ABCMeta, abstractmethod
 
+from functools import cache
 import json
 from schema import SchemaError
 import six
 from typing import Any, Sequence, Union
 
 
-@six.add_metaclass(ABCMeta)
-class Blueprintable(object):
+class Blueprintable(Exportable, metaclass=ABCMeta):
     """
     An abstract base class representing "blueprint-like" objects, such as
     :py:class:`.Blueprint`, :py:class:`.DeconstructionPlanner`,
@@ -37,10 +39,12 @@ class Blueprintable(object):
         Initializes the private ``_root`` data dictionary, as well as setting
         the ``item`` name.
         """
+        # Init exportable
+        super().__init__()
+
         # The "root" dict, contains everything inside of this blueprintable
         # Output format is equivalent to:
         # { self._root_item: self._root }
-        self._root = {}
 
         self._root_item = six.text_type(root_item)
         self._root["item"] = six.text_type(item)
@@ -91,7 +95,7 @@ class Blueprintable(object):
         self.setup(**root[self._root_item], unknown=unknown)
 
     @abstractmethod
-    def setup(unknown="error", **kwargs):  # pragma: no coverage
+    def setup(self, unknown="error", **kwargs):  # pragma: no coverage
         # type: (str, **dict) -> None
         """
         Setup the Blueprintable's parameters with the input keywords as values.
@@ -179,10 +183,8 @@ class Blueprintable(object):
         # type: (str) -> None
         if value is None:
             self._root.pop("label", None)
-        elif isinstance(value, six.string_types):
-            self._root["label"] = six.text_type(value)
         else:
-            raise TypeError("`label` must be a string or None")
+            self._root["label"] = value
 
     # =========================================================================
 
@@ -208,10 +210,8 @@ class Blueprintable(object):
         # type: (str) -> None
         if value is None:
             self._root.pop("description", None)
-        elif isinstance(value, six.string_types):
-            self._root["description"] = six.text_type(value)
         else:
-            raise TypeError("'description' must be a string or None")
+            self._root["description"] = value
 
     # =========================================================================
 
@@ -255,11 +255,16 @@ class Blueprintable(object):
         # type: (list[Union[dict, str]]) -> None
         if value is None:
             self._root.pop("icons", None)
-            return
-        try:
-            self._root["icons"] = signatures.ICONS.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        else:
+            self._root["icons"] = value
+
+    def set_icons(self, *icon_names):
+        """
+        TODO
+        """
+        self.icons = [None] * len(icon_names)
+        for i, icon in enumerate(icon_names):
+            self.icons[i] = {"index": i + 1, "signal": signal_dict(icon)}
 
     # =========================================================================
 
@@ -312,12 +317,22 @@ class Blueprintable(object):
         # type: (Union[int, Sequence[int]]) -> None
         if value is None:
             self._root.pop("version", None)
-        elif isinstance(value, six.integer_types):
-            self._root["version"] = value
-        elif isinstance(value, Sequence):
-            self._root["version"] = utils.encode_version(*value)
         else:
-            raise TypeError("'version' must be an int, sequence of ints or None")
+            self._root["version"] = value
+
+    def set_version(self, major, minor, patch=0, dev_ver=0):
+        """
+        Convenience function for setting a Blueprintable's version by it's
+        component semantic version numbers. Loose wrapper around
+        :py:func:`.encode_version`.
+
+        :param major: The major Factorio version.
+        :param minor: The minor Factorio version.
+        :param patch: The current patch number.
+        :param dev_ver: The (internal) development version.
+        """
+        # TODO: use this method in constructor
+        self._root["version"] = utils.encode_version(major, minor, patch, dev_ver)
 
     # =========================================================================
     # Utility functions
@@ -385,54 +400,14 @@ class Blueprintable(object):
         version_tuple = utils.decode_version(self._root["version"])
         return utils.version_tuple_to_string(version_tuple)
 
-    @abstractmethod
-    def to_dict(self):  # pragma: no coverage
-        # type: () -> dict
-        """
-        Returns the blueprintable as a dictionary. Intended for getting the
-        precursor to a Factorio blueprint string before encoding and compression
-        takes place.
+    # def validate(self):
+    #     # type: () -> bool
+    #     self.label = signatures.Label.validate(self.label)
+    #     self.description = signatures.Description.validate(self.description)
+    #     self.icons = signatures.Icons.validate(self.icons)
+    #     self.version = signatures.Version.validate(self.version)
 
-        :returns: The ``dict`` representation of the :py:class:`.Blueprintable`.
-        """
-        pass
-
-    def to_string(self):  # pragma: no coverage
-        # type: () -> str
-        """
-        Returns this object as an encoded Factorio blueprint string.
-
-        :returns: The zlib-compressed, base-64 encoded string.
-
-        :example:
-
-        .. doctest::
-
-            >>> from draftsman.blueprintable import (
-            ...     Blueprint, DeconstructionPlanner, UpgradePlanner, BlueprintBook
-            ... )
-            >>> Blueprint({"version": (1, 0)}).to_string()
-            '0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDE3sTQ3Mzc0MDM1q60FAHmVE1M='
-            >>> DeconstructionPlanner({"version": (1, 0)}).to_string()
-            '0eNpdy0EKgCAQAMC/7Nkgw7T8TIQtIdga7tol/HtdunQdmBs2DJlYSg0SMy1nWomwgL+BUSTSzuCppqQgCh7gf6H7goILC78Cfpi0cWZ21unejra1B7C2I9M='
-            >>> UpgradePlanner({"version": (1, 0)}).to_string()
-            '0eNo1yksKgCAUBdC93LFBhmm5mRB6iGAv8dNE3Hsjz/h0tOSzu+lK0TFThu0oVGtgX2C5xSgQKj2wcy5zCnyUS3gZdjukMuo02shV73qMH4ZxHbs='
-            >>> BlueprintBook({"version": (1, 0)}).to_string()
-            '0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MTSzNzcwNDcxMzWprAVWGHQI='
-        """
-        return utils.JSON_to_string(self.to_dict())
-
-    def __setitem__(self, key, value):
-        # type: (str, Any) -> None
-        self._root[key] = value
-
-    def __getitem__(self, key):
-        # type: (str) -> Any
-        return self._root[key]
-
-    def __contains__(self, item):
-        # type: (str) -> bool
-        return item in self._root
+    #     super().validate()
 
     def __str__(self):  # pragma: no coverage
         # type: () -> str

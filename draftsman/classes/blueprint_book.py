@@ -89,28 +89,28 @@ class BlueprintableList(MutableSequence):
                     if "blueprint" in elem:
                         self.append(
                             Blueprint(
-                                elem["blueprint"], 
+                                elem, 
                                 unknown=unknown
                             )
                         )
                     elif "deconstruction_planner" in elem:
                         self.append(
                             DeconstructionPlanner(
-                                elem["deconstruction_planner"], 
+                                elem, 
                                 unknown=unknown
                             )
                         )
                     elif "upgrade_planner" in elem:
                         self.append(
                             UpgradePlanner(
-                                elem["upgrade_planner"], 
+                                elem, 
                                 unknown=unknown
                             )
                         )
                     elif "blueprint_book" in elem:
                         self.append(
                             BlueprintBook(
-                                elem["blueprint_book"], 
+                                elem, 
                                 unknown=unknown
                             )
                         )
@@ -255,11 +255,22 @@ class BlueprintBook(Blueprintable):
         # type: (dict) -> None
         if value is None:
             self._root.pop("label_color", None)
-            return
+        else:
+            self._root["label_color"] = value
+
+    def set_label_color(self, r, g, b, a=None):
+        """
+        TODO
+        """
         try:
-            self._root["label_color"] = signatures.COLOR.validate(value)
+            if a is None:
+                self._root["label_color"] = signatures.COLOR.validate([r, g, b])  # TODO
+            else:
+                self._root["label_color"] = signatures.COLOR.validate(
+                    [r, g, b, a]
+                )  # FIXME
         except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+            raise DataFormatError from e
 
     # =========================================================================
 
@@ -334,6 +345,12 @@ class BlueprintBook(Blueprintable):
     # =========================================================================
     # Utility functions
     # =========================================================================
+
+    def validate(self):
+        """
+        TODO
+        """
+        pass
 
     def to_dict(self):
         # type: () -> dict

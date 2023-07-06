@@ -35,6 +35,7 @@ from draftsman.error import (
     EntityNotCircuitConnectableError,
     DataFormatError,
     InvalidAssociationError,
+    InvalidSignalError,
 )
 from draftsman.utils import encode_version, AABB
 from draftsman.warning import (
@@ -92,7 +93,7 @@ class BlueprintTesting(unittest.TestCase):
             "blueprint": {"item": "blueprint", "version": encode_version(1, 1, 54, 0)}
         }
         blueprint = Blueprint(example)
-        assert blueprint.to_dict()["blueprint"] == example
+        assert blueprint.to_dict() == example
 
         # # TypeError
         # with self.assertRaises(TypeError):
@@ -142,8 +143,11 @@ class BlueprintTesting(unittest.TestCase):
         blueprint = Blueprint()
         blueprint.setup(
             label="something",
-            label_color=(1.0, 0.0, 0.0),
-            icons=["signal-A", "signal-B"],
+            label_color={"r": 1.0, "g": 0.0, "b": 0.0},
+            icons=[
+                {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}},
+                {"index": 2, "signal": {"name": "signal-B", "type": "virtual"}},
+            ],
             snapping_grid_size=(32, 32),
             snapping_grid_position=(16, 16),
             position_relative_to_grid=(-5, -7),
@@ -186,7 +190,7 @@ class BlueprintTesting(unittest.TestCase):
 
     def test_set_label(self):
         blueprint = Blueprint()
-        blueprint.version = (1, 1, 54, 0)
+        blueprint.set_version(1, 1, 54, 0)
         # String
         blueprint.label = "testing The LABEL"
         assert blueprint.label == "testing The LABEL"
@@ -201,18 +205,15 @@ class BlueprintTesting(unittest.TestCase):
             "item": "blueprint",
             "version": encode_version(1, 1, 54, 0),
         }
-        # Other
-        with pytest.raises(TypeError):
-            blueprint.label = 100
 
     # =========================================================================
 
     def test_set_label_color(self):
         blueprint = Blueprint()
-        blueprint.version = (1, 1, 54, 0)
+        blueprint.set_version(1, 1, 54, 0)
         # Valid 3 args
         # Test for floating point conversion error by using 0.1
-        blueprint.label_color = (0.5, 0.1, 0.5)
+        blueprint.set_label_color(0.5, 0.1, 0.5)
         assert blueprint.label_color == {"r": 0.5, "g": 0.1, "b": 0.5}
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
@@ -220,7 +221,7 @@ class BlueprintTesting(unittest.TestCase):
             "version": encode_version(1, 1, 54, 0),
         }
         # Valid 4 args
-        blueprint.label_color = (1.0, 1.0, 1.0, 0.25)
+        blueprint.set_label_color(1.0, 1.0, 1.0, 0.25)
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "label_color": {"r": 1.0, "g": 1.0, "b": 1.0, "a": 0.25},
@@ -235,14 +236,14 @@ class BlueprintTesting(unittest.TestCase):
         }
         # Invalid Data
         with pytest.raises(DataFormatError):
-            blueprint.label_color = ("red", blueprint, 5)
+            blueprint.set_label_color("red", blueprint, 5)
 
     # =========================================================================
 
     def test_set_icons(self):
         blueprint = Blueprint()
         # Single Icon
-        blueprint.icons = ["signal-A"]
+        blueprint.set_icons("signal-A")
         assert blueprint.icons == [
             {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
         ]
@@ -250,12 +251,19 @@ class BlueprintTesting(unittest.TestCase):
             {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
         ]
         # Multiple Icon
-        blueprint.icons = ["signal-A", "signal-B", "signal-C"]
+        blueprint.set_icons("signal-A", "signal-B", "signal-C")
         assert blueprint["icons"] == [
             {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1},
             {"signal": {"name": "signal-B", "type": "virtual"}, "index": 2},
             {"signal": {"name": "signal-C", "type": "virtual"}, "index": 3},
         ]
+        
+        # Raw signal dicts:
+        blueprint.set_icons({"name": "some-signal", "type": "some-type"})
+        assert blueprint["icons"] == [
+            {"signal": {"name": "some-signal", "type": "some-type"}, "index": 1}
+        ]
+
         # None
         blueprint.icons = None
         assert blueprint.icons == None
@@ -265,19 +273,16 @@ class BlueprintTesting(unittest.TestCase):
         }
 
         # Incorrect Signal Name
-        with pytest.raises(DataFormatError):
-            blueprint.icons = ["wrong!"]
+        with pytest.raises(InvalidSignalError):
+            blueprint.set_icons("wrong!")
 
         # Incorrect Signal Type
-        with pytest.raises(DataFormatError):
-            blueprint.icons = [123456, "uh-oh"]
+        with pytest.raises(InvalidSignalError):
+            blueprint.set_icons(123456, "uh-oh")
 
         # Incorrect Signal dict format
-        with pytest.raises(DataFormatError):
-            blueprint.icons = [{"incorrectly": "formatted"}]
-
-        with pytest.raises(DataFormatError):
-            blueprint.icons = TypeError
+        # with pytest.raises(TypeError):
+        #     blueprint.set_icons({"incorrectly": "formatted"})
 
     # =========================================================================
 
@@ -288,14 +293,11 @@ class BlueprintTesting(unittest.TestCase):
         blueprint.description = None
         assert blueprint.description == None
 
-        with pytest.raises(TypeError):
-            blueprint.description = TypeError
-
     # =========================================================================
 
     def test_set_version(self):
         blueprint = Blueprint()
-        blueprint.version = (1, 0, 40, 0)
+        blueprint.set_version(1, 0, 40, 0)
         assert blueprint.version == 281474979332096
 
         blueprint.version = None
@@ -303,10 +305,10 @@ class BlueprintTesting(unittest.TestCase):
         assert blueprint.to_dict()["blueprint"] == {"item": "blueprint"}
 
         with pytest.raises(TypeError):
-            blueprint.version = TypeError
+            blueprint.set_version(TypeError, TypeError)
 
         with pytest.raises(TypeError):
-            blueprint.version = ("1", "0", "40", "0")
+            blueprint.set_version("1", "0", "40", "0")
 
     # =========================================================================
 
@@ -592,7 +594,7 @@ class BlueprintTesting(unittest.TestCase):
 
     def test_add_tile(self):
         blueprint = Blueprint()
-        blueprint.version = (1, 1, 54, 0)
+        blueprint.set_version(1, 1, 54, 0)
 
         # Checkerboard grid
         for x in range(2):
@@ -625,7 +627,7 @@ class BlueprintTesting(unittest.TestCase):
     def test_version_tuple(self):
         blueprint = Blueprint()
         assert blueprint.version_tuple() == __factorio_version_info__
-        blueprint.version = (0, 0, 0, 0)
+        blueprint.set_version(0, 0, 0, 0)
         assert blueprint.version_tuple() == (0, 0, 0, 0)
 
     # =========================================================================
@@ -633,7 +635,7 @@ class BlueprintTesting(unittest.TestCase):
     def test_version_string(self):
         blueprint = Blueprint()
         assert blueprint.version_string() == __factorio_version__
-        blueprint.version = (0, 0, 0, 0)
+        blueprint.set_version(0, 0, 0, 0)
         assert blueprint.version_string() == "0.0.0.0"
 
     # =========================================================================

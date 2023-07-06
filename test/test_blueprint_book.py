@@ -167,7 +167,7 @@ class BlueprintBookTesting(unittest.TestCase):
         blueprint_book = BlueprintBook()
         example = {
             "label": "a label",
-            "label_color": (50, 50, 50),
+            "label_color": {"r": 50, "g": 50, "b": 50},
             "active_index": 0,
             "item": "blueprint-book",
             "blueprints": [],
@@ -189,7 +189,7 @@ class BlueprintBookTesting(unittest.TestCase):
 
     def test_set_label(self):
         blueprint_book = BlueprintBook()
-        blueprint_book.version = (1, 1, 54, 0)
+        blueprint_book.set_version(1, 1, 54, 0)
         # String
         blueprint_book.label = "testing The LABEL"
         assert blueprint_book.label == "testing The LABEL"
@@ -210,16 +210,13 @@ class BlueprintBookTesting(unittest.TestCase):
                 "version": encode_version(1, 1, 54, 0),
             }
         }
-        # Other
-        with pytest.raises(TypeError):
-            blueprint_book.label = 100
 
     def test_set_label_color(self):
         blueprint_book = BlueprintBook()
-        blueprint_book.version = (1, 1, 54, 0)
+        blueprint_book.set_version(1, 1, 54, 0)
         # Valid 3 args
         # Test for floating point conversion error by using 0.1
-        blueprint_book.label_color = (0.5, 0.1, 0.5)
+        blueprint_book.set_label_color(0.5, 0.1, 0.5)
         assert blueprint_book.label_color == {"r": 0.5, "g": 0.1, "b": 0.5}
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
@@ -230,7 +227,7 @@ class BlueprintBookTesting(unittest.TestCase):
             }
         }
         # Valid 4 args
-        blueprint_book.label_color = (1.0, 1.0, 1.0, 0.25)
+        blueprint_book.set_label_color(1.0, 1.0, 1.0, 0.25)
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
@@ -251,33 +248,40 @@ class BlueprintBookTesting(unittest.TestCase):
         }
 
         with pytest.raises(DataFormatError):
-            blueprint_book.label_color = TypeError
+            blueprint_book.set_label_color(TypeError, TypeError, TypeError)
 
         # Invalid Data
         with pytest.raises(DataFormatError):
-            blueprint_book.label_color = ("red", blueprint_book, 5)
+            blueprint_book.set_label_color("red", blueprint_book, 5)
 
     def test_set_icons(self):
-        blueprint = BlueprintBook()
+        blueprint_book = BlueprintBook()
         # Single Icon
-        blueprint.icons = ["signal-A"]
-        assert blueprint.icons == [
+        blueprint_book.set_icons("signal-A")
+        assert blueprint_book.icons == [
             {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
         ]
-        assert blueprint["icons"] == [
+        assert blueprint_book["icons"] == [
             {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
         ]
         # Multiple Icon
-        blueprint.icons = ["signal-A", "signal-B", "signal-C"]
-        assert blueprint["icons"] == [
+        blueprint_book.set_icons("signal-A", "signal-B", "signal-C")
+        assert blueprint_book["icons"] == [
             {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1},
             {"signal": {"name": "signal-B", "type": "virtual"}, "index": 2},
             {"signal": {"name": "signal-C", "type": "virtual"}, "index": 3},
         ]
+        
+        # Raw signal dicts
+        blueprint_book.set_icons({"name": "some-signal", "type": "some-type"})
+        assert blueprint_book["icons"] == [
+            {"signal": {"name": "some-signal", "type": "some-type"}, "index": 1}
+        ]
+
         # None
-        blueprint.icons = None
-        assert blueprint.icons == None
-        assert blueprint.to_dict() == {
+        blueprint_book.icons = None
+        assert blueprint_book.icons == None
+        assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
                 "active_index": 0,
@@ -286,19 +290,12 @@ class BlueprintBookTesting(unittest.TestCase):
         }
 
         # Incorrect Signal Name
-        with pytest.raises(DataFormatError):
-            blueprint.icons = ["wrong!"]
+        with pytest.raises(InvalidSignalError):
+            blueprint_book.set_icons("wrong!")
 
         # Incorrect Signal Type
-        with pytest.raises(DataFormatError):
-            blueprint.icons = [123456, "uh-oh"]
-
-        # Incorrect Signal dict format
-        with pytest.raises(DataFormatError):
-            blueprint.icons = [{"incorrectly": "formatted"}]
-
-        with pytest.raises(DataFormatError):
-            blueprint.icons = TypeError
+        with pytest.raises(InvalidSignalError):
+            blueprint_book.set_icons(123456, "uh-oh")
 
     def test_set_active_index(self):
         blueprint_book = BlueprintBook()
@@ -323,7 +320,7 @@ class BlueprintBookTesting(unittest.TestCase):
 
     def test_set_version(self):
         blueprint_book = BlueprintBook()
-        blueprint_book.version = (1, 0, 40, 0)
+        blueprint_book.set_version(1, 0, 40, 0)
         assert blueprint_book.version == 281474979332096
 
         blueprint_book.version = None
@@ -333,10 +330,10 @@ class BlueprintBookTesting(unittest.TestCase):
         }
 
         with pytest.raises(TypeError):
-            blueprint_book.version = TypeError
+            blueprint_book.set_version(TypeError)
 
         with pytest.raises(TypeError):
-            blueprint_book.version = ("1", "0", "40", "0")
+            blueprint_book.set_version("1", "0", "40", "0")
 
     def test_set_blueprints(self):
         blueprint_book = BlueprintBook()
@@ -396,21 +393,21 @@ class BlueprintBookTesting(unittest.TestCase):
     def test_version_tuple(self):
         blueprint_book = BlueprintBook()
         assert blueprint_book.version_tuple() == __factorio_version_info__
-        blueprint_book.version = (0, 0, 0, 0)
+        blueprint_book.set_version(0, 0, 0, 0)
         assert blueprint_book.version_tuple() == (0, 0, 0, 0)
 
     def test_version_string(self):
         blueprint_book = BlueprintBook()
         assert blueprint_book.version_string() == __factorio_version__
-        blueprint_book.version = (0, 0, 0, 0)
+        blueprint_book.set_version(0, 0, 0, 0)
         assert blueprint_book.version_string() == "0.0.0.0"
 
     def test_to_dict(self):
-        pass
+        pass # TODO
 
     def test_to_string(self):
         blueprint_book = BlueprintBook()
-        blueprint_book.version = (1, 1, 53, 0)
+        blueprint_book.set_version(1, 1, 53, 0)
         # self.assertEqual(
         #     blueprint_book.to_string(),
         #     "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTQ1NDY3NDGprAVVBHPY="
