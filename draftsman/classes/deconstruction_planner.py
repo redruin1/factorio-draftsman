@@ -358,6 +358,14 @@ class DeconstructionPlanner(Blueprintable):
         # Otherwise its unique; add to list
         self.tile_filters.append({"index": index + 1, "name": name})
 
+    # =========================================================================
+
+    def validate(self):
+        """
+        TODO
+        """
+        pass
+
     def to_dict(self):
         out_dict = copy.deepcopy(self._root)
 

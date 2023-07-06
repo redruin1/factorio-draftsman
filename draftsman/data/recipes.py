@@ -16,16 +16,16 @@ from .. import data
 
 with pkg_resources.open_binary(data, "recipes.pkl") as inp:
     _data = pickle.load(inp)
-    raw = _data[0]
-    categories = _data[1]
-    for_machine = _data[2]
+    raw: dict[str, dict] = _data[0]
+    categories: dict[str, list[str]] = _data[1]
+    for_machine: dict[str, list[str]] = _data[2]
 
 
-def add_recipe(name, ingredients, result):
-    raise NotImplementedError
+def add_recipe(name: str, ingredients: list[str], result: str):
+    raise NotImplementedError # TODO
 
 
-def get_recipe_ingredients(recipe_name, expensive=False):
+def get_recipe_ingredients(recipe_name: str, expensive: bool=False):
     # type: (str, bool) -> set[str]
     """
     Returns a ``set`` of all item types that ``recipe_name`` requires. Discards

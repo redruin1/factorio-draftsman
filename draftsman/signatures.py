@@ -14,12 +14,12 @@ from draftsman.classes.association import Association
 from draftsman.data.signals import signal_dict, mapping_dict
 
 from builtins import int
+from enum import Enum
+from pydantic import BaseModel, validator, root_validator, Field
+from typing import List, Literal
 from schema import Schema, Use, Optional, Or, And
+from typing import Optional as TrueOptional  # TODO: fixme
 import six
-import weakref
-
-
-# TODO: separate CONTROL_BEHAVIOR into their individual signatures for each entity
 
 
 INTEGER = Schema(int)
@@ -713,22 +713,175 @@ SCHEDULE = Schema(
 SCHEDULES = Schema([SCHEDULE])
 
 
-# def normalize_mappers(mappers):
-#     for i, mapper in enumerate(mappers):
-#         if isinstance(mapper, (tuple, list)):
-#             mappers[i] = {"index": i}
-#             if mapper[0]:
-#                 mappers[i]["from"] = signal_dict(mapper[0])
-#             if mapper[1]:
-#                 mappers[i]["to"] = signal_dict(mapper[1])
+def normalize_mappers(mappers):
+    if mappers is None:
+        return mappers
+    for i, mapper in enumerate(mappers):
+        if isinstance(mapper, (tuple, list)):
+            mappers[i] = {"index": i}
+            if mapper[0]:
+                mappers[i]["from"] = mapping_dict(mapper[0])
+            if mapper[1]:
+                mappers[i]["to"] = mapping_dict(mapper[1])
+    return mappers
 
 
-# MAPPERS = Schema(
-#     And(
-#         Use(normalize_mappers),
-#         Or(
-#             [{Optional("from"): SIGNAL_ID, Optional("to"): SIGNAL_ID, "index": int}],
-#             None,
-#         ),
-#     )
-# )
+MAPPERS = Schema(
+    And(
+        Use(normalize_mappers),
+        Or(
+            [
+                {
+                    Optional("from"): MAPPING_ID_OR_NONE,
+                    Optional("to"): MAPPING_ID_OR_NONE,
+                    "index": int,
+                }
+            ],
+            None,
+        ),
+    )
+)
+
+
+# =============================================================================
+# Beyond be dragons
+
+signal_schema = {  # TODO: rename
+    "$id": "SIGNAL_DICT",  # TODO: rename
+    "title": "Signal dict",
+    "description": "JSON object that represents a signal. Used in the circuit network, but also used for blueprintable icons.",
+    "type": "object",
+    "properties": {
+        "name": {
+            "description": "Must be a name recognized by Factorio, or will error on import. Surprisingly, can actually be omitted; in that case will result in an empty signal.",
+            "type": "string",
+        },
+        "type": {
+            "description": "Must be one of the following values, or will error on import.",
+            "type": "string",
+            "enum": ["item", "fluid", "virtual"],
+        },
+    },
+    "required": ["type"],
+    "additionalProperties": False,
+    "draftsman_conversion": lambda key, value: (key, normalize_signal_id(value)),
+}
+
+
+mapper_schema = {  # TODO: rename
+    "$id": "MAPPER_DICT",  # TODO: rename
+    "title": "Mapper dict",
+    "description": "JSON object that represents a mapper. Used in Upgrade Planners to describe their function.",
+    "type": "object",
+    "properties": {
+        "name": {
+            "description": "Must be a name recognized by Factorio, or will error on import.",
+            "type": "string",
+        },
+        "type": {
+            "description": "Must be one of the following values, or will error on import. Item refers to modules, entity refers to everything else (as far as I've investigated; modded objects might change this behavior, but I have yet to take the time to find out)",
+            "type": "string",
+            "enum": ["item", "entity"],
+        },
+    },
+    "required": ["name", "type"],
+    "additionalProperties": False,
+    "draftsman_conversion": lambda key, value: (key, normalize_mapping_id(value)),
+}
+
+
+class MapperType(str, Enum):
+    entity = "entity"
+    item = "item"
+
+
+class MapperID(BaseModel):
+    name: str
+    type: MapperType
+
+
+class Mapper(BaseModel):
+    to: MapperID | None = None
+    from_: MapperID | None = Field(None, alias="from")  # Damn you Python
+    index: int = Field(..., ge=0, lt=2**64)
+
+
+class Mappers(BaseModel):
+    __root__: List[Mapper] | None
+
+    # @validator("__root__", pre=True)
+    # def normalize_mappers(cls, mappers):
+    #     if mappers is None:
+    #         return mappers
+    #     for i, mapper in enumerate(mappers):
+    #         if isinstance(mapper, (tuple, list)):
+    #             mappers[i] = {"index": i}
+    #             if mapper[0]:
+    #                 mappers[i]["from"] = mapping_dict(mapper[0])
+    #             if mapper[1]:
+    #                 mappers[i]["to"] = mapping_dict(mapper[1])
+    #     return mappers
+
+
+icons_schema = {  # TODO: rename
+    "$id": "ICONS_ARRAY",  # TODO: rename
+    "title": "Icons list",
+    "description": "Format of the list of signals used to give blueprintable objects unique appearences. Only a maximum of 4 entries are allowed; indicies outside of the range [1, 4] will return 'Index out of bounds', and defining multiple icons that use the same index returns 'Icon already specified'.",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "signal": {
+                "description": "Which signal icon to use.",
+                "$ref": "factorio-draftsman://SIGNAL_DICT",
+            },
+            "index": {
+                "description": "What index to place the signal icon, 1-indexed.",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4,
+            },
+        },
+        "required": ["signal", "index"],
+        "additionalProperties": False,
+    },
+    "maxItems": 4,
+    "draftsman_exportIf": "truthy",
+    "draftsman_conversion": lambda key, value: (key, normalize_icons(value)),
+}
+
+
+class SignalID(BaseModel):
+    name: TrueOptional[str]  # Anyone's guess _why_ this is optional
+    type: str
+
+
+class Icon(BaseModel):
+    signal: SignalID
+    index: int
+
+
+class Icons(BaseModel):
+    __root__: List[Icon] | None = Field(..., max_items=4)
+
+    # @root_validator(pre=True)
+    @validator("__root__", pre=True)
+    def normalize_icons(cls, icons):
+        if icons is None:
+            return icons
+        for i, icon in enumerate(icons):
+            if isinstance(icon, six.string_types):
+                icons[i] = {"index": i + 1, "signal": signal_dict(icon)}
+        return icons
+
+
+class Label(BaseModel):
+    __root__: str = None
+
+
+class Description(BaseModel):
+    __root__: str = None
+
+
+class Version(BaseModel):
+    __root__: int = Field(None, ge=0, lt=2**64)

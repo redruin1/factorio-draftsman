@@ -1,5 +1,4 @@
 # items.py
-# -*- encoding: utf-8 -*-
 
 import pickle
 
@@ -14,11 +13,10 @@ from draftsman import data
 
 with pkg_resources.open_binary(data, "items.pkl") as inp:
     _data = pickle.load(inp)
-    raw = _data[0]
-    subgroups = _data[1]
-    groups = _data[2]
+    raw: dict[str, dict] = _data[0]
+    subgroups: dict[str, dict] = _data[1]
+    groups: dict[str, dict] = _data[2]
 
 
-def add_item(name, subgroup, group):
-    # type: (str, str, str) -> None
+def add_item(name: str, subgroup: str, group: str):
     raise NotImplementedError

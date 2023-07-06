@@ -231,7 +231,7 @@ class Entity(EntityLike):
             self.tile_position = tile_position
 
         # Entity tags
-        self.tags = None
+        self.tags = {}
         if "tags" in kwargs:
             self.tags = kwargs["tags"]
             self.unused_args.pop("tags")

@@ -276,9 +276,9 @@ class InvalidSignalError(DraftsmanError):
     pass
 
 
-class InvalidMappingError(DraftsmanError):
+class InvalidMapperError(DraftsmanError):
     """
-    Raised when a mapping name does not match any valid entry currently
+    Raised when a mapper name does not match any valid entry currently
     recognized by Draftsman.
     """
 

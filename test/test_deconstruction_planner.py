@@ -59,7 +59,7 @@ class DeconstructionPlannerTesting(unittest.TestCase):
         }
 
         with pytest.warns(DraftsmanWarning):
-            DeconstructionPlanner({"something": "incorrect"})
+            DeconstructionPlanner({"deconstruction_planner": {"something": "incorrect"}})
 
     def test_set_entity_filter_mode(self):
         decon_planner = DeconstructionPlanner()

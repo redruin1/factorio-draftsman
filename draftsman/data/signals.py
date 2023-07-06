@@ -4,10 +4,9 @@ from __future__ import unicode_literals
 
 from draftsman import data
 from draftsman.data import entities, modules
-from draftsman.error import InvalidSignalError, InvalidMappingError
+from draftsman.error import InvalidSignalError, InvalidMapperError
 
 import pickle
-import six
 
 try:  # pragma: no coverage
     import importlib.resources as pkg_resources  # type: ignore
@@ -18,23 +17,27 @@ except ImportError:  # pragma: no coverage
 
 with pkg_resources.open_binary(data, "signals.pkl") as inp:
     _data = pickle.load(inp)
-    raw = _data[0]
-    type_of = _data[1]
-    item = _data[2]
-    fluid = _data[3]
-    virtual = _data[4]
+
+    raw: dict[str, dict] = _data[0]
+
+    # Look up table for a particular signal's type
+    type_of: dict[str, str] = _data[1]
+
+    # Lists of signal names organized by their type for easy iteration
+    item: list[str] = _data[2]
+    fluid: list[str] = _data[3]
+    virtual: list[str] = _data[4]
     pure_virtual = ["signal-everything", "signal-anything", "signal-each"]
 
 
-def add_signal(name, type):
-    # type: (str, str) -> None
+def add_signal(name: str, type: str):
     """
     Temporarily adds a signal to :py:mod:`draftsman.data.signals`. This allows
     the user to specify custom signals so that Draftsman can deduce their type
-    without having to install a corresponding mod. More specifically, it
-    populates :py:data:`raw` and :py:data:`type_of` with the correct values,
-    and adds the name to either :py:data:`item`, :py:data:`fluid`, or
-    :py:data:`virtual` depending on ``type``.
+    without having to manually specify each time or install a corresponding mod.
+    More specifically, it populates :py:data:`raw` and :py:data:`type_of` with
+    the correct values, and adds the name to either :py:data:`.item`,
+    :py:data:`.fluid`, or :py:data:`.virtual` depending on ``type``.
 
     Note that this is not intended as a replacement for generating proper signal
     data using ``draftsman-update``; instead it offers a fast mechanism for
@@ -60,8 +63,7 @@ def add_signal(name, type):
         virtual.append(name)
 
 
-def get_signal_type(signal_name):
-    # type: (str) -> str
+def get_signal_type(signal_name: str) -> str:
     """
     Returns the type of the signal based on its ID string.
 
@@ -75,23 +77,13 @@ def get_signal_type(signal_name):
     :exception InvalidSignalError: If the signal name is not contained within
         :py:mod:`draftsman.data.signals`, and thus it's type cannot be deduced.
     """
-    # if signal_name in signals.virtual:
-    #     return "virtual"
-    # elif signal_name in signals.fluid:
-    #     return "fluid"
-    # elif signal_name in signals.item:
-    #     return "item"
-    # else:
-    #     raise InvalidSignalError("'{}'".format(str(signal_name)))
-
     try:
-        return six.text_type(type_of[signal_name])
+        return type_of[signal_name]
     except KeyError:
         raise InvalidSignalError("'{}'".format(signal_name))
 
 
-def signal_dict(signal_name):
-    # type: (str) -> dict
+def signal_dict(signal: str) -> dict:
     """
     Creates a SignalID ``dict`` from the given signal name.
 
@@ -101,28 +93,36 @@ def signal_dict(signal_name):
 
     :returns: A dict with the ``"name"`` and ``"type"`` keys set.
     """
-    return {"name": six.text_type(signal_name), "type": get_signal_type(signal_name)}
+    if signal is None or isinstance(signal, dict):
+        return signal
+    else:
+        return {"name": str(signal), "type": get_signal_type(signal)}
 
 
-def get_mapping_type(mapping_name):
-    # type: (str) -> str
+def get_mapper_type(mapper_name: str) -> str:
     """
     TODO
     """
     # TODO: actually check that this is the case (particularly with modded entities/items)
-    if mapping_name in modules.raw:  # TODO: should probably change
+    if mapper_name in modules.raw:  # TODO: should probably change
         return "item"
-    elif mapping_name in entities.raw:  # TODO: should probably change
+    elif mapper_name in entities.raw:  # TODO: should probably change
         return "entity"
     else:
-        raise InvalidMappingError("'{}'".format(mapping_name))
+        raise InvalidMapperError("'{}'".format(mapper_name))
 
 
-def mapping_dict(mapping_name):
-    # type: (str) -> dict
+def mapper_dict(mapper: str) -> dict:
     """
     Creates a MappingID ``dict`` from  the given mapping name.
 
-    TODO
+    Uses :py:func:`get_mapping_type` to get the type for the dictionary.
+
+    :param signal_name: The name of the signal.
+
+    :returns: A dict with the ``"name"`` and ``"type"`` keys set.
     """
-    return {"name": six.text_type(mapping_name), "type": get_mapping_type(mapping_name)}
+    if mapper is None or isinstance(mapper, dict):
+        return mapper
+    else:
+        return {"name": str(mapper), "type": get_mapper_type(mapper)}

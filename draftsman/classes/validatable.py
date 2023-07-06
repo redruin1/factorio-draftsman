@@ -1,3 +1,0 @@
-# validatable.py
-
-# TODO

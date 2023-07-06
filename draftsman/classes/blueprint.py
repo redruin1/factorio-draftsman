@@ -293,12 +293,22 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         # type: (dict) -> None
         if value is None:
             self._root.pop("label_color", None)
-            return
+        else:
+            self._root["label_color"] = value
 
+    def set_label_color(self, r, g, b, a=None):
+        """
+        TODO
+        """
         try:
-            self._root["label_color"] = signatures.COLOR.validate(value)
+            if a is None:
+                self._root["label_color"] = signatures.COLOR.validate([r, g, b])  # TODO
+            else:
+                self._root["label_color"] = signatures.COLOR.validate(
+                    [r, g, b, a]
+                )  # FIXME
         except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+            raise DataFormatError from e
 
     # =========================================================================
 
@@ -778,6 +788,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                 "Current blueprint dimensions ({}, {}) exceeds the maximum size"
                 " (10,000 x 10,000)".format(self.tile_width, self.tile_height)
             )
+
+    def validate(self):
+        """
+        TODO
+        """
+        pass
 
     def to_dict(self):
         # type: () -> dict
