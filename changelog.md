@@ -1,8 +1,11 @@
 # Changelog
 
+## 1.0.6
 * Merged SIGSTACKFAULT's pull requests:
     * Fix type annotation of `Tile.__init__()`
     * Fix type annotation of `BlueprintBook.insert()`
+* Fixed Lua `defines` table not being defined by the time `factorio-data/core` runs (#85)
+* Fixed UTF-8 BOM tokens not being properly stripped from all mod Lua files, resulting in issues when sending to Lupa (#84)
 
 ## 1.0.5
 * Added `get_blueprintable_from_JSON()` and patched `get_blueprintable_from_string()` so that it no longer converts the string twice (accidentally)

@@ -36,6 +36,7 @@ except ImportError:
 
 import argparse
 from collections import OrderedDict
+import io
 import json
 import os
 import pickle
@@ -46,6 +47,9 @@ import zipfile
 
 mod_archive_pattern = "(([\\w\\D]+)_([\\d\\.]+))\\.zip"
 mod_archive_regex = re.compile(mod_archive_pattern)
+
+mod_folder_pattern = "([\\w\\D]+)_([\\d\\.]+)"
+mod_folder_regex = re.compile(mod_folder_pattern)
 
 dependency_string_pattern = (
     "[^\\w\\?\\!~]*([\\?\\!~])?[^\\w\\?\\!]*([\\w-]+)([><=]=?)?([\\d\\.]+)?"
@@ -105,10 +109,25 @@ class Mod(object):
 
 def file_to_string(filepath):
     """
-    Simply grabs a file's contents and returns it as a string.
+    Simply grabs a file's contents and returns it as a string. Ensures that the
+    returned string is stripped of special unicode characters that Lupa dislikes.
     """
-    with open(filepath, mode="r") as file:
+    # "utf-8-sig" makes sure to strip BOM tokens if they exist
+    with open(filepath, mode="r", encoding="utf-8-sig") as file:
         return file.read()
+
+
+def archive_to_string(archive, filepath):
+    # type: (zipfile.ZipFile, str) -> None
+    """
+    Simply grabs a file with the specified name from an archive and returns it 
+    as a string. Ensures that the returned string is stripped of special 
+    unicode characters that Lupa dislikes.
+    """
+    with archive.open(filepath, mode="r") as target_file:
+        # "utf-8-sig" makes sure to strip BOM tokens if they exist
+        formatted = io.TextIOWrapper(target_file, encoding="utf-8-sig")
+        return formatted.read()
 
 
 def get_mod_settings(location):
@@ -198,8 +217,8 @@ def get_mod_settings(location):
     return mod_settings
 
 
-def python_require(mod, module_name, package_path):
-    # type: (Mod, str, str) -> str
+def python_require(mod, mod_folder, module_name, package_path):
+    # type: (Mod, str, str, str) -> str
     """
     Function called from Lua that checks for a file in a ``zipfile`` archive,
     and returns the contents of the file if found.
@@ -214,21 +233,23 @@ def python_require(mod, module_name, package_path):
     if not mod.archive:
         return None, "Current mod ({}) is not an archive".format(mod.name)
 
-    # print(mod.files)
-
     # We emulate lua filepath searching
     filepaths = package_path.split(";")
     for filepath in filepaths:
         # Replace the question mark with the module_name
         filepath = filepath.replace("?", module_name)
-        # Make it local to the archive, replacing the global path to the local
-        # internal path
-        filepath = filepath.replace("./factorio-mods/" + mod.name, mod.internal_folder)
         # Normalize for Zipfile if there are backslashes
         filepath = filepath.replace("\\", "/")
+        # Make it local to the archive, replacing the global path to the local
+        # internal path
+        print("filepath", filepath)
+        print("mod_folder + mod.name", mod_folder + "/" + mod.name)
+        print("mod.internal_folder", mod.internal_folder)
+        filepath = filepath.replace(mod_folder + "/" + mod.name, mod.internal_folder)
         try:
+            string_contents = archive_to_string(mod.files, filepath)
             fixed_filepath = os.path.dirname(filepath[filepath.find("/") :])
-            return mod.files.read(filepath), fixed_filepath
+            return string_contents, fixed_filepath
         except KeyError:
             pass
 
@@ -237,6 +258,7 @@ def python_require(mod, module_name, package_path):
 
 
 def load_stage(lua, mod_list, mod, stage):
+    # type: (lupa.LuaRuntime, list[Mod], Mod, str) -> None
     """
     Load a stage of the Factorio data lifecycle. Sets meta information and loads
     and executes the file string in the ``lua`` context.
@@ -1305,14 +1327,15 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
 
         if mod_obj.lower().endswith(".zip"):
             # Zip file
+            # TODO: assert actually matches
             m = mod_archive_regex.match(mod_obj)
             folder_name = m.group(1)
             mod_name = m.group(2).replace(" ", "")
             external_mod_version = m.group(3)
             files = zipfile.ZipFile(mod_location, mode="r")
 
-            # There is no restriction on the name of the folder, just that there
-            # is only one at the root of the archive
+            # There is no restriction on the name of the internal folder, just 
+            # that there is only one at the root of the archive
             # All the mods I've seen use the same "mod-name_mod-version", but
             # the wiki says this is not enforced
             # Hence, we use this scuffed code to actually get a list of all the
@@ -1346,7 +1369,9 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
 
             try:
                 # Zipfiles don't like backslashes, so we manually concatenate
-                mod_info = json.loads(files.read(mod_folder + "/info.json"))
+                mod_info = json.loads(
+                    archive_to_string(files, mod_folder + "/info.json")
+                )
             except KeyError:
                 raise IncorrectModFormatError(
                     "Mod '{}' has no 'info.json' file in its root folder".format(
@@ -1359,13 +1384,14 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
 
         elif os.path.isdir(mod_location):
             # Folder
-            mod_name = mod_obj
-            # TODO: assert mod folder name matches either "name" or "name_version"
-            # format
-            # m = mod_archive_regex.match(mod_obj)
-            # mod_name = m.group(1)
-            # external_mod_version = m.group(2)
-            # print(mod_obj)
+            print("folder", mod_obj)
+            # TODO: assert mod folder name matches either "name" or 
+            # "name_version" format
+            m = mod_folder_regex.match(mod_obj)
+            mod_name = m.group(1)
+            external_mod_version = m.group(2)
+            print(mod_name)
+            print(external_mod_version)
             try:
                 with open(os.path.join(mod_location, "info.json"), "r") as info_file:
                     mod_info = json.load(info_file)
@@ -1408,33 +1434,33 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
         if archive:
             # Attempt to load setting files
             try:
-                settings = files.read(mod_folder + "/settings.lua")
+                settings = archive_to_string(files, mod_folder + "/settings.lua")
                 mod_data["settings.lua"] = settings
             except KeyError:
                 pass
             try:
-                settings = files.read(mod_folder + "/settings-updates.lua")
+                settings = archive_to_string(files, mod_folder + "/settings-updates.lua")
                 mod_data["settings-updates.lua"] = settings
             except KeyError:
                 pass
             try:
-                settings = files.read(mod_folder + "/settings-final-fixes.lua")
+                settings = archive_to_string(files, mod_folder + "/settings-final-fixes.lua")
                 mod_data["settings-final-fixes.lua"] = settings
             except KeyError:
                 pass
             # Attempt to load data files
             try:
-                data = files.read(mod_folder + "/data.lua")
+                data = archive_to_string(files, mod_folder + "/data.lua")
                 mod_data["data.lua"] = data
             except KeyError:
                 pass
             try:
-                data_updates = files.read(mod_folder + "/data-updates.lua")
+                data_updates = archive_to_string(files, mod_folder + "/data-updates.lua")
                 mod_data["data-updates.lua"] = data_updates
             except KeyError:
                 pass
             try:
-                data_final_fixes = files.read(mod_folder + "/data-final-fixes.lua")
+                data_final_fixes = archive_to_string(files, mod_folder + "/data-final-fixes.lua")
                 mod_data["data-final-fixes.lua"] = data_final_fixes
             except KeyError:
                 pass
@@ -1488,7 +1514,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
             internal_folder=mod_folder,
             version=mod_version,
             archive=archive,
-            location="./factorio-mods/" + mod_name,  # maybe absolute?,
+            location=factorio_mods + "/" + mod_name,  # maybe absolute?,
             info=mod_info,
             files=files,
             data=mod_data,
@@ -1607,6 +1633,13 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
     # Setup emulated factorio environment (Set up at {site-packages}/draftsman)
     lua = lupa.LuaRuntime(unpack_returned_tuples=True)
 
+    # First we load `defines.lua` in this context, which is a set of constant
+    # values used by the game. We do this first because these can be used at any
+    # point in any of the subsequent steps
+    # This is not included in `factorio-data` and has to be manually extracted
+    # (See compatibility/defines.lua for more info)
+    lua.execute(file_to_string(os.path.join(env_dir, "compatibility", "defines.lua")))
+
     # Factorio utility functions
     lua.execute(
         file_to_string(os.path.join(factorio_data, "core", "lualib", "util.lua"))
@@ -1646,6 +1679,9 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
     # fixes a few small discrepancies that Factorio's environment has
     lua.execute(file_to_string(os.path.join(env_dir, "compatibility", "interface.lua")))
 
+    # Record where to look for mod folders
+    lua.globals().MOD_FOLDER_LOCATION = factorio_mods
+
     # Create aliases to the Lua functions for ease of access
     # Add path to Lua `package.path`
     lua_add_path = lua.globals()["lua_add_path"]
@@ -1675,11 +1711,6 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
     lualib_path = os.path.join(factorio_data, "core", "lualib", "?.lua")
     lua_add_path(lualib_path)
     load_stage(lua, mods, core_mod, "data.lua")
-
-    # In addition to core, we also load `defines.lua` in this context
-    # This is not included in `factorio-data` and has to be manually extracted
-    # (See compatibility/defines.lua for more info)
-    lua.execute(file_to_string(os.path.join(env_dir, "compatibility", "defines.lua")))
 
     # We also add a special path, which is just the entire module
     # (This is used for absolute paths in archives, so we add it once here)

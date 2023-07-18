@@ -8,6 +8,7 @@
 
 -- Meta globals: these are used to keep track of ourselves during the load
 -- process (since we have to do this manually due to reasons)
+MOD_FOLDER_LOCATION = nil    -- Exactly where the mods are expected to be
 MOD_LIST = nil      -- Total list of all mods; populated by Python
 MOD_TREE = {}       -- Stack of mods keeping track of where to require files
 MOD_DIR = nil       -- Path to the current mod (at the top of the mod tree)
@@ -106,7 +107,7 @@ local function normalize_module_name(modname)
 
     -- Handle __mod-name__ format (alphanumeric + '-' + '_')
     local match, name = modname:match("(__([%w%-_]+)__)")
-    --print(modname, match)
+    print(modname, match, name)
     local absolute = true
     if name == "core" or name == "base" then
         modname = string.gsub(modname, match, "./factorio-data/"..name)
@@ -115,14 +116,14 @@ local function normalize_module_name(modname)
         -- We need to do this because some people like to name their files
         -- "__init__.lua" or similar (FactorioExtended-Plus-Logistics)
         if mods[name] then
-            --print(name)
+            print(name.." is a recognized mod")
             -- Change '-' to '%-' so the following gsub doesn't treat them
             -- as special characters
             local correct_match = string.gsub(match, "%-", "%%-")
             -- replace
-            modname = string.gsub(modname, correct_match, "./factorio-mods/"..name)
+            modname = string.gsub(modname, correct_match, MOD_FOLDER_LOCATION.."/"..name)
         else
-            -- Can't determine what modl; use relative paths instead
+            -- Can't determine what mod; use relative paths instead
             -- TODO: this should probably error with a better message
             absolute = false
         end
@@ -138,12 +139,14 @@ end
 -- has taken place, `old_require` is called and executed at the end of the
 -- function.
 local old_require = require
+DELETE_ME_PLEASE_GOD = nil
 function require(module_name)
-    --print("\tcurrent_file:", CURRENT_FILE)
-    --print("\trequiring:", module_name)
+    print("\tcurrent_file:", CURRENT_FILE)
+    print("\trequiring:", module_name)
     local absolute
+    DELETE_ME_PLEASE_GOD = module_name
     module_name, absolute = normalize_module_name(module_name)
-    --print("Normalized module name:", module_name, absolute)
+    print("Normalized module name:", module_name, absolute)
     CURRENT_FILE = module_name
 
     --print(package.path)
@@ -215,11 +218,12 @@ end
 -- to read from the python zipfile archives first and continues with regular
 -- lua file loading afterwards.
 local archive_searcher = function(module_name)
-    local contents, err = python_require(MOD_TREE[#MOD_TREE], module_name, package.path)
+    local contents, err = python_require(MOD_TREE[#MOD_TREE], MOD_FOLDER_LOCATION, module_name, package.path)
     if contents then
         filepath = err
         CURRENT_DIR = filepath -- hacky patch
-        return assert(load(contents, module_name))
+        print("modname: ", DELETE_ME_PLEASE_GOD)
+        return assert(load(contents, module_name)), DELETE_ME_PLEASE_GOD -- maybe?
     else
         return err
     end
@@ -257,7 +261,7 @@ end
 -- is loaded first, mod B will require "utils" and will get A's copy of the file
 -- instead of loading mod B's copy.
 -- To prevent this, we unload all required files every time we load a stage,
--- which is excessive but guarantees correct behavior.
+-- which is excessive but (hopefully) guarantees correct behavior.
 function lua_unload_cache()
     for k, _ in pairs(package.loaded) do
         package.loaded[k] = nil
