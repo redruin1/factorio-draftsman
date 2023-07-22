@@ -44,6 +44,7 @@ class Pump(
 
     _exports = {}
     _exports.update(Entity._exports)
+    _exports.update(DirectionalMixin._exports)
     _exports.update(CircuitConnectableMixin._exports)
     _exports.update(ControlBehaviorMixin._exports)
     _exports.update(CircuitConditionMixin._exports)
