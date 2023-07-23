@@ -143,6 +143,7 @@ Both `mod-info.json` and `mod-settings.dat` are recognized by `draftsman-update`
 * Add constraints on `UpgradePlanner` and `DeconstructionPlanner`
 * `Blueprint.schedules` convenience functions
 * More doctests
+* Add documentation on report and contributing
 * Write test cases for `dump_format`
 * Add plaintext representations of Entity JSON objects for all entities in addition to blueprintables
 * Update modding documentation guide to reflect 2.0 changes

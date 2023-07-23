@@ -1,7 +1,7 @@
 -- Uses the same strategy as https://github.com/jcranmer/factorio-tools/blob/master/defines.lua
 -- Extracted with the command:
 -- /c game.write_file("defines.lua", "defines = " .. serpent.block(defines, {indent="    "}))
--- Current version: 1.1.81
+-- Current version: 1.1.88
 
 defines = {
     alert_type = {
@@ -279,9 +279,12 @@ defines = {
         on_console_chat = 73,
         on_console_command = 74,
         on_cutscene_cancelled = 169,
+        on_cutscene_finished = 182,
+        on_cutscene_started = 181,
         on_cutscene_waypoint_reached = 35,
         on_difficulty_settings_changed = 62,
         on_entity_cloned = 124,
+        on_entity_color_changed = 180,
         on_entity_damaged = 103,
         on_entity_destroyed = 160,
         on_entity_died = 4,
@@ -351,6 +354,7 @@ defines = {
         on_player_fast_transferred = 132,
         on_player_flushed_fluid = 162,
         on_player_gun_inventory_changed = 39,
+        on_player_input_method_changed = 183,
         on_player_joined_game = 45,
         on_player_kicked = 116,
         on_player_left_game = 46,
@@ -450,6 +454,11 @@ defines = {
         ten_hours = 4,
         ten_minutes = 2,
         two_hundred_fifty_hours = 6
+    },
+    game_controller_interaction = {
+        always = 0,
+        never = 2,
+        normal = 1
     },
     group_state = {
         attacking_distraction = 2,

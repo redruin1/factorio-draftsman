@@ -84,54 +84,55 @@ end
 -- Also returns a boolean `absolute`, which indicates if the filepath is 
 -- considered absolute (from the root mods directory) or local (relative to
 -- CURRENT_FILE)
-local function normalize_module_name(modname)
+local function normalize_module_name(module_name)
     -- remove lua from end if present
-    modname = modname:gsub(".lua$", "")
+    module_name = module_name:gsub(".lua$", "")
 
     -- Normalize dots to paths, if appropriate
     -- First, check to see if there are any slashes in the path
-    dot_path = modname:find("[/\\]") == nil
+    dot_path = module_name:find("[/\\]") == nil
     -- If not, we assume it's a dot separated path, so we convert to forward
     -- slashes for consistency
     if dot_path then
-        modname = modname:gsub("%.", "/")
+        module_name = module_name:gsub("%.", "/")
     end
     -- We do this because some slash paths can have dots in their folder names
     -- that should not be converted to path delimeters (Krastorio2)
-    
+
     -- Some people like to specify their paths with a prepending dot to indicate
     -- the current folder like 'require(".config")' (FreightForwarding)
     -- In order to fix this, we check if the path starts with a slash, and then
     -- remove it if it does
-    modname = modname:gsub("^/", "")
+    module_name = module_name:gsub("^/", "")
 
     -- Handle __mod-name__ format (alphanumeric + '-' + '_')
-    local match, name = modname:match("(__([%w%-_]+)__)")
-    print(modname, match, name)
+    local match, name = module_name:match("(__([%w%-_]+)__)")
+    --print(modname, match, name)
     local absolute = true
     if name == "core" or name == "base" then
-        modname = string.gsub(modname, match, "./factorio-data/"..name)
+        module_name = string.gsub(module_name, match, "./factorio-data/"..name)
     elseif match ~= nil then
         -- Check if the name is the name of a currently enabled mod
         -- We need to do this because some people like to name their files
         -- "__init__.lua" or similar (FactorioExtended-Plus-Logistics)
         if mods[name] then
-            print(name.." is a recognized mod")
+            --print(name.." is a recognized mod")
             -- Change '-' to '%-' so the following gsub doesn't treat them
             -- as special characters
             local correct_match = string.gsub(match, "%-", "%%-")
+            --print(MOD_LIST[name].location)
             -- replace
-            modname = string.gsub(modname, correct_match, MOD_FOLDER_LOCATION.."/"..name)
+            module_name = string.gsub(module_name, correct_match, MOD_LIST[name].location)
         else
             -- Can't determine what mod; use relative paths instead
             -- TODO: this should probably error with a better message
-            absolute = false
+            assert(false, "Unknown mod " .. name)
         end
     else
         absolute = false
     end
 
-    return modname, absolute
+    return module_name, absolute
 end
 
 -- Overwrite of require function. Normalizes the module name to make it easier
@@ -139,20 +140,89 @@ end
 -- has taken place, `old_require` is called and executed at the end of the
 -- function.
 local old_require = require
-DELETE_ME_PLEASE_GOD = nil
+-- function require(module_name)
+--     print("\tcurrent_file:", CURRENT_FILE)
+--     print("\trequiring:", module_name)
+--     local absolute
+--     module_name, absolute = normalize_module_name(module_name)
+--     print("Normalized module name:", module_name, absolute)
+--     CURRENT_FILE = module_name
+
+--     --print(package.path)
+
+--     -- if not, try again after adding the path to the currently executing file
+--     --print("CURRENT_FILE:", CURRENT_FILE)
+
+--     local function get_parent(path)
+--         local pattern1 = "^(.+)/"
+--         local pattern2 = "^(.+)\\"
+
+--         if (string.match(path,pattern1) == nil) then
+--             return string.match(path,pattern2)
+--         else
+--             return string.match(path,pattern1)
+--         end
+--     end
+
+--     PARENT_DIR = get_parent(module_name)
+--     print("PARENT_DIR:", PARENT_DIR)
+--     local added = false
+--     if PARENT_DIR then
+--         local with_path = PARENT_DIR .. "/?.lua"
+--         -- add the mod directory to the path if it's an absolute path
+--         if not absolute then with_path = MOD_DIR .. "/" .. with_path end
+--         --print("\tWITH_PATH: " .. with_path)
+--         lua_add_path(with_path)
+--         --print("added path:", with_path)
+--         added = true
+--     else -- God this whole thing is scuffed
+--         if not absolute then with_path = MOD_DIR .. CURRENT_DIR .. "/?.lua" end
+--         lua_add_path(with_path)
+--         added = true
+--     end
+
+--     -- Also check to see if mod context has changed
+--     local mod_changed = false
+--     local match = string.match(module_name, MOD_FOLDER_LOCATION .. "/([%a%d%.-_]+)/.+$")
+--     if absolute and match then
+--         print(match)
+--         print("pushing mod ", match)
+--         lua_push_mod(MOD_LIST[match])
+--         mod_changed = true
+--     end
+
+--     result = old_require(module_name)
+
+--     if added then
+--         lua_remove_path()
+--     end
+
+--     if mod_changed then
+--         --print("popping mod")
+--         lua_pop_mod()
+--     end
+
+--     return result
+-- end
+
 function require(module_name)
-    print("\tcurrent_file:", CURRENT_FILE)
-    print("\trequiring:", module_name)
-    local absolute
-    DELETE_ME_PLEASE_GOD = module_name
-    module_name, absolute = normalize_module_name(module_name)
-    print("Normalized module name:", module_name, absolute)
-    CURRENT_FILE = module_name
+    --print("\tcurrent_file:", CURRENT_FILE)
+    --print("\trequiring:", module_name)
 
-    --print(package.path)
+    local mod_changed = false
+    local match, name = module_name:match("(__([%w%-_]+)__)")
+    -- if the filepath uses this notation and the name is a mod, then we alter the current mod
+    if match and mods[name] and MOD_TREE[#MOD_TREE] ~= MOD_LIST[name]then
+        --print(name)
+        --print("pushing mod ", name)
+        lua_push_mod(MOD_LIST[name])
+        mod_changed = true
+    end
 
-    -- if not, try again after adding the path to the currently executing file
-    --print("CURRENT_FILE:", CURRENT_FILE)
+    local norm_module_name, absolute = normalize_module_name(module_name)
+    --print("Normalized module name:", norm_module_name)
+
+    CURRENT_FILE = norm_module_name
 
     local function get_parent(path)
         local pattern1 = "^(.+)/"
@@ -165,9 +235,10 @@ function require(module_name)
         end
     end
 
-    PARENT_DIR = get_parent(module_name)
+    PARENT_DIR = get_parent(norm_module_name)
     --print("PARENT_DIR:", PARENT_DIR)
-    local added = false
+    local path_added = false
+    -- TODO: revise this logic to be better
     if PARENT_DIR then
         local with_path = PARENT_DIR .. "/?.lua"
         -- add the mod directory to the path if it's an absolute path
@@ -175,30 +246,26 @@ function require(module_name)
         --print("\tWITH_PATH: " .. with_path)
         lua_add_path(with_path)
         --print("added path:", with_path)
-        added = true
+        path_added = true
     else -- God this whole thing is scuffed
-        if not absolute then with_path = MOD_DIR .. CURRENT_DIR .. "/?.lua" end
+        --print("\trelative")
+        -- get directory of current file
+        local rel_parent = get_parent(CURRENT_FILE) or ""
+        if not absolute then with_path = MOD_DIR .. rel_parent .. "/?.lua" end -- MOD_DIR .. CURRENT_DIR
         lua_add_path(with_path)
-        added = true
-    end
-
-    -- Also check to see if mod context has changed
-    local mod_changed = false
-    local match = string.match(module_name, "%./factorio%-mods/([%a-_]+)/.+")
-    if absolute and match then
-        --print("pushing mod ", match)
-        lua_push_mod(MOD_LIST[match])
-        mod_changed = true
+        --print("added path:", with_path)
+        path_added = true
     end
 
     result = old_require(module_name)
 
-    if added then
+    if path_added then
+        --print("removed path")
         lua_remove_path()
     end
 
     if mod_changed then
-        --print("popping mod")
+        --print("removed mod")
         lua_pop_mod()
     end
 
@@ -209,7 +276,7 @@ end
 -- this path when required and return the dummy values specified earlier above. 
 -- This is done before all other searches, though after `normalize_module_name()`
 local menu_simulations_searcher = function(module_name)
-    if module_name == "./factorio-data/base/menu-simulations/menu-simulations" then
+    if module_name == "__base__/menu-simulations/menu-simulations" then
         return (function() return menu_simulations end)
     end
 end
@@ -218,22 +285,60 @@ end
 -- to read from the python zipfile archives first and continues with regular
 -- lua file loading afterwards.
 local archive_searcher = function(module_name)
+    module_name, _ = normalize_module_name(module_name)
+    -- TODO
     local contents, err = python_require(MOD_TREE[#MOD_TREE], MOD_FOLDER_LOCATION, module_name, package.path)
     if contents then
         filepath = err
-        CURRENT_DIR = filepath -- hacky patch
-        print("modname: ", DELETE_ME_PLEASE_GOD)
-        return assert(load(contents, module_name)), DELETE_ME_PLEASE_GOD -- maybe?
+        --CURRENT_DIR = filepath -- hacky patch
+        return assert(load(contents, module_name))
     else
         return err
     end
 end
 
--- First, the path is checked if its the menu simulations
+-- Function that replaces the regular Lua file searching. Identical in function
+-- except that it doesn't convert dots to slashes; we manually take care of that
+-- ourselves in `normalize_module_name`. Every path passed into this function
+-- expects to be in a literal path format, hence the name.
+local literal_searcher = function(module_name)
+    local norm_module_name, absolute = normalize_module_name(module_name)
+    --print(package.path)
+
+    local errmsg = ""
+    for path in string.gmatch(package.path, "([^;]+)") do
+        local filename = string.gsub(path, "%?", norm_module_name)
+        --local file, err = io.open(filename, "rb")
+        --local file_string, err = python_file_to_string(filename)
+        local file, err = python_get_file(filename)
+        if file then
+            --print(file, err)
+            --print("loaded from file: " .. filename)
+            -- Compile and return the module
+            --result = assert(load(assert(file:read("*a")), module_name))
+            --result = assert(load(file_string, module_name))
+            result = assert(load(file.read(), module_name))
+            file.close() -- make sure we close that bitch
+            --CURRENT_DIR = filename
+            return result
+        else
+            --print(err)
+        end
+        errmsg = errmsg.."\n\tno file '"..filename.."' (checked with custom loader)"
+    end
+    return errmsg
+end
+
+-- search order:
+-- 1. menu_simulations (returns some dummy data so that Factorio doesn't complain)
+-- 2. archive_searcher (defers to python and searches one of the zip files)
+-- 3. package.preload (returns a copy if already loaded once in this session)
+-- 4. literal_searcher (overwrites file searcher, identical but with some custom behavior)
+-- 5. C lib searcher (unused)
+-- 6. All-in-one searcher (unused)
 table.insert(package.searchers, 1, menu_simulations_searcher)
--- Then, zip archives are prioritized more than file folders
 table.insert(package.searchers, 2, archive_searcher)
--- Then the regular `require` load process is followed, preloaded, files, etc.
+package.searchers[4] = literal_searcher
 
 -- =================
 -- Interface Helpers
@@ -271,15 +376,18 @@ end
 -- Push a mod to the stack of mods that the current require chain is using
 function lua_push_mod(mod)
     table.insert(MOD_TREE, mod)
+    MOD_DIR = MOD_TREE[#MOD_TREE].location
 end
 
 -- Pop a mod off the stack of mods that the current require chain is using
 function lua_pop_mod()
     table.remove(MOD_TREE)
+    MOD_DIR = MOD_TREE[#MOD_TREE].location
 end
 
 -- Wipe all mods from the mod tree to return it to a known state 
 -- (on stage change)
 function lua_wipe_mods()
     MOD_TREE = {}
+    MOD_DIR = nil
 end

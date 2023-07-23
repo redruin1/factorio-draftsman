@@ -48,7 +48,7 @@ import zipfile
 mod_archive_pattern = "(([\\w\\D]+)_([\\d\\.]+))\\.zip"
 mod_archive_regex = re.compile(mod_archive_pattern)
 
-mod_folder_pattern = "([\\w\\D]+)_([\\d\\.]+)"
+mod_folder_pattern = "([^\\s.]+)(?:_([\\d\\.]+))?$"
 mod_folder_regex = re.compile(mod_folder_pattern)
 
 dependency_string_pattern = (
@@ -120,14 +120,14 @@ def file_to_string(filepath):
 def archive_to_string(archive, filepath):
     # type: (zipfile.ZipFile, str) -> None
     """
-    Simply grabs a file with the specified name from an archive and returns it 
-    as a string. Ensures that the returned string is stripped of special 
+    Simply grabs a file with the specified name from an archive and returns it
+    as a string. Ensures that the returned string is stripped of special
     unicode characters that Lupa dislikes.
     """
-    with archive.open(filepath, mode="r") as target_file:
+    with archive.open(filepath, mode="r") as file:
         # "utf-8-sig" makes sure to strip BOM tokens if they exist
-        formatted = io.TextIOWrapper(target_file, encoding="utf-8-sig")
-        return formatted.read()
+        formatted_file = io.TextIOWrapper(file, encoding="utf-8-sig")
+        return formatted_file.read()
 
 
 def get_mod_settings(location):
@@ -231,7 +231,9 @@ def python_require(mod, mod_folder, module_name, package_path):
     # No sense searching the archive if the mod is not one to begin with; we
     # relay this information back to the Lua require function
     if not mod.archive:
-        return None, "Current mod ({}) is not an archive".format(mod.name)
+        return None, "\n\tCurrent mod ({}) is not an archive".format(mod.name)
+
+    # print("\t", mod.name)
 
     # We emulate lua filepath searching
     filepaths = package_path.split(";")
@@ -242,10 +244,11 @@ def python_require(mod, mod_folder, module_name, package_path):
         filepath = filepath.replace("\\", "/")
         # Make it local to the archive, replacing the global path to the local
         # internal path
-        print("filepath", filepath)
-        print("mod_folder + mod.name", mod_folder + "/" + mod.name)
-        print("mod.internal_folder", mod.internal_folder)
-        filepath = filepath.replace(mod_folder + "/" + mod.name, mod.internal_folder)
+        # print("\tbefore filepath", filepath)
+        # print("mod_folder + mod.name", mod_folder + "/" + mod.name)
+        # print("mod.location", mod.location)
+        filepath = filepath.replace(mod.location, mod.internal_folder)
+        # print("\tafter filepath:", filepath)
         try:
             string_contents = archive_to_string(mod.files, filepath)
             fixed_filepath = os.path.dirname(filepath[filepath.find("/") :])
@@ -268,10 +271,10 @@ def load_stage(lua, mod_list, mod, stage):
     # lua.globals().MOD = mod
     lua.globals().MOD_DIR = mod.location
     lua.globals().lua_push_mod(mod)
-    lua.globals().CURRENT_FILE = os.path.join(mod.location, stage)
+    lua.globals().CURRENT_FILE = mod.location + "/" + stage
 
     # Add the base mod folder as a base path (in addition to base and core)
-    lua.globals().lua_add_path(os.path.join(mod.location, "?.lua"))
+    lua.globals().lua_add_path(mod.location + "/?.lua")
 
     lua.execute(mod.data[stage])
 
@@ -1200,7 +1203,7 @@ def extract_tiles(lua, data_location, verbose):
 # =============================================================================
 
 
-def update(verbose=False, path=None, show_logs=False, no_mods=False):
+def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None):
     """
     Updates the data in the :py:mod:`.draftsman.data` modules.
 
@@ -1240,7 +1243,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
         )
 
     # Dictionary of mods
-    mods = {}
+    mods: dict[str, Mod] = {}
 
     # Add "base" and "core" mods
     # Core mod is somewhat special, and not loaded in the standard lifecycle
@@ -1315,26 +1318,25 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
 
     # Preload all the mods and their versions
     for mod_obj in os.listdir(factorio_mods):
-        # The following variables are the minimum info we need to acquire
-        mod_name = None
-        mod_version = None
-
-        mod_info = None  # Data extracted from the mod's info.json file
-        archive = None  # Is this mod a zip archive or not?
-
-        mod_location = os.path.join(factorio_mods, mod_obj)
-        external_mod_version = None  # Optional (the filepath version)
+        # mod_location = os.path.join(factorio_mods, mod_obj)
+        mod_location = factorio_mods + "/" + mod_obj
+        external_mod_version = None  # Optional (the version indicated by filepath)
 
         if mod_obj.lower().endswith(".zip"):
             # Zip file
-            # TODO: assert actually matches
             m = mod_archive_regex.match(mod_obj)
+            if not m:
+                raise IncorrectModFormatError(
+                    "Mod archive '{}' does not fit the 'name_version' format".format(
+                        mod_obj
+                    )
+                )
             folder_name = m.group(1)
             mod_name = m.group(2).replace(" ", "")
             external_mod_version = m.group(3)
             files = zipfile.ZipFile(mod_location, mode="r")
 
-            # There is no restriction on the name of the internal folder, just 
+            # There is no restriction on the name of the internal folder, just
             # that there is only one at the root of the archive
             # All the mods I've seen use the same "mod-name_mod-version", but
             # the wiki says this is not enforced
@@ -1381,17 +1383,22 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
 
             mod_version = mod_info["version"]
             archive = True
+            location = factorio_mods + "/" + mod_name
 
         elif os.path.isdir(mod_location):
             # Folder
             print("folder", mod_obj)
-            # TODO: assert mod folder name matches either "name" or 
+            # TODO: assert mod folder name matches either "name" or
             # "name_version" format
             m = mod_folder_regex.match(mod_obj)
+            if not m:
+                raise IncorrectModFormatError(
+                    "Mod folder '{}' does not fit the 'name' or 'name_version' format".format(
+                        mod_obj
+                    )
+                )
             mod_name = m.group(1)
             external_mod_version = m.group(2)
-            print(mod_name)
-            print(external_mod_version)
             try:
                 with open(os.path.join(mod_location, "info.json"), "r") as info_file:
                     mod_info = json.load(info_file)
@@ -1405,6 +1412,8 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
             mod_folder = mod_location
             mod_version = mod_info["version"]
             archive = False
+            files = None
+            location = mod_location
 
         else:  # Regular file
             continue  # Ignore: cannot be considered a mod
@@ -1417,14 +1426,14 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
             continue
 
         # Idiot check: assert external version matches internal version
-        if external_mod_version:
-            assert version_string_to_tuple(
-                external_mod_version
-            ) == version_string_to_tuple(
-                mod_version
-            ), "{}: External version does not match internal version".format(
-                mod_name
-            )
+        # if external_mod_version:
+        #     assert version_string_to_tuple(
+        #         external_mod_version
+        #     ) == version_string_to_tuple(
+        #         mod_version
+        #     ), "{}: External version ({}) does not match internal version ({})".format(
+        #         mod_name, external_mod_version, mod_version
+        #     )
 
         # Ensure that the mod's factorio version is correct
         mod_factorio_version = version_string_to_tuple(mod_info["factorio_version"])
@@ -1439,12 +1448,16 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
             except KeyError:
                 pass
             try:
-                settings = archive_to_string(files, mod_folder + "/settings-updates.lua")
+                settings = archive_to_string(
+                    files, mod_folder + "/settings-updates.lua"
+                )
                 mod_data["settings-updates.lua"] = settings
             except KeyError:
                 pass
             try:
-                settings = archive_to_string(files, mod_folder + "/settings-final-fixes.lua")
+                settings = archive_to_string(
+                    files, mod_folder + "/settings-final-fixes.lua"
+                )
                 mod_data["settings-final-fixes.lua"] = settings
             except KeyError:
                 pass
@@ -1455,12 +1468,16 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
             except KeyError:
                 pass
             try:
-                data_updates = archive_to_string(files, mod_folder + "/data-updates.lua")
+                data_updates = archive_to_string(
+                    files, mod_folder + "/data-updates.lua"
+                )
                 mod_data["data-updates.lua"] = data_updates
             except KeyError:
                 pass
             try:
-                data_final_fixes = archive_to_string(files, mod_folder + "/data-final-fixes.lua")
+                data_final_fixes = archive_to_string(
+                    files, mod_folder + "/data-final-fixes.lua"
+                )
                 mod_data["data-final-fixes.lua"] = data_final_fixes
             except KeyError:
                 pass
@@ -1505,54 +1522,71 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
 
         # To fix this, we explicitly check for mods with a duplicate name, and
         # we only overwrite it if the latter mod's version is greater than the
-        # existing mod's version:
+        # existing mod's version.
 
-        # TODO: issue warnings if mod exists as both a zip archive and a folder?
+        # In addition, if there are two versions of the same mod with equivalent
+        # versions, but one is a zip archive and the other is a folder, then the
+        # folder will take precedence over the zip file.
 
-        new_mod = Mod(
+        current_mod = Mod(
             name=mod_name,
             internal_folder=mod_folder,
             version=mod_version,
             archive=archive,
-            location=factorio_mods + "/" + mod_name,  # maybe absolute?,
+            location=location,  # maybe absolute?,
             info=mod_info,
             files=files,
             data=mod_data,
         )
+
+        if verbose or report:
+            print("(zip)" if archive else "(dir)", mod_name, mod_version)
+
         # If a mod with this name already exists
-        if mod_name in mods and verbose:
-            # We also issue warnings regardless of verbosity, as this is likely
-            # undesired behavior
+        if mod_name in mods:
+            # We warn the user, as this can lead to undesired behavior
+            previous_mod = mods[mod_name]
             print(
-                "WARNING: Duplicate of mod '{}' found ({})".format(
-                    mod_name, new_mod.version
+                "WARNING: Duplicate of mod '{}' found (current: {} -> new: {})".format(
+                    mod_name, previous_mod.version, current_mod.version
                 )
             )
-            old_mod = mods[mod_name]
+
             # Skip overwriting this mod if the current one is of a later version
             # than the current
-            if version_string_to_tuple(new_mod.version) <= version_string_to_tuple(
-                old_mod.version
+            if version_string_to_tuple(previous_mod.version) < version_string_to_tuple(
+                current_mod.version
             ):
                 print(
+                    "\tOverwriting older version ({}) with newer version ({})".format(
+                        previous_mod.version, current_mod.version
+                    )
+                )
+            elif version_string_to_tuple(
+                previous_mod.version
+            ) > version_string_to_tuple(current_mod.version):
+                print(
                     "\tSkipping older version ({}) in favor of newer version ({})".format(
-                        new_mod.version, old_mod.version
+                        current_mod.version, previous_mod.version
                     )
                 )
                 continue
-
-            # Else
-            print(
-                "\tOverwriting older version ({}) with newer version ({})".format(
-                    old_mod.version, new_mod.version
-                )
-            )
-
-        elif verbose:
-            print(mod_name)
+            else:  # versions are identical
+                # If the previous mod is a folder, and the new mod is an archive,
+                # defer to the folder
+                if previous_mod.archive and not current_mod.archive:
+                    print("\tUsing folder version instead of zip archive")
+                else:
+                    print("\tDeferring to folder version instead of zip archive")
+                    continue
 
         # Add/Overwrite the mod to the list
-        mods[mod_name] = new_mod
+        mods[mod_name] = current_mod
+
+    if report:
+        # TODO: add some extra features, like piping output to a file instead of
+        # stdout, as well as some formatting things
+        return
 
     # Create the dependency tree
     if verbose:
@@ -1670,6 +1704,22 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
     # This function is in charge of reading a required file from a zip archive
     # and providing the source to Lua's `require` function
     lua.globals().python_require = python_require
+
+    # Because Lupa can't handle byte-order marks in input files, we can't rely
+    # on Lua itself to load raw files using require unmodified
+    # We can try to strip the byte-order mark on the Lua side of things, but
+    # frankly I trust Python here way more than I trust Lua to handle file
+    # formatting
+    # So instead, we open a correctly encoded file on the python side of things
+    # and then pass a file handle to Lua instead (which Lua reads from and
+    # unloads)
+    def python_get_file(filepath):
+        try:
+            return open(filepath, mode="r", encoding="utf-8-sig")
+        except Exception as e:  # Exceptions in Lua are evil, so we don't do that
+            return None, repr(e)
+
+    lua.globals().python_get_file = python_get_file
 
     # Register logging status within Lua context
     lua.globals().LOG_ENABLED = show_logs
@@ -1811,6 +1861,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False):
 
     if verbose:
         print("\nUpdate finished.")  # Phew.
+        print("hella slick; nothing broke!")
 
 
 def main():
@@ -1850,6 +1901,14 @@ def main():
         action="store_true",
         help="Prints the version of Lua used when loading and exits",
     )
+    parser.add_argument(
+        "-r",
+        "--report",
+        nargs="?",
+        default=None,
+        const=True,
+        help="Outputs a list of mods at '--path' as well as their configurations",
+    )
     args = parser.parse_args()
     if args.lua_version:
         print(
@@ -1863,5 +1922,5 @@ def main():
             path=args.path,
             show_logs=args.log,
             no_mods=args.no_mods,
+            report=args.report,
         )
-        print("hella slick; nothing broke!")

@@ -1,11 +1,19 @@
 # Changelog
 
 ## 1.0.6
+* Updated `factorio-data` to version `1.1.88`
+* Updated `compatibility/defines.lua` to `1.1.88`
+* Merged arpheno's pull request:
+    * Fixed `Pump` so that it now correctly exports it's `direction`
 * Merged SIGSTACKFAULT's pull requests:
     * Fix type annotation of `Tile.__init__()`
     * Fix type annotation of `BlueprintBook.insert()`
+* `draftsman-update` is now (finally) able to load mods from folder directories instead of just zip archives
+* `draftsman-update` will now prefer mods in folders instead of zip archives if one of each type present and they have the exact same ID and version (I think this matches Factorio, create an issue if it's not)
+* Added `--report` command to `draftsman-update` that prints out a list of currently active mods and their versions (to aid in bug reports)
 * Fixed Lua `defines` table not being defined by the time `factorio-data/core` runs (#85)
 * Fixed UTF-8 BOM tokens not being properly stripped from all mod Lua files, resulting in issues when sending to Lupa (#84)
+* Changed the Lua load process a whole lot for `draftsman-update`, hopefully behaving more predictably and causing no regressions
 
 ## 1.0.5
 * Added `get_blueprintable_from_JSON()` and patched `get_blueprintable_from_string()` so that it no longer converts the string twice (accidentally)
