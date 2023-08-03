@@ -4,7 +4,7 @@ from draftsman.classes.blueprint import Blueprint
 from draftsman.constants import Direction
 
 
-def flip_belts(blueprint):
+def reverse_belts(blueprint):
     # type: (Blueprint) -> None
     """
     Modifies the passed in blueprintable in place to swap the direction of all

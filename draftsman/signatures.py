@@ -11,7 +11,7 @@ match the data format specified, which is usually wrapped with ``DraftsmanError`
 from __future__ import unicode_literals
 
 from draftsman.classes.association import Association
-from draftsman.data.signals import signal_dict, mapping_dict
+from draftsman.data.signals import signal_dict, mapper_dict
 
 from builtins import int
 from enum import Enum
@@ -116,7 +116,7 @@ SIGNAL_ID_OR_CONSTANT = Schema(
 
 def normalize_mapping_id(input):
     if isinstance(input, six.string_types):
-        return mapping_dict(input)
+        return mapper_dict(input)
     else:
         return input
 
@@ -720,9 +720,9 @@ def normalize_mappers(mappers):
         if isinstance(mapper, (tuple, list)):
             mappers[i] = {"index": i}
             if mapper[0]:
-                mappers[i]["from"] = mapping_dict(mapper[0])
+                mappers[i]["from"] = mapper_dict(mapper[0])
             if mapper[1]:
-                mappers[i]["to"] = mapping_dict(mapper[1])
+                mappers[i]["to"] = mapper_dict(mapper[1])
     return mappers
 
 

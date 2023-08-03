@@ -163,6 +163,7 @@ def main():
     add_signals_to_mapping(signals.item)
     add_signals_to_mapping(signals.fluid)
 
+    # Some assembly-like code to be compiled into numeric values
     commands = [
         "LD",
         0,

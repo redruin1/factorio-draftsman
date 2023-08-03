@@ -38,8 +38,10 @@ from draftsman.utils import aabb_to_dimensions
 import math
 from PIL import Image
 import numpy as np
-import pyperclip
-
+try:
+    import pyperclip
+except ImportError:
+    pyperclip = None
 
 def main():
     # Manually specify the color, whether its a tile or entity, and its name
@@ -67,9 +69,14 @@ def main():
     # The example image is square, so we use one parameter for simplicity
     target_size = 200
 
+    print("Filepath of image to covert:")
+    img_path = input()
+
     # open an image
-    img = Image.open("examples/example2.png")
+    img = Image.open(img_path)
     img = img.resize((target_size, target_size))
+
+    print("Working. This may take a bit.")
 
     img_data = np.array(img)[:, :, :3]
 
@@ -152,20 +159,17 @@ def main():
                 occupied_pixels[y][x] = True
                 push_error_to_neighbours(x, y, current_color, closest_color[0])
 
-    # Output the blueprint to a string
-    # print(blueprint.to_string())
-
-    # Sometimes with such large blueprints the regular console might run out of
-    # lines before displaying the entire blueprint. If that's the case, you can
-    # also output to a file:
-    # with open("examples/image_blueprint.txt", "w") as file:
-    #    file.write(blueprint.to_string())
-
-    # Or, you can use a tool to output the contents directly into the user's
-    # clipboard:
-    pyperclip.copy(blueprint.to_string())
-
-    print("done")
+    # If pyperclip is present, then just copy it to their clipboard
+    if pyperclip:
+        pyperclip.copy(blueprint.to_string())
+        print("Copied to your clipboard")
+    else:
+        # Sometimes with such large blueprints the regular console might run out
+        # of lines before displaying the entire blueprint
+        # So instead, we output the data to a file
+        with open("examples/output/converted_image.blueprint", "w") as file:
+           file.write(blueprint.to_string())
+        print("Wrote 'examples/output/converted_image.blueprint'")
 
 
 if __name__ == "__main__":

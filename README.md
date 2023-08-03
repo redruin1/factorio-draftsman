@@ -143,38 +143,14 @@ Both `mod-info.json` and `mod-settings.dat` are recognized by `draftsman-update`
 
 --------------------------------------------------------------------------------
 
-## Experimental Features
+## Contributing
 
-### Lupa 2.0 (beta)
+Draftsman is a large and expansive project, intended to be used by as many people as possible. As such, it is a difficult project to maintain by myself. All support is welcome, whether it be finding/fixing bugs, improving mod compatibility, adding features, improving documentation, adding examples, or anything in-between. I maintain a [`TODO.md`] list which contains all the features that I'm currently planning on implementing (eventually, at least).
 
-Allows `draftsman-update` to run on Lua 5.2 instead of Lua 5.4 (which fixes some mod compatibility issues):
+Bugs are tracked on the issue page; If you have an issue that's affecting you, search here for your issue and create a new one if it's not there.
 
-```
-> pip uninstall lupa    # (if already installed)
-> pip install -e git+https://github.com/scoder/lupa.git#egg=lupa
-```
+If you have a feature request that is on the TODO list, or that you firmly believe belongs in Draftsman and you have a working prototype, then the issues page is also the place for that.
 
---------------------------------------------------------------------------------
+If you have a feature request that isn't currently on the TODO list and you believe it might be a good fit for the project, but you're not absolutely sure if it belongs or how it should be implemented into Draftsman, start a [discussion thread here](https://github.com/redruin1/factorio-draftsman/discussions/categories/ideas). If a discussed feature is accepted, it will get added to the TODO list and tracked on the issues page. 
 
-## TODO
-* Add equality operators for all `Entity`s
-* Finish short descriptions of each example (should probably add more examples as well)
-* Add constraints on `UpgradePlanner` and `DeconstructionPlanner`
-* Python3-ify everything
-* More doctests
-* Make draftsman's prototypes match Factorio's prototypes exactly (for consistency's sake)
-* Write `__repr__` function for everything
-* Write `dump_format` (and test_cases)
-    * Add plaintext representations of Entity JSON objects for all entities in addition to blueprintables
-* Update modding documentation guide to reflect 2.0 changes
-* Add warnings for placement constraints on rails, rail signals and train stops
-* Reevaluate the diamond diagrams for inherited `Entity` subclass
-* Figure out exactly what determines if an `Entity` is flip-able or not
-* Maybe add interface so that mods can include files that can be loaded with Draftsman? (this would be neat)
-* Split documentation from docstrings so that each function has a more readable example
-* RailPlanner (specify rail paths via turtle-like commands)
-* Custom `data.raw` extraction and formatting?
-* Maybe integrate defaults for more succinct blueprint strings?
-* Unify entity validation into one monolithic thing
-* Investigate more performant alternatives to `schema` (validir? requires cython, currently we're pure python)
-* Look into Lua (or other language) bindings via backport to C/Cython
+If you want to contribute, read [CONTRIBUTING.md] first, fork the project, and dive in. When you're ready, submit a PR with the changes towards the intended branch, describing what exactly the changes intend to do (linking against any relevant issues if necessary). If all checks pass, you can expect the PR to merged in a (relatively) timely manner and pushed to the next minor or major version.
