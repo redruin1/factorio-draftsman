@@ -1095,9 +1095,10 @@ class EntityCollection(object):
             is the outermost car in the direction that ``wagon`` points.
         """
         train = []
+        all_locos_backwards = True
         used_wagons = set()  # Create a set of trains to check
 
-        def traverse_neighbours(wagon, current_train):
+        def traverse_neighbours(wagon, current_train) -> list:
             """
             Check areas near a specified wagon to see if there are other wagons
             connected to it.
@@ -1107,6 +1108,7 @@ class EntityCollection(object):
                 radius=7.5,  # Average distance is less than 7 tiles
                 type={"locomotive", "cargo-wagon", "fluid-wagon", "artillery-wagon"},
             )
+            print(len(neighbours))
             for neighbour in neighbours:
                 # Check to make sure we haven't already added this wagon to a
                 # train
@@ -1122,7 +1124,7 @@ class EntityCollection(object):
                     < neighbour.orientation
                     < inv_wagon_dir + 0.125
                 ):
-                    # Determine the neighbour closest truck point
+                    # Determine the neighbour's closest truck point
                     a = neighbour.position + neighbour.orientation.to_vector(2)
                     b = neighbour.position + neighbour.orientation.to_vector(-2)
                     if distance(wagon.position, a) < distance(wagon.position, b):
@@ -1130,12 +1132,15 @@ class EntityCollection(object):
                     else:
                         neighbour_truck = b
 
+                    print(current_train)
                     # Check front
                     wagon_truck = wagon.position + wagon.orientation.to_vector(2)
                     if 2.9 < distance(wagon_truck, neighbour_truck) <= 3.1:
                         # Add to beginning of train list
                         used_wagons.add(neighbour)
                         current_train.insert(0, neighbour)
+                        if neighbour.type == "locomotive":
+                            all_locos_backwards = False
                         traverse_neighbours(neighbour, current_train)
 
                     # Check back
@@ -1151,18 +1156,26 @@ class EntityCollection(object):
         used_wagons.add(wagon)
         train = traverse_neighbours(wagon, [wagon])
 
+        # Sometimes the starting wagon can be pointing the opposite way, so all
+        # locomotives end up pointing back to front
+        # If that's the case, we reverse the list so that left is front and back
+        # is right
+        if all_locos_backwards:
+            train.reverse()
+
         return train
 
     def find_trains_filtered(
         self,
-        train_length=None,
-        num_type=None,
-        orientation=None,
-        config=None,
-        invert=False,
-        limit=None,
-    ):
-        # type: (int | tuple, dict, Orientation, TrainConfiguration, bool, int) -> list[list[EntityLike]]
+        train_length: int | tuple=None,
+        orientation: Orientation=None,
+        at_station: bool | set=False,
+        num_type: dict=None,
+        config: TrainConfiguration=None,
+        schedule: Schedule=None,
+        invert: bool=False,
+        limit: int=None,
+    ) -> list[list[EntityLike]]:
         """
         Finds a set of trains that match the passed in parameters. Formally, a
         "train" in this context is a connected set of wagons which may or may
@@ -1213,6 +1226,7 @@ class EntityCollection(object):
         wagons = self.find_entities_filtered(
             type={"locomotive", "cargo-wagon", "fluid-wagon", "artillery-wagon"}
         )
+        stops = self.find_entities_filtered(type="train-stop")
         trains = []
         used_wagons = set()  # Create a set of wagons already traversed
 
@@ -1232,6 +1246,9 @@ class EntityCollection(object):
 
             trains.append(train)
 
+        for train in trains:
+            print("\t", train)
+
         def normalize_range(value):
             """
             Converts integers to inclusive ranges like:
@@ -1249,6 +1266,8 @@ class EntityCollection(object):
         # Normalize inputs
         if train_length is not None:
             train_length = normalize_range(train_length)
+        if isinstance(at_station, str):
+            at_station = {at_station}
         if num_type is not None:
             for car_type in num_type:
                 num_type[car_type] = normalize_range(num_type[car_type])
@@ -1263,13 +1282,35 @@ class EntityCollection(object):
             orientation are dummy values until they're actually added to a BP.
             """
             # TODO: ensure it includes everything
-            return car1.type == car2.type
+            return car1.name == car2.name
+
+        def train_at_station(train):
+            """
+            Determine whether a train's head is adjacent to a train stop. Returns
+            the name of the station the train is (likely) stopped at.
+            """
+            # Get the position and orientation of where the stop should be if it
+            # exists:
+            forward = train[0].orientation.to_direction()
+            right = forward.next(eight_way=False)
+            pos = train[0].position + forward.to_vector(3) + right.to_vector(2)
+            for stop in stops:
+                if stop.position == pos and stop.direction == forward:
+                    return stop.station # station name
 
         # Filter based on parameters
         def test(train):
             if train_length is not None:
                 if not (train_length[0] <= len(train) <= train_length[1]):
                     return False
+            if at_station:
+                if isinstance(at_station, set):
+                    station_name = train_at_station(train)
+                    if station_name not in at_station:
+                        return False
+                else: # bool
+                    if not train_at_station(train):
+                        return False
             if num_type is not None:
                 for desired_type, desired_range in num_type.items():
                     num_found = sum(x.type == desired_type for x in train)
@@ -1282,9 +1323,27 @@ class EntityCollection(object):
             if config is not None:
                 if len(train) != len(config.cars):
                     return False
+                print("train:", train)
                 for i, config_car in enumerate(config.cars):
+                    print(i)
                     if not equivalent_cars(train[i], config_car):
+                        print("mismatch")
+                        print(train[i])
+                        print(config_car)
                         return False
+            if schedule is not None:
+                if len(self.schedules) == 0:
+                    return False
+                # Get the first locomotive in the train, since all locomotives
+                # on the train should share the same schedule
+                for car in train:
+                    if car.type == "locomotive":
+                        locomotive = car
+                # Search for the schedule that that locomotive uses
+                for bp_schedule in self.schedules:
+                    if Association(locomotive) in bp_schedule.locomotives:
+                        if bp_schedule != schedule:
+                            return False
             return True
 
         if invert:
@@ -1292,6 +1351,12 @@ class EntityCollection(object):
         else:
             return list(filter(lambda train: test(train), trains))[:limit]
 
+    def find_schedules_filtered(self):
+        """
+        Finds a set of schedules in the parent Collection.
+        TODO
+        """
+        pass # TODO
 
 # =============================================================================
 

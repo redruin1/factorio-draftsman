@@ -27,8 +27,8 @@ def main():
 
     # Some metadata
     blueprint.label = "Signal Index ({})".format(input_signal)
-    blueprint.label_color = (1.0, 0.0, 1.0, 1.0)
-    blueprint.icons = ["signal-I", "signal-D"]
+    blueprint.set_label_color(1.0, 0.0, 1.0, 1.0)
+    blueprint.set_icons("signal-I", "signal-D")
     blueprint.description = (
         "Converts the value of {} into a unique unit signal.".format(input_signal)
     )

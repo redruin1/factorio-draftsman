@@ -10,43 +10,29 @@ def main():
     # Import a rail oval with a train stop with name "A" and name "B"
     blueprint = Blueprint()
 
+    # fmt: off
+    
     # In order to specify a specific train format, we construct a helper object
     # called `TrainConfiguration`
     # The notable thing about TrainConfiguration is that you can specify your
-    # overall train format in a variant of the community-accepted syntax:
+    # overall train format in a variant of the common community-accepted syntax:
     config = TrainConfiguration("1-4")  # 1 Locomotive followed by 4 cargo wagons
     config = TrainConfiguration("1-4-0")  # Same as above
-    config = TrainConfiguration(
-        "1-4-1"
-    )  # 1 Locomotive pointing forward, 4 cargo wagons, and 1 loco pointing backwards
-    config = TrainConfiguration("1<-4-1>")  # Same as above, but explicit
-    config = TrainConfiguration(
-        "1<-4-<1"
-    )  # Two loco's on each end, both pointing forward between 4 cargo wagons
-    config = TrainConfiguration(
-        "1<-4C-<1"
-    )  # Same as above, but explicitly cargo wagons are specified
-    config = TrainConfiguration(
-        "1<-4F-<1"
-    )  # Same as above, but each cargo wagon is now a fluid wagon
-    config = TrainConfiguration(
-        "1<-4-<1", wagons="fluid"
-    )  # Same as above, converts all non-locomotive cars to cars of that type
-    config = TrainConfiguration(
-        "1-4-1", direction="forward"
-    )  # Specify that all locomotive should point forward regardless of order
-    config = TrainConfiguration(
-        "1-4-1-4-1"
-    )  # In this case all locomotives point "forward" when there's more than 2 locomotive cells
+    config = TrainConfiguration("1-4-1")  # 1 Locomotive pointing forward, 4 cargo wagons, and 1 loco pointing backwards
+    config = TrainConfiguration("1<-4-1>")  # Same as above, but explicit loco direction
+    config = TrainConfiguration("1<-4-1<")  # Same as above, but both locomotives are pointing forward
+    config = TrainConfiguration("1<-4C-1<")  # Same as above, but cargo wagons are explicitly specified
+    config = TrainConfiguration("1<-4F-1<")  # Same as above, but each cargo wagon is instead a fluid wagon
+    config = TrainConfiguration("1<-4-<1", wagons="fluid")  # Same as above, converts all non-locomotive cars to cars of that type
+    config = TrainConfiguration("1-4-1", direction="forward")  # Specify that all locomotive should point forward regardless of order
+    config = TrainConfiguration("1-4-1-4-1")  # In this case all locomotives point "forward" when there's more than 2 locomotive cells
     # More specifically, "dual" direction is only used when there's only 2 locomotive blocks and they exist at the start and end
     config = TrainConfiguration("<-4-<-4->")  # unless, of course, you manually specify
-    config = TrainConfiguration(
-        "<<<FFFCCCAAA<<<"
-    )  # Configurations can also be entirely explicit, no hyphens necessary
-    config = TrainConfiguration(
-        "<<<-FFFCCCAAA-<<<"
-    )  # Same as above; hyphens can also be added for clarity
+    config = TrainConfiguration("<<<FFFCCCAAA<<<")  # Configurations can also be entirely explicit, no hyphens necessary
+    config = TrainConfiguration("<<<-FFFCCCAAA-<<<")  # hyphens can also be added just for clarity
     # C is for cargo wagons, F is for fluid wagons, A for artillery
+
+    # fmt: on
 
     # With the syntax explained, let's create an final configuration, a dual-
     # headed configuration with one of each wagon type
@@ -57,24 +43,35 @@ def main():
 
     # The benefit of this is that you can customize any properties about the
     # config before adding it to a blueprint. For example:
-    config.cars[0].set_item_request("nuclear-fuel", 3)  # Fuel the locomotive
-    config.cars[1].set_inventory_filters(
-        ["iron-ore", "copper-ore", "stone", "coal"]
-    )  # Set cargo filters
-    config.cars[2].tags = {"some": "stuff"}  # Set the modding tags for them
-    config.cars[3].set_item_request(
-        "artillery-shell", 25
-    )  # Even preload the artillery wagons on construction
+    # Fuel the locomotive
+    config.cars[0].set_item_request("nuclear-fuel", 3)  
+    # Set cargo filters
+    config.cars[1].set_inventory_filters([              
+        "iron-ore", 
+        "copper-ore", 
+        "stone", 
+        "coal"
+    ])  
+    # Set the modding tags for them
+    config.cars[2].tags = {"some": "stuff"}  
+    # Even preload the artillery wagons on construction
+    config.cars[3].set_item_request("artillery-shell", 25)  
 
+    # Cars are specified from the left of the right, so the 0th
+    # car is the leftmost character in the string.
     # Modifying position or orientation are redundant in this case, as they're
     # overwritten when they're added to a blueprint.
 
-    # blueprint.add_train_at_position((3, 0), Direction.WEST, config=config, schedule=None)
+    # We can add a station at a particular position and direction, which is the
+    # simplest method of adding it to a blueprint:
+    if False: 
+        blueprint.add_train_at_position((3, 0), Direction.WEST, config=config, schedule=None)
+    
     # For more information on the `schedule` parameter, see `train_schedule_usage.py`
 
     # Specifying by position is acceptable for some blueprints, but 90 percent
     # of the time users want to put their blueprints behind stations.
-    # Let's create a station (with some rails) and place another identical train
+    # Let's create a station (with some rails) and place the train there instead:
 
     # Configs have a `rail_length` which is the number of straight-rails needed
     # on the ground in order to place the full train
@@ -94,9 +91,11 @@ def main():
         id="station_A",
     )
 
+    # Note that we use the station's ID, not it's name. This is because there
+    # can be multiple stations with the name "A", and how would we discern 
+    # between them?
     blueprint.add_train_at_station(config, "station_A")
 
-    # print(blueprint)
     print(blueprint.to_string())
 
     # By default, train configurations only map to vanilla train cars. However,
@@ -128,7 +127,8 @@ def main():
             # point to different wagons of any type. Any symbol should work
             # provided that they're:
             #   * 1 character long, and
-            #   * they're the uppercase equivalent
+            #   * they're the uppercase equivalent, since the string is 
+            #     normalized to uppercase
         }
 
         # Now we can re-use the same string from earlier to get an upgraded
@@ -142,6 +142,9 @@ def main():
         # You can also change the default mapping in TrainConfiguration so that
         # this only has to be done once on setup:
         TrainConfiguration.default_mapping = modded_mapping
+
+        # Then any subsequent calls to `TrainConfiguration("...")` or 
+        # `TrainConfiguration.from_string("...")` will use the modded mapping.
 
 
 if __name__ == "__main__":  # pragma: no coverage

@@ -192,7 +192,7 @@ def main():
     blueprint.entities.append(rail_planner)
     rail_blueprints.blueprints.append(blueprint)
 
-    # Though, see `train_configuration_usage.py` for more information on train
+    # See `train_configuration_usage.py` for more information on train
     # configurations and `train_schedule_usage.py` for more information on
     # train schedules.
 

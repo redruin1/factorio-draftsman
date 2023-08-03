@@ -1512,12 +1512,18 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
 
         elif os.path.isdir(mod_location):
             # Folder
-            mod_name = mod_obj
+            # mod_name = mod_obj
             # TODO: assert mod folder name matches either "name" or "name_version"
             # format
-            # m = mod_archive_regex.match(mod_obj)
-            # mod_name = m.group(1)
-            # external_mod_version = m.group(2)
+            m = mod_folder_regex.match(mod_obj)
+            if not m:
+                raise IncorrectModFormatError(
+                    "Mod folder '{}' does not fit the 'name' or 'name_version' format".format(
+                        mod_obj
+                    )
+                )
+            mod_name = m.group(1)
+            external_mod_version = m.group(2)
             try:
                 with open(os.path.join(mod_location, "info.json"), "r") as info_file:
                     mod_info = json.load(info_file)

@@ -2454,6 +2454,14 @@ class BlueprintTesting(unittest.TestCase):
             [blueprint.entities[0], blueprint.entities[2], blueprint.entities[6]]
         ]
 
+        # Test continuity around corners
+        test_string = "0eNqdldtu4yAQht+Fa8diOAzgV6lWlZugFMnBEXayjSK/+07sbtqqtMK5sOTDzDfDzz/myl66kz+mEEfWXFnY9nFgzdOVDWEf2+72brwcPWtYGP2BVSy2h9tTakPHpoqFuPNvrIHpT8V8HMMY/JI/P1ye4+nw4hMF3DO7ftsf+jGcPdGO/UApfbzVIcwGtKzY5XajaiGtsCA0VelTIF67RPKaXn0rIO4FhpGa27+Om7nH32qYKQOSD4B0DqQeAMkcSD8AghwI76Btm/b95m+7p9wspuYABqzRC8/8thucOym0UcII0Nrg/8QQzxTXJwLEU9dlGjLrV+ZyC7PrOdm9dx8CndLZ736mqIUiSI5dSH67fM0ZE3ix6qq2gksSeYHzGp2Wec0dcroo2nLFAQHkvDslogOUrhL53Ij6ukiRY64ZPzNT4StV5qiyWDpXW2eVfPerrMmA31VDY8mbZFZ0RjgERa4tVm3FOJvFY7pAtxWzbaCYioV/W8QakYPGd8tlNDNZT68YXHTFba8YYzTFVLeCqvNUOtzm46/5dFpW7OzTsARYUMYJg6gtWjtN/wAFLVWc"
+        blueprint = Blueprint(test_string)
+
+        assert blueprint.find_trains_filtered() == [
+            [blueprint.entities[0], blueprint.entities[2], blueprint.entities[6]]
+        ]
+
     # =========================================================================
     # TileCollection
     # =========================================================================

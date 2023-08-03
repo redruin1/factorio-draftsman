@@ -19,27 +19,28 @@ split across multiple trains which is probably undesirable for this purpose.
 
 from draftsman.blueprintable import Blueprint
 from draftsman.entity import CargoWagon
+from draftsman.constants import Orientation
 
 
 def main():
     # Train contents we want to filter
     # item name: amount of wagon slots
     contents = {
-        "stone": 40,
-        "coal": 40,
-        "iron-ore": 40,
-        "copper-ore": 40,
-        "uranium-ore": 40,
+        "stone": 10,
+        "coal": 10,
+        "iron-ore": 10,
+        "copper-ore": 5,
+        "uranium-ore": 5,
     }
 
     blueprint = Blueprint()
     # Locomotive
-    blueprint.entities.append("locomotive", position=[0, 0], orientation=0.75)
+    blueprint.entities.append("locomotive", position=[0, 0], orientation=Orientation.WEST)
     # Offset the position to account for the Locomotive
     train_car_position = 1
 
     # Create the cargo wagons
-    cargo_wagon = CargoWagon("cargo-wagon", orientation=0.75)
+    cargo_wagon = CargoWagon("cargo-wagon", orientation=Orientation.WEST)
     slot_count = 0  # because inventory slot indexing starts at 1 instead of 0
 
     for item, slots in contents.items():
@@ -51,7 +52,7 @@ def main():
                 cargo_wagon.position = (7 * train_car_position, 0)
                 blueprint.entities.append(cargo_wagon)
                 # Reset
-                cargo_wagon = CargoWagon("cargo-wagon", orientation=0.75)
+                cargo_wagon = CargoWagon("cargo-wagon", orientation=Orientation.WEST)
                 slot_count = 0
                 train_car_position += 1
 

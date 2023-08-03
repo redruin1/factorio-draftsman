@@ -402,10 +402,11 @@ class Entity(EntityLike):
     @tile_position.setter
     def tile_position(self, value):
         # type: (Union[dict, list, tuple]) -> None
-        if self.parent:
-            raise DraftsmanError(
-                "Cannot change position of entity while it's inside another object"
-            )
+        # TODO: re-evaluate
+        # if self.parent:
+        #     raise DraftsmanError(
+        #         "Cannot change position of entity while it's inside another object"
+        #     )
 
         # self._tile_position.update_from_other(value, int)
         self._tile_position.update_from_other(value, int)

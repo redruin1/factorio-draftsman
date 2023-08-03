@@ -317,6 +317,9 @@ class EntityList(MutableSequence):
         """
         TODO
         """
+        if not isinstance(other, EntityList): # TODO: needed?
+            other = EntityList(initlist=other)
+
         new_entity_list = EntityList()
 
         for entity in self.data:
@@ -339,6 +342,9 @@ class EntityList(MutableSequence):
         """
         TODO
         """
+        if not isinstance(other, EntityList): # TODO: needed?
+            other = EntityList(initlist=other)
+
         new_entity_list = EntityList()
 
         for entity in self.data:
@@ -357,6 +363,9 @@ class EntityList(MutableSequence):
         """
         TODO
         """
+        if not isinstance(other, EntityList): # TODO: needed?
+            other = EntityList(initlist=other)
+
         new_entity_list = EntityList()
 
         for entity in self.data:
@@ -593,6 +602,9 @@ class EntityList(MutableSequence):
                     neighbours[i] = try_to_replace_association(neighbour)
 
         return new
+    
+    # def __repr__(self) -> str:
+    #     return "TODO"
 
     # =========================================================================
     # Internal functions

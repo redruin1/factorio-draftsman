@@ -16,7 +16,7 @@ from draftsman.warning import OverlappingObjectsWarning
 def main():
     blueprint = Blueprint()
     blueprint.label = "Huge Pumpjacks"
-    blueprint.icons = ["pumpjack"]
+    blueprint.set_icons("pumpjack")
 
     # Do this unless you want your stdout flooded with warnings
     warnings.simplefilter("ignore", OverlappingObjectsWarning)

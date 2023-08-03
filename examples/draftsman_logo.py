@@ -1,7 +1,7 @@
 # draftsman_logo.py
 
 """
-Script to generate the draftsman logo.
+Script to generate the draftsman logo. Featured on the Readme.
 """
 
 from draftsman.blueprintable import Blueprint
@@ -65,7 +65,7 @@ def main():
     draw = ImageDraw.Draw(im)
     draw.fontmode = "1"
     # Get the font
-    font = ImageFont.truetype("examples/TitilliumWeb-SemiBold.ttf", 17)
+    font = ImageFont.truetype("examples/assets/TitilliumWeb-SemiBold.ttf", 17)
     # Background
     draw.rectangle(((0, 0), img_size), fill=1)
     border_dim = (110, 40)

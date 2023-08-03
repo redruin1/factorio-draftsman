@@ -793,6 +793,9 @@ def aabb_to_dimensions(aabb):
     """
     if aabb is None:
         return (0, 0)
+    
+    if not isinstance(aabb, AABB):
+        aabb = AABB(aabb[0][0], aabb[0][1], aabb[1][0], aabb[1][1])
 
     x = int(math.ceil(aabb.bot_right[0] - aabb.top_left[0]))
     y = int(math.ceil(aabb.bot_right[1] - aabb.top_left[1]))

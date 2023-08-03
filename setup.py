@@ -59,7 +59,7 @@ setup(
     install_requires = [
         "schema >= 0.7.5",
         "lupa >= 2.0",
-        "six >= 1.16.0",
+        "six >= 1.16.0", # TODO: remove
         "typing",
         "typing_extensions; python_version < '3.8'",
         "importlib-resources; python_version < '3.7'",
