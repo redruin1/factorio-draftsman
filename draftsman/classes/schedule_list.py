@@ -2,6 +2,7 @@
 
 from draftsman.classes.schedule import Schedule
 
+from pydantic import BaseModel
 from typing import MutableSequence
 
 
@@ -9,6 +10,9 @@ class ScheduleList(MutableSequence):
     """
     TODO
     """
+
+    class Model(BaseModel):
+        data: list[dict] # TODO: fix
 
     def __init__(self, initlist=None):
         """
@@ -80,4 +84,4 @@ class ScheduleList(MutableSequence):
         return "<ScheduleList>{}".format(repr(self.data))
 
     # def __deepcopy__(self, memo):
-    #     pass
+    #     pass # TODO, I think

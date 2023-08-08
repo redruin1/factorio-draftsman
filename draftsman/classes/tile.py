@@ -16,10 +16,12 @@ from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.vector import Vector
 from draftsman.error import InvalidTileError, DraftsmanError
+from draftsman import signatures
 from draftsman.utils import AABB
 
 import draftsman.data.tiles as tiles
 
+from pydantic import BaseModel
 from typing import TYPE_CHECKING, Union, Tuple
 
 if TYPE_CHECKING:  # pragma: no coverage
@@ -32,6 +34,10 @@ class Tile(SpatialLike):
     """
     Tile class. Used for keeping track of tiles in Blueprints.
     """
+
+    class Model(BaseModel):
+        name: str
+        position: signatures.Position
 
     def __init__(self, name, position=(0, 0)):
         # type: (str, Tuple[int, int]) -> None

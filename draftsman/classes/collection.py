@@ -5,7 +5,7 @@ from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.entity_list import EntityList
 from draftsman.classes.tile_list import TileList
 from draftsman.classes.train_configuration import TrainConfiguration
-from draftsman.classes.schedule import Schedule
+from draftsman.classes.schedule import Schedule, WaitCondition, WaitConditions
 from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.tile import Tile
@@ -27,10 +27,15 @@ from draftsman.warning import (
 from draftsman.utils import AABB, PrimitiveAABB, flatten_entities, distance
 
 import abc
+import itertools
 import math
 import six
-from typing import Union
+from typing import Union, Sequence
 import warnings
+
+# TODO: move this
+from draftsman.entity import Locomotive, CargoWagon, FluidWagon, ArtilleryWagon
+RollingStock = Union[Locomotive, CargoWagon, FluidWagon, ArtilleryWagon]
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -943,12 +948,15 @@ class EntityCollection(object):
         :param schedule: A :py:class:`Schedule` object specifying the schedule
             that the newly created train should inherit.
         """
+        if isinstance(config, str):
+            config = TrainConfiguration(config)
+
         # If we need to add the train to a schedule
         if schedule is not None:
             # Check to see if an equivalent train schedule already exists
             current_schedule = None
             for existing_schedule in self.schedules:
-                if schedule == existing_schedule:
+                if schedule.stops == existing_schedule.stops:
                     # If so, use that
                     current_schedule = existing_schedule
                     break
@@ -1037,6 +1045,51 @@ class EntityCollection(object):
                 -7
             )  # 7 = distance between wagons
 
+    def set_train_schedule(
+            self, 
+            train_cars: Locomotive | list[RollingStock | list[RollingStock]], 
+            schedule: Schedule
+        ):
+        """
+        TODO
+        """
+        # Determine if we already have an equivalent schedule in the collection
+        current_schedule = None
+        for existing_schedule in self.schedules:
+            if schedule == existing_schedule:
+                # If so, use that
+                current_schedule = existing_schedule
+                break
+        # Otherwise, add a new schedule and set that as current working schedule
+        if current_schedule is None:
+            self.schedules.append(schedule)
+            current_schedule = self.schedules[-1]
+
+        # Normalize train cars to a list
+        if not isinstance(train_cars, Sequence):
+            train_cars = [train_cars]
+
+        # Flatten the list (if flattenable)
+        # TODO
+
+        # Ignore any non-locomotive entities
+        locomotives = list(filter(lambda x: x.type == "locomotive", train_cars))
+
+        used_cars = set()
+        # Iterate over every locomotive
+        for locomotive in locomotives:
+            if locomotive in used_cars:
+                continue
+
+            found_train = self.find_train_from_wagon(locomotive)
+            found_locomotives = list(filter(lambda x: x.type == "locomotive", found_train))
+
+            for found_locomotive in found_locomotives:
+                if found_locomotive in used_cars:
+                    continue
+                current_schedule.add_locomotive(found_locomotive)
+                used_cars.add(found_locomotive)
+
     def remove_train(self, cars):
         # type: (list[EntityLike]) -> None
         """
@@ -1074,7 +1127,7 @@ class EntityCollection(object):
     # Train Queries
     # =========================================================================
 
-    def find_train_from_wagon(self, wagon):
+    def find_train_from_wagon(self, wagon: RollingStock) -> list[RollingStock]:
         """
         Returns a list of rolling stock connected together. Allows you to grab
         all connected cars to a particular wagon if you know where one
@@ -1086,6 +1139,12 @@ class EntityCollection(object):
         at least one connected locomotive), but it also may not, since it's
         only criteria is connection.
 
+        .. WARNING::
+
+            This function might also return false positives if rolling stock is 
+            located right next to each other in a fully-compresssed rail setups.
+            PR's to mitigate this are welcome.
+
         :param wagon: The ID of the wagon or the wagon itself to search for
             neighbours.
 
@@ -1095,28 +1154,39 @@ class EntityCollection(object):
             is the outermost car in the direction that ``wagon`` points.
         """
         train = []
-        all_locos_backwards = True
-        used_wagons = set()  # Create a set of trains to check
+        all_locos_backwards = True # Flag in case we need to reverse entire train
+        used_wagons = set()  # Set of wagons we've already added to the current train
 
-        def traverse_neighbours(wagon, current_train) -> list:
+        def traverse_neighbours(
+                wagon: RollingStock, 
+                current_train: list[RollingStock], 
+                backwards: bool = False
+        ) -> list[RollingStock]:
             """
             Check areas near a specified wagon to see if there are other wagons
             connected to it.
             """
-            neighbours = self.find_entities_filtered(
+            nonlocal all_locos_backwards
+
+            # print(wagon.type)
+            # print(backwards)
+            if wagon.type == "locomotive" and not backwards:
+                all_locos_backwards = False
+
+            neighbours: list[RollingStock] = self.find_entities_filtered(
                 position=wagon.position,
                 radius=7.5,  # Average distance is less than 7 tiles
                 type={"locomotive", "cargo-wagon", "fluid-wagon", "artillery-wagon"},
             )
-            print(len(neighbours))
+            # print(len(neighbours))
             for neighbour in neighbours:
                 # Check to make sure we haven't already added this wagon to a
                 # train
                 if neighbour in used_wagons:
                     continue
 
-                # Check the orientation
-                # If the orientation is +- 45 degrees in either direction:
+                # If the orientation is +- 45 degrees in either direction from 
+                # the current wagon's orientation, it may be connected
                 wagon_dir = float(wagon.orientation)
                 inv_wagon_dir = float(wagon.orientation.opposite())
                 if (wagon_dir - 0.125 < neighbour.orientation < wagon_dir + 0.125) or (
@@ -1132,24 +1202,35 @@ class EntityCollection(object):
                     else:
                         neighbour_truck = b
 
-                    print(current_train)
-                    # Check front
-                    wagon_truck = wagon.position + wagon.orientation.to_vector(2)
+                    if backwards:
+                        forward_orientation = wagon.orientation.opposite()
+                    else:
+                        forward_orientation = wagon.orientation
+
+                    # Determine the front from `forward_orientation`
+                    neighbour_vec = neighbour.orientation.to_vector()
+                    forward_vec = forward_orientation.to_vector()
+                    dot_prod = sum([i*j for (i, j) in zip(neighbour_vec, forward_vec)])
+                    if dot_prod < 0:
+                        neighbour_is_backwards = True
+                    else:
+                        neighbour_is_backwards = False
+
+                    # Check "front"
+                    wagon_truck = wagon.position + forward_orientation.to_vector(2)
                     if 2.9 < distance(wagon_truck, neighbour_truck) <= 3.1:
                         # Add to beginning of train list
                         used_wagons.add(neighbour)
                         current_train.insert(0, neighbour)
-                        if neighbour.type == "locomotive":
-                            all_locos_backwards = False
-                        traverse_neighbours(neighbour, current_train)
+                        traverse_neighbours(neighbour, current_train, neighbour_is_backwards)
 
-                    # Check back
-                    wagon_truck = wagon.position + wagon.orientation.to_vector(-2)
+                    # Check "back"
+                    wagon_truck = wagon.position + forward_orientation.to_vector(-2)
                     if 2.9 < distance(wagon_truck, neighbour_truck) <= 3.1:
                         # Add to end of train list
                         used_wagons.add(neighbour)
                         current_train.append(neighbour)
-                        traverse_neighbours(neighbour, current_train)
+                        traverse_neighbours(neighbour, current_train, neighbour_is_backwards)
 
             return current_train
 
@@ -1158,10 +1239,12 @@ class EntityCollection(object):
 
         # Sometimes the starting wagon can be pointing the opposite way, so all
         # locomotives end up pointing back to front
-        # If that's the case, we reverse the list so that left is front and back
-        # is right
+        # If that's the case, we reverse the list so that left is front and 
+        # right is back
         if all_locos_backwards:
             train.reverse()
+
+        # print("Final train:", train)
 
         return train
 
@@ -1170,7 +1253,8 @@ class EntityCollection(object):
         train_length: int | tuple=None,
         orientation: Orientation=None,
         at_station: bool | set=False,
-        num_type: dict=None,
+        num_type: dict | None=None,
+        num_name: dict | None=None,
         config: TrainConfiguration=None,
         schedule: Schedule=None,
         invert: bool=False,
@@ -1198,6 +1282,16 @@ class EntityCollection(object):
             return (inclusive). Either the min or the max can also be set to
             ``None`` which indicates no minimum length and no maxiumum length
             respectively.
+        :param orientation: A :py:class:`Orientation` (or equivalent ``float``)
+            that describes the orientation that every car in the returned train
+            list should have. Note that trains placed on curved rails will not
+            be returned by this parameter, as _all_ train cars must equal
+            ``orientation``.
+        :param at_station: Can be specified as a ``bool`` value which will 
+            return all trains at any station, a ``str`` value where it will
+            return all trains at any station with that name, or as a ``set[str]``
+            where each all of the trains behind any station with one of those
+            names is returned.
         :param num_type: A ``dict`` of wagon types where each key is the ``str``
             type of the wagon and the value is an ``int`` representing the
             desired number of those wagons in the returned train. Allows to
@@ -1206,14 +1300,14 @@ class EntityCollection(object):
             with a ``Sequence`` of 2 ``int``s representing the minimum and
             maximum tolerable value of a wagon of that type, along with ``None``
             for no particular min or max.
-        :param orientation: A :py:class:`Orientation` (or equivalent ``float``)
-            that describes the orientation that every car in the returned train
-            list should have. Note that trains placed on curved rails will not
-            be returned by this parameter, as _all_ train cars must equal
-            ``orientation``.
+        :param num_name: Identical to ``num_type``, except that instead of 
+            wagon type it's wagon name, in case there happen to be more than
+            one type of Locomotive, CargoWagon, FluidWagon, or ArtilleryWagon. 
+            Useful for blueprints with modded trains, where you might want to
+            distinguish between them.
         :param config: A :py:class:`TrainConfiguration` object to filter against.
-            Performs a strict equality check between each of the train
-            configuration's cars and the cars in the returned trains.
+            Performs a equality check between each of the train configuration's 
+            cars and the cars in the returned trains.
         :param invert: Whether or not to return the inversion of the search
             criteria.
         :param limit: A maximum number of unique trains to return.
@@ -1246,10 +1340,10 @@ class EntityCollection(object):
 
             trains.append(train)
 
-        for train in trains:
-            print("\t", train)
+        # for train in trains:
+        #     print("\t", train)
 
-        def normalize_range(value):
+        def normalize_range(value: int | Sequence) -> tuple[int, int]:
             """
             Converts integers to inclusive ranges like:
                 1 -> (1, 1)
@@ -1271,6 +1365,9 @@ class EntityCollection(object):
         if num_type is not None:
             for car_type in num_type:
                 num_type[car_type] = normalize_range(num_type[car_type])
+        if num_name is not None:
+            for car_name in num_name:
+                num_name[car_name] = normalize_range(num_name[car_name])
         if limit is None:
             limit = len(trains)
 
@@ -1281,7 +1378,8 @@ class EntityCollection(object):
             to consider in this case since a train configuration's position and
             orientation are dummy values until they're actually added to a BP.
             """
-            # TODO: ensure it includes everything
+            # TODO: ensure it includes everything else, like fuel requests, item
+            # filters, etc.
             return car1.name == car2.name
 
         def train_at_station(train):
@@ -1297,6 +1395,11 @@ class EntityCollection(object):
             for stop in stops:
                 if stop.position == pos and stop.direction == forward:
                     return stop.station # station name
+            # TODO: check both ends if the we determine that the train is dual
+            # headed
+            # TODO: check to ensure that this train has a schedule that includes
+            # the name of the stop before assuming that this train is at that
+            # stop
 
         # Filter based on parameters
         def test(train):
@@ -1308,12 +1411,17 @@ class EntityCollection(object):
                     station_name = train_at_station(train)
                     if station_name not in at_station:
                         return False
-                else: # bool
+                else:  # bool
                     if not train_at_station(train):
                         return False
             if num_type is not None:
                 for desired_type, desired_range in num_type.items():
                     num_found = sum(x.type == desired_type for x in train)
+                    if not (desired_range[0] <= num_found <= desired_range[1]):
+                        return False
+            if num_name is not None:
+                for desired_name, desired_range in num_name.items():
+                    num_found = sum(x.name == desired_name for x in train)
                     if not (desired_range[0] <= num_found <= desired_range[1]):
                         return False
             if orientation is not None:
@@ -1323,13 +1431,8 @@ class EntityCollection(object):
             if config is not None:
                 if len(train) != len(config.cars):
                     return False
-                print("train:", train)
                 for i, config_car in enumerate(config.cars):
-                    print(i)
                     if not equivalent_cars(train[i], config_car):
-                        print("mismatch")
-                        print(train[i])
-                        print(config_car)
                         return False
             if schedule is not None:
                 if len(self.schedules) == 0:
@@ -1340,10 +1443,11 @@ class EntityCollection(object):
                     if car.type == "locomotive":
                         locomotive = car
                 # Search for the schedule that that locomotive uses
-                for bp_schedule in self.schedules:
-                    if Association(locomotive) in bp_schedule.locomotives:
-                        if bp_schedule != schedule:
-                            return False
+                for found_schedule in self.schedules:
+                    if Association(locomotive) in found_schedule.locomotives:
+                        if found_schedule.stops == schedule.stops:
+                            return True  # FIXME: cursed returns
+                return False
             return True
 
         if invert:
@@ -1351,12 +1455,6 @@ class EntityCollection(object):
         else:
             return list(filter(lambda train: test(train), trains))[:limit]
 
-    def find_schedules_filtered(self):
-        """
-        Finds a set of schedules in the parent Collection.
-        TODO
-        """
-        pass # TODO
 
 # =============================================================================
 

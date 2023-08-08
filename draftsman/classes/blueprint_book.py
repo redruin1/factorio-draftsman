@@ -61,9 +61,10 @@ from draftsman.warning import DraftsmanWarning, IndexWarning
 
 from builtins import int
 import copy
+from pydantic import BaseModel, ConfigDict, Field
 from schema import SchemaError
 import six
-from typing import Union
+from typing import Union, Literal
 import warnings
 
 try:  # pragma: no coverage
@@ -156,11 +157,21 @@ class BlueprintableList(MutableSequence):
             )
 
 
+class BlueprintBookModel(BaseModel):
+    item: Literal["blueprint-book"] = "blueprint-book"
+    label: str | None = None
+    version: int | None = Field(None, ge=0, lt=2**64)
+
+
 class BlueprintBook(Blueprintable):
     """
     Factorio Blueprint Book class. Contains a list of :py:class:`.Blueprintable`
     objects as well as some of it's own metadata.
     """
+
+    class Format(BaseModel):
+        blueprint_book: BlueprintBookModel = BlueprintBookModel()
+
 
     @utils.reissue_warnings
     def __init__(self, blueprint_book=None, unknown="error"):
@@ -173,6 +184,7 @@ class BlueprintBook(Blueprintable):
             ``dict`` object with the desired keys in the correct format.
         """
         super(BlueprintBook, self).__init__(
+            format=BlueprintBookModel,
             root_item="blueprint_book",
             item="blueprint-book",
             init_data=blueprint_book,
@@ -181,9 +193,9 @@ class BlueprintBook(Blueprintable):
 
     @utils.reissue_warnings
     def setup(self, unknown="error", **kwargs):
-        self._root = {}
+        # self._root = {}
 
-        self._root["item"] = "blueprint-book"
+        # self._root["item"] = "blueprint-book"
         kwargs.pop("item", None)
 
         self.label = kwargs.pop("label", None)

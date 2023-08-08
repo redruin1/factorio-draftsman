@@ -14,11 +14,13 @@ from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.vector import Vector
 from draftsman.data import entities
 from draftsman.error import InvalidEntityError, DraftsmanError
+from draftsman import signatures
 from draftsman import utils
 
 import copy
 import json
-from typing import Union, Callable
+from pydantic import BaseModel
+from typing import Union, Any
 from schema import Schema
 import six
 import weakref
@@ -66,6 +68,11 @@ class Entity(EntityLike):
     Categorizes entities into "types" based on their class, each of which is
     implemented in :py:mod:`draftsman.prototypes`.
     """
+
+    class Model(BaseModel):
+        name: str
+        position: signatures.Position
+        tags: dict[str, Any] | None = None
 
     # A dictionary containing all of the valid keys used in exported blueprint
     # strings.

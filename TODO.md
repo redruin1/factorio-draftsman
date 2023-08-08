@@ -4,12 +4,13 @@
 The `__eq__` operator for any Entity should return true if each entity is exactly equal in name, type, and all attributes.
 
 ---
-### Finish short descriptions of each example
-(should probably add more examples as well)
-
----
 ### Add constraints on `DeconstructionPlanner`
 General constraints on parameters and inputs; what you can deconstruct, what you can't, etc.
+
+---
+### Add predictive entity/tile name correction using `difflib.get_close_matches`
+With it we should be able to have Draftsman predict that we mean "wooden-chest" instead of something like "wodenchest"
+Actually, this could be added in a lot of places through the API
 
 ---
 ### Python3-ify everything
@@ -87,6 +88,11 @@ Currently `Entity` and `Blueprintable` have two slightly different methods of co
 - `validir`: peak performance (I think), but requires cython; currently we're pure python and wheel building would have to be set up. In addition, I'm not sure the feature set is complete enough for what I want
 - `pydantic`: nicer, and we wouldn't have to build it ourselves; I'm currently investigating this one now. Unfortunately, it requires modern Python, which will make 2.0's minimum version greater than 1.0's
 - Rolling our own: last resort; incredible amounts of work but features we can customize to our any need
+
+---
+### Add more examples
+Should also probably subdivide the examples folder into subfolders like `rail`, `combinator`, `queries`, `misc`, etc.
+And give each folder their own README.md that describes what each one does
 
 ---
 ### Investigate a Cython rewrite in efforts to make the library as performant as possible

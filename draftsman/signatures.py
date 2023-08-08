@@ -15,12 +15,107 @@ from draftsman.data.signals import signal_dict, mapper_dict
 
 from builtins import int
 from enum import Enum
-from pydantic import BaseModel, validator, root_validator, Field
-from typing import List, Literal
+from pydantic import RootModel, model_validator, Field
+from pydantic import BaseModel
+from typing import List, Literal, Any
 from schema import Schema, Use, Optional, Or, And
 from typing import Optional as TrueOptional  # TODO: fixme
 import six
 
+
+# class BaseModel(PydanticBaseModel):
+#     @classmethod
+#     def model_construct(cls, _recursive=False, _fields_set=None, **values):
+#         if not _recursive:
+#             super().model_construct(_fields_set=_fields_set, **values)
+
+#         # m = cls.__new__(cls)
+#         # fields_values = {}
+
+#         # config = cls.model_config
+
+#         # for name, field in cls.model_fields.items():
+#         #     print(name, field.annotation)
+#         #     key = field.alias
+#         #     if key not in values:
+#         #         key = name
+
+#         #     if key in values: 
+#         #         if values[key] is None and not field.is_required(): # Moved this check since None value can be passed for Optional nested field
+#         #             fields_values[name] = field.get_default()
+#         #         else:
+#         #             if issubclass(field.annotation.__class__, BaseModel):
+#         #                 if field.shape == 2:
+#         #                     fields_values[name] = [
+#         #                         field.annotation.model_construct(**e)
+#         #                         for e in values[key]
+#         #                     ]
+#         #                 else:
+#         #                     fields_values[name] = field.outer_type_.model_construct(**values[key])
+#         #             else:
+#         #                 fields_values[name] = values[key]
+#         #     elif not field.is_required():
+#         #         fields_values[name] = field.get_default()
+
+#         # object.__setattr__(m, '__dict__', fields_values)
+#         # if _fields_set is None:
+#         #     _fields_set = set(values.keys())
+#         # object.__setattr__(m, '__pydantic_fields_set__', _fields_set)
+#         # # m._init_private_attributes()
+#         # return m
+
+#         m = cls.__new__(cls)
+#         fields_values: dict[str, Any] = {}
+#         defaults: dict[str, Any] = {}  # keeping this separate from `fields_values` helps us compute `_fields_set`
+#         for name, field in cls.model_fields.items():
+#             print(name, field)
+#             if field.alias and field.alias in values:
+#                 # if issubclass(field.annotation, BaseModel):
+#                 try:
+#                     # assert issubclass(field.annotation, BaseModel)
+#                     fields_values[name] = field.annotation.model_construct(
+#                         _recursive=_recursive, 
+#                         _fields_set=_fields_set, 
+#                         **values[field.alias]
+#                     )
+#                 except AttributeError:
+#                     fields_values[name] = values.pop(field.alias)
+#             elif name in values:
+#                 try:
+#                     # assert issubclass(field.annotation, BaseModel)
+#                     fields_values[name] = field.annotation.model_construct(
+#                         _recursive=_recursive, 
+#                         _fields_set=_fields_set, 
+#                         **values[name]
+#                     )
+#                 except AttributeError:
+#                     fields_values[name] = values.pop(name)
+#             elif not field.is_required():
+#                 defaults[name] = field.get_default(call_default_factory=True)
+#         if _fields_set is None:
+#             _fields_set = set(fields_values.keys())
+#         fields_values.update(defaults)
+
+#         _extra: dict[str, Any] | None = None
+#         if cls.model_config.get('extra') == 'allow':
+#             _extra = {}
+#             for k, v in values.items():
+#                 _extra[k] = v
+#         else:
+#             fields_values.update(values)
+#         object.__setattr__(m, '__dict__', fields_values)
+#         object.__setattr__(m, '__pydantic_fields_set__', _fields_set)
+#         if not cls.__pydantic_root_model__:
+#             object.__setattr__(m, '__pydantic_extra__', _extra)
+
+#         if cls.__pydantic_post_init__:
+#             m.model_post_init(None)
+#         elif not cls.__pydantic_root_model__:
+#             # Note: if there are any private attributes, cls.__pydantic_post_init__ would exist
+#             # Since it doesn't, that means that `__pydantic_private__` should be set to None
+#             object.__setattr__(m, '__pydantic_private__', None)
+
+#         return m
 
 INTEGER = Schema(int)
 INTEGER_OR_NONE = Schema(Or(int, None))
@@ -806,8 +901,8 @@ class Mapper(BaseModel):
     index: int = Field(..., ge=0, lt=2**64)
 
 
-class Mappers(BaseModel):
-    __root__: List[Mapper] | None
+class Mappers(RootModel):
+    root: List[Mapper] | None
 
     # @validator("__root__", pre=True)
     # def normalize_mappers(cls, mappers):
@@ -861,11 +956,11 @@ class Icon(BaseModel):
     index: int
 
 
-class Icons(BaseModel):
-    __root__: List[Icon] | None = Field(..., max_items=4)
+class Icons(RootModel):
+    root: List[Icon] | None = Field(..., max_length=4)
 
     # @root_validator(pre=True)
-    @validator("__root__", pre=True)
+    @model_validator(mode="before")
     def normalize_icons(cls, icons):
         if icons is None:
             return icons
@@ -875,13 +970,35 @@ class Icons(BaseModel):
         return icons
 
 
-class Label(BaseModel):
-    __root__: str = None
+class Color(BaseModel):
+    r: int | float
+    g: int | float
+    b: int | float
+    a: int | float | None
 
 
-class Description(BaseModel):
-    __root__: str = None
+class Position(BaseModel):
+    x: float | int
+    y: float | int
 
 
-class Version(BaseModel):
-    __root__: int = Field(None, ge=0, lt=2**64)
+class WaitCondition(BaseModel):
+    type: str
+    compare_type: str
+    ticks: int | None = None
+    condition: dict | None = None
+
+class Stop(BaseModel):
+    station: str
+    wait_conditions: list[WaitCondition]
+
+# class Label(RootModel):
+#     root: str | None = None
+
+
+# class Description(RootModel):
+#     root: str | None = None
+
+
+# class Version(RootModel):
+#     root: int | None = Field(None, ge=0, lt=2**64)

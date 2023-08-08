@@ -50,11 +50,11 @@ class OrientationMixin(object):
 
     @property
     def orientation(self):
-        # type: () -> float
+        # type: () -> Orientation
         """
         The angle that the current Entity is facing, expressed as a ``float``
         in the range ``[0.0, 1.0)``, where ``0.0`` is North and increases
-        clockwise.
+        clockwise. TODO: update
 
         Raises :py:class:`.ValueWarning` if set to a value not in the range
         ``[0.0, 1.0)``.
@@ -75,7 +75,7 @@ class OrientationMixin(object):
 
     @orientation.setter
     def orientation(self, value):
-        # type: (float) -> None
+        # type: (Orientation) -> None
         if value is None:
             self._orientation = value
             self._collision_set.shapes[0].angle = 0

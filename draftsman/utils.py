@@ -19,9 +19,13 @@ import json
 import math
 from functools import wraps
 import six
-from typing import Any, Union, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Union
 import warnings
 import zlib
+
+if TYPE_CHECKING:
+    from draftsman.classes.entity_like import EntityLike
+    from draftsman.entity import Entity
 
 # =============================================================================
 # Abstract Shape Classes
@@ -803,7 +807,8 @@ def aabb_to_dimensions(aabb):
     return (x, y)
 
 
-def flatten_entities(entities):
+# TODO: move this
+def flatten_entities(entities: "list[EntityLike | list[EntityLike]]") -> "list[Entity]":
     """
     Iterates over a list of entities with nested structures and returns a 1D,
     "flattened" list of those entities.
@@ -849,11 +854,8 @@ def flatten_entities(entities):
 #             raise ex
 #     return wrapper_ignore_exctb
 
-P = ParamSpec("P")
-R = TypeVar("R")
 
-
-def reissue_warnings(func: Callable[P, R]) -> Callable[P, R]:
+def reissue_warnings(func):
     """
     Function decorator that catches all warnings issued from a function and
     re-issues them to the calling function.
@@ -864,7 +866,7 @@ def reissue_warnings(func: Callable[P, R]) -> Callable[P, R]:
     """
 
     @wraps(func)
-    def inner(*args: P.args, **kwargs: P.kwargs) -> R:
+    def inner(*args, **kwargs):
         with warnings.catch_warnings(record=True) as warning_list:
             result = func(*args, **kwargs)
 

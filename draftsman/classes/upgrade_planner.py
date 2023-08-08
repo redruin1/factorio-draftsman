@@ -3,7 +3,7 @@
 """
 .. code-block:: python
 
-    >>> from draftsamn.blueprintable import UpgradePlanner
+    >>> from draftsman.blueprintable import UpgradePlanner
     >>> UpgradePlanner.Format.schema_json(indent=4)
 """
 
@@ -14,7 +14,7 @@ from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.exportable import ValidationResult
 from draftsman.data import entities, items, modules
 from draftsman.error import DataFormatError
-from draftsman import signatures
+from draftsman.signatures import Icons, Mappers, Mapper, mapper_dict 
 from draftsman import utils
 from draftsman.warning import (
     IndexWarning,
@@ -26,11 +26,10 @@ from functools import cached_property
 
 import bisect
 import copy
-import fastjsonschema
-from pydantic import BaseModel, Extra, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from schema import Schema, Optional, SchemaError
 import six
-from typing import Union, Sequence
+from typing import Union, Sequence, Literal
 import warnings
 
 
@@ -189,25 +188,22 @@ class UpgradePlannerModel(BaseModel):
     Upgrade planner object schema.
     """
 
-    item: str = Field("upgrade-planner", const=True)
-    label: signatures.Label = None
-    version: signatures.Version = None
+    item: Literal["upgrade-planner"] = "upgrade-planner"
+    label: str | None = None
+    version: int | None = Field(None, ge=0, lt=2**64)
 
     class Settings(BaseModel):
         """
         TODO
         """
 
-        description: signatures.Description = None
-        icons: signatures.Icons = None
-        mappers: signatures.Mappers = None
+        description: str | None = None
+        icons: Icons | None = None
+        mappers: Mappers | None = None
 
-    settings: Settings = {}
+    settings: Settings | None = Settings()
 
-    class Config:
-        extra = Extra.forbid
-
-    @validator("item")
+    @field_validator("item")
     def correct_item(cls, v):
         assert v == "upgrade-planner"
         return v
@@ -223,12 +219,9 @@ class UpgradePlanner(Blueprintable):
         """
         The full description of UpgradePlanner's formal schema.
         """
+        upgrade_planner: UpgradePlannerModel = UpgradePlannerModel()
 
-        upgrade_planner: UpgradePlannerModel
-
-        class Config:
-            title = "UpgradePlanner"
-            extra = Extra.forbid
+        model_config = ConfigDict(title="UpgradePlanner", extra="forbid")
 
     # =========================================================================
 
@@ -239,9 +232,10 @@ class UpgradePlanner(Blueprintable):
         Constructs a new :py:class:`.UpgradePlanner`.
 
         :param upgrade_planner: Either a dictionary containing all the key
-            attributes to set, or
+            attributes to set, or a blueprint string to import.
         """
         super(UpgradePlanner, self).__init__(
+            format=UpgradePlannerModel,
             root_item="upgrade_planner",
             item="upgrade-planner",
             init_data=upgrade_planner,
@@ -250,10 +244,10 @@ class UpgradePlanner(Blueprintable):
 
     @utils.reissue_warnings
     def setup(self, unknown="error", **kwargs):
-        self._root = {}
-        self._root["settings"] = {}
+        # _root = {}
+        # _root["settings"] = {}
 
-        self._root["item"] = "upgrade-planner"
+        # _root["item"] = "upgrade-planner"
         kwargs.pop("item", None)
 
         self.label = kwargs.pop("label", None)
@@ -284,7 +278,7 @@ class UpgradePlanner(Blueprintable):
     @property
     def description(self):
         # type: () -> str
-        return self._root["settings"].get("description", None)
+        return self._root.settings.get("description", None)
 
     @description.setter
     def description(self, value):
@@ -372,8 +366,8 @@ class UpgradePlanner(Blueprintable):
             Can be set to ``None`` which will leave it blank.
         :param index: The location in the upgrade planner's mappers list.
         """
-        from_obj = signatures.mapping_dict(from_obj)
-        to_obj = signatures.mapping_dict(to_obj)
+        from_obj = mapper_dict(from_obj)
+        to_obj = mapper_dict(to_obj)
         index = int(index)
 
         if self.mappers is None:
@@ -421,8 +415,8 @@ class UpgradePlanner(Blueprintable):
         :param to_obj: The :py:data:`.MAPPING_ID` to convert entities/items to.
         :param index: The index of the mapping in the mapper to search.
         """
-        from_obj = signatures.mapping_dict(from_obj)
-        to_obj = signatures.mapping_dict(to_obj)
+        from_obj = mapper_dict(from_obj)
+        to_obj = mapper_dict(to_obj)
         index = int(index) if index is not None else None
 
         if index is None:
@@ -443,7 +437,7 @@ class UpgradePlanner(Blueprintable):
             self.mappers.remove(mapper)
 
     def pop_mapping(self, index):
-        # type: (int) -> signatures.MAPPER
+        # type: (int) -> Mapper
         """
         Removes a mapping at a specific mapper index. Note that this is not the
         position of the mapper in the :py:attr:`.mappers` list; it is the value
@@ -474,7 +468,7 @@ class UpgradePlanner(Blueprintable):
             return
 
         # TODO: wrap with DataFormatError or similar
-        self._root = UpgradePlannerModel.validate(self._root).dict(
+        self._root = UpgradePlannerModel.model_validate(self._root).model_dump(
             by_alias=True, exclude_none=True
         )
 
@@ -551,11 +545,14 @@ class UpgradePlanner(Blueprintable):
 
     def to_dict(self):
         # type: () -> dict
-        out_dict = self.__class__.Format.construct(  # Performs no validation(!)
+        out_dict = self.__class__.Format.model_construct(  # Performs no validation(!)
+            _recursive=True,
             upgrade_planner=self._root
-        ).dict(
+        )
+        print("\tout_dict:", out_dict)
+        out_dict = out_dict.model_dump(
             by_alias=True,  # Some attributes are reserved words (type, from,
-            # etc.); this resolves that issue
+                            # etc.); this resolves that issue
             exclude_none=True,  # Trim if values are None
             exclude_defaults=True,  # Trim if values are defaults
         )
