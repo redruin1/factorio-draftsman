@@ -16,6 +16,7 @@ try:  # pragma: no coverage
 except ImportError:  # pragma: no coverage
     from collections import MutableSequence
 from copy import deepcopy
+from pydantic import BaseModel
 import six
 from typing import Union, Any, TYPE_CHECKING
 import warnings
@@ -32,6 +33,9 @@ class EntityList(MutableSequence):
     to index with id strings, as well as extra framework for interfacing with
     :py:class:`.EntityCollection` classes.
     """
+
+    class Model(BaseModel):
+        data: list[dict] # TODO: fix
 
     @utils.reissue_warnings
     def __init__(self, parent=None, initlist=None, unknown="error"):

@@ -103,7 +103,9 @@ from draftsman.error import (
     MalformedBlueprintStringError,
 )
 from draftsman import signatures
+from draftsman.entity import Entity
 from draftsman.tile import Tile
+from draftsman.classes.schedule import Schedule
 from draftsman import utils
 from draftsman.warning import DraftsmanWarning
 
@@ -111,8 +113,9 @@ from builtins import int
 import copy
 from schema import SchemaError
 import six
-from typing import Sequence, Union
+from typing import Sequence, Union, Literal
 import warnings
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, model_serializer
 
 
 class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
@@ -121,6 +124,133 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     and ``Tiles`` and a selection of other metadata. Inherits all the functions
     and attributes you would expect, as well as some extra functionality.
     """
+
+    # =========================================================================
+    # Format
+    # =========================================================================
+
+    # What does the output format of the blueprint dict look like?
+    class Model(BaseModel):
+        item: Literal["blueprint"] = "blueprint"
+        label: str | None = None
+        label_color: signatures.Color | None = None
+        description: str | None = None
+        icons: signatures.Icons | None = None
+        version: int | None = Field(None, ge=0, lt=2**64)
+
+        snap_to_grid: signatures.Position | None = Field(None, alias="snap-to-grid")
+        absolute_snapping: bool | None = Field(None, alias="absolute-snapping")
+        position_relative_to_grid: signatures.Position | None = Field(None, alias="position-relative-to-grid")
+
+        entities: EntityList.Model | None = EntityList(None)        # TODO: correct annotation
+        tiles: TileList.Model | None = TileList(None)               # TODO: correct annotation
+        schedules: ScheduleList.Model | None = ScheduleList(None)   # TODO: correct annotation
+
+        @field_serializer("snap_to_grid")
+        def serialze_snap_to_grid(self, snap_to_grid: Vector, _info):
+            return snap_to_grid.to_dict()
+        
+        @field_serializer("entities")
+        def serialize_entities(self, entities: EntityList, _info):
+            # print("entities serializer")
+            # print(_info)
+            flattened_list = utils.flatten_entities(entities)
+            
+            entities_out = []
+            for i, entity in enumerate(flattened_list):
+                # Get a copy of the dict representation of the Entity
+                # (At this point, Associations are not copied and still point to original)
+                result = entity.to_dict() # copy.deepcopy?
+                if not isinstance(result, dict):
+                    raise DraftsmanError(
+                        "{}.to_dict() must return a dict".format(type(entity).__name__)
+                    )
+                # Add this to the output's entities and set it's entity_number
+                entities_out.append(result)
+                entities_out[i]["entity_number"] = i + 1
+    
+            def throw_invalid_connection(entity):
+                raise InvalidAssociationError(
+                    "'{}' at {} is connected to an entity that no longer exists".format(
+                        entity["name"], entity["position"]
+                    )
+                )
+
+            for entity in entities_out:
+                if "connections" in entity:  # Wire connections
+                    connections = entity["connections"]
+                    for side in connections:
+                        if side in {"1", "2"}:
+                            for color in connections[side]:
+                                connection_points = connections[side][color]
+                                for point in connection_points:
+                                    old = point["entity_id"]
+                                    if old() is None:  # pragma: no coverage
+                                        throw_invalid_connection(entity)
+                                    else:  # Association
+                                        point["entity_id"] = flattened_list.index(old()) + 1
+
+                        elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+                            connection_points = connections[side]
+                            for point in connection_points:
+                                old = point["entity_id"]
+                                if old() is None:  # pragma: no coverage
+                                    throw_invalid_connection(entity)
+                                else:  # Association
+                                    point["entity_id"] = flattened_list.index(old()) + 1
+
+                if "neighbours" in entity:  # Power pole connections
+                    neighbours = entity["neighbours"]
+                    for i, neighbour in enumerate(neighbours):
+                        if neighbour() is None:  # pragma: no coverage
+                            throw_invalid_connection(entity)
+                        else:  # Association
+                            neighbours[i] = flattened_list.index(neighbour()) + 1
+
+            if len(entities_out) == 0:
+                return None
+
+            return entities_out
+        
+        @field_serializer("tiles")
+        def serialize_tiles(self, tiles: TileList, _info):
+            # print("tiles serializer")
+
+            # TODO: what if Groups have tiles? handle
+            tiles_out = []
+            for tile in tiles:
+                tiles_out.append(tile.to_dict())
+
+            if len(tiles_out) == 0:
+                return None
+
+            return tiles_out
+        
+        @field_serializer("schedules")
+        def serialize_schedules(self, schedules: ScheduleList, _info):
+            # print("schedules serializer")
+            # print(self)
+
+            # TODO: recurse schedules
+
+            schedules_out = []
+            for schedule in schedules:
+                schedules_out.append(schedule.to_dict())
+            
+            for schedule in schedules_out:
+                # replace locomotives with their associations
+                pass
+
+            if len(schedules_out) == 0:
+                schedules_out = None
+
+            return schedules_out
+
+        # @model_serializer()
+        # def serialize_model(self) -> dict:
+        #     return {}
+
+        model_config = ConfigDict(title="UpgradePlanner", extra="forbid")
 
     # =========================================================================
     # Constructors
@@ -139,18 +269,20 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             ``dict`` object with the desired keys in the correct format.
         """
         super(Blueprint, self).__init__(
+            format=Blueprint.Model,
             root_item="blueprint",
             item="blueprint",
             init_data=blueprint,
             unknown=unknown,
         )
+        self._root: Blueprint.Model  # just for type-hinting
 
     @utils.reissue_warnings
     def setup(self, unknown="error", **kwargs):
-        self._root = {}
+        # self._root = {}
 
         # Item (type identifier)
-        self._root["item"] = "blueprint"
+        # self._root["item"] = "blueprint"
         kwargs.pop("item", None)
 
         ### METADATA ###
@@ -198,21 +330,21 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
         # Data lists
         if "entities" in kwargs:
-            self._root["entities"] = EntityList(
+            self._root.entities = EntityList(
                 self, kwargs.pop("entities"), unknown=unknown
             )
         else:
-            self._root["entities"] = EntityList(self)
+            self._root.entities = EntityList(self)
 
         if "tiles" in kwargs:
-            self._root["tiles"] = TileList(self, kwargs.pop("tiles"), unknown=unknown)
+            self._root.tiles = TileList(self, kwargs.pop("tiles"), unknown=unknown)
         else:
-            self._root["tiles"] = TileList(self)
+            self._root.tiles = TileList(self)
 
         if "schedules" in kwargs:
-            self._root["schedules"] = ScheduleList(kwargs.pop("schedules"))
+            self._root.schedules = ScheduleList(kwargs.pop("schedules"))
         else:
-            self._root["schedules"] = ScheduleList()
+            self._root.schedules = ScheduleList()
 
         # Issue warnings for any keyword not recognized by Blueprint
         for unused_arg in kwargs:
@@ -286,15 +418,17 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             print(blueprint.label_color)
             # {'r': 127.0, 'g': 127.0, 'b': 127.0}
         """
-        return self._root.get("label_color", None)
+        # return self._root.get("label_color", None)
+        return self._root.label_color
 
     @label_color.setter
     def label_color(self, value):
         # type: (dict) -> None
-        if value is None:
-            self._root.pop("label_color", None)
-        else:
-            self._root["label_color"] = value
+        # if value is None:
+        #     self._root.pop("label_color", None)
+        # else:
+        #     self._root["label_color"] = value
+        self._root.label_color = None
 
     def set_label_color(self, r, g, b, a=None):
         """
@@ -328,16 +462,18 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             set to ``None``
         :type: ``dict{"x": int, "y": int}``
         """
-        return self._root.get("snap-to-grid", None)
+        # return self._root.get("snap-to-grid", None)
+        self._root.snap_to_grid
 
     @snapping_grid_size.setter
     def snapping_grid_size(self, value):
         # type: (Union[dict, Sequence]) -> None
-        if value is None:
-            self._root.pop("snap-to-grid", None)
-            return
+        # if value is None:
+        #     self._root.pop("snap-to-grid", None)
+        #     return
 
-        self._root["snap-to-grid"] = Vector.from_other(value, int)
+        # self._root["snap-to-grid"] = Vector.from_other(value, int)
+        self._root.snap_to_grid = value
 
     # =========================================================================
 
@@ -389,17 +525,19 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.
         """
-        return self._root.get("absolute-snapping", None)
+        # return self._root.get("absolute-snapping", None)
+        return self._root.absolute_snapping
 
     @absolute_snapping.setter
     def absolute_snapping(self, value):
         # type: (bool) -> None
-        if value is None:
-            self._root.pop("absolute-snapping", None)
-        elif isinstance(value, bool):
-            self._root["absolute-snapping"] = value
-        else:
-            raise TypeError("'absolute_snapping' must be a bool or None")
+        # if value is None:
+        #     self._root.pop("absolute-snapping", None)
+        # elif isinstance(value, bool):
+        #     self._root["absolute-snapping"] = value
+        # else:
+        #     raise TypeError("'absolute_snapping' must be a bool or None")
+        self._root.absolute_snapping = value
 
     # =========================================================================
 
@@ -414,16 +552,18 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         :setter: Sets the a
         :type: ``dict{"x": int, "y": int}``
         """
-        return self._root.get("position-relative-to-grid", None)
+        # return self._root.get("position-relative-to-grid", None)
+        return self._root.position_relative_to_grid
 
     @position_relative_to_grid.setter
     def position_relative_to_grid(self, value):
         # type: (Union[dict, Sequence]) -> None
-        if value is None:
-            self._root.pop("position-relative-to-grid", None)
-            return
+        # if value is None:
+        #     self._root.pop("position-relative-to-grid", None)
+        #     return
 
-        self._root["position-relative-to-grid"] = Vector.from_other(value, int)
+        # self._root["position-relative-to-grid"] = Vector.from_other(value, int)
+        self._root.position_relative_to_grid = value
 
     # =========================================================================
 
@@ -437,7 +577,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         on ``EntityList``, check out this writeup
         :ref:`here <handbook.blueprints.blueprint_differences>`.
         """
-        return self._root["entities"]
+        # return self._root["entities"]
+        return self._root.entities
 
     @entities.setter
     def entities(self, value):
@@ -445,13 +586,13 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         self._entity_map.clear()
 
         if value is None:
-            self._root["entities"].clear()
+            self._root.entities.clear()
         elif isinstance(value, list):
-            self._root["entities"] = EntityList(self, value)
+            self._root.entities = EntityList(self, value)
         elif isinstance(value, EntityList):
             # Just don't ask
             # self._root["entities"] = copy.deepcopy(value, memo={"new_parent": self})
-            self._root["entities"] = EntityList(self, value.data)
+            self._root.entities = EntityList(self, value.data)
         else:
             raise TypeError("'entities' must be an EntityList, list, or None")
 
@@ -576,7 +717,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             blueprint.tiles = None
             assert len(blueprint.tiles) == 0
         """
-        return self._root["tiles"]
+        # return self._root["tiles"]
+        return self._root.tiles
 
     @tiles.setter
     def tiles(self, value):
@@ -584,11 +726,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         self.tile_map.clear()
 
         if value is None:
-            self._root["tiles"] = TileList(self)
+            self._root.tiles = TileList(self)
         elif isinstance(value, list):
-            self._root["tiles"] = TileList(self, value)
+            self._root.tiles = TileList(self, value)
         elif isinstance(value, TileList):
-            self._root["tiles"] = TileList(self, value.data)
+            self._root.tiles = TileList(self, value.data)
         else:
             raise TypeError("'tiles' must be a TileList, list, or None")
 
@@ -687,17 +829,18 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         :exception ValueError: If set to anything other than a ``list`` of
             :py:class:`.Schedule` or .
         """
-        return self._root["schedules"]
+        # return self._root["schedules"]
+        return self._root.schedules
 
     @schedules.setter
     def schedules(self, value):
         # type: (list) -> None
         if value is None:
-            self._root["schedules"] = ScheduleList()
+            self._root.schedules = ScheduleList()
         elif isinstance(value, ScheduleList):
-            self._root["schedules"] = value
+            self._root.schedules = value
         else:
-            self._root["schedules"] = ScheduleList(value)
+            self._root.schedules = ScheduleList(value)
 
     # =========================================================================
 
@@ -795,31 +938,171 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         """
         pass
 
-    def to_dict(self):
-        # type: () -> dict
-        """
-        Returns the blueprint as a dictionary. Intended for getting the
-        precursor to a Factorio blueprint string before encoding and compression
-        takes place.
+    # def to_dict(self):
+    #     # type: () -> dict
+    #     """
+    #     Returns the blueprint as a dictionary. Intended for getting the
+    #     precursor to a Factorio blueprint string before encoding and compression
+    #     takes place.
 
-        :returns: The ``dict`` representation of the Blueprint.
-        """
-        # Create a new dict to return without modifying the original Blueprint
-        # (We exclude "entities" and "tiles" because these objects are not
-        # copyable for space and recursion depth reasons)
-        out_dict = {
-            x: self._root[x]
-            for x in self._root
-            if x not in {"entities", "tiles", "schedules"}
+    #     :returns: The ``dict`` representation of the Blueprint.
+    #     """
+    #     # Create a new dict to return without modifying the original Blueprint
+    #     # (We exclude "entities" and "tiles" because these objects are not
+    #     # copyable for space and recursion depth reasons)
+    #     out_dict = {
+    #         x: self._root[x]
+    #         for x in self._root
+    #         if x not in {"entities", "tiles", "schedules"}
+    #     }
+    #     # out_dict["schedules"] = copy.deepcopy(self._root["schedules"])
+
+    #     if "snap-to-grid" in out_dict:
+    #         out_dict["snap-to-grid"] = out_dict["snap-to-grid"].to_dict()
+    #     if "position-relative-to-grid" in out_dict:
+    #         out_dict["position-relative-to-grid"] = out_dict[
+    #             "position-relative-to-grid"
+    #         ].to_dict()
+
+    #     # We also need to process any schedules that any subgroup might have, so
+    #     # we recursively traverse the nested entitylike tree and append each
+    #     # schedule to the output list
+    #     # TODO: re-add the following
+    #     # def recurse_schedules(entitylike_list):
+    #     #     for entitylike in entitylike_list:
+    #     #         if hasattr(entitylike, "schedules"):  # if a group
+    #     #             # Add the schedules of this group
+    #     #             out_dict["schedules"] += copy.deepcopy(entitylike.schedules)
+    #     #             # Check through this groups entities to see if they have
+    #     #             # schedules:
+    #     #             recurse_schedules(entitylike.entities)
+
+    #     # recurse_schedules(self._root["entities"])
+
+    #     # This associates each entity with a numeric index, which we use later
+    #     flattened_list = utils.flatten_entities(self._root["entities"])
+
+    #     # Convert all Entities into dicts
+    #     out_dict["entities"] = []
+    #     i = 0
+    #     for entity in flattened_list:
+    #         # Get a copy of the dict representation of the Entity
+    #         # (At this point, Associations are not copied and still point to original)
+    #         result = copy.deepcopy(entity.to_dict())
+    #         if not isinstance(result, dict):
+    #             raise DraftsmanError(
+    #                 "{}.to_dict() must return a dict".format(type(entity).__name__)
+    #             )
+    #         # Add this to the output's entities and set it's entity_number
+    #         out_dict["entities"].append(result)
+    #         out_dict["entities"][i]["entity_number"] = i + 1
+    #         i += 1
+
+    #     # Convert all tiles into dicts
+    #     # Maybe handle TileLike?
+    #     out_dict["tiles"] = []
+    #     for tile in self.tiles:
+    #         out_dict["tiles"].append(copy.deepcopy(tile.to_dict()))
+
+    #     # Convert all schedules into dicts
+    #     out_dict["schedules"] = []
+    #     for i, schedule in enumerate(self._root["schedules"]):
+    #         out_dict["schedules"].append(copy.deepcopy(schedule.to_dict()))
+    #         # out_dict["schedules"][i] = schedule.to_dict()
+
+    #     # Offset coordinate objects by snapping grid
+    #     if self.snapping_grid_position is not None:
+    #         # Offset Entities
+    #         for entity in out_dict["entities"]:
+    #             entity["position"]["x"] -= self.snapping_grid_position.x
+    #             entity["position"]["y"] -= self.snapping_grid_position.y
+    #         # Offset Tiles
+    #         for tile in out_dict["tiles"]:
+    #             tile["position"]["x"] -= self.snapping_grid_position.x
+    #             tile["position"]["y"] -= self.snapping_grid_position.y
+
+    #     def throw_invalid_connection(entity):
+    #         raise InvalidAssociationError(
+    #             "'{}' at {} is connected to an entity that no longer exists".format(
+    #                 entity["name"], entity["position"]
+    #             )
+    #         )
+
+    #     # Convert all associations to use their integer indices
+    #     # (This could be nicer)
+    #     for entity in out_dict["entities"]:
+    #         if "connections" in entity:  # Wire connections
+    #             connections = entity["connections"]
+    #             for side in connections:
+    #                 if side in {"1", "2"}:
+    #                     for color in connections[side]:
+    #                         connection_points = connections[side][color]
+    #                         for point in connection_points:
+    #                             old = point["entity_id"]
+    #                             if old() is None:  # pragma: no coverage
+    #                                 throw_invalid_connection(entity)
+    #                             else:  # Association
+    #                                 point["entity_id"] = flattened_list.index(old()) + 1
+
+    #                 elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+    #                     connection_points = connections[side]
+    #                     for point in connection_points:
+    #                         old = point["entity_id"]
+    #                         if old() is None:  # pragma: no coverage
+    #                             throw_invalid_connection(entity)
+    #                         else:  # Association
+    #                             point["entity_id"] = flattened_list.index(old()) + 1
+
+    #         if "neighbours" in entity:  # Power pole connections
+    #             neighbours = entity["neighbours"]
+    #             for i, neighbour in enumerate(neighbours):
+    #                 if neighbour() is None:  # pragma: no coverage
+    #                     throw_invalid_connection(entity)
+    #                 else:  # Association
+    #                     neighbours[i] = flattened_list.index(neighbour()) + 1
+
+    #     # Change all locomotive names to use entity_number
+    #     for schedule in out_dict["schedules"]:
+    #         for i, locomotive in enumerate(schedule["locomotives"]):
+    #             if locomotive() is None:  # pragma: no coverage
+    #                 throw_invalid_connection(entity)
+    #             else:  # Association
+    #                 schedule["locomotives"][i] = flattened_list.index(locomotive()) + 1
+
+    #     # Delete empty entries to compress as much as possible
+    #     if len(out_dict["entities"]) == 0:
+    #         del out_dict["entities"]
+    #     if len(out_dict["tiles"]) == 0:
+    #         del out_dict["tiles"]
+    #     if len(out_dict["schedules"]) == 0:
+    #         del out_dict["schedules"]
+
+    #     return {"blueprint": out_dict}
+
+    def to_dict(self) -> dict:
+
+        structure = {
+            "item": self.item,
+            "version": self.version,
+            "entities": self.entities,
+            "tiles": self.tiles,
+            "scheules": self.schedules
         }
-        # out_dict["schedules"] = copy.deepcopy(self._root["schedules"])
+        # Construct a new, output-formatted Pydantic model
+        # We perform no validation during this step, as it's the users choice
+        # whether or not to do that before or after
+        out_model = Blueprint.Model.model_construct(**structure)
 
-        if "snap-to-grid" in out_dict:
-            out_dict["snap-to-grid"] = out_dict["snap-to-grid"].to_dict()
-        if "position-relative-to-grid" in out_dict:
-            out_dict["position-relative-to-grid"] = out_dict[
-                "position-relative-to-grid"
-            ].to_dict()
+        print("\t", out_model)
+
+        # We then create an output dict
+        out_dict = out_model.model_dump(
+            by_alias=True, 
+            exclude_none=True, 
+            exclude_defaults=True
+        )
+
+        print("\t", out_dict)
 
         # We also need to process any schedules that any subgroup might have, so
         # we recursively traverse the nested entitylike tree and append each
@@ -834,38 +1117,16 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         #             # schedules:
         #             recurse_schedules(entitylike.entities)
 
-        # recurse_schedules(self._root["entities"])
+        # Convert all schedules into dicts
+        # out_dict["schedules"] = []
+        # for i, schedule in enumerate(self._root["schedules"]):
+        #     out_dict["schedules"].append(copy.deepcopy(schedule.to_dict()))
+        #     # out_dict["schedules"][i] = schedule.to_dict()
 
         # This associates each entity with a numeric index, which we use later
-        flattened_list = utils.flatten_entities(self._root["entities"])
+        # flattened_list = utils.flatten_entities(self._root.entities)
 
-        # Convert all Entities into dicts
-        out_dict["entities"] = []
-        i = 0
-        for entity in flattened_list:
-            # Get a copy of the dict representation of the Entity
-            # (At this point, Associations are not copied and still point to original)
-            result = copy.deepcopy(entity.to_dict())
-            if not isinstance(result, dict):
-                raise DraftsmanError(
-                    "{}.to_dict() must return a dict".format(type(entity).__name__)
-                )
-            # Add this to the output's entities and set it's entity_number
-            out_dict["entities"].append(result)
-            out_dict["entities"][i]["entity_number"] = i + 1
-            i += 1
-
-        # Convert all tiles into dicts
-        # Maybe handle TileLike?
-        out_dict["tiles"] = []
-        for tile in self.tiles:
-            out_dict["tiles"].append(copy.deepcopy(tile.to_dict()))
-
-        # Convert all schedules into dicts
-        out_dict["schedules"] = []
-        for i, schedule in enumerate(self._root["schedules"]):
-            out_dict["schedules"].append(copy.deepcopy(schedule.to_dict()))
-            # out_dict["schedules"][i] = schedule.to_dict()
+        print(out_dict)
 
         # Offset coordinate objects by snapping grid
         if self.snapping_grid_position is not None:
@@ -878,63 +1139,57 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                 tile["position"]["x"] -= self.snapping_grid_position.x
                 tile["position"]["y"] -= self.snapping_grid_position.y
 
-        def throw_invalid_connection(entity):
-            raise InvalidAssociationError(
-                "'{}' at {} is connected to an entity that no longer exists".format(
-                    entity["name"], entity["position"]
-                )
-            )
+        # def throw_invalid_connection(entity):
+        #     raise InvalidAssociationError(
+        #         "'{}' at {} is connected to an entity that no longer exists".format(
+        #             entity["name"], entity["position"]
+        #         )
+        #     )
 
         # Convert all associations to use their integer indices
         # (This could be nicer)
-        for entity in out_dict["entities"]:
-            if "connections" in entity:  # Wire connections
-                connections = entity["connections"]
-                for side in connections:
-                    if side in {"1", "2"}:
-                        for color in connections[side]:
-                            connection_points = connections[side][color]
-                            for point in connection_points:
-                                old = point["entity_id"]
-                                if old() is None:  # pragma: no coverage
-                                    throw_invalid_connection(entity)
-                                else:  # Association
-                                    point["entity_id"] = flattened_list.index(old()) + 1
+        # if "entities" in out_dict:
+        #     for entity in out_dict["entities"]:
+        #         if "connections" in entity:  # Wire connections
+        #             connections = entity["connections"]
+        #             for side in connections:
+        #                 if side in {"1", "2"}:
+        #                     for color in connections[side]:
+        #                         connection_points = connections[side][color]
+        #                         for point in connection_points:
+        #                             old = point["entity_id"]
+        #                             if old() is None:  # pragma: no coverage
+        #                                 throw_invalid_connection(entity)
+        #                             else:  # Association
+        #                                 point["entity_id"] = flattened_list.index(old()) + 1
 
-                    elif side in {"Cu0", "Cu1"}:  # pragma: no branch
-                        connection_points = connections[side]
-                        for point in connection_points:
-                            old = point["entity_id"]
-                            if old() is None:  # pragma: no coverage
-                                throw_invalid_connection(entity)
-                            else:  # Association
-                                point["entity_id"] = flattened_list.index(old()) + 1
+        #                 elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+        #                     connection_points = connections[side]
+        #                     for point in connection_points:
+        #                         old = point["entity_id"]
+        #                         if old() is None:  # pragma: no coverage
+        #                             throw_invalid_connection(entity)
+        #                         else:  # Association
+        #                             point["entity_id"] = flattened_list.index(old()) + 1
 
-            if "neighbours" in entity:  # Power pole connections
-                neighbours = entity["neighbours"]
-                for i, neighbour in enumerate(neighbours):
-                    if neighbour() is None:  # pragma: no coverage
-                        throw_invalid_connection(entity)
-                    else:  # Association
-                        neighbours[i] = flattened_list.index(neighbour()) + 1
+        #         if "neighbours" in entity:  # Power pole connections
+        #             neighbours = entity["neighbours"]
+        #             for i, neighbour in enumerate(neighbours):
+        #                 if neighbour() is None:  # pragma: no coverage
+        #                     throw_invalid_connection(entity)
+        #                 else:  # Association
+        #                     neighbours[i] = flattened_list.index(neighbour()) + 1
 
-        # Change all locomotive names to use entity_number
-        for schedule in out_dict["schedules"]:
-            for i, locomotive in enumerate(schedule["locomotives"]):
-                if locomotive() is None:  # pragma: no coverage
-                    throw_invalid_connection(entity)
-                else:  # Association
-                    schedule["locomotives"][i] = flattened_list.index(locomotive()) + 1
+        # # Change all locomotive names to use entity_number
+        # if "schedules" in out_dict:
+        #     for schedule in out_dict["schedules"]:
+        #         for i, locomotive in enumerate(schedule["locomotives"]):
+        #             if locomotive() is None:  # pragma: no coverage
+        #                 throw_invalid_connection(entity)
+        #             else:  # Association
+        #                 schedule["locomotives"][i] = flattened_list.index(locomotive()) + 1
 
-        # Delete empty entries to compress as much as possible
-        if len(out_dict["entities"]) == 0:
-            del out_dict["entities"]
-        if len(out_dict["tiles"]) == 0:
-            del out_dict["tiles"]
-        if len(out_dict["schedules"]) == 0:
-            del out_dict["schedules"]
-
-        return {"blueprint": out_dict}
+        return {self._root_item: out_dict}
 
     # =========================================================================
 

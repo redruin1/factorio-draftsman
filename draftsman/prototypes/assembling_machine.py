@@ -64,6 +64,9 @@ class AssemblingMachine(
     @utils.reissue_warnings
     def set_item_request(self, item, count):
         # type: (str, int) -> None
+
+        super(AssemblingMachine, self).set_item_request(item, count)
+
         if item in modules.raw:
             # Check to make sure the recipe is within the module's limitations
             # (If it has any)
@@ -91,7 +94,5 @@ class AssemblingMachine(
                     ItemLimitationWarning,
                     stacklevel=2,
                 )
-
-        super(AssemblingMachine, self).set_item_request(item, count)
 
     # TODO: overwrite direction.setter so that it only works with specific recipes

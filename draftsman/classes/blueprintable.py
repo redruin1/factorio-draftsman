@@ -20,6 +20,7 @@ import json
 from schema import SchemaError
 import six
 from typing import Any, Sequence, Union
+from pydantic import BaseModel
 
 
 class Blueprintable(Exportable, metaclass=ABCMeta):
@@ -33,8 +34,8 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     """
 
     @utils.reissue_warnings
-    def __init__(self, root_item, item, init_data, unknown):
-        # type: (str, str, Union[str, dict], str) -> None
+    def __init__(self, format, root_item, item, init_data, unknown):
+        # type: (str, BaseModel, str, Union[str, dict], str) -> None
         """
         Initializes the private ``_root`` data dictionary, as well as setting
         the ``item`` name.
@@ -47,7 +48,8 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         # { self._root_item: self._root }
 
         self._root_item = six.text_type(root_item)
-        self._root["item"] = six.text_type(item)
+        # self._root["item"] = six.text_type(item)
+        self._root = format()
 
         if init_data is None:
             self.setup()
@@ -159,7 +161,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> BlueprintBook().item
             'blueprint-book'
         """
-        return self._root["item"]
+        return self._root.item
 
     # =========================================================================
 
@@ -176,15 +178,16 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :exception TypeError: When setting ``label`` to something other than
             ``str`` or ``None``.
         """
-        return self._root.get("label", None)
+        # return self._root.get("label", None)
+        return self._root.label
 
     @label.setter
     def label(self, value):
         # type: (str) -> None
-        if value is None:
-            self._root.pop("label", None)
-        else:
-            self._root["label"] = value
+        # if value is None:
+        #     self._root.pop("label", None)
+        # else:
+        self._root.label = value
 
     # =========================================================================
 
@@ -203,15 +206,16 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :exception TypeError: If setting to anything other than a ``str`` or
             ``None``.
         """
-        return self._root.get("description", None)
+        # return self._root.get("description", None)
+        return self._root.description
 
     @description.setter
     def description(self, value):
         # type: (str) -> None
-        if value is None:
-            self._root.pop("description", None)
-        else:
-            self._root["description"] = value
+        # if value is None:
+        #     self._root.pop("description", None)
+        # else:
+        self._root.description = value
 
     # =========================================================================
 
@@ -248,15 +252,16 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> blueprint.icons
             [{'index': 1, 'signal': {'name': 'transport-belt', 'type': 'item'}}]
         """
-        return self._root.get("icons", None)
+        # return self._root.get("icons", None)
+        return self._root.icons
 
     @icons.setter
     def icons(self, value):
         # type: (list[Union[dict, str]]) -> None
-        if value is None:
-            self._root.pop("icons", None)
-        else:
-            self._root["icons"] = value
+        # if value is None:
+        #     self._root.pop("icons", None)
+        # else:
+        self._root.icons = value
 
     def set_icons(self, *icon_names):
         """
@@ -310,15 +315,17 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> assert blueprint.version_tuple() == (1, 0, 0, 0)
             >>> assert blueprint.version_string() == "1.0.0.0"
         """
-        return self._root.get("version", None)
+        # return self._root.get("version", None)
+        return self._root.version
 
     @version.setter
     def version(self, value):
         # type: (Union[int, Sequence[int]]) -> None
-        if value is None:
-            self._root.pop("version", None)
-        else:
-            self._root["version"] = value
+        # if value is None:
+        #     self._root.pop("version", None)
+        # else:
+        #     self._root["version"] = value
+        self._root.version = value
 
     def set_version(self, major, minor, patch=0, dev_ver=0):
         """
@@ -332,7 +339,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :param dev_ver: The (internal) development version.
         """
         # TODO: use this method in constructor
-        self._root["version"] = utils.encode_version(major, minor, patch, dev_ver)
+        self._root.version = utils.encode_version(major, minor, patch, dev_ver)
 
     # =========================================================================
     # Utility functions

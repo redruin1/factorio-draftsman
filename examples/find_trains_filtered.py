@@ -43,7 +43,6 @@ def main():
     print("Trains with 2 locomotives and 1 cargo wagon: {}".format(len(trains)))
 
     config = TrainConfiguration("2-1")
-    print("config.cars: {}".format(config.cars))
     trains = bp.find_trains_filtered(config=config)
     print("Trains with 2 locomotives followed by 1 cargo wagon: {}".format(len(trains)))
 

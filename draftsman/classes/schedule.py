@@ -4,9 +4,12 @@ from draftsman.classes.association import Association
 from draftsman.prototypes.locomotive import Locomotive
 from draftsman.constants import Ticks, WaitConditionType, WaitConditionCompareType
 from draftsman.signatures import SIGNAL_ID_OR_NONE, COMPARATOR, SIGNAL_ID_OR_CONSTANT
+from draftsman import signatures
 
 import copy
+from pydantic import BaseModel
 from typing import Union
+
 
 # TODO: make dataclass?
 class WaitCondition(object):
@@ -193,6 +196,9 @@ class WaitConditions(object):
             if self._conditions[i] != other._conditions[i]:
                 return False
         return True
+    
+    def __getitem__(self, index) -> WaitCondition:
+        return self._conditions[index]
 
     def __repr__(self) -> str:
         return "<WaitConditions>{}".format(repr(self._conditions))
@@ -204,6 +210,10 @@ class Schedule(object):
     :py:class:`Association`s to the Locomotives that inherit them, as well as
     the order of stops and their conditions.
     """
+
+    class Model(BaseModel):
+        locomotives: list[int] = []
+        stops: list[signatures.Stop] = []
 
     def __init__(self, locomotives=[], schedule=[]):
         """

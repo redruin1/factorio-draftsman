@@ -81,15 +81,16 @@ class Furnace(ModulesMixin, RequestItemsMixin, Entity):
     @utils.reissue_warnings
     def set_item_request(self, item, count):
         # type: (str, int) -> None
-        if item not in modules.raw and item not in self.valid_input_ingredients:
-            warnings.warn(
-                "Cannot request items that this Furnace doesn't use ({})".format(item),
-                ItemLimitationWarning,
-                stacklevel=2,
-            )
 
         # TODO: handle fuel input items
 
         # self._handle_module_slots(item, count)
 
         super(Furnace, self).set_item_request(item, count)
+
+        if item not in modules.raw and item not in self.valid_input_ingredients:
+            warnings.warn(
+                "Cannot request items that this Furnace doesn't use ({})".format(item),
+                ItemLimitationWarning,
+                stacklevel=2,
+            )

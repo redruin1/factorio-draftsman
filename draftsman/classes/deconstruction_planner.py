@@ -57,18 +57,28 @@ from draftsman import utils
 from draftsman.warning import DraftsmanWarning
 
 import copy
+from pydantic import BaseModel, ConfigDict, Field
 from schema import SchemaError
 import six
-from typing import Union
+from typing import Union, Literal
 import warnings
+
+
+class DeconstructionPlannerModel(BaseModel):
+    item: Literal["deconstruction-planner"] = "deconstruction-planner"
+    label: str | None = None
+    version: int | None = Field(None, ge=0, lt=2**64)
 
 
 class DeconstructionPlanner(Blueprintable):
     """
     Handles the deconstruction of entities. Has functionality to only select
-    certain entities or tiles, as well as only natrual objects like trees and
+    certain entities or tiles, as well as only natural objects like trees and
     rocks.
     """
+
+    class Format(BaseModel):
+        deconstruction_planner: DeconstructionPlannerModel = DeconstructionPlannerModel()
 
     @utils.reissue_warnings
     def __init__(self, deconstruction_planner=None, unknown="error"):
@@ -77,6 +87,7 @@ class DeconstructionPlanner(Blueprintable):
         TODO
         """
         super(DeconstructionPlanner, self).__init__(
+            format=DeconstructionPlannerModel,
             root_item="deconstruction_planner",
             item="deconstruction-planner",
             init_data=deconstruction_planner,

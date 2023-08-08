@@ -11,7 +11,7 @@ from draftsman.error import (
     IncorrectBlueprintTypeError,
     MalformedBlueprintStringError,
     DataFormatError,
-    InvalidMappingError
+    InvalidMapperError
 )
 from draftsman import utils
 from draftsman.warning import (
@@ -301,7 +301,7 @@ class TestUpgradePlanner:
         ]
 
         # Errors
-        with pytest.raises(InvalidMappingError):
+        with pytest.raises(InvalidMapperError):
             upgrade_planner.set_mapping(TypeError, TypeError, TypeError)
 
         # =====================================================================
@@ -356,7 +356,7 @@ class TestUpgradePlanner:
         #     upgrade_planner.remove_mapping("inserter", "fast-inserter", 24)
 
         # Errors
-        with pytest.raises(InvalidMappingError):
+        with pytest.raises(InvalidMapperError):
             upgrade_planner.remove_mapping("inserter", "incorrect")
 
         with pytest.raises(ValueError):

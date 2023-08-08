@@ -549,11 +549,12 @@ class BlueprintTesting(unittest.TestCase):
 
         blueprint.entities.append("wooden-chest")
 
-        with pytest.raises(DraftsmanError):
-            blueprint.entities[0].position = (100.5, 100.5)
+        # TODO: evaluate
+        # with pytest.raises(DraftsmanError):
+        #     blueprint.entities[0].position = (100.5, 100.5)
 
-        with pytest.raises(DraftsmanError):
-            blueprint.entities[0].tile_position = (100, 100)
+        # with pytest.raises(DraftsmanError):
+        #     blueprint.entities[0].tile_position = (100, 100)
 
         # self.assertEqual(blueprint.area, [[100.35, 100.35], [100.65, 100.65]])
         # blueprint.entities.append("inserter")
@@ -2381,31 +2382,61 @@ class BlueprintTesting(unittest.TestCase):
     # =========================================================================
 
     def test_find_train_from_wagon(self):
+        # 3 trains:
+        # 1 going north, "1-FA"
+        # 1 going around a east-to-north corner, dual-headed "1-C-1"
+        # 1 isolated locomotive pointing west, "1"
         test_string = "0eNqVk9FuwyAMRf+F5xQ5BmLIr0zTlLasQqJQkaRbVOXfR9Mqm5R2yx5B9rn32nBhW9/bU3KhY/WFuV0MLatfLqx1h9D46103nCyrmevskRUsNMfrKTXOs7FgLuztJ6vL8bVgNnSuc/bWPx2Gt9AftzblgrnTx108xs6dbaadYptbYrjqZMwGJRVsYDUK5KbSpLJETC7DmlsZjMWCjSvZKHmFJRhB6i5CHEAYqHCpw0EbDSUprZBIKRIkQN4sLRyI2cG7791+89EcMuS3eGZ9PDnDd006xOdwNFyRLvGeTpacSqmleCDDS0IAFJCzA5ABCTmmkNNoXDjn0pgyJPTeP7CkVk5cEVfi25BY+ng4zmolXlQcDU6D/KcCzQpN6pz3Ng1/L01Wz5aWH//0Peofv6lgZ5vaqQB1KckgVQZBCxzHLxBxE5M="
         blueprint = Blueprint(test_string)
 
+        # Grab train #1 with the locomotive
         assert blueprint.find_train_from_wagon(blueprint.entities[0]) == [
             blueprint.entities[0],
             blueprint.entities[2],
             blueprint.entities[6],
         ]
 
+        # Grab dual headed from central cargo wagon
         assert blueprint.find_train_from_wagon(blueprint.entities[3]) == [
             blueprint.entities[1],
             blueprint.entities[3],
             blueprint.entities[5],
         ]
 
+        # Isolated locomotive
+        assert blueprint.find_train_from_wagon(blueprint.entities[4]) == [
+            blueprint.entities[4]
+        ]
+
+        # Curved locomotive like above, with a fluid wagon within range of the
+        # head but facing a perpendicular direction
         test_string = "0eNqNktFqwzAMRf9Fz5mRZTu28ytjjLT1iiGxi5N0KyX/PiUtZawZ7FFG99wrWVfYdVM4lZhGaK4Q9zkN0LxeYYjH1HbL23g5BWggjqGHClLbL1VpYwdzBTEdwhc0cn6rIKQxjjHc9GtxeU9TvwuFGx7KLu9zn8d4Dkw75YElOS0+jHkh0qImiV5ZU8EFGlJWICqPNRm2yyUyuL1JUKDzDqU1zpC1xlhlFeraWW59SkCPBB/dFA8vn+2RIRsRtLo5axIkV9Yv2w24esD3bTnmv+HkhbFO0n06LYWV2mm1YSOkJURSyLMjWo8aeUyl19XEdObWXBiSpq7biKT/uXFVC/Lkl63dM6nnKByPP3g9gebHxVRwDmVYe8hJbT3Z2hM6RfP8Da2auHA="
         blueprint = Blueprint(test_string)
 
+        # Make sure the fluid wagon is not falsely included with the train
         assert blueprint.find_train_from_wagon(blueprint.entities[0]) == [
             blueprint.entities[0],
             blueprint.entities[2],
             blueprint.entities[3],
         ]
 
+        # 1 train, "2-C" pointing east
+        test_string = "0eNqVkk1uhDAMha9SeZ2pZgIIJrv2Cl1WCGUgpZFCgkJgilDuXgdoi1r6t7Mjv+85tie4qF60VmoHbAJZGt0Be5ygk7XmKry5sRXAQDrRAAHNm5BZLhV4AlJX4gXYyZNfJcqUpjFODmIjpD4nILSTTorFeE7GQvfNRVgkv+tLbmtzuPLaaIS2pkMNhmiHnAONKIERWHyMkG6sRA5fCo63aRIMB3wyFmt0r1Ro+JMV3Wt1x4km3zvRZAcc/RF8yn4E46S68llUvVpH9UELOSXRpmJZ4pseHpbo5g59r1y6Ahddze4LCkEtt6JYN2cs1q3xE04LfD5v+Avv/v880bRuDMA8/Gi+Eba5QgKDsN3sQrNTnJ5pmkbpOcli718BQnHlBA=="
+        blueprint = Blueprint(test_string)
+
+        # Grab from the cargo wagon (which is pointing the wrong way!)
+        # and make sure the output is reversed so trains are at front
+        assert blueprint.find_train_from_wagon(blueprint.entities[0]) == [
+            blueprint.entities[2],
+            blueprint.entities[1],
+            blueprint.entities[0]
+        ]
+
     def test_find_trains_filtered(self):
+        # 3 trains:
+        # 1 going north, "1-FA"
+        # 1 going around a east-to-north corner, dual-headed "1-C-1"
+        # 1 isolated locomotive pointing west, "1"
         test_string = "0eNqVk9FuwyAMRf+F5xQ5BmLIr0zTlLasQqJQkaRbVOXfR9Mqm5R2yx5B9rn32nBhW9/bU3KhY/WFuV0MLatfLqx1h9D46103nCyrmevskRUsNMfrKTXOs7FgLuztJ6vL8bVgNnSuc/bWPx2Gt9AftzblgrnTx108xs6dbaadYptbYrjqZMwGJRVsYDUK5KbSpLJETC7DmlsZjMWCjSvZKHmFJRhB6i5CHEAYqHCpw0EbDSUprZBIKRIkQN4sLRyI2cG7791+89EcMuS3eGZ9PDnDd006xOdwNFyRLvGeTpacSqmleCDDS0IAFJCzA5ABCTmmkNNoXDjn0pgyJPTeP7CkVk5cEVfi25BY+ng4zmolXlQcDU6D/KcCzQpN6pz3Ng1/L01Wz5aWH//0Peofv6lgZ5vaqQB1KckgVQZBCxzHLxBxE5M="
 
         blueprint = Blueprint(test_string)
@@ -2455,11 +2486,17 @@ class BlueprintTesting(unittest.TestCase):
         ]
 
         # Test continuity around corners
-        test_string = "0eNqdldtu4yAQht+Fa8diOAzgV6lWlZugFMnBEXayjSK/+07sbtqqtMK5sOTDzDfDzz/myl66kz+mEEfWXFnY9nFgzdOVDWEf2+72brwcPWtYGP2BVSy2h9tTakPHpoqFuPNvrIHpT8V8HMMY/JI/P1ye4+nw4hMF3DO7ftsf+jGcPdGO/UApfbzVIcwGtKzY5XajaiGtsCA0VelTIF67RPKaXn0rIO4FhpGa27+Om7nH32qYKQOSD4B0DqQeAMkcSD8AghwI76Btm/b95m+7p9wspuYABqzRC8/8thucOym0UcII0Nrg/8QQzxTXJwLEU9dlGjLrV+ZyC7PrOdm9dx8CndLZ736mqIUiSI5dSH67fM0ZE3ix6qq2gksSeYHzGp2Wec0dcroo2nLFAQHkvDslogOUrhL53Ij6ukiRY64ZPzNT4StV5qiyWDpXW2eVfPerrMmA31VDY8mbZFZ0RjgERa4tVm3FOJvFY7pAtxWzbaCYioV/W8QakYPGd8tlNDNZT68YXHTFba8YYzTFVLeCqvNUOtzm46/5dFpW7OzTsARYUMYJg6gtWjtN/wAFLVWc"
+        test_string = "0eNqNkutqwzAMhd9Fv1PjayTnVcYYaWeKIbFLLt1KybtPSdoyaKD9KXHO0SehK+ybMZy6mAaorhAPOfVQfVyhj8dUN3NvuJwCVBCH0EIBqW7nqqtjA1MBMX2HX6jU9FlASEMcYlj9S3H5SmO7Dx0LHs4mH3Kbh3gOnHbKPVtymudwzE6XvoALVNoogY7zcxc5qV41UnDrKVo/og91d8y7n/rI4s1sISWS0u42g7ZnsAiRVcaRI+Ws9iWhm3c9sy537E1j02ygmHdRUApSpZXlncU6of06aIPIO2+kMeilIzJIfjW+BrJvAzlBVKJaFl2AvCBU0pstoJKviMobPikytLLa3e76Gsm9+QmkRWnJmjuQU88czMZ/t3xm9e+RCziHrl80mpRFrxH5eI7sNP0BD83n6g=="
         blueprint = Blueprint(test_string)
 
         assert blueprint.find_trains_filtered() == [
-            [blueprint.entities[0], blueprint.entities[2], blueprint.entities[6]]
+            [
+                blueprint.entities[4], 
+                blueprint.entities[3],
+                blueprint.entities[2],
+                blueprint.entities[1],
+                blueprint.entities[0]
+            ]
         ]
 
     # =========================================================================

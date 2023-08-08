@@ -7,6 +7,7 @@ TODO
 
 from __future__ import unicode_literals, division
 
+from pydantic import BaseModel, ConfigDict
 from typing import Union, Callable
 
 PrimitiveVector = "Sequence[float, float]"
@@ -16,6 +17,12 @@ class Vector(object):
     """
     A simple 2d vector class, used to aid in developent and user experience.
     """
+
+    class Model(BaseModel):
+        x: float
+        y: float
+
+        model_config = ConfigDict(extra="forbid")
 
     def __init__(self, x, y):
         # type: (float, float, Vector) -> None

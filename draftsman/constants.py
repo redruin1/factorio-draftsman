@@ -478,3 +478,15 @@ class WaitConditionCompareType(str, Enum):
 
     AND = "and"
     OR = "or"
+
+
+class WireColor(str, Enum):
+    """
+    The valid wire colors for circuit connection types in Factorio, either red
+    or green.
+
+    * ``RED``: Red wire.
+    * ``GREEN``: Green wire.
+    """
+    RED = "red"
+    GREEN = "green"

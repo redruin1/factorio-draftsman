@@ -60,18 +60,19 @@ class Lab(ModulesMixin, RequestItemsMixin, Entity):
     @utils.reissue_warnings
     def set_item_request(self, item, count):
         # type: (str, int) -> None
-        if item not in modules.raw and item not in self.inputs:
-            warnings.warn(
-                "Item '{}' cannot be placed in Lab".format(item),
-                ItemLimitationWarning,
-                stacklevel=2,
-            )
 
         # TODO: check the lab's limitations to see if the module is allowed
         # ('allowed_effects')
         # This is all for regular labs, but not necessarily modded ones.
 
         # TODO: check the amount of the science pack passed in; if its greater
-        # than 10(?) issue an ItemCapacityWarning
+        # than 1 stack issue an ItemCapacityWarning
 
         super(Lab, self).set_item_request(item, count)
+
+        if item not in modules.raw and item not in self.inputs:
+            warnings.warn(
+                "Item '{}' cannot be placed in Lab".format(item),
+                ItemLimitationWarning,
+                stacklevel=2,
+            )
