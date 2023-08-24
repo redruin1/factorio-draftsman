@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Furnace, furnaces
+from draftsman.entity import Furnace, furnaces, Container
 from draftsman.error import InvalidEntityError, InvalidItemError
 from draftsman.warning import (
     DraftsmanWarning,
@@ -11,6 +11,7 @@ from draftsman.warning import (
     ItemLimitationWarning,
 )
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -106,3 +107,21 @@ class FurnaceTesting(unittest.TestCase):
 
         assert furnace1.items == {"copper-ore": 100}
         assert furnace1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        furnace1 = Furnace("stone-furnace")
+        furnace2 = Furnace("stone-furnace")
+
+        assert furnace1 == furnace2
+
+        furnace1.tags = {"some": "stuff"}
+
+        assert furnace1 != furnace2
+
+        container = Container()
+
+        assert furnace1 != container
+        assert furnace2 != container
+
+        # hashable
+        assert isinstance(furnace1, Hashable)

@@ -91,6 +91,8 @@ with pkg_resources.open_binary(data, "entities.pkl") as inp:
     infinity_pipes: list[str] = _data["infinity_pipes"]
     burner_generators: list[str] = _data["burner_generators"]
 
+    all: list[str] = _data["all"]
+
 
 def add_entity(
     name: str,

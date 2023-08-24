@@ -155,3 +155,15 @@ class ElectricEnergyInterface(Entity):
         self.buffer_size = other.buffer_size
         self.power_production = other.power_production
         self.power_usage = other.power_usage
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return (
+            super().__eq__(other)
+            and self.buffer_size == other.buffer_size
+            and self.power_production == other.power_production
+            and self.power_usage == other.power_usage
+        )

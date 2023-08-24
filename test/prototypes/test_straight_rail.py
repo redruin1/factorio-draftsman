@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from draftsman.blueprintable import Blueprint
 from draftsman.constants import Direction
-from draftsman.entity import StraightRail, straight_rails
+from draftsman.entity import StraightRail, straight_rails, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import (
     DraftsmanWarning,
@@ -13,6 +13,7 @@ from draftsman.warning import (
     OverlappingObjectsWarning,
 )
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -94,3 +95,21 @@ class StraightRailTesting(unittest.TestCase):  # Hoo boy
         del rail2
 
         assert rail1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        rail1 = StraightRail("straight-rail")
+        rail2 = StraightRail("straight-rail")
+
+        assert rail1 == rail2
+
+        rail1.tags = {"some": "stuff"}
+
+        assert rail1 != rail2
+
+        container = Container()
+
+        assert rail1 != container
+        assert rail2 != container
+
+        # hashable
+        assert isinstance(rail1, Hashable)

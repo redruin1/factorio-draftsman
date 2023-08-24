@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Turret, turrets
+from draftsman.entity import Turret, turrets, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -46,3 +47,21 @@ class TurretTesting(unittest.TestCase):
         del turret2
 
         assert turret1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        turret1 = Turret("gun-turret")
+        turret2 = Turret("gun-turret")
+
+        assert turret1 == turret2
+
+        turret1.tags = {"some": "stuff"}
+
+        assert turret1 != turret2
+
+        container = Container()
+
+        assert turret1 != container
+        assert turret2 != container
+
+        # hashable
+        assert isinstance(turret1, Hashable)

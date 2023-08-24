@@ -128,3 +128,7 @@ class RailChainSignal(
     #     # it is facing the correct direction (must be on the right side of the
     #     # track, unless there exists another signal on the opposite side)
     #     pass
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

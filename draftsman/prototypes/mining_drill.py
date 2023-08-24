@@ -104,3 +104,7 @@ class MiningDrill(
         # self._handle_module_slots(item, amount)
 
         super(MiningDrill, self).set_item_request(item, amount)
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

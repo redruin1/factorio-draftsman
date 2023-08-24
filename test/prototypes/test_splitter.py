@@ -4,10 +4,11 @@
 from __future__ import unicode_literals
 
 from draftsman.constants import Direction
-from draftsman.entity import Splitter, splitters
+from draftsman.entity import Splitter, splitters, Container
 from draftsman.error import InvalidEntityError, InvalidSideError, InvalidItemError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -117,3 +118,21 @@ class SplitterTesting(unittest.TestCase):
         assert splitter1.output_priority == "right"
         assert splitter1.filter == "small-lamp"
         assert splitter1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        splitter1 = Splitter("splitter")
+        splitter2 = Splitter("splitter")
+
+        assert splitter1 == splitter2
+
+        splitter1.tags = {"some": "stuff"}
+
+        assert splitter1 != splitter2
+
+        container = Container()
+
+        assert splitter1 != container
+        assert splitter2 != container
+
+        # hashable
+        assert isinstance(splitter1, Hashable)

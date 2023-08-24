@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import ArtilleryWagon, artillery_wagons
+from draftsman.entity import ArtilleryWagon, artillery_wagons, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -59,3 +60,21 @@ class ArtilleryWagonTesting(unittest.TestCase):
         # Ensure wagon1's data remains valid even if wagon2 gets destroyed
         del wagon2
         assert wagon1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        wagon1 = ArtilleryWagon("artillery-wagon")
+        wagon2 = ArtilleryWagon("artillery-wagon")
+
+        assert wagon1 == wagon2
+
+        wagon1.set_item_request("artillery-shell", 10)
+
+        assert wagon1 != wagon2
+
+        container = Container()
+
+        assert wagon1 != container
+        assert wagon2 != container
+
+        # hashable
+        assert isinstance(wagon1, Hashable)

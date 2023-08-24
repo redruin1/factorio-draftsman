@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Boiler, boilers
+from draftsman.entity import Boiler, boilers, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -46,3 +47,21 @@ class BoilerTesting(unittest.TestCase):
         del boiler2
 
         assert boiler1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        boiler1 = Boiler("boiler")
+        boiler2 = Boiler("boiler")
+
+        assert boiler1 == boiler2
+
+        boiler1.set_item_request("coal", 10)
+
+        assert boiler1 != boiler2
+
+        container = Container()
+
+        assert boiler1 != container
+        assert boiler2 != container
+
+        # hashable
+        assert isinstance(boiler1, Hashable)

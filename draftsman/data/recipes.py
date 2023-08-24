@@ -22,10 +22,10 @@ with pkg_resources.open_binary(data, "recipes.pkl") as inp:
 
 
 def add_recipe(name: str, ingredients: list[str], result: str):
-    raise NotImplementedError # TODO
+    raise NotImplementedError  # TODO
 
 
-def get_recipe_ingredients(recipe_name: str, expensive: bool=False):
+def get_recipe_ingredients(recipe_name: str, expensive: bool = False):
     # type: (str, bool) -> set[str]
     """
     Returns a ``set`` of all item types that ``recipe_name`` requires. Discards

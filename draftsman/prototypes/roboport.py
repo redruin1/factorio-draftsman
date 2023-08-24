@@ -257,3 +257,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
                 self.control_behavior["total_construction_output_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

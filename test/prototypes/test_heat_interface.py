@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import HeatInterface, heat_interfaces
+from draftsman.entity import HeatInterface, heat_interfaces, Container
 from draftsman.error import InvalidEntityError, InvalidModeError
 from draftsman.warning import DraftsmanWarning, TemperatureRangeWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -84,3 +85,21 @@ class HeatInterfaceTesting(unittest.TestCase):
         assert interface1.temperature == 100
         assert interface1.mode == "at-most"
         assert interface1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        interface1 = HeatInterface("heat-interface")
+        interface2 = HeatInterface("heat-interface")
+
+        assert interface1 == interface2
+
+        interface1.tags = {"some": "stuff"}
+
+        assert interface1 != interface2
+
+        container = Container()
+
+        assert interface1 != container
+        assert interface2 != container
+
+        # hashable
+        assert isinstance(interface1, Hashable)

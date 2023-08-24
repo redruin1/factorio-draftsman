@@ -4,10 +4,11 @@
 from __future__ import unicode_literals
 
 from draftsman.constants import Direction
-from draftsman.entity import ConstantCombinator, constant_combinators
+from draftsman.entity import ConstantCombinator, constant_combinators, Container
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -376,3 +377,21 @@ class ConstantCombinatorTesting(unittest.TestCase):
                 }
             ]
         }
+
+    def test_eq(self):
+        generator1 = ConstantCombinator("constant-combinator")
+        generator2 = ConstantCombinator("constant-combinator")
+
+        assert generator1 == generator2
+
+        generator1.set_signal(0, "signal-check", 100)
+
+        assert generator1 != generator2
+
+        container = Container()
+
+        assert generator1 != container
+        assert generator2 != container
+
+        # hashable
+        assert isinstance(generator1, Hashable)

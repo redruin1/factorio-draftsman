@@ -128,3 +128,8 @@ class RequestFiltersMixin(object):
         super(RequestFiltersMixin, self).merge(other)
 
         self.request_filters = other.request_filters
+
+    # =========================================================================
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.request_filters == other.request_filters

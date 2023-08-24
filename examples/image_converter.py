@@ -38,10 +38,12 @@ from draftsman.utils import aabb_to_dimensions
 import math
 from PIL import Image
 import numpy as np
+
 try:
     import pyperclip
 except ImportError:
     pyperclip = None
+
 
 def main():
     # Manually specify the color, whether its a tile or entity, and its name
@@ -168,7 +170,7 @@ def main():
         # of lines before displaying the entire blueprint
         # So instead, we output the data to a file
         with open("examples/output/converted_image.blueprint", "w") as file:
-           file.write(blueprint.to_string())
+            file.write(blueprint.to_string())
         print("Wrote 'examples/output/converted_image.blueprint'")
 
 

@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Loader, loaders
+from draftsman.entity import Loader, loaders, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -29,32 +30,50 @@ class LoaderTesting(unittest.TestCase):
             Loader("this is not a loader")
 
     def test_mergable_with(self):
-        container1 = Loader()
-        container2 = Loader(
+        loader1 = Loader()
+        loader2 = Loader(
             filters=[{"name": "coal", "index": 1}],
             io_type="input",
             tags={"some": "stuff"},
         )
 
-        assert container1.mergable_with(container1)
+        assert loader1.mergable_with(loader1)
 
-        assert container1.mergable_with(container2)
-        assert container2.mergable_with(container1)
+        assert loader1.mergable_with(loader2)
+        assert loader2.mergable_with(loader1)
 
-        container2.tile_position = (1, 1)
-        assert not container1.mergable_with(container2)
+        loader2.tile_position = (1, 1)
+        assert not loader1.mergable_with(loader2)
 
     def test_merge(self):
-        container1 = Loader()
-        container2 = Loader(
+        loader1 = Loader()
+        loader2 = Loader(
             filters=[{"name": "coal", "index": 1}],
             io_type="input",
             tags={"some": "stuff"},
         )
 
-        container1.merge(container2)
-        del container2
+        loader1.merge(loader2)
+        del loader2
 
-        assert container1.filters == [{"name": "coal", "index": 1}]
-        assert container1.io_type == "input"
-        assert container1.tags == {"some": "stuff"}
+        assert loader1.filters == [{"name": "coal", "index": 1}]
+        assert loader1.io_type == "input"
+        assert loader1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        loader1 = Loader()
+        loader2 = Loader()
+
+        assert loader1 == loader2
+
+        loader1.tags = {"some": "stuff"}
+
+        assert loader1 != loader2
+
+        container = Container()
+
+        assert loader1 != container
+        assert loader2 != container
+
+        # hashable
+        assert isinstance(loader1, Hashable)

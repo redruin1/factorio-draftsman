@@ -440,3 +440,7 @@ class ArithmeticCombinator(
         in the exported string.
         """
         self.control_behavior.pop("arithmetic_conditions", None)
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

@@ -69,3 +69,7 @@ class Beacon(ModulesMixin, RequestItemsMixin, Entity):
             )
 
         super(Beacon, self).set_item_request(item, count)
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

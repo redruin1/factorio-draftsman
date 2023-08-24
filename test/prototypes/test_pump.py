@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Pump, pumps
+from draftsman.entity import Pump, pumps, Container
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -50,3 +51,21 @@ class PumpTesting(unittest.TestCase):
         del pump2
 
         assert pump1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        pump1 = Pump("pump")
+        pump2 = Pump("pump")
+
+        assert pump1 == pump2
+
+        pump1.tags = {"some": "stuff"}
+
+        assert pump1 != pump2
+
+        container = Container()
+
+        assert pump1 != container
+        assert pump2 != container
+
+        # hashable
+        assert isinstance(pump1, Hashable)

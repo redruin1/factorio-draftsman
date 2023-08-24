@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import FluidWagon, fluid_wagons
+from draftsman.entity import FluidWagon, fluid_wagons, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -61,3 +62,21 @@ class FluidWagonTesting(unittest.TestCase):
         del wagon2
 
         assert wagon1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        wagon1 = FluidWagon("fluid-wagon")
+        wagon2 = FluidWagon("fluid-wagon")
+
+        assert wagon1 == wagon2
+
+        wagon1.tags = {"some": "stuff"}
+
+        assert wagon1 != wagon2
+
+        container = Container()
+
+        assert wagon1 != container
+        assert wagon2 != container
+
+        # hashable
+        assert isinstance(wagon1, Hashable)

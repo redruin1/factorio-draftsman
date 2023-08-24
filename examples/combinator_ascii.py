@@ -36,23 +36,25 @@ def main():
     # https://mods.factorio.com/mod/nixie-tubes
     if mod_list.get("nixie-tubes", False):
         letters += "[]{}()!.?@*-%+/"
-        translations.update({
-            "(": "paropen",
-            ")": "parclose",
-            "[": "sqopen",
-            "]": "sqclose",
-            "{": "curopen",
-            "}": "curclose",
-            ".": "stop",
-            "?": "qmark",
-            "!": "exmark",
-            "@": "at",
-            "/": "slash",
-            "*": "asterisk",
-            "-": "minus",
-            "+": "plus",
-            "%": "percent",
-        })
+        translations.update(
+            {
+                "(": "paropen",
+                ")": "parclose",
+                "[": "sqopen",
+                "]": "sqclose",
+                "{": "curopen",
+                "}": "curclose",
+                ".": "stop",
+                "?": "qmark",
+                "!": "exmark",
+                "@": "at",
+                "/": "slash",
+                "*": "asterisk",
+                "-": "minus",
+                "+": "plus",
+                "%": "percent",
+            }
+        )
 
     for letter in letters:
         if letter.isalnum():

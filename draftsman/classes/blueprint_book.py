@@ -172,7 +172,6 @@ class BlueprintBook(Blueprintable):
     class Format(BaseModel):
         blueprint_book: BlueprintBookModel = BlueprintBookModel()
 
-
     @utils.reissue_warnings
     def __init__(self, blueprint_book=None, unknown="error"):
         # type: (str, Union[str, dict]) -> None
@@ -184,7 +183,7 @@ class BlueprintBook(Blueprintable):
             ``dict`` object with the desired keys in the correct format.
         """
         super(BlueprintBook, self).__init__(
-            format=BlueprintBookModel,
+            # format=BlueprintBookModel,
             root_item="blueprint_book",
             item="blueprint-book",
             init_data=blueprint_book,
@@ -310,18 +309,6 @@ class BlueprintBook(Blueprintable):
         if value is None:
             self._root["active_index"] = 0
         elif isinstance(value, int):
-            if not 0 <= value < 65536:
-                raise IndexError(
-                    "'active_index' ({}) not in range [0, 65536)".format(value)
-                )
-            elif self.blueprints is not None and value >= len(self.blueprints):
-                warnings.warn(
-                    "'active_index' ({}) not in range [0, {})".format(
-                        value, len(self.blueprints)
-                    ),
-                    IndexWarning,
-                    stacklevel=2,
-                )
             self._root["active_index"] = value
         else:
             raise TypeError("'active_index' must be a int or None")
@@ -343,7 +330,7 @@ class BlueprintBook(Blueprintable):
         :exception TypeError: If set to anything other than ``list`` or
             ``None``.
         """
-        return self._root.get("blueprints", None)
+        return self._root["blueprints"]
 
     @blueprints.setter
     def blueprints(self, value):
@@ -362,6 +349,18 @@ class BlueprintBook(Blueprintable):
         """
         TODO
         """
+        if not 0 <= self.active_index < 65536:
+            raise IndexError(
+                "'active_index' ({}) not in range [0, 65536)".format(self.active_index)
+            )
+        elif len(self.blueprints) > 0 and self.active_index >= len(self.blueprints):
+            warnings.warn(
+                "'active_index' ({}) not in range [0, {})".format(
+                    self.active_index, len(self.blueprints)
+                ),
+                IndexWarning,
+                stacklevel=2,
+            )
         pass
 
     def to_dict(self):

@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.constants import Direction
-from draftsman.entity import AssemblingMachine, assembling_machines
+from draftsman.entity import AssemblingMachine, assembling_machines, Container
 from draftsman.error import InvalidEntityError, InvalidRecipeError, InvalidItemError
 from draftsman.warning import (
     DraftsmanWarning,
@@ -14,6 +14,7 @@ from draftsman.warning import (
 
 import warnings
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -131,3 +132,21 @@ class AssemblingMachineTesting(unittest.TestCase):
         assert machine1.tags == {"some": "stuff"}
         assert machine1.recipe == "copper-cable"
         assert machine1.items == {"copper-plate": 100}
+
+    def test_eq(self):
+        machine1 = AssemblingMachine("assembling-machine-1")
+        machine2 = AssemblingMachine("assembling-machine-1")
+
+        assert machine1 == machine2
+
+        machine1.recipe = "iron-gear-wheel"
+
+        assert machine1 != machine2
+
+        container = Container()
+
+        assert machine1 != container
+        assert machine2 != container
+
+        # hashable
+        assert isinstance(machine1, Hashable)

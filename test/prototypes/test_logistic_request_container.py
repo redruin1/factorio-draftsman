@@ -3,10 +3,15 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import LogisticRequestContainer, logistic_request_containers
+from draftsman.entity import (
+    LogisticRequestContainer,
+    logistic_request_containers,
+    Container,
+)
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -158,3 +163,21 @@ class LogisticRequestContainerTesting(unittest.TestCase):
             {"name": "utility-science-pack", "index": 1, "count": 10}
         ]
         assert container1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        container1 = LogisticRequestContainer("logistic-chest-requester")
+        container2 = LogisticRequestContainer("logistic-chest-requester")
+
+        assert container1 == container2
+
+        container1.tags = {"some": "stuff"}
+
+        assert container1 != container2
+
+        container = Container()
+
+        assert container1 != container
+        assert container2 != container
+
+        # hashable
+        assert isinstance(container1, Hashable)

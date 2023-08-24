@@ -488,5 +488,6 @@ class WireColor(str, Enum):
     * ``RED``: Red wire.
     * ``GREEN``: Green wire.
     """
+
     RED = "red"
     GREEN = "green"

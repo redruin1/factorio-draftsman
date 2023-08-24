@@ -797,7 +797,7 @@ def aabb_to_dimensions(aabb):
     """
     if aabb is None:
         return (0, 0)
-    
+
     if not isinstance(aabb, AABB):
         aabb = AABB(aabb[0][0], aabb[0][1], aabb[1][0], aabb[1][1])
 

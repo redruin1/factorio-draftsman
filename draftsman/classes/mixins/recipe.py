@@ -142,3 +142,8 @@ class RecipeMixin(object):
         self.recipe = other.recipe
 
         super(RecipeMixin, self).merge(other)
+
+    # =========================================================================
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.recipe == other.recipe

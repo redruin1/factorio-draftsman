@@ -30,6 +30,22 @@ class AssociationTesting(unittest.TestCase):
         # with self.assertRaises(TypeError):
         #     Association(NonEntity()) # Fail
 
+    def test_eq(self):
+        test = Container("wooden-chest")
+        association1 = Association(test)
+        association2 = Association(test)
+
+        assert association1 == association2
+
+        test2 = Container("wooden-chest")
+        association3 = Association(test2)
+
+        assert test == test2
+        assert association1 != association3
+
+        # Also test against unrelated object
+        assert association1 != test
+
     def test_deepcopy(self):
         blueprint = Blueprint()
 

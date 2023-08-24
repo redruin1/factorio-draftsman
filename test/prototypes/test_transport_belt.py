@@ -4,10 +4,11 @@
 from __future__ import unicode_literals
 
 from draftsman.constants import Direction, ReadMode
-from draftsman.entity import TransportBelt, transport_belts
+from draftsman.entity import TransportBelt, transport_belts, Container
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -182,3 +183,21 @@ class TransportBeltTesting(unittest.TestCase):
             "circuit_contents_read_mode": ReadMode.HOLD,
         }
         assert belt1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        belt1 = TransportBelt("transport-belt")
+        belt2 = TransportBelt("transport-belt")
+
+        assert belt1 == belt2
+
+        belt1.tags = {"some": "stuff"}
+
+        assert belt1 != belt2
+
+        container = Container()
+
+        assert belt1 != container
+        assert belt2 != container
+
+        # hashable
+        assert isinstance(belt1, Hashable)

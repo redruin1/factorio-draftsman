@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Radar, radars
+from draftsman.entity import Radar, radars, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -46,3 +47,21 @@ class RadarTesting(unittest.TestCase):
         del radar2
 
         assert radar1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        radar1 = Radar("radar")
+        radar2 = Radar("radar")
+
+        assert radar1 == radar2
+
+        radar1.tags = {"some": "stuff"}
+
+        assert radar1 != radar2
+
+        container = Container()
+
+        assert radar1 != container
+        assert radar2 != container
+
+        # hashable
+        assert isinstance(radar1, Hashable)

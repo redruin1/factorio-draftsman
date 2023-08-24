@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.constants import Direction
-from draftsman.entity import DeciderCombinator, decider_combinators
+from draftsman.entity import DeciderCombinator, decider_combinators, Container
 from draftsman.error import (
     InvalidEntityError,
     DataFormatError,
@@ -13,6 +13,7 @@ from draftsman.error import (
 from draftsman.warning import DraftsmanWarning
 from draftsman.data import signals
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -461,3 +462,21 @@ class DeciderCombinatorTesting(unittest.TestCase):
             }
         }
         assert comb1.tags == {}  # Overwritten by comb2
+
+    def test_eq(self):
+        decider1 = DeciderCombinator("decider-combinator")
+        decider2 = DeciderCombinator("decider-combinator")
+
+        assert decider1 == decider2
+
+        decider1.tags = {"some": "stuff"}
+
+        assert decider1 != decider2
+
+        container = Container()
+
+        assert decider1 != container
+        assert decider2 != container
+
+        # hashable
+        assert isinstance(decider1, Hashable)

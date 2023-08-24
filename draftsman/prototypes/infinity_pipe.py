@@ -283,3 +283,12 @@ class InfinityPipe(Entity):
         self.infinite_fluid_percentage = other.infinite_fluid_percentage
         self.infinite_fluid_mode = other.infinite_fluid_mode
         self.infinite_fluid_temperature = other.infinite_fluid_temperature
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return (
+            super().__eq__(other) and self.infinity_settings == other.infinity_settings
+        )

@@ -112,3 +112,8 @@ class PowerConnectableMixin(object):
             self._neighbours = signatures.NEIGHBOURS.validate(value)
         except SchemaError as e:
             six.raise_from(DataFormatError(e), None)
+
+    # =========================================================================
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.neighbours == other.neighbours

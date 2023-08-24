@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import ProgrammableSpeaker, programmable_speakers
+from draftsman.entity import ProgrammableSpeaker, programmable_speakers, Container
 from draftsman.error import (
     DraftsmanError,
     InvalidEntityError,
@@ -14,6 +14,7 @@ from draftsman.error import (
 )
 from draftsman.warning import DraftsmanWarning, VolumeRangeWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -456,3 +457,21 @@ class ProgrammableSpeakerTesting(unittest.TestCase):
         assert speaker1.instrument_id == 1
         assert speaker1.note_id == 1
         assert speaker1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        speaker1 = ProgrammableSpeaker("programmable-speaker")
+        speaker2 = ProgrammableSpeaker("programmable-speaker")
+
+        assert speaker1 == speaker2
+
+        speaker1.tags = {"some": "stuff"}
+
+        assert speaker1 != speaker2
+
+        container = Container()
+
+        assert speaker1 != container
+        assert speaker2 != container
+
+        # hashable
+        assert isinstance(speaker1, Hashable)

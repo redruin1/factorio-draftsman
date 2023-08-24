@@ -96,3 +96,7 @@ class AssemblingMachine(
                 )
 
     # TODO: overwrite direction.setter so that it only works with specific recipes
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

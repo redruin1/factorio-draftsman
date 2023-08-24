@@ -3,10 +3,15 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import LogisticPassiveContainer, logistic_passive_containers
+from draftsman.entity import (
+    LogisticPassiveContainer,
+    logistic_passive_containers,
+    Container,
+)
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -123,3 +128,21 @@ class LogisticPassiveContainerTesting(unittest.TestCase):
 
         assert container1.bar == 10
         assert container1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        container1 = LogisticPassiveContainer("logistic-chest-passive-provider")
+        container2 = LogisticPassiveContainer("logistic-chest-passive-provider")
+
+        assert container1 == container2
+
+        container1.tags = {"some": "stuff"}
+
+        assert container1 != container2
+
+        container = Container()
+
+        assert container1 != container
+        assert container2 != container
+
+        # hashable
+        assert isinstance(container1, Hashable)

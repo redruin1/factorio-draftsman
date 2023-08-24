@@ -196,7 +196,7 @@ class WaitConditions(object):
             if self._conditions[i] != other._conditions[i]:
                 return False
         return True
-    
+
     def __getitem__(self, index) -> WaitCondition:
         return self._conditions[index]
 

@@ -45,3 +45,7 @@ class ArtilleryWagon(RequestItemsMixin, OrientationMixin, Entity):
 
     # TODO: ensure that only artillery shells can be loaded
     # Though what about mods?
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

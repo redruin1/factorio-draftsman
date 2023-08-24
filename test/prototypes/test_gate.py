@@ -4,10 +4,11 @@
 from __future__ import unicode_literals
 
 from draftsman.constants import Direction
-from draftsman.entity import Gate, gates
+from draftsman.entity import Gate, gates, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -47,3 +48,21 @@ class GateTesting(unittest.TestCase):
         del gate2
 
         assert gate1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        gate1 = Gate("gate")
+        gate2 = Gate("gate")
+
+        assert gate1 == gate2
+
+        gate1.tags = {"some": "stuff"}
+
+        assert gate1 != gate2
+
+        container = Container()
+
+        assert gate1 != container
+        assert gate2 != container
+
+        # hashable
+        assert isinstance(gate1, Hashable)

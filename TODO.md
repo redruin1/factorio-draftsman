@@ -1,16 +1,32 @@
 # TODO
 
-### Add equality operators for all `Entity`s
-The `__eq__` operator for any Entity should return true if each entity is exactly equal in name, type, and all attributes.
+### Add as many of the example programs to the test suite as possible
+To help ensure that they're behaving correctly over any API changes, so they stay up-to-date
+
+---
+### Improve import organization
+Move common constructs like `Vector` out of `draftsman.utils`, people shouldn't have to traverse all the way to `draftsman.classes.group` to import `Group`, etc.
+
+---
+### `EntityList.clear()` has some bad side effects, investigate and fix
+Might make sense to actually move all of the spatial detection code into `EntityList`
 
 ---
 ### Add constraints on `DeconstructionPlanner`
 General constraints on parameters and inputs; what you can deconstruct, what you can't, etc.
 
 ---
-### Add predictive entity/tile name correction using `difflib.get_close_matches`
-With it we should be able to have Draftsman predict that we mean "wooden-chest" instead of something like "wodenchest"
-Actually, this could be added in a lot of places through the API
+### Write `__repr__` function for everything
+For most of the commonly-used things this is already the case, but would be nice if every Draftsman object had a nice, user-readable formatted output.
+
+---
+### Unify entity validation into one monolithic thing
+Currently `Entity` and `Blueprintable` have two slightly different methods of converting their Python object representation to their output JSON dict/string format. Ideally this would be one single method (and thus one single point of failure to maintain).
+
+---
+### Write `dump_format` (and test_cases)
+Do this not only for all the blueprintable types, but also each entity. In addition, include this output at the header of each documentation file, so people finally have a concrete reference for the actual blueprint string format
+- Once that's done, maybe we can finally update the Factorio wiki to be up-to-date
 
 ---
 ### Python3-ify everything
@@ -38,15 +54,6 @@ As of writing there are a number of classes and class types that differ due to p
 ---
 ### Make it so that you can change the name of an `Entity` if the two collision boxes match
 This is very complex though, there's a reason I put this off
-
----
-### Write `__repr__` function for everything
-For most of the commonly-used things this is already the case, but would be nice if every Draftsman object had a nice, user-readable formatted output.
-
----
-### Write `dump_format` (and test_cases)
-Do this not only for all the blueprintable types, but also each entity. In addition, include this output at the header of each documentation file, so people finally have a concrete reference for the actual blueprint string format
-- Once that's done, maybe we can finally update the Factorio wiki to be up-to-date
 
 ---
 ### Add warnings for placement constraints on rails, rail signals and train stops
@@ -80,8 +87,8 @@ Currently all the data being extracted from the Factorio load process is all "ha
 A bootleg version of this currently exists already, where null entries are removed, but there should also be some kind of control for the "verbosity" of the output blueprint dict/string
 
 ---
-### Unify entity validation into one monolithic thing
-Currently `Entity` and `Blueprintable` have two slightly different methods of converting their Python object representation to their output JSON dict/string format. Ideally this would be one single method (and thus one single point of failure to maintain).
+### In the same vein as above, also perhaps an option for blueprint canonicalization
+Ordering objects inside blueprints in regular ways for best compression, minimal git diff, etc.
 
 ---
 ### Investigate more performant alternatives to `schema` for format validation

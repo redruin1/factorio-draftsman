@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Container, containers
+from draftsman.entity import Container, containers, Accumulator
 from draftsman.error import (
     DraftsmanError,
     InvalidEntityError,
@@ -12,6 +12,7 @@ from draftsman.error import (
 )
 from draftsman.warning import DraftsmanWarning, ItemCapacityWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -144,3 +145,21 @@ class ContainerTesting(unittest.TestCase):
 
         assert container1.bar == 10
         assert container1.items == {"copper-plate": 100}
+
+    def test_eq(self):
+        container1 = Container("wooden-chest")
+        container2 = Container("wooden-chest")
+
+        assert container1 == container2
+
+        container1.bar = 4
+
+        assert container1 != container2
+
+        container = Accumulator()
+
+        assert container1 != container
+        assert container2 != container
+
+        # hashable
+        assert isinstance(container1, Hashable)

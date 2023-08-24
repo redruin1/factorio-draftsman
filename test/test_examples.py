@@ -21,6 +21,7 @@ class TestExamples:
 
     def test_item_stack_signals(self, monkeypatch):
         from examples.item_stack_signals import main
+
         main()
 
     # def test_pumpjack_placer(self): # TODO

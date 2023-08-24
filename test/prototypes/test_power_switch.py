@@ -5,10 +5,11 @@ from __future__ import unicode_literals
 
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.group import Group
-from draftsman.entity import PowerSwitch, power_switches
+from draftsman.entity import PowerSwitch, power_switches, Container
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -153,3 +154,21 @@ class PowerSwitchTesting(unittest.TestCase):
         #         },
         #     ]
         # )
+
+    def test_eq(self):
+        switch1 = PowerSwitch("power-switch")
+        switch2 = PowerSwitch("power-switch")
+
+        assert switch1 == switch2
+
+        switch1.tags = {"some": "stuff"}
+
+        assert switch1 != switch2
+
+        container = Container()
+
+        assert switch1 != container
+        assert switch2 != container
+
+        # hashable
+        assert isinstance(switch1, Hashable)

@@ -64,6 +64,8 @@ class Pump(
 
     # =========================================================================
 
+    __hash__ = Entity.__hash__
+
     @ControlBehaviorMixin.control_behavior.setter
     def control_behavior(self, value):
         # type: (dict) -> None

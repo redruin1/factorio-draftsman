@@ -40,7 +40,7 @@ import six
 #         #     if key not in values:
 #         #         key = name
 
-#         #     if key in values: 
+#         #     if key in values:
 #         #         if values[key] is None and not field.is_required(): # Moved this check since None value can be passed for Optional nested field
 #         #             fields_values[name] = field.get_default()
 #         #         else:
@@ -74,8 +74,8 @@ import six
 #                 try:
 #                     # assert issubclass(field.annotation, BaseModel)
 #                     fields_values[name] = field.annotation.model_construct(
-#                         _recursive=_recursive, 
-#                         _fields_set=_fields_set, 
+#                         _recursive=_recursive,
+#                         _fields_set=_fields_set,
 #                         **values[field.alias]
 #                     )
 #                 except AttributeError:
@@ -84,8 +84,8 @@ import six
 #                 try:
 #                     # assert issubclass(field.annotation, BaseModel)
 #                     fields_values[name] = field.annotation.model_construct(
-#                         _recursive=_recursive, 
-#                         _fields_set=_fields_set, 
+#                         _recursive=_recursive,
+#                         _fields_set=_fields_set,
 #                         **values[name]
 #                     )
 #                 except AttributeError:
@@ -974,12 +974,20 @@ class Color(BaseModel):
     r: int | float
     g: int | float
     b: int | float
-    a: int | float | None
+    a: int | float | None = None
 
 
 class Position(BaseModel):
     x: float | int
     y: float | int
+
+    @model_validator(mode="before")
+    def model_validator(cls, data):
+        # likely a Vector
+        try:
+            return data.to_dict()
+        except AttributeError:
+            return data
 
 
 class WaitCondition(BaseModel):
@@ -988,9 +996,11 @@ class WaitCondition(BaseModel):
     ticks: int | None = None
     condition: dict | None = None
 
+
 class Stop(BaseModel):
     station: str
     wait_conditions: list[WaitCondition]
+
 
 # class Label(RootModel):
 #     root: str | None = None

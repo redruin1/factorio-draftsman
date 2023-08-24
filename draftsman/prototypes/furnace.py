@@ -94,3 +94,7 @@ class Furnace(ModulesMixin, RequestItemsMixin, Entity):
                 ItemLimitationWarning,
                 stacklevel=2,
             )
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

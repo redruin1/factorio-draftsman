@@ -81,3 +81,10 @@ class RocketSilo(RequestItemsMixin, Entity):
         super(RocketSilo, self).merge(other)
 
         self.auto_launch = other.auto_launch
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.auto_launch == other.auto_launch

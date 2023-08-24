@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import BurnerGenerator, burner_generators
+from draftsman.entity import BurnerGenerator, burner_generators, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -44,3 +45,21 @@ class BurnerGeneratorTesting(unittest.TestCase):
         del generator2
 
         assert generator1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        generator1 = BurnerGenerator("burner-generator")
+        generator2 = BurnerGenerator("burner-generator")
+
+        assert generator1 == generator2
+
+        generator1.tags = {"some": "stuff"}
+
+        assert generator1 != generator2
+
+        container = Container()
+
+        assert generator1 != container
+        assert generator2 != container
+
+        # hashable
+        assert isinstance(generator1, Hashable)

@@ -109,3 +109,13 @@ class LogisticRequestContainer(
             self._request_from_buffers = value
         else:
             raise TypeError("'request_from_buffers' must be a bool or None")
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return (
+            super().__eq__(other)
+            and self.request_from_buffers == other.request_from_buffers
+        )

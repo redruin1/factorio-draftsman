@@ -41,3 +41,7 @@ class Locomotive(RequestItemsMixin, ColorMixin, OrientationMixin, Entity):
         del self.unused_args
 
     # TODO: check if item requests are valid fuel sources or not
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

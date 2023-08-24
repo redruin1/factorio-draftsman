@@ -4,10 +4,11 @@
 from __future__ import unicode_literals
 
 from draftsman.constants import Direction
-from draftsman.entity import StorageTank, storage_tanks
+from draftsman.entity import StorageTank, storage_tanks, Container
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -107,3 +108,21 @@ class StorageTankTesting(unittest.TestCase):
         del tank2
 
         assert tank1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        tank1 = StorageTank("storage-tank")
+        tank2 = StorageTank("storage-tank")
+
+        assert tank1 == tank2
+
+        tank1.tags = {"some": "stuff"}
+
+        assert tank1 != tank2
+
+        container = Container()
+
+        assert tank1 != container
+        assert tank2 != container
+
+        # hashable
+        assert isinstance(tank1, Hashable)

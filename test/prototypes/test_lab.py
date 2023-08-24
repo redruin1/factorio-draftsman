@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Lab, labs
+from draftsman.entity import Lab, labs, Container
 from draftsman.error import InvalidEntityError, InvalidItemError
 from draftsman.warning import (
     DraftsmanWarning,
@@ -11,6 +11,7 @@ from draftsman.warning import (
     ItemLimitationWarning,
 )
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -107,3 +108,21 @@ class LabTesting(unittest.TestCase):
         del lab2
 
         assert lab1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        lab1 = Lab("lab")
+        lab2 = Lab("lab")
+
+        assert lab1 == lab2
+
+        lab1.tags = {"some": "stuff"}
+
+        assert lab1 != lab2
+
+        container = Container()
+
+        assert lab1 != container
+        assert lab2 != container
+
+        # hashable
+        assert isinstance(lab1, Hashable)

@@ -202,3 +202,12 @@ class InfinityContainer(RequestItemsMixin, Entity):
         super(InfinityContainer, self).merge(other)
 
         self.infinity_settings = other.infinity_settings
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return (
+            super().__eq__(other) and self.infinity_settings == other.infinity_settings
+        )

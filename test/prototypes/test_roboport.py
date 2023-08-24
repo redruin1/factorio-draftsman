@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Roboport, roboports
+from draftsman.entity import Roboport, roboports, Container
 from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -303,3 +304,21 @@ class RoboportTesting(unittest.TestCase):
             },
         }
         assert roboport1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        roboport1 = Roboport("roboport")
+        roboport2 = Roboport("roboport")
+
+        assert roboport1 == roboport2
+
+        roboport1.tags = {"some": "stuff"}
+
+        assert roboport1 != roboport2
+
+        container = Container()
+
+        assert roboport1 != container
+        assert roboport2 != container
+
+        # hashable
+        assert isinstance(roboport1, Hashable)

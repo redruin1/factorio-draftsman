@@ -3,6 +3,7 @@
 from draftsman import utils
 
 from abc import ABCMeta, abstractmethod
+from pydantic import BaseModel
 from typing import List, Any
 import warnings
 import pprint  # TODO: think about
@@ -55,16 +56,20 @@ class ValidationResult:
 
 class Exportable(metaclass=ABCMeta):
     """
-    TODO
+    An abstract base class representing an object that has a form within a JSON
+    Factorio blueprint string, such as entities, tiles, or entire blueprints
+    themselves. Posesses a ``_root`` dictionary which contains it's contents, as
+    well as validation utilities.
     """
+
+    class Format(BaseModel):
+        pass
 
     def __init__(self):
         self._root = {}
         self._is_valid = False
 
-    def __setattr__(self, name, value):
-        super().__setattr__("_is_valid", False)
-        super().__setattr__(name, value)
+    # =========================================================================
 
     @property
     def is_valid(self):
@@ -72,6 +77,8 @@ class Exportable(metaclass=ABCMeta):
         TODO
         """
         return self._is_valid
+
+    # =========================================================================
 
     @abstractmethod
     def validate(self):
@@ -88,44 +95,49 @@ class Exportable(metaclass=ABCMeta):
         """
         return ValidationResult([], [])
 
-    @abstractmethod
-    def to_dict(self):  # pragma: no coverage
-        # type: () -> dict
+    def to_dict(self) -> dict:
         """
         Returns this object as a dictionary. Intended for getting the precursor
-        to a Factorio blueprint string before encoding and compression takes
+        to a Factorio blueprint string before compression and encoding takes
         place.
 
         :returns: The ``dict`` representation of this object.
         """
-        pass
+        out_dict = self.__class__.Format.model_construct(  # Performs no validation(!)
+            **self._root
+        ).model_dump(
+            by_alias=True,  # Some attributes are reserved words (type, from,
+            # etc.); this resolves that issue
+            exclude_none=True,  # Trim if values are None
+            exclude_defaults=True,  # Trim if values are defaults
+            warnings=False  # Ignore warnings because `model_construct` cannot
+            # be made recursive for some asinine reason
+        )
 
-    def to_string(self):  # pragma: no coverage
-        # type: () -> str
+        return out_dict
+
+    @classmethod
+    def dump_format(cls) -> dict:  # pragma: no coverage
         """
-        Returns this object as an encoded Factorio blueprint string.
+        Returns a JSON schema object that correctly validates this object. Can
+        be exported to a JSON string that can be shared and used generically by
+        any application that supports JSON schema validation.
 
-        :returns: The zlib-compressed, base-64 encoded string.
+        .. see-also::
 
-        :example:
+            https://json-schema.org/
 
-        .. doctest::
-
-            >>> from draftsman.blueprintable import (
-            ...     Blueprint, DeconstructionPlanner, UpgradePlanner, BlueprintBook
-            ... )
-            >>> Blueprint({"version": (1, 0)}).to_string()
-            '0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDE3sTQ3Mzc0MDM1q60FAHmVE1M='
-            >>> DeconstructionPlanner({"version": (1, 0)}).to_string()
-            '0eNpdy0EKgCAQAMC/7Nkgw7T8TIQtIdga7tol/HtdunQdmBs2DJlYSg0SMy1nWomwgL+BUSTSzuCppqQgCh7gf6H7goILC78Cfpi0cWZ21unejra1B7C2I9M='
-            >>> UpgradePlanner({"version": (1, 0)}).to_string()
-            '0eNo1yksKgCAUBdC93LFBhmm5mRB6iGAv8dNE3Hsjz/h0tOSzu+lK0TFThu0oVGtgX2C5xSgQKj2wcy5zCnyUS3gZdjukMuo02shV73qMH4ZxHbs='
-            >>> BlueprintBook({"version": (1, 0)}).to_string()
-            '0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MTSzNzcwNDcxMzWprAVWGHQI='
+        :returns: A python dictionary containing all the relevant key-value
+            pairs, which can be dumped to a string with ``json.dumps``
         """
-        # TODO: add options to compress/canoncialize blueprints before export
-        # (though should that happen on a per-blueprintable basis? And what about non-Blueprint strings, like upgrade planners?)
-        return utils.JSON_to_string(self.to_dict())
+        # TODO: is this testable?
+        return cls.Format.model_json_schema(by_alias=True)
+
+    # =========================================================================
+
+    def __setattr__(self, name, value):
+        super().__setattr__("_is_valid", False)
+        super().__setattr__(name, value)
 
     def __setitem__(self, key, value):
         # type: (str, Any) -> None

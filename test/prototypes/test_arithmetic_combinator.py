@@ -15,6 +15,7 @@ from draftsman.error import (
 )
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -493,3 +494,21 @@ class ArithmeticCombinatorTesting(unittest.TestCase):
                 },
             }
         ]
+
+    def test_eq(self):
+        combinatorA = ArithmeticCombinator("arithmetic-combinator")
+        combinatorB = ArithmeticCombinator("arithmetic-combinator")
+
+        assert combinatorA == combinatorB
+
+        combinatorA.set_arithmetic_conditions(1, "*", 1, "signal-check")
+
+        assert combinatorA != combinatorB
+
+        container = Container("wooden-chest")
+
+        assert combinatorA != container
+        assert combinatorB != container
+
+        # hashable
+        assert isinstance(combinatorA, Hashable)

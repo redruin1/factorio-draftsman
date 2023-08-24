@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Beacon, beacons
+from draftsman.entity import Beacon, beacons, Container
 from draftsman.error import InvalidEntityError, InvalidItemError
 from draftsman.warning import (
     DraftsmanWarning,
@@ -11,6 +11,7 @@ from draftsman.warning import (
     ItemLimitationWarning,
 )
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -67,3 +68,21 @@ class BeaconTesting(unittest.TestCase):
         del beacon2
 
         assert beacon1.items == {"speed-module-2": 2}
+
+    def test_eq(self):
+        beacon1 = Beacon("beacon")
+        beacon2 = Beacon("beacon")
+
+        assert beacon1 == beacon2
+
+        beacon1.set_item_request("speed-module-3", 2)
+
+        assert beacon1 != beacon2
+
+        container = Container()
+
+        assert beacon1 != container
+        assert beacon2 != container
+
+        # hashable
+        assert isinstance(beacon1, Hashable)

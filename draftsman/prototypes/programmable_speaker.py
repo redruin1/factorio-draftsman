@@ -618,3 +618,14 @@ class ProgrammableSpeaker(
 
         self.parameters = other.parameters
         self.alert_parameters = other.alert_parameters
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return (
+            super().__eq__(other)
+            and self.parameters == other.parameters
+            and self.alert_parameters == other.alert_parameters
+        )

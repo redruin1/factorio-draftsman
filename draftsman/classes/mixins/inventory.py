@@ -171,3 +171,8 @@ class InventoryMixin(object):
         super(InventoryMixin, self).merge(other)
 
         self.bar = other.bar
+
+    # =========================================================================
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.bar == other.bar

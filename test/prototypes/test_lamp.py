@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Lamp, lamps
+from draftsman.entity import Lamp, lamps, Container
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -70,3 +71,21 @@ class LampTesting(unittest.TestCase):
 
         assert lamp1.use_colors == True
         assert lamp1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        lamp1 = Lamp("small-lamp")
+        lamp2 = Lamp("small-lamp")
+
+        assert lamp1 == lamp2
+
+        lamp1.tags = {"some": "stuff"}
+
+        assert lamp1 != lamp2
+
+        container = Container()
+
+        assert lamp1 != container
+        assert lamp2 != container
+
+        # hashable
+        assert isinstance(lamp1, Hashable)

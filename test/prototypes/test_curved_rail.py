@@ -4,10 +4,11 @@
 from __future__ import unicode_literals
 
 from draftsman.constants import Direction
-from draftsman.entity import CurvedRail, curved_rails
+from draftsman.entity import CurvedRail, curved_rails, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning, RailAlignmentWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -62,3 +63,21 @@ class CurvedRailTesting(unittest.TestCase):
         del rail2
 
         assert rail1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        generator1 = CurvedRail("curved-rail")
+        generator2 = CurvedRail("curved-rail")
+
+        assert generator1 == generator2
+
+        generator1.tags = {"some": "stuff"}
+
+        assert generator1 != generator2
+
+        container = Container()
+
+        assert generator1 != container
+        assert generator2 != container
+
+        # hashable
+        assert isinstance(generator1, Hashable)

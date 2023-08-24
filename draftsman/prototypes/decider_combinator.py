@@ -427,3 +427,7 @@ class DeciderCombinator(
         in the exported string.
         """
         self.control_behavior.pop("decider_conditions", None)
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

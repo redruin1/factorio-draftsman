@@ -133,3 +133,7 @@ class Wall(
                 self.control_behavior["output_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
