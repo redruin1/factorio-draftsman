@@ -50,7 +50,11 @@ def main():
     schedule.append_stop("Station A", WaitCondition(WaitConditionType.FULL_CARGO))
     schedule.append_stop("Station B", WaitCondition(WaitConditionType.EMPTY_CARGO))
     trains = bp.find_trains_filtered(schedule=schedule)
-    print("Trains that pickup at 'Station A' and dropoff at 'Station B': {}".format(len(trains)))
+    print(
+        "Trains that pickup at 'Station A' and dropoff at 'Station B': {}".format(
+            len(trains)
+        )
+    )
 
 
 if __name__ == "__main__":

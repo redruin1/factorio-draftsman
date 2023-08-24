@@ -94,6 +94,8 @@ with pkg_resources.open_binary(data, "entities.pkl") as inp:
     burner_generators: list[str] = _data["burner_generators"]
     player_ports: list[str] = _data["player_ports"]
 
+    all: list[str] = _data["all"]
+
 
 def add_entity(
     name: str,

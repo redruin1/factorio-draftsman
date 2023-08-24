@@ -3,15 +3,18 @@
 
 from __future__ import unicode_literals
 
+from draftsman.classes.association import Association
 from draftsman.classes.group import Group
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.vector import Vector
 from draftsman.constants import Direction
 from draftsman.error import DraftsmanError
-
 from draftsman.data import items
+from draftsman.prototypes.straight_rail import StraightRail
+from draftsman.prototypes.curved_rail import CurvedRail
 
 import math
+from weakref import ReferenceType as Ref
 from typing import Union
 
 
@@ -24,7 +27,7 @@ class RailPlanner(Group):
     def __init__(
         self,
         name="rail",
-        start_position=[0, 0],
+        head_position=[0, 0],
         head_direction=Direction.NORTH,
         **kwargs
     ):
@@ -37,9 +40,11 @@ class RailPlanner(Group):
         self.straight_rail = items.raw[name]["straight_rail"]
         self.curved_rail = items.raw[name]["curved_rail"]
 
-        self._head_position = Vector.from_other(start_position)
+        self._head_position = Vector(0, 0)
+
+        self.head_position = head_position
         self.head_direction = head_direction
-        self.last_rail_added = None  # type: EntityLike
+        self._last_rail_added: Association | None = None
 
         self.diagonal_side = 0  # left
 
@@ -47,21 +52,24 @@ class RailPlanner(Group):
 
     @property
     def head_position(self):
-        # type: () -> dict
+        # type: () -> Vector
         """
-        TODO
-        Specifically, this is the position where the next placed rail will go.
+        The turtle "head" of the rail planner. This is the rail-tile position
+        where the next placed rail will go.
+
+        .. see-also::
+
+            :py:attr:`.head_direction`
+
+        :getter: TODO
+        :setter: TODO
+        :type: :py:class:`Vector`
         """
         return self._head_position
 
     @head_position.setter
     def head_position(self, value):
         # type: (Union[dict, list, tuple]) -> None
-        if self.parent:
-            raise DraftsmanError(
-                "Cannot change position of Group while it's inside a Collection"
-            )
-
         # TODO: issue rail alignment warning if not on rail grid
 
         self._head_position.update_from_other(value, int)
@@ -73,7 +81,17 @@ class RailPlanner(Group):
     def head_direction(self):
         # type: () -> Direction
         """
-        TODO
+        The :py:enum:`.Direction` that the user intends to build the next rails
+        in. Note that this direction is not necessarily equal to the direction
+        of the placed rail entities themselves.
+
+        .. see-also::
+
+            :py:attr:`.head_direction`
+
+        :getter: TODO
+        :setter: TODO
+        :type: :py:enum:`.Direction`
         """
         return self._head_direction
 
@@ -81,57 +99,55 @@ class RailPlanner(Group):
     def head_direction(self, value):
         # type: (Direction) -> None
         self._head_direction = Direction(value)
-        self._direction = Direction((value + 2) % 8)
+        self._direction = self._head_direction.next(eight_way=False)
 
     # =========================================================================
 
     @property
-    def direction(self):
-        # type: () -> Direction
+    def last_rail_added(self) -> Ref[StraightRail | CurvedRail] | None:
         """
-        TODO
+        Reference to the last rail entity that was added in the RailPlanner, or
+        ``None`` if no entities have been added yet. Used internally, but
+        provided for the user. Read only.
         """
-        return self._direction
-
-    @direction.setter
-    def direction(self, value):
-        # type: (Direction) -> None
-        self._direction = Direction(value)
+        if self._last_rail_added is not None:
+            return self._last_rail_added()
+        else:
+            return self._last_rail_added
 
     # =========================================================================
 
     def move_forward(self, amount=1):
         # type: (int) -> None
         """
-        TODO
+        Moves the :py:class:`.RailPlanner`'s head ``amount`` rail-tiles in the
+        direction :py:attr:`.head_direction`.
+
+        Note that the distance travelled by this function is measured with the
+        Manhattan-distance, meaning travelling across diagonals will take twice
+        as many rails:
+
+        .. doctest::
+
+            >>> rail_planner = RailPlanner()
+            >>> rail_planner.direction = Direction.SOUTH
+            >>> rail_planner.move_forward(10)
+            >>> rail_planner.head_position
+            Vector(0, 10)
+            >>> rail_planner.head_position = (0, 0)
+            >>> rail_planner.direction = Direction.SOUTHEAST
+            >>> rail_planner.move_forward(10)
+            >>> rail_planner.head_position
+            Vector(5, 5)
+
+        :param amount: The amount of rails to place going in that direction.
         """
-        # offset_matrix = [
-        #     {"x": 0, "y": -2},  # 0 (North)
-        #     {"x": 2, "y": 0, "d": 5},  # 1 (Northeast)
-        #     {"x": 2, "y": 0},  # 2 (East)
-        #     {"x": 2, "y": 0, "d": 7},  # 3 (Southeast)
-        #     {"x": 0, "y": 2},  # 4 (South)
-        #     {"x": 0, "y": 2, "d": 1},  # 5 (Southwest)
-        #     {"x": -2, "y": 0},  # 6 (West)
-        #     {"x": 0, "y": 2, "d": 3},  # 7 (Northwest)
-        # ]
         cardinal_matrix = {
             Direction.NORTH: {"x": 0, "y": -2},
             Direction.EAST: {"x": 2, "y": 0},
             Direction.SOUTH: {"x": 0, "y": 2},
             Direction.WEST: {"x": -2, "y": 0},
         }
-        # diagonal_matrix = [
-        #     {
-        #         Direction.NORTHEAST: {"x": 0, "y": 2, "d": Direction.SOUTHWEST},
-        #         Direction.SOUTHEAST: {"x": 2, "y": 0, "d": Direction.NORTHWEST},
-        #         Direction.SOUTHWEST: {"x": 2, "y": 0, "d": Direction.NORTHEAST},
-        #         Direction.NORTHWEST: {"x": 0, "y": 2, "d": Direction.SOUTHEAST},
-        #     },
-        #     {
-
-        #     }
-        # ]
         diagonal_matrix = {
             Direction.NORTHEAST: {
                 Direction.NORTHWEST: {"x": 0, "y": -2, "d": Direction.SOUTHEAST},
@@ -150,12 +166,6 @@ class RailPlanner(Group):
                 Direction.NORTHEAST: {"x": 0, "y": -2, "d": Direction.SOUTHWEST},
             },
         }
-        # travel_dir = {
-        #     Direction.NORTHEAST: {"x":  1, "y": -1},
-        #     Direction.SOUTHEAST: {"x":  1, "y":  1},
-        #     Direction.SOUTHWEST: {"x": -1, "y":  1},
-        #     Direction.NORTHWEST: {"x": -1, "y": -1},
-        # }
         if self.head_direction in {0, 2, 4, 6}:  # Straight rails, easy
             offset = cardinal_matrix[self.head_direction]
             for _ in range(amount):
@@ -165,32 +175,40 @@ class RailPlanner(Group):
                     direction=self.head_direction,
                     merge=True,
                 )
-                self.last_rail_added = self.entities[-1]
+                self._last_rail_added = Association(self.entities[-1])
                 self.head_position["x"] += offset["x"]
                 self.head_position["y"] += offset["y"]
         else:  # Diagonal rails, hard
             if self.diagonal_side == 0:
-                self.direction = self.head_direction.previous(eight_way=False)
+                real_direction = self.head_direction.previous(eight_way=False)
             else:
-                self.direction = self.head_direction.next(eight_way=False)
+                real_direction = self.head_direction.next(eight_way=False)
             for _ in range(amount):
-                offset = diagonal_matrix[self.head_direction][self.direction]
+                offset = diagonal_matrix[self.head_direction][real_direction]
                 self.entities.append(
                     self.straight_rail,
                     tile_position=self.head_position,
-                    direction=self.direction,
+                    direction=real_direction,
                     merge=True,
                 )
-                self.last_rail_added = self.entities[-1]
+                self._last_rail_added = Association(self.entities[-1])
                 self.head_position.x += offset["x"]
                 self.head_position.y += offset["y"]
-                self.direction = offset["d"]
+                real_direction = offset["d"]
                 self.diagonal_side = int(not self.diagonal_side)
 
     def turn_left(self, amount=1):
         # type: (int) -> None
         """
-        TODO
+        Places ``amount`` curved rails turning left from :py:attr:`head_position`,
+        and places the head at the point just after the rails. Each increment of
+        ``amount`` is equivalent to a turn of 45 degrees.
+
+        90-degree bends in Factorio need a intermediary straight rail in-between
+        the curved rail segements; this function automatically takes care of
+        this for you, so manual management is not needed.
+
+        :param amount: The amount of rails to place going in that direction.
         """
         matrix = {
             Direction.NORTH: {
@@ -243,9 +261,6 @@ class RailPlanner(Group):
         for _ in range(amount):
             # If we're diagonal and turning left, we need to ensure that there
             # is at least one straight rail between curved rails
-            # We can ensure this by checking if diagonal_side is 1 (on the right)
-            # If it's not, step one rail (swapping diagonal_side) and place the
-            # curved rail
             if (
                 self.head_direction in diagonals and self.diagonal_side == 1
             ):  # next side is right
@@ -258,7 +273,7 @@ class RailPlanner(Group):
                 direction=entry["direction"],
                 merge=True,
             )
-            self.last_rail_added = self.entities[-1]
+            self._last_rail_added = Association(self.entities[-1])
             self.head_position += entry["head_offset"]
             if self.head_direction in diagonals:
                 self.diagonal_side = 1  # right
@@ -319,9 +334,6 @@ class RailPlanner(Group):
         for _ in range(amount):
             # If we're diagonal and turning left, we need to ensure that there
             # is at least one straight rail between curved rails
-            # We can ensure this by checking if diagonal_side is 1 (on the right)
-            # If it's not, step one rail (swapping diagonal_side) and place the
-            # curved rail
             if (
                 self.head_direction in diagonals and self.diagonal_side == 0
             ):  # next side is left
@@ -334,13 +346,13 @@ class RailPlanner(Group):
                 direction=entry["direction"],
                 merge=True,
             )
-            self.last_rail_added = self.entities[-1]
+            self._last_rail_added = Association(self.entities[-1])
             self.head_position += entry["head_offset"]
             if self.head_direction in diagonals:
                 self.diagonal_side = 0  # left
 
-    def add_signal(self, entity, right_side=True, front=True):
-        # type: (bool, bool, Union[str, EntityLike], dict) -> None
+    def add_signal(self, entity, right=True, front=True):
+        # type: (Union[str, EntityLike], bool, bool) -> None
         """
         Adds a rail signal to the last placed rail. Defaults to the front right
         side of the last placed rail entity, determined by the current
@@ -360,7 +372,7 @@ class RailPlanner(Group):
             planner. This is useful if you want to specify a modded signal
             entity (e.g. ``"my-modded-rail-signal"``), or if you want to use a
             custom signal entity with customized attributes to use as a template.
-        :param right_side: Which side to place the signal on. Defaults to the
+        :param right: Which side to place the signal on. Defaults to the
             right, as that's the side that trains use when determining their
             pathing when heading in :py:attr:`head_direction`.
         :param front: Which end of the track to place the signal on. Horizontal
@@ -389,17 +401,11 @@ class RailPlanner(Group):
                 offset = (1, 0)
                 matrix = {
                     Direction.NORTHEAST: {
-                        Direction.SOUTHEAST: [
-                            Vector(-1, -1),  # Left
-                            Vector(1, 1),  # Right
-                        ],
+                        Direction.SOUTHEAST: [Vector(-1, -1), Vector(1, 1)],
                         Direction.NORTHWEST: [Vector(-2, -2), Vector(0, 0)],
                     },
                     Direction.SOUTHEAST: {
-                        Direction.NORTHEAST: [
-                            Vector(1, -2),  # Left
-                            Vector(-1, 0),  # Right
-                        ],
+                        Direction.NORTHEAST: [Vector(1, -2), Vector(-1, 0)],
                         Direction.SOUTHWEST: [Vector(0, -1), Vector(-2, 1)],
                     },
                     Direction.SOUTHWEST: {
@@ -412,10 +418,10 @@ class RailPlanner(Group):
                     },
                 }
 
-                index = int(right_side)
+                index = int(right)
                 offset = matrix[self.head_direction][rail_dir][index]
 
-                if right_side:
+                if right:
                     signal_dir = self.head_direction.opposite()
                 else:
                     signal_dir = self.head_direction
@@ -452,10 +458,10 @@ class RailPlanner(Group):
                     ],
                 }
 
-                index = (int(right_side) << 1) | int(front)
+                index = (int(right) << 1) | int(front)
                 offset = matrix[rail_dir][index]
 
-                if right_side:
+                if right:
                     signal_dir = rail_dir.opposite()
                 else:
                     signal_dir = rail_dir
@@ -465,42 +471,19 @@ class RailPlanner(Group):
                 )
         else:
             # Curved rail
+            # fmt: off
             matrix = {
                 (Direction.NORTH, Direction.SOUTH): [
-                    {
-                        "offset": Vector(-1, -4),
-                        "direction": Direction.SOUTHEAST,
-                    },  # right front
-                    {
-                        "offset": Vector(2, 3),
-                        "direction": Direction.SOUTH,
-                    },  # right back
-                    {
-                        "offset": Vector(-3, -2),
-                        "direction": Direction.NORTHWEST,
-                    },  # left front
-                    {
-                        "offset": Vector(-1, 3),
-                        "direction": Direction.NORTH,
-                    },  # left back
+                    {"offset": Vector(-1, -4), "direction": Direction.SOUTHEAST},
+                    {"offset": Vector(2, 3), "direction": Direction.SOUTH},
+                    {"offset": Vector(-3, -2), "direction": Direction.NORTHWEST},
+                    {"offset": Vector(-1, 3), "direction": Direction.NORTH},
                 ],
                 (Direction.NORTH, Direction.NORTHWEST): [
-                    {
-                        "offset": Vector(-1, 3),
-                        "direction": Direction.NORTH,
-                    },  # left back
-                    {
-                        "offset": Vector(-3, -2),
-                        "direction": Direction.NORTHWEST,
-                    },  # left front
-                    {
-                        "offset": Vector(2, 3),
-                        "direction": Direction.SOUTH,
-                    },  # right back
-                    {
-                        "offset": Vector(-1, -4),
-                        "direction": Direction.SOUTHEAST,
-                    },  # right front
+                    {"offset": Vector(-1, 3), "direction": Direction.NORTH},
+                    {"offset": Vector(-3, -2), "direction": Direction.NORTHWEST},
+                    {"offset": Vector(2, 3), "direction": Direction.SOUTH},
+                    {"offset": Vector(-1, -4), "direction": Direction.SOUTHEAST},
                 ],
                 (Direction.NORTHEAST, Direction.NORTHEAST): [
                     {"offset": Vector(-3, 3), "direction": Direction.NORTH},
@@ -515,40 +498,16 @@ class RailPlanner(Group):
                     {"offset": Vector(-3, 3), "direction": Direction.NORTH},
                 ],
                 (Direction.EAST, Direction.WEST): [
-                    {
-                        "offset": Vector(3, -1),
-                        "direction": Direction.SOUTHWEST,
-                    },  # right front
-                    {
-                        "offset": Vector(-4, 2),
-                        "direction": Direction.WEST,
-                    },  # right back
-                    {
-                        "offset": Vector(1, -3),
-                        "direction": Direction.NORTHEAST,
-                    },  # left front
-                    {
-                        "offset": Vector(-4, -1),
-                        "direction": Direction.EAST,
-                    },  # left back
+                    {"offset": Vector(3, -1), "direction": Direction.SOUTHWEST},
+                    {"offset": Vector(-4, 2), "direction": Direction.WEST},
+                    {"offset": Vector(1, -3), "direction": Direction.NORTHEAST},
+                    {"offset": Vector(-4, -1), "direction": Direction.EAST},
                 ],
                 (Direction.EAST, Direction.NORTHEAST): [
-                    {
-                        "offset": Vector(-4, -1),
-                        "direction": Direction.EAST,
-                    },  # left back
-                    {
-                        "offset": Vector(1, -3),
-                        "direction": Direction.NORTHEAST,
-                    },  # left front
-                    {
-                        "offset": Vector(-4, 2),
-                        "direction": Direction.WEST,
-                    },  # right back
-                    {
-                        "offset": Vector(3, -1),
-                        "direction": Direction.SOUTHWEST,
-                    },  # right front
+                    {"offset": Vector(-4, -1), "direction": Direction.EAST},
+                    {"offset": Vector(1, -3), "direction": Direction.NORTHEAST},
+                    {"offset": Vector(-4, 2), "direction": Direction.WEST},
+                    {"offset": Vector(3, -1), "direction": Direction.SOUTHWEST},
                 ],
                 (Direction.SOUTHEAST, Direction.SOUTHEAST): [
                     {"offset": Vector(-4, -3), "direction": Direction.EAST},
@@ -563,40 +522,16 @@ class RailPlanner(Group):
                     {"offset": Vector(-4, -3), "direction": Direction.EAST},
                 ],
                 (Direction.SOUTH, Direction.NORTH): [
-                    {
-                        "offset": Vector(0, 3),
-                        "direction": Direction.NORTHWEST,
-                    },  # right front
-                    {
-                        "offset": Vector(-3, -4),
-                        "direction": Direction.NORTH,
-                    },  # right back
-                    {
-                        "offset": Vector(2, 1),
-                        "direction": Direction.SOUTHEAST,
-                    },  # left front
-                    {
-                        "offset": Vector(0, -4),
-                        "direction": Direction.SOUTH,
-                    },  # left back
+                    {"offset": Vector(0, 3), "direction": Direction.NORTHWEST},
+                    {"offset": Vector(-3, -4), "direction": Direction.NORTH},
+                    {"offset": Vector(2, 1), "direction": Direction.SOUTHEAST},
+                    {"offset": Vector(0, -4), "direction": Direction.SOUTH},
                 ],
                 (Direction.SOUTH, Direction.SOUTHEAST): [
-                    {
-                        "offset": Vector(0, -4),
-                        "direction": Direction.SOUTH,
-                    },  # left back
-                    {
-                        "offset": Vector(2, 1),
-                        "direction": Direction.SOUTHEAST,
-                    },  # left front
-                    {
-                        "offset": Vector(-3, -4),
-                        "direction": Direction.NORTH,
-                    },  # right back
-                    {
-                        "offset": Vector(0, 3),
-                        "direction": Direction.NORTHWEST,
-                    },  # right front
+                    {"offset": Vector(0, -4), "direction": Direction.SOUTH},
+                    {"offset": Vector(2, 1), "direction": Direction.SOUTHEAST},
+                    {"offset": Vector(-3, -4), "direction": Direction.NORTH},
+                    {"offset": Vector(0, 3), "direction": Direction.NORTHWEST},
                 ],
                 (Direction.SOUTHWEST, Direction.SOUTHWEST): [
                     {"offset": Vector(2, -4), "direction": Direction.SOUTH},
@@ -611,34 +546,16 @@ class RailPlanner(Group):
                     {"offset": Vector(2, -4), "direction": Direction.SOUTH},
                 ],
                 (Direction.WEST, Direction.EAST): [
-                    {
-                        "offset": Vector(-4, 0),
-                        "direction": Direction.NORTHEAST,
-                    },  # right front
-                    {
-                        "offset": Vector(3, -3),
-                        "direction": Direction.EAST,
-                    },  # right back
-                    {
-                        "offset": Vector(-2, 2),
-                        "direction": Direction.SOUTHWEST,
-                    },  # left front
-                    {"offset": Vector(3, 0), "direction": Direction.WEST},  # left back
+                    {"offset": Vector(-4, 0), "direction": Direction.NORTHEAST},
+                    {"offset": Vector(3, -3), "direction": Direction.EAST},
+                    {"offset": Vector(-2, 2), "direction": Direction.SOUTHWEST},
+                    {"offset": Vector(3, 0), "direction": Direction.WEST},
                 ],
                 (Direction.WEST, Direction.SOUTHWEST): [
-                    {"offset": Vector(3, 0), "direction": Direction.WEST},  # left back
-                    {
-                        "offset": Vector(-2, 2),
-                        "direction": Direction.SOUTHWEST,
-                    },  # left front
-                    {
-                        "offset": Vector(3, -3),
-                        "direction": Direction.EAST,
-                    },  # right back
-                    {
-                        "offset": Vector(-4, 0),
-                        "direction": Direction.NORTHEAST,
-                    },  # right front
+                    {"offset": Vector(3, 0), "direction": Direction.WEST},
+                    {"offset": Vector(-2, 2), "direction": Direction.SOUTHWEST},
+                    {"offset": Vector(3, -3), "direction": Direction.EAST},
+                    {"offset": Vector(-4, 0), "direction": Direction.NORTHEAST},
                 ],
                 (Direction.NORTHWEST, Direction.NORTHWEST): [
                     {"offset": Vector(3, 2), "direction": Direction.WEST},
@@ -653,8 +570,9 @@ class RailPlanner(Group):
                     {"offset": Vector(3, 2), "direction": Direction.WEST},
                 ],
             }
+            # fmt: on
 
-            index = (int(right_side) << 1) | int(front)
+            index = (int(right) << 1) | int(front)
             permutation = (rail_dir, self.head_direction)
 
             offset = matrix[permutation][index]["offset"]
@@ -663,8 +581,8 @@ class RailPlanner(Group):
                 entity, tile_position=rail_pos + offset, direction=signal_dir
             )
 
-    def add_station(self, entity, station=None, right_side=True):
-        # type: (str, bool, Union[str, EntityLike]) -> None
+    def add_station(self, entity, station=None, right=True):
+        # type: (Union[str, EntityLike], str, bool) -> None
         """
         Adds a train station at the :py:attr:`head_position` on the specified
         side.
@@ -677,7 +595,7 @@ class RailPlanner(Group):
         :param station: The name to give to this train station. If left as
             ``None``, the game will automatically generate a valid train stop
             name on import.
-        :param right_side: Which side to place the stop on. Defaults to the
+        :param right: Which side to place the stop on. Defaults to the
             right, as that's the side that trains use when pathing to a station
             in :py:attr:`head_direction`.
         """
@@ -707,7 +625,7 @@ class RailPlanner(Group):
             Direction.SOUTH: Vector(-2, 0),
             Direction.WEST: Vector(0, -2),
         }
-        if right_side:
+        if right:
             rail_dir = self.last_rail_added.direction
         else:
             rail_dir = self.last_rail_added.direction.opposite()

@@ -78,7 +78,9 @@ class DeconstructionPlanner(Blueprintable):
     """
 
     class Format(BaseModel):
-        deconstruction_planner: DeconstructionPlannerModel = DeconstructionPlannerModel()
+        deconstruction_planner: DeconstructionPlannerModel = (
+            DeconstructionPlannerModel()
+        )
 
     @utils.reissue_warnings
     def __init__(self, deconstruction_planner=None, unknown="error"):
@@ -87,7 +89,7 @@ class DeconstructionPlanner(Blueprintable):
         TODO
         """
         super(DeconstructionPlanner, self).__init__(
-            format=DeconstructionPlannerModel,
+            # format=DeconstructionPlannerModel,
             root_item="deconstruction_planner",
             item="deconstruction-planner",
             init_data=deconstruction_planner,

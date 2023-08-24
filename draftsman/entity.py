@@ -8,7 +8,6 @@ all the prototypes in :py:mod:`draftsman.prototypes`.
 from draftsman.classes.entity import Entity
 from draftsman.error import InvalidEntityError
 
-
 # fmt: off
 from draftsman.prototypes.container import Container, containers
 from draftsman.prototypes.storage_tank import StorageTank, storage_tanks
@@ -72,6 +71,10 @@ from draftsman.prototypes.infinity_pipe import InfinityPipe, infinity_pipes
 from draftsman.prototypes.burner_generator import BurnerGenerator, burner_generators
 from draftsman.prototypes.player_port import PlayerPort, player_ports
 # fmt: on
+
+from draftsman.data import entities
+
+import difflib
 
 
 def new_entity(name, unknown="error", **kwargs):
@@ -228,7 +231,19 @@ def new_entity(name, unknown="error", **kwargs):
     if unknown == "ignore":
         return None
     elif unknown == "error":
-        raise InvalidEntityError("'{}'".format(name))
+        # TODO: this is pretty slow all things considered. It might make more
+        # sense to try: ... constructing a entity of each type with a name, and
+        # throw a InvalidEntityError if it has no suggestions, and a different
+        # error (PossibleInvalidEntityError) if it does; then catch the Invalid
+        # EntityError and let the PossibleInvalidEntityError raise
+        suggestions = difflib.get_close_matches(name, entities.all, n=1)
+        if len(suggestions) > 0:
+            suggestion_string = "; did you mean '{}'".format(suggestions[0])
+        else:
+            suggestion_string = ""
+        raise InvalidEntityError(
+            "'{}' is not a recognized entity{}".format(name, suggestion_string)
+        )
     elif unknown == "pass":
         pass  # TODO
     else:

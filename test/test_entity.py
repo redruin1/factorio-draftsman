@@ -64,6 +64,13 @@ class EntityTesting(unittest.TestCase):
         with pytest.raises(InvalidEntityError):
             iron_chest.name = "incorrect"
 
+    def test_suggest_similar_name(self):
+        with pytest.raises(
+            InvalidEntityError,
+            match="'wodenchest' is not a valid name for this Container; did you mean 'wooden-chest'?",
+        ):
+            wooden_chest = Container("wodenchest")
+
     def test_set_position(self):
         iron_chest = Container("iron-chest")
         iron_chest.position = (1.23, 1.34)
@@ -355,7 +362,11 @@ class EntityFactoryTesting(unittest.TestCase):
         self.assertIsInstance(new_entity("player-port"), PlayerPort)
 
     def test_errors(self):
-        with pytest.raises(InvalidEntityError):
-            new_entity("I have a lot of entities that I need to test...",)
+        with pytest.raises(InvalidEntityError, match="'incorrect' is not a recognized entity"):
+            new_entity("incorrect")
+
+    def test_suggestion_error(self):
+        with pytest.raises(InvalidEntityError, match="'sgtorage-tank' is not a recognized entity; did you mean 'storage-tank'?"):
+            new_entity("sgtorage-tank")
 
 # fmt: on

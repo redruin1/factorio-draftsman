@@ -20,7 +20,9 @@ def main():
 
     entity_name = input()
     matching_entities = bp.find_entities_filtered(name=entity_name)
-    assert len(matching_entities) > 0, "No entities with name '{}' in blueprint".format(entity_name)
+    assert len(matching_entities) > 0, "No entities with name '{}' in blueprint".format(
+        entity_name
+    )
 
     print("What item would you like to request for that entity?")
     item_name = input()

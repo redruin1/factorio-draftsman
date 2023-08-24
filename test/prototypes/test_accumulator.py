@@ -8,6 +8,7 @@ from draftsman.entity import Accumulator, accumulators, Container
 from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -112,3 +113,11 @@ class AccumulatorTesting(unittest.TestCase):
         accumulatorA.output_signal = "signal-A"
 
         assert accumulatorA != accumulatorB
+
+        container = Container("wooden-chest")
+
+        assert accumulatorA != container
+        assert accumulatorB != container
+
+        # hashable
+        assert isinstance(accumulatorA, Hashable)

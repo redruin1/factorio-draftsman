@@ -150,3 +150,11 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
         super(StackSizeMixin, self).merge(other)
 
         self.override_stack_size = other.override_stack_size
+
+    # =========================================================================
+
+    def __eq__(self, other) -> bool:
+        return (
+            super().__eq__(other)
+            and self.override_stack_size == other.override_stack_size
+        )

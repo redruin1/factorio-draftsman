@@ -4,10 +4,11 @@
 from __future__ import unicode_literals
 
 from draftsman.constants import Direction
-from draftsman.entity import TrainStop, train_stops
+from draftsman.entity import TrainStop, train_stops, Container
 from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatError
 from draftsman.warning import DraftsmanWarning, RailAlignmentWarning, DirectionWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -288,3 +289,21 @@ class TrainStopTesting(unittest.TestCase):
 
         assert stop1.station == "Station name"
         assert stop1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        stop1 = TrainStop("train-stop")
+        stop2 = TrainStop("train-stop")
+
+        assert stop1 == stop2
+
+        stop1.tags = {"some": "stuff"}
+
+        assert stop1 != stop2
+
+        container = Container()
+
+        assert stop1 != container
+        assert stop2 != container
+
+        # hashable
+        assert isinstance(stop1, Hashable)

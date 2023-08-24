@@ -86,7 +86,11 @@ class LogisticTrainStop(TrainStop):
         Return a list of the parent train stop, as well as the input and output
         entities.
         """
-        return [super(LogisticTrainStop, self), self.entities["input"], self.entities["output"]]
+        return [
+            super(LogisticTrainStop, self),
+            self.entities["input"],
+            self.entities["output"],
+        ]
 
     def _adjust_sub_entities(self):
         # type: () -> None
@@ -101,16 +105,16 @@ class LogisticTrainStop(TrainStop):
             return
 
         input_offset_dict = {
-            Direction.NORTH: (0, -1), 
-            Direction.EAST: (0, 0), 
-            Direction.SOUTH: (-1, 0), 
-            Direction.WEST: (-1, -1)
+            Direction.NORTH: (0, -1),
+            Direction.EAST: (0, 0),
+            Direction.SOUTH: (-1, 0),
+            Direction.WEST: (-1, -1),
         }
         output_offset_dict = {
-            Direction.NORTH: (-1, -1), 
-            Direction.EAST: (0, -1), 
-            Direction.SOUTH: (0, 0), 
-            Direction.WEST: (-1, 0)
+            Direction.NORTH: (-1, -1),
+            Direction.EAST: (0, -1),
+            Direction.SOUTH: (0, 0),
+            Direction.WEST: (-1, 0),
         }
 
         offset = input_offset_dict[self.direction]

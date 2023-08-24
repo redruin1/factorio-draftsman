@@ -156,3 +156,8 @@ class EightWayDirectionalMixin(object):
         # type: (Entity) -> bool
         base_mergable = super(EightWayDirectionalMixin, self).mergable_with(other)
         return base_mergable and self.direction == other.direction
+
+    # =========================================================================
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.direction == other.direction

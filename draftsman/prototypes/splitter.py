@@ -186,3 +186,15 @@ class Splitter(DirectionalMixin, Entity):
         self.input_priority = other.input_priority
         self.output_priority = other.output_priority
         self.filter = other.filter
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return (
+            super().__eq__(other) and 
+            self.input_priority == other.input_priority and
+            self.output_priority == other.output_priority and
+            self.filter == other.filter
+        )

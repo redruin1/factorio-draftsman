@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Wall, walls
+from draftsman.entity import Wall, walls, Container
 from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -86,3 +87,21 @@ class WallTesting(unittest.TestCase):
         del wall2
 
         assert wall1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        wall1 = Wall("stone-wall")
+        wall2 = Wall("stone-wall")
+
+        assert wall1 == wall2
+
+        wall1.tags = {"some": "stuff"}
+
+        assert wall1 != wall2
+
+        container = Container()
+
+        assert wall1 != container
+        assert wall2 != container
+
+        # hashable
+        assert isinstance(wall1, Hashable)

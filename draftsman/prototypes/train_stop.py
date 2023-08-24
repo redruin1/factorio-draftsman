@@ -310,3 +310,14 @@ class TrainStop(
 
         self.station = other.station
         self.manual_trains_limit = other.manual_trains_limit
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return (
+            super().__eq__(other)
+            and self.station == other.station
+            and self.manual_trains_limit == other.manual_trains_limit
+        )

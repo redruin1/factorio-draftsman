@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import RocketSilo, rocket_silos
+from draftsman.entity import RocketSilo, rocket_silos, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -17,7 +18,7 @@ else:  # pragma: no coverage
 
 
 class RocketSiloTesting(unittest.TestCase):
-    def test_contstructor_init(self):
+    def test_constructor_init(self):
         silo = RocketSilo(auto_launch=True)
         assert silo.to_dict() == {
             "name": "rocket-silo",
@@ -54,3 +55,21 @@ class RocketSiloTesting(unittest.TestCase):
 
         assert silo1.auto_launch == True
         assert silo1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        generator1 = RocketSilo("rocket-silo")
+        generator2 = RocketSilo("rocket-silo")
+
+        assert generator1 == generator2
+
+        generator1.tags = {"some": "stuff"}
+
+        assert generator1 != generator2
+
+        container = Container()
+
+        assert generator1 != container
+        assert generator2 != container
+
+        # hashable
+        assert isinstance(generator1, Hashable)

@@ -249,3 +249,8 @@ class InventoryFilterMixin(object):
         self.inventory = {}
         self.bar = other.bar
         self.set_inventory_filters(other.inventory.get("filters", None))
+
+    # =========================================================================
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.inventory == other.inventory

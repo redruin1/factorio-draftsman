@@ -95,3 +95,8 @@ class IOTypeMixin(object):
         super(IOTypeMixin, self).merge(other)
 
         self.io_type = other.io_type
+
+    # =========================================================================
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.io_type == other.io_type

@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Pipe, pipes
+from draftsman.entity import Pipe, pipes, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -48,3 +49,21 @@ class PipeTesting(unittest.TestCase):
         del pipe2
 
         assert pipe1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        pipe1 = Pipe("pipe")
+        pipe2 = Pipe("pipe")
+
+        assert pipe1 == pipe2
+
+        pipe1.tags = {"some": "stuff"}
+
+        assert pipe1 != pipe2
+
+        container = Container()
+
+        assert pipe1 != container
+        assert pipe2 != container
+
+        # hashable
+        assert isinstance(pipe1, Hashable)

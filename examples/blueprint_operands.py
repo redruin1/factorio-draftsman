@@ -21,18 +21,18 @@ def main():
     # EntityList, TileList, and ScheduleList all implement methods that allow
     # you to get the set union, intersection, and difference:
 
-    # The union in this case would be any entity that either in one blueprint OR 
+    # The union in this case would be any entity that either in one blueprint OR
     # the other, without duplicates
-    # Because the two overlap each other, in this case their union is equivalent 
+    # Because the two overlap each other, in this case their union is equivalent
     # to `smelter_with_weave`
     union = Blueprint()
     union.entities = smelter_with_weave.entities | smelter.entities
     # union.entities = smelter_with_weave.entities.union(smelter.entities)
     print("union:\n", union.to_string())
 
-    # The intersection in this case is any entity that exists exactly the same 
+    # The intersection in this case is any entity that exists exactly the same
     # in BOTH blueprints
-    # Only the furnaces are shared between the two blueprints, so their 
+    # Only the furnaces are shared between the two blueprints, so their
     # intersection is equivalent to `smelter`
     intersection = Blueprint()
     intersection.entities = smelter_with_weave.entities & smelter.entities
@@ -54,8 +54,8 @@ def main():
     # are not the same blueprint due to possession of `icons` table and (possibly) version mismatch
     assert smelter_with_weave != union
 
-    # This notation also provides a neat pneumonic for removing certain entities
-    # If we want to simply remove a set of entities, first we get a list of all 
+    # This notation also provides a neat pneumonic for removing certain entities.
+    # If we want to simply remove a set of entities, first we get a list of all
     # the entities we want to remove
     belt_entities = smelter_with_weave.find_entities_filtered(
         type={"transport-belt", "splitter", "underground-belt"}
@@ -65,8 +65,15 @@ def main():
     no_belts.entities = smelter_with_weave.entities - belt_entities
     # And the resulting blueprint will simply be the original minus the belts:
     print("no_belts:\n", no_belts.to_string())
-    assert len(no_belts.find_entities_filtered(type={"transport-belt", "splitter", "underground-belt"})) == 0
+    assert (
+        len(
+            no_belts.find_entities_filtered(
+                type={"transport-belt", "splitter", "underground-belt"}
+            )
+        )
+        == 0
+    )
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no coverage
     main()

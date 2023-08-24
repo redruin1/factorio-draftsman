@@ -45,3 +45,7 @@ class CargoWagon(RequestItemsMixin, InventoryFilterMixin, OrientationMixin, Enti
         del self.unused_args
 
     # TODO: check for item requests exceeding cargo capacity
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

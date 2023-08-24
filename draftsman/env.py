@@ -738,11 +738,14 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
                 continue
 
             target_list.append(entity)
+            entities["all"].append(entity)
 
     def sort(target_list):
         sorted_list = get_order(target_list, *sort_tuple)
         for i, x in enumerate(sorted_list):
             target_list[i] = x
+
+    entities["all"] = []
 
     #  Chests
     entities["containers"] = []
@@ -778,6 +781,8 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
             entities["filter_inserters"].append(inserter)
         else:
             entities["inserters"].append(inserter)
+
+        entities["all"].append(inserter)
     sort(entities["inserters"])
     sort(entities["filter_inserters"])
 
@@ -861,6 +866,8 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
             entities["logistic_buffer_containers"].append(container)
         elif container_type == "requester":
             entities["logistic_request_containers"].append(container)
+
+        entities["all"].append(inserter)
     sort(entities["logistic_passive_containers"])
     sort(entities["logistic_active_containers"])
     sort(entities["logistic_storage_containers"])
@@ -1056,6 +1063,9 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     entities["player_ports"] = []
     categorize_entities(data.raw["player-port"], entities["player_ports"])
     sort(entities["player_ports"])
+
+    #  List of all entities
+    sort(entities["all"])
 
     raw_order = get_order(unordered_entities_raw, *sort_tuple)
     entities["raw"] = OrderedDict()

@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 import re
 
-from draftsman.classes.exportable import Exportable
+from draftsman.classes.exportable import Exportable, ValidationResult
 from draftsman.data.signals import signal_dict
 from draftsman.error import (
     IncorrectBlueprintTypeError,
@@ -34,7 +34,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     """
 
     @utils.reissue_warnings
-    def __init__(self, format, root_item, item, init_data, unknown):
+    def __init__(self, root_item, item, init_data, unknown):
         # type: (str, BaseModel, str, Union[str, dict], str) -> None
         """
         Initializes the private ``_root`` data dictionary, as well as setting
@@ -48,8 +48,8 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         # { self._root_item: self._root }
 
         self._root_item = six.text_type(root_item)
-        # self._root["item"] = six.text_type(item)
-        self._root = format()
+        self._root = {}
+        self._root["item"] = six.text_type(item)
 
         if init_data is None:
             self.setup()
@@ -161,7 +161,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> BlueprintBook().item
             'blueprint-book'
         """
-        return self._root.item
+        return self._root["item"]
 
     # =========================================================================
 
@@ -178,16 +178,15 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :exception TypeError: When setting ``label`` to something other than
             ``str`` or ``None``.
         """
-        # return self._root.get("label", None)
-        return self._root.label
+        return self._root.get("label", None)
 
     @label.setter
     def label(self, value):
         # type: (str) -> None
-        # if value is None:
-        #     self._root.pop("label", None)
-        # else:
-        self._root.label = value
+        if value is None:
+            self._root.pop("label", None)
+        else:
+            self._root["label"] = value
 
     # =========================================================================
 
@@ -206,16 +205,15 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :exception TypeError: If setting to anything other than a ``str`` or
             ``None``.
         """
-        # return self._root.get("description", None)
-        return self._root.description
+        return self._root.get("description", None)
 
     @description.setter
     def description(self, value):
         # type: (str) -> None
-        # if value is None:
-        #     self._root.pop("description", None)
-        # else:
-        self._root.description = value
+        if value is None:
+            self._root.pop("description", None)
+        else:
+            self._root["description"] = value
 
     # =========================================================================
 
@@ -252,16 +250,15 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> blueprint.icons
             [{'index': 1, 'signal': {'name': 'transport-belt', 'type': 'item'}}]
         """
-        # return self._root.get("icons", None)
-        return self._root.icons
+        return self._root.get("icons", None)
 
     @icons.setter
     def icons(self, value):
         # type: (list[Union[dict, str]]) -> None
-        # if value is None:
-        #     self._root.pop("icons", None)
-        # else:
-        self._root.icons = value
+        if value is None:
+            self._root.pop("icons", None)
+        else:
+            self._root["icons"] = value
 
     def set_icons(self, *icon_names):
         """
@@ -315,17 +312,15 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> assert blueprint.version_tuple() == (1, 0, 0, 0)
             >>> assert blueprint.version_string() == "1.0.0.0"
         """
-        # return self._root.get("version", None)
-        return self._root.version
+        return self._root.get("version", None)
 
     @version.setter
     def version(self, value):
         # type: (Union[int, Sequence[int]]) -> None
-        # if value is None:
-        #     self._root.pop("version", None)
-        # else:
-        #     self._root["version"] = value
-        self._root.version = value
+        if value is None:
+            self._root.pop("version", None)
+        else:
+            self._root["version"] = value
 
     def set_version(self, major, minor, patch=0, dev_ver=0):
         """
@@ -339,7 +334,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :param dev_ver: The (internal) development version.
         """
         # TODO: use this method in constructor
-        self._root.version = utils.encode_version(major, minor, patch, dev_ver)
+        self._root["version"] = utils.encode_version(major, minor, patch, dev_ver)
 
     # =========================================================================
     # Utility functions
@@ -407,14 +402,49 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         version_tuple = utils.decode_version(self._root["version"])
         return utils.version_tuple_to_string(version_tuple)
 
-    # def validate(self):
-    #     # type: () -> bool
-    #     self.label = signatures.Label.validate(self.label)
-    #     self.description = signatures.Description.validate(self.description)
-    #     self.icons = signatures.Icons.validate(self.icons)
-    #     self.version = signatures.Version.validate(self.version)
+    # =========================================================================
 
-    #     super().validate()
+    def to_dict(self):
+        # type: () -> dict
+        out_dict = self.__class__.Format.model_construct(  # Performs no validation(!)
+            **{self._root_item: self._root}
+        ).model_dump(
+            by_alias=True,  # Some attributes are reserved words (type, from,
+            # etc.); this resolves that issue
+            exclude_none=True,  # Trim if values are None
+            exclude_defaults=True,  # Trim if values are defaults
+            warnings=False  # Ignore warnings because `model_construct` cannot
+            # be made recursive for some asinine reason
+        )
+
+        return out_dict
+
+    def to_string(self):  # pragma: no coverage
+        # type: () -> str
+        """
+        Returns this object as an encoded Factorio blueprint string.
+
+        :returns: The zlib-compressed, base-64 encoded string.
+
+        :example:
+
+        .. doctest::
+
+            >>> from draftsman.blueprintable import (
+            ...     Blueprint, DeconstructionPlanner, UpgradePlanner, BlueprintBook
+            ... )
+            >>> Blueprint({"version": (1, 0)}).to_string()
+            '0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDE3sTQ3Mzc0MDM1q60FAHmVE1M='
+            >>> DeconstructionPlanner({"version": (1, 0)}).to_string()
+            '0eNpdy0EKgCAQAMC/7Nkgw7T8TIQtIdga7tol/HtdunQdmBs2DJlYSg0SMy1nWomwgL+BUSTSzuCppqQgCh7gf6H7goILC78Cfpi0cWZ21unejra1B7C2I9M='
+            >>> UpgradePlanner({"version": (1, 0)}).to_string()
+            '0eNo1yksKgCAUBdC93LFBhmm5mRB6iGAv8dNE3Hsjz/h0tOSzu+lK0TFThu0oVGtgX2C5xSgQKj2wcy5zCnyUS3gZdjukMuo02shV73qMH4ZxHbs='
+            >>> BlueprintBook({"version": (1, 0)}).to_string()
+            '0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MTSzNzcwNDcxMzWprAVWGHQI='
+        """
+        # TODO: add options to compress/canonicalize blueprints before export
+        # (though should that happen on a per-blueprintable basis? And what about non-Blueprint strings, like upgrade planners?)
+        return utils.JSON_to_string(self.to_dict())
 
     def __str__(self):  # pragma: no coverage
         # type: () -> str

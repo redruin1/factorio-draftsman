@@ -257,7 +257,7 @@ class BlueprintTesting(unittest.TestCase):
             {"signal": {"name": "signal-B", "type": "virtual"}, "index": 2},
             {"signal": {"name": "signal-C", "type": "virtual"}, "index": 3},
         ]
-        
+
         # Raw signal dicts:
         blueprint.set_icons({"name": "some-signal", "type": "some-type"})
         assert blueprint["icons"] == [
@@ -1904,8 +1904,9 @@ class BlueprintTesting(unittest.TestCase):
         schedule.append_stop("Station 1", WaitCondition(WaitConditionType.FULL_CARGO))
         schedule.append_stop("Station 2", WaitCondition(WaitConditionType.EMPTY_CARGO))
 
+        # (Also test string configuration)
         blueprint.add_train_at_position(
-            config=config, position=(0, 2), direction=Direction.EAST, schedule=schedule
+            config="1-1", position=(0, 2), direction=Direction.EAST, schedule=schedule
         )
 
         assert len(blueprint.entities) == 4
@@ -2108,9 +2109,9 @@ class BlueprintTesting(unittest.TestCase):
         schedule.append_stop("Station 1", WaitCondition(WaitConditionType.FULL_CARGO))
         schedule.append_stop("Station 2", WaitCondition(WaitConditionType.EMPTY_CARGO))
 
-        # test direct reference
+        # Test direct reference and string config
         blueprint.add_train_at_station(
-            config=config, station=blueprint.entities[-1], schedule=schedule
+            config="1-1", station=blueprint.entities[-1], schedule=schedule
         )
 
         assert len(blueprint.entities) == 6
@@ -2296,6 +2297,57 @@ class BlueprintTesting(unittest.TestCase):
 
     # =========================================================================
 
+    def test_set_train_schedule(self):
+        # 2 trains with 2 different schedules
+        test_string = "0eNqdk01vgzAMhv+Lz1lVvkrh3MOOO2+qUApuFykkURK6oYr/PhPY1k2dVHaLkf08rxJzgYPs0FihPJQXELVWDsqXCzhxUlyO33xvEEoQHltgoHg7VlLXutVenBEGBkI1+A5lNLD/DcbDngEqL7zASR+KvlJde0BL5FvzDIx2NKLVaCPMQ5Yx6KHcrIpisy6SPCOFtoJgfGpbr7Ix4y96fB89LQI9vw+aLIocJQszp4syR+ktKl26q1+x6eR869+osY5YctUxbcXnODwib8j3xoWvaGmaYJ0oxDDcYjW/v7bUN5+PnZQw7MOefKF2Vht9PC6nYWt8P+IC8Gf4mKV/h3/i8oz2ebnRcOdQndBWxiKd/GQnU9jy8upvYkAKF3zxNkrzIs7zJC+ybToMH2rsKd8="
+        blueprint = Blueprint(test_string)
+        # Also add another dummy schedule before
+        # blueprint.schedules.insert(0, Schedule())
+
+        trains = blueprint.find_trains_filtered()
+        assert len(trains) == 2
+        train = trains[0]
+        assert len(blueprint.schedules) == 2
+        assert len(blueprint.schedules[0].locomotives) == 2
+        assert blueprint.schedules[0].locomotives[0]() in train
+
+        # Set train schedule to None
+        blueprint.set_train_schedule(train, None)
+        assert len(blueprint.schedules) == 2
+        assert len(blueprint.schedules[0].locomotives) == 0
+
+        # Doing it again should have no ill effects
+        blueprint.set_train_schedule(train, None)
+        assert len(blueprint.schedules) == 2
+        assert len(blueprint.schedules[0].locomotives) == 0
+
+        # Delete any schedules with no locomotives, which should delete 1 schedule
+        blueprint.schedules[:] = [
+            schedule
+            for schedule in blueprint.schedules
+            if len(schedule.locomotives) > 0
+        ]
+        assert len(blueprint.schedules) == 1
+
+        # Set the first train's schedule to that of the second
+        # (Also test selection with just one train car)
+        blueprint.set_train_schedule(train[0], blueprint.schedules[0])
+        assert len(blueprint.schedules[0].locomotives) == 4
+        assert blueprint.schedules[0].locomotives[2]() in train
+
+        # Overwrite the first train's schedule with a new schedule
+        new_schedule = Schedule()
+        new_schedule.append_stop("new stop 1")
+        new_schedule.append_stop("new stop 2")
+        blueprint.set_train_schedule(train, new_schedule)
+
+        assert len(blueprint.schedules) == 2
+        assert len(blueprint.schedules[0].locomotives) == 2
+        assert len(blueprint.schedules[1].locomotives) == 2
+        assert blueprint.schedules[1].locomotives[0]() in train
+
+    # =========================================================================
+
     def test_remove_train(self):
         blueprint = Blueprint()
 
@@ -2429,7 +2481,7 @@ class BlueprintTesting(unittest.TestCase):
         assert blueprint.find_train_from_wagon(blueprint.entities[0]) == [
             blueprint.entities[2],
             blueprint.entities[1],
-            blueprint.entities[0]
+            blueprint.entities[0],
         ]
 
     def test_find_trains_filtered(self):
@@ -2491,13 +2543,74 @@ class BlueprintTesting(unittest.TestCase):
 
         assert blueprint.find_trains_filtered() == [
             [
-                blueprint.entities[4], 
+                blueprint.entities[4],
                 blueprint.entities[3],
                 blueprint.entities[2],
                 blueprint.entities[1],
-                blueprint.entities[0]
+                blueprint.entities[0],
             ]
         ]
+
+        # A whole bunch of trains in some hypothetical depot
+        test_string = """0eNqdmUtz2jAUhf9KR2uTsV6Wza5ddNVdlx0m44BCNDUyY0xSJsN/r4xJoI3DnHt3tpE/Pe6951joVTw0e7/tQuzF/FWEZRt3Yv7rVezCOtbN8Kw/bL2Yi9D7jchErDfDXVeHRhwzEeLK/xFzeVxkwsc+9MGP759uDvdxv3nwXWrw/uauT++un/rZCZGJbbtLb7Vx6CqRZsqktgcx15VM/FXo/HL8WR2zD1iFY3WFYzUB63CsIWAtjrUErMaxBQFLCJnDsYoQspKAJYSsImAJIZM5gUuImbzUWdMu203bh2c/BZXlFbTtQuLUY4P8TtkpMqHUFCEdJKHWJCEfJKHYJCEhJKHaJCUjLuU2YONs17fbm1D9HzRLAzrHUPyof/sv35tDjGKqLwf29S7F9t++iuu+fo5XX75NdlWCCanfEtJ9TEg3mZAVw1IcYCk5w1MQrmSYCsJVDFdBuJfCXNbdup291OvU9pb6T4Zu+EZ4To/aLrWJ+6aZ6sswLAyZg2V4GMItGCaGcB1YLcOCfbbkk/KtOP6IjJhjkABXcwwS4UqGjSFcxbAxhKsZNoZwDcPGEK4lq7LJNcAtyKqMcR1ZlTFuCaunuqKy1FNXZAeA5mBysipjXElWZYyryKqMcTWqyvbzUE6qsjFkVcZGbMmqjHELsipjXEfbthBWuCTrPTbiiqz3ENfmZL3HuJKs9xhX0bYtJrc3ti1vW4mvU1sJqxnWUgFTMAxrQbiXIqy7PjSN7w43bMDclUY7e8VH8tsWDP9CBu8YnoJwS4anINxLPT42+7D6fKGVYy10kTNMCxh4IRmmhXAVw1oQrmZYC8I1qMnmvPhZhnUh4y4YBoNwHcNgEG7JMBiEWzEM5gN3kdxg+eRX++Z8jHDJheE+fYkZd9VmPKmYsI9MvNShv1+2cXXqeoQl1Lbu/P35RKPtUrvz9WP6tBbHxTCxqX+2yDy/2faHAbgY5nQ6O5lfHbVk4tl3u3HSpTSuUs5pV9nSHI9/Ad/ZT18="""
+        bp = Blueprint(test_string)
+
+        # All trains
+        trains = bp.find_trains_filtered()
+        assert len(trains) == 4
+
+        # Trains with length of 3
+        trains = bp.find_trains_filtered(train_length=3)
+        assert len(trains) == 3
+
+        # Trains facing east
+        trains = bp.find_trains_filtered(orientation=Orientation.EAST)
+        assert len(trains) == 2
+
+        # Trains not facing east
+        trains = bp.find_trains_filtered(orientation=Orientation.EAST, invert=True)
+        assert len(trains) == 2
+
+        # Trains at stations
+        trains = bp.find_trains_filtered(at_station=True)
+        assert len(trains) == 3
+
+        # Trains not at stations
+        trains = bp.find_trains_filtered(at_station=True, invert=True)
+        assert len(trains) == 1
+
+        # Trains at stations with the name "Station A"
+        trains = bp.find_trains_filtered(at_station="Station A")
+        assert len(trains) == 1
+
+        # Trains at stations with the name "Station A" or "Station B"
+        trains = bp.find_trains_filtered(at_station={"Station A", "Station B"})
+        assert len(trains) == 2
+
+        # Trains with 2 locomotives and 1 cargo wagon
+        trains = bp.find_trains_filtered(num_type={"locomotive": 2, "cargo-wagon": 1})
+        assert len(trains) == 2
+
+        # Trains with 2 "locomotive"s and 1 "cargo-wagon"
+        trains = bp.find_trains_filtered(num_name={"locomotive": 2, "cargo-wagon": 1})
+        assert len(trains) == 2
+
+        # Trains with 2 locomotives followed by 1 cargo wagon
+        config = TrainConfiguration("2-1")
+        trains = bp.find_trains_filtered(config=config)
+        assert len(trains) == 1
+
+        # Trains that follow a specific schedule
+        schedule = Schedule()
+        schedule.append_stop("Station A", WaitCondition(WaitConditionType.FULL_CARGO))
+        schedule.append_stop("Station B", WaitCondition(WaitConditionType.EMPTY_CARGO))
+        trains = bp.find_trains_filtered(schedule=schedule)
+        assert len(trains) == 1
+
+        # Trains that follow a different schedule
+        schedule = Schedule()
+        trains = bp.find_trains_filtered(schedule=schedule)
+        assert len(trains) == 0
 
     # =========================================================================
     # TileCollection

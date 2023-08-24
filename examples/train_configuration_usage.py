@@ -30,7 +30,8 @@ def main():
     config = TrainConfiguration("<-4-<-4->")  # unless, of course, you manually specify
     config = TrainConfiguration("<<<FFFCCCAAA<<<")  # Configurations can also be entirely explicit, no hyphens necessary
     config = TrainConfiguration("<<<-FFFCCCAAA-<<<")  # hyphens can also be added just for clarity
-    # C is for cargo wagons, F is for fluid wagons, A for artillery
+    # C is for cargo wagons, F is for fluid wagons, A for artillery, and can be
+    # specified in either upper or lowercase
 
     # fmt: on
 
@@ -44,18 +45,13 @@ def main():
     # The benefit of this is that you can customize any properties about the
     # config before adding it to a blueprint. For example:
     # Fuel the locomotive
-    config.cars[0].set_item_request("nuclear-fuel", 3)  
+    config.cars[0].set_item_request("nuclear-fuel", 3)
     # Set cargo filters
-    config.cars[1].set_inventory_filters([              
-        "iron-ore", 
-        "copper-ore", 
-        "stone", 
-        "coal"
-    ])  
+    config.cars[1].set_inventory_filters(["iron-ore", "copper-ore", "stone", "coal"])
     # Set the modding tags for them
-    config.cars[2].tags = {"some": "stuff"}  
+    config.cars[2].tags = {"some": "stuff"}
     # Even preload the artillery wagons on construction
-    config.cars[3].set_item_request("artillery-shell", 25)  
+    config.cars[3].set_item_request("artillery-shell", 25)
 
     # Cars are specified from the left of the right, so the 0th
     # car is the leftmost character in the string.
@@ -64,9 +60,11 @@ def main():
 
     # We can add a station at a particular position and direction, which is the
     # simplest method of adding it to a blueprint:
-    if False: 
-        blueprint.add_train_at_position((3, 0), Direction.WEST, config=config, schedule=None)
-    
+    if False:
+        blueprint.add_train_at_position(
+            (3, 0), Direction.WEST, config=config, schedule=None
+        )
+
     # For more information on the `schedule` parameter, see `train_schedule_usage.py`
 
     # Specifying by position is acceptable for some blueprints, but 90 percent
@@ -92,9 +90,18 @@ def main():
     )
 
     # Note that we use the station's ID, not it's name. This is because there
-    # can be multiple stations with the name "A", and how would we discern 
+    # can be multiple stations with the name "A", and how would we discern
     # between them?
     blueprint.add_train_at_station(config, "station_A")
+
+    # Side note: for both `add_train_at_position` and `add_train_at_station`,
+    # you can also just pass the train configuration string which will be auto-
+    # converted to a full TrainConfiguration object:
+    if False:
+        blueprint.add_train_at_station("2-4", ...)
+        blueprint.add_train_at_position("2-4-2", ...)
+    # Doing this, you of course lose the added customization at the benefit of
+    # brevity.
 
     print(blueprint.to_string())
 
@@ -127,7 +134,7 @@ def main():
             # point to different wagons of any type. Any symbol should work
             # provided that they're:
             #   * 1 character long, and
-            #   * they're the uppercase equivalent, since the string is 
+            #   * they're the uppercase equivalent, since the string is
             #     normalized to uppercase
         }
 
@@ -143,7 +150,7 @@ def main():
         # this only has to be done once on setup:
         TrainConfiguration.default_mapping = modded_mapping
 
-        # Then any subsequent calls to `TrainConfiguration("...")` or 
+        # Then any subsequent calls to `TrainConfiguration("...")` or
         # `TrainConfiguration.from_string("...")` will use the modded mapping.
 
 

@@ -37,3 +37,7 @@ class Turret(RequestItemsMixin, DirectionalMixin, Entity):
             )
 
         del self.unused_args
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

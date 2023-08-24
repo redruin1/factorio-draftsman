@@ -140,3 +140,10 @@ class FilterInserter(
         super(FilterInserter, self).merge(other)
 
         self.filter_mode = other.filter_mode
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.filter_mode == other.filter_mode

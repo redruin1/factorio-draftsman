@@ -27,8 +27,20 @@ class TileTesting(unittest.TestCase):
         assert tile.position.y == 0
 
         # Invalid name
-        with pytest.raises(InvalidTileError):
+        with pytest.raises(
+            InvalidTileError, match="'weeeeee' is not a valid name for this Tile"
+        ):
             tile = Tile("weeeeee")
+            issues = tile.inspect()
+            for error in issues:
+                raise error
+
+        # Invalid name with suggestion
+        with pytest.raises(
+            InvalidTileError,
+            match="'stonepath' is not a valid name for this Tile; did you mean 'stone-path'?",
+        ):
+            tile = Tile("stonepath")
             issues = tile.inspect()
             for error in issues:
                 raise error

@@ -110,3 +110,10 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
         super(LinkedContainer, self).merge(other)
 
         self.link_id = other.link_id
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.link_id == other.link_id

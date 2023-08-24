@@ -91,3 +91,8 @@ class OrientationMixin(object):
         # type: (Entity) -> bool
         base_mergable = super(OrientationMixin, self).mergable_with(other)
         return base_mergable and self.orientation == other.orientation
+
+    # =========================================================================
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.orientation == other.orientation

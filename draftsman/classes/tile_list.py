@@ -20,9 +20,8 @@ if TYPE_CHECKING:  # pragma: no coverage
 
 
 class TileList(MutableSequence):
-
     class Model(BaseModel):
-        data: list[dict] # TODO: fix
+        data: list[dict]  # TODO: fix
 
     def __init__(self, parent, initlist=None, unknown="error"):
         # type: (TileCollection, list[Tile], str) -> None

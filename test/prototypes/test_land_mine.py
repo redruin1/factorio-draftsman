@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import LandMine, land_mines
+from draftsman.entity import LandMine, land_mines, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -46,3 +47,21 @@ class LandMineTesting(unittest.TestCase):
         del landmine2
 
         assert landmine1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        landmine1 = LandMine("land-mine")
+        landmine2 = LandMine("land-mine")
+
+        assert landmine1 == landmine2
+
+        landmine1.tags = {"some": "stuff"}
+
+        assert landmine1 != landmine2
+
+        container = Container()
+
+        assert landmine1 != container
+        assert landmine2 != container
+
+        # hashable
+        assert isinstance(landmine1, Hashable)

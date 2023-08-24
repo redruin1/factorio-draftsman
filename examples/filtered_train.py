@@ -30,12 +30,14 @@ def main():
         "coal": 10,
         "iron-ore": 10,
         "copper-ore": 5,
-        "uranium-ore": 5,
+        "uranium-ore": 10,
     }
 
     blueprint = Blueprint()
     # Locomotive
-    blueprint.entities.append("locomotive", position=[0, 0], orientation=Orientation.WEST)
+    blueprint.entities.append(
+        "locomotive", position=[0, 0], orientation=Orientation.WEST
+    )
     # Offset the position to account for the Locomotive
     train_car_position = 1
 
@@ -65,7 +67,7 @@ def main():
 
     # Add a fancy title
     blueprint.label = "1-{} Filtered Train".format(train_car_position)
-    blueprint.label_color = (1.0, 0.0, 0.0)  # because why not
+    blueprint.set_label_color(1.0, 0.0, 0.0)  # because why not
 
     # print(blueprint)
     print(blueprint.to_string())

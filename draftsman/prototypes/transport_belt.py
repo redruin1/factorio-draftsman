@@ -76,3 +76,7 @@ class TransportBelt(
             )
         except SchemaError as e:
             six.raise_from(DataFormatError(e), None)
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

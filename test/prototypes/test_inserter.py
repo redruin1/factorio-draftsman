@@ -4,10 +4,11 @@
 from __future__ import unicode_literals
 
 from draftsman.constants import Direction, ReadMode
-from draftsman.entity import Inserter, inserters
+from draftsman.entity import Inserter, inserters, Container
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -140,3 +141,21 @@ class InserterTesting(unittest.TestCase):
 
         assert inserter1.override_stack_size == 1
         assert inserter1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        inserter1 = Inserter("inserter")
+        inserter2 = Inserter("inserter")
+
+        assert inserter1 == inserter2
+
+        inserter1.tags = {"some": "stuff"}
+
+        assert inserter1 != inserter2
+
+        container = Container()
+
+        assert inserter1 != container
+        assert inserter2 != container
+
+        # hashable
+        assert isinstance(inserter1, Hashable)

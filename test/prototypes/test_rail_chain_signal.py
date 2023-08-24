@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import RailChainSignal, rail_chain_signals
+from draftsman.entity import RailChainSignal, rail_chain_signals, Container
 from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -139,3 +140,21 @@ class RailChainSignalTesting(unittest.TestCase):
             "blue_output_signal": {"name": "signal-D", "type": "virtual"},
         }
         assert signal1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        signal1 = RailChainSignal("rail-chain-signal")
+        signal2 = RailChainSignal("rail-chain-signal")
+
+        assert signal1 == signal2
+
+        signal1.tags = {"some": "stuff"}
+
+        assert signal1 != signal2
+
+        container = Container()
+
+        assert signal1 != container
+        assert signal2 != container
+
+        # hashable
+        assert isinstance(signal1, Hashable)

@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import SolarPanel, solar_panels
+from draftsman.entity import SolarPanel, solar_panels, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -48,3 +49,21 @@ class SolarPanelTesting(unittest.TestCase):
         del panel2
 
         assert panel1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        panel1 = SolarPanel("solar-panel")
+        panel2 = SolarPanel("solar-panel")
+
+        assert panel1 == panel2
+
+        panel1.tags = {"some": "stuff"}
+
+        assert panel1 != panel2
+
+        container = Container()
+
+        assert panel1 != container
+        assert panel2 != container
+
+        # hashable
+        assert isinstance(panel1, Hashable)

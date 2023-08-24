@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import LinkedContainer, linked_containers
+from draftsman.entity import LinkedContainer, linked_containers, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -78,3 +79,21 @@ class LinkedContainerTesting(unittest.TestCase):
 
         assert container1.link_id == 0xFFFF
         assert container1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        container1 = LinkedContainer()
+        container2 = LinkedContainer()
+
+        assert container1 == container2
+
+        container1.tags = {"some": "stuff"}
+
+        assert container1 != container2
+
+        container = Container()
+
+        assert container1 != container
+        assert container2 != container
+
+        # hashable
+        assert isinstance(container1, Hashable)

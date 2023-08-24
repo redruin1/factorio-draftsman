@@ -12,7 +12,7 @@ class ScheduleList(MutableSequence):
     """
 
     class Model(BaseModel):
-        data: list[dict] # TODO: fix
+        data: list[dict]  # TODO: fix
 
     def __init__(self, initlist=None):
         """
@@ -45,9 +45,8 @@ class ScheduleList(MutableSequence):
 
     def __setitem__(self, index, item):
         # type: (int, Schedule) -> None
-        if isinstance(index, slice):
-            start, stop, step = index.indices(len(self))
-            for i in range(start, stop, step):
+        if isinstance(item, MutableSequence):
+            for i in range(len(item)):
                 if not isinstance(item[i], Schedule):
                     raise TypeError(
                         "Entry in <ScheduleList> must be an instance of <Schedule>"

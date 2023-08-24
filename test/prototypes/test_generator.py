@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Generator, generators
+from draftsman.entity import Generator, generators, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -48,3 +49,21 @@ class GeneratorTesting(unittest.TestCase):
         del gen2
 
         assert gen1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        generator1 = Generator("steam-engine")
+        generator2 = Generator("steam-engine")
+
+        assert generator1 == generator2
+
+        generator1.tags = {"some": "stuff"}
+
+        assert generator1 != generator2
+
+        container = Container()
+
+        assert generator1 != container
+        assert generator2 != container
+
+        # hashable
+        assert isinstance(generator1, Hashable)

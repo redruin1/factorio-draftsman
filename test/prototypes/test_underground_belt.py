@@ -4,10 +4,11 @@
 from __future__ import unicode_literals
 
 from draftsman.constants import Direction
-from draftsman.entity import UndergroundBelt, underground_belts
+from draftsman.entity import UndergroundBelt, underground_belts, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -100,3 +101,21 @@ class UndergroundBeltTesting(unittest.TestCase):
 
         assert belt1.io_type == "output"
         assert belt1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        belt1 = UndergroundBelt("underground-belt")
+        belt2 = UndergroundBelt("underground-belt")
+
+        assert belt1 == belt2
+
+        belt1.tags = {"some": "stuff"}
+
+        assert belt1 != belt2
+
+        container = Container()
+
+        assert belt1 != container
+        assert belt2 != container
+
+        # hashable
+        assert isinstance(belt1, Hashable)

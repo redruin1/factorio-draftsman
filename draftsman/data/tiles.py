@@ -15,7 +15,7 @@ with pkg_resources.open_binary(data, "tiles.pkl") as inp:
     raw: dict[str, dict] = pickle.load(inp)
 
 
-def add_tile(name: str, collision_mask: set[str]=set()):
+def add_tile(name: str, collision_mask: set[str] = set()):
     """
     Temporarily adds a tile to :py:mod:`draftsman.data.tiles`.
 

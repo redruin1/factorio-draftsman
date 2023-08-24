@@ -5,10 +5,11 @@ from __future__ import unicode_literals
 
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.group import Group
-from draftsman.entity import ElectricPole, electric_poles
+from draftsman.entity import ElectricPole, electric_poles, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -234,3 +235,21 @@ class ElectricPoleTesting(unittest.TestCase):
                 "connections": {"1": {"red": [{"entity_id": 1}]}},
             },
         ]
+
+    def test_eq(self):
+        pole1 = ElectricPole("small-electric-pole")
+        pole2 = ElectricPole("small-electric-pole")
+
+        assert pole1 == pole2
+
+        pole1.tags = {"some": "stuff"}
+
+        assert pole1 != pole2
+
+        container = Container()
+
+        assert pole1 != container
+        assert pole2 != container
+
+        # hashable
+        assert isinstance(pole1, Hashable)

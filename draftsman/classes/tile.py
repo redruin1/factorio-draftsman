@@ -21,6 +21,7 @@ from draftsman.utils import AABB
 
 import draftsman.data.tiles as tiles
 
+import difflib
 from pydantic import BaseModel
 from typing import TYPE_CHECKING, Union, Tuple
 
@@ -56,25 +57,10 @@ class Tile(SpatialLike):
         self._parent = None
 
         # Tile name
-        self.name = name  # TODO: optional error checking
+        self.name = name
 
-        # Tile positions are in grid coordinates
+        # Tile positions are in integer grid coordinates
         self.position = position
-
-        # Tile AABB for SpatialHashMap
-        # self._collision_set = _TILE_COLLISION_SET
-
-        # Tile mask for SpatialHashMap
-        # TODO: extract this to generic data to save memory like entity
-        # try:
-        #     self._collision_mask = set(tiles.raw[self.name]["collision_mask"])
-        #     self._collision_mask = tiles.collision_masks[self.name]
-        # except KeyError:
-        #     # Maybe add a new entry?
-        #     # tiles.raw[self.name] = {"name": self.name, "collision_mask": set()}
-        #     self._collision_mask = set()
-        # if self.name not in tiles.raw:
-        #     tiles.add_tile(self.name)
 
     # =========================================================================
 
@@ -107,7 +93,6 @@ class Tile(SpatialLike):
     @name.setter
     def name(self, value):
         # type: (str) -> None
-        # TODO: validate that name is string using deal
         self._name = value
 
     # =========================================================================
@@ -196,7 +181,18 @@ class Tile(SpatialLike):
         issues = []
 
         if self.name not in tiles.raw:
-            issues.append(InvalidTileError("'{}'".format(self.name)))
+            suggestions = difflib.get_close_matches(self.name, tiles.raw, n=1)
+            if len(suggestions) > 0:
+                suggestion_string = "; did you mean '{}'?".format(suggestions[0])
+            else:
+                suggestion_string = ""
+            issues.append(
+                InvalidTileError(
+                    "'{}' is not a valid name for this {}{}".format(
+                        self.name, type(self).__name__, suggestion_string
+                    )
+                )
+            )
 
         return issues
 

@@ -86,3 +86,7 @@ class Lamp(
             self.control_behavior["use_colors"] = value
         else:
             raise TypeError("'use_colors' must be a bool or None")
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

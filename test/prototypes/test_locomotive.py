@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Locomotive, locomotives
+from draftsman.entity import Locomotive, locomotives, Container
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -66,3 +67,21 @@ class LocomotiveTesting(unittest.TestCase):
 
         assert train1.color == {"r": 100, "g": 100, "b": 100}
         assert train1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        train1 = Locomotive("locomotive")
+        train2 = Locomotive("locomotive")
+
+        assert train1 == train2
+
+        train1.tags = {"some": "stuff"}
+
+        assert train1 != train2
+
+        container = Container()
+
+        assert train1 != container
+        assert train2 != container
+
+        # hashable
+        assert isinstance(train1, Hashable)

@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import CargoWagon, cargo_wagons
+from draftsman.entity import CargoWagon, cargo_wagons, Container
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -123,3 +124,21 @@ class CargoWagonTesting(unittest.TestCase):
         assert wagon1.tags == {"some": "stuff"}
         assert wagon1.bar == 1
         assert wagon1.inventory["filters"] == [{"index": 1, "name": "transport-belt"}]
+
+    def test_eq(self):
+        generator1 = CargoWagon("cargo-wagon")
+        generator2 = CargoWagon("cargo-wagon")
+
+        assert generator1 == generator2
+
+        generator1.set_inventory_filter(5, "transport-belt")
+
+        assert generator1 != generator2
+
+        container = Container()
+
+        assert generator1 != container
+        assert generator2 != container
+
+        # hashable
+        assert isinstance(generator1, Hashable)

@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import InfinityContainer, infinity_containers
+from draftsman.entity import InfinityContainer, infinity_containers, Container
 from draftsman.error import (
     InvalidEntityError,
     InvalidItemError,
@@ -14,6 +14,7 @@ from draftsman.warning import DraftsmanWarning
 
 from schema import SchemaError
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -207,3 +208,21 @@ class InfinityContainerTesting(unittest.TestCase):
                 {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
             ],
         }
+
+    def test_eq(self):
+        container1 = InfinityContainer("infinity-chest")
+        container2 = InfinityContainer("infinity-chest")
+
+        assert container1 == container2
+
+        container1.tags = {"some": "stuff"}
+
+        assert container1 != container2
+
+        container = Container()
+
+        assert container1 != container
+        assert container2 != container
+
+        # hashable
+        assert isinstance(container, Hashable)

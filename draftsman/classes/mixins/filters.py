@@ -148,3 +148,8 @@ class FiltersMixin(object):
         self.filters = []
         for item in other.filters:
             self.set_item_filter(item["index"] - 1, item["name"])
+
+    # =========================================================================
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.filters == other.filters

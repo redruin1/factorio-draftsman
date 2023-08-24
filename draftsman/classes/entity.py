@@ -18,6 +18,7 @@ from draftsman import signatures
 from draftsman import utils
 
 import copy
+import difflib
 import json
 from pydantic import BaseModel
 from typing import Union, Any
@@ -167,9 +168,15 @@ class Entity(EntityLike):
 
         # Name
         if name not in self.similar_entities:
+            # Check to see if there's a a similar
+            suggestions = difflib.get_close_matches(name, similar_entities, n=1)
+            if len(suggestions) > 0:
+                suggestion_string = "; did you mean '{}'?".format(suggestions[0])
+            else:
+                suggestion_string = ""
             raise InvalidEntityError(
-                "'{}' is not a valid name for this {}".format(
-                    name, self.__class__.__name__
+                "'{}' is not a valid name for this {}{}".format(
+                    name, type(self).__name__, suggestion_string
                 )
             )
         self._name = six.text_type(name)

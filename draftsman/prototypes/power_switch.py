@@ -117,3 +117,10 @@ class PowerSwitch(
         super(PowerSwitch, self).merge(other)
 
         self.switch_state = other.switch_state
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.switch_state == other.switch_state

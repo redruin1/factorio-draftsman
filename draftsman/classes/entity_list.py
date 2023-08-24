@@ -35,7 +35,7 @@ class EntityList(MutableSequence):
     """
 
     class Model(BaseModel):
-        data: list[dict] # TODO: fix
+        data: list[dict]  # TODO: fix
 
     @utils.reissue_warnings
     def __init__(self, parent=None, initlist=None, unknown="error"):
@@ -321,7 +321,7 @@ class EntityList(MutableSequence):
         """
         TODO
         """
-        if not isinstance(other, EntityList): # TODO: needed?
+        if not isinstance(other, EntityList):  # TODO: needed?
             other = EntityList(initlist=other)
 
         new_entity_list = EntityList()
@@ -346,7 +346,7 @@ class EntityList(MutableSequence):
         """
         TODO
         """
-        if not isinstance(other, EntityList): # TODO: needed?
+        if not isinstance(other, EntityList):  # TODO: needed?
             other = EntityList(initlist=other)
 
         new_entity_list = EntityList()
@@ -367,7 +367,7 @@ class EntityList(MutableSequence):
         """
         TODO
         """
-        if not isinstance(other, EntityList): # TODO: needed?
+        if not isinstance(other, EntityList):  # TODO: needed?
             other = EntityList(initlist=other)
 
         new_entity_list = EntityList()
@@ -606,7 +606,7 @@ class EntityList(MutableSequence):
                     neighbours[i] = try_to_replace_association(neighbour)
 
         return new
-    
+
     # def __repr__(self) -> str:
     #     return "TODO"
 

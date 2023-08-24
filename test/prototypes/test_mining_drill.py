@@ -4,7 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.constants import MiningDrillReadMode
-from draftsman.entity import MiningDrill, mining_drills
+from draftsman.entity import MiningDrill, mining_drills, Container
 from draftsman.error import InvalidEntityError, InvalidItemError, DataFormatError
 from draftsman.warning import (
     DraftsmanWarning,
@@ -12,6 +12,7 @@ from draftsman.warning import (
     ItemLimitationWarning,
 )
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -118,3 +119,21 @@ class MiningDrillTesting(unittest.TestCase):
 
         assert drill1.items == {"productivity-module": 1, "productivity-module-2": 1}
         assert drill1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        drill1 = MiningDrill("electric-mining-drill")
+        drill2 = MiningDrill("electric-mining-drill")
+
+        assert drill1 == drill2
+
+        drill1.tags = {"some": "stuff"}
+
+        assert drill1 != drill2
+
+        container = Container()
+
+        assert drill1 != container
+        assert drill2 != container
+
+        # hashable
+        assert isinstance(drill1, Hashable)

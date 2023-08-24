@@ -3,10 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import Reactor, reactors
+from draftsman.entity import Reactor, reactors, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import DraftsmanWarning
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -48,3 +49,21 @@ class ReactorTesting(unittest.TestCase):
         del reactor2
 
         assert reactor1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        reactor1 = Reactor("nuclear-reactor")
+        reactor2 = Reactor("nuclear-reactor")
+
+        assert reactor1 == reactor2
+
+        reactor1.tags = {"some": "stuff"}
+
+        assert reactor1 != reactor2
+
+        container = Container()
+
+        assert reactor1 != container
+        assert reactor2 != container
+
+        # hashable
+        assert isinstance(reactor1, Hashable)

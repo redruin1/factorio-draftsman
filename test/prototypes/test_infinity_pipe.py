@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman.entity import InfinityPipe, infinity_pipes
+from draftsman.entity import InfinityPipe, infinity_pipes, Container
 from draftsman.error import (
     InvalidEntityError,
     InvalidFluidError,
@@ -14,6 +14,7 @@ from draftsman.warning import DraftsmanWarning, TemperatureRangeWarning
 
 from schema import SchemaError
 
+from collections.abc import Hashable
 import sys
 import pytest
 
@@ -195,3 +196,21 @@ class InfinityPipeTesting(unittest.TestCase):
             "temperature": 500,
         }
         assert pipe1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        pipe1 = InfinityPipe("infinity-pipe")
+        pipe2 = InfinityPipe("infinity-pipe")
+
+        assert pipe1 == pipe2
+
+        pipe1.tags = {"some": "stuff"}
+
+        assert pipe1 != pipe2
+
+        container = Container()
+
+        assert pipe1 != container
+        assert pipe2 != container
+
+        # hashable
+        assert isinstance(pipe1, Hashable)

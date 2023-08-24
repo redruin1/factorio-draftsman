@@ -126,3 +126,8 @@ class ControlBehaviorMixin(six.with_metaclass(ABCMeta, object)):
         else:  # int
             condition["constant"] = b
             condition.pop("second_signal", None)
+
+    # =========================================================================
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.control_behavior == other.control_behavior

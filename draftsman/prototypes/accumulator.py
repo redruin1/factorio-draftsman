@@ -93,7 +93,9 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             except SchemaError as e:
                 six.raise_from(DataFormatError(e), None)
 
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
     def __eq__(self, other):
-        # type: (Accumulator) -> bool
-        base = super().__eq__(other)
-        return base and self.output_signal == other.output_signal
+        return super().__eq__(other) and self.output_signal == other.output_signal

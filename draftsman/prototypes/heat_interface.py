@@ -138,3 +138,14 @@ class HeatInterface(Entity):
 
         self.temperature = other.temperature
         self.mode = other.mode
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return (
+            super().__eq__(other)
+            and self.temperature == other.temperature
+            and self.mode == other.mode
+        )

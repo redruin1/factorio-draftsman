@@ -122,3 +122,8 @@ class RequestItemsMixin(object):
 
         # self.items = other.items
         self.set_item_requests(other.items)
+
+    # =========================================================================
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.items == other.items
