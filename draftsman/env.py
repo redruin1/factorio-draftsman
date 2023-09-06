@@ -434,17 +434,19 @@ def get_items(lua):
             sorted_elem[v["name"]] = v
         return sorted_elem
 
+    # Apparently "order" is not required field, so we must sort by both order and name
+
     # Sort the groups and subgroups dictionaries
-    test_values = sorted(list(groups.values()), key=lambda x: x["order"])
-    # sorted_groups = {}
-    # for v in test_values:
-    #     sorted_groups[v["name"]] = v
+    test_values = sorted(
+        list(groups.values()),
+        key=lambda x: (x.get("order", None) is None, x.get("order", None), x["name"]),
+    )
     sorted_groups = to_ordered_dict(test_values)
 
-    test_values = sorted(list(subgroups.values()), key=lambda x: x["order"])
-    # sorted_subgroups = {}
-    # for v in test_values:
-    #     sorted_subgroups[v["name"]] = v
+    test_values = sorted(
+        list(subgroups.values()),
+        key=lambda x: (x.get("order", None) is None, x.get("order", None), x["name"]),
+    )
     sorted_subgroups = to_ordered_dict(test_values)
 
     group_index_dict = {}
@@ -506,17 +508,27 @@ def get_items(lua):
             group_list[i]["subgroups"][j]["items"] = to_ordered_dict(
                 sorted(
                     group_list[i]["subgroups"][j]["items"],
-                    key=lambda x: (x["order"], x["name"]),
+                    key=lambda x: (
+                        x.get("order", None) is None,
+                        x.get("order", None),
+                        x["name"],
+                    ),
                 )
             )
         group_list[i]["subgroups"] = to_ordered_dict(
-            sorted(group_list[i]["subgroups"], key=lambda x: (x["order"], x["name"]))
+            sorted(
+                group_list[i]["subgroups"],
+                key=lambda x: (
+                    x.get("order", None) is None,
+                    x.get("order", None),
+                    x["name"],
+                ),
+            )
         )
-    group_list = sorted(group_list, key=lambda x: (x["order"], x["name"]))
-
-    # print(json.dumps(group_list[0]["subgroups"], indent=2))
-
-    # print(json.dumps(sorted_groups, indent=2))
+    group_list = sorted(
+        group_list,
+        key=lambda x: (x.get("order", None) is None, x.get("order", None), x["name"]),
+    )
 
     # Flatten into all_items dictionary
     sorted_items = OrderedDict()
@@ -1218,12 +1230,12 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
     factorio_data = os.path.join(env_dir, "factorio-data")
     data_location = os.path.join(env_dir, "data")
     if path is None:
-        factorio_mods = os.path.join(env_dir, "factorio-mods")
+        factorio_mods_folder = os.path.join(env_dir, "factorio-mods")
     else:
-        factorio_mods = path
+        factorio_mods_folder = path
 
     if verbose:
-        print("Reading mods from:", factorio_mods)
+        print("Reading mods from:", factorio_mods_folder)
 
     # Get the info from factorio-data and treat it as the "base" mod
     with open(os.path.join(factorio_data, "base", "info.json")) as base_info_file:
@@ -1286,17 +1298,17 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
 
     # This shouldn't need to be done, but lets create the factorio-mod folder if
     # it doesn't exist in case the user deletes the whole thing accidently
-    if path is None and not os.path.isdir(factorio_mods):
-        os.mkdir(factorio_mods)
+    if path is None and not os.path.isdir(factorio_mods_folder):
+        os.mkdir(factorio_mods_folder)
 
     # Check that our path actually exists (in case it was user specified)
-    if not os.path.isdir(factorio_mods):
-        raise OSError("Directory '{}' not found".format(factorio_mods))
+    if not os.path.isdir(factorio_mods_folder):
+        raise OSError("Directory '{}' not found".format(factorio_mods_folder))
 
     # Attempt to get the list of enabled mods from mod-list.json
     enabled_mod_list = {}
     try:
-        with open(os.path.join(factorio_mods, "mod-list.json")) as mod_list_file:
+        with open(os.path.join(factorio_mods_folder, "mod-list.json")) as mod_list_file:
             mod_json = json.load(mod_list_file)
             for mod in mod_json["mods"]:
                 enabled_mod_list[mod["name"].replace(" ", "")] = (
@@ -1305,11 +1317,11 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
     except FileNotFoundError:  # If no such file is found
         # Every mod is enabled by default, unless `no_mods` is True
         enabled_mod_list["base"] = True
-        for mod_obj in os.listdir(factorio_mods):
+        for mod_obj in os.listdir(factorio_mods_folder):
             if mod_obj.lower().endswith(".zip"):
                 mod_name = mod_archive_regex.match(mod_obj).group(1).replace(" ", "")
                 enabled_mod_list[mod_name] = not no_mods
-            elif os.path.isdir(os.path.join(factorio_mods, mod_obj)):
+            elif os.path.isdir(os.path.join(factorio_mods_folder, mod_obj)):
                 mod_name = mod_obj
                 enabled_mod_list[mod_name] = not no_mods
 
@@ -1317,9 +1329,9 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
         print("\nDiscovering mods...\n")
 
     # Preload all the mods and their versions
-    for mod_obj in os.listdir(factorio_mods):
+    for mod_obj in os.listdir(factorio_mods_folder):
         # mod_location = os.path.join(factorio_mods, mod_obj)
-        mod_location = factorio_mods + "/" + mod_obj
+        mod_location = factorio_mods_folder + "/" + mod_obj
         external_mod_version = None  # Optional (the version indicated by filepath)
 
         if mod_obj.lower().endswith(".zip"):
@@ -1383,7 +1395,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
 
             mod_version = mod_info["version"]
             archive = True
-            location = factorio_mods + "/" + mod_name
+            location = factorio_mods_folder + "/" + mod_name
 
         elif os.path.isdir(mod_location):
             # Folder
@@ -1533,7 +1545,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
             internal_folder=mod_folder,
             version=mod_version,
             archive=archive,
-            location=location,  # maybe absolute?,
+            location=location.replace("\\", "/"), # Make sure forward slashes
             info=mod_info,
             files=files,
             data=mod_data,
@@ -1730,7 +1742,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
     lua.execute(file_to_string(os.path.join(env_dir, "compatibility", "interface.lua")))
 
     # Record where to look for mod folders
-    lua.globals().MOD_FOLDER_LOCATION = factorio_mods
+    lua.globals().MOD_FOLDER_LOCATION = factorio_mods_folder
 
     # Create aliases to the Lua functions for ease of access
     # Add path to Lua `package.path`
@@ -1800,7 +1812,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
     # If there is a mod settings file present, we overwrite the defaults we just
     # initialized if they're present
     try:
-        user_settings = get_mod_settings(factorio_mods)
+        user_settings = get_mod_settings(factorio_mods_folder)
         # If so, Overwrite the 'value' key for all the settings present
         for setting_type, setting_dict in user_settings.items():
             lua_settings = lua.globals().settings[setting_type]

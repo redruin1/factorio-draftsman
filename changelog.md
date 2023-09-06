@@ -1,5 +1,7 @@
 # Changelog
 
+* Fixed issue loading IndustrialRevolution modpack (regression) (#98)
+
 ## 1.0.6
 * Updated `factorio-data` to version `1.1.88`
 * Updated `compatibility/defines.lua` to `1.1.88`
