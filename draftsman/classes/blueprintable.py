@@ -2,25 +2,17 @@
 # -*- encoding: utf-8 -*-
 
 from __future__ import unicode_literals
-import re
 
-from draftsman.classes.exportable import Exportable, ValidationResult
+from draftsman.classes.exportable import Exportable
 from draftsman.data.signals import signal_dict
-from draftsman.error import (
-    IncorrectBlueprintTypeError,
-    DataFormatError,
-)
-from draftsman import signatures
+from draftsman.error import IncorrectBlueprintTypeError
 from draftsman import utils
 
 from abc import ABCMeta, abstractmethod
 
-from functools import cache
 import json
-from schema import SchemaError
 import six
 from typing import Any, Sequence, Union
-from pydantic import BaseModel
 
 
 class Blueprintable(Exportable, metaclass=ABCMeta):
@@ -35,7 +27,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     @utils.reissue_warnings
     def __init__(self, root_item, item, init_data, unknown):
-        # type: (str, BaseModel, str, Union[str, dict], str) -> None
+        # type: (str, str, Union[str, dict], str) -> None
         """
         Initializes the private ``_root`` data dictionary, as well as setting
         the ``item`` name.
@@ -404,20 +396,20 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     # =========================================================================
 
-    def to_dict(self):
-        # type: () -> dict
-        out_dict = self.__class__.Format.model_construct(  # Performs no validation(!)
-            **{self._root_item: self._root}
-        ).model_dump(
-            by_alias=True,  # Some attributes are reserved words (type, from,
-            # etc.); this resolves that issue
-            exclude_none=True,  # Trim if values are None
-            exclude_defaults=True,  # Trim if values are defaults
-            warnings=False  # Ignore warnings because `model_construct` cannot
-            # be made recursive for some asinine reason
-        )
+    # def to_dict(self):
+    #     # type: () -> dict
+    #     out_dict = self.__class__.Format.model_construct(  # Performs no validation(!)
+    #         **{self._root_item: self._root}
+    #     ).model_dump(
+    #         by_alias=True,  # Some attributes are reserved words (type, from,
+    #         # etc.); this resolves that issue
+    #         exclude_none=True,  # Trim if values are None
+    #         exclude_defaults=True,  # Trim if values are defaults
+    #         warnings=False  # Ignore warnings because `model_construct` cannot
+    #         # be made recursive for some asinine reason
+    #     )
 
-        return out_dict
+    #     return out_dict
 
     def to_string(self):  # pragma: no coverage
         # type: () -> str
@@ -449,6 +441,12 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     def __str__(self):  # pragma: no coverage
         # type: () -> str
         return "<{}>{}".format(
-            self.__class__.__name__,
+            type(self).__name__,
             json.dumps(self.to_dict()[self._root_item], indent=2),
+        )
+
+    def __repr__(self) -> str:  # pragma: no coverage
+        return "<{}>{}".format(
+            type(self).__name__, 
+            repr(self.to_dict()[self._root_item])
         )

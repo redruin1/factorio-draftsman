@@ -138,149 +138,158 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     # Format
     # =========================================================================
 
-    # What does the output format of the blueprint dict look like?
-    class Model(BaseModel):
-        item: Literal["blueprint"] = "blueprint"
-        label: str | None = None
-        label_color: signatures.Color | None = None
-        description: str | None = None
-        icons: signatures.Icons | None = None
-        version: int | None = Field(None, ge=0, lt=2**64)
+    class Format(BaseModel):
+        class BlueprintObject(BaseModel):
+            item: Literal["blueprint"]
+            label: str | None = None
+            label_color: signatures.Color | None = None
+            description: str | None = None
+            icons: signatures.Icons | None = None
+            version: int | None = Field(None, ge=0, lt=2**64)
 
-        snap_to_grid: signatures.Position | None = Field(None, alias="snap-to-grid")
-        absolute_snapping: bool | None = Field(None, alias="absolute-snapping")
-        snapping_grid_position: signatures.Position | None = Field(None, exclude=True)
-        position_relative_to_grid: signatures.Position | None = Field(
-            None, alias="position-relative-to-grid"
-        )
-
-        entities: list[dict] = []  # TODO: correct annotation
-        tiles: list[dict] = []  # TODO: correct annotation
-        schedules: list[dict] = []  # TODO: correct annotation
-
-        @classmethod
-        def _throw_invalid_association(cls, entity):
-            raise InvalidAssociationError(
-                "'{}' at {} is connected to an entity that no longer exists".format(
-                    entity["name"], entity["position"]
-                )
+            snap_to_grid: signatures.Position | None = Field(None, alias="snap-to-grid")
+            absolute_snapping: bool | None = Field(None, alias="absolute-snapping")
+            snapping_grid_position: signatures.Position | None = Field(None, exclude=True)
+            position_relative_to_grid: signatures.Position | None = Field(
+                None, alias="position-relative-to-grid"
             )
 
-        @field_validator("entities", mode="before")
-        def validate_entities(cls, entities: EntityList, info: FieldValidationInfo):
-            print("entities validate")
-            info.data["_flattened_list"] = utils.flatten_entities(entities)
-            entities_out = []
-            for i, entity in enumerate(info.data["_flattened_list"]):
-                # Get a copy of the dict representation of the Entity
-                # (At this point, Associations are not copied and still point to original)
-                # result = entity.to_dict() # copy.deepcopy?
-                result = copy.deepcopy(entity.to_dict())
-                if not isinstance(result, dict):
-                    raise DraftsmanError(
-                        "{}.to_dict() must return a dict".format(type(entity).__name__)
-                    )
-                # Add this to the output's entities and set it's entity_number
-                entities_out.append(result)
-                entities_out[i]["entity_number"] = i + 1
+            entities: list[dict] = []  # TODO: correct annotation
+            tiles: list[dict] = []  # TODO: correct annotation
+            schedules: list[dict] = []  # TODO: correct annotation
 
-            for entity in entities_out:
-                if "connections" in entity:  # Wire connections
-                    connections = entity["connections"]
-                    for side in connections:
-                        if side in {"1", "2"}:
-                            for color in connections[side]:
-                                connection_points = connections[side][color]
+            @classmethod
+            def _throw_invalid_association(cls, entity):
+                raise InvalidAssociationError(
+                    "'{}' at {} is connected to an entity that no longer exists".format(
+                        entity["name"], entity["position"]
+                    )
+                )
+
+            @field_validator("entities", mode="before")
+            def validate_entities(cls, entities: EntityList, info: FieldValidationInfo):
+                info.data["_flattened_list"] = utils.flatten_entities(entities)
+                entities_out = []
+                for i, entity in enumerate(info.data["_flattened_list"]):
+                    # Get a copy of the dict representation of the Entity
+                    # (At this point, Associations are not copied and still point to original)
+                    # result = entity.to_dict() # copy.deepcopy?
+                    result = copy.deepcopy(entity.to_dict())
+                    if not isinstance(result, dict):
+                        raise DraftsmanError(
+                            "{}.to_dict() must return a dict".format(type(entity).__name__)
+                        )
+                    # Add this to the output's entities and set it's entity_number
+                    entities_out.append(result)
+                    entities_out[i]["entity_number"] = i + 1
+
+                for entity in entities_out:
+                    if "connections" in entity:  # Wire connections
+                        connections = entity["connections"]
+                        for side in connections:
+                            if side in {"1", "2"}:
+                                for color in connections[side]:
+                                    connection_points = connections[side][color]
+                                    for point in connection_points:
+                                        old = point["entity_id"]
+                                        if old() is None:  # pragma: no coverage
+                                            cls._throw_invalid_association(entity)
+                                        else:  # Association
+                                            point["entity_id"] = (
+                                                info.data["_flattened_list"].index(old())
+                                                + 1
+                                            )
+
+                            elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+                                connection_points = connections[side]
                                 for point in connection_points:
                                     old = point["entity_id"]
                                     if old() is None:  # pragma: no coverage
                                         cls._throw_invalid_association(entity)
                                     else:  # Association
                                         point["entity_id"] = (
-                                            info.data["_flattened_list"].index(old())
-                                            + 1
+                                            info.data["_flattened_list"].index(old()) + 1
                                         )
 
-                        elif side in {"Cu0", "Cu1"}:  # pragma: no branch
-                            connection_points = connections[side]
-                            for point in connection_points:
-                                old = point["entity_id"]
-                                if old() is None:  # pragma: no coverage
-                                    cls._throw_invalid_association(entity)
-                                else:  # Association
-                                    point["entity_id"] = (
-                                        info.data["_flattened_list"].index(old()) + 1
-                                    )
+                    if "neighbours" in entity:  # Power pole connections
+                        neighbours = entity["neighbours"]
+                        for i, neighbour in enumerate(neighbours):
+                            if neighbour() is None:  # pragma: no coverage
+                                cls._throw_invalid_association(entity)
+                            else:  # Association
+                                neighbours[i] = (
+                                    info.data["_flattened_list"].index(neighbour()) + 1
+                                )
 
-                if "neighbours" in entity:  # Power pole connections
-                    neighbours = entity["neighbours"]
-                    for i, neighbour in enumerate(neighbours):
-                        if neighbour() is None:  # pragma: no coverage
-                            cls._throw_invalid_association(entity)
+                return entities_out
+
+            # @field_validator("entities", mode="after")
+            # def adjust_entity_positions(self, entities, info):
+            #     if self.snapping_grid_position is not None:
+            #         # Offset Entities
+            #         for entity in entities:
+            #             entity["position"]["x"] -= self.snapping_grid_position.x
+            #             entity["position"]["y"] -= self.snapping_grid_position.y
+
+            @field_validator("tiles", mode="before")
+            def validate_tiles(cls, tiles: TileList, info: FieldValidationInfo):
+                # TODO: what if Groups have tiles? handle
+                tiles_out = []
+                for tile in tiles:
+                    tiles_out.append(tile.to_dict())
+
+                return tiles_out
+            
+            # @field_validator("tiles", mode="after")
+            # def adjust_tile_positions(self, tiles, info):
+            #     if self.snapping_grid_position is not None:
+            #         # Offset Tiles
+            #         for tile in tiles:
+            #             tile["position"]["x"] -= self.snapping_grid_position.x
+            #             tile["position"]["y"] -= self.snapping_grid_position.y
+
+            @field_validator("schedules", mode="before")
+            def validate_schedules(cls, schedules: ScheduleList, info: FieldValidationInfo):
+                # print("schedules serializer")
+                # print(self)
+
+                # TODO: recurse schedules in any group
+
+                schedules_out = []
+                for schedule in schedules:
+                    schedules_out.append(schedule.to_dict())
+
+                # Change all locomotive names to use entity_number
+                for schedule in schedules_out:
+                    for i, locomotive in enumerate(schedule["locomotives"]):
+                        if locomotive() is None:  # pragma: no coverage
+                            cls._throw_invalid_association(locomotive)
                         else:  # Association
-                            neighbours[i] = (
-                                info.data["_flattened_list"].index(neighbour()) + 1
+                            schedule["locomotives"][i] = (
+                                info.data["_flattened_list"].index(locomotive()) + 1
                             )
 
-            return entities_out
+                return schedules_out
 
-        @field_validator("tiles", mode="before")
-        def validate_tiles(cls, tiles: TileList, info: FieldValidationInfo):
-            # TODO: what if Groups have tiles? handle
-            tiles_out = []
-            for tile in tiles:
-                tiles_out.append(tile.to_dict())
+            @model_validator(mode="after")
+            def adjust_grid_positions(self) -> "Blueprint.Format.BlueprintObject":
+                if self.snapping_grid_position is not None:
+                    # Offset Entities
+                    for entity in self.entities:
+                        entity["position"]["x"] -= self.snapping_grid_position.x
+                        entity["position"]["y"] -= self.snapping_grid_position.y
 
-            return tiles_out
+                    # Offset Tiles
+                    for tile in self.tiles:
+                        tile["position"]["x"] -= self.snapping_grid_position.x
+                        tile["position"]["y"] -= self.snapping_grid_position.y
 
-        @field_validator("schedules", mode="before")
-        def validate_schedules(cls, schedules: ScheduleList, info: FieldValidationInfo):
-            # print("schedules serializer")
-            # print(self)
+                return self
+            
+        blueprint: BlueprintObject
+        index: int | None = Field(None, description="Only present when inside a BlueprintBook") # TODO: dimension
 
-            # TODO: recurse schedules
-
-            schedules_out = []
-            for schedule in schedules:
-                schedules_out.append(schedule.to_dict())
-
-            # Change all locomotive names to use entity_number
-            for schedule in schedules_out:
-                for i, locomotive in enumerate(schedule["locomotives"]):
-                    if locomotive() is None:  # pragma: no coverage
-                        cls._throw_invalid_association(locomotive)
-                    else:  # Association
-                        schedule["locomotives"][i] = (
-                            info.data["_flattened_list"].index(locomotive()) + 1
-                        )
-
-            return schedules_out
-
-        @field_serializer("entities")
-        def serialize_entities(self, entities):
-            if self.snapping_grid_position is not None:
-                # Offset Entities
-                for entity in entities:
-                    entity["position"]["x"] -= self.snapping_grid_position.x
-                    entity["position"]["y"] -= self.snapping_grid_position.y
-
-            return entities
-
-        @field_serializer("tiles")
-        def serialize_tiles(self, tiles):
-            if self.snapping_grid_position is not None:
-                # Offset Tiles
-                for tile in tiles:
-                    tile["position"]["x"] -= self.snapping_grid_position.x
-                    tile["position"]["y"] -= self.snapping_grid_position.y
-
-            return tiles
-
-        # @model_serializer()
-        # def serialize_model(self) -> dict:
-        #     return {}
-
-        model_config = ConfigDict(title="UpgradePlanner", extra="forbid")
+        model_config = ConfigDict(title="ExternalObject")
 
     # =========================================================================
     # Constructors
@@ -523,16 +532,15 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             attribute if set to ``None``.
         :type: ``dict{"x": int, "y": int}``
         """
-        return self._snapping_grid_position
+        return self._root.get("snapping_grid_position", None)
 
     @snapping_grid_position.setter
     def snapping_grid_position(self, value):
         # type: (Union[dict, Sequence]) -> None
         if value is None:
-            self._snapping_grid_position = value
-            return
-
-        self._snapping_grid_position = Vector.from_other(value, int)
+            self._root.pop("snapping_grid_position", None)
+        else:
+            self._root["snapping_grid_position"] = Vector.from_other(value, int)
 
     # =========================================================================
 
@@ -1107,9 +1115,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     def to_dict(self) -> dict:
         # Construct a new, output-formatted Pydantic model
-        # TODO: no validation should be performed on this step
-        out_model = Blueprint.Model(
-            **self._root, snapping_grid_position=self._snapping_grid_position
+        # TODO: no validation should be performed on this step, but we still 
+        # need to transform EntityList/TileList/ScheduleList into their dict
+        # forms (if possible)
+        out_model = Blueprint.Format(
+            **{self._root_item: self._root}
         )
 
         # print("\t", out_model)
@@ -1118,7 +1128,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         out_dict = out_model.model_dump(
             by_alias=True,
             exclude_none=True,
-            # exclude_defaults=True, # This would be ideal, but problems arise
+            exclude_defaults=True, # This would be ideal, but problems arise
             warnings=False,  # Ignore warnings until model_construct is properly recursive
         )
 
@@ -1137,25 +1147,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         #             # schedules:
         #             recurse_schedules(entitylike.entities)
 
-        # Convert all schedules into dicts
-        # out_dict["schedules"] = []
-        # for i, schedule in enumerate(self._root["schedules"]):
-        #     out_dict["schedules"].append(copy.deepcopy(schedule.to_dict()))
-        #     # out_dict["schedules"][i] = schedule.to_dict()
-
-        # This associates each entity with a numeric index, which we use later
-        # flattened_list = utils.flatten_entities(self._root.entities)
-
-        # print(out_dict)
-
-        if len(out_dict["entities"]) == 0:
-            del out_dict["entities"]
-        if len(out_dict["tiles"]) == 0:
-            del out_dict["tiles"]
-        if len(out_dict["schedules"]) == 0:
-            del out_dict["schedules"]
-
-        return {self._root_item: out_dict}
+        return out_dict
 
     # =========================================================================
 

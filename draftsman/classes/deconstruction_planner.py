@@ -49,25 +49,19 @@ from __future__ import unicode_literals
 
 from draftsman import __factorio_version_info__
 from draftsman.classes.blueprintable import Blueprintable
+from draftsman.classes.exportable import ValidationResult
 from draftsman.constants import FilterMode, TileSelectionMode
-from draftsman.data import items
+from draftsman.data import entities, tiles
 from draftsman.error import DataFormatError, InvalidItemError
-from draftsman import signatures
+from draftsman.warning import IndexWarning, UnrecognizedElementWarning
+from draftsman.signatures import BaseModel, Icons, EntityFilter, TileFilter
 from draftsman import utils
 from draftsman.warning import DraftsmanWarning
 
-import copy
-from pydantic import BaseModel, ConfigDict, Field
-from schema import SchemaError
+from pydantic import Field
 import six
 from typing import Union, Literal
 import warnings
-
-
-class DeconstructionPlannerModel(BaseModel):
-    item: Literal["deconstruction-planner"] = "deconstruction-planner"
-    label: str | None = None
-    version: int | None = Field(None, ge=0, lt=2**64)
 
 
 class DeconstructionPlanner(Blueprintable):
@@ -77,10 +71,36 @@ class DeconstructionPlanner(Blueprintable):
     rocks.
     """
 
+    # =========================================================================
+    # Format
+    # =========================================================================
+
     class Format(BaseModel):
-        deconstruction_planner: DeconstructionPlannerModel = (
-            DeconstructionPlannerModel()
-        )
+        class DeconstructionPlannerObject(BaseModel):
+            item: Literal["deconstruction-planner"]
+            label: str | None = None
+            version: int | None = Field(None, ge=0, lt=2**64)
+
+            class Settings(BaseModel):
+                description: str | None = None
+                icons: Icons | None = None
+
+                entity_filter_mode: FilterMode | None = None
+                entity_filters: list[EntityFilter] | None = None
+                trees_and_rocks_only: bool | None = None
+                
+                tile_filter_mode: FilterMode | None = None
+                tile_filters: list[TileFilter] | None = None
+                tile_selection_mode: TileSelectionMode | None = None
+
+            settings: Settings | None = Settings()
+
+        deconstruction_planner: DeconstructionPlannerObject
+        index: int | None = Field(None, description="Only present when inside a BlueprintBook") # TODO: dimension
+
+    # =========================================================================
+    # Constructors
+    # =========================================================================
 
     @utils.reissue_warnings
     def __init__(self, deconstruction_planner=None, unknown="error"):
@@ -179,11 +199,7 @@ class DeconstructionPlanner(Blueprintable):
         if value is None:
             self._root["settings"].pop("entity_filters", None)
         else:
-            try:
-                value = signatures.FILTERS.validate(value)
-                self._root["settings"]["entity_filters"] = value
-            except SchemaError as e:
-                six.raise_from(DataFormatError, e)
+            self._root["settings"]["entity_filters"] = value
 
     # =========================================================================
 
@@ -255,11 +271,9 @@ class DeconstructionPlanner(Blueprintable):
         if value is None:
             self._root["settings"].pop("tile_filters", None)
         else:
-            try:
-                value = signatures.FILTERS.validate(value)
-                self._root["settings"]["tile_filters"] = value
-            except SchemaError as e:
-                six.raise_from(DataFormatError, e)
+            self._root["settings"]["tile_filters"] = value
+
+    # TODO: set_tile_filters() function
 
     # =========================================================================
 
@@ -311,12 +325,12 @@ class DeconstructionPlanner(Blueprintable):
             self.entity_filters = []
 
         # Check if index is ouside the range of the max filter slots
-        if not 0 <= index < 30:
-            raise IndexError(
-                "Index {} exceeds the maximum number of entity filter slots (30)".format(
-                    index
-                )
-            )
+        # if not 0 <= index < 30:
+        #     raise IndexError(
+        #         "Index {} exceeds the maximum number of entity filter slots (30)".format(
+        #             index
+        #         )
+        #     )
 
         # Check to see that `name` is a valid entity
         # TODO
@@ -332,6 +346,13 @@ class DeconstructionPlanner(Blueprintable):
 
         # Otherwise its unique; add to list
         self.entity_filters.append({"index": index + 1, "name": name})
+
+    def set_entity_filters(self, *entity_names: list[str]):
+        """
+        TODO
+        """
+        for i, entity_name in enumerate(entity_names):
+            self.set_entity_filter(i, entity_name)
 
     def set_tile_filter(self, index, name):
         # type: (int, str) -> None
@@ -349,12 +370,12 @@ class DeconstructionPlanner(Blueprintable):
             self.tile_filters = []
 
         # Check if `index` is ouside the range of the max filter slots
-        if not 0 <= index < 30:
-            raise IndexError(
-                "Index {} exceeds the maximum number of tile filter slots (30)".format(
-                    index
-                )
-            )
+        # if not 0 <= index < 30:
+        #     raise IndexError(
+        #         "Index {} exceeds the maximum number of tile filter slots (30)".format(
+        #             index
+        #         )
+        #     )
 
         # Check to see that `name` is a valid tile
         # TODO
@@ -371,18 +392,94 @@ class DeconstructionPlanner(Blueprintable):
         # Otherwise its unique; add to list
         self.tile_filters.append({"index": index + 1, "name": name})
 
+    def set_tile_filters(self, *tile_names: list[str]):
+        """
+        TODO
+        """
+        for i, tile_name in enumerate(tile_names):
+            self.set_tile_filter(i, tile_name)
+
     # =========================================================================
 
     def validate(self):
         """
         TODO
         """
-        pass
+        if self.is_valid:
+            return
+        
+        # TODO: wrap with DataFormatError or similar
+        # TODO: this is a bit confusingly named, but it shouldn't matter for
+        # the end user
+        DeconstructionPlanner.Format.DeconstructionPlannerObject.model_validate(self._root)
+
+        super().validate()
+
+    def inspect(self) -> ValidationResult:
+        result = super().inspect()
+
+        # By nature of necessity, we must ensure that all members of upgrade
+        # planner are in a correct and known format, so we must call:
+        try:
+            self.validate()
+        except Exception as e:
+            # If validation fails, it's in a format that we do not expect; and
+            # therefore unreasonable for us to assume that we can continue
+            # checking for issues relating to that non-existent format.
+            # Therefore, we add the errors to the error list and early exit
+            # TODO: figure out the proper way to reraise
+            result.error_list.append(DataFormatError(str(e)))
+            return result
+
+        for entity_filter in self.entity_filters:
+            if not 0 <= entity_filter["index"] < 30:
+                result.warning_list.append(
+                    IndexWarning(
+                        "Index of entity_filter '{}' ({}) exceeds the maximum number of tile filter slots (30)".format(
+                            entity_filter["name"], entity_filter["index"]
+                        )
+                    )
+                )
+            
+            if entity_filter["name"] not in entities.raw:
+                result.warning_list.append(
+                    UnrecognizedElementWarning(
+                        "Unrecognized entity '{}'".format(entity_filter["name"])
+                    )
+                )
+
+        for tile_filter in self.tile_filters:
+            if not 0 <= tile_filter["index"] < 30:
+                result.warning_list.append(
+                    IndexWarning(
+                        "Index of entity_filter '{}' ({}) exceeds the maximum number of tile filter slots (30)".format(
+                            tile_filter["name"], tile_filter["index"]
+                        )
+                    )
+                )
+            
+            if tile_filter["name"] not in tiles.raw:
+                result.warning_list.append(
+                    UnrecognizedElementWarning(
+                        "Unrecognized tile '{}'".format(entity_filter["name"])
+                    )
+                )
+
+        return result
 
     def to_dict(self):
-        out_dict = copy.deepcopy(self._root)
+        out_model = DeconstructionPlanner.Format.model_construct(
+            **{self._root_item: self._root}, _recursive=True
+        )
 
-        if out_dict["settings"] == {}:
-            out_dict["settings"] = None  # null
+        print(out_model)
 
-        return {"deconstruction_planner": out_dict}
+        # We then create an output dict
+        out_dict = out_model.model_dump(
+            by_alias=True,
+            exclude_none=True,
+            exclude_defaults=True,
+            warnings=False,  # Ignore warnings until model_construct is recursive
+        )
+
+        return out_dict

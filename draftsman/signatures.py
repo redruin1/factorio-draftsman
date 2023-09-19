@@ -13,109 +13,191 @@ from __future__ import unicode_literals
 from draftsman.classes.association import Association
 from draftsman.data.signals import signal_dict, mapper_dict
 
-from builtins import int
+from typing_extensions import Annotated
+
 from enum import Enum
-from pydantic import RootModel, model_validator, Field
-from pydantic import BaseModel
-from typing import List, Literal, Any
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import RootModel as PydanticRootModel
+from pydantic import model_validator, Field
 from schema import Schema, Use, Optional, Or, And
 from typing import Optional as TrueOptional  # TODO: fixme
 import six
+import sys
+import types
+import typing
+
+try:
+    from typing import get_args, get_origin  # type: ignore
+except ImportError:
+    from typing_extensions import get_args, get_origin
 
 
-# class BaseModel(PydanticBaseModel):
-#     @classmethod
-#     def model_construct(cls, _recursive=False, _fields_set=None, **values):
-#         if not _recursive:
-#             super().model_construct(_fields_set=_fields_set, **values)
+if sys.version_info >= (3, 10):
 
-#         # m = cls.__new__(cls)
-#         # fields_values = {}
+    def _is_union(origin):
+        return origin is typing.Union or origin is types.UnionType
 
-#         # config = cls.model_config
+else:
 
-#         # for name, field in cls.model_fields.items():
-#         #     print(name, field.annotation)
-#         #     key = field.alias
-#         #     if key not in values:
-#         #         key = name
+    def _is_union(origin):
+        return origin is typing.Union
 
-#         #     if key in values:
-#         #         if values[key] is None and not field.is_required(): # Moved this check since None value can be passed for Optional nested field
-#         #             fields_values[name] = field.get_default()
-#         #         else:
-#         #             if issubclass(field.annotation.__class__, BaseModel):
-#         #                 if field.shape == 2:
-#         #                     fields_values[name] = [
-#         #                         field.annotation.model_construct(**e)
-#         #                         for e in values[key]
-#         #                     ]
-#         #                 else:
-#         #                     fields_values[name] = field.outer_type_.model_construct(**values[key])
-#         #             else:
-#         #                 fields_values[name] = values[key]
-#         #     elif not field.is_required():
-#         #         fields_values[name] = field.get_default()
 
-#         # object.__setattr__(m, '__dict__', fields_values)
-#         # if _fields_set is None:
-#         #     _fields_set = set(values.keys())
-#         # object.__setattr__(m, '__pydantic_fields_set__', _fields_set)
-#         # # m._init_private_attributes()
-#         # return m
+class BaseModel(PydanticBaseModel):
+    """
+    Here we patch Pydantic's base model so that we can support a recursive 
+    `model_construct()`. Hopefully this change gets implemented upstream, but 
+    if not/until then this modification enables this behavior
 
-#         m = cls.__new__(cls)
-#         fields_values: dict[str, Any] = {}
-#         defaults: dict[str, Any] = {}  # keeping this separate from `fields_values` helps us compute `_fields_set`
-#         for name, field in cls.model_fields.items():
-#             print(name, field)
-#             if field.alias and field.alias in values:
-#                 # if issubclass(field.annotation, BaseModel):
-#                 try:
-#                     # assert issubclass(field.annotation, BaseModel)
-#                     fields_values[name] = field.annotation.model_construct(
-#                         _recursive=_recursive,
-#                         _fields_set=_fields_set,
-#                         **values[field.alias]
-#                     )
-#                 except AttributeError:
-#                     fields_values[name] = values.pop(field.alias)
-#             elif name in values:
-#                 try:
-#                     # assert issubclass(field.annotation, BaseModel)
-#                     fields_values[name] = field.annotation.model_construct(
-#                         _recursive=_recursive,
-#                         _fields_set=_fields_set,
-#                         **values[name]
-#                     )
-#                 except AttributeError:
-#                     fields_values[name] = values.pop(name)
-#             elif not field.is_required():
-#                 defaults[name] = field.get_default(call_default_factory=True)
-#         if _fields_set is None:
-#             _fields_set = set(fields_values.keys())
-#         fields_values.update(defaults)
+    Make sure if you create new blueprint-likes to use THIS version of BaseModel
+    instead of Pydantic's default!
+    """
+    @classmethod
+    def model_construct(cls, _fields_set=None, _recursive=False, **values):
+        print("model construct {}".format(cls.__name__))
+        m = cls.__new__(cls)
+        fields_values: dict[str, typing.Any] = {}
+        defaults: dict[str, typing.Any] = {} 
+        for name, field in cls.model_fields.items():
+            print("\t", name, field.annotation)
+            if field.alias and field.alias in values:
+                value = values.pop(field.alias)
+                if _recursive:
+                    value = _recursive_model_construct(field.annotation, value)
+                fields_values[name] = value
+            elif name in values:
+                value = values.pop(name)
+                if _recursive:
+                    value = _recursive_model_construct(field.annotation, value)
+                fields_values[name] = value
+            elif not field.is_required():
+                defaults[name] = field.get_default(call_default_factory=True)
+        if _fields_set is None:
+            _fields_set = set(fields_values.keys())
+        fields_values.update(defaults)
 
-#         _extra: dict[str, Any] | None = None
-#         if cls.model_config.get('extra') == 'allow':
-#             _extra = {}
-#             for k, v in values.items():
-#                 _extra[k] = v
-#         else:
-#             fields_values.update(values)
-#         object.__setattr__(m, '__dict__', fields_values)
-#         object.__setattr__(m, '__pydantic_fields_set__', _fields_set)
-#         if not cls.__pydantic_root_model__:
-#             object.__setattr__(m, '__pydantic_extra__', _extra)
+        _extra: dict[str, typing.Any] | None = None
+        if cls.model_config.get('extra') == 'allow':
+            _extra = {}
+            for k, v in values.items():
+                _extra[k] = v
+        else:
+            fields_values.update(values)
+        object.__setattr__(m, '__dict__', fields_values)
+        object.__setattr__(m, '__pydantic_fields_set__', _fields_set)
+        if not cls.__pydantic_root_model__:
+            object.__setattr__(m, '__pydantic_extra__', _extra)
 
-#         if cls.__pydantic_post_init__:
-#             m.model_post_init(None)
-#         elif not cls.__pydantic_root_model__:
-#             # Note: if there are any private attributes, cls.__pydantic_post_init__ would exist
-#             # Since it doesn't, that means that `__pydantic_private__` should be set to None
-#             object.__setattr__(m, '__pydantic_private__', None)
+        if cls.__pydantic_post_init__:
+            m.model_post_init(None)
+        elif not cls.__pydantic_root_model__:
+            # Note: if there are any private attributes, cls.__pydantic_post_init__ would exist
+            # Since it doesn't, that means that `__pydantic_private__` should be set to None
+            object.__setattr__(m, '__pydantic_private__', None)
 
-#         return m
+        return m
+
+
+class RootModel(PydanticRootModel):
+    """
+    Because we also use `RootModel`, we need to overwrite this method as well
+    """
+    @classmethod
+    def model_construct(cls, root, _fields_set = None, _recursive=False):
+        print("root recurse")
+        # Redirect to our patched model
+        return BaseModel.model_construct(
+            root=root, _fields_set=_fields_set, _recursive=_recursive
+        )
+
+
+def _recursive_model_construct(annotation: type | None, value: typing.Any):
+    # No annotation? Early exit
+    if annotation is None:
+        return value
+    # Try treating the entire annotation as a BaseModel
+    try:
+        if issubclass(annotation, BaseModel):
+            print("yes!")
+            return annotation.model_construct(**value, _recursive=True)
+    except Exception as e:
+        print(type(e).__name__, e)
+        print("issue with BaseModel '{}'".format(annotation))
+        pass
+    # Try also treating the entire annotation as a RootModel
+    try:
+        if issubclass(annotation, RootModel):
+            return annotation.model_construct(value, _recursive=True)
+    except Exception as e:
+        print(type(e).__name__, e)
+        print("Issue with RootModel '{}'".format(annotation))
+        pass
+
+    # If that doesn't work, we might have a special type we need to explode
+    origin = get_origin(annotation)
+    # Early-exit so that issubclass() doesn't throw
+    print("origin: {}".format(origin))
+    if origin is None:
+        print("No origin")
+        print("returning '{}'".format(value))
+        return value
+    elif _is_union(origin):  # or origin is types.UnionType:
+        print("union")
+        # TODO: union_mode/discriminators?
+        for possible_type in get_args(annotation):
+            # The following could also probably be more explicit
+            print("possible_type: ", possible_type)
+            try:
+                if issubclass(possible_type, BaseModel):
+                    return possible_type.model_construct(**value, _recursive=True)
+            except Exception as e:
+                print(type(e), e)
+                print("failed to recurse '{}'".format(annotation))
+                pass
+            # Try also treating the entire annotation as a RootModel
+            try:
+                if issubclass(possible_type, RootModel):
+                    return possible_type.model_construct(value, _recursive=True)
+            except Exception as e:
+                print(e)
+                print("failed to recurse '{}'".format(annotation))
+                pass
+            
+        print("none of the union members matched!")
+    elif origin is typing.Literal:
+        print("literal")
+        return value
+    elif isinstance(origin, (str, bytes)):
+        print("string")
+        return value
+    elif issubclass(origin, typing.Tuple):
+        print("tuple")
+        args = get_args(annotation)
+        if isinstance(args[-1], type(Ellipsis)):
+            # format: tuple[T, ...]
+            member_type = args[0]
+            return tuple(_recursive_model_construct(member_type, v) for v in value)
+        else:
+            # format: tuple[A, B, C]
+            return tuple(_recursive_model_construct(member_type, value[i]) for i, member_type in enumerate(args))
+    elif issubclass(origin, typing.Sequence):
+        print("sequence")
+        member_type = get_args(annotation)[0]
+        print(member_type)
+        print(value)
+        return [_recursive_model_construct(member_type, v) for v in value]
+    elif issubclass(origin, typing.Mapping):
+        print("mapping")
+        # Unsure if we need to explode key_type as well as value_type
+        key_type, value_type = get_args(annotation)
+        return {k: _recursive_model_construct(value_type, v) for k, v in value.items()}
+
+    print("returning '{}'".format(value))
+    # If none of the above, return the unchanged value
+    return value
+
+
+uint64 = Annotated[int, Field(..., ge=0, lt=2**64)]
 
 INTEGER = Schema(int)
 INTEGER_OR_NONE = Schema(Or(int, None))
@@ -885,6 +967,7 @@ mapper_schema = {  # TODO: rename
 }
 
 
+# TODO: move this
 class MapperType(str, Enum):
     entity = "entity"
     item = "item"
@@ -898,11 +981,11 @@ class MapperID(BaseModel):
 class Mapper(BaseModel):
     to: MapperID | None = None
     from_: MapperID | None = Field(None, alias="from")  # Damn you Python
-    index: int = Field(..., ge=0, lt=2**64)
+    index: uint64
 
 
 class Mappers(RootModel):
-    root: List[Mapper] | None
+    root: list[Mapper] | None
 
     # @validator("__root__", pre=True)
     # def normalize_mappers(cls, mappers):
@@ -917,35 +1000,6 @@ class Mappers(RootModel):
     #                 mappers[i]["to"] = mapping_dict(mapper[1])
     #     return mappers
 
-
-icons_schema = {  # TODO: rename
-    "$id": "ICONS_ARRAY",  # TODO: rename
-    "title": "Icons list",
-    "description": "Format of the list of signals used to give blueprintable objects unique appearences. Only a maximum of 4 entries are allowed; indicies outside of the range [1, 4] will return 'Index out of bounds', and defining multiple icons that use the same index returns 'Icon already specified'.",
-    "type": "array",
-    "items": {
-        "type": "object",
-        "properties": {
-            "signal": {
-                "description": "Which signal icon to use.",
-                "$ref": "factorio-draftsman://SIGNAL_DICT",
-            },
-            "index": {
-                "description": "What index to place the signal icon, 1-indexed.",
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 4,
-            },
-        },
-        "required": ["signal", "index"],
-        "additionalProperties": False,
-    },
-    "maxItems": 4,
-    "draftsman_exportIf": "truthy",
-    "draftsman_conversion": lambda key, value: (key, normalize_icons(value)),
-}
-
-
 class SignalID(BaseModel):
     name: TrueOptional[str]  # Anyone's guess _why_ this is optional
     type: str
@@ -953,11 +1007,11 @@ class SignalID(BaseModel):
 
 class Icon(BaseModel):
     signal: SignalID
-    index: int
+    index: int # TODO dimension
 
 
 class Icons(RootModel):
-    root: List[Icon] | None = Field(..., max_length=4)
+    root: list[Icon] | None = Field(..., max_length=4)
 
     # @root_validator(pre=True)
     @model_validator(mode="before")
@@ -971,10 +1025,10 @@ class Icons(RootModel):
 
 
 class Color(BaseModel):
-    r: int | float
-    g: int | float
-    b: int | float
-    a: int | float | None = None
+    r: int | float = Field(..., ge=0, le=255)
+    g: int | float = Field(..., ge=0, le=255)
+    b: int | float = Field(..., ge=0, le=255)
+    a: int | float | None = Field(None, ge=0, le=255)
 
 
 class Position(BaseModel):
@@ -993,8 +1047,8 @@ class Position(BaseModel):
 class WaitCondition(BaseModel):
     type: str
     compare_type: str
-    ticks: int | None = None
-    condition: dict | None = None
+    ticks: int | None = None # TODO dimension
+    condition: dict | None = None # TODO: correct annotation
 
 
 class Stop(BaseModel):
@@ -1002,13 +1056,11 @@ class Stop(BaseModel):
     wait_conditions: list[WaitCondition]
 
 
-# class Label(RootModel):
-#     root: str | None = None
+class EntityFilter(BaseModel):
+    name: str
+    index: uint64
 
 
-# class Description(RootModel):
-#     root: str | None = None
-
-
-# class Version(RootModel):
-#     root: int | None = Field(None, ge=0, lt=2**64)
+class TileFilter(BaseModel):
+    name: str
+    index: uint64

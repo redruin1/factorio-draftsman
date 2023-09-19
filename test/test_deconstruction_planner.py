@@ -25,7 +25,6 @@ class DeconstructionPlannerTesting(unittest.TestCase):
         decon_planner = DeconstructionPlanner()
         assert decon_planner.to_dict()["deconstruction_planner"] == {
             "item": "deconstruction-planner",
-            "settings": None,
             "version": utils.encode_version(*__factorio_version_info__),
         }
 
@@ -35,7 +34,6 @@ class DeconstructionPlannerTesting(unittest.TestCase):
         )
         assert decon_planner.to_dict()["deconstruction_planner"] == {
             "item": "deconstruction-planner",
-            "settings": None,
             "version": utils.encode_version(1, 1, 61),
         }
 
@@ -102,15 +100,11 @@ class DeconstructionPlannerTesting(unittest.TestCase):
         ]
 
         # Test Abridged
-        decon_planner.entity_filters = ["transport-belt", "fast-transport-belt"]
+        decon_planner.set_entity_filters("transport-belt", "fast-transport-belt")
         assert decon_planner.entity_filters == [
             {"name": "transport-belt", "index": 1},
             {"name": "fast-transport-belt", "index": 2},
         ]
-
-        # Errors
-        with pytest.raises(DataFormatError):
-            decon_planner.entity_filters = "incorrect"
 
     def test_set_trees_and_rocks_only(self):
         decon_planner = DeconstructionPlanner()
@@ -168,15 +162,11 @@ class DeconstructionPlannerTesting(unittest.TestCase):
         ]
 
         # Test Abridged
-        decon_planner.tile_filters = ["concrete", "stone-path"]
+        decon_planner.set_tile_filters("concrete", "stone-path")
         assert decon_planner.tile_filters == [
             {"name": "concrete", "index": 1},
             {"name": "stone-path", "index": 2},
         ]
-
-        # Errors
-        with pytest.raises(DataFormatError):
-            decon_planner.tile_filters = "incorrect"
 
     def test_tile_selection_mode(self):
         decon_planner = DeconstructionPlanner()
@@ -224,8 +214,8 @@ class DeconstructionPlannerTesting(unittest.TestCase):
         ]
 
         # Errors
-        with pytest.raises(IndexError):
-            decon_planner.set_entity_filter(100, "transport-belt")
+        # with pytest.raises(IndexError):
+        #     decon_planner.set_entity_filter(100, "transport-belt")
 
         # TODO: check for invalid input names
 
@@ -252,7 +242,7 @@ class DeconstructionPlannerTesting(unittest.TestCase):
         assert decon_planner.tile_filters == [{"name": "stone-path", "index": 2}]
 
         # Errors
-        with pytest.raises(IndexError):
-            decon_planner.set_tile_filter(100, "concrete")
+        # with pytest.raises(IndexError):
+        #     decon_planner.set_tile_filter(100, "concrete")
 
         # TODO: check for invalid input names

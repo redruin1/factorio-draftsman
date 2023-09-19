@@ -27,20 +27,32 @@
             "active_index": int, # The currently selected blueprint in "blueprints"
             "blueprints": [ # A list of all Blueprintable objects this book contains
                 {
-                    "item": "blueprint",
-                    ... # Any associated Blueprint key/values
+                    {
+                        "item": "blueprint",
+                        ... # Any associated Blueprint key/values
+                    },
+                    "index": int # Index in the Blueprint Book
                 }, # or
                 {
-                    "item": "deconstruction-planner",
-                    ... # Any associated DeconstructionPlanner key/values
+                    {
+                        "item": "deconstruction-planner",
+                        ... # Any associated DeconstructionPlanner key/values
+                    }, 
+                    "index": int # Index in the Blueprint Book
                 }, # or
                 {
-                    "item": "upgrade-planner",
-                    ... # Any associated UpgradePlanner key/values
+                    {
+                        "item": "upgrade-planner",
+                        ... # Any associated UpgradePlanner key/values
+                    },
+                    "index": int # Index in the Blueprint Book
                 }, # or
                 {
-                    "item": "blueprint-book",
-                    ... # Any above key/values
+                    {
+                        "item": "blueprint-book",
+                        ... # Any above key/values
+                    },
+                    "index": int # Index in the Blueprint Book
                 }
             ]
         }
@@ -53,18 +65,19 @@ from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.deconstruction_planner import DeconstructionPlanner
+from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.error import DataFormatError
-from draftsman import signatures
+from draftsman.signatures import BaseModel, Color, Icons
 from draftsman import utils
 from draftsman.warning import DraftsmanWarning, IndexWarning
 
 from builtins import int
 import copy
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field, field_validator, ValidationError
 from schema import SchemaError
 import six
-from typing import Union, Literal
+from typing import Union, Literal, overload
 import warnings
 
 try:  # pragma: no coverage
@@ -82,7 +95,7 @@ class BlueprintableList(MutableSequence):
 
     def __init__(self, initlist=None, unknown="error"):
         # type: (list[Blueprint], str) -> None
-        self.data = []
+        self.data: list[Blueprintable] = []
         if initlist is not None:
             for elem in initlist:
                 if isinstance(elem, dict):
@@ -123,28 +136,29 @@ class BlueprintableList(MutableSequence):
                 else:
                     self.append(elem)
 
-    def insert(self, idx, value):
-        # type: (int, Blueprintable) -> None
+    def insert(self, idx: int, value: Blueprintable):
         # Make sure the blueprintable is valid
         self.check_blueprintable(value)
 
         self.data.insert(idx, value)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Blueprintable:
         return self.data[idx]
 
-    def __setitem__(self, idx, value):
-        # type: (int, Union[Blueprint, BlueprintBook]) -> None
+    def __setitem__(self, idx: int, value: Blueprintable):
         # Make sure the blueprintable is valid
         self.check_blueprintable(value)
 
         self.data[idx] = value
 
-    def __delitem__(self, idx):
+    def __delitem__(self, idx: int):
         del self.data[idx]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.data)
+
+    def __repr__(self) -> str:
+        return "<BlueprintableList>{}".format(repr(self.data))
 
     def check_blueprintable(self, blueprintable):
         if not isinstance(
@@ -157,20 +171,45 @@ class BlueprintableList(MutableSequence):
             )
 
 
-class BlueprintBookModel(BaseModel):
-    item: Literal["blueprint-book"] = "blueprint-book"
-    label: str | None = None
-    version: int | None = Field(None, ge=0, lt=2**64)
-
-
 class BlueprintBook(Blueprintable):
     """
     Factorio Blueprint Book class. Contains a list of :py:class:`.Blueprintable`
     objects as well as some of it's own metadata.
     """
 
+    # =========================================================================
+    # Format
+    # =========================================================================
+
     class Format(BaseModel):
-        blueprint_book: BlueprintBookModel = BlueprintBookModel()
+        class BlueprintBookObject(BaseModel):
+            item: Literal["blueprint-book"]
+            label: str | None = None
+            label_color: Color | None = None
+            description: str | None = None
+            icons: Icons | None = None
+            active_index: int
+            version: int | None = Field(None, ge=0, lt=2**64)
+            
+            blueprints: list[
+                    Union[
+                        # TODO: implement __get_pydantic_core_schema__ for all of these
+                        # so we can just write "Union[Blueprint, DeconstructionPlanner, ...]",
+                        Blueprint.Format,
+                        DeconstructionPlanner.Format, 
+                        UpgradePlanner.Format,
+                        "BlueprintBook.Format"
+                    ]
+                ] = []
+
+        blueprint_book: BlueprintBookObject
+        index: int | None = Field(None, description="Only present when inside a BlueprintBook") # TODO: dimension
+
+        model_config = ConfigDict(title="ExternalObject")
+
+    # =========================================================================
+    # Constructors
+    # =========================================================================
 
     @utils.reissue_warnings
     def __init__(self, blueprint_book=None, unknown="error"):
@@ -274,13 +313,12 @@ class BlueprintBook(Blueprintable):
         TODO
         """
         try:
-            if a is None:
-                self._root["label_color"] = signatures.COLOR.validate([r, g, b])  # TODO
-            else:
-                self._root["label_color"] = signatures.COLOR.validate(
-                    [r, g, b, a]
-                )  # FIXME
-        except SchemaError as e:
+            self._root["label_color"] = Color(
+                r=r, g=g, b=b, a=a
+            ).model_dump(
+                exclude_none=True
+            )
+        except ValidationError as e:
             raise DataFormatError from e
 
     # =========================================================================
@@ -334,6 +372,7 @@ class BlueprintBook(Blueprintable):
 
     @blueprints.setter
     def blueprints(self, value):
+        # TODO: handle BlueprintableList as input value
         if value is None:
             self._root["blueprints"] = BlueprintableList()
         elif isinstance(value, list):
@@ -363,6 +402,41 @@ class BlueprintBook(Blueprintable):
             )
         pass
 
+    def inspect(self) -> ValidationResult:
+        result = super().inspect()
+
+        # By nature of necessity, we must ensure that all members of upgrade
+        # planner are in a correct and known format, so we must call:
+        try:
+            self.validate()
+        except Exception as e:
+            # If validation fails, it's in a format that we do not expect; and
+            # therefore unreasonable for us to assume that we can continue
+            # checking for issues relating to that non-existent format.
+            # Therefore, we add the errors to the error list and early exit
+            # TODO: figure out the proper way to reraise
+            result.error_list.append(DataFormatError(str(e)))
+            return result
+
+        # Warn if active_index is out of reasonable bounds
+        if not 0 <= self.active_index < len(self.blueprints):
+            result.warning_list.append(
+                IndexWarning(
+                    "'active_index' ({}) must be in range [0, {}) or else it will have no effect".format(
+                        self.active_index,
+                        len(self.blueprints),
+                    )
+                )
+            )
+
+        # Inspect every sub-blueprint and concatenate all errors and warnings
+        for blueprintable in self.blueprints:
+            subresult = blueprintable.inspect()
+            result.error_list.extend(subresult.error_list)
+            result.warning_list.extend(subresult.warning_list)
+
+        return result
+
     def to_dict(self):
         # type: () -> dict
         """
@@ -372,16 +446,37 @@ class BlueprintBook(Blueprintable):
 
         :returns: The dict representation of the BlueprintBook.
         """
-        # Get the root dicts from each blueprint and insert them into blueprints
-        out_dict = copy.deepcopy(self._root)
+        #
+        root_copy = {k: v for k, v in self._root.items() if k != "blueprints"}
 
-        out_dict["blueprints"] = []
+        # Transform blueprints
+        root_copy["blueprints"] = []
         for i, blueprintable in enumerate(self.blueprints):
-            blueprintable_entry = blueprintable.to_dict()
+            blueprintable_entry = copy.deepcopy(blueprintable.to_dict())
+            print("blueprintable entry:", blueprintable_entry)
             blueprintable_entry["index"] = i
-            out_dict["blueprints"].append(blueprintable_entry)
+            root_copy["blueprints"].append(blueprintable_entry)
 
-        if len(out_dict["blueprints"]) == 0:
-            del out_dict["blueprints"]
+        # The following should make sense, but it's actually just dumb
 
-        return {"blueprint_book": out_dict}
+        # print("\tROOT_COPY: ", root_copy)
+
+        # out_model = BlueprintBook.Format.model_construct(
+        #     **{self._root_item: root_copy}, _recursive=True
+        # )
+
+        # print("\tOUT_MODEL: ", out_model)
+        
+        # out_dict = out_model.model_dump(
+        #     by_alias=True,
+        #     exclude_none=True,
+        #     exclude_defaults=True,
+        #     warnings=False  # Ignore warnings until model_construct is recursive
+        # )
+
+        # print("\tOUT_DICT:", out_dict)
+
+        if len(root_copy["blueprints"]) == 0:
+            del root_copy["blueprints"]
+
+        return {"blueprint_book": root_copy}

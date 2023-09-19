@@ -12,9 +12,9 @@ from __future__ import unicode_literals
 from draftsman import __factorio_version_info__
 from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.exportable import ValidationResult
-from draftsman.data import entities, items, modules
+from draftsman.data import entities, items
 from draftsman.error import DataFormatError
-from draftsman import signatures
+from draftsman.signatures import BaseModel, Icons, Mapper, Mappers, mapper_dict, uint64
 from draftsman import utils
 from draftsman.warning import (
     IndexWarning,
@@ -22,11 +22,10 @@ from draftsman.warning import (
     RedundantOperationWarning,
     UnrecognizedElementWarning,
 )
-from functools import cached_property
 
 import bisect
 import copy
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import Field, field_validator, ConfigDict
 from schema import Schema, Optional, SchemaError
 import six
 from typing import Union, Sequence, Literal
@@ -190,15 +189,19 @@ class UpgradePlanner(Blueprintable):
     items.
     """
 
+    # =========================================================================
+    # Format
+    # =========================================================================
+
     class Format(BaseModel):
         """
         The full description of UpgradePlanner's formal schema.
         """
 
-        class UpgradePlanner(BaseModel):
-            item: Literal["upgrade-planner"] = "upgrade-planner"
+        class UpgradePlannerObject(BaseModel):
+            item: Literal["upgrade-planner"]
             label: str | None = None
-            version: int | None = Field(None, ge=0, lt=2**64)
+            version: uint64 | None = None
 
             class Settings(BaseModel):
                 """
@@ -207,22 +210,24 @@ class UpgradePlanner(Blueprintable):
                 """
 
                 description: str | None = None
-                icons: signatures.Icons | None = None
-                mappers: signatures.Mappers | None = None
+                icons: Icons | None = None
+                mappers: Mappers | None = None
 
             settings: Settings | None = Settings()
 
-            @field_validator("item")
-            def correct_item(cls, v):
-                assert v == "upgrade-planner"
-                return v
+            # TODO: do we need/want this?
+            # @field_validator("item")
+            # def correct_item(cls, v):
+            #     assert v == "upgrade-planner"
+            #     return v
 
-            model_config = ConfigDict(extra="forbid")
+        upgrade_planner: UpgradePlannerObject
+        index: int | None = Field(None, description="Only present when inside a BlueprintBook") # TODO: dimension
 
-        upgrade_planner: UpgradePlanner
+        model_config = ConfigDict(title="UpgradePlannerRoot")
 
-        model_config = ConfigDict(title="UpgradePlannerRoot", extra="forbid")
-
+    # =========================================================================
+    # Constructors
     # =========================================================================
 
     @utils.reissue_warnings
@@ -363,8 +368,8 @@ class UpgradePlanner(Blueprintable):
             Can be set to ``None`` which will leave it blank.
         :param index: The location in the upgrade planner's mappers list.
         """
-        from_obj = signatures.mapper_dict(from_obj)
-        to_obj = signatures.mapper_dict(to_obj)
+        from_obj = mapper_dict(from_obj)
+        to_obj = mapper_dict(to_obj)
         index = int(index)
 
         if self.mappers is None:
@@ -412,8 +417,8 @@ class UpgradePlanner(Blueprintable):
         :param to_obj: The :py:data:`.MAPPING_ID` to convert entities/items to.
         :param index: The index of the mapping in the mapper to search.
         """
-        from_obj = signatures.mapper_dict(from_obj)
-        to_obj = signatures.mapper_dict(to_obj)
+        from_obj = mapper_dict(from_obj)
+        to_obj = mapper_dict(to_obj)
         index = int(index) if index is not None else None
 
         if index is None:
@@ -434,7 +439,7 @@ class UpgradePlanner(Blueprintable):
             self.mappers.remove(mapper)
 
     def pop_mapping(self, index):
-        # type: (int) -> signatures.Mapper
+        # type: (int) -> Mapper
         """
         Removes a mapping at a specific mapper index. Note that this is not the
         position of the mapper in the :py:attr:`.mappers` list; it is the value
@@ -467,9 +472,7 @@ class UpgradePlanner(Blueprintable):
         # TODO: wrap with DataFormatError or similar
         # TODO: this is a bit confusingly named, but it shouldn't matter for
         # the end user
-        UpgradePlanner.Format.UpgradePlanner.model_validate(self._root).model_dump(
-            by_alias=True, exclude_none=True
-        )
+        UpgradePlanner.Format.UpgradePlannerObject.model_validate(self._root)
 
         super().validate()
 
@@ -544,15 +547,17 @@ class UpgradePlanner(Blueprintable):
 
     def to_dict(self):
         # type: () -> dict
-        out_dict = self.__class__.Format.model_construct(  # Performs no validation(!)
-            **{self._root_item: self._root}
-        ).model_dump(
-            by_alias=True,  # Some attributes are reserved words (type, from,
-            # etc.); this resolves that issue
+        out_model = UpgradePlanner.Format.model_construct(
+            **{self._root_item: self._root}, _recursive=True
+        )
+        
+        print("\tMODEL: ",out_model)
+
+        out_dict = out_model.model_dump(
+            by_alias=True,
             exclude_none=True,  # Trim if values are None
-            exclude_defaults=True,  # Trim if values are defaults
-            warnings=False  # Ignore warnings because `model_construct` cannot
-            # be made recursive for some asinine reason
+            # exclude_defaults=True,  # This would be ideal, but problems arise
+            warnings=False  # Ignore warnings until model_construct is properly recursive
         )
 
         # TODO: Ideally this would also be part of the last step, but another

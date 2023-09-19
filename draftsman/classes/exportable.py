@@ -10,6 +10,9 @@ import pprint  # TODO: think about
 
 
 class ValidationResult:
+    """
+    TODO
+    """
     def __init__(self, error_list: List[Exception], warning_list: List[Warning]):
         self.error_list: List[Exception] = error_list
         self.warning_list: List[Warning] = warning_list
@@ -50,7 +53,7 @@ class ValidationResult:
 
     def __repr__(self):  # pragma: no coverage
         return "ValidationResult{{errors={}, warnings={}}}".format(
-            self.error_list, self.warning_list
+            repr(self.error_list), repr(self.warning_list)
         )
 
 
@@ -74,7 +77,26 @@ class Exportable(metaclass=ABCMeta):
     @property
     def is_valid(self):
         """
-        TODO
+        Read-only attribute that indicates whether or not this object is 
+        validated. If this attribute is true, you can assume that all component 
+        attributes of this object are formatted correctly and value tolerant. 
+        Validity is lost anytime any attribute of a valid object is altered, and 
+        gained when :py:meth:`.validate` is called:
+
+        .. example::
+
+            >>> from draftsman.entity import Container
+            >>> c = Container("wooden-chest")
+            >>> c.is_valid
+            False
+            >>> c.validate()
+            >>> c.is_valid
+            True
+            >>> c.bar = 10  # Even though 10 is a valid value, validate() must 
+            >>> c.is_valid  # be called again for draftsman to know this
+            False
+
+        Read only.
         """
         return self._is_valid
 
@@ -83,15 +105,35 @@ class Exportable(metaclass=ABCMeta):
     @abstractmethod
     def validate(self):
         """
-        TODO
+        Method that attempts to first coerce the object into a known form, and
+        then checks the values of its attributes for correctness. If unable to
+        do so, this function raises :py:error:`.DataFormatError`. Otherwise,
+        no errors are raised and :py:attr:`.is_valid` is set to ``True``.
+
+        .. example::
+
+            >>> from draftsman.entity import Container
+            >>> from draftsman.error import DataFormatError
+            >>> c = Container("wooden-chest")
+            >>> c.bar = "incorrect"
+            >>> try:
+            ...     c.validate()
+            ... except DataFormatError as e:
+            ...     print("wrong! {}", e)
+            wrong!
+
+        :raises:
         """
-        # Subsequent objects must implement this method and then call this
+        # NOTE: Subsequent objects must implement this method and then call this
         # parent method to cache successful validity
         super().__setattr__("_is_valid", True)
 
     def inspect(self):
         """
-        TODO
+        Inspects
+
+        :returns: A :py:class:`.ValidationResult` object, containing any found
+            errors or warnings pertaining to this object.
         """
         return ValidationResult([], [])
 
@@ -117,7 +159,7 @@ class Exportable(metaclass=ABCMeta):
         return out_dict
 
     @classmethod
-    def dump_format(cls) -> dict:  # pragma: no coverage
+    def json_schema(cls) -> dict:  # pragma: no coverage
         """
         Returns a JSON schema object that correctly validates this object. Can
         be exported to a JSON string that can be shared and used generically by
@@ -128,7 +170,7 @@ class Exportable(metaclass=ABCMeta):
             https://json-schema.org/
 
         :returns: A python dictionary containing all the relevant key-value
-            pairs, which can be dumped to a string with ``json.dumps``
+            pairs, which can be dumped to a string with ``json.dumps``.
         """
         # TODO: is this testable?
         return cls.Format.model_json_schema(by_alias=True)
