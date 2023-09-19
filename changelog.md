@@ -1,5 +1,11 @@
 # Changelog
 
+# 1.1.0
+* Added a number of missing prototype objects that are blueprintable:
+    * `SimpleEntityWithOwner`
+    * `SimpleEntityWithForce`
+    * `PlayerPort`
+* Fixed an issue where color settings were not recognized in the settings stage (#103)
 * Fixed issue loading IndustrialRevolution modpack (regression) (#98)
 
 ## 1.0.6

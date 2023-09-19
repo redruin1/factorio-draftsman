@@ -917,6 +917,20 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     categorize_entities(data.raw["radar"], entities["radars"])
     sort(entities["radars"])
 
+    #  Simple Entities with Owner
+    entities["simple_entities_with_owner"] = []
+    categorize_entities(
+        data.raw["simple-entity-with-owner"], entities["simple_entities_with_owner"]
+    )
+    sort(entities["simple_entities_with_owner"])
+
+    #  Simple Entities with Force
+    entities["simple_entities_with_force"] = []
+    categorize_entities(
+        data.raw["simple-entity-with-force"], entities["simple_entities_with_force"]
+    )
+    sort(entities["simple_entities_with_force"])
+
     #  Electric Energy Interfaces
     entities["electric_energy_interfaces"] = []
     categorize_entities(
@@ -961,6 +975,11 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     entities["burner_generators"] = []
     categorize_entities(data.raw["burner-generator"], entities["burner_generators"])
     sort(entities["burner_generators"])
+
+    #  Player Ports
+    entities["player_ports"] = []
+    categorize_entities(data.raw["player-port"], entities["player_ports"])
+    sort(entities["player_ports"])
 
     raw_order = get_order(unordered_entities_raw, *sort_tuple)
     entities["raw"] = OrderedDict()
@@ -1545,7 +1564,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
             internal_folder=mod_folder,
             version=mod_version,
             archive=archive,
-            location=location.replace("\\", "/"), # Make sure forward slashes
+            location=location.replace("\\", "/"),  # Make sure forward slashes
             info=mod_info,
             files=files,
             data=mod_data,

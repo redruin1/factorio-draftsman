@@ -75,6 +75,8 @@ with pkg_resources.open_binary(data, "entities.pkl") as inp:
     gates = _data["gates"]
     turrets = _data["turrets"]
     radars = _data["radars"]
+    simple_entities_with_owner = _data["simple_entities_with_owner"]
+    simple_entities_with_force = _data["simple_entities_with_force"]
     electric_energy_interfaces = _data["electric_energy_interfaces"]
     linked_containers = _data["linked_containers"]
     heat_interfaces = _data["heat_interfaces"]
@@ -82,3 +84,4 @@ with pkg_resources.open_binary(data, "entities.pkl") as inp:
     infinity_containers = _data["infinity_containers"]
     infinity_pipes = _data["infinity_pipes"]
     burner_generators = _data["burner_generators"]
+    player_ports = _data["player_ports"]

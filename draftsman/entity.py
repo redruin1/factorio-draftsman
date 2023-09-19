@@ -61,6 +61,8 @@ from draftsman.prototypes.wall import Wall, walls
 from draftsman.prototypes.gate import Gate, gates
 from draftsman.prototypes.turret import Turret, turrets
 from draftsman.prototypes.radar import Radar, radars
+from draftsman.prototypes.simple_entity_with_owner import SimpleEntityWithOwner, simple_entities_with_owner
+from draftsman.prototypes.simple_entity_with_force import SimpleEntityWithForce, simple_entities_with_force
 from draftsman.prototypes.electric_energy_interface import ElectricEnergyInterface, electric_energy_interfaces
 from draftsman.prototypes.linked_container import LinkedContainer, linked_containers
 from draftsman.prototypes.heat_interface import HeatInterface, heat_interfaces
@@ -68,6 +70,7 @@ from draftsman.prototypes.linked_belt import LinkedBelt, linked_belts
 from draftsman.prototypes.infinity_container import InfinityContainer, infinity_containers
 from draftsman.prototypes.infinity_pipe import InfinityPipe, infinity_pipes
 from draftsman.prototypes.burner_generator import BurnerGenerator, burner_generators
+from draftsman.prototypes.player_port import PlayerPort, player_ports
 # fmt: on
 
 
@@ -195,6 +198,10 @@ def new_entity(name, **kwargs):
         return Turret(name, **kwargs)
     if name in radars:
         return Radar(name, **kwargs)
+    if name in simple_entities_with_owner:
+        return SimpleEntityWithOwner(name, **kwargs)
+    if name in simple_entities_with_force:
+        return SimpleEntityWithForce(name, **kwargs)
     if name in electric_energy_interfaces:
         return ElectricEnergyInterface(name, **kwargs)
     if name in linked_containers:
@@ -209,5 +216,7 @@ def new_entity(name, **kwargs):
         return InfinityPipe(name, **kwargs)
     if name in burner_generators:
         return BurnerGenerator(name, **kwargs)
+    if name in player_ports:
+        return PlayerPort(name, **kwargs)
 
     raise InvalidEntityError("'{}'".format(name))

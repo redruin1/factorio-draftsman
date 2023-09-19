@@ -314,6 +314,12 @@ class EntityFactoryTesting(unittest.TestCase):
     def test_radar(self):
         self.assertIsInstance(new_entity("radar"), Radar)
 
+    def test_simple_entity_with_owner(self):
+        self.assertIsInstance(new_entity("simple-entity-with-owner"), SimpleEntityWithOwner)
+
+    def test_simple_entity_with_force(self):
+        self.assertIsInstance(new_entity("simple-entity-with-force"), SimpleEntityWithForce)
+
     def test_electric_energy_interface(self):
         self.assertIsInstance(new_entity("electric-energy-interface"), ElectricEnergyInterface)
 
@@ -336,6 +342,9 @@ class EntityFactoryTesting(unittest.TestCase):
 
     def test_burner_generator(self):
         self.assertIsInstance(new_entity("burner-generator"), BurnerGenerator)
+
+    def test_player_port(self):
+        self.assertIsInstance(new_entity("player-port"), PlayerPort)
 
     def test_errors(self):
         self.assertRaises(
