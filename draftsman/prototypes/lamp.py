@@ -17,6 +17,7 @@ from draftsman.data.entities import lamps
 
 from schema import SchemaError
 import six
+from typing import ClassVar
 import warnings
 
 
@@ -28,13 +29,23 @@ class Lamp(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **CircuitConditionMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        CircuitConditionMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(CircuitConditionMixin.ControlFormat):
+            use_colors: bool | None = None
+
+        control_behavior: ControlBehavior | None = ControlBehavior()
 
     def __init__(self, name=lamps[0], **kwargs):
         # type: (str, **dict) -> None
@@ -51,13 +62,13 @@ class Lamp(
 
     # =========================================================================
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = signatures.LAMP_CONTROL_BEHAVIOR.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    # @ControlBehaviorMixin.control_behavior.setter
+    # def control_behavior(self, value):
+    #     # type: (dict) -> None
+    #     try:
+    #         self._control_behavior = signatures.LAMP_CONTROL_BEHAVIOR.validate(value)
+    #     except SchemaError as e:
+    #         six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 

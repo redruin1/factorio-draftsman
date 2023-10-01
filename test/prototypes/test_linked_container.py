@@ -18,7 +18,7 @@ else:  # pragma: no coverage
 
 
 class LinkedContainerTesting(unittest.TestCase):
-    def test_contstructor_init(self):
+    def test_constructor_init(self):
         container = LinkedContainer(link_id=1000)
         assert container.to_dict() == {
             "name": container.name,

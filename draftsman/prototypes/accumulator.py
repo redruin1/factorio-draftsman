@@ -3,7 +3,8 @@
 
 from __future__ import unicode_literals
 
-from draftsman import signatures
+from draftsman import signatures # TODO: remove
+from draftsman.signatures import SignalID
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMixin
 from draftsman.error import DataFormatError
@@ -12,8 +13,10 @@ from draftsman.warning import DraftsmanWarning
 from draftsman.data.entities import accumulators
 from draftsman.data.signals import signal_dict
 
+from pydantic import BaseModel
 from schema import SchemaError
 import six
+from typing import ClassVar
 import warnings
 
 
@@ -23,12 +26,21 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(BaseModel):
+            output_signal: SignalID | None = None
+
+        control_behavior: ControlBehavior | None = ControlBehavior()
 
     def __init__(self, name=accumulators[0], **kwargs):
         # type: (str, **dict) -> None
@@ -49,15 +61,15 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
 
     # =========================================================================
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = signatures.ACCUMULATOR_CONTROL_BEHAVIOR.validate(
-                value
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    # @ControlBehaviorMixin.control_behavior.setter
+    # def control_behavior(self, value):
+    #     # type: (dict) -> None
+    #     try:
+    #         self._control_behavior = signatures.ACCUMULATOR_CONTROL_BEHAVIOR.validate(
+    #             value
+    #         )
+    #     except SchemaError as e:
+    #         six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 

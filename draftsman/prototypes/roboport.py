@@ -3,18 +3,19 @@
 
 from __future__ import unicode_literals
 
-from draftsman import signatures
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMixin
 from draftsman.error import DataFormatError
+from draftsman.signatures import SignalID, ROBOPORT_CONTROL_BEHAVIOR, SIGNAL_ID # TODO remove
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import roboports
 from draftsman.data.signals import signal_dict
 
+from pydantic import BaseModel
 from schema import SchemaError
 import six
-from typing import Union
+from typing import ClassVar, Union
 import warnings
 
 
@@ -24,12 +25,22 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    # }
     # fmt: on
+    class Format(ControlBehaviorMixin.Format, CircuitConnectableMixin.Format, Entity.Format):
+        class ControlBehavior(BaseModel):
+            read_logistics: bool | None = None
+            read_robot_stats: bool | None = None
+            available_logistic_output_signal: SignalID | None = None
+            total_logistic_output_signal: SignalID | None = None
+            available_construction_output_signal: SignalID | None = None
+            total_construction_output_signal: SignalID | None = None
+
+        control_behavior: ControlBehavior | None = None
 
     def __init__(self, name=roboports[0], **kwargs):
         # type: (str, **dict) -> None
@@ -46,15 +57,15 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
 
     # =========================================================================
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = signatures.ROBOPORT_CONTROL_BEHAVIOR.validate(
-                value
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    # @ControlBehaviorMixin.control_behavior.setter
+    # def control_behavior(self, value):
+    #     # type: (dict) -> None
+    #     try:
+    #         self._control_behavior = ROBOPORT_CONTROL_BEHAVIOR.validate(
+    #             value
+    #         )
+    #     except SchemaError as e:
+    #         six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -145,7 +156,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             )
         else:  # dict or other
             try:
-                value = signatures.SIGNAL_ID.validate(value)
+                value = SIGNAL_ID.validate(value)
                 self.control_behavior["available_logistic_output_signal"] = value
             except SchemaError as e:
                 raise six.raise_from(TypeError(e), None)
@@ -179,7 +190,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             self.control_behavior["total_logistic_output_signal"] = signal_dict(value)
         else:  # dict or other
             try:
-                value = signatures.SIGNAL_ID.validate(value)
+                value = SIGNAL_ID.validate(value)
                 self.control_behavior["total_logistic_output_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")
@@ -216,7 +227,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             )
         else:  # dict or other
             try:
-                value = signatures.SIGNAL_ID.validate(value)
+                value = SIGNAL_ID.validate(value)
                 self.control_behavior["available_construction_output_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")
@@ -253,7 +264,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             )
         else:  # dict or other
             try:
-                value = signatures.SIGNAL_ID.validate(value)
+                value = SIGNAL_ID.validate(value)
                 self.control_behavior["total_construction_output_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")

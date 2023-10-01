@@ -20,13 +20,20 @@ class Loader(FiltersMixin, IOTypeMixin, DirectionalMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **IOTypeMixin._exports,
-        **FiltersMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **IOTypeMixin._exports,
+    #     **FiltersMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        FiltersMixin.Format,
+        IOTypeMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format,
+    ):
+        pass
 
     def __init__(self, name=loaders[0], **kwargs):
         # type: (str, **dict) -> None

@@ -11,18 +11,18 @@ from __future__ import unicode_literals
 from draftsman.classes.association import Association
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
+from draftsman.classes.exportable import Exportable
 from draftsman.classes.vector import Vector
 from draftsman.data import entities
 from draftsman.error import InvalidEntityError, DraftsmanError
-from draftsman import signatures
+from draftsman.signatures import uint64, Position, recursive_construct
 from draftsman import utils
 
 import copy
 import difflib
 import json
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Union, Any
-from schema import Schema
 import six
 import weakref
 
@@ -63,17 +63,23 @@ class _TileVector(Vector):
         self.entity()._position._data[1] = value + self.entity().tile_height / 2
 
 
-class Entity(EntityLike):
+class Entity(Exportable, EntityLike):
     """
     Entity base-class. Used for all entity types that are specified in Factorio.
     Categorizes entities into "types" based on their class, each of which is
     implemented in :py:mod:`draftsman.prototypes`.
     """
 
-    class Model(BaseModel):
+    class Format(BaseModel):
         name: str
-        position: signatures.Position
-        tags: dict[str, Any] | None = None
+        position: Position
+        tags: dict[str, Any] | None = {}
+        entity_number: uint64 | None = Field(
+            None,
+            description="""The number of the entity in the blueprint.
+Note: this is cast to a 64-bit float at some point on import, which means that values above 2^53 will suffer from floating point precision error.
+Not that that probably matters, at those values.""",
+        )
 
     # A dictionary containing all of the valid keys used in exported blueprint
     # strings.
@@ -81,27 +87,27 @@ class Entity(EntityLike):
     # differ from ``ConstantCombinator._exports``.
     # TODO: this needs to be some kind of recursive structure so that the data
     # for things like "control_behavior" aren't displayed flat
-    _exports = {
-        "name": {
-            "format": "str",
-            "description": "Name of the entity",
-            "required": True,
-        },
-        "position": {
-            "format": "{'x': float, 'y': float}",
-            "description": "Position of the entity in the blueprint/world",
-            "required": True,
-            "transform": (lambda self, _: getattr(self, "global_position").to_dict()),
-        },
-        "tags": {
-            "format": "{...}",
-            "description": (
-                "Any custom data associated with the entity; used for modded data "
-                "primarily"
-            ),
-            "required": lambda x: x,  # Only optional if empty
-        },
-    }
+    # _exports = {
+    #     "name": {
+    #         "format": "str",
+    #         "description": "Name of the entity",
+    #         "required": True,
+    #     },
+    #     "position": {
+    #         "format": "{'x': float, 'y': float}",
+    #         "description": "Position of the entity in the blueprint/world",
+    #         "required": True,
+    #         "transform": (lambda self, _: getattr(self, "global_position").to_dict()),
+    #     },
+    #     "tags": {
+    #         "format": "{...}",
+    #         "description": (
+    #             "Any custom data associated with the entity; used for modded data "
+    #             "primarily"
+    #         ),
+    #         "required": lambda x: x,  # Only optional if empty
+    #     },
+    # }
 
     @classmethod
     def dump_format(cls):
@@ -156,8 +162,10 @@ class Entity(EntityLike):
         :exception InvalidEntityError: If ``name`` is set to anything other than
             an entry in ``similar_entities``.
         """
+        # Init Exportable
+        Exportable.__init__(self)
         # Init EntityLike
-        super(Entity, self).__init__()
+        EntityLike.__init__(self)
 
         # For user convinience, keep track of all the unused arguments, and
         # issue a warning if the user provided one that was not used.
@@ -179,7 +187,7 @@ class Entity(EntityLike):
                     name, type(self).__name__, suggestion_string
                 )
             )
-        self._name = six.text_type(name)
+        self._root["name"] = name
 
         # Entity type
         self._type = entities.raw[self.name]["type"]
@@ -199,17 +207,6 @@ class Entity(EntityLike):
         # Collision set (Internal)
         # Check to see if we have overwritten this value with the better ones
         if not hasattr(self, "_overwritten_collision_set"):
-            # collision_box = entities.raw[self.name]["collision_box"]
-            # self._collision_set = CollisionSet(
-            #     [
-            #         utils.AABB(
-            #             collision_box[0][0],
-            #             collision_box[0][1],
-            #             collision_box[1][0],
-            #             collision_box[1][1],
-            #         )
-            #     ]
-            # )
             self._collision_set = entities.collision_sets[self.name]
 
         # Collision mask (Internal)
@@ -245,7 +242,7 @@ class Entity(EntityLike):
             self.tile_position = tile_position
 
         # Entity tags
-        self.tags = {}
+        self.tags = None
         if "tags" in kwargs:
             self.tags = kwargs["tags"]
             self.unused_args.pop("tags")
@@ -265,7 +262,7 @@ class Entity(EntityLike):
 
         :type: ``str``
         """
-        return self._name
+        return self._root["name"]
 
     @name.setter
     def name(self, value):
@@ -276,7 +273,7 @@ class Entity(EntityLike):
             )
 
         if value in self.similar_entities:
-            self._name = value
+            self._root["name"] = value
         else:
             raise InvalidEntityError(
                 "'{}' is not a valid name for this type".format(value)
@@ -433,7 +430,7 @@ class Entity(EntityLike):
 
     @property
     def global_position(self):
-        # type: () -> dict
+        # type: () -> Vector
         """
         The "global", or root-most position of the Entity. This value is always
         equivalent to :py:meth:`~.Entity.position`, unless the entity exists
@@ -569,69 +566,114 @@ class Entity(EntityLike):
         :exception TypeError: If tags is set to anything other than a ``dict``
             or ``None``.
         """
-        return self._tags
+        return self._root.get("tags", None)
 
     @tags.setter
-    def tags(self, tags):
+    def tags(self, value):
         # type: (dict) -> None
-        if tags is None or isinstance(tags, dict):
-            self._tags = tags
+        if value is None:
+            self._root.pop("tags", None)
+        elif isinstance(value, dict):
+            self._root["tags"] = value
         else:
             raise TypeError("'tags' must be a dict or None")
 
     # =========================================================================
-
+    
     def to_dict(self):
         # type: () -> dict
-        """
-        Converts the Entity to its JSON dict representation. The keys returned
-        are determined by the contents of the `exports` dictionary and their
-        criteria functions.
+        # out_model = self.__class__.Format.model_construct(  # Performs no validation(!)
+        #     **self._root, position=self.global_position.to_dict()
+        # )
+        out_model = recursive_construct(self.__class__.Format, **self._root, position=self.global_position.to_dict())
+        print(out_model)
+        out_dict = out_model.model_dump(
+            # Some attributes are reserved words ('type', 'from', etc.); this 
+            # resolves that issue
+            by_alias=True,  
+            exclude_none=True,  # Trim if values are None
+            exclude_defaults=True,  # Trim if values are defaults
+            # NOTE: Associations must be converted later, since we don't have 
+            # enough information to convert them to integer indexes
+            # Thus, this function will always emit warnings in this case; so we
+            # disable them here
+            # I would like a more elegant way to do this, but it currently eludes
+            # me
+            warnings=False,
+        )
 
-        A attribute from the Entity will be included as a key in the output dict
-        if both of the following conditions are met:
+        return out_dict
 
-        1. The attribute is in the ``exports`` dictionary
-        2. The associated criteria function is either not present or returns
-           ``True``. This is used to avoid including excess keys, keeping
-           Blueprint string size down.
+    # def to_dict(self):
+    #     # type: () -> dict
+    #     """
+    #     Converts the Entity to its JSON dict representation. The keys returned
+    #     are determined by the contents of the `exports` dictionary and their
+    #     criteria functions.
 
-        In addition, a second function may be provided to have a formatting step
-        to alter either the key and/or its value, which gets inserted into the
-        output ``dict``.
+    #     A attribute from the Entity will be included as a key in the output dict
+    #     if both of the following conditions are met:
 
-        :returns: The exported JSON-dict representation of the Entity.
-        """
-        # out = {}
-        # for name, funcs in self.exports.items():
-        #     value = getattr(self, name)
-        #     criterion = funcs[0]
-        #     formatter = funcs[1]
-        #     # Does the value match the criteria to be included?
-        #     if criterion is None or criterion(value):
-        #         if formatter is not None:
-        #             # Normalize key/value pair
-        #             k, v = formatter(name, value)
-        #         else:
-        #             k, v = name, value
-        #         out[k] = v
+    #     1. The attribute is in the ``exports`` dictionary
+    #     2. The associated criteria function is either not present or returns
+    #        ``True``. This is used to avoid including excess keys, keeping
+    #        Blueprint string size down.
 
-        # return out
+    #     In addition, a second function may be provided to have a formatting step
+    #     to alter either the key and/or its value, which gets inserted into the
+    #     output ``dict``.
 
-        out = {}
-        for name, export in self.__class__._exports.items():
-            transform = export.get("transform", None)
-            if transform is not None:
-                value = transform(self, name)
-            else:
-                value = getattr(self, name)
+    #     :returns: The exported JSON-dict representation of the Entity.
+    #     """
+    #     # out = {}
+    #     # for name, funcs in self.exports.items():
+    #     #     value = getattr(self, name)
+    #     #     criterion = funcs[0]
+    #     #     formatter = funcs[1]
+    #     #     # Does the value match the criteria to be included?
+    #     #     if criterion is None or criterion(value):
+    #     #         if formatter is not None:
+    #     #             # Normalize key/value pair
+    #     #             k, v = formatter(name, value)
+    #     #         else:
+    #     #             k, v = name, value
+    #     #         out[k] = v
 
-            required = export.get("required", None)
-            # print(required)
-            if required is True or required and required(value):
-                out[name] = value
+    #     # return out
 
-        return out
+    #     # out = {}
+    #     # for name, export in self.__class__._exports.items():
+    #     #     transform = export.get("transform", None)
+    #     #     if transform is not None:
+    #     #         value = transform(self, name)
+    #     #     else:
+    #     #         value = getattr(self, name)
+
+    #     #     required = export.get("required", None)
+    #     #     # print(required)
+    #     #     if required is True or required and required(value):
+    #     #         out[name] = value
+
+    #     # return out
+
+    #     out_model = self.Format.model_construct(**self._root)
+
+    #     out_dict = out_model.model_dump(
+    #         by_alias=True,
+    #         exclude_none=True,
+    #         exclude_defaults=True,
+    #         # warnings=False
+    #     )
+
+    #     return out_dict
+    
+    def validate(self):
+        if self.is_valid:
+            return
+        
+        self.Format.model_validate(self._root)
+        
+        super().validate()
 
     def inspect(self):
         # type: () -> list[Exception]
@@ -763,7 +805,7 @@ class Entity(EntityLike):
                     #         self.connections[side].append(point)
                     #     merge_power_connection(self, side, point, other)
                     raise ValueError(
-                        "Cannot merge power switches (yet); see <TODO> for details"
+                        "Cannot merge power switches (yet); see function for details"
                     )
 
         # Tags (overwrite self with other)

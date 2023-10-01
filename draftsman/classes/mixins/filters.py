@@ -5,9 +5,9 @@ from __future__ import unicode_literals
 
 from draftsman.data import items, entities
 from draftsman.error import InvalidItemError, DataFormatError
-from draftsman import signatures
+from draftsman.signatures import Filters
 
-from schema import SchemaError
+from pydantic import BaseModel, ValidationError
 import six
 
 
@@ -16,24 +16,26 @@ class FiltersMixin(object):
     Allows the entity to specify item filters.
     """
 
-    _exports = {
-        "filters": {
-            "format": "[{'index': int, 'name': item_name_1}, ...]",
-            "description": "Any item filters that this entity has",
-            "required": lambda x: x is not None and len(x) != 0,
-        }
-    }
+    # _exports = {
+    #     "filters": {
+    #         "format": "[{'index': int, 'name': item_name_1}, ...]",
+    #         "description": "Any item filters that this entity has",
+    #         "required": lambda x: x is not None and len(x) != 0,
+    #     }
+    # }
+    class Format(BaseModel):
+        filters: Filters | None = None
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(FiltersMixin, self).__init__(name, similar_entities, **kwargs)
 
-        self._filter_count = entities.raw[self.name].get("filter_count", 0)
+        self._filter_count = entities.raw[self.name].get("filter_count", 0) # TODO: memory savings
 
         self.filters = None
 
         if "filters" in kwargs:
-            self.set_item_filters(kwargs["filters"])
+            self.filters = kwargs["filters"]
             self.unused_args.pop("filters")
         # self._add_export("filters", lambda x: x is not None and len(x) != 0)
 
@@ -50,6 +52,23 @@ class FiltersMixin(object):
         :type: ``int``
         """
         return self._filter_count
+    
+
+    @property
+    def filters(self):
+        # TODO
+        """
+        TODO
+        """
+        return self._root.get("filters", None)
+    
+    @filters.setter
+    def filters(self, value):
+        # TODO
+        if value is None:
+            self._root.pop("filters", None)
+        else:
+            self._root["filters"] = value
 
     # =========================================================================
 
@@ -125,9 +144,11 @@ class FiltersMixin(object):
 
         # Normalize to standard internal format
         try:
-            filters = signatures.FILTERS.validate(filters)
-        except SchemaError as e:
+            filters = Filters(filters).model_dump(by_alias=True, exclude_none=True, exclude_defaults=True)
+        except ValidationError as e:
             six.raise_from(DataFormatError(e), None)
+
+        print(filters)
 
         # Make sure the items are items and indices are within standards
         for item in filters:
@@ -141,6 +162,8 @@ class FiltersMixin(object):
 
         for item in filters:
             self.set_item_filter(item["index"] - 1, item["name"])
+
+    # =========================================================================
 
     def merge(self, other):
         super(FiltersMixin, self).merge(other)

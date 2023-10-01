@@ -9,6 +9,7 @@ from draftsman.error import DraftsmanError
 from draftsman import utils
 from draftsman.warning import DirectionWarning
 
+from pydantic import BaseModel
 from typing import Union
 import warnings
 
@@ -30,13 +31,15 @@ class DirectionalMixin(object):
         :py:class:`~.mixins.eight_way_directional.EightWayDirectionalMixin`
     """
 
-    _exports = {
-        "direction": {
-            "format": "int",
-            "description": "The direction this entity is facing",
-            "required": lambda x: x != 0,
-        }
-    }
+    # _exports = {
+    #     "direction": {
+    #         "format": "int",
+    #         "description": "The direction this entity is facing",
+    #         "required": lambda x: x != 0,
+    #     }
+    # }
+    class Format(BaseModel):
+        direction: Direction | None = Direction.NORTH
 
     def __init__(self, name, similar_entities, tile_position=[0, 0], **kwargs):
         # type: (str, list[str], Union[list, dict], **dict) -> None
@@ -115,7 +118,7 @@ class DirectionalMixin(object):
         :exception ValueError: If set to anything other than a ``Direction``, or
             an equivalent ``int``.
         """
-        return self._direction
+        return self._root["direction"]
 
     @direction.setter
     def direction(self, value):
@@ -141,23 +144,23 @@ class DirectionalMixin(object):
             )
 
         if value is None:
-            self._direction = Direction(0)  # Default Direction
+            self._root["direction"] = Direction(0)  # Default Direction
         else:
-            self._direction = Direction(value)
+            self._root["direction"] = Direction(value)
 
-        if self._direction not in {0, 2, 4, 6}:
+        if self._root["direction"] not in {0, 2, 4, 6}:
             # Default to a known orientation
-            self._direction = Direction(int(self._direction / 2) * 2)
+            self._root["direction"] = Direction(int(self._root["direction"] / 2) * 2)
             warnings.warn(
                 "'{}' only has 4-way rotation; defaulting to {}".format(
-                    type(self).__name__, self._direction
+                    type(self).__name__, self._root["direction"]
                 ),
                 DirectionWarning,
                 stacklevel=2,
             )
 
         # Get the precalulated orientations
-        self._collision_set = self._collision_set_rotation[self._direction]
+        self._collision_set = self._collision_set_rotation[self._root["direction"]]
 
         # Actually update tile width and height
         old_tile_width = self._tile_width

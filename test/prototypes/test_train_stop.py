@@ -112,10 +112,12 @@ class TrainStopTesting(unittest.TestCase):
             TrainStop("this is not a curved rail")
         with pytest.raises(TypeError):
             TrainStop(station=100)
-        with pytest.raises(DataFormatError):
-            TrainStop(color="wrong")
-        with pytest.raises(DataFormatError):
-            TrainStop(control_behavior={"unused_key": "something"})
+
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     TrainStop(color="wrong")
+        # with pytest.raises(DataFormatError):
+        #     TrainStop(control_behavior={"unused_key": "something"})
 
     def test_set_manual_trains_limit(self):
         train_stop = TrainStop()

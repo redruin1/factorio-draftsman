@@ -19,12 +19,14 @@ class UndergroundBelt(IOTypeMixin, DirectionalMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **IOTypeMixin._exports
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **IOTypeMixin._exports
+    # }
     # fmt: on
+    class Format(IOTypeMixin.Format, DirectionalMixin.Format, Entity.Format):
+        pass
 
     def __init__(self, name=underground_belts[0], **kwargs):
         # type: (str, **dict) -> None

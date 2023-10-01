@@ -19,12 +19,14 @@ class Boiler(RequestItemsMixin, DirectionalMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **RequestItemsMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **RequestItemsMixin._exports,
+    # }
     # fmt: on
+    class Format(RequestItemsMixin.Format, DirectionalMixin.Format, Entity.Format):
+        pass
 
     def __init__(self, name=boilers[0], **kwargs):
         # type: (str, **dict) -> None

@@ -43,8 +43,9 @@ class LocomotiveTesting(unittest.TestCase):
             Locomotive("this is not a locomotive")
         with pytest.raises(TypeError):
             Locomotive("locomotive", orientation="wrong")
-        with pytest.raises(DataFormatError):
-            Locomotive("locomotive", color="also wrong")
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     Locomotive("locomotive", color="also wrong")
 
     def test_mergable_with(self):
         train1 = Locomotive("locomotive")
@@ -65,8 +66,15 @@ class LocomotiveTesting(unittest.TestCase):
         train1.merge(train2)
         del train2
 
-        assert train1.color == {"r": 100, "g": 100, "b": 100}
+        assert train1.color == (100, 100, 100)
         assert train1.tags == {"some": "stuff"}
+
+        assert train1.to_dict() == {
+            "name": "locomotive",
+            "position": {"x": 1.0, "y": 3.0},
+            "color": {"r": 100, "g": 100, "b": 100},
+            "tags": {"some": "stuff"}
+        }
 
     def test_eq(self):
         train1 = Locomotive("locomotive")

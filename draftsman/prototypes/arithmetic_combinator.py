@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman import signatures
+from draftsman.signatures import int32, SignalID
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     ControlBehaviorMixin,
@@ -16,9 +17,10 @@ from draftsman.warning import DraftsmanWarning
 from draftsman.data.entities import arithmetic_combinators
 from draftsman import utils
 
+from pydantic import BaseModel
 from schema import SchemaError
 import six
-from typing import Union
+from typing import ClassVar, Literal, Union
 import warnings
 
 
@@ -31,13 +33,31 @@ class ArithmeticCombinator(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        ControlBehaviorMixin.Format, 
+        CircuitConnectableMixin.Format, 
+        DirectionalMixin.Format, 
+        Entity.Format
+    ):
+        class ControlBehavior(BaseModel):
+            class ArithmeticConditions(BaseModel):
+                first_constant: int32 | None = None
+                first_signal: SignalID | None = None
+                operation: Literal["*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR"] | None = None
+                second_constant: int32 | None = None
+                second_signal: SignalID | None = None
+                output_signal: SignalID | None = None
+            
+            arithmetic_conditions: ArithmeticConditions | None = None
+
+        control_behavior: ControlBehavior | None = ControlBehavior()
 
     def __init__(self, name=arithmetic_combinators[0], **kwargs):
         # type: (str, **dict) -> None
@@ -62,15 +82,15 @@ class ArithmeticCombinator(
 
     # =========================================================================
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = (
-                signatures.ARITHMETIC_COMBINATOR_CONTROL_BEHAVIOR.validate(value)
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    # @ControlBehaviorMixin.control_behavior.setter
+    # def control_behavior(self, value):
+    #     # type: (dict) -> None
+    #     try:
+    #         self._control_behavior = (
+    #             signatures.ARITHMETIC_COMBINATOR_CONTROL_BEHAVIOR.validate(value)
+    #         )
+    #     except SchemaError as e:
+    #         six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 

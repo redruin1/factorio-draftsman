@@ -3,12 +3,13 @@
 
 from __future__ import unicode_literals
 
-from draftsman import signatures
+from draftsman.signatures import SignalID, PROGRAMMABLE_SPEAKER_CONTROL_BEHAVIOR, PARAMETERS, ALERT_PARAMETERS, SIGNAL_ID # TODO remove
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnableDisableMixin,
 )
 from draftsman.error import (
     DataFormatError,
@@ -22,14 +23,15 @@ from draftsman.data.entities import programmable_speakers
 import draftsman.data.instruments as instruments_data
 from draftsman.data.signals import signal_dict
 
+from pydantic import BaseModel
 from schema import SchemaError
 import six
-from typing import Union
+from typing import ClassVar, Union
 import warnings
 
 
 class ProgrammableSpeaker(
-    CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, Entity
+    CircuitConditionMixin, EnableDisableMixin, ControlBehaviorMixin, CircuitConnectableMixin, Entity
 ):
     """
     An entity that makes sounds that can be controlled by circuit network
@@ -37,23 +39,53 @@ class ProgrammableSpeaker(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **CircuitConditionMixin._exports,
-        "parameters": {
-            "format": "TODO",
-            "description": "Parameters related to sound playback",
-            "required": lambda x: x is not None and len(x) != 0,
-        },
-        "alert_parameters": {
-            "format": "TODO",
-            "description": "Parameters related to alert notifications",
-            "required": lambda x: x is not None and len(x) != 0,
-        },
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    #     "parameters": {
+    #         "format": "TODO",
+    #         "description": "Parameters related to sound playback",
+    #         "required": lambda x: x is not None and len(x) != 0,
+    #     },
+    #     "alert_parameters": {
+    #         "format": "TODO",
+    #         "description": "Parameters related to alert notifications",
+    #         "required": lambda x: x is not None and len(x) != 0,
+    #     },
+    # }
     # fmt: on
+    class Format(
+        CircuitConditionMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        Entity.Format
+    ):
+        class ControlBehavior(CircuitConditionMixin.ControlFormat, EnableDisableMixin.ControlFormat):
+            class CircuitParameters(BaseModel):
+                signal_value_is_pitch: bool | None = None
+                instrument_id: int | None = None # TODO dimension
+                note_id: int | None = None # TODO dimension
+
+            circuit_parameters: CircuitParameters | None = None
+
+        control_behavior: ControlBehavior | None = ControlBehavior()
+
+        class Parameters(BaseModel):
+            playback_volume: float | None = None # TODO dimension(?)
+            playback_globally: bool | None = None
+            allow_polyphony: bool | None = None
+
+        parameters: Parameters | None = Parameters()
+
+        class AlertParameters(BaseModel):
+            show_alert: bool | None = None
+            show_on_map: bool | None = None
+            icon_signal_id: SignalID | None = None
+            alert_message: str | None = None
+
+        alert_parameters: AlertParameters | None = AlertParameters()
 
     def __init__(self, name=programmable_speakers[0], **kwargs):
         # type: (str, **dict) -> None
@@ -114,15 +146,15 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = (
-                signatures.PROGRAMMABLE_SPEAKER_CONTROL_BEHAVIOR.validate(value)
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    # @ControlBehaviorMixin.control_behavior.setter
+    # def control_behavior(self, value):
+    #     # type: (dict) -> None
+    #     try:
+    #         self._control_behavior = (
+    #             PROGRAMMABLE_SPEAKER_CONTROL_BEHAVIOR.validate(value)
+    #         )
+    #     except SchemaError as e:
+    #         six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -152,15 +184,15 @@ class ProgrammableSpeaker(
         :exception DataFormatError: If set to anything that does not match the
             :py:class:`.PARAMETERS` format.
         """
-        return self._parameters
+        return self._root["parameters"]
 
     @parameters.setter
     def parameters(self, value):
         # type: (dict) -> None
-        try:
-            self._parameters = signatures.PARAMETERS.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        if value is None:
+            self._root["parameters"] = {}
+        else:
+            self._root["parameters"] = value
 
     # =========================================================================
 
@@ -178,15 +210,15 @@ class ProgrammableSpeaker(
         :exception DataFormatError: If set to anything that does not match the
             :py:class:`.ALERT_PARAMETERS` format.
         """
-        return self._alert_parameters
+        return self._root["alert_parameters"]
 
     @alert_parameters.setter
     def alert_parameters(self, value):
         # type: (dict) -> None
-        try:
-            self._alert_parameters = signatures.ALERT_PARAMETERS.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        if value is None:
+            self._root["alert_parameters"] = {}
+        else:
+            self._root["alert_parameters"] = value
 
     # =========================================================================
 
@@ -214,17 +246,16 @@ class ProgrammableSpeaker(
         # type: (float) -> None
         if value is None:
             self.parameters.pop("playback_volume", None)
-        elif isinstance(value, float):
-            if not 0.0 <= value <= 1.0:
-                warnings.warn(
-                    "volume ({}) not in range of [0.0, 1.0], will be clamped "
-                    "on import".format(value),
-                    VolumeRangeWarning,
-                    stacklevel=2,
-                )
-            self.parameters["playback_volume"] = value
         else:
-            raise TypeError("'volume' must be a float or None")
+            # TODO: move
+            # if not 0.0 <= value <= 1.0:
+            #     warnings.warn(
+            #         "volume ({}) not in range of [0.0, 1.0], will be clamped "
+            #         "on import".format(value),
+            #         VolumeRangeWarning,
+            #         stacklevel=2,
+            #     )
+            self.parameters["playback_volume"] = value
 
     # =========================================================================
 
@@ -351,7 +382,7 @@ class ProgrammableSpeaker(
             self.alert_parameters["icon_signal_id"] = signal_dict(value)
         else:  # dict or other
             try:
-                value = signatures.SIGNAL_ID.validate(value)
+                value = SIGNAL_ID.validate(value)
                 self.alert_parameters["icon_signal_id"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")

@@ -100,8 +100,9 @@ class DeciderCombinatorTesting(unittest.TestCase):
         # Errors
         with pytest.raises(InvalidEntityError):
             DeciderCombinator("this is not an arithmetic combinator")
-        with pytest.raises(DataFormatError):
-            DeciderCombinator(control_behavior={"unused_key": "something"})
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     DeciderCombinator(control_behavior={"unused_key": "something"})
 
     def test_flags(self):
         for name in decider_combinators:
@@ -461,7 +462,7 @@ class DeciderCombinatorTesting(unittest.TestCase):
                 "copy_count_from_input": False,
             }
         }
-        assert comb1.tags == {}  # Overwritten by comb2
+        assert comb1.tags == None  # Overwritten by comb2
 
     def test_eq(self):
         decider1 = DeciderCombinator("decider-combinator")

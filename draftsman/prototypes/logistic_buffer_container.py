@@ -21,6 +21,7 @@ from draftsman.data.entities import logistic_buffer_containers
 
 from schema import SchemaError
 import six
+from typing import ClassVar
 import warnings
 
 
@@ -38,16 +39,31 @@ class LogisticBufferContainer(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **RequestFiltersMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **LogisticModeOfOperationMixin._exports,
-        **RequestItemsMixin._exports,
-        **InventoryMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **RequestFiltersMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **LogisticModeOfOperationMixin._exports,
+    #     **RequestItemsMixin._exports,
+    #     **InventoryMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        InventoryMixin.Format,
+        RequestItemsMixin.Format,
+        LogisticModeOfOperationMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        RequestFiltersMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(
+            LogisticModeOfOperationMixin.Format
+        ):
+            pass
+
+        control_behavior: ClassVar[ControlBehavior | None] = None
 
     def __init__(self, name=logistic_buffer_containers[0], **kwargs):
         # type: (str, **dict) -> None

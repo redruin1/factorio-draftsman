@@ -128,6 +128,7 @@ class Exportable(metaclass=ABCMeta):
         # parent method to cache successful validity
         super().__setattr__("_is_valid", True)
 
+    @abstractmethod
     def inspect(self):
         """
         Inspects
@@ -137,6 +138,7 @@ class Exportable(metaclass=ABCMeta):
         """
         return ValidationResult([], [])
 
+    @abstractmethod
     def to_dict(self) -> dict:
         """
         Returns this object as a dictionary. Intended for getting the precursor
@@ -145,18 +147,7 @@ class Exportable(metaclass=ABCMeta):
 
         :returns: The ``dict`` representation of this object.
         """
-        out_dict = self.__class__.Format.model_construct(  # Performs no validation(!)
-            **self._root
-        ).model_dump(
-            by_alias=True,  # Some attributes are reserved words (type, from,
-            # etc.); this resolves that issue
-            exclude_none=True,  # Trim if values are None
-            exclude_defaults=True,  # Trim if values are defaults
-            warnings=False  # Ignore warnings because `model_construct` cannot
-            # be made recursive for some asinine reason
-        )
-
-        return out_dict
+        pass
 
     @classmethod
     def json_schema(cls) -> dict:  # pragma: no coverage

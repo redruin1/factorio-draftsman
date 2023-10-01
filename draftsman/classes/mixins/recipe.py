@@ -8,6 +8,7 @@ from draftsman.data import recipes, modules
 from draftsman.error import InvalidRecipeError
 from draftsman.warning import ModuleLimitationWarning, ItemLimitationWarning
 
+from pydantic import BaseModel
 from schema import SchemaError
 import six
 import warnings
@@ -24,20 +25,19 @@ class RecipeMixin(object):
     recipes that it can make.
     """
 
-    _exports = {
-        "recipe": {
-            "format": "str",
-            "description": "The name of the entity's selected recipe",
-            "required": lambda x: x is not None,
-        }
-    }
+    # _exports = {
+    #     "recipe": {
+    #         "format": "str",
+    #         "description": "The name of the entity's selected recipe",
+    #         "required": lambda x: x is not None,
+    #     }
+    # }
+    class Format(BaseModel):
+        recipe: str | None = None
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(RecipeMixin, self).__init__(name, similar_entities, **kwargs)
-
-        # List of all recipes that this machine can make
-        self._recipes = recipes.for_machine[self.name]
 
         # Recipe that this machine is currently set to
         self.recipe = None
@@ -57,7 +57,7 @@ class RecipeMixin(object):
 
         :type: ``list[str]``
         """
-        return self._recipes
+        return recipes.for_machine[self.name]
 
     # =========================================================================
 
@@ -83,13 +83,13 @@ class RecipeMixin(object):
         :exception InvalidRecipeError: If set to a string that is not contained
             within this Entity's ``recipes``.
         """
-        return self._recipe
+        return self._root.get("recipe", None)
 
     @recipe.setter
     def recipe(self, value):
         # type: (str) -> None
         if value is None:
-            self._recipe = None
+            self._root.pop("recipe", None)
             return
 
         try:
@@ -98,7 +98,7 @@ class RecipeMixin(object):
             six.raise_from(TypeError(e), None)
 
         if value in self.recipes:
-            self._recipe = value
+            self._root["recipe"] = value
         else:
             raise InvalidRecipeError(
                 "'{}' not in this entity's valid recipes".format(value)

@@ -33,8 +33,9 @@ class LampTesting(unittest.TestCase):
         # Errors
         with pytest.raises(InvalidEntityError):
             Lamp("this is not a lamp")
-        with pytest.raises(DataFormatError):
-            Lamp(control_behavior={"unused_key": "something"})
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     Lamp(control_behavior={"unused_key": "something"})
 
     def test_set_use_colors(self):
         lamp = Lamp("small-lamp")

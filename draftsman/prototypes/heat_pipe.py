@@ -18,10 +18,12 @@ class HeatPipe(Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports
-    }
+    # _exports = {
+    #     **Entity._exports
+    # }
     # fmt: on
+    class Format(Entity.Format):
+        pass
 
     def __init__(self, name=heat_pipes[0], **kwargs):
         # type: (str, **dict) -> None

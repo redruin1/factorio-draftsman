@@ -11,6 +11,7 @@ from draftsman.classes.mixins import (
     InserterModeOfOperationMixin,
     CircuitConditionMixin,
     LogisticConditionMixin,
+    EnableDisableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
@@ -23,6 +24,7 @@ from draftsman.data.entities import filter_inserters
 
 from schema import SchemaError
 import six
+from typing import Literal
 import warnings
 
 
@@ -33,6 +35,7 @@ class FilterInserter(
     InserterModeOfOperationMixin,
     CircuitConditionMixin,
     LogisticConditionMixin,
+    EnableDisableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
@@ -50,24 +53,50 @@ class FilterInserter(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **LogisticConditionMixin._exports,
-        **CircuitConditionMixin._exports,
-        **InserterModeOfOperationMixin._exports,
-        **CircuitReadHandMixin._exports,
-        **StackSizeMixin._exports,
-        **FiltersMixin._exports,
-        "filter_mode": {
-            "format": "'whitelist' or 'blacklist'",
-            "description": "Whether or not to invert the item filters specified",
-            "required": lambda x: x is not None,
-        },
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **LogisticConditionMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    #     **InserterModeOfOperationMixin._exports,
+    #     **CircuitReadHandMixin._exports,
+    #     **StackSizeMixin._exports,
+    #     **FiltersMixin._exports,
+    #     "filter_mode": {
+    #         "format": "'whitelist' or 'blacklist'",
+    #         "description": "Whether or not to invert the item filters specified",
+    #         "required": lambda x: x is not None,
+    #     },
+    # }
     # fmt: on
+    class Format(
+        FiltersMixin.Format,
+        StackSizeMixin.Format,
+        CircuitReadHandMixin.Format,
+        InserterModeOfOperationMixin.Format,
+        CircuitConditionMixin.Format,
+        LogisticConditionMixin.Format,
+        EnableDisableMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(
+            StackSizeMixin.ControlFormat,
+            CircuitReadHandMixin.ControlFormat,
+            InserterModeOfOperationMixin.ControlFormat,
+            CircuitConditionMixin.ControlFormat,
+            LogisticConditionMixin.ControlFormat,
+            EnableDisableMixin.ControlFormat,
+        ):
+            pass
+
+        control_behavior: ControlBehavior | None = ControlBehavior()
+
+        filter_mode: Literal["whitelist", "blacklist"] | None = None
 
     def __init__(self, name=filter_inserters[0], **kwargs):
         # type: (str, **dict) -> None
@@ -90,15 +119,15 @@ class FilterInserter(
 
     # =========================================================================
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = (
-                signatures.FILTER_INSERTER_CONTROL_BEHAVIOR.validate(value)
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    # @ControlBehaviorMixin.control_behavior.setter
+    # def control_behavior(self, value):
+    #     # type: (dict) -> None
+    #     try:
+    #         self._control_behavior = (
+    #             signatures.FILTER_INSERTER_CONTROL_BEHAVIOR.validate(value)
+    #         )
+    #     except SchemaError as e:
+    #         six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -117,21 +146,18 @@ class FilterInserter(
             nor ``"blacklist"``.
         :exception TypeError: If set to anything other than a ``str`` or ``None``.
         """
-        return self._filter_mode
+        return self._root.get("filter_mode", None)
 
     @filter_mode.setter
     def filter_mode(self, value):
         # type: (str) -> None
+        # TODO: evaluate when this check should take place
         if value is None:
-            self._filter_mode = value
-        elif isinstance(value, six.string_types):
-            value = six.text_type(value)
-            valid_modes = {"whitelist", "blacklist"}
-            if value not in valid_modes:
-                raise ValueError("'filter_mode' must be one of {}".format(valid_modes))
-            self._filter_mode = value
+            self._root.pop("filter_mode", None)
+        elif value in {"whitelist", "blacklist"}:
+            self._root["filter_mode"] = value
         else:
-            raise TypeError("'filter_mode' must be a str or None")
+            raise ValueError("'filter_mode' must be one of {'whitelist', 'blacklist'} or None")
 
     # =========================================================================
 

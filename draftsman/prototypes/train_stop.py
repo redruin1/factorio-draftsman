@@ -15,7 +15,7 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.error import DataFormatError
-from draftsman import signatures
+from draftsman.signatures import SignalID, SIGNAL_ID, TRAIN_STOP_CONTROL_BEHAVIOR # TODO fix
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import train_stops
@@ -23,7 +23,7 @@ from draftsman.data.signals import signal_dict
 
 from schema import SchemaError
 import six
-from typing import Union
+from typing import ClassVar, Union
 import warnings
 
 
@@ -43,28 +43,56 @@ class TrainStop(
     """
 
     # fmt: on
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **DoubleGridAlignedMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **EnableDisableMixin._exports,
-        **LogisticConditionMixin._exports,
-        **CircuitConditionMixin._exports,
-        **ColorMixin._exports,
-        "station": {
-            "format": "str",
-            "description": "The name for this station",
-            "required": lambda x: x is not None,
-        },
-        "manual_trains_limit": {
-            "format": "int",
-            "description": "Manual train limit for this stop (overwritten by logistics or circuit condition)",
-            "required": lambda x: x is not None,
-        },
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **DoubleGridAlignedMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **EnableDisableMixin._exports,
+    #     **LogisticConditionMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    #     **ColorMixin._exports,
+    #     "station": {
+    #         "format": "str",
+    #         "description": "The name for this station",
+    #         "required": lambda x: x is not None,
+    #     },
+    #     "manual_trains_limit": {
+    #         "format": "int",
+    #         "description": "Manual train limit for this stop (overwritten by logistics or circuit condition)",
+    #         "required": lambda x: x is not None,
+    #     },
+    # }
     # fmt: on
+    class Format(
+        ColorMixin.Format,
+        CircuitConditionMixin.Format,
+        LogisticConditionMixin.Format,
+        EnableDisableMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        DoubleGridAlignedMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(
+            CircuitConditionMixin.ControlFormat,
+            LogisticConditionMixin.ControlFormat,
+            EnableDisableMixin.ControlFormat,
+        ):
+            read_from_train: bool | None = None
+            read_stopped_train: bool | None = None
+            train_stopped_signal: SignalID | None = None
+            set_trains_limit: bool | None = None
+            trains_limit_signal: SignalID | None = None
+            read_trains_count: bool | None = None
+            trains_count_signal: SignalID | None = None
+
+        control_behavior: ControlBehavior | None = ControlBehavior()
+
+        station: str | None = None
+        manual_trains_limit: int | None = None # TODO: dimension
 
     def __init__(self, name=train_stops[0], similar_entities=train_stops, **kwargs):
         # type: (str, list[str], **dict) -> None
@@ -97,7 +125,7 @@ class TrainStop(
     def control_behavior(self, value):
         # type: (dict) -> None
         try:
-            self._control_behavior = signatures.TRAIN_STOP_CONTROL_BEHAVIOR.validate(
+            self._control_behavior = TRAIN_STOP_CONTROL_BEHAVIOR.validate( # TODO change
                 value
             )
         except SchemaError as e:
@@ -110,16 +138,17 @@ class TrainStop(
         # type: () -> str
         """
         The name of this station.
+        TODO more
         """
-        return self._station
+        return self._root.get("station", None)
 
     @station.setter
     def station(self, value):
         # type: (str) -> None
         if value is None:
-            self._station = value
+            self._root.pop("station", None)
         elif isinstance(value, six.string_types):
-            self._station = six.text_type(value)
+            self._root["station"] = value
         else:
             raise TypeError("'station' must be a str or None")
 
@@ -132,13 +161,15 @@ class TrainStop(
         A limit to the amount of trains that can use this stop. Overridden by
         the circuit signal set train limit (if present).
         """
-        return self._manual_trains_limit
+        return self._root.get("manual_trains_limit", None)
 
     @manual_trains_limit.setter
     def manual_trains_limit(self, value):
         # type: (int) -> None
-        if value is None or isinstance(value, int):
-            self._manual_trains_limit = value
+        if value is None:
+            self._root.pop("manual_trains_limit", None)
+        elif isinstance(value, int): # TODO: change
+            self._root["manual_trains_limit"] = value
         else:
             raise TypeError("'manual_trains_limit' must be an int or None")
 
@@ -205,7 +236,7 @@ class TrainStop(
             self.control_behavior["train_stopped_signal"] = signal_dict(value)
         else:  # dict or other
             try:
-                value = signatures.SIGNAL_ID.validate(value)
+                value = SIGNAL_ID.validate(value)
                 self.control_behavior["train_stopped_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")
@@ -251,7 +282,7 @@ class TrainStop(
             self.control_behavior["trains_limit_signal"] = signal_dict(value)
         else:  # dict or other
             try:
-                value = signatures.SIGNAL_ID.validate(value)
+                value = SIGNAL_ID.validate(value)
                 self.control_behavior["trains_limit_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")
@@ -297,7 +328,7 @@ class TrainStop(
             self.control_behavior["trains_count_signal"] = signal_dict(value)
         else:  # dict or other
             try:
-                value = signatures.SIGNAL_ID.validate(value)
+                value = SIGNAL_ID.validate(value)
                 self.control_behavior["trains_count_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")

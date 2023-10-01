@@ -74,11 +74,12 @@ class ContainerTesting(unittest.TestCase):
         with pytest.raises(TypeError):
             Container("wooden-chest", position=TypeError)
 
-        with pytest.raises(TypeError):
-            Container("wooden-chest", bar="not even trying")
+        # TODO: move to validate
+        # with pytest.raises(TypeError):
+        #     Container("wooden-chest", bar="not even trying")
 
-        with pytest.raises(DataFormatError):
-            Container("wooden-chest", connections={"this is": ["very", "wrong"]})
+        # with pytest.raises(DataFormatError):
+        #     Container("wooden-chest", connections={"this is": ["very", "wrong"]})
 
     def test_power_and_circuit_flags(self):
         for container_name in containers:

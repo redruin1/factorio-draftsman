@@ -10,15 +10,18 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.error import DataFormatError
-import draftsman.signatures as signatures
+from draftsman.signatures import SignalFilters
+from draftsman.signatures import CONSTANT_COMBINATOR_CONTROL_BEHAVIOR, SIGNAL_FILTERS, INTEGER, SIGNAL_ID_OR_NONE
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import constant_combinators
 from draftsman.data import entities
 from draftsman.data import signals
 
+from pydantic import BaseModel
 from schema import SchemaError
 import six
+from typing import ClassVar
 import warnings
 
 
@@ -31,13 +34,24 @@ class ConstantCombinator(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        ControlBehaviorMixin.Format, 
+        CircuitConnectableMixin.Format, 
+        DirectionalMixin.Format, 
+        Entity.Format
+    ):
+        class ControlBehavior(BaseModel):
+            filters: SignalFilters | None = None
+            is_on: bool | None = None
+
+        control_behavior: ControlBehavior | None = ControlBehavior()
 
     def __init__(self, name=constant_combinators[0], **kwargs):
         # type: (str, **dict) -> None
@@ -59,15 +73,15 @@ class ConstantCombinator(
 
     # =========================================================================
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = (
-                signatures.CONSTANT_COMBINATOR_CONTROL_BEHAVIOR.validate(value)
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    # @ControlBehaviorMixin.control_behavior.setter
+    # def control_behavior(self, value):
+    #     # type: (dict) -> None
+    #     try:
+    #         self._control_behavior = (
+    #             CONSTANT_COMBINATOR_CONTROL_BEHAVIOR.validate(value)
+    #         )
+    #     except SchemaError as e:
+    #         six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -123,7 +137,7 @@ class ConstantCombinator(
             self.control_behavior.pop("filters", None)
         else:
             try:
-                value = signatures.SIGNAL_FILTERS.validate(value)
+                value = SIGNAL_FILTERS.validate(value)
                 # Check for pure virtual signals
                 # APPARENTLY this is allowed, but because this is not "endorsed"
                 # by Factorio we issue warnings if we find one
@@ -182,10 +196,10 @@ class ConstantCombinator(
         """
         # Check validity before modifying self
         try:
-            index = signatures.INTEGER.validate(index)
-            signal = signatures.SIGNAL_ID_OR_NONE.validate(signal)
+            index = INTEGER.validate(index)
+            signal = SIGNAL_ID_OR_NONE.validate(signal)
             # signal = signals.signal_dict(signal) if signal is not None else None
-            count = signatures.INTEGER.validate(count)
+            count = INTEGER.validate(count)
         except SchemaError as e:
             six.raise_from(TypeError(e), None)
 

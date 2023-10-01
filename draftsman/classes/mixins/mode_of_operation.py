@@ -5,6 +5,8 @@ from __future__ import unicode_literals
 
 from draftsman.constants import InserterModeOfOperation, LogisticModeOfOperation
 
+from pydantic import BaseModel
+
 
 class InserterModeOfOperationMixin(object):  # (ControlBehaviorMixin)
     """
@@ -13,7 +15,12 @@ class InserterModeOfOperationMixin(object):  # (ControlBehaviorMixin)
     Gives the Inserter a mode of operation constant.
     """
 
-    _exports = {}
+    # _exports = {}
+    class ControlFormat(BaseModel):
+        circuit_mode_of_operation: InserterModeOfOperation | None = None
+
+    class Format(BaseModel):
+        pass
 
     @property
     def mode_of_operation(self):
@@ -48,7 +55,12 @@ class LogisticModeOfOperationMixin(object):  # (ControlBehaviorMixin)
     Gives the Logistics container a mode of operation constant.
     """
 
-    _exports = {}
+    # _exports = {}
+    class ControlFormat(BaseModel):
+        circuit_mode_of_operation: LogisticModeOfOperation | None = None
+
+    class Format(BaseModel):
+        pass
 
     @property
     def mode_of_operation(self):

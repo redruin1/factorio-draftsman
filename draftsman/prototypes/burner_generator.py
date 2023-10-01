@@ -18,11 +18,13 @@ class BurnerGenerator(DirectionalMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports
+    # }
     # fmt: on
+    class Format(DirectionalMixin.Format, Entity.Format):
+        pass
 
     def __init__(self, name=burner_generators[0], **kwargs):
         # type: (str, **dict) -> None

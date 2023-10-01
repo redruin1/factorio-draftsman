@@ -3,6 +3,9 @@
 
 from __future__ import unicode_literals
 
+from draftsman.signatures import Condition
+
+from pydantic import BaseModel
 from typing import Union
 
 
@@ -14,7 +17,13 @@ class LogisticConditionMixin(object):  # (ControlBehaviorMixin)
     amount of some item in the logistic network exceeds some constant.
     """
 
-    _exports = {}
+    # _exports = {}
+    class ControlFormat(BaseModel):
+        connect_to_logistic_network: bool | None = None
+        logistic_condition: Condition | None = None
+
+    class Format(BaseModel):
+        pass
 
     @property
     def connect_to_logistic_network(self):

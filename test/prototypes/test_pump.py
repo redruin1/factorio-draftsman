@@ -28,8 +28,9 @@ class PumpTesting(unittest.TestCase):
         # Errors
         with pytest.raises(InvalidEntityError):
             Pump("this is not a pump")
-        with pytest.raises(DataFormatError):
-            Pump(control_behavior={"unused_key": "something"})
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     Pump(control_behavior={"unused_key": "something"})
 
     def test_mergable_with(self):
         pump1 = Pump("pump")

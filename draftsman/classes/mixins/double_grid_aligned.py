@@ -7,6 +7,7 @@ from draftsman.classes.vector import Vector
 from draftsman.warning import RailAlignmentWarning
 
 import math
+from pydantic import BaseModel
 from typing import Union
 import warnings
 
@@ -17,7 +18,9 @@ class DoubleGridAlignedMixin(object):
     Sets the ``double_grid_aligned`` attribute to ``True``.
     """
 
-    _exports = {}
+    # _exports = {}
+    class Format(BaseModel):
+        pass
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None

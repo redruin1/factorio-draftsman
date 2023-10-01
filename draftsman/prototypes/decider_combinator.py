@@ -10,16 +10,18 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.error import DataFormatError, DraftsmanError
-import draftsman.signatures as signatures
+from draftsman.signatures import int32, Comparator, SignalID
+from draftsman.signatures import DECIDER_COMBINATOR_CONTROL_BEHAVIOR, SIGNAL_ID_OR_NONE, COMPARATOR, SIGNAL_ID_OR_CONSTANT, BOOL_OR_NONE # TODO remove
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import decider_combinators
 from draftsman.data import signals
 from draftsman import utils
 
+from pydantic import BaseModel
 from schema import SchemaError
 import six
-from typing import Union
+from typing import ClassVar, Union
 import warnings
 
 
@@ -40,13 +42,33 @@ class DeciderCombinator(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format
+    ):
+        class ControlBehavior(BaseModel):
+            class DeciderConditions(BaseModel):
+                constant: int32 | None = None
+                first_constant: int32 | None = None
+                first_signal: SignalID | None = None
+                comparator: Comparator | None = None
+                second_constant: int32 | None = None
+                second_signal: SignalID | None = None
+                output_signal: SignalID | None = None
+                copy_count_from_input: bool | None = None
+            
+            decider_conditions: DeciderConditions | None = None
+
+        control_behavior: ControlBehavior | None = ControlBehavior()
 
     def __init__(self, name=decider_combinators[0], **kwargs):
         # type: (str, **dict) -> None
@@ -65,15 +87,15 @@ class DeciderCombinator(
 
     # =========================================================================
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = (
-                signatures.DECIDER_COMBINATOR_CONTROL_BEHAVIOR.validate(value)
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    # @ControlBehaviorMixin.control_behavior.setter
+    # def control_behavior(self, value):
+    #     # type: (dict) -> None
+    #     try:
+    #         self._control_behavior = (
+    #             DECIDER_COMBINATOR_CONTROL_BEHAVIOR.validate(value)
+    #         )
+    #     except SchemaError as e:
+    #         six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -127,7 +149,7 @@ class DeciderCombinator(
     def first_operand(self, value):
         # type: (Union[dict, int]) -> None
         try:
-            value = signatures.SIGNAL_ID_OR_NONE.validate(value)
+            value = SIGNAL_ID_OR_NONE.validate(value)
         except SchemaError as e:
             six.raise_from(TypeError(e), None)
 
@@ -201,7 +223,7 @@ class DeciderCombinator(
     def operation(self, value):
         # type: (str) -> None
         try:
-            value = signatures.COMPARATOR.validate(value)
+            value = COMPARATOR.validate(value)
         except SchemaError as e:
             six.raise_from(TypeError(e), None)
 
@@ -250,7 +272,7 @@ class DeciderCombinator(
     def second_operand(self, value):
         # type: (Union[str, int]) -> None
         try:
-            value = signatures.SIGNAL_ID_OR_CONSTANT.validate(value)
+            value = SIGNAL_ID_OR_CONSTANT.validate(value)
         except SchemaError as e:
             six.raise_from(TypeError(e), None)
 
@@ -303,7 +325,7 @@ class DeciderCombinator(
     def output_signal(self, value):
         # type: (str) -> None
         try:
-            value = signatures.SIGNAL_ID_OR_NONE.validate(value)
+            value = SIGNAL_ID_OR_NONE.validate(value)
         except SchemaError as e:
             six.raise_from(TypeError(e), None)
 
@@ -401,11 +423,11 @@ class DeciderCombinator(
         """
         # Check all the parameters before we set anything to preserve original
         try:
-            first_operand = signatures.SIGNAL_ID_OR_NONE.validate(first_operand)
-            operation = signatures.COMPARATOR.validate(operation)
-            second_operand = signatures.SIGNAL_ID_OR_CONSTANT.validate(second_operand)
-            output_signal = signatures.SIGNAL_ID_OR_NONE.validate(output_signal)
-            copy_count_from_input = signatures.BOOL_OR_NONE.validate(
+            first_operand = SIGNAL_ID_OR_NONE.validate(first_operand)
+            operation = COMPARATOR.validate(operation)
+            second_operand = SIGNAL_ID_OR_CONSTANT.validate(second_operand)
+            output_signal = SIGNAL_ID_OR_NONE.validate(output_signal)
+            copy_count_from_input = BOOL_OR_NONE.validate(
                 copy_count_from_input
             )
         except SchemaError as e:

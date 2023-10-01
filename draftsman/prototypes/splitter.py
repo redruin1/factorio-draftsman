@@ -29,26 +29,30 @@ class Splitter(DirectionalMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        "input_priority": {
-            "format": "'left' or 'right'",
-            "description": "Which side takes input priority",
-            "required": lambda x: x is not None,
-        },
-        "output_priority": {
-            "format": "'left' or 'right'",
-            "description": "Which side takes output priority",
-            "required": lambda x: x is not None,
-        },
-        "filter": {
-            "format": "str",
-            "description": "Name of the item being filtered",
-            "required": lambda x: x is not None,
-        },
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     "input_priority": {
+    #         "format": "'left' or 'right'",
+    #         "description": "Which side takes input priority",
+    #         "required": lambda x: x is not None,
+    #     },
+    #     "output_priority": {
+    #         "format": "'left' or 'right'",
+    #         "description": "Which side takes output priority",
+    #         "required": lambda x: x is not None,
+    #     },
+    #     "filter": {
+    #         "format": "str",
+    #         "description": "Name of the item being filtered",
+    #         "required": lambda x: x is not None,
+    #     },
+    # }
     # fmt: off
+    class Format(DirectionalMixin.Format, Entity.Format):
+        input_priority: Literal["left", "right"] | None = None
+        output_priority: Literal["left", "right"] | None = None
+        filter: str | None = None
 
     def __init__(self, name=splitters[0], **kwargs):
         # type: (str, **dict) -> None
@@ -98,19 +102,19 @@ class Splitter(DirectionalMixin, Entity):
         :exception InvalidSideError: If set to an invalid side as specified
             above.
         """
-        return self._input_priority
+        return self._root.get("input_priority", None)
 
     @input_priority.setter
     def input_priority(self, value):
         # type: (Literal["left", "right", None]) -> None
         if value is None:
-            self._input_priority = value
+            self._root.pop("input_priority", None)
         elif isinstance(value, six.string_types):
             value = six.text_type(value)
             valid_sides = {"left", "right"}
             if value not in valid_sides:
                 raise InvalidSideError("'{}'".format(value))
-            self._input_priority = value
+            self._root["input_priority"] = value
         else:
             raise TypeError("'input_priority' must be a str or None")
 
@@ -131,19 +135,19 @@ class Splitter(DirectionalMixin, Entity):
         :exception InvalidSideError: If set to an invalid side as specified
             above.
         """
-        return self._output_priority
+        return self._root.get("output_priority", None)
 
     @output_priority.setter
     def output_priority(self, value):
         # type: (Literal["left", "right", None]) -> None
         if value is None:
-            self._output_priority = value
+            self._root.pop("output_priority", None)
         elif isinstance(value, six.string_types):
             value = six.text_type(value)
             valid_sides = {"left", "right"}
             if value not in valid_sides:
                 raise InvalidSideError("'{}'".format(value))
-            self._output_priority = value
+            self._root["output_priority"] = value
         else:
             raise TypeError("'output_priority' must be a str or None")
 
@@ -162,18 +166,18 @@ class Splitter(DirectionalMixin, Entity):
         :exception TypeError: If set to anything other than a ``str`` or ``None``.
         :exception InvalidItemError: If set to an invalid item name.
         """
-        return self._filter
+        return self._root.get("filter", None)
 
     @filter.setter
     def filter(self, value):
         # type: (str) -> None
         if value is None:
-            self._filter = value
+            self._root.pop("filter", None)
         elif isinstance(value, six.string_types):
             value = six.text_type(value)
             if value not in items.raw:
                 raise InvalidItemError("'{}'".format(value))
-            self._filter = value
+            self._root["filter"] = value
         else:
             raise TypeError("'filter' must be a str or None")
 

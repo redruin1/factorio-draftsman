@@ -41,7 +41,7 @@ class InserterTesting(unittest.TestCase):
         assert inserter.to_dict() == {
             "name": "inserter",
             "position": {"x": 1.5, "y": 1.5},
-            "direction": 2,
+            "direction": Direction.EAST,
             "override_stack_size": 1,
             "control_behavior": {
                 "circuit_set_stack_size": True,
@@ -54,7 +54,7 @@ class InserterTesting(unittest.TestCase):
                 "connect_to_logistic_network": True,
                 "logistic_condition": {},
                 "circuit_read_hand_contents": True,
-                "circuit_hand_read_mode": 0,
+                "circuit_hand_read_mode": ReadMode.PULSE,
             },
             "connections": {"1": {"green": [{"entity_id": 2, "circuit_id": 1}]}},
         }
@@ -95,16 +95,17 @@ class InserterTesting(unittest.TestCase):
         with pytest.raises(ValueError):
             Inserter("inserter", direction="incorrect")
 
-        with pytest.raises(TypeError):
-            Inserter("inserter", override_stack_size="incorrect")
+        # TODO: move to validate
+        # with pytest.raises(TypeError):
+        #     Inserter("inserter", override_stack_size="incorrect")
 
-        with pytest.raises(DataFormatError):
-            Inserter("inserter", connections={"this is": ["very", "wrong"]})
+        # with pytest.raises(DataFormatError):
+        #     Inserter("inserter", connections={"this is": ["very", "wrong"]})
 
-        with pytest.raises(DataFormatError):
-            Inserter(
-                "inserter", control_behavior={"this is": ["also", "very", "wrong"]}
-            )
+        # with pytest.raises(DataFormatError):
+        #     Inserter(
+        #         "inserter", control_behavior={"this is": ["also", "very", "wrong"]}
+        #     )
 
     def test_power_and_circuit_flags(self):
         for name in inserters:

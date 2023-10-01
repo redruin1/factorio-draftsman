@@ -3,11 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman import signatures
+from draftsman.signatures import RequestFilters
 from draftsman.data import items
 from draftsman.error import InvalidItemError, DataFormatError
 
-from schema import SchemaError
+from pydantic import BaseModel, ValidationError
 import six
 
 from typing import TYPE_CHECKING
@@ -22,13 +22,15 @@ class RequestFiltersMixin(object):
     network.
     """
 
-    _exports = {
-        "request_filters": {
-            "format": "TODO",
-            "description": "A list of all items requested by this entity",
-            "required": lambda x: x is not None,
-        }
-    }
+    # _exports = {
+    #     "request_filters": {
+    #         "format": "TODO",
+    #         "description": "A list of all items requested by this entity",
+    #         "required": lambda x: x is not None,
+    #     }
+    # }
+    class Format(BaseModel):
+        request_filters: RequestFilters | None = None
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
@@ -40,6 +42,24 @@ class RequestFiltersMixin(object):
             self.set_request_filters(kwargs["request_filters"])
             self.unused_args.pop("request_filters")
         # self._add_export("request_filters", lambda x: x is not None)
+
+    # =========================================================================
+
+    @property
+    def request_filters(self):
+        # type: () -> list[dict]
+        """
+        TODO
+        """
+        return self._root.get("request_filters", None)
+    
+    @request_filters.setter
+    def request_filters(self, value):
+        # type: (list[dict]) -> None
+        if value is None:
+            self._root.pop("request_filters", None)
+        else:
+            self._root["request_filters"] = value
 
     # =========================================================================
 
@@ -60,12 +80,12 @@ class RequestFiltersMixin(object):
         :exception InvalidItemError: If ``item`` is not a valid item name.
         :exception IndexError: If ``index`` is not in the range ``[0, 1000)``.
         """
-        try:
-            index = signatures.INTEGER.validate(index)
-            item = signatures.STRING_OR_NONE.validate(item)
-            count = signatures.INTEGER_OR_NONE.validate(count)
-        except SchemaError as e:
-            six.raise_from(TypeError(e), None)
+        # try: # TODO
+        #     index = signatures.INTEGER.validate(index)
+        #     item = signatures.STRING_OR_NONE.validate(item)
+        #     count = signatures.INTEGER_OR_NONE.validate(count)
+        # except SchemaError as e:
+        #     six.raise_from(TypeError(e), None)
 
         # if item is not None and item not in items.raw:
         #     raise InvalidItemError("'{}'".format(item))
@@ -110,14 +130,16 @@ class RequestFiltersMixin(object):
         """
         # Validate filters
         try:
-            filters = signatures.REQUEST_FILTERS.validate(filters)
-        except SchemaError as e:
+            filters = RequestFilters(root=filters).model_dump(by_alias=True, exclude_none=True, exclude_defaults=True)
+        except ValidationError as e:
             six.raise_from(DataFormatError(e), None)
 
         # Make sure the items are items
         # for item in filters:
         #     if item["name"] not in items.raw:
         #         raise InvalidItemError(item["name"])
+
+        print(filters)
 
         self.request_filters = []
         for i in range(len(filters)):

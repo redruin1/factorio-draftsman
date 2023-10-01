@@ -12,7 +12,9 @@ from draftsman.warning import DraftsmanWarning
 from draftsman.data.entities import infinity_containers
 from draftsman.data import items
 
+from pydantic import BaseModel
 from schema import SchemaError
+from typing import Literal
 import six
 import warnings
 
@@ -23,16 +25,28 @@ class InfinityContainer(RequestItemsMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **RequestItemsMixin._exports,
-        "infinity_settings": {
-            "format": "TODO",
-            "description": "Item filters for infinite spawning/deletion",
-            "required": lambda x: len(x) != 0,
-        },
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **RequestItemsMixin._exports,
+    #     "infinity_settings": {
+    #         "format": "TODO",
+    #         "description": "Item filters for infinite spawning/deletion",
+    #         "required": lambda x: len(x) != 0,
+    #     },
+    # }
     # fmt: on
+    class Format(Entity.Format):
+        class InfinitySettings(BaseModel):
+            class InfinityFilter(BaseModel):
+                index: int
+                name: str
+                count: int
+                mode: Literal["at-least", "at-most", "exactly"]
+
+            filters: list[InfinityFilter] | None = None
+            remove_unfiltered_items: bool | None = None
+
+        infinity_settings: InfinitySettings | None = None
 
     def __init__(self, name=infinity_containers[0], **kwargs):
         # type: (str, **dict) -> None
@@ -70,16 +84,15 @@ class InfinityContainer(RequestItemsMixin, Entity):
         :exception DataFormatError: If set to anything that does not match the
             :py:data:`.INFINITY_CONTAINER` format.
         """
-        return self._infinity_settings
+        return self._root["infinity_settings"]
 
     @infinity_settings.setter
     def infinity_settings(self, value):
         # type: (dict) -> None
-        try:
-            value = signatures.INFINITY_CONTAINER.validate(value)
-            self._infinity_settings = value
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        if value is None:
+            self._root["infinity_settings"] = {}
+        else:
+            self._root["infinity_settings"] = value
 
     # =========================================================================
 

@@ -17,10 +17,12 @@ class SolarPanel(Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports
-    }
+    # _exports = {
+    #     **Entity._exports
+    # }
     # fmt: on
+    class Format(Entity.Format):
+        pass
 
     def __init__(self, name=solar_panels[0], **kwargs):
         # type: (str, **dict) -> None

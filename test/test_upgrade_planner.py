@@ -94,7 +94,7 @@ class TestUpgradePlanner:
         # Normal case
         upgrade_planner.description = "some description"
         assert upgrade_planner.description == "some description"
-        assert upgrade_planner["settings"]["description"] is upgrade_planner.description
+        assert upgrade_planner["upgrade_planner"]["settings"]["description"] is upgrade_planner.description
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "version": utils.encode_version(*__factorio_version_info__),
@@ -104,7 +104,7 @@ class TestUpgradePlanner:
         # None case
         upgrade_planner.description = None
         assert upgrade_planner.description == None
-        assert "description" not in upgrade_planner["settings"]
+        assert "description" not in upgrade_planner["upgrade_planner"]["settings"]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "version": utils.encode_version(*__factorio_version_info__),
@@ -120,7 +120,7 @@ class TestUpgradePlanner:
         assert upgrade_planner.icons == [
             {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}
         ]
-        assert upgrade_planner["settings"]["icons"] is upgrade_planner.icons
+        assert upgrade_planner["upgrade_planner"]["settings"]["icons"] is upgrade_planner.icons
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "version": utils.encode_version(*__factorio_version_info__),
@@ -134,7 +134,7 @@ class TestUpgradePlanner:
         # None case
         upgrade_planner.icons = None
         assert upgrade_planner.icons == None
-        assert "icons" not in upgrade_planner["settings"]
+        assert "icons" not in upgrade_planner["upgrade_planner"]["settings"]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "version": utils.encode_version(*__factorio_version_info__),
@@ -148,7 +148,7 @@ class TestUpgradePlanner:
         assert upgrade_planner.icons == [
             {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}
         ]
-        assert upgrade_planner["settings"]["icons"] is upgrade_planner.icons
+        assert upgrade_planner["upgrade_planner"]["settings"]["icons"] is upgrade_planner.icons
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "version": utils.encode_version(*__factorio_version_info__),
@@ -166,7 +166,7 @@ class TestUpgradePlanner:
             {"index": 2, "signal": {"name": "signal-B", "type": "virtual"}},
             {"index": 3, "signal": {"name": "signal-C", "type": "virtual"}},
         ]
-        assert upgrade_planner["settings"]["icons"] is upgrade_planner.icons
+        assert upgrade_planner["upgrade_planner"]["settings"]["icons"] is upgrade_planner.icons
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "version": utils.encode_version(*__factorio_version_info__),
@@ -217,7 +217,7 @@ class TestUpgradePlanner:
         # Test None
         upgrade_planner.mappers = None
         assert upgrade_planner.mappers == None
-        assert "mappers" not in upgrade_planner._root["settings"]
+        assert "mappers" not in upgrade_planner._root["upgrade_planner"]["settings"]
 
     def test_set_mapping(self):
         upgrade_planner = UpgradePlanner()

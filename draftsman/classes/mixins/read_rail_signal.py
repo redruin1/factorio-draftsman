@@ -4,9 +4,10 @@
 from __future__ import unicode_literals
 
 from draftsman.error import DataFormatError
-from draftsman import signatures
+from draftsman.signatures import SignalID
 from draftsman.data.signals import signal_dict
 
+from pydantic import BaseModel, Field
 from schema import SchemaError
 import six
 
@@ -16,14 +17,21 @@ if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
-class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
+class ReadRailSignalMixin:  # (ControlBehaviorMixin)
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
 
     Allows the Entity to set red, yellow, and green circuit output signals.
     """
 
-    _exports = {}
+    # _exports = {}
+    class ControlFormat(BaseModel):
+        red_output_signal: SignalID | None = None
+        yellow_output_signal: SignalID | None = Field(None, alias="orange_output_signal")
+        green_output_signal: SignalID | None = None
+
+    class Format(BaseModel):
+        pass
 
     @property
     def red_output_signal(self):
@@ -55,16 +63,8 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
         # type: (str) -> None
         if value is None:
             self.control_behavior.pop("red_output_signal", None)
-        elif isinstance(value, six.string_types):
-            # Make sure this is a unicode string
-            value = six.text_type(value)
-            self.control_behavior["red_output_signal"] = signal_dict(value)
-        else:  # dict or other
-            try:
-                value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["red_output_signal"] = value
-            except SchemaError as e:
-                six.raise_from(DataFormatError(e), None)
+        else:
+            self.control_behavior["red_output_signal"] = value
 
     # =========================================================================
 
@@ -98,16 +98,8 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
         # type: (str) -> None
         if value is None:
             self.control_behavior.pop("orange_output_signal", None)
-        elif isinstance(value, six.string_types):
-            # Make sure this is a unicode string
-            value = six.text_type(value)
-            self.control_behavior["orange_output_signal"] = signal_dict(value)
-        else:  # dict or other
-            try:
-                value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["orange_output_signal"] = value
-            except SchemaError as e:
-                six.raise_from(DataFormatError(e), None)
+        else:
+            self.control_behavior["orange_output_signal"] = value
 
     # =========================================================================
 
@@ -134,23 +126,15 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
         :exception DataFormatError: If set to a dict that does not match the
             dict format specified above.
         """
-        return self.control_behavior["green_output_signal"]
+        return self.control_behavior.get("green_output_signal", None)
 
     @green_output_signal.setter
     def green_output_signal(self, value):
         # type: (str) -> None
         if value is None:
             self.control_behavior.pop("green_output_signal", None)
-        elif isinstance(value, six.string_types):
-            # Make sure this is a unicode string
-            value = six.text_type(value)
-            self.control_behavior["green_output_signal"] = signal_dict(value)
-        else:  # dict or other
-            try:
-                value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["green_output_signal"] = value
-            except SchemaError as e:
-                six.raise_from(DataFormatError(e), None)
+        else:
+            self.control_behavior["green_output_signal"] = value
 
     # =========================================================================
 

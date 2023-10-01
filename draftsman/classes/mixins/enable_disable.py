@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman import signatures
+from pydantic import BaseModel
 
 
 class EnableDisableMixin(object):  # (ControlBehaviorMixin)
@@ -14,7 +14,12 @@ class EnableDisableMixin(object):  # (ControlBehaviorMixin)
     its operation.
     """
 
-    _exports = {}
+    # _exports = {}
+    class ControlFormat(BaseModel):
+        circuit_enable_disable: bool | None = None
+
+    class Format(BaseModel):
+        pass
 
     @property
     def enable_disable(self):

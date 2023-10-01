@@ -20,6 +20,7 @@ from draftsman.data.entities import logistic_request_containers
 
 from schema import SchemaError
 import six
+from typing import ClassVar
 import warnings
 
 
@@ -37,21 +38,38 @@ class LogisticRequestContainer(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **RequestFiltersMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **LogisticModeOfOperationMixin._exports,
-        **RequestItemsMixin._exports,
-        **InventoryMixin._exports,
-        "request_from_buffers": {
-            "format": "bool",
-            "description": "Whether or not to request from buffer chests",
-            "required": lambda x: x is not None,
-        },
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **RequestFiltersMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **LogisticModeOfOperationMixin._exports,
+    #     **RequestItemsMixin._exports,
+    #     **InventoryMixin._exports,
+    #     "request_from_buffers": {
+    #         "format": "bool",
+    #         "description": "Whether or not to request from buffer chests",
+    #         "required": lambda x: x is not None,
+    #     },
+    # }
     # fmt: on
+    class Format(
+        InventoryMixin.Format,
+        RequestItemsMixin.Format,
+        LogisticModeOfOperationMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        RequestFiltersMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(
+            LogisticModeOfOperationMixin.Format
+        ):
+            pass
+
+        control_behavior: ClassVar[ControlBehavior | None] = None
+
+        request_from_buffers: bool | None = None
 
     def __init__(self, name=logistic_request_containers[0], **kwargs):
         # type: (str, **dict) -> None

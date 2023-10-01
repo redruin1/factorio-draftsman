@@ -68,7 +68,7 @@ from draftsman.classes.deconstruction_planner import DeconstructionPlanner
 from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.error import DataFormatError
-from draftsman.signatures import BaseModel, Color, Icons
+from draftsman.signatures import BaseModel, Color, Icons, uint16
 from draftsman import utils
 from draftsman.warning import DraftsmanWarning, IndexWarning
 
@@ -203,7 +203,7 @@ class BlueprintBook(Blueprintable):
                 ] = []
 
         blueprint_book: BlueprintBookObject
-        index: int | None = Field(None, description="Only present when inside a BlueprintBook") # TODO: dimension
+        index: uint16 | None = Field(None, description="Only present when inside a BlueprintBook")
 
         model_config = ConfigDict(title="ExternalObject")
 
@@ -248,11 +248,11 @@ class BlueprintBook(Blueprintable):
             self.version = utils.encode_version(*__factorio_version_info__)
 
         if "blueprints" in kwargs:
-            self._root["blueprints"] = BlueprintableList(
+            self._root[self._root_item]["blueprints"] = BlueprintableList(
                 kwargs.pop("blueprints"), unknown=unknown
             )
         else:
-            self._root["blueprints"] = BlueprintableList()
+            self._root[self._root_item]["blueprints"] = BlueprintableList()
 
         # Issue warnings for any keyword not recognized by BlueprintBook
         for unused_arg in kwargs:
@@ -298,22 +298,22 @@ class BlueprintBook(Blueprintable):
             print(blueprint.label_color)
             # {'r': 127.0, 'g': 127.0, 'b': 127.0}
         """
-        return self._root.get("label_color", None)
+        return self._root[self._root_item].get("label_color", None)
 
     @label_color.setter
     def label_color(self, value):
         # type: (dict) -> None
         if value is None:
-            self._root.pop("label_color", None)
+            self._root[self._root_item].pop("label_color", None)
         else:
-            self._root["label_color"] = value
+            self._root[self._root_item]["label_color"] = value
 
     def set_label_color(self, r, g, b, a=None):
         """
         TODO
         """
         try:
-            self._root["label_color"] = Color(
+            self._root[self._root_item]["label_color"] = Color(
                 r=r, g=g, b=b, a=a
             ).model_dump(
                 exclude_none=True
@@ -339,15 +339,15 @@ class BlueprintBook(Blueprintable):
         :exception TypeError: If set to anything other than an ``int`` or
             ``None``.
         """
-        return self._root.get("active_index", None)
+        return self._root[self._root_item].get("active_index", None)
 
     @active_index.setter
     def active_index(self, value):
         # type: (int) -> None
         if value is None:
-            self._root["active_index"] = 0
+            self._root[self._root_item]["active_index"] = 0
         elif isinstance(value, int):
-            self._root["active_index"] = value
+            self._root[self._root_item]["active_index"] = value
         else:
             raise TypeError("'active_index' must be a int or None")
 
@@ -368,15 +368,15 @@ class BlueprintBook(Blueprintable):
         :exception TypeError: If set to anything other than ``list`` or
             ``None``.
         """
-        return self._root["blueprints"]
+        return self._root[self._root_item]["blueprints"]
 
     @blueprints.setter
     def blueprints(self, value):
         # TODO: handle BlueprintableList as input value
         if value is None:
-            self._root["blueprints"] = BlueprintableList()
+            self._root[self._root_item]["blueprints"] = BlueprintableList()
         elif isinstance(value, list):
-            self._root["blueprints"] = BlueprintableList(value)
+            self._root[self._root_item]["blueprints"] = BlueprintableList(value)
         else:
             raise TypeError("'blueprints' must be a list or None")
 
@@ -446,20 +446,26 @@ class BlueprintBook(Blueprintable):
 
         :returns: The dict representation of the BlueprintBook.
         """
-        #
-        root_copy = {k: v for k, v in self._root.items() if k != "blueprints"}
+        # Create a copy, omitting blueprints because that part is special
+        root_copy = {
+            self._root_item: {k: v for k, v in self._root[self._root_item].items() if k != "blueprints"}
+        }
+        if self.index is not None:
+            root_copy["index"] = self.index
 
         # Transform blueprints
-        root_copy["blueprints"] = []
+        root_copy[self._root_item]["blueprints"] = []
         for i, blueprintable in enumerate(self.blueprints):
-            blueprintable_entry = copy.deepcopy(blueprintable.to_dict())
+            blueprintable_entry = blueprintable.to_dict()
             print("blueprintable entry:", blueprintable_entry)
-            blueprintable_entry["index"] = i
-            root_copy["blueprints"].append(blueprintable_entry)
+            # Users can manually customize index, we only override if none is found
+            if "index" not in blueprintable_entry:
+                blueprintable_entry["index"] = i
+            root_copy[self._root_item]["blueprints"].append(blueprintable_entry)
 
         # The following should make sense, but it's actually just dumb
 
-        # print("\tROOT_COPY: ", root_copy)
+        print("\tROOT_COPY: ", root_copy)
 
         # out_model = BlueprintBook.Format.model_construct(
         #     **{self._root_item: root_copy}, _recursive=True
@@ -476,7 +482,7 @@ class BlueprintBook(Blueprintable):
 
         # print("\tOUT_DICT:", out_dict)
 
-        if len(root_copy["blueprints"]) == 0:
-            del root_copy["blueprints"]
+        if len(root_copy[self._root_item]["blueprints"]) == 0:
+            del root_copy[self._root_item]["blueprints"]
 
-        return {"blueprint_book": root_copy}
+        return root_copy

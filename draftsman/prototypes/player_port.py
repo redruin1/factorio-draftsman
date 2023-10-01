@@ -14,8 +14,10 @@ class PlayerPort(Entity):
     A constructable respawn point typically used in scenarios.
     """
 
-    _exports = {}
-    _exports.update(Entity._exports)
+    # _exports = {}
+    # _exports.update(Entity._exports)
+    class Format(Entity.Format):
+        pass
 
     def __init__(self, name=player_ports[0], **kwargs):
         # type: (str, **dict) -> None

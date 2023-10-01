@@ -1,5 +1,4 @@
 # test_simple_entity_with_owner.py
-# -*- encoding: utf-8 -*-
 
 from __future__ import unicode_literals
 

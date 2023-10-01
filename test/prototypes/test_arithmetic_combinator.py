@@ -110,8 +110,9 @@ class ArithmeticCombinatorTesting(unittest.TestCase):
         # Errors
         with pytest.raises(InvalidEntityError):
             ArithmeticCombinator("this is not an arithmetic combinator")
-        with pytest.raises(DataFormatError):
-            ArithmeticCombinator(control_behavior={"unused_key": "something"})
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     ArithmeticCombinator(control_behavior={"unused_key": "something"})
 
     def test_flags(self):
         for name in arithmetic_combinators:

@@ -247,12 +247,12 @@ class BlueprintTesting(unittest.TestCase):
         assert blueprint.icons == [
             {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
         ]
-        assert blueprint["icons"] == [
+        assert blueprint["blueprint"]["icons"] == [
             {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
         ]
         # Multiple Icon
         blueprint.set_icons("signal-A", "signal-B", "signal-C")
-        assert blueprint["icons"] == [
+        assert blueprint["blueprint"]["icons"] == [
             {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1},
             {"signal": {"name": "signal-B", "type": "virtual"}, "index": 2},
             {"signal": {"name": "signal-C", "type": "virtual"}, "index": 3},
@@ -260,7 +260,7 @@ class BlueprintTesting(unittest.TestCase):
 
         # Raw signal dicts:
         blueprint.set_icons({"name": "some-signal", "type": "some-type"})
-        assert blueprint["icons"] == [
+        assert blueprint["blueprint"]["icons"] == [
             {"signal": {"name": "some-signal", "type": "some-type"}, "index": 1}
         ]
 
@@ -316,7 +316,7 @@ class BlueprintTesting(unittest.TestCase):
         blueprint = Blueprint()
         blueprint.snapping_grid_size = (10, 10)
         assert blueprint.snapping_grid_size == Vector(10, 10)
-        assert blueprint["snap-to-grid"] == Vector(10, 10)
+        assert blueprint["blueprint"]["snap-to-grid"] == Vector(10, 10)
 
         blueprint.snapping_grid_size = None
         assert blueprint.snapping_grid_size == None
@@ -344,7 +344,7 @@ class BlueprintTesting(unittest.TestCase):
         blueprint = Blueprint()
         blueprint.absolute_snapping = True
         assert blueprint.absolute_snapping == True
-        assert blueprint["absolute-snapping"] == True
+        assert blueprint["blueprint"]["absolute-snapping"] == True
 
         blueprint.absolute_snapping = None
         assert blueprint.absolute_snapping == None
@@ -362,7 +362,7 @@ class BlueprintTesting(unittest.TestCase):
         blueprint = Blueprint()
         blueprint.position_relative_to_grid = (1, 2)
         assert blueprint.position_relative_to_grid == Vector(1, 2)
-        assert blueprint["position-relative-to-grid"] == Vector(1, 2)
+        assert blueprint["blueprint"]["position-relative-to-grid"] == Vector(1, 2)
 
         blueprint.position_relative_to_grid = None
         assert blueprint.position_relative_to_grid == None
@@ -657,9 +657,9 @@ class BlueprintTesting(unittest.TestCase):
             "item": "blueprint",
             "version": encode_version(*__factorio_version_info__),
         }
-        assert blueprint.entities is blueprint._root["entities"]
-        assert blueprint.tiles is blueprint._root["tiles"]
-        assert blueprint.schedules is blueprint._root["schedules"]
+        assert blueprint.entities is blueprint._root["blueprint"]["entities"]
+        assert blueprint.tiles is blueprint._root["blueprint"]["tiles"]
+        assert blueprint.schedules is blueprint._root["blueprint"]["schedules"]
 
         # Copper wire connection case
         blueprint.entities.append("power-switch", id="a")
@@ -869,14 +869,14 @@ class BlueprintTesting(unittest.TestCase):
     def test_getitem(self):
         blueprint = Blueprint()
         blueprint.label = "testing"
-        assert blueprint["label"] is blueprint._root["label"]
+        assert blueprint["blueprint"]["label"] is blueprint._root["blueprint"]["label"]
 
     # =========================================================================
 
     def test_setitem(self):
         blueprint = Blueprint()
-        blueprint["label"] = "testing"
-        assert blueprint["label"] == blueprint._root["label"]
+        blueprint["blueprint"]["label"] = "testing"
+        assert blueprint["blueprint"]["label"] == blueprint._root["blueprint"]["label"]
 
     # =========================================================================
 

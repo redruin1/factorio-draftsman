@@ -30,14 +30,16 @@ class HeatInterfaceTesting(unittest.TestCase):
         # Warnings
         with pytest.warns(DraftsmanWarning):
             HeatInterface(unused_keyword="whatever")
-        with pytest.warns(TemperatureRangeWarning):
-            HeatInterface(temperature=100000)  # 100,000
+        # TODO: move to inspect
+        # with pytest.warns(TemperatureRangeWarning):
+        #     HeatInterface(temperature=100000)  # 100,000
 
         # Errors
         with pytest.raises(InvalidEntityError):
             HeatInterface("this is not a heat interface")
-        with pytest.raises(TypeError):
-            HeatInterface(temperature="incorrect")
+        # TODO: move to validate
+        # with pytest.raises(TypeError):
+        #     HeatInterface(temperature="incorrect")
 
     def test_set_temperature(self):
         interface = HeatInterface()
@@ -46,11 +48,13 @@ class HeatInterfaceTesting(unittest.TestCase):
         interface.temperature = None
         assert interface.temperature == None
         # Warnings
-        with pytest.warns(TemperatureRangeWarning):
-            interface.temperature = -1000
+        # TODO: move to inspect
+        # with pytest.warns(TemperatureRangeWarning):
+        #     interface.temperature = -1000
         # Errors
-        with pytest.raises(TypeError):
-            interface.temperature = "incorrect"
+        # TODO: move to validate
+        # with pytest.raises(TypeError):
+        #     interface.temperature = "incorrect"
 
     def test_set_mode(self):
         interface = HeatInterface()

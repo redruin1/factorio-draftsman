@@ -4,9 +4,10 @@
 from __future__ import unicode_literals
 
 from draftsman.error import DataFormatError
-from draftsman import signatures
+from draftsman.signatures import SignalID
 from draftsman.data.signals import signal_dict
 
+from pydantic import BaseModel
 from schema import SchemaError
 import six
 
@@ -24,13 +25,19 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
     overridden stack size and a circuit-set stack size.
     """
 
-    _exports = {
-        "override_stack_size": {
-            "format": "int",
-            "description": "The stack size override to use (if enabled)",
-            "required": lambda x: x is not None,
-        }
-    }
+    # _exports = {
+    #     "override_stack_size": {
+    #         "format": "int",
+    #         "description": "The stack size override to use (if enabled)",
+    #         "required": lambda x: x is not None,
+    #     }
+    # }
+    class ControlFormat(BaseModel):
+        circuit_set_stack_size: bool | None = None
+        stack_control_input_signal: SignalID | None = None
+
+    class Format(BaseModel):
+        override_stack_size: int | None = None # TODO dimension
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
@@ -58,15 +65,15 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
 
         :exception TypeError:
         """
-        return self._override_stack_size
+        return self._root.get("override_stack_size", None)
 
     @override_stack_size.setter
     def override_stack_size(self, value):
         # type: (int) -> None
-        if value is None or isinstance(value, six.integer_types):
-            self._override_stack_size = value
+        if value is None:
+            self._root.pop("override_stack_size", None)
         else:
-            raise TypeError("'value' must be an int or None")
+            self._root["override_stack_size"] = value
 
     # =========================================================================
 
@@ -138,7 +145,7 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
             self.control_behavior["stack_control_input_signal"] = signal_dict(value)
         else:  # dict or other
             try:
-                value = signatures.SIGNAL_ID.validate(value)
+                value = SignalID(**value).model_dump() # TODO: better
                 self.control_behavior["stack_control_input_signal"] = value
             except SchemaError as e:
                 six.raise_from(DataFormatError(e), None)

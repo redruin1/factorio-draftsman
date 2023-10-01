@@ -84,16 +84,17 @@ class LogisticPassiveContainerTesting(unittest.TestCase):
                 "logistic-chest-passive-provider", position=TypeError
             )
 
-        with pytest.raises(TypeError):
-            LogisticPassiveContainer(
-                "logistic-chest-passive-provider", bar="not even trying"
-            )
+        # TODO: move to validate
+        # with pytest.raises(TypeError):
+        #     LogisticPassiveContainer(
+        #         "logistic-chest-passive-provider", bar="not even trying"
+        #     )
 
-        with pytest.raises(DataFormatError):
-            LogisticPassiveContainer(
-                "logistic-chest-passive-provider",
-                connections={"this is": ["very", "wrong"]},
-            )
+        # with pytest.raises(DataFormatError):
+        #     LogisticPassiveContainer(
+        #         "logistic-chest-passive-provider",
+        #         connections={"this is": ["very", "wrong"]},
+        #     )
 
     def test_power_and_circuit_flags(self):
         for name in logistic_passive_containers:

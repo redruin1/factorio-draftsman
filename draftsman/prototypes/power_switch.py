@@ -20,6 +20,7 @@ from draftsman.data.entities import power_switches
 
 from schema import SchemaError
 import six
+from typing import ClassVar
 import warnings
 
 
@@ -38,21 +39,39 @@ class PowerSwitch(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **PowerConnectableMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **LogisticConditionMixin._exports,
-        **CircuitConditionMixin._exports,
-        "switch_state": {
-            "format": "bool",
-            "description": "The 'default' state of the switch (overridden by logistic or circuit conditions)",
-            "required": lambda x: x is not None,
-        },
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **PowerConnectableMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **LogisticConditionMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    #     "switch_state": {
+    #         "format": "bool",
+    #         "description": "The 'default' state of the switch (overridden by logistic or circuit conditions)",
+    #         "required": lambda x: x is not None,
+    #     },
+    # }
     # fmt: on
+    class Format(
+        CircuitConditionMixin.Format,
+        LogisticConditionMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        PowerConnectableMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(
+            CircuitConditionMixin.ControlFormat,
+            LogisticConditionMixin.ControlFormat,
+        ):
+            pass
+
+        control_behavior: ClassVar[ControlBehavior | None] = None
+
+        switch_state: bool | None = None
 
     def __init__(self, name=power_switches[0], **kwargs):
         # type: (str, **dict) -> None
@@ -77,15 +96,15 @@ class PowerSwitch(
 
     # =========================================================================
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = signatures.POWER_SWITCH_CONTROL_BEHAVIOR.validate(
-                value
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    # @ControlBehaviorMixin.control_behavior.setter
+    # def control_behavior(self, value):
+    #     # type: (dict) -> None
+    #     try:
+    #         self._control_behavior = signatures.POWER_SWITCH_CONTROL_BEHAVIOR.validate(
+    #             value
+    #         )
+    #     except SchemaError as e:
+    #         six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -102,15 +121,15 @@ class PowerSwitch(
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
-        return self._switch_state
+        return self._root.get("switch_state", None)
 
     @switch_state.setter
     def switch_state(self, value):
         # type: (bool) -> None
-        if value is None or isinstance(value, bool):
-            self._switch_state = value
+        if value is None:
+            self._root.pop("switch_state", None)
         else:
-            raise TypeError("'switch_state' must be a bool or None")
+            self._root["switch_state"] = value
 
     def merge(self, other):
         # type: (PowerSwitch) -> None

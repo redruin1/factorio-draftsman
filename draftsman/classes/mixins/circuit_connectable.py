@@ -3,11 +3,11 @@
 
 from __future__ import unicode_literals
 
-from draftsman import signatures
+from draftsman.signatures import Connections, recursive_construct
 from draftsman.data import entities
 from draftsman.error import DataFormatError
 
-from schema import SchemaError
+from pydantic import BaseModel, ValidationError
 import six
 
 
@@ -16,13 +16,15 @@ class CircuitConnectableMixin(object):
     Enables the Entity to be connected to circuit networks.
     """
 
-    _exports = {
-        "connections": {
-            "format": "TODO",
-            "description": "All circuit and copper wire connections",
-            "required": lambda x: len(x) != 0,
-        }
-    }
+    # _exports = {
+    #     "connections": {
+    #         "format": "TODO",
+    #         "description": "All circuit and copper wire connections",
+    #         "required": lambda x: len(x) != 0,
+    #     }
+    # }
+    class Format(BaseModel):
+        connections: Connections | None = Connections()
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
@@ -78,15 +80,17 @@ class CircuitConnectableMixin(object):
         :exception DataFormatError: If set to anything that does not match the
             format of :py:data:`draftsman.signatures.CONNECTIONS`.
         """
-        return self._connections
+        return self._root["connections"]
 
     @connections.setter
     def connections(self, value):
         # type: (dict) -> None
         try:
-            self._connections = signatures.CONNECTIONS.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+            # self._root["connections"] = Connections(**value).model_dump(by_alias=True, exclude_none=True, exclude_defaults=True)
+            self._root["connections"] = recursive_construct(Connections, **value).model_dump(by_alias=True, exclude_none=True, exclude_defaults=True)
+        except ValidationError as e:
+            print(e)
+            raise DataFormatError from e
 
     # =========================================================================
 

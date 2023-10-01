@@ -8,8 +8,8 @@ from draftsman.classes.mixins import ModulesMixin, RequestItemsMixin
 from draftsman import utils
 from draftsman.warning import DraftsmanWarning, ItemLimitationWarning
 
-from draftsman.data.entities import labs, raw
-from draftsman.data import items, modules
+from draftsman.data.entities import labs
+from draftsman.data import entities, modules
 
 import warnings
 
@@ -20,19 +20,22 @@ class Lab(ModulesMixin, RequestItemsMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **RequestItemsMixin._exports,
-        **ModulesMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **RequestItemsMixin._exports,
+    #     **ModulesMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        ModulesMixin.Format,
+        RequestItemsMixin.Format,
+        Entity.Format,
+    ):
+        pass
 
     def __init__(self, name=labs[0], **kwargs):
         # type: (str, **dict) -> None
         super(Lab, self).__init__(name, labs, **kwargs)
-
-        # Keep track of science packs that this lab can use
-        self._inputs = raw[self.name]["inputs"]
 
         for unused_arg in self.unused_args:
             warnings.warn(
@@ -53,7 +56,7 @@ class Lab(ModulesMixin, RequestItemsMixin, Entity):
 
         :type: ``list[str]``
         """
-        return self._inputs
+        return entities.raw[self.name]["inputs"]
 
     # =========================================================================
 

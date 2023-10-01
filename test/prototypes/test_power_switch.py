@@ -35,8 +35,9 @@ class PowerSwitchTesting(unittest.TestCase):
         # Errors
         with pytest.raises(InvalidEntityError):
             PowerSwitch("this is not a power switch")
-        with pytest.raises(DataFormatError):
-            PowerSwitch(control_behavior={"unused_key": "something"})
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     PowerSwitch(control_behavior={"unused_key": "something"})
 
     def test_flags(self):
         for name in power_switches:
@@ -52,8 +53,9 @@ class PowerSwitchTesting(unittest.TestCase):
         assert power_switch.switch_state == False
         power_switch.switch_state = None
         assert power_switch.switch_state == None
-        with pytest.raises(TypeError):
-            power_switch.switch_state = TypeError
+        # TODO: move to validate
+        # with pytest.raises(TypeError):
+        #     power_switch.switch_state = TypeError
 
     def test_mergable_with(self):
         switch1 = PowerSwitch("power-switch")

@@ -19,6 +19,7 @@ from draftsman.data.entities import offshore_pumps
 
 from schema import SchemaError
 import six
+from typing import ClassVar
 import warnings
 
 
@@ -35,15 +36,30 @@ class OffshorePump(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **LogisticConditionMixin._exports,
-        **CircuitConditionMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **LogisticConditionMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        CircuitConditionMixin.Format,
+        LogisticConditionMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(
+            CircuitConditionMixin.ControlFormat,
+            LogisticConditionMixin.ControlFormat,
+        ):
+            pass
+
+        control_behavior: ClassVar[ControlBehavior | None] = None
 
     def __init__(self, name=offshore_pumps[0], **kwargs):
         # type: (str, **dict) -> None

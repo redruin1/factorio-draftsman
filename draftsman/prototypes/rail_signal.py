@@ -21,6 +21,7 @@ from draftsman.data import entities
 
 from schema import SchemaError
 import six
+from typing import ClassVar
 import warnings
 
 
@@ -39,16 +40,34 @@ class RailSignal(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **EightWayDirectionalMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **EnableDisableMixin._exports,
-        **CircuitConditionMixin._exports,
-        **ReadRailSignalMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **EightWayDirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **EnableDisableMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    #     **ReadRailSignalMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        ReadRailSignalMixin.Format, 
+        CircuitConditionMixin.Format,
+        EnableDisableMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        EightWayDirectionalMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(
+            ReadRailSignalMixin.ControlFormat,
+            CircuitConditionMixin.ControlFormat,
+            EnableDisableMixin.ControlFormat
+        ):
+            circuit_read_signal: bool | None = None
+            circuit_close_signal: bool | None = None
+
+        control_behavior: ControlBehavior | None = ControlBehavior()
 
     def __init__(self, name=rail_signals[0], **kwargs):
         # type: (str, **dict) -> None

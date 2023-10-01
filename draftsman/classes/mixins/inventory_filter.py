@@ -3,7 +3,7 @@
 
 from __future__ import unicode_literals
 
-from draftsman import signatures
+from draftsman.signatures import InventoryFilters, Filters
 from draftsman.data import entities
 from draftsman.data import items
 from draftsman.error import (
@@ -12,7 +12,7 @@ from draftsman.error import (
 )
 from draftsman.warning import IndexWarning
 
-from schema import SchemaError
+from pydantic import BaseModel, ValidationError
 import six
 import warnings
 
@@ -27,13 +27,15 @@ class InventoryFilterMixin(object):
     Allows an Entity to set inventory filters. Only used on :py:class:`.CargoWagon`.
     """
 
-    _exports = {
-        "inventory": {
-            "format": "TODO",
-            "description": "Inventory filters",
-            "required": lambda x: len(x) != 0,
-        }
-    }
+    # _exports = {
+    #     "inventory": {
+    #         "format": "TODO",
+    #         "description": "Inventory filters",
+    #         "required": lambda x: len(x) != 0,
+    #     }
+    # }
+    class Format(BaseModel):
+        inventory: InventoryFilters | None = InventoryFilters()
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
@@ -88,15 +90,32 @@ class InventoryFilterMixin(object):
         :exception DataFormatError: If the set value differs from the
             ``INVENTORY_FILTER`` specification.
         """
-        return self._inventory
+        return self._root["inventory"]
 
     @inventory.setter
     def inventory(self, value):
         # type: (dict) -> None
-        try:
-            self._inventory = signatures.INVENTORY_FILTER.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        if value is None:
+            self._root["inventory"] = {}
+        else:
+            self._root["inventory"] = value
+
+    # =========================================================================
+
+    @property
+    def filters(self):
+        # type: () -> Filters
+        """
+        TODO
+        """
+        return self.inventory.get("filters", None)
+    
+    @filters.setter
+    def filters(self, value):
+        if value is None:
+            self.inventory.pop("filters", None)
+        else:
+            self.inventory["filters"] = value
 
     # =========================================================================
 
@@ -120,13 +139,13 @@ class InventoryFilterMixin(object):
         :exception IndexError: If the set value lies outside of the range
             ``[0, 65536)``.
         """
-        return self._inventory.get("bar", None)
+        return self.inventory.get("bar", None)
 
     @bar.setter
     def bar(self, value):
         # type: (int) -> None
         if value is None:
-            self._inventory.pop("bar", None)
+            self.inventory.pop("bar", None)
             return
 
         if not isinstance(value, six.integer_types):
@@ -143,7 +162,7 @@ class InventoryFilterMixin(object):
                 stacklevel=2,
             )
 
-        self._inventory["bar"] = value
+        self.inventory["bar"] = value
 
     # =========================================================================
 
@@ -162,11 +181,8 @@ class InventoryFilterMixin(object):
         :exception IndexError: If ``index`` lies outside the range
             ``[0, inventory_size)``.
         """
-        try:
-            index = signatures.INTEGER.validate(index)
-            item = signatures.STRING_OR_NONE.validate(item)
-        except SchemaError as e:
-            six.raise_from(TypeError(e), None)
+        index = int(index)
+        item = str(item) if item is not None else None
 
         if "filters" not in self.inventory:
             self.inventory["filters"] = []
@@ -228,8 +244,12 @@ class InventoryFilterMixin(object):
             return
 
         try:
-            filters = signatures.FILTERS.validate(filters)
-        except SchemaError as e:
+            filters = Filters(root=filters).model_dump(
+                by_alias=True,
+                exclude_none=True,
+                exclude_defaults=True,
+            )
+        except ValidationError as e:
             six.raise_from(DataFormatError(e), None)
 
         # Make sure the items are item signals
@@ -246,9 +266,10 @@ class InventoryFilterMixin(object):
         # type: (Entity) -> None
         super(InventoryFilterMixin, self).merge(other)
 
-        self.inventory = {}
-        self.bar = other.bar
-        self.set_inventory_filters(other.inventory.get("filters", None))
+        # self.inventory = {}
+        # self.bar = other.bar
+        # self.set_inventory_filters(other.inventory.get("filters", None))
+        self.inventory = other.inventory
 
     # =========================================================================
 

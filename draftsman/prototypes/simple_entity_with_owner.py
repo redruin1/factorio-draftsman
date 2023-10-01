@@ -14,17 +14,19 @@ class SimpleEntityWithOwner(Entity):
     A generic entity owned by some other entity.
     """
 
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(
-        {
-            "variation": {
-                "format": "int",
-                "description": "Graphical variation of the entity",
-                "required": lambda x: x is not None,
-            },
-        }
-    )
+    # _exports = {}
+    # _exports.update(Entity._exports)
+    # _exports.update(
+    #     {
+    #         "variation": {
+    #             "format": "int",
+    #             "description": "Graphical variation of the entity",
+    #             "required": lambda x: x is not None,
+    #         },
+    #     }
+    # )
+    class Format(Entity.Format):
+        variation: int | None = None # TODO: dimension
 
     def __init__(self, name=simple_entities_with_owner[0], **kwargs):
         # type: (str, **dict) -> None
@@ -52,9 +54,12 @@ class SimpleEntityWithOwner(Entity):
 
         :type: ``int``
         """
-        return self._variation
+        return self._root.get("variation")
 
     @variation.setter
     def variation(self, value):
         # type: (int) -> None
-        self._variation = value
+        if value is None:
+            self._root.pop("variation", None)
+        else:
+            self._root["variation"] = value

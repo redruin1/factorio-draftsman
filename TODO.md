@@ -1,5 +1,11 @@
 # TODO
 
+### For backwards compat, allow indexing a blueprintable to point to its `_root[_root_item]` sub-index instead of it's true `_root`?
+
+### Rename `InvalidSignalError` to `UnknownSignalError` (do the same with everything else to indicate change in functionality)
+
+### Add bool `validate` parameter to the constructor of `Entity`; indicates whether or not to validate the entity after construction
+
 ### Add as many of the example programs to the test suite as possible
 To help ensure that they're behaving correctly over any API changes, so they stay up-to-date
 

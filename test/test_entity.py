@@ -34,7 +34,7 @@ class EntityTesting(unittest.TestCase):
             "tags": {"wee": 500, "hello": "world", "addition": 2},
         }
 
-        # Resetting tags to empty should omit it based on its lambda func
+        # Resetting tags to empty dict should be omitted
         container.tags = {}
         assert container.to_dict() == {
             "name": "wooden-chest",
@@ -164,6 +164,13 @@ class EntityTesting(unittest.TestCase):
         blueprint.entities[0].id = "duplicate"
         with pytest.raises(DuplicateIDError):
             blueprint.entities[1].id = "duplicate"
+
+    def test_change_position_in_blueprint(self):
+        blueprint = Blueprint()
+        example = Container("wooden-chest")
+        blueprint.entities.append(example, copy=False)
+        with pytest.raises(DraftsmanError):
+            example.position = (10.5, 10.5)
 
     def test_flippable(self):
         belt = TransportBelt()

@@ -19,16 +19,18 @@ class RocketSilo(RequestItemsMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **RequestItemsMixin._exports,
-        "auto_launch": {
-            "format": "bool",
-            "description": "Whether the silo should launch on rocket completion",
-            "required": lambda x: x is not None,
-        },
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **RequestItemsMixin._exports,
+    #     "auto_launch": {
+    #         "format": "bool",
+    #         "description": "Whether the silo should launch on rocket completion",
+    #         "required": lambda x: x is not None,
+    #     },
+    # }
     # fmt: on
+    class Format(RequestItemsMixin.Format, Entity.Format):
+        auto_launch: bool | None = None
 
     def __init__(self, name=rocket_silos[0], **kwargs):
         # type: (str, **dict) -> None
@@ -64,13 +66,15 @@ class RocketSilo(RequestItemsMixin, Entity):
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
-        return self._auto_launch
+        return self._root.get("auto_launch", None)
 
     @auto_launch.setter
     def auto_launch(self, value):
         # type: (bool) -> None
-        if value is None or isinstance(value, bool):
-            self._auto_launch = value
+        if value is None:
+            self._root.pop("auto_launch", None)
+        elif isinstance(value, bool):
+            self._root["auto_launch"] = value
         else:
             raise TypeError("'auto_launch' must be a bool or None")
 

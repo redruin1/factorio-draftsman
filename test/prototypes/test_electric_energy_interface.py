@@ -49,8 +49,9 @@ class ElectricEnergyInterfaceTesting(unittest.TestCase):
         assert interface.buffer_size == 100
         interface.buffer_size = None
         assert interface.buffer_size == None
-        with pytest.raises(TypeError):
-            interface.buffer_size = "incorrect"
+        # TODO: move to validate
+        # with pytest.raises(TypeError):
+        #     interface.buffer_size = "incorrect"
 
     def test_set_power_production(self):
         interface = ElectricEnergyInterface()
@@ -58,8 +59,9 @@ class ElectricEnergyInterfaceTesting(unittest.TestCase):
         assert interface.power_production == 100
         interface.power_production = None
         assert interface.power_production == None
-        with pytest.raises(TypeError):
-            interface.power_production = "incorrect"
+        # TODO: move to validate
+        # with pytest.raises(TypeError):
+        #     interface.power_production = "incorrect"
 
     def test_set_power_usage(self):
         interface = ElectricEnergyInterface()
@@ -67,8 +69,9 @@ class ElectricEnergyInterfaceTesting(unittest.TestCase):
         assert interface.power_usage == 100
         interface.power_usage = None
         assert interface.power_usage == None
-        with pytest.raises(TypeError):
-            interface.power_usage = "incorrect"
+        # TODO: move to validate
+        # with pytest.raises(TypeError):
+        #     interface.power_usage = "incorrect"
 
     def test_mergable_with(self):
         interface1 = ElectricEnergyInterface("electric-energy-interface")

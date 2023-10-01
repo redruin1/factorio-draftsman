@@ -3,6 +3,7 @@
 from draftsman.data import entities, modules
 from draftsman.warning import ModuleCapacityWarning
 
+from pydantic import BaseModel
 import warnings
 
 
@@ -14,7 +15,9 @@ class ModulesMixin(object):  # (RequestItemsMixin)
     currently inside the entity.
     """
 
-    _exports = {}
+    # _exports = {}
+    class Format(BaseModel):
+        pass
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None

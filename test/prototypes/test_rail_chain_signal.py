@@ -75,8 +75,9 @@ class RailChainSignalTesting(unittest.TestCase):
         # Errors:
         with pytest.raises(InvalidEntityError):
             RailChainSignal("this is not a rail chain signal")
-        with pytest.raises(DataFormatError):
-            RailChainSignal(control_behavior={"unused_key": "something"})
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     RailChainSignal(control_behavior={"unused_key": "something"})
 
     def test_set_blue_output_signal(self):
         rail_signal = RailChainSignal()
@@ -130,16 +131,27 @@ class RailChainSignalTesting(unittest.TestCase):
             tags={"some": "stuff"},
         )
 
+        print(signal2.control_behavior)
+
         signal1.merge(signal2)
         del signal2
 
+        print(signal1.control_behavior)
+
         assert signal1.control_behavior == {
+            "red_output_signal": "signal-A",
+            "orange_output_signal": "signal-B",
+            "green_output_signal": "signal-C",
+            "blue_output_signal": "signal-D",
+        }
+        assert signal1.tags == {"some": "stuff"}
+
+        assert signal1.to_dict()["control_behavior"] == {
             "red_output_signal": {"name": "signal-A", "type": "virtual"},
             "orange_output_signal": {"name": "signal-B", "type": "virtual"},
             "green_output_signal": {"name": "signal-C", "type": "virtual"},
             "blue_output_signal": {"name": "signal-D", "type": "virtual"},
         }
-        assert signal1.tags == {"some": "stuff"}
 
     def test_eq(self):
         signal1 = RailChainSignal("rail-chain-signal")

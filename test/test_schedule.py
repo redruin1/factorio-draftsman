@@ -206,6 +206,16 @@ class TestWaitConditions:
     def test_len(self):
         pass
 
+    def test_getitem(self):
+        a = WaitConditions([
+            WaitCondition(WaitConditionType.FULL_CARGO),
+            WaitCondition(WaitConditionType.INACTIVITY, WaitConditionCompareType.AND, ticks=1000)
+        ])
+
+        assert a[0].type == WaitConditionType.FULL_CARGO
+        assert a[1].type == WaitConditionType.INACTIVITY
+        assert a[1].ticks == 1000
+
     def test_equals(self):
         # Not equivalent types
         a = WaitConditions()

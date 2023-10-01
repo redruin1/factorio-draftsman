@@ -74,8 +74,9 @@ class InfinityContainerTesting(unittest.TestCase):
         }
         container.infinity_settings = None
         assert container.infinity_settings == {}
-        with pytest.raises(DataFormatError):
-            container.infinity_settings = {"this is": ["incorrect", "for", "sure"]}
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     container.infinity_settings = {"this is": ["incorrect", "for", "sure"]}
 
     def test_set_remove_unfiltered_items(self):
         container = InfinityContainer()

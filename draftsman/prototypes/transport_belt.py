@@ -22,6 +22,7 @@ from draftsman.data import entities
 
 from schema import SchemaError
 import six
+from typing import ClassVar
 import warnings
 
 
@@ -40,17 +41,36 @@ class TransportBelt(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **EnableDisableMixin._exports,
-        **LogisticConditionMixin._exports,
-        **CircuitConditionMixin._exports,
-        **CircuitReadContentsMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **EnableDisableMixin._exports,
+    #     **LogisticConditionMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    #     **CircuitReadContentsMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        CircuitReadContentsMixin.Format,
+        CircuitConditionMixin.Format,
+        LogisticConditionMixin.Format,
+        EnableDisableMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format
+    ):
+        class ControlBehavior(
+            CircuitReadContentsMixin.ControlFormat,
+            CircuitConditionMixin.ControlFormat,
+            LogisticConditionMixin.ControlFormat,
+            EnableDisableMixin.ControlFormat,
+        ):
+            pass
+        
+        control_behavior: ControlBehavior | None = ControlBehavior()
 
     def __init__(self, name=transport_belts[0], **kwargs):
         # type: (str, **dict) -> None
@@ -64,18 +84,6 @@ class TransportBelt(
             )
 
         del self.unused_args
-
-    # =========================================================================
-
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = (
-                signatures.TRANSPORT_BELT_CONTROL_BEHAVIOR.validate(value)
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 

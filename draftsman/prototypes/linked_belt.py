@@ -31,14 +31,17 @@ class LinkedBelt(DirectionalMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports
+    # }
     # fmt: on
+    class Format(DirectionalMixin.Format, Entity.Format):
+        pass
 
     def __init__(self, name=default_linked_belt, **kwargs):
         # type: (str, **dict) -> None
+        # TODO: this should be better
         if len(linked_belts) == 0:  # pragma: no coverage
             raise DraftsmanError(
                 "There is no LinkedBelt to create; check your Factorio version"

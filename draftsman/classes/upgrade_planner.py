@@ -14,7 +14,7 @@ from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.exportable import ValidationResult
 from draftsman.data import entities, items
 from draftsman.error import DataFormatError
-from draftsman.signatures import BaseModel, Icons, Mapper, Mappers, mapper_dict, uint64
+from draftsman.signatures import Icons, Mapper, Mappers, mapper_dict, uint16, uint64
 from draftsman import utils
 from draftsman.warning import (
     IndexWarning,
@@ -25,7 +25,7 @@ from draftsman.warning import (
 
 import bisect
 import copy
-from pydantic import Field, field_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from schema import Schema, Optional, SchemaError
 import six
 from typing import Union, Sequence, Literal
@@ -222,7 +222,7 @@ class UpgradePlanner(Blueprintable):
             #     return v
 
         upgrade_planner: UpgradePlannerObject
-        index: int | None = Field(None, description="Only present when inside a BlueprintBook") # TODO: dimension
+        index: uint16 | None = Field(None, description="Only present when inside a BlueprintBook") # TODO: dimension
 
         model_config = ConfigDict(title="UpgradePlannerRoot")
 
@@ -258,12 +258,14 @@ class UpgradePlanner(Blueprintable):
         else:
             self.version = utils.encode_version(*__factorio_version_info__)
 
-        self._root["settings"] = {}
+        self._root[self._root_item]["settings"] = {}
         input_settings = kwargs.pop("settings", None)
         if input_settings is not None:
             self.mappers = input_settings.pop("mappers", None)
             self.description = input_settings.pop("description", None)
             self.icons = input_settings.pop("icons", None)
+
+        self.index = kwargs.pop("index", None)
 
         # Issue warnings for any keyword not recognized by UpgradePlanner
         for unused_arg in kwargs:
@@ -280,30 +282,30 @@ class UpgradePlanner(Blueprintable):
     @property
     def description(self):
         # type: () -> str
-        return self._root["settings"].get("description", None)
+        return self._root[self._root_item]["settings"].get("description", None)
 
     @description.setter
     def description(self, value):
         # type: (str) -> None
         if value is None:
-            self._root["settings"].pop("description", None)
+            self._root[self._root_item]["settings"].pop("description", None)
         else:
-            self._root["settings"]["description"] = value
+            self._root[self._root_item]["settings"]["description"] = value
 
     # =========================================================================
 
     @property
     def icons(self):
         # type: () -> list
-        return self._root["settings"].get("icons", None)
+        return self._root[self._root_item]["settings"].get("icons", None)
 
     @icons.setter
     def icons(self, value):
         # type: (list[Union[dict, str]]) -> None
         if value is None:
-            self._root["settings"].pop("icons", None)
+            self._root[self._root_item]["settings"].pop("icons", None)
         else:
-            self._root["settings"]["icons"] = value
+            self._root[self._root_item]["settings"]["icons"] = value
 
     # =========================================================================
 
@@ -335,15 +337,15 @@ class UpgradePlanner(Blueprintable):
             to ``None``
         :type: ``[{"from": {...}, "to": {...}, "index": int}]``
         """
-        return self._root["settings"].get("mappers", None)
+        return self._root[self._root_item]["settings"].get("mappers", None)
 
     @mappers.setter
     def mappers(self, value):
         # type: (Union[list[dict], list[tuple]]) -> None
         if value is None:
-            self._root["settings"].pop("mappers", None)
+            self._root[self._root_item]["settings"].pop("mappers", None)
         else:
-            self._root["settings"]["mappers"] = value
+            self._root[self._root_item]["settings"]["mappers"] = value
 
     # =========================================================================
 
@@ -470,9 +472,7 @@ class UpgradePlanner(Blueprintable):
             return
 
         # TODO: wrap with DataFormatError or similar
-        # TODO: this is a bit confusingly named, but it shouldn't matter for
-        # the end user
-        UpgradePlanner.Format.UpgradePlannerObject.model_validate(self._root)
+        UpgradePlanner.Format.model_validate(self._root)
 
         super().validate()
 
@@ -547,16 +547,20 @@ class UpgradePlanner(Blueprintable):
 
     def to_dict(self):
         # type: () -> dict
-        out_model = UpgradePlanner.Format.model_construct(
-            **{self._root_item: self._root}, _recursive=True
-        )
+        print(self.version)
+
+        out_model = UpgradePlanner.Format.model_construct(**self._root)
+        out_model.upgrade_planner = UpgradePlanner.Format.UpgradePlannerObject.model_construct(**out_model.upgrade_planner)
+        # out_model.upgrade_planner.settings = UpgradePlanner.Format.UpgradePlannerObject.Settings.model_construct(**out_model.upgrade_planner.settings)
+        # out_model.upgrade_planner.settings.icons = Icons.model_construct(out_model.upgrade_planner.settings.icons)
+        # out_model.upgrade_planner.settings.mappers = Mappers.model_construct(out_model.upgrade_planner.settings.mappers)
         
-        print("\tMODEL: ",out_model)
+        print("\tMODEL: ", out_model)
 
         out_dict = out_model.model_dump(
             by_alias=True,
             exclude_none=True,  # Trim if values are None
-            # exclude_defaults=True,  # This would be ideal, but problems arise
+            exclude_defaults=True,  # This would be ideal, but problems arise
             warnings=False  # Ignore warnings until model_construct is properly recursive
         )
 

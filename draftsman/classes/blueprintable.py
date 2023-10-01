@@ -41,7 +41,8 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
         self._root_item = six.text_type(root_item)
         self._root = {}
-        self._root["item"] = six.text_type(item)
+        self._root[self._root_item] = {}
+        self._root[self._root_item]["item"] = six.text_type(item)
 
         if init_data is None:
             self.setup()
@@ -153,7 +154,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> BlueprintBook().item
             'blueprint-book'
         """
-        return self._root["item"]
+        return self._root[self._root_item]["item"]
 
     # =========================================================================
 
@@ -170,15 +171,15 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :exception TypeError: When setting ``label`` to something other than
             ``str`` or ``None``.
         """
-        return self._root.get("label", None)
+        return self._root[self._root_item].get("label", None)
 
     @label.setter
     def label(self, value):
         # type: (str) -> None
         if value is None:
-            self._root.pop("label", None)
+            self._root[self._root_item].pop("label", None)
         else:
-            self._root["label"] = value
+            self._root[self._root_item]["label"] = value
 
     # =========================================================================
 
@@ -197,15 +198,15 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :exception TypeError: If setting to anything other than a ``str`` or
             ``None``.
         """
-        return self._root.get("description", None)
+        return self._root[self._root_item].get("description", None)
 
     @description.setter
     def description(self, value):
         # type: (str) -> None
         if value is None:
-            self._root.pop("description", None)
+            self._root[self._root_item].pop("description", None)
         else:
-            self._root["description"] = value
+            self._root[self._root_item]["description"] = value
 
     # =========================================================================
 
@@ -242,15 +243,15 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> blueprint.icons
             [{'index': 1, 'signal': {'name': 'transport-belt', 'type': 'item'}}]
         """
-        return self._root.get("icons", None)
+        return self._root[self._root_item].get("icons", None)
 
     @icons.setter
     def icons(self, value):
         # type: (list[Union[dict, str]]) -> None
         if value is None:
-            self._root.pop("icons", None)
+            self._root[self._root_item].pop("icons", None)
         else:
-            self._root["icons"] = value
+            self._root[self._root_item]["icons"] = value
 
     def set_icons(self, *icon_names):
         """
@@ -304,15 +305,43 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> assert blueprint.version_tuple() == (1, 0, 0, 0)
             >>> assert blueprint.version_string() == "1.0.0.0"
         """
-        return self._root.get("version", None)
+        return self._root[self._root_item].get("version", None)
 
     @version.setter
     def version(self, value):
         # type: (Union[int, Sequence[int]]) -> None
         if value is None:
-            self._root.pop("version", None)
+            self._root[self._root_item].pop("version", None)
         else:
-            self._root["version"] = value
+            self._root[self._root_item]["version"] = value
+
+    # =========================================================================
+
+    @property
+    def index(self):
+        # type: () -> int
+        """
+        The 0-indexed location of the blueprintable in a parent 
+        :py:class:`BlueprintBook`. This member is automatically generated if 
+        omitted, but can be manually set with this attribute. ``index`` has no 
+        meaning when the blueprintable is not located inside another BlueprintBook.
+        
+        :getter: Gets the index of this blueprintable, or ``None`` if not set.
+            A blueprintable's index is only generated when exporting with 
+            :py:meth:`.to_dict`, so ``index`` will still be ``None`` even if 
+            this blueprintable does exist within a BlueprintBook. 
+        :setter: Sets the index of the upgrade planner, or removes it if set to 
+            ``None``.
+        :type: ``uint16``
+        """
+        return self._root[self._root_item].get("index", None)
+    
+    @index.setter
+    def index(self, value):
+        if value is None:
+            self._root[self._root_item].pop("index", None)
+        else:
+            self._root[self._root_item]["index"] = value
 
     def set_version(self, major, minor, patch=0, dev_ver=0):
         """
@@ -326,7 +355,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :param dev_ver: The (internal) development version.
         """
         # TODO: use this method in constructor
-        self._root["version"] = utils.encode_version(major, minor, patch, dev_ver)
+        self.version = utils.encode_version(major, minor, patch, dev_ver)
 
     # =========================================================================
     # Utility functions
@@ -372,7 +401,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> blueprint.version_tuple()
             (1, 0, 0, 0)
         """
-        return utils.decode_version(self._root["version"])
+        return utils.decode_version(self._root[self._root_item]["version"])
 
     def version_string(self):
         # type: () -> str
@@ -391,7 +420,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> blueprint.version_string()
             '1.2.3.0'
         """
-        version_tuple = utils.decode_version(self._root["version"])
+        version_tuple = utils.decode_version(self._root[self._root_item]["version"])
         return utils.version_tuple_to_string(version_tuple)
 
     # =========================================================================

@@ -7,6 +7,7 @@ from draftsman import signatures
 from draftsman.data import entities
 from draftsman.error import DataFormatError
 
+from pydantic import BaseModel
 from schema import SchemaError
 import six
 
@@ -16,13 +17,15 @@ class PowerConnectableMixin(object):
     Enables the Entity to be connected to power networks.
     """
 
-    _exports = {
-        "neighbours": {
-            "format": "[int, ...]",
-            "description": "List of entity_ids of power poles connected to this entity",
-            "required": lambda x: x is not None and len(x) != 0,
-        }
-    }
+    # _exports = {
+    #     "neighbours": {
+    #         "format": "[int, ...]",
+    #         "description": "List of entity_ids of power poles connected to this entity",
+    #         "required": lambda x: x is not None and len(x) != 0,
+    #     }
+    # }
+    class Format(BaseModel):
+        neighbours: list[int] | None = []
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
@@ -103,15 +106,15 @@ class PowerConnectableMixin(object):
         :exception DataFormatError: If set to anything that does not match the
             specification above.
         """
-        return self._neighbours
+        return self._root["neighbours"]
 
     @neighbours.setter
     def neighbours(self, value):
         # type: (list) -> None
-        try:
-            self._neighbours = signatures.NEIGHBOURS.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        if value is None:
+            self._root["neighbours"] = []
+        else:
+            self._root["neighbours"] = value
 
     # =========================================================================
 

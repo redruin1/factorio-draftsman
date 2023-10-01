@@ -19,13 +19,20 @@ class Locomotive(RequestItemsMixin, ColorMixin, OrientationMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **OrientationMixin._exports,
-        **ColorMixin._exports,
-        **RequestItemsMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **OrientationMixin._exports,
+    #     **ColorMixin._exports,
+    #     **RequestItemsMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        RequestItemsMixin.Format,
+        ColorMixin.Format,
+        OrientationMixin.Format,
+        Entity.Format
+    ):
+        pass
 
     def __init__(self, name=locomotives[0], **kwargs):
         # type: (str, **dict) -> None

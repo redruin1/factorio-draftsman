@@ -11,7 +11,7 @@ from draftsman.classes.mixins import (
     EightWayDirectionalMixin,
 )
 from draftsman.error import DataFormatError
-from draftsman import signatures
+from draftsman.signatures import SignalID, RAIL_CHAIN_SIGNAL_CONTROL_BEHAVIOR, SIGNAL_ID # TODO remove
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import rail_chain_signals
@@ -20,7 +20,7 @@ from draftsman.data import entities
 
 from schema import SchemaError
 import six
-from typing import Union
+from typing import ClassVar, Union
 import warnings
 
 
@@ -37,14 +37,27 @@ class RailChainSignal(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **EightWayDirectionalMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **ReadRailSignalMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **EightWayDirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **ReadRailSignalMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        ReadRailSignalMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        EightWayDirectionalMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(
+            ReadRailSignalMixin.ControlFormat
+        ):
+            blue_output_signal: SignalID | None = None
+
+        control_behavior: ControlBehavior | None = ControlBehavior()
 
     def __init__(self, name=rail_chain_signals[0], **kwargs):
         # type: (str, **dict) -> None
@@ -67,15 +80,15 @@ class RailChainSignal(
 
     # =========================================================================
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = (
-                signatures.RAIL_CHAIN_SIGNAL_CONTROL_BEHAVIOR.validate(value)
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    # @ControlBehaviorMixin.control_behavior.setter
+    # def control_behavior(self, value):
+    #     # type: (dict) -> None
+    #     try:
+    #         self._control_behavior = (
+    #             RAIL_CHAIN_SIGNAL_CONTROL_BEHAVIOR.validate(value)
+    #         )
+    #     except SchemaError as e:
+    #         six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 
@@ -114,7 +127,7 @@ class RailChainSignal(
             self.control_behavior["blue_output_signal"] = signal_dict(value)
         else:  # dict or other
             try:
-                value = signatures.SIGNAL_ID.validate(value)
+                value = SIGNAL_ID.validate(value)
                 self.control_behavior["blue_output_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")

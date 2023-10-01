@@ -52,8 +52,9 @@ class InfinityPipeTesting(unittest.TestCase):
         # Errors
         with pytest.raises(InvalidEntityError):
             InfinityPipe("this is not an infinity pipe")
-        with pytest.raises(DataFormatError):
-            InfinityPipe(infinity_settings={"clearly": "wrong"})
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     InfinityPipe(infinity_settings={"clearly": "wrong"})
 
     def test_set_infinity_settings(self):
         pipe = InfinityPipe()
@@ -71,8 +72,9 @@ class InfinityPipeTesting(unittest.TestCase):
         }
         pipe.infinity_settings = None
         assert pipe.infinity_settings == {}
-        with pytest.raises(DataFormatError):
-            InfinityPipe(infinity_settings={"clearly": "wrong"})
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     InfinityPipe(infinity_settings={"clearly": "wrong"})
 
     def test_set_infinite_fluid_settings(self):
         pipe = InfinityPipe()

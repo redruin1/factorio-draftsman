@@ -19,12 +19,14 @@ class ArtilleryWagon(RequestItemsMixin, OrientationMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **OrientationMixin._exports,
-        **RequestItemsMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **OrientationMixin._exports,
+    #     **RequestItemsMixin._exports,
+    # }
     # fmt: on
+    class Format(RequestItemsMixin.Format, OrientationMixin.Format, Entity.Format):
+        pass
 
     def __init__(self, name=artillery_wagons[0], **kwargs):
         # type: (str, **dict) -> None

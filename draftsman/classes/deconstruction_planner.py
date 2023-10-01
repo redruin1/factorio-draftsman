@@ -54,7 +54,7 @@ from draftsman.constants import FilterMode, TileSelectionMode
 from draftsman.data import entities, tiles
 from draftsman.error import DataFormatError, InvalidItemError
 from draftsman.warning import IndexWarning, UnrecognizedElementWarning
-from draftsman.signatures import BaseModel, Icons, EntityFilter, TileFilter
+from draftsman.signatures import BaseModel, Icons, EntityFilter, TileFilter, uint16, uint64
 from draftsman import utils
 from draftsman.warning import DraftsmanWarning
 
@@ -79,7 +79,7 @@ class DeconstructionPlanner(Blueprintable):
         class DeconstructionPlannerObject(BaseModel):
             item: Literal["deconstruction-planner"]
             label: str | None = None
-            version: int | None = Field(None, ge=0, lt=2**64)
+            version: uint64 | None = None
 
             class Settings(BaseModel):
                 description: str | None = None
@@ -96,7 +96,7 @@ class DeconstructionPlanner(Blueprintable):
             settings: Settings | None = Settings()
 
         deconstruction_planner: DeconstructionPlannerObject
-        index: int | None = Field(None, description="Only present when inside a BlueprintBook") # TODO: dimension
+        index: uint16 | None = Field(None, description="Only present when inside a BlueprintBook")
 
     # =========================================================================
     # Constructors
@@ -118,11 +118,10 @@ class DeconstructionPlanner(Blueprintable):
 
     @utils.reissue_warnings
     def setup(self, unknown="error", **kwargs):
-        self._root = {}
-        self._root["settings"] = {}
+        self._root[self._root_item]["settings"] = {}
 
         # Item (type identifier)
-        self._root["item"] = "deconstruction-planner"
+        self._root[self._root_item]["item"] = "deconstruction-planner"
         kwargs.pop("item", None)
 
         self.label = kwargs.pop("label", None)
@@ -171,15 +170,15 @@ class DeconstructionPlanner(Blueprintable):
         :raises ValueError: If not set to an valid :py:data:`.FilterMode` or
             ``None``.
         """
-        return self._root["settings"].get("entity_filter_mode", None)
+        return self._root[self._root_item]["settings"].get("entity_filter_mode", None)
 
     @entity_filter_mode.setter
     def entity_filter_mode(self, value):
         # type: (FilterMode) -> None
         if value is None:
-            self._root["settings"].pop("entity_filter_mode", None)
+            self._root[self._root_item]["settings"].pop("entity_filter_mode", None)
         else:
-            self._root["settings"]["entity_filter_mode"] = FilterMode(value)
+            self._root[self._root_item]["settings"]["entity_filter_mode"] = FilterMode(value)
 
     # =========================================================================
 
@@ -190,16 +189,16 @@ class DeconstructionPlanner(Blueprintable):
         The list of entity filters.
         TODO
         """
-        return self._root["settings"].get("entity_filters", None)
+        return self._root[self._root_item]["settings"].get("entity_filters", None)
 
     @entity_filters.setter
     def entity_filters(self, value):
         # type: (list[dict]) -> None
         # TODO: what if index >= 30?
         if value is None:
-            self._root["settings"].pop("entity_filters", None)
+            self._root[self._root_item]["settings"].pop("entity_filters", None)
         else:
-            self._root["settings"]["entity_filters"] = value
+            self._root[self._root_item]["settings"]["entity_filters"] = value
 
     # =========================================================================
 
@@ -216,15 +215,15 @@ class DeconstructionPlanner(Blueprintable):
 
         :raises TypeError: If set to anything other than a ``bool`` or ``None``.
         """
-        return self._root["settings"].get("trees_and_rocks_only", None)
+        return self._root[self._root_item]["settings"].get("trees_and_rocks_only", None)
 
     @trees_and_rocks_only.setter
     def trees_and_rocks_only(self, value):
         # type: (bool) -> None
         if value is None:
-            self._root["settings"].pop("trees_and_rocks_only", None)
+            self._root[self._root_item]["settings"].pop("trees_and_rocks_only", None)
         elif isinstance(value, bool):
-            self._root["settings"]["trees_and_rocks_only"] = value
+            self._root[self._root_item]["settings"]["trees_and_rocks_only"] = value
         else:
             raise TypeError("'trees_and_rocks_only' must be either a bool or None")
 
@@ -244,15 +243,15 @@ class DeconstructionPlanner(Blueprintable):
         :raises ValueError: If not set to an valid :py:data:`.FilterMode` or
             ``None``.
         """
-        return self._root["settings"].get("tile_filter_mode", None)
+        return self._root[self._root_item]["settings"].get("tile_filter_mode", None)
 
     @tile_filter_mode.setter
     def tile_filter_mode(self, value):
         # type: (FilterMode) -> None
         if value is None:
-            self._root["settings"].pop("tile_filter_mode", None)
+            self._root[self._root_item]["settings"].pop("tile_filter_mode", None)
         else:
-            self._root["settings"]["tile_filter_mode"] = FilterMode(value)
+            self._root[self._root_item]["settings"]["tile_filter_mode"] = FilterMode(value)
 
     # =========================================================================
 
@@ -263,15 +262,15 @@ class DeconstructionPlanner(Blueprintable):
         The list of tile filters.
         TODO
         """
-        return self._root["settings"].get("tile_filters", None)
+        return self._root[self._root_item]["settings"].get("tile_filters", None)
 
     @tile_filters.setter
     def tile_filters(self, value):
         # type: (list[dict]) -> None
         if value is None:
-            self._root["settings"].pop("tile_filters", None)
+            self._root[self._root_item]["settings"].pop("tile_filters", None)
         else:
-            self._root["settings"]["tile_filters"] = value
+            self._root[self._root_item]["settings"]["tile_filters"] = value
 
     # TODO: set_tile_filters() function
 
@@ -295,15 +294,15 @@ class DeconstructionPlanner(Blueprintable):
         :raises ValueError: If not set to a valid :py:data:`.TileSelectionMode`
             or ``None``.
         """
-        return self._root["settings"].get("tile_selection_mode", None)
+        return self._root[self._root_item]["settings"].get("tile_selection_mode", None)
 
     @tile_selection_mode.setter
     def tile_selection_mode(self, value):
         # type: (TileSelectionMode) -> None
         if value is None:
-            self._root["settings"].pop("tile_selection_mode", None)
+            self._root[self._root_item]["settings"].pop("tile_selection_mode", None)
         else:
-            self._root["settings"]["tile_selection_mode"] = TileSelectionMode(value)
+            self._root[self._root_item]["settings"]["tile_selection_mode"] = TileSelectionMode(value)
 
     # =========================================================================
     # Utility functions
@@ -468,9 +467,9 @@ class DeconstructionPlanner(Blueprintable):
         return result
 
     def to_dict(self):
-        out_model = DeconstructionPlanner.Format.model_construct(
-            **{self._root_item: self._root}, _recursive=True
-        )
+        out_model = DeconstructionPlanner.Format.model_construct(**self._root)
+        out_model.deconstruction_planner = DeconstructionPlanner.Format.DeconstructionPlannerObject.model_construct(**out_model.deconstruction_planner)
+        out_model.deconstruction_planner.settings = DeconstructionPlanner.Format.DeconstructionPlannerObject.Settings.model_construct(**out_model.deconstruction_planner.settings)
 
         print(out_model)
 

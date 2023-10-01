@@ -4,8 +4,9 @@
 from __future__ import unicode_literals
 
 from draftsman.error import DataFormatError
-from draftsman import signatures
+from draftsman.signatures import Color
 
+from pydantic import BaseModel
 from typing import Union
 from schema import SchemaError
 import six
@@ -21,13 +22,15 @@ class ColorMixin(object):
     Gives the entity an editable color.
     """
 
-    _exports = {
-        "color": {
-            "format": "{'r': r, 'g': g, 'b': b, 'a': a}",
-            "description": "The color property of the entity if colorable",
-            "required": lambda x: x is not None,
-        }
-    }
+    # _exports = {
+    #     "color": {
+    #         "format": "{'r': r, 'g': g, 'b': b, 'a': a}",
+    #         "description": "The color property of the entity if colorable",
+    #         "required": lambda x: x is not None,
+    #     }
+    # }
+    class Format(BaseModel):
+        color: Color | None = None
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
@@ -63,13 +66,16 @@ class ColorMixin(object):
         :exception DataFormatError: If the set ``color`` does not match the
             above specification.
         """
-        return self._color
+        return self._root.get("color", None)
 
     @color.setter
     def color(self, value):
         # type: (Union[list, dict]) -> None
+        if value is None:
+            self._root.pop("color", None)
+            return
         try:
-            self._color = signatures.COLOR.validate(value)
+            self._root["color"] = value
         except SchemaError as e:
             six.raise_from(DataFormatError(e), None)
 

@@ -67,20 +67,20 @@ class DeconstructionPlannerTesting(unittest.TestCase):
         decon_planner.entity_filter_mode = FilterMode.WHITELIST
         assert decon_planner.entity_filter_mode == FilterMode.WHITELIST
         assert (
-            decon_planner._root["settings"]["entity_filter_mode"]
+            decon_planner["deconstruction_planner"]["settings"]["entity_filter_mode"]
             == FilterMode.WHITELIST
         )
 
         decon_planner.entity_filter_mode = FilterMode.BLACKLIST
         assert decon_planner.entity_filter_mode == FilterMode.BLACKLIST
         assert (
-            decon_planner._root["settings"]["entity_filter_mode"]
+            decon_planner["deconstruction_planner"]["settings"]["entity_filter_mode"]
             == FilterMode.BLACKLIST
         )
 
         decon_planner.entity_filter_mode = None
         assert decon_planner.entity_filter_mode == None
-        assert "entity_filter_mode" not in decon_planner._root["settings"]
+        assert "entity_filter_mode" not in decon_planner["deconstruction_planner"]["settings"]
 
         # Errors
         with pytest.raises(ValueError):
@@ -111,15 +111,15 @@ class DeconstructionPlannerTesting(unittest.TestCase):
 
         decon_planner.trees_and_rocks_only = True
         assert decon_planner.trees_and_rocks_only == True
-        assert decon_planner._root["settings"]["trees_and_rocks_only"] == True
+        assert decon_planner["deconstruction_planner"]["settings"]["trees_and_rocks_only"] == True
 
         decon_planner.trees_and_rocks_only = False
         assert decon_planner.trees_and_rocks_only == False
-        assert decon_planner._root["settings"]["trees_and_rocks_only"] == False
+        assert decon_planner["deconstruction_planner"]["settings"]["trees_and_rocks_only"] == False
 
         decon_planner.trees_and_rocks_only = None
         assert decon_planner.trees_and_rocks_only == None
-        assert "trees_and_rocks_only" not in decon_planner._root["settings"]
+        assert "trees_and_rocks_only" not in decon_planner["deconstruction_planner"]["settings"]
 
         # Errors
         with pytest.raises(TypeError):
@@ -131,18 +131,18 @@ class DeconstructionPlannerTesting(unittest.TestCase):
         decon_planner.tile_filter_mode = FilterMode.WHITELIST
         assert decon_planner.tile_filter_mode == FilterMode.WHITELIST
         assert (
-            decon_planner._root["settings"]["tile_filter_mode"] == FilterMode.WHITELIST
+            decon_planner["deconstruction_planner"]["settings"]["tile_filter_mode"] == FilterMode.WHITELIST
         )
 
         decon_planner.tile_filter_mode = FilterMode.BLACKLIST
         assert decon_planner.tile_filter_mode == FilterMode.BLACKLIST
         assert (
-            decon_planner._root["settings"]["tile_filter_mode"] == FilterMode.BLACKLIST
+            decon_planner["deconstruction_planner"]["settings"]["tile_filter_mode"] == FilterMode.BLACKLIST
         )
 
         decon_planner.tile_filter_mode = None
         assert decon_planner.tile_filter_mode == None
-        assert "tile_filter_mode" not in decon_planner._root["settings"]
+        assert "tile_filter_mode" not in decon_planner["deconstruction_planner"]["settings"]
 
         # Errors
         with pytest.raises(ValueError):
@@ -174,14 +174,14 @@ class DeconstructionPlannerTesting(unittest.TestCase):
         decon_planner.tile_selection_mode = TileSelectionMode.NORMAL
         assert decon_planner.tile_selection_mode == TileSelectionMode.NORMAL
         assert (
-            decon_planner._root["settings"]["tile_selection_mode"]
+            decon_planner._root["deconstruction_planner"]["settings"]["tile_selection_mode"]
             == TileSelectionMode.NORMAL
         )
 
         decon_planner.tile_selection_mode = TileSelectionMode.NEVER
         assert decon_planner.tile_selection_mode == TileSelectionMode.NEVER
         assert (
-            decon_planner._root["settings"]["tile_selection_mode"]
+            decon_planner._root["deconstruction_planner"]["settings"]["tile_selection_mode"]
             == TileSelectionMode.NEVER
         )
 

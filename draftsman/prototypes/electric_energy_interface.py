@@ -18,25 +18,29 @@ class ElectricEnergyInterface(Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        "buffer_size": {
-            "format": "int",
-            "description": "How much energy this interface can store",
-            "required": lambda x: x is not None,
-        },
-        "power_production": {
-            "format": "int",
-            "description": "How much energy this interface produces per tick",
-            "required": lambda x: x is not None,
-        },
-        "power_usage": {
-            "format": "int",
-            "description": "How much energy this interface consumes per tick",
-            "required": lambda x: x is not None,
-        },
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     "buffer_size": {
+    #         "format": "int",
+    #         "description": "How much energy this interface can store",
+    #         "required": lambda x: x is not None,
+    #     },
+    #     "power_production": {
+    #         "format": "int",
+    #         "description": "How much energy this interface produces per tick",
+    #         "required": lambda x: x is not None,
+    #     },
+    #     "power_usage": {
+    #         "format": "int",
+    #         "description": "How much energy this interface consumes per tick",
+    #         "required": lambda x: x is not None,
+    #     },
+    # }
     # fmt: on
+    class Format(Entity.Format):
+        buffer_size: int | None = None # TODO: dimension
+        power_production: int | None = None # TODO: dimension
+        power_usage: int | None = None # TODO: dimension
 
     def __init__(self, name=electric_energy_interfaces[0], **kwargs):
         # type: (str, **dict) -> None
@@ -86,15 +90,15 @@ class ElectricEnergyInterface(Entity):
         :exception TypeError: If set to anything other than an ``int`` or
             ``None``.
         """
-        return self._buffer_size
+        return self._root.get("buffer_size", None)
 
     @buffer_size.setter
     def buffer_size(self, value):
         # type: (int) -> None
-        if value is None or isinstance(value, six.integer_types):
-            self._buffer_size = value
+        if value is None:
+            self._root.pop("buffer_size", None)
         else:
-            raise TypeError("'buffer_size' must be an int or None")
+            self._root["buffer_size"] = value
 
     # =========================================================================
 
@@ -111,15 +115,15 @@ class ElectricEnergyInterface(Entity):
         :exception TypeError: If set to anything other than an ``int`` or
             ``None``.
         """
-        return self._power_production
+        return self._root.get("power_production", None)
 
     @power_production.setter
     def power_production(self, value):
         # type: (int) -> None
-        if value is None or isinstance(value, six.integer_types):
-            self._power_production = value
+        if value is None:
+            self._root.pop("power_production", None)
         else:
-            raise TypeError("'power_production' must be an int or None")
+            self._root["power_production"] = value
 
     # =========================================================================
 
@@ -136,15 +140,15 @@ class ElectricEnergyInterface(Entity):
         :exception TypeError: If set to anything other than an ``int`` or
             ``None``.
         """
-        return self._power_usage
+        return self._root.get("power_usage", None)
 
     @power_usage.setter
     def power_usage(self, value):
         # type: (int) -> None
-        if value is None or isinstance(value, six.integer_types):
-            self._power_usage = value
+        if value is None:
+            self._root.pop("power_usage", None)
         else:
-            raise TypeError("'power_usage' must be an int or None")
+            self._root["power_usage"] = value
 
     # =========================================================================
 

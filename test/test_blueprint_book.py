@@ -261,12 +261,12 @@ class BlueprintBookTesting(unittest.TestCase):
         assert blueprint_book.icons == [
             {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
         ]
-        assert blueprint_book["icons"] == [
+        assert blueprint_book["blueprint_book"]["icons"] == [
             {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
         ]
-        # Multiple Icon
+        # Multiple Icons
         blueprint_book.set_icons("signal-A", "signal-B", "signal-C")
-        assert blueprint_book["icons"] == [
+        assert blueprint_book["blueprint_book"]["icons"] == [
             {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1},
             {"signal": {"name": "signal-B", "type": "virtual"}, "index": 2},
             {"signal": {"name": "signal-C", "type": "virtual"}, "index": 3},
@@ -274,7 +274,7 @@ class BlueprintBookTesting(unittest.TestCase):
 
         # Raw signal dicts
         blueprint_book.set_icons({"name": "some-signal", "type": "some-type"})
-        assert blueprint_book["icons"] == [
+        assert blueprint_book["blueprint_book"]["icons"] == [
             {"signal": {"name": "some-signal", "type": "some-type"}, "index": 1}
         ]
 
@@ -402,9 +402,6 @@ class BlueprintBookTesting(unittest.TestCase):
         blueprint_book.set_version(0, 0, 0, 0)
         assert blueprint_book.version_string() == "0.0.0.0"
 
-    def test_to_dict(self):
-        pass  # TODO
-
     def test_to_string(self):
         blueprint_book = BlueprintBook()
         blueprint_book.set_version(1, 1, 53, 0)
@@ -412,14 +409,14 @@ class BlueprintBookTesting(unittest.TestCase):
         #     blueprint_book.to_string(),
         #     "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTQ1NDY3NDGprAVVBHPY="
         # )
-        assert blueprint_book.blueprints is blueprint_book._root["blueprints"]
-        assert blueprint_book.blueprints is blueprint_book["blueprints"]
+        assert blueprint_book.blueprints is blueprint_book._root["blueprint_book"]["blueprints"]
+        assert blueprint_book.blueprints is blueprint_book["blueprint_book"]["blueprints"]
 
     def test_setitem(self):
         blueprint_book = BlueprintBook()
-        blueprint_book["label"] = "whatever"
-        assert blueprint_book._root["label"] is blueprint_book.label
-        assert blueprint_book["label"] == "whatever"
+        blueprint_book["blueprint_book"]["label"] = "whatever"
+        assert blueprint_book._root["blueprint_book"]["label"] is blueprint_book.label
+        assert blueprint_book["blueprint_book"]["label"] == "whatever"
 
     def test_getitem(self):
         pass

@@ -26,6 +26,7 @@ from draftsman.data import items
 
 from schema import SchemaError
 import six
+from typing import ClassVar
 import warnings
 
 
@@ -46,19 +47,40 @@ class MiningDrill(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **EnableDisableMixin._exports,
-        **LogisticConditionMixin._exports,
-        **CircuitConditionMixin._exports,
-        **CircuitReadResourceMixin._exports,
-        **RequestItemsMixin._exports,
-        **ModulesMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **EnableDisableMixin._exports,
+    #     **LogisticConditionMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    #     **CircuitReadResourceMixin._exports,
+    #     **RequestItemsMixin._exports,
+    #     **ModulesMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        ModulesMixin.Format,
+        RequestItemsMixin.Format,
+        CircuitReadResourceMixin.Format,
+        CircuitConditionMixin.Format,
+        LogisticConditionMixin.Format,
+        EnableDisableMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format
+    ):
+        class ControlBehavior(
+            CircuitReadResourceMixin.ControlFormat,
+            CircuitConditionMixin.ControlFormat,
+            LogisticConditionMixin.ControlFormat,
+            EnableDisableMixin.ControlFormat,
+        ):
+            pass
+
+        control_behavior: ControlBehavior | None = ControlBehavior()
 
     def __init__(self, name=mining_drills[0], **kwargs):
         # type: (str, **dict) -> None
@@ -75,15 +97,15 @@ class MiningDrill(
 
     # =========================================================================
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = signatures.MINING_DRILL_CONTROL_BEHAVIOR.validate(
-                value
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    # @ControlBehaviorMixin.control_behavior.setter
+    # def control_behavior(self, value):
+    #     # type: (dict) -> None
+    #     try:
+    #         self._control_behavior = signatures.MINING_DRILL_CONTROL_BEHAVIOR.validate(
+    #             value
+    #         )
+    #     except SchemaError as e:
+    #         six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 

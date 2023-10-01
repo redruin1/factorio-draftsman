@@ -29,13 +29,16 @@ class TransportBeltTesting(unittest.TestCase):
             control_behavior={
                 "circuit_enable_disable": True,
                 "circuit_condition": {
-                    "first_signal": "signal-blue",
+                    "first_signal": {"name": "signal-blue", "type": "virtual"},
                     "comparator": "=",
-                    "second_signal": "signal-blue",
+                    "second_signal": {"name": "signal-blue", "type": "virtual"},
                 },
                 "connect_to_logistic_network": True,
                 "logistic_condition": {
-                    "first_signal": "fast-underground-belt",
+                    "first_signal": {
+                        "name": "fast-underground-belt",
+                        "type": "item",
+                    },
                     "comparator": ">=",
                     "constant": 0,
                 },
@@ -43,10 +46,10 @@ class TransportBeltTesting(unittest.TestCase):
                 "circuit_contents_read_mode": ReadMode.HOLD,
             },
         )
-        self.maxDiff = None
+
         assert fast_belt.to_dict() == {
             "name": "fast-transport-belt",
-            "direction": 2,
+            "direction": Direction.EAST,
             "position": {"x": 0.5, "y": 0.5},
             "connections": {"1": {"green": [{"entity_id": 1}]}},
             "control_behavior": {
@@ -89,14 +92,15 @@ class TransportBeltTesting(unittest.TestCase):
         with pytest.raises(ValueError):
             TransportBelt("transport-belt", direction="incorrect")
 
-        with pytest.raises(DataFormatError):
-            TransportBelt("transport-belt", connections={"this is": ["very", "wrong"]})
+        # TODO: move these to validation
+        # with pytest.raises(DataFormatError):
+        #     TransportBelt("transport-belt", connections={"this is": ["very", "wrong"]})
 
-        with pytest.raises(DataFormatError):
-            TransportBelt(
-                "transport-belt",
-                control_behavior={"this is": ["also", "very", "wrong"]},
-            )
+        # with pytest.raises(DataFormatError):
+        #     TransportBelt(
+        #         "transport-belt",
+        #         control_behavior={"this is": ["also", "very", "wrong"]},
+        #     )
 
     def test_power_and_circuit_flags(self):
         for transport_belt in transport_belts:
@@ -144,13 +148,16 @@ class TransportBeltTesting(unittest.TestCase):
             control_behavior={
                 "circuit_enable_disable": True,
                 "circuit_condition": {
-                    "first_signal": "signal-blue",
+                    "first_signal": {"name": "signal-blue", "type": "virtual"},
                     "comparator": "=",
-                    "second_signal": "signal-blue",
+                    "second_signal": {"name": "signal-blue", "type": "virtual"},
                 },
                 "connect_to_logistic_network": True,
                 "logistic_condition": {
-                    "first_signal": "fast-underground-belt",
+                    "first_signal": {
+                        "name": "fast-underground-belt",
+                        "type": "item",
+                    },
                     "comparator": ">=",
                     "constant": 0,
                 },
@@ -176,7 +183,7 @@ class TransportBeltTesting(unittest.TestCase):
                     "name": "fast-underground-belt",
                     "type": "item",
                 },
-                "comparator": "≥",
+                "comparator": ">=",
                 "constant": 0,
             },
             "circuit_read_hand_contents": False,

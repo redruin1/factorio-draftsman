@@ -10,6 +10,7 @@ from draftsman.warning import DraftsmanWarning, TemperatureRangeWarning
 
 from draftsman.data.entities import heat_interfaces
 
+from typing import Literal
 import warnings
 
 
@@ -19,20 +20,23 @@ class HeatInterface(Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        "temperature": {
-            "format": "int[0, 1000]",
-            "description": "Temperature of the heat interface in degrees Celcius",
-            "required": lambda x: x is not None and x != 0,
-        },
-        "mode": {
-            "format": "'at-least' or 'at-most' or 'exactly' or 'add' or 'remove'",
-            "description": "How the interface should affect it's temperature",
-            "required": lambda x: x is not None and x != "at-least",
-        },
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     "temperature": {
+    #         "format": "int[0, 1000]",
+    #         "description": "Temperature of the heat interface in degrees Celcius",
+    #         "required": lambda x: x is not None and x != 0,
+    #     },
+    #     "mode": {
+    #         "format": "'at-least' or 'at-most' or 'exactly' or 'add' or 'remove'",
+    #         "description": "How the interface should affect it's temperature",
+    #         "required": lambda x: x is not None and x != "at-least",
+    #     },
+    # }
     # fmt: on
+    class Format(Entity.Format):
+        temperature: int | None = 0 # TODO: dimension
+        mode: Literal["at-least", "at-most", "exactly", "add", "remove"] | None = "at-least"
 
     def __init__(self, name=heat_interfaces[0], **kwargs):
         # type: (str, **dict) -> None
@@ -77,24 +81,23 @@ class HeatInterface(Entity):
         :exception TypeError: If set to anything other than an ``int`` or
             ``None``.
         """
-        return self._temperature
+        return self._root.get("temperature")
 
     @temperature.setter
     def temperature(self, value):
         # type: (int) -> None
         if value is None:
-            self._temperature = value
-        elif isinstance(value, int):
-            if not 0 <= value <= 1000:
-                warnings.warn(
-                    "'temperature' ({}) not in range [0, 1000]; will be clamped"
-                    " on import".format(value),
-                    TemperatureRangeWarning,
-                    stacklevel=2,
-                )
-            self._temperature = value
+            self._root.pop("temperature", None)
         else:
-            raise TypeError("'temperature' must be an int or None")
+            # TODO: move to inspect
+            # if not 0 <= value <= 1000:
+            #     warnings.warn(
+            #         "'temperature' ({}) not in range [0, 1000]; will be clamped"
+            #         " on import".format(value),
+            #         TemperatureRangeWarning,
+            #         stacklevel=2,
+            #     )
+            self._root["temperature"] = value
 
     # =========================================================================
 
@@ -120,13 +123,16 @@ class HeatInterface(Entity):
         :exception InvalidModeError: If set to anything other than one of the
             valid strings above or ``None``.
         """
-        return self._mode
+        return self._root.get("mode", None)
 
     @mode.setter
     def mode(self, value):
         # type: (str) -> None
-        if value in {"at-least", "at-most", "exactly", "add", "remove", None}:
-            self._mode = value
+        # TODO: evaluate where this check should be
+        if value is None:
+            self._root.pop("mode", None)
+        elif value in {"at-least", "at-most", "exactly", "add", "remove"}:
+            self._root["mode"] = value
         else:
             raise InvalidModeError(value)
 

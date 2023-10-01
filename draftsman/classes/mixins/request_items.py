@@ -9,6 +9,7 @@ from draftsman.error import InvalidItemError
 from draftsman.utils import reissue_warnings
 from draftsman.warning import ModuleCapacityWarning
 
+from pydantic import BaseModel
 from schema import SchemaError
 import six
 import warnings
@@ -19,7 +20,7 @@ if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
-class RequestItemsMixin(object):
+class RequestItemsMixin:
     """
     Enables an entity to request items during its construction. Note that this
     is *not* for Logistics requests such as requester and buffer chests (that's
@@ -29,13 +30,15 @@ class RequestItemsMixin(object):
     machines.
     """
 
-    _exports = {
-        "items": {
-            "format": "{'item_name': count, ...}",
-            "description": "List of construction item requests (such as modules for beacons)",
-            "required": lambda x: len(x) != 0,
-        }
-    }
+    # _exports = {
+    #     "items": {
+    #         "format": "{'item_name': count, ...}",
+    #         "description": "List of construction item requests (such as modules for beacons)",
+    #         "required": lambda x: len(x) != 0,
+    #     }
+    # }
+    class Format(BaseModel):
+        items: dict[str, int] | None = {} # TODO: dimension and better hinting + custom object so we can validate this
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
@@ -43,9 +46,28 @@ class RequestItemsMixin(object):
 
         self.items = {}
         if "items" in kwargs:
-            self.set_item_requests(kwargs["items"])
+            self.items = kwargs["items"]
             self.unused_args.pop("items")
         # self._add_export("items", lambda x: len(x) != 0)
+
+    # =========================================================================
+
+    @property
+    def items(self):
+        # type: () -> dict[str, int]
+        """
+        TODO
+        """
+        return self._root.get("items", None)
+    
+    @items.setter
+    def items(self, value):
+        # type: (dict[str, int]) -> None
+        if value is None:
+            self._root["items"] = {}
+        else:
+            self._root["items"] = value
+
 
     # =========================================================================
 

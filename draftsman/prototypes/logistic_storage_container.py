@@ -30,14 +30,22 @@ class LogisticStorageContainer(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **RequestFiltersMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **RequestItemsMixin._exports,
-        **InventoryMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **RequestFiltersMixin._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **RequestItemsMixin._exports,
+    #     **InventoryMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        InventoryMixin.Format,
+        RequestItemsMixin.Format,
+        CircuitConnectableMixin.Format,
+        RequestFiltersMixin.Format,
+        Entity.Format
+    ):
+        pass
 
     def __init__(self, name=logistic_storage_containers[0], **kwargs):
         # type: (str, **dict) -> None

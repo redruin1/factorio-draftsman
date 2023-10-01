@@ -3,6 +3,9 @@
 
 from __future__ import unicode_literals
 
+from draftsman.signatures import Condition
+
+from pydantic import BaseModel
 from typing import Union
 
 
@@ -13,7 +16,12 @@ class CircuitConditionMixin(object):  # (ControlBehaviorMixin)
     value of some signal exceeds some constant.
     """
 
-    _exports = {}
+    # _exports = {}
+    class ControlFormat(BaseModel):
+        circuit_condition: Condition | None = None
+
+    class Format(BaseModel):
+        pass
 
     def set_circuit_condition(self, a=None, cmp="<", b=0):
         # type: (str, str, Union[str, int]) -> None

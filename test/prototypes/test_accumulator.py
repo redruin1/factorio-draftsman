@@ -46,8 +46,9 @@ class AccumulatorTesting(unittest.TestCase):
         # Errors
         with pytest.raises(InvalidEntityError):
             Accumulator("not an accumulator")
-        with pytest.raises(DataFormatError):
-            Accumulator(control_behavior={"output_signal": "incorrect"})
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     Accumulator(control_behavior={"output_signal": "incorrect"})
 
     def test_output_signal(self):
         accumulator = Accumulator()

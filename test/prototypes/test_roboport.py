@@ -120,8 +120,9 @@ class RoboportTesting(unittest.TestCase):
         # Errors
         with pytest.raises(InvalidEntityError):
             Roboport("this is not a roboport")
-        with pytest.raises(DataFormatError):
-            Roboport(control_behavior={"unused_key": "something"})
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     Roboport(control_behavior={"unused_key": "something"})
 
     def test_set_read_logistics(self):
         roboport = Roboport()
@@ -286,6 +287,16 @@ class RoboportTesting(unittest.TestCase):
         assert roboport1.control_behavior == {
             "read_logistics": True,
             "read_robot_stats": True,
+            "available_logistic_output_signal": "signal-A",
+            "total_logistic_output_signal": "signal-B",
+            "available_construction_output_signal": "signal-C",
+            "total_construction_output_signal": "signal-D",
+        }
+        assert roboport1.tags == {"some": "stuff"}
+
+        assert roboport1.to_dict()["control_behavior"] == {
+            "read_logistics": True,
+            "read_robot_stats": True,
             "available_logistic_output_signal": {
                 "name": "signal-A",
                 "type": "virtual",
@@ -303,7 +314,6 @@ class RoboportTesting(unittest.TestCase):
                 "type": "virtual",
             },
         }
-        assert roboport1.tags == {"some": "stuff"}
 
     def test_eq(self):
         roboport1 = Roboport("roboport")

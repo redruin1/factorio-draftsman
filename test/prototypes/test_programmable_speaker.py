@@ -138,8 +138,9 @@ class ProgrammableSpeakerTesting(unittest.TestCase):
         # Errors
         with pytest.raises(InvalidEntityError):
             ProgrammableSpeaker("not a programmable speaker")
-        with pytest.raises(DataFormatError):
-            ProgrammableSpeaker(control_behavior={"unused_key": "something"})
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     ProgrammableSpeaker(control_behavior={"unused_key": "something"})
 
     def test_flags(self):
         for name in programmable_speakers:
@@ -166,16 +167,18 @@ class ProgrammableSpeakerTesting(unittest.TestCase):
         speaker.parameters = None
         assert speaker.parameters == {}
 
-        with pytest.raises(DataFormatError):
-            speaker.parameters = "false"
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     speaker.parameters = "false"
 
     def test_set_alert_parameters(self):
         speaker = ProgrammableSpeaker()
         speaker.alert_parameters = None
         assert speaker.alert_parameters == {}
 
-        with pytest.raises(DataFormatError):
-            speaker.alert_parameters = "false"
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     speaker.alert_parameters = "false"
 
     def test_set_volume(self):
         speaker = ProgrammableSpeaker()
@@ -186,16 +189,14 @@ class ProgrammableSpeakerTesting(unittest.TestCase):
         assert speaker.parameters == {}
 
         # Warnings
-        with pytest.warns(VolumeRangeWarning):
-            speaker.volume = 10.0
+        # TODO: move to inspect
+        # with pytest.warns(VolumeRangeWarning):
+        #     speaker.volume = 10.0
+        # assert speaker.parameters == {"playback_volume": 10.0}
 
-        assert speaker.parameters == {"playback_volume": 10.0}
-
-        # Errors
-        with pytest.raises(TypeError):
-            speaker.volume = "incorrect"
-
-        assert speaker.parameters == {"playback_volume": 10.0}
+        # No Error
+        speaker.volume = "incorrect"
+        assert speaker.parameters == {"playback_volume": "incorrect"}
 
     def test_set_global_playback(self):
         speaker = ProgrammableSpeaker()
@@ -451,12 +452,36 @@ class ProgrammableSpeakerTesting(unittest.TestCase):
         assert speaker1.allow_polyphony == True
         assert speaker1.show_alert == True
         assert speaker1.show_alert_on_map == False
-        assert speaker1.alert_icon == {"name": "signal-check", "type": "virtual"}
+        assert speaker1.alert_icon == "signal-check"
         assert speaker1.alert_message == "some string"
         assert speaker1.signal_value_is_pitch == False
         assert speaker1.instrument_id == 1
         assert speaker1.note_id == 1
         assert speaker1.tags == {"some": "stuff"}
+
+        assert speaker1.to_dict() == {
+            "name": "programmable-speaker",
+            "position": {"x": 0.5, "y": 0.5},
+            "parameters": {
+                "playback_volume": 1.0,
+                "playback_globally": True,
+                "allow_polyphony": True,
+            },
+            "alert_parameters": {
+                "show_alert": True,
+                "show_on_map": False,
+                "icon_signal_id": {"name": "signal-check", "type": "virtual"},
+                "alert_message": "some string",
+            },
+            "control_behavior": {
+                "circuit_parameters": {
+                    "signal_value_is_pitch": False,
+                    "instrument_id": 1,
+                    "note_id": 1,
+                }
+            },
+            "tags": {"some": "stuff"},
+        }
 
     def test_eq(self):
         speaker1 = ProgrammableSpeaker("programmable-speaker")

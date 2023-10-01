@@ -59,12 +59,13 @@ class LogisticStorageContainerTesting(unittest.TestCase):
             "tags": {"A": "B"},
         }
 
-        storage_chest = LogisticStorageContainer(request_filters=[("iron-ore", 100)])
-        assert storage_chest.to_dict() == {
-            "name": "logistic-chest-storage",
-            "position": {"x": 0.5, "y": 0.5},
-            "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
-        }
+        # TODO: retired; use `set_request_filters` instead
+        # storage_chest = LogisticStorageContainer(request_filters=[("iron-ore", 100)])
+        # assert storage_chest.to_dict() == {
+        #     "name": "logistic-chest-storage",
+        #     "position": {"x": 0.5, "y": 0.5},
+        #     "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
+        # }
 
         storage_chest = LogisticStorageContainer(
             request_filters=[{"index": 1, "name": "iron-ore", "count": 100}]
@@ -93,18 +94,19 @@ class LogisticStorageContainerTesting(unittest.TestCase):
         with pytest.raises(TypeError):
             LogisticStorageContainer("logistic-chest-storage", position=TypeError)
 
-        with pytest.raises(TypeError):
-            LogisticStorageContainer("logistic-chest-storage", bar="not even trying")
+        # TODO: move to validate
+        # with pytest.raises(TypeError):
+        #     LogisticStorageContainer("logistic-chest-storage", bar="not even trying")
 
-        with pytest.raises(DataFormatError):
-            LogisticStorageContainer(
-                "logistic-chest-storage", connections={"this is": ["very", "wrong"]}
-            )
+        # with pytest.raises(DataFormatError):
+        #     LogisticStorageContainer(
+        #         "logistic-chest-storage", connections={"this is": ["very", "wrong"]}
+        #     )
 
-        with pytest.raises(DataFormatError):
-            LogisticStorageContainer(
-                "logistic-chest-storage", request_filters={"this is": ["very", "wrong"]}
-            )
+        # with pytest.raises(DataFormatError):
+        #     LogisticStorageContainer(
+        #         "logistic-chest-storage", request_filters={"this is": ["very", "wrong"]}
+        #     )
 
     def test_power_and_circuit_flags(self):
         for name in logistic_storage_containers:

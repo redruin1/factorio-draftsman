@@ -36,12 +36,18 @@ class StraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **EightWayDirectionalMixin._exports,
-        **DoubleGridAlignedMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **EightWayDirectionalMixin._exports,
+    #     **DoubleGridAlignedMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        DoubleGridAlignedMixin.Format,
+        EightWayDirectionalMixin.Format,
+        Entity.Format
+    ):
+        pass
 
     def __init__(self, name=straight_rails[0], **kwargs):
         # type: (str, **dict) -> None

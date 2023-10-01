@@ -8,6 +8,7 @@ from draftsman.constants import Orientation
 from draftsman.warning import ValueWarning
 from draftsman.utils import Rectangle
 
+from pydantic import BaseModel
 import warnings
 
 from typing import TYPE_CHECKING
@@ -21,13 +22,15 @@ class OrientationMixin(object):
     Used in trains and wagons to specify their direction.
     """
 
-    _exports = {
-        "orientation": {
-            "format": "float[0.0, 1.0]",
-            "description": "The floating point rotation of the entity",
-            "required": lambda x: x is not None and x != 0,
-        }
-    }
+    # _exports = {
+    #     "orientation": {
+    #         "format": "float[0.0, 1.0]",
+    #         "description": "The floating point rotation of the entity",
+    #         "required": lambda x: x is not None and x != 0,
+    #     }
+    # }
+    class Format(BaseModel):
+        orientation: float | None = Orientation.NORTH
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
@@ -40,7 +43,7 @@ class OrientationMixin(object):
         # Need to make a per-instance copy
         self._collision_set = CollisionSet([Rectangle((0, 0), width, height, 0)])
 
-        self.orientation = 0.0
+        self.orientation = Orientation.NORTH
         if "orientation" in kwargs:
             self.orientation = kwargs["orientation"]
             self.unused_args.pop("orientation")
@@ -71,21 +74,19 @@ class OrientationMixin(object):
         :exception TypeError: If set to anything other than a ``float`` or
             ``None``.
         """
-        return self._orientation
+        return self._root.get("orientation", None)
 
     @orientation.setter
     def orientation(self, value):
         # type: (Orientation) -> None
         if value is None:
-            self._orientation = value
+            self._root["orientation"] = Orientation.NORTH
             self._collision_set.shapes[0].angle = 0
-        elif isinstance(value, (float, int)):
-            self._orientation = Orientation(value % 1.0)
+        else:
+            self._root["orientation"] = Orientation(value % 1.0)
             self._collision_set.shapes[0].angle = (value % 1.0) * 360.0
             # TODO: what if orientation changes when inside a EntityCollection?
             # Might end up intersecting neigbouring entities
-        else:
-            raise TypeError("'orientation' must be a float or None")
 
     def mergable_with(self, other):
         # type: (Entity) -> bool

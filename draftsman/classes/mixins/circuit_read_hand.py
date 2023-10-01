@@ -5,6 +5,8 @@ from __future__ import unicode_literals
 
 from draftsman.constants import ReadMode
 
+from pydantic import BaseModel
+
 
 class CircuitReadHandMixin(object):  # (ControlBehaviorMixin)
     """
@@ -18,7 +20,13 @@ class CircuitReadHandMixin(object):  # (ControlBehaviorMixin)
         | :py:class:`~draftsman.classes.mixins.circuit_read_resource.CircuitReadResourceMixin`
     """
 
-    _exports = {}
+    # _exports = {}
+    class ControlFormat(BaseModel):
+        circuit_read_hand_contents: bool | None = None
+        circuit_hand_read_mode: ReadMode | None = None
+
+    class Format(BaseModel):
+        pass
 
     @property
     def read_hand_contents(self):

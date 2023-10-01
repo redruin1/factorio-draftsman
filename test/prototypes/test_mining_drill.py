@@ -32,14 +32,16 @@ class MiningDrillTesting(unittest.TestCase):
         # Warnings
         with pytest.warns(DraftsmanWarning):
             MiningDrill(unused_keyword="whatever")
-        with pytest.warns(ModuleCapacityWarning):
-            MiningDrill("electric-mining-drill", items={"productivity-module": 5})
+        # TODO: move to validate
+        # with pytest.warns(ModuleCapacityWarning):
+        #     MiningDrill("electric-mining-drill", items={"productivity-module": 5})
 
         # Errors
         with pytest.raises(InvalidEntityError):
             MiningDrill("not a mining drill")
-        with pytest.raises(DataFormatError):
-            MiningDrill(control_behavior={"unused_key": "something"})
+        # TODO: move to validate
+        # with pytest.raises(DataFormatError):
+        #     MiningDrill(control_behavior={"unused_key": "something"})
 
     def test_set_item_request(self):
         mining_drill = MiningDrill("electric-mining-drill")
@@ -49,15 +51,16 @@ class MiningDrillTesting(unittest.TestCase):
             "position": {"x": 1.5, "y": 1.5},
             "items": {"speed-module-3": 3},
         }
-        with pytest.warns(ModuleCapacityWarning):
-            mining_drill.set_item_request("productivity-module-3", 3)
-        assert mining_drill.to_dict() == {
-            "name": "electric-mining-drill",
-            "position": {"x": 1.5, "y": 1.5},
-            "items": {"speed-module-3": 3, "productivity-module-3": 3},
-        }
+        # TODO: move to validate/inspect
+        # with pytest.warns(ModuleCapacityWarning):
+        #     mining_drill.set_item_request("productivity-module-3", 3)
+        # assert mining_drill.to_dict() == {
+        #     "name": "electric-mining-drill",
+        #     "position": {"x": 1.5, "y": 1.5},
+        #     "items": {"speed-module-3": 3, "productivity-module-3": 3},
+        # }
         mining_drill.set_item_request("speed-module-3", None)
-        assert mining_drill.items == {"productivity-module-3": 3}
+        assert mining_drill.items == {}
         mining_drill.set_item_requests(None)
         assert mining_drill.items == {}
         with pytest.warns(ItemLimitationWarning):

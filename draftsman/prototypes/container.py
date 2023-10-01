@@ -22,13 +22,20 @@ class Container(InventoryMixin, RequestItemsMixin, CircuitConnectableMixin, Enti
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **CircuitConnectableMixin._exports,
-        **RequestItemsMixin._exports,
-        **InventoryMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **RequestItemsMixin._exports,
+    #     **InventoryMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        InventoryMixin.Format,
+        RequestItemsMixin.Format,
+        CircuitConnectableMixin.Format,
+        Entity.Format,
+    ):
+        pass
 
     def __init__(self, name=containers[0], **kwargs):
         # type: (str, **dict) -> None

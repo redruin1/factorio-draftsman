@@ -11,7 +11,7 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
 )
 from draftsman.error import DataFormatError
-from draftsman import signatures
+from draftsman.signatures import SignalID
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import walls
@@ -19,7 +19,7 @@ from draftsman.data.signals import signal_dict
 
 from schema import SchemaError
 import six
-from typing import Union
+from typing import ClassVar, Union
 import warnings
 
 
@@ -35,14 +35,30 @@ class Wall(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **EnableDisableMixin._exports,
-        **CircuitConditionMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **CircuitConnectableMixin._exports,
+    #     **ControlBehaviorMixin._exports,
+    #     **EnableDisableMixin._exports,
+    #     **CircuitConditionMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        CircuitConditionMixin.Format,
+        EnableDisableMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        Entity.Format
+    ):
+        class ControlBehavior(
+            CircuitConditionMixin.ControlFormat,
+            EnableDisableMixin.ControlFormat,
+        ):
+            circuit_open_gate: bool | None = None
+            circuit_read_sensor: bool | None = None
+            output_signal: SignalID | None = None
+
+        control_behavior: ClassVar[ControlBehavior | None] = None
 
     def __init__(self, name=walls[0], **kwargs):
         # type: (str, **dict) -> None
@@ -63,7 +79,8 @@ class Wall(
     def control_behavior(self, value):
         # type: (dict) -> None
         try:
-            self._control_behavior = signatures.WALL_CONTROL_BEHAVIOR.validate(value)
+            # self._control_behavior = signatures.WALL_CONTROL_BEHAVIOR.validate(value) # TODO
+            self._control_behavior = value
         except SchemaError as e:
             six.raise_from(DataFormatError(e), None)
 
@@ -129,7 +146,7 @@ class Wall(
             self.control_behavior["output_signal"] = signal_dict(value)
         else:  # dict or other
             try:
-                value = signatures.SIGNAL_ID.validate(value)
+                value = SignalID(**value).model_dump() # TODO better
                 self.control_behavior["output_signal"] = value
             except SchemaError:
                 raise TypeError("Incorrectly formatted SignalID")

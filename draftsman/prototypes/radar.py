@@ -17,10 +17,12 @@ class Radar(Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports
-    }
+    # _exports = {
+    #     **Entity._exports
+    # }
     # fmt: on
+    class Format(Entity.Format):
+        pass
 
     def __init__(self, name=radars[0], **kwargs):
         # type: (str, **dict) -> None

@@ -62,12 +62,13 @@ class LogisticBufferContainerTesting(unittest.TestCase):
             "tags": {"A": "B"},
         }
 
-        buffer_chest = LogisticBufferContainer(request_filters=[("iron-ore", 100)])
-        assert buffer_chest.to_dict() == {
-            "name": "logistic-chest-buffer",
-            "position": {"x": 0.5, "y": 0.5},
-            "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
-        }
+        # TODO: retired; use `set_request_filters` instead
+        # buffer_chest = LogisticBufferContainer(request_filters=[("iron-ore", 100)])
+        # assert buffer_chest.to_dict() == {
+        #     "name": "logistic-chest-buffer",
+        #     "position": {"x": 0.5, "y": 0.5},
+        #     "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
+        # }
 
         buffer_chest = LogisticBufferContainer(
             request_filters=[{"index": 1, "name": "iron-ore", "count": 100}]
@@ -96,21 +97,22 @@ class LogisticBufferContainerTesting(unittest.TestCase):
         with pytest.raises(TypeError):
             LogisticBufferContainer("logistic-chest-buffer", position=TypeError)
 
-        with pytest.raises(TypeError):
-            LogisticBufferContainer("logistic-chest-buffer", bar="not even trying")
+        # TODO: move to validate
+        # with pytest.raises(TypeError):
+        #     LogisticBufferContainer("logistic-chest-buffer", bar="not even trying")
 
-        with pytest.raises(DataFormatError):
-            LogisticBufferContainer(
-                "logistic-chest-buffer", connections={"this is": ["very", "wrong"]}
-            )
+        # with pytest.raises(DataFormatError):
+        #     LogisticBufferContainer(
+        #         "logistic-chest-buffer", connections={"this is": ["very", "wrong"]}
+        #     )
 
-        with pytest.raises(DataFormatError):
-            LogisticBufferContainer(
-                "logistic-chest-buffer", request_filters={"this is": ["very", "wrong"]}
-            )
+        # with pytest.raises(DataFormatError):
+        #     LogisticBufferContainer(
+        #         "logistic-chest-buffer", request_filters={"this is": ["very", "wrong"]}
+        #     )
 
-        with pytest.raises(DataFormatError):
-            LogisticBufferContainer(control_behavior={"unused_key": "something"})
+        # with pytest.raises(DataFormatError):
+        #     LogisticBufferContainer(control_behavior={"unused_key": "something"})
 
     def test_power_and_circuit_flags(self):
         for name in logistic_buffer_containers:

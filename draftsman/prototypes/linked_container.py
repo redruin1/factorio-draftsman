@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import InventoryMixin, RequestItemsMixin
-from draftsman import signatures
+from draftsman.signatures import uint32
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import linked_containers
@@ -21,17 +21,23 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **RequestItemsMixin._exports,
-        **InventoryMixin._exports,
-        "link_id": {
-            "format": "int32",
-            "description": "The current 'channel' that this container uses",
-            "required": lambda x: x != 0,
-        },
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **RequestItemsMixin._exports,
+    #     **InventoryMixin._exports,
+    #     "link_id": {
+    #         "format": "int32",
+    #         "description": "The current 'channel' that this container uses",
+    #         "required": lambda x: x != 0,
+    #     },
+    # }
     # fmt: on
+    class Format(
+        InventoryMixin.Format,
+        RequestItemsMixin.Format,
+        Entity.Format,
+    ):
+        link_id: uint32 | None = None
 
     def __init__(self, name=linked_containers[0], **kwargs):
         # type: (str, **dict) -> None
@@ -56,11 +62,11 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
 
     @property
     def link_id(self):
-        # type: () -> int
+        # type: () -> uint32
         """
         The linking ID that this ``LinkedContainer`` currently has. Encoded as
         a 32 bit unsigned integer, where a container only links to another with
-        the same ``link_id``. If an integer greater than 32-bits is passed in
+        the same ``link_id``. If an integer greater than 32-bits is passed in,
         only the lowest bits are used.
 
         :getter: Gets the link ID of the ``LinkedContainer``.
@@ -69,15 +75,16 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
 
         :exception TypeError: If set to anything other than an ``int`` or ``None``.
         """
-        return self._link_id
+        return self._root["link_id"]
 
     @link_id.setter
     def link_id(self, value):
         # type: (int) -> None
+        # TODO: think about where this size check should be
         if value is None:
-            self._link_id = 0
+            self._root["link_id"] = 0
         elif isinstance(value, six.integer_types):
-            self._link_id = value & 0xFFFFFFFF
+            self._root["link_id"] = value & 0xFFFFFFFF
         else:
             raise TypeError("'link_id' must be an int or None")
 

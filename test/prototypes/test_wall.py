@@ -26,8 +26,6 @@ class WallTesting(unittest.TestCase):
 
         with pytest.raises(InvalidEntityError):
             Wall("this is not a wall")
-        with pytest.raises(DataFormatError):
-            Wall(control_behavior={"unused_key": "something"})
 
     def test_set_enable_disable(self):
         wall = Wall()

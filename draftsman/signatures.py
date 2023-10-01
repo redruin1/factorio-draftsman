@@ -16,11 +16,10 @@ from draftsman.data.signals import signal_dict, mapper_dict
 from typing_extensions import Annotated
 
 from enum import Enum
-from pydantic import BaseModel as PydanticBaseModel
-from pydantic import RootModel as PydanticRootModel
-from pydantic import model_validator, Field
+from pydantic import BaseModel, RootModel, model_validator, model_serializer, Field
 from schema import Schema, Use, Optional, Or, And
 from typing import Optional as TrueOptional  # TODO: fixme
+from typing import Literal, Any
 import six
 import sys
 import types
@@ -43,161 +42,271 @@ else:
         return origin is typing.Union
 
 
-class BaseModel(PydanticBaseModel):
-    """
-    Here we patch Pydantic's base model so that we can support a recursive 
-    `model_construct()`. Hopefully this change gets implemented upstream, but 
-    if not/until then this modification enables this behavior
+def recursive_construct(model_class: BaseModel, **input_data) -> BaseModel:
+    def handle_annotation(annotation: type, value: Any):
+        # print(annotation, value)
+        try:
+            if issubclass(annotation, BaseModel):
+                # print("yes!")
+                return recursive_construct(annotation, **value)
+        except Exception as e:
+            # print(type(e).__name__, e)
+            # print("issue with BaseModel".format(annotation))
+            pass
+        try:
+            if issubclass(annotation, RootModel):
+                # print("rootyes!")
+                return recursive_construct(annotation, root=value)
+        except Exception as e:
+            # print(type(e).__name__, e)
+            # print("issue with RootModel")
+            pass
 
-    Make sure if you create new blueprint-likes to use THIS version of BaseModel
-    instead of Pydantic's default!
-    """
-    @classmethod
-    def model_construct(cls, _fields_set=None, _recursive=False, **values):
-        print("model construct {}".format(cls.__name__))
-        m = cls.__new__(cls)
-        fields_values: dict[str, typing.Any] = {}
-        defaults: dict[str, typing.Any] = {} 
-        for name, field in cls.model_fields.items():
-            print("\t", name, field.annotation)
-            if field.alias and field.alias in values:
-                value = values.pop(field.alias)
-                if _recursive:
-                    value = _recursive_model_construct(field.annotation, value)
-                fields_values[name] = value
-            elif name in values:
-                value = values.pop(name)
-                if _recursive:
-                    value = _recursive_model_construct(field.annotation, value)
-                fields_values[name] = value
-            elif not field.is_required():
-                defaults[name] = field.get_default(call_default_factory=True)
-        if _fields_set is None:
-            _fields_set = set(fields_values.keys())
-        fields_values.update(defaults)
+        origin = get_origin(annotation)
+        # print(origin)
 
-        _extra: dict[str, typing.Any] | None = None
-        if cls.model_config.get('extra') == 'allow':
-            _extra = {}
-            for k, v in values.items():
-                _extra[k] = v
+        if origin is None:
+            return value
+        elif _is_union(origin):
+            # print("optional")
+            args = get_args(annotation)
+            for arg in args:
+                # print("\t", arg)
+                result = handle_annotation(arg, value)
+                # print("union result: {}".format(result))
+                if result != value:
+                    # print("early exit")
+                    return result
+            # Otherwise
+            # print("otherwise")
+            return value
+        elif origin is typing.Literal:
+            # print("literal")
+            return value
+        elif isinstance(origin, (str, bytes)):
+            # print("string")
+            return value
+        elif issubclass(origin, typing.Tuple):
+            # print("tuple")
+            args = get_args(annotation)
+            if isinstance(args[-1], type(Ellipsis)):
+                # format: tuple[T, ...]
+                member_type = args[0]
+                return tuple(handle_annotation(member_type, v) for v in value)
+            else:
+                # format: tuple[A, B, C]
+                return tuple(handle_annotation(member_type, value[i]) for i, member_type in enumerate(args))
+        elif issubclass(origin, typing.Sequence):
+            # print("list")
+            member_type = get_args(annotation)[0]
+            # print(member_type)
+            # print(value)
+            result = [handle_annotation(member_type, v) for v in value]
+            # print("result: {}".format(result))
+            return result
         else:
-            fields_values.update(values)
-        object.__setattr__(m, '__dict__', fields_values)
-        object.__setattr__(m, '__pydantic_fields_set__', _fields_set)
-        if not cls.__pydantic_root_model__:
-            object.__setattr__(m, '__pydantic_extra__', _extra)
+            return value
 
-        if cls.__pydantic_post_init__:
-            m.model_post_init(None)
-        elif not cls.__pydantic_root_model__:
-            # Note: if there are any private attributes, cls.__pydantic_post_init__ would exist
-            # Since it doesn't, that means that `__pydantic_private__` should be set to None
-            object.__setattr__(m, '__pydantic_private__', None)
+    m = model_class.__new__(model_class)
+    fields_values: dict[str, typing.Any] = {}
+    defaults: dict[str, typing.Any] = {} 
+    for name, field in model_class.model_fields.items():
+        # print("\t", name, field.annotation)
+        if field.alias and field.alias in input_data:
+            fields_values[name] = handle_annotation(field.annotation, input_data.pop(field.alias))
+        elif name in input_data:
+            result = handle_annotation(field.annotation, input_data.pop(name))
+            # print("outer_result: {}".format(result))
+            fields_values[name] = result
+        elif not field.is_required():
+            # print("\tdefault")
+            defaults[name] = field.get_default(call_default_factory=True)
+    _fields_set = set(fields_values.keys())
+    fields_values.update(defaults)
 
-        return m
+    # print(fields_values)
+
+    _extra: dict[str, typing.Any] | None = None
+    if model_class.model_config.get('extra') == 'allow':
+        _extra = {}
+        for k, v in input_data.items():
+            _extra[k] = v
+    else:
+        fields_values.update(input_data)
+    object.__setattr__(m, '__dict__', fields_values)
+    object.__setattr__(m, '__pydantic_fields_set__', _fields_set)
+    if not model_class.__pydantic_root_model__:
+        object.__setattr__(m, '__pydantic_extra__', _extra)
+
+    if model_class.__pydantic_post_init__:
+        m.model_post_init(None)
+    elif not model_class.__pydantic_root_model__:
+        # Note: if there are any private attributes, cls.__pydantic_post_init__ would exist
+        # Since it doesn't, that means that `__pydantic_private__` should be set to None
+        object.__setattr__(m, '__pydantic_private__', None)
+
+    return m
 
 
-class RootModel(PydanticRootModel):
-    """
-    Because we also use `RootModel`, we need to overwrite this method as well
-    """
-    @classmethod
-    def model_construct(cls, root, _fields_set = None, _recursive=False):
-        print("root recurse")
-        # Redirect to our patched model
-        return BaseModel.model_construct(
-            root=root, _fields_set=_fields_set, _recursive=_recursive
-        )
+# class BaseModel(PydanticBaseModel):
+#     """
+#     Here we patch Pydantic's base model so that we can support a recursive 
+#     `model_construct()`. Hopefully this change gets implemented upstream, but 
+#     if not/until then this modification enables this behavior
+
+#     Make sure if you create new blueprint-likes to use THIS version of BaseModel
+#     instead of Pydantic's default!
+#     """
+#     @classmethod
+#     def model_construct(cls, _fields_set=None, _recursive=False, **values):
+#         print("model construct {}".format(cls.__name__))
+#         m = cls.__new__(cls)
+#         fields_values: dict[str, typing.Any] = {}
+#         defaults: dict[str, typing.Any] = {} 
+#         for name, field in cls.model_fields.items():
+#             print("\t", name, field.annotation)
+#             if field.alias and field.alias in values:
+#                 value = values.pop(field.alias)
+#                 if _recursive:
+#                     value = _recursive_model_construct(field.annotation, value)
+#                 fields_values[name] = value
+#             elif name in values:
+#                 value = values.pop(name)
+#                 if _recursive:
+#                     value = _recursive_model_construct(field.annotation, value)
+#                 fields_values[name] = value
+#             elif not field.is_required():
+#                 defaults[name] = field.get_default(call_default_factory=True)
+#         if _fields_set is None:
+#             _fields_set = set(fields_values.keys())
+#         fields_values.update(defaults)
+
+#         _extra: dict[str, typing.Any] | None = None
+#         if cls.model_config.get('extra') == 'allow':
+#             _extra = {}
+#             for k, v in values.items():
+#                 _extra[k] = v
+#         else:
+#             fields_values.update(values)
+#         object.__setattr__(m, '__dict__', fields_values)
+#         object.__setattr__(m, '__pydantic_fields_set__', _fields_set)
+#         if not cls.__pydantic_root_model__:
+#             object.__setattr__(m, '__pydantic_extra__', _extra)
+
+#         if cls.__pydantic_post_init__:
+#             m.model_post_init(None)
+#         elif not cls.__pydantic_root_model__:
+#             # Note: if there are any private attributes, cls.__pydantic_post_init__ would exist
+#             # Since it doesn't, that means that `__pydantic_private__` should be set to None
+#             object.__setattr__(m, '__pydantic_private__', None)
+
+#         return m
 
 
-def _recursive_model_construct(annotation: type | None, value: typing.Any):
-    # No annotation? Early exit
-    if annotation is None:
-        return value
-    # Try treating the entire annotation as a BaseModel
-    try:
-        if issubclass(annotation, BaseModel):
-            print("yes!")
-            return annotation.model_construct(**value, _recursive=True)
-    except Exception as e:
-        print(type(e).__name__, e)
-        print("issue with BaseModel '{}'".format(annotation))
-        pass
-    # Try also treating the entire annotation as a RootModel
-    try:
-        if issubclass(annotation, RootModel):
-            return annotation.model_construct(value, _recursive=True)
-    except Exception as e:
-        print(type(e).__name__, e)
-        print("Issue with RootModel '{}'".format(annotation))
-        pass
+# class RootModel(PydanticRootModel):
+#     """
+#     Because we also use `RootModel`, we need to overwrite this method as well
+#     """
+#     @classmethod
+#     def model_construct(cls, root, _fields_set = None, _recursive=False):
+#         print("root recurse")
+#         # Redirect to our patched model
+#         return BaseModel.model_construct(
+#             root=root, _fields_set=_fields_set, _recursive=_recursive
+#         )
 
-    # If that doesn't work, we might have a special type we need to explode
-    origin = get_origin(annotation)
-    # Early-exit so that issubclass() doesn't throw
-    print("origin: {}".format(origin))
-    if origin is None:
-        print("No origin")
-        print("returning '{}'".format(value))
-        return value
-    elif _is_union(origin):  # or origin is types.UnionType:
-        print("union")
-        # TODO: union_mode/discriminators?
-        for possible_type in get_args(annotation):
-            # The following could also probably be more explicit
-            print("possible_type: ", possible_type)
-            try:
-                if issubclass(possible_type, BaseModel):
-                    return possible_type.model_construct(**value, _recursive=True)
-            except Exception as e:
-                print(type(e), e)
-                print("failed to recurse '{}'".format(annotation))
-                pass
-            # Try also treating the entire annotation as a RootModel
-            try:
-                if issubclass(possible_type, RootModel):
-                    return possible_type.model_construct(value, _recursive=True)
-            except Exception as e:
-                print(e)
-                print("failed to recurse '{}'".format(annotation))
-                pass
+
+# def _recursive_model_construct(annotation: type | None, value: typing.Any):
+#     # No annotation? Early exit
+#     if annotation is None:
+#         return value
+#     # Try treating the entire annotation as a BaseModel
+#     try:
+#         if issubclass(annotation, BaseModel):
+#             print("yes!")
+#             return annotation.model_construct(**value, _recursive=True)
+#     except Exception as e:
+#         print(type(e).__name__, e)
+#         print("issue with BaseModel '{}'".format(annotation))
+#         pass
+#     # Try also treating the entire annotation as a RootModel
+#     try:
+#         if issubclass(annotation, RootModel):
+#             return annotation.model_construct(value, _recursive=True)
+#     except Exception as e:
+#         print(type(e).__name__, e)
+#         print("Issue with RootModel '{}'".format(annotation))
+#         pass
+
+#     # If that doesn't work, we might have a special type we need to explode
+#     origin = get_origin(annotation)
+#     # Early-exit so that issubclass() doesn't throw
+#     print("origin: {}".format(origin))
+#     if origin is None:
+#         print("No origin")
+#         print("returning '{}'".format(value))
+#         return value
+#     elif _is_union(origin):  # or origin is types.UnionType:
+#         print("union")
+#         # TODO: union_mode/discriminators?
+#         for possible_type in get_args(annotation):
+#             # The following could also probably be more explicit
+#             print("possible_type: ", possible_type)
+#             try:
+#                 if issubclass(possible_type, BaseModel):
+#                     return possible_type.model_construct(**value, _recursive=True)
+#             except Exception as e:
+#                 print(type(e), e)
+#                 print("failed to recurse '{}'".format(annotation))
+#                 pass
+#             # Try also treating the entire annotation as a RootModel
+#             try:
+#                 if issubclass(possible_type, RootModel):
+#                     return possible_type.model_construct(value, _recursive=True)
+#             except Exception as e:
+#                 print(e)
+#                 print("failed to recurse '{}'".format(annotation))
+#                 pass
             
-        print("none of the union members matched!")
-    elif origin is typing.Literal:
-        print("literal")
-        return value
-    elif isinstance(origin, (str, bytes)):
-        print("string")
-        return value
-    elif issubclass(origin, typing.Tuple):
-        print("tuple")
-        args = get_args(annotation)
-        if isinstance(args[-1], type(Ellipsis)):
-            # format: tuple[T, ...]
-            member_type = args[0]
-            return tuple(_recursive_model_construct(member_type, v) for v in value)
-        else:
-            # format: tuple[A, B, C]
-            return tuple(_recursive_model_construct(member_type, value[i]) for i, member_type in enumerate(args))
-    elif issubclass(origin, typing.Sequence):
-        print("sequence")
-        member_type = get_args(annotation)[0]
-        print(member_type)
-        print(value)
-        return [_recursive_model_construct(member_type, v) for v in value]
-    elif issubclass(origin, typing.Mapping):
-        print("mapping")
-        # Unsure if we need to explode key_type as well as value_type
-        key_type, value_type = get_args(annotation)
-        return {k: _recursive_model_construct(value_type, v) for k, v in value.items()}
+#         print("none of the union members matched!")
+#     elif origin is typing.Literal:
+#         print("literal")
+#         return value
+#     elif isinstance(origin, (str, bytes)):
+#         print("string")
+#         return value
+#     elif issubclass(origin, typing.Tuple):
+#         print("tuple")
+#         args = get_args(annotation)
+#         if isinstance(args[-1], type(Ellipsis)):
+#             # format: tuple[T, ...]
+#             member_type = args[0]
+#             return tuple(_recursive_model_construct(member_type, v) for v in value)
+#         else:
+#             # format: tuple[A, B, C]
+#             return tuple(_recursive_model_construct(member_type, value[i]) for i, member_type in enumerate(args))
+#     elif issubclass(origin, typing.Sequence):
+#         print("sequence")
+#         member_type = get_args(annotation)[0]
+#         print(member_type)
+#         print(value)
+#         return [_recursive_model_construct(member_type, v) for v in value]
+#     elif issubclass(origin, typing.Mapping):
+#         print("mapping")
+#         # Unsure if we need to explode key_type as well as value_type
+#         key_type, value_type = get_args(annotation)
+#         return {k: _recursive_model_construct(value_type, v) for k, v in value.items()}
 
-    print("returning '{}'".format(value))
-    # If none of the above, return the unchanged value
-    return value
+#     print("returning '{}'".format(value))
+#     # If none of the above, return the unchanged value
+#     return value
 
 
-uint64 = Annotated[int, Field(..., ge=0, lt=2**64)]
+int32 = Annotated[int, Field(..., ge=-2**31, lt=2**31)]
+
+uint16 = Annotated[int, Field(..., ge=0, lt=2**16)]
+uint32 = Annotated[int, Field(..., ge=0, lt=2**32)]
+uint64 = Annotated[int, Field(..., ge=0, lt=2**64)] # TODO: description about floating point issues
 
 INTEGER = Schema(int)
 INTEGER_OR_NONE = Schema(Or(int, None))
@@ -1001,8 +1110,18 @@ class Mappers(RootModel):
     #     return mappers
 
 class SignalID(BaseModel):
-    name: TrueOptional[str]  # Anyone's guess _why_ this is optional
+    name: TrueOptional[str]  # Anyone's guess as to _why_ this is optional
     type: str
+
+    @model_serializer
+    def normalize(self):
+        if isinstance(self, str):
+            # If self is a string, then we try and convert to a dict
+            # If the string is unknown, we cannot possibly know the type of this
+            # signal, so this function raises an InvalidSignalError
+            return signal_dict(self)
+        else:
+            return {"name": self.name, "type": self.type}
 
 
 class Icon(BaseModel):
@@ -1030,6 +1149,24 @@ class Color(BaseModel):
     b: int | float = Field(..., ge=0, le=255)
     a: int | float | None = Field(None, ge=0, le=255)
 
+    @model_serializer
+    def normalize(self): # FIXME: scuffed
+        if isinstance(self, (list, tuple)):
+            new_color = {}
+            new_color["r"] = self[0]
+            new_color["g"] = self[1]
+            new_color["b"] = self[2]
+            try:
+                new_color["a"] = self[3]
+            except IndexError:
+                pass
+            return new_color
+        elif isinstance(self, dict):
+            return {k: v for k, v in self.items() if v is not None}
+        else:
+            return {k: v for k, v in self.__dict__.items() if v is not None}
+
+
 
 class Position(BaseModel):
     x: float | int
@@ -1042,7 +1179,8 @@ class Position(BaseModel):
             return data.to_dict()
         except AttributeError:
             return data
-
+        
+# TODO: maybe a FloatPosition/IntPosition split for entities and tiles?
 
 class WaitCondition(BaseModel):
     type: str
@@ -1064,3 +1202,143 @@ class EntityFilter(BaseModel):
 class TileFilter(BaseModel):
     name: str
     index: uint64
+
+
+class CircuitConnectionPoint(BaseModel):
+    entity_id: int # TODO: dimension
+    circuit_id: Literal[1, 2] | None = None
+
+
+class WireConnectionPoint(BaseModel):
+    entity_id: int # TODO: dimension
+    wire_id: Literal[0, 1] | None = None
+
+
+class Connections(BaseModel):
+    class CircuitConnections(BaseModel):
+        red: list[CircuitConnectionPoint] | None = None
+        green: list[CircuitConnectionPoint] | None = None
+
+    Wr1: CircuitConnections | None = Field(None, alias="1")
+    Wr2: CircuitConnections | None = Field(None, alias="2")
+    Cu0: list[WireConnectionPoint] | None = None
+    Cu1: list[WireConnectionPoint] | None = None
+
+
+# factorio_comparator_choices = {">", "<", "=", "≥", "≤", "≠"}
+# python_comparator_choices = {"==", "<=", ">=", "!="}
+class Comparator(RootModel):
+    root: Literal[">", "<", "=", "≥", "≤", "≠"]
+
+    @model_serializer
+    def normalize(self):
+        conversions = {
+            "==": "=", 
+            ">=": "≥", 
+            "<=": "≤", 
+            "!=": "≠"
+        }
+        if self.root in conversions:
+            return conversions[self.root]
+        else:
+            return self.root
+
+
+class Condition(BaseModel):
+    first_signal: SignalID | None = None
+    second_signal: SignalID | None = None
+    comparator: Comparator | None = None
+    constant: int32 | None = None
+
+
+class Filters(RootModel):
+    class FilterEntry(BaseModel):
+        index: int | None = None # TODO: dimension, optional?
+        name: str | None = None # TODO: optional?
+
+    root: list[FilterEntry] | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_validate(cls, input):
+        result = []
+        for i, entry in enumerate(input):
+            if isinstance(entry, str):
+                result.append({"index": i + 1, "name": entry})
+            else:
+                result.append(entry)
+        return result
+
+    @model_serializer
+    def normalize_construct(self):
+        result = []
+        for i, entry in enumerate(self.root):
+            if isinstance(entry, str):
+                result.append({"index": i + 1, "name": entry})
+            else:
+                result.append(entry)
+        return result
+
+
+class InventoryFilters(BaseModel):
+    filters: Filters | None = None
+    bar: uint16 | None = None
+
+
+class RequestFilters(RootModel):
+    class Request(BaseModel):
+        index: int # TODO dimension, optional?
+        name: str # TODO: optional?
+        count: int # TODO dimension, optional?
+
+    root: list[Request]
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_validate(cls, input):
+        result = []
+        for i, entry in enumerate(input):
+            if isinstance(entry, (tuple, list)):
+                result.append({"index": i + 1, "name": entry[0], "count": entry[1]})
+            else:
+                result.append(entry)
+        return result
+
+    @model_serializer
+    def normalize_construct(self):
+        result = []
+        for i, entry in enumerate(self.root):
+            if isinstance(entry, (tuple, list)):
+                result.append({"index": i + 1, "name": entry[0], "count": entry[1]})
+            else:
+                result.append(entry)
+        return result
+
+
+class SignalFilters(RootModel):
+    class SignalFilter(BaseModel):
+        index: int # TODO: dimension, optional?
+        signal: SignalID # TODO: optional?
+        count: int # TODO: dimension, optional?
+
+    root: list[SignalFilter]
+
+    @model_serializer
+    def normalize(self):
+        new_list = []
+        for i, entry in enumerate(self.root):
+            if isinstance(entry, tuple):
+                # out = {"index": i + 1, "signal": entry[0], "count": entry[1]}
+                out = self.SignalFilter.model_construct(
+                    index=i + 1,
+                    signal=entry[0], 
+                    count=entry[1]
+                ).model_dump(
+                    by_alias=True,
+                    exclude_none=True,
+                    exclude_defaults=True,
+                )
+                new_list.append(out)
+            else:
+                new_list.append(entry)
+        return new_list

@@ -80,16 +80,17 @@ class ContainerTesting(unittest.TestCase):
                 "logistic-chest-active-provider", position=TypeError
             )
 
-        with pytest.raises(TypeError):
-            LogisticActiveContainer(
-                "logistic-chest-active-provider", bar="not even trying"
-            )
+        # TODO: move to validate
+        # with pytest.raises(TypeError):
+        #     LogisticActiveContainer(
+        #         "logistic-chest-active-provider", bar="not even trying"
+        #     )
 
-        with pytest.raises(DataFormatError):
-            LogisticActiveContainer(
-                "logistic-chest-active-provider",
-                connections={"this is": ["very", "wrong"]},
-            )
+        # with pytest.raises(DataFormatError):
+        #     LogisticActiveContainer(
+        #         "logistic-chest-active-provider",
+        #         connections={"this is": ["very", "wrong"]},
+        #     )
 
     def test_power_and_circuit_flags(self):
         for container_name in logistic_active_containers:

@@ -10,7 +10,7 @@ import six
 
 
 @six.add_metaclass(abc.ABCMeta)
-class SpatialLike(object):
+class SpatialLike:
     """
     Abstract class that provides the necessary methods so that an object that
     can be added to a :py:class:`~draftsman.classes.spatialhashmap.SpatialHashMap`.

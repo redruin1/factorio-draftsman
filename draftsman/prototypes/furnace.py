@@ -20,12 +20,14 @@ class Furnace(ModulesMixin, RequestItemsMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **RequestItemsMixin._exports,
-        **ModulesMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **RequestItemsMixin._exports,
+    #     **ModulesMixin._exports,
+    # }
     # fmt: on
+    class Format(ModulesMixin.Format, RequestItemsMixin.Format, Entity.Format):
+        pass
 
     def __init__(self, name=furnaces[0], **kwargs):
         # type: (str, **dict) -> None

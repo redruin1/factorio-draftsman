@@ -6,13 +6,14 @@ from __future__ import unicode_literals
 from draftsman.error import DataFormatError
 from draftsman import signatures
 
-from abc import ABCMeta, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
+from pydantic import BaseModel
 from typing import Union
 from schema import SchemaError
 import six
 
 # six.add_metaclass(ABCMeta) # Doesn't work for some reason
-class ControlBehaviorMixin(six.with_metaclass(ABCMeta, object)):
+class ControlBehaviorMixin:
     """
     Enables the entity to specify control behavior.
 
@@ -38,21 +39,27 @@ class ControlBehaviorMixin(six.with_metaclass(ABCMeta, object)):
     * :py:class:`.mixins.stack_size.StackSizeMixin`
     """
 
-    _exports = {
-        "control_behavior": {
-            "format": "TODO",
-            "description": "The control behavior of the entity",
-            "required": lambda x: x is not None and len(x) != 0,
-        }
-    }
+    # _exports = {
+    #     "control_behavior": {
+    #         "format": "TODO",
+    #         "description": "The control behavior of the entity",
+    #         "required": lambda x: x is not None and len(x) != 0,
+    #     }
+    # }
+    class Format(BaseModel):
+        # TODO: It would be nice if we could specify "control_behavior" as an
+        # abstract field, so that any sub-Format that inherits ControlBehavior
+        # must implement it 
+        # `control_behavior: AbstractField` or something
+        pass
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
         super(ControlBehaviorMixin, self).__init__(name, similar_entities, **kwargs)
 
-        self.control_behavior = {}
+        self._root["control_behavior"] = {}
         if "control_behavior" in kwargs:
-            self.control_behavior = kwargs["control_behavior"]
+            self._root["control_behavior"] = kwargs["control_behavior"]
             self.unused_args.pop("control_behavior")
         # self._add_export("control_behavior", lambda x: x is not None and len(x) != 0)
 
@@ -72,13 +79,15 @@ class ControlBehaviorMixin(six.with_metaclass(ABCMeta, object)):
         :exception DataFormatError: If set to anything that does not match the
             ``CONTROL_BEHAVIOR`` signature.
         """
-        return self._control_behavior
+        return self._root["control_behavior"]
 
     @control_behavior.setter
-    @abstractmethod
-    def control_behavior(self, value):  # pragma: no coverage
+    def control_behavior(self, value):
         # type: (dict) -> None
-        pass
+        if value is None:
+            self._root["control_behavior"] = {}
+        else:
+            self._root["control_behavior"] = value
 
     # =========================================================================
 

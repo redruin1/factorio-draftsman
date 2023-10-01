@@ -11,7 +11,9 @@ from draftsman.warning import DraftsmanWarning, TemperatureRangeWarning
 from draftsman.data.entities import infinity_pipes
 import draftsman.data.signals as signals
 
+from pydantic import BaseModel
 from schema import SchemaError
+from typing import Literal
 import six
 import warnings
 
@@ -22,15 +24,23 @@ class InfinityPipe(Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        "infinity_settings": {
-            "format": "TODO",
-            "description": "Fluid filters for infinite spawning/deletion",
-            "required": lambda x: len(x) != 0,
-        }
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     "infinity_settings": {
+    #         "format": "TODO",
+    #         "description": "Fluid filters for infinite spawning/deletion",
+    #         "required": lambda x: len(x) != 0,
+    #     }
+    # }
     # fmt: on
+    class Format(Entity.Format):
+        class InfinitySettings(BaseModel):
+            name: str | None = None
+            percentage: float | None = None
+            mode: Literal["at-least", "at-most", "exactly", "add", "remove"] | None = None
+            temperature: int | None = None # TODO dimension
+
+        infinity_settings: InfinitySettings | None = InfinitySettings()
 
     def __init__(self, name=infinity_pipes[0], **kwargs):
         # type: (str, **dict) -> None
@@ -68,16 +78,15 @@ class InfinityPipe(Entity):
         :exception DataFormatError: If set to anything that does not match the
             :py:data:`.INFINITY_PIPE` format.
         """
-        return self._infinity_settings
+        return self._root["infinity_settings"]
 
     @infinity_settings.setter
     def infinity_settings(self, value):
         # type: (dict) -> None
-        try:
-            value = signatures.INFINITY_PIPE.validate(value)
-            self._infinity_settings = value
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        if value is None:
+            self._root["infinity_settings"] = {}
+        else:
+            self._root["infinity_settings"] = value
 
     # =========================================================================
 

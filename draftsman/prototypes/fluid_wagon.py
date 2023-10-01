@@ -19,11 +19,13 @@ class FluidWagon(OrientationMixin, Entity):
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **OrientationMixin._exports
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **OrientationMixin._exports
+    # }
     # fmt: on
+    class Format(OrientationMixin.Format, Entity.Format):
+        pass
 
     def __init__(self, name=fluid_wagons[0], **kwargs):
         # type: (str, **dict) -> None

@@ -7,6 +7,7 @@ from draftsman import signatures
 from draftsman.constants import Direction
 from draftsman.error import DraftsmanError
 
+from pydantic import BaseModel
 from schema import SchemaError
 from typing import Union
 
@@ -29,13 +30,15 @@ class EightWayDirectionalMixin(object):
         :py:class:`~.mixins.directional.DirectionalMixin`
     """
 
-    _exports = {
-        "direction": {
-            "format": "int",
-            "description": "The direction this entity is facing",
-            "required": lambda x: x != 0,
-        }
-    }
+    # _exports = {
+    #     "direction": {
+    #         "format": "int",
+    #         "description": "The direction this entity is facing",
+    #         "required": lambda x: x != 0,
+    #     }
+    # }
+    class Format(BaseModel):
+        direction: Direction | None = Direction.NORTH
 
     def __init__(self, name, similar_entities, tile_position=[0, 0], **kwargs):
         # type: (str, list[str], Union[list, dict], **dict) -> None
@@ -107,7 +110,7 @@ class EightWayDirectionalMixin(object):
         :exception ValueError: If set to anything other than a ``Direction``, or
             its equivalent ``int``.
         """
-        return self._direction
+        return self._root["direction"]
 
     @direction.setter
     def direction(self, value):
@@ -118,9 +121,9 @@ class EightWayDirectionalMixin(object):
             )
 
         if value is None:
-            self._direction = Direction(0)  # Default Direction
+            self._root["direction"] = Direction(0)  # Default Direction
         else:
-            self._direction = Direction(value)
+            self._root["direction"] = Direction(value)
 
         # if self._direction in {2, 3, 6, 7}:
         #     self._tile_width = self.static_tile_height
@@ -138,9 +141,9 @@ class EightWayDirectionalMixin(object):
         #     self._tile_height = self.static_tile_height
         #     self._collision_box = self.static_collision_box
 
-        self._collision_set = self._collision_set_rotation[self._direction]
+        self._collision_set = self._collision_set_rotation[self._root["direction"]]
         # TODO: do this a little more reliably
-        if self._direction in {2, 3, 6, 7}:
+        if self._root["direction"] in {2, 3, 6, 7}:
             self._tile_width = self._static_tile_height
             self._tile_height = self._static_tile_width
         else:

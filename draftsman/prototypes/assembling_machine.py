@@ -35,14 +35,22 @@ class AssemblingMachine(
     """
 
     # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **RecipeMixin._exports,
-        **RequestItemsMixin._exports,
-        **ModulesMixin._exports,
-    }
+    # _exports = {
+    #     **Entity._exports,
+    #     **DirectionalMixin._exports,
+    #     **RecipeMixin._exports,
+    #     **RequestItemsMixin._exports,
+    #     **ModulesMixin._exports,
+    # }
     # fmt: on
+    class Format(
+        ModulesMixin.Format,
+        RequestItemsMixin.Format,
+        RecipeMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format,
+    ):
+        pass
 
     def __init__(self, name=assembling_machines[0], **kwargs):
         # type: (str, **dict) -> None

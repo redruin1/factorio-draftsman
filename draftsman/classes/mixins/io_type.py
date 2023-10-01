@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 from draftsman.error import DataFormatError
 from draftsman import signatures
 
+from pydantic import BaseModel, Field
 from schema import SchemaError
 import six
 
@@ -25,14 +26,16 @@ class IOTypeMixin(object):
     Gives an entity a Input/Output type.
     """
 
-    _exports = {
-        "type": {
-            "format": "'input' or 'output'",
-            "description": "The IO type of the entity",
-            "required": lambda x: x is not None and x != "input",
-            "transform": lambda self, _: getattr(self, "io_type"),
-        }
-    }
+    # _exports = {
+    #     "type": {
+    #         "format": "'input' or 'output'",
+    #         "description": "The IO type of the entity",
+    #         "required": lambda x: x is not None and x != "input",
+    #         "transform": lambda self, _: getattr(self, "io_type"),
+    #     }
+    # }
+    class Format(BaseModel):
+        io_type: Literal["input", "output"] | None = Field(None, alias="type")
 
     def __init__(self, name, similar_entities, **kwargs):
         # type: (str, list[str], **dict) -> None
@@ -73,7 +76,7 @@ class IOTypeMixin(object):
         :exception ValueError: If set to anything other than ``"input"`` or
             ``"output"``.
         """
-        return self._io_type
+        return self._root["type"]
 
     @io_type.setter
     def io_type(self, value):
@@ -84,7 +87,7 @@ class IOTypeMixin(object):
             six.raise_from(TypeError(e), None)
 
         if value in {"input", "output", None}:
-            self._io_type = value
+            self._root["type"] = value
         else:
             raise ValueError("'io_type' must be 'input', 'output' or None")
 
