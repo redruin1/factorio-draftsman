@@ -19,7 +19,7 @@ from draftsman.error import (
     DataFormatError,
     MalformedBlueprintStringError,
 )
-from draftsman import signatures
+from draftsman.signatures import Connections
 from draftsman.utils import (
     reissue_warnings,
     string_to_JSON,
@@ -30,7 +30,6 @@ from draftsman.utils import (
 
 import copy
 from typing import Union
-from schema import SchemaError
 import six
 
 
@@ -125,8 +124,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         self.position = position
 
     @reissue_warnings
-    def load_from_string(self, blueprint_string):
-        # type: (str) -> None
+    def load_from_string(self, blueprint_string: str):
         """
         Load the Blueprint with the contents of ``blueprint_string``. Raises
         ``draftsman.warning.DraftsmanWarning`` if there are any unrecognized
@@ -151,17 +149,24 @@ class Group(Transformable, EntityCollection, EntityLike):
         # Convert circuit and power connections to Associations
         for entity in self.entities:
             if hasattr(entity, "connections"):  # Wire connections
-                connections = entity.connections
-                for side in connections:
+                connections: Connections = entity.connections
+                for side in connections.true_model_fields():
+                    if connections[side] is None:
+                        continue
+
                     if side in {"1", "2"}:
-                        for color in connections[side]:
+                        for color, _ in connections[side]:
                             connection_points = connections[side][color]
+                            if connection_points is None:
+                                continue
                             for point in connection_points:
                                 old = point["entity_id"] - 1
                                 point["entity_id"] = Association(self.entities[old])
 
                     elif side in {"Cu0", "Cu1"}:  # pragma: no branch
                         connection_points = connections[side]
+                        if connection_points is None:
+                            continue
                         for point in connection_points:
                             old = point["entity_id"] - 1
                             point["entity_id"] = Association(self.entities[old])
@@ -232,8 +237,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def type(self):
-        # type: () -> str
+    def type(self) -> str:
         """
         The type of the Group. Defaults to ``"group"``. Can be specified to any
         string to aid in organization. For example:
@@ -471,9 +475,9 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def double_grid_aligned(self):
-        # type: () -> bool
+    def double_grid_aligned(self) -> bool:
         for entity in self.entities:
+            print(entity.double_grid_aligned)
             if entity.double_grid_aligned:
                 return True
         return False
@@ -481,8 +485,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def entities(self):
-        # type: () -> EntityList
+    def entities(self) -> EntityList:
         """
         The list of the Group's entities. Internally the list is a custom
         class named :py:class:`draftsman.classes.EntityList`, which has all the
@@ -685,9 +688,12 @@ class Group(Transformable, EntityCollection, EntityLike):
         # print("group.merge")
         return  # Do nothing
 
-    def __str__(self):  # pragma: no coverage
-        # type: () -> str
+    def __str__(self) -> str:  # pragma: no coverage
+        # TODO: better formatting
         return "<Group>" + str(self.entities.data)
+
+    def __repr__(self) -> str:  # pragma: no coverage
+        return "<Group>{}".format(self.entities.data)
 
     def __deepcopy__(self, memo):
         # type: (dict) -> Group
@@ -707,7 +713,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         v = getattr(self, "_entity_map")
         setattr(result, "_entity_map", copy.deepcopy(v, memo))
         result.entity_map.clear()
-        # Also make sure "_collision_box" is intialized before setting up
+        # Also make sure "_collision_set" is intialized before setting up
         # "_entities"
         v = getattr(self, "_collision_set")
         setattr(result, "_collision_set", copy.deepcopy(v, memo))

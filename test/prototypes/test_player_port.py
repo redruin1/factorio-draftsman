@@ -1,28 +1,20 @@
 # test_player_port.py
 
-from __future__ import unicode_literals
+from draftsman.entity import PlayerPort, player_ports, Container
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
-from draftsman.entity import PlayerPort, player_ports
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
-
-import sys
+from typing import Hashable
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class PlayerPortTesting(unittest.TestCase):
+class TestPlayerPort:
     def test_contstructor_init(self):
-        turret = PlayerPort()
+        port = PlayerPort()
 
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             PlayerPort(unused_keyword="whatever")
 
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             PlayerPort("this is not a player port")
 
     def test_mergable_with(self):
@@ -45,3 +37,21 @@ class PlayerPortTesting(unittest.TestCase):
         del port2
 
         assert port1.tags == {"some": "stuff"}
+
+    def test_eq(self):
+        pipe1 = PlayerPort("player-port")
+        pipe2 = PlayerPort("player-port")
+
+        assert pipe1 == pipe2
+
+        pipe1.tags = {"some": "stuff"}
+
+        assert pipe1 != pipe2
+
+        container = Container()
+
+        assert pipe1 != container
+        assert pipe2 != container
+
+        # hashable
+        assert isinstance(pipe1, Hashable)

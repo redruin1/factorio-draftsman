@@ -69,7 +69,7 @@ def main():
 
     # Specify the size of the image
     # The example image is square, so we use one parameter for simplicity
-    target_size = 200
+    target_size = 256
 
     print("Filepath of image to covert:")
     img_path = input()

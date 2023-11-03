@@ -1,23 +1,14 @@
 # test_linked_container.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import LinkedContainer, linked_containers, Container
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class LinkedContainerTesting(unittest.TestCase):
+class TestLinkedContainer:
     def test_constructor_init(self):
         container = LinkedContainer(link_id=1000)
         assert container.to_dict() == {
@@ -27,13 +18,13 @@ class LinkedContainerTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             LinkedContainer(unused_keyword="whatever")
+        with pytest.warns(UnknownEntityWarning):
+            LinkedContainer("this is not a linked container")
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            LinkedContainer("this is not a linked container")
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             LinkedContainer(link_id="incorrect")
 
     def test_set_link(self):
@@ -53,9 +44,11 @@ class LinkedContainerTesting(unittest.TestCase):
         container = LinkedContainer()
         container.link_id = 0xFFFF
         assert container.link_id == 0xFFFF
+
         container.link_id = None
         assert container.link_id == 0
-        with pytest.raises(TypeError):
+        
+        with pytest.raises(DataFormatError):
             container.link_id = "incorrect"
 
     def test_mergable_with(self):

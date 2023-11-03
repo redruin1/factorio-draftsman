@@ -3,44 +3,48 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import SimpleEntityWithForce, simple_entities_with_force
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class SimpleEntityWithForceTesting(unittest.TestCase):
+class TestSimpleEntityWithForce:
     def test_contstructor_init(self):
         entity = SimpleEntityWithForce(variation=13)
         assert entity.name == simple_entities_with_force[0]
         assert entity.variation == 13
 
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             SimpleEntityWithForce(unused_keyword="whatever")
 
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             SimpleEntityWithForce("this is not correct")
 
     def test_to_dict(self):
         entity = SimpleEntityWithForce("simple-entity-with-force")
         assert entity.variation == 1
-        assert entity.to_dict() == {
+        assert entity.to_dict(exclude_defaults=False) == {
             "name": "simple-entity-with-force",
             "position": {"x": 0.5, "y": 0.5},
-            "variation": 1,
+            "variation": 1, # Default
+            "tags": {}  # Default
         }
 
         entity.variation = None
-        assert entity.to_dict() == {
+        assert entity.variation == None
+        assert entity.to_dict(exclude_defaults=False) == {
             "name": "simple-entity-with-force",
             "position": {"x": 0.5, "y": 0.5},
+            "tags": {} # Default
         }
+
+    def test_power_and_circuit_flags(self):
+        for name in simple_entities_with_force:
+            entity = SimpleEntityWithForce(name)
+            assert entity.power_connectable == False
+            assert entity.dual_power_connectable == False
+            assert entity.circuit_connectable == False
+            assert entity.dual_circuit_connectable == False
 
     def test_mergable_with(self):
         entity1 = SimpleEntityWithForce("simple-entity-with-force")

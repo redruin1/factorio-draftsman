@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     FiltersMixin,
     StackSizeMixin,
@@ -16,16 +17,14 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     DirectionalMixin,
 )
-from draftsman.error import DataFormatError
-from draftsman import signatures
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
+from draftsman.signatures import Connections, DraftsmanBaseModel, Filters, uint8
 
 from draftsman.data.entities import filter_inserters
 
-from schema import SchemaError
-import six
-from typing import Literal
-import warnings
+from pydantic import ConfigDict, Field
+from typing import Any, Literal, Optional, Union
 
 
 class FilterInserter(
@@ -49,28 +48,10 @@ class FilterInserter(
 
         In Factorio, the ``Inserter`` prototype includes both regular and filter
         inserters. In Draftsman, inserters are split into two different classes,
-        :py:class:`~.Inserter` and :py:class:`~.FilterInserter`
+        :py:class:`~.Inserter` and :py:class:`~.FilterInserter`. This might
+        change in a future version of Draftsman.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    #     **LogisticConditionMixin._exports,
-    #     **CircuitConditionMixin._exports,
-    #     **InserterModeOfOperationMixin._exports,
-    #     **CircuitReadHandMixin._exports,
-    #     **StackSizeMixin._exports,
-    #     **FiltersMixin._exports,
-    #     "filter_mode": {
-    #         "format": "'whitelist' or 'blacklist'",
-    #         "description": "Whether or not to invert the item filters specified",
-    #         "required": lambda x: x is not None,
-    #     },
-    # }
-    # fmt: on
     class Format(
         FiltersMixin.Format,
         StackSizeMixin.Format,
@@ -91,49 +72,73 @@ class FilterInserter(
             CircuitConditionMixin.ControlFormat,
             LogisticConditionMixin.ControlFormat,
             EnableDisableMixin.ControlFormat,
+            DraftsmanBaseModel,
         ):
             pass
 
-        control_behavior: ControlBehavior | None = ControlBehavior()
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        filter_mode: Literal["whitelist", "blacklist"] | None = None
+        filter_mode: Optional[Literal["whitelist", "blacklist"]] = Field(
+            "whitelist",
+            description="""
+            Whether or not to treat the item filters associated with this 
+            inserter as a list of items to allow or a list of items to disallow.
+            """,
+        )
 
-    def __init__(self, name=filter_inserters[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(FilterInserter, self).__init__(name, filter_inserters, **kwargs)
+        model_config = ConfigDict(title="FilterInserter")
 
-        self.filter_mode = None
-        if "filter_mode" in kwargs:
-            self.filter_mode = kwargs["filter_mode"]
-            self.unused_args.pop("filter_mode")
-        # self._add_export("filter_mode", lambda x: x is not None)
+    def __init__(
+        self,
+        name: str = filter_inserters[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        override_stack_size: uint8 = None,
+        filters: Filters = Filters(),
+        filter_mode: Literal["whitelist", "blacklist"] = "whitelist",
+        connections: Connections = Connections(),
+        control_behavior: Format.ControlBehavior = Format.ControlBehavior(),
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self._root: __class__.Format
 
-        del self.unused_args
+        super().__init__(
+            name,
+            filter_inserters,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            override_stack_size=override_stack_size,
+            filters=filters,
+            connections=connections,
+            control_behavior=control_behavior,
+            tags=tags,
+            **kwargs
+        )
 
-    # =========================================================================
+        self.filter_mode = filter_mode
 
-    # @ControlBehaviorMixin.control_behavior.setter
-    # def control_behavior(self, value):
-    #     # type: (dict) -> None
-    #     try:
-    #         self._control_behavior = (
-    #             signatures.FILTER_INSERTER_CONTROL_BEHAVIOR.validate(value)
-    #         )
-    #     except SchemaError as e:
-    #         six.raise_from(DataFormatError(e), None)
+        self.validate_assignment = validate_assignment
+
+        if validate:
+            self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
     @property
-    def filter_mode(self):
-        # type: () -> str
+    def filter_mode(self) -> Literal["whitelist", "blacklist", None]:
         """
         The mode that the filter is set to. Can be either ``"whitelist"`` or
         ``"blacklist"``.
@@ -146,24 +151,22 @@ class FilterInserter(
             nor ``"blacklist"``.
         :exception TypeError: If set to anything other than a ``str`` or ``None``.
         """
-        return self._root.get("filter_mode", None)
+        return self._root.filter_mode
 
     @filter_mode.setter
-    def filter_mode(self, value):
-        # type: (str) -> None
-        # TODO: evaluate when this check should take place
-        if value is None:
-            self._root.pop("filter_mode", None)
-        elif value in {"whitelist", "blacklist"}:
-            self._root["filter_mode"] = value
+    def filter_mode(self, value: Literal["whitelist", "blacklist", None]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "filter_mode", value
+            )
+            self._root.filter_mode = result
         else:
-            raise ValueError("'filter_mode' must be one of {'whitelist', 'blacklist'} or None")
+            self._root.filter_mode = value
 
     # =========================================================================
 
-    def merge(self, other):
-        # type: (FilterInserter) -> None
-        super(FilterInserter, self).merge(other)
+    def merge(self, other: "FilterInserter"):
+        super().merge(other)
 
         self.filter_mode = other.filter_mode
 

@@ -1,29 +1,70 @@
 # exportable.py
+from draftsman.constants import ValidationMode
 
-from draftsman import utils
+from draftsman.error import DataFormatError
 
 from abc import ABCMeta, abstractmethod
-from pydantic import BaseModel
-from typing import List, Any
+from pydantic import BaseModel, ValidationError
+from typing import Any, List, Literal, Union
 import warnings
 import pprint  # TODO: think about
 
 
+def attempt_and_reissue(
+    object: Any, format_model: BaseModel, target: Any, name: str, value: Any, **kwargs
+):
+    """
+    Helper function that normalizes assignment validation
+    """
+    context = {
+        "mode": object.validate_assignment,
+        "object": object,
+        "warning_list": [],
+        "assignment": True,
+        **kwargs,
+    }
+    try:
+        result = format_model.__pydantic_validator__.validate_assignment(
+            target,
+            name,
+            value,
+            strict=False,  # TODO: disallow any weird string -> int / string -> bool conversions
+            context=context,
+        )
+    except ValidationError as e:
+        raise DataFormatError(e) from None
+    for warning in context["warning_list"]:
+        warnings.warn(warning, stacklevel=4)
+    return getattr(result, name)
+
+
+# def normalize_validation_mode(value):
+#     allowed_values = {None, "minimum", "strict", "pedantic"}
+#     if value in allowed_values:
+#         return value
+#     else:
+#         raise ValueError(
+#             "'validate_assignment' should be a bool or one of {}".format(allowed_values)
+#         )
+
+
 class ValidationResult:
     """
-    TODO
+    Helper object used to contain errors and warnings issued from
+    :py:meth:`.Exportable.validate`.
     """
+
     def __init__(self, error_list: List[Exception], warning_list: List[Warning]):
         self.error_list: List[Exception] = error_list
         self.warning_list: List[Warning] = warning_list
 
-    def reissue_all(self):
+    def reissue_all(self, stacklevel=2):
         for error in self.error_list:
             raise error
         for warning in self.warning_list:
-            warnings.warn(warning, stacklevel=2)
+            warnings.warn(warning, stacklevel=stacklevel)
 
-    def __eq__(self, other):  # pragma: no coverage
+    def __eq__(self, other):
         # Primarily for test suite.
         if not isinstance(other, ValidationResult):
             return False
@@ -46,7 +87,7 @@ class ValidationResult:
         return True
 
     def __str__(self):  # pragma: no coverage
-        return "ValidationResult{{\n    errors={}, \n    warnings={}\n}}".format(
+        return "ValidationResult{{\n    errors={},\n    warnings={}\n}}".format(
             pprint.pformat(self.error_list, indent=4),
             pprint.pformat(self.warning_list, indent=4),
         )
@@ -69,18 +110,23 @@ class Exportable(metaclass=ABCMeta):
         pass
 
     def __init__(self):
-        self._root = {}
+        self._root: __class__.Format
+        # TODO: hopefully put _root initialization here
         self._is_valid = False
+        # Validation assignment is set to "none" on construction since we might
+        # not want to validate at this point; validation is performed at the end
+        # of construction in the child-most class, if desired
+        self._validate_assignment = ValidationMode.NONE
 
     # =========================================================================
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         """
-        Read-only attribute that indicates whether or not this object is 
-        validated. If this attribute is true, you can assume that all component 
-        attributes of this object are formatted correctly and value tolerant. 
-        Validity is lost anytime any attribute of a valid object is altered, and 
+        Read-only attribute that indicates whether or not this object is
+        validated. If this attribute is true, you can assume that all component
+        attributes of this object are formatted correctly and value tolerant.
+        Validity is lost anytime any attribute of a valid object is altered, and
         gained when :py:meth:`.validate` is called:
 
         .. example::
@@ -92,13 +138,47 @@ class Exportable(metaclass=ABCMeta):
             >>> c.validate()
             >>> c.is_valid
             True
-            >>> c.bar = 10  # Even though 10 is a valid value, validate() must 
+            >>> c.bar = 10  # Even though 10 is a valid value, validate() must
             >>> c.is_valid  # be called again for draftsman to know this
             False
 
         Read only.
         """
         return self._is_valid
+
+    # =========================================================================
+
+    @property
+    def validate_assignment(
+        self,
+    ) -> Union[ValidationMode, Literal["none", "minimum", "strict", "pedantic"]]:
+        """
+        Toggleable flag that indicates whether assignments to this object should
+        be validated, and how. Can be set in the constructor of the entity or
+        changed at any point during runtime. Note that this is on a per-entity
+        basis, so multiple instances of otherwise identical entities can have
+        different validation configurations.
+
+        TODO: table of all the different values
+
+        .. NOTE ::
+
+            Item-assignment (``entity["field"] = obj``) is *never* validated,
+            regardless of this parameter. This is mostly a side effect of how
+            things work behind the scenes, but it can be used to explicitly
+            indicate a "raw" modification that is guaranteed to be cheap and
+            will never error or issue warnings.
+
+        :getter:
+        :setter: Sets the assignment mode. Raises a :py:class:`.DataFormatError`
+            if set to an invalid value.
+        :type: ``str``
+        """
+        return self._validate_assignment
+
+    @validate_assignment.setter
+    def validate_assignment(self, value):
+        self._validate_assignment = ValidationMode(value)
 
     # =========================================================================
 
@@ -128,43 +208,65 @@ class Exportable(metaclass=ABCMeta):
         # parent method to cache successful validity
         super().__setattr__("_is_valid", True)
 
-    @abstractmethod
-    def inspect(self):
-        """
-        Inspects
+    # @abstractmethod
+    # def inspect(self):
+    #     """
+    #     Inspects
 
-        :returns: A :py:class:`.ValidationResult` object, containing any found
-            errors or warnings pertaining to this object.
-        """
-        return ValidationResult([], [])
+    #     :returns: A :py:class:`.ValidationResult` object, containing any found
+    #         errors or warnings pertaining to this object.
+    #     """
+    #     return ValidationResult([], [])
 
-    @abstractmethod
-    def to_dict(self) -> dict:
-        """
-        Returns this object as a dictionary. Intended for getting the precursor
-        to a Factorio blueprint string before compression and encoding takes
-        place.
-
-        :returns: The ``dict`` representation of this object.
-        """
-        pass
+    def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
+        return self._root.model_dump(
+            # Some attributes are reserved words ('type', 'from', etc.); this
+            # resolves that issue
+            by_alias=True,
+            # Trim if values are None
+            exclude_none=exclude_none,
+            # Trim if values are defaults
+            exclude_defaults=exclude_defaults,
+            # Ignore warnings because we might export a model where the keys are
+            # intentionally incorrect
+            # Plus there are things like Associations with which we want to
+            # preserve when returning this object so that a parent object can
+            # handle them
+            warnings=False,
+        )
 
     @classmethod
     def json_schema(cls) -> dict:  # pragma: no coverage
         """
-        Returns a JSON schema object that correctly validates this object. Can
-        be exported to a JSON string that can be shared and used generically by
-        any application that supports JSON schema validation.
+        Returns a JSON schema object that correctly validates this object. This
+        schema can be used with any compliant JSON schema validation library to
+        check if a given blueprint string will import into Factorio.
 
         .. see-also::
 
             https://json-schema.org/
 
-        :returns: A python dictionary containing all the relevant key-value
-            pairs, which can be dumped to a string with ``json.dumps``.
+        :returns: A modern, JSON-schema compliant dictionary with appropriate
+            types, ranges, allowed/excluded values, as well as titles and
+            descriptions.
         """
         # TODO: is this testable?
+        # TODO: implement a custom schema_generator subclass that strips
+        # whitespace from description keys, so that they can be formatted more
+        # properly later
         return cls.Format.model_json_schema(by_alias=True)
+
+    # TODO
+    # @classmethod
+    # def get_format(cls, indent=2):
+    #     # type: (int) -> str
+    #     """
+    #     Produces a pretty string representation of ``meth:dump_format``. Work in
+    #     progress.
+
+    #     :returns: A formatted string that can be output to stdout or file.
+    #     """
+    #     return json.dumps(cls.dump_format(), indent=indent)  # pragma: no coverage
 
     # =========================================================================
 
@@ -172,14 +274,11 @@ class Exportable(metaclass=ABCMeta):
         super().__setattr__("_is_valid", False)
         super().__setattr__(name, value)
 
-    def __setitem__(self, key, value):
-        # type: (str, Any) -> None
+    def __setitem__(self, key: str, value: Any):
         self._root[key] = value
 
-    def __getitem__(self, key):
-        # type: (str) -> Any
+    def __getitem__(self, key: str) -> Any:
         return self._root[key]
 
-    def __contains__(self, item):
-        # type: (str) -> bool
+    def __contains__(self, item: str) -> bool:
         return item in self._root

@@ -1,36 +1,28 @@
 # test_offshore_pump.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import OffshorePump, offshore_pumps, Container
-from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class OffshorePumpTesting(unittest.TestCase):
+class TestOffshorePump:
     def test_constructor_init(self):
         pump = OffshorePump()
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             OffshorePump(unused_keyword="whatever")
+        with pytest.warns(UnknownKeywordWarning):
+            OffshorePump(control_behavior={"unused_key": "something"})
+        with pytest.warns(UnknownEntityWarning):
+            OffshorePump("not a heat pipe")
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            OffshorePump("not a heat pipe")
-        # TODO: move to validate
-        # with pytest.raises(DataFormatError):
-        #     OffshorePump(control_behavior={"unused_key": "something"})
+        with pytest.raises(DataFormatError):
+            OffshorePump(control_behavior="incorrect")
 
     def test_mergable_with(self):
         pump1 = OffshorePump("offshore-pump")

@@ -1,18 +1,17 @@
 # schedulelist.py
 
 from draftsman.classes.schedule import Schedule
+from draftsman.error import DataFormatError
 
-from pydantic import BaseModel
-from typing import MutableSequence
+from pydantic import GetCoreSchemaHandler
+from pydantic_core import CoreSchema, core_schema
+from typing import Any, MutableSequence
 
 
 class ScheduleList(MutableSequence):
     """
     TODO
     """
-
-    class Model(BaseModel):
-        data: list[dict]  # TODO: fix
 
     def __init__(self, initlist=None):
         """
@@ -28,7 +27,7 @@ class ScheduleList(MutableSequence):
                 elif isinstance(elem, dict):
                     self.append(Schedule(**elem))
                 else:
-                    raise TypeError("Constructor either takes Tile or dict entries")
+                    raise DataFormatError("ScheduleList only accepts Schedule or dict entries")
 
     def insert(self, index, schedule):
         """
@@ -84,3 +83,7 @@ class ScheduleList(MutableSequence):
 
     # def __deepcopy__(self, memo):
     #     pass # TODO, I think
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _source_type: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
+        return core_schema.no_info_after_validator_function(cls, handler(list[dict])) # TODO: correct annotation

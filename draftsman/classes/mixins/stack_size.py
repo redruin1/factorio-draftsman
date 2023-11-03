@@ -1,15 +1,13 @@
 # stack_size.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.error import DataFormatError
-from draftsman.signatures import SignalID
+from draftsman.signatures import SignalID, uint8
 from draftsman.data.signals import signal_dict
 
-from pydantic import BaseModel
-from schema import SchemaError
+from pydantic import BaseModel, Field
 import six
+from typing import Optional
 
 from typing import TYPE_CHECKING
 
@@ -17,7 +15,7 @@ if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
-class StackSizeMixin(object):  # (ControlBehaviorMixin)
+class StackSizeMixin:  # (ControlBehaviorMixin)
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
 
@@ -25,38 +23,44 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
     overridden stack size and a circuit-set stack size.
     """
 
-    # _exports = {
-    #     "override_stack_size": {
-    #         "format": "int",
-    #         "description": "The stack size override to use (if enabled)",
-    #         "required": lambda x: x is not None,
-    #     }
-    # }
     class ControlFormat(BaseModel):
-        circuit_set_stack_size: bool | None = None
-        stack_control_input_signal: SignalID | None = None
+        circuit_set_stack_size: Optional[bool] = Field(
+            None,
+            description="""
+            Whether or not the circuit network should affect the stack size of 
+            this entity.
+            """,
+        )
+        stack_control_input_signal: Optional[SignalID] = Field(
+            None,
+            description="""
+            What circuit signal should be used to override the stack size of 
+            this entity, if 'circuit_set_stack_size' is true.
+            """,
+        )
 
     class Format(BaseModel):
-        override_stack_size: int | None = None # TODO dimension
+        override_stack_size: Optional[uint8] = Field(
+            None,
+            description="""
+            The constant stack size override for this entity. Superseded by 
+            'stack_control_input_signal', if present and enabled.
+            """,
+        )
 
-    def __init__(self, name, similar_entities, **kwargs):
-        # type: (str, list[str], **dict) -> None
-        super(StackSizeMixin, self).__init__(name, similar_entities, **kwargs)
+    def __init__(self, name: str, similar_entities: list[str], **kwargs):
+        self._root: __class__.Format
 
-        self.override_stack_size = None
-        if "override_stack_size" in kwargs:
-            # self.set_stack_size_override(kwargs["override_stack_size"])
-            self.override_stack_size = kwargs["override_stack_size"]
-            self.unused_args.pop("override_stack_size")
-        # self._add_export("override_stack_size", lambda x: x is not None)
+        super().__init__(name, similar_entities, **kwargs)
+
+        self.override_stack_size = kwargs.get("override_stack_size", None)
 
     # =========================================================================
 
     @property
-    def override_stack_size(self):
-        # type: () -> int
+    def override_stack_size(self) -> int:
         """
-        Sets an inserter's stack size override. Will use this unless a circuit
+        The inserter's stack size override. Will use this unless a circuit
         stack size is set and enabled.
 
         :getter: Gets the overridden stack size.
@@ -65,21 +69,22 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
 
         :exception TypeError:
         """
-        return self._root.get("override_stack_size", None)
+        return self._root.override_stack_size
 
     @override_stack_size.setter
-    def override_stack_size(self, value):
-        # type: (int) -> None
-        if value is None:
-            self._root.pop("override_stack_size", None)
+    def override_stack_size(self, value: int):  # TODO: dimension
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "override_stack_size", value
+            )
+            self._root.override_stack_size = result
         else:
-            self._root["override_stack_size"] = value
+            self._root.override_stack_size = value
 
     # =========================================================================
 
     @property
-    def circuit_stack_size_enabled(self):
-        # type: () -> bool
+    def circuit_stack_size_enabled(self) -> Optional[bool]:
         """
         Sets if the inserter's stack size is controlled by circuit signal.
 
@@ -92,25 +97,30 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.
         """
-        return self.control_behavior.get("circuit_set_stack_size", None)
+        return self.control_behavior.circuit_set_stack_size
 
     @circuit_stack_size_enabled.setter
-    def circuit_stack_size_enabled(self, value):
-        # type: (bool) -> None
-        if value is None:
-            self.control_behavior.pop("circuit_set_stack_size", None)
-        elif isinstance(value, bool):
-            self.control_behavior["circuit_set_stack_size"] = value
+    def circuit_stack_size_enabled(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, 
+                self.Format.ControlBehavior,
+                self.control_behavior,
+                "circuit_set_stack_size", 
+                value
+            )
+            self.control_behavior.circuit_set_stack_size = result
         else:
-            raise TypeError("'circuit_set_stack_size' must be a bool or None")
+            self.control_behavior.circuit_set_stack_size = value
 
     # =========================================================================
 
     @property
-    def stack_control_signal(self):
-        # type: () -> dict
+    def stack_size_control_signal(self) -> Optional[SignalID]:
         """
-        Specify the stack size input signal for the inserter if enabled.
+        Specify the stack size input signal for the inserter. Will read from
+        this signal's value on any connected circuit network and will use that
+        value to set the maximum stack size for this entity, if enabled.
 
         Stored as a ``dict`` in the format ``{"name": str, "type": str}``, where
         ``name`` is the name of the signal and ``type`` is it's type, either
@@ -130,37 +140,32 @@ class StackSizeMixin(object):  # (ControlBehaviorMixin)
         :exception DataFormatError: If set to a dict that does not match the
             dict format specified above.
         """
-        return self.control_behavior.get("stack_control_input_signal", None)
+        return self.control_behavior.stack_control_input_signal
 
-    @stack_control_signal.setter
-    def stack_control_signal(self, value):
-        # type: (str) -> None
-        if value is None:
-            self.control_behavior.pop("stack_control_input_signal", None)
-            return
-
-        if isinstance(value, six.string_types):
-            # Make sure this is a unicode string
-            value = six.text_type(value)
-            self.control_behavior["stack_control_input_signal"] = signal_dict(value)
-        else:  # dict or other
-            try:
-                value = SignalID(**value).model_dump() # TODO: better
-                self.control_behavior["stack_control_input_signal"] = value
-            except SchemaError as e:
-                six.raise_from(DataFormatError(e), None)
+    @stack_size_control_signal.setter
+    def stack_size_control_signal(self, value: Optional[SignalID]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                self.Format.ControlBehavior,
+                self.control_behavior, 
+                "stack_control_input_signal", 
+                value
+            )
+            self.control_behavior.stack_control_input_signal = result
+        else:
+            self.control_behavior.stack_control_input_signal = value
 
     # =========================================================================
 
-    def merge(self, other):
-        # type: (Entity) -> None
+    def merge(self, other: "Entity"):
         super(StackSizeMixin, self).merge(other)
 
         self.override_stack_size = other.override_stack_size
 
     # =========================================================================
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: "Entity") -> bool:
         return (
             super().__eq__(other)
             and self.override_stack_size == other.override_stack_size

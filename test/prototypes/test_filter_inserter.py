@@ -1,24 +1,16 @@
 # test_filter_inserter.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.constants import Direction, ReadMode
 from draftsman.entity import FilterInserter, filter_inserters, Container
-from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError, InvalidItemError
+from draftsman.signatures import Filters
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class FilterInserterTesting(unittest.TestCase):
+class TestFilterInserter:
     def test_constructor_init(self):
         # Valid
         inserter = FilterInserter(
@@ -53,9 +45,9 @@ class FilterInserterTesting(unittest.TestCase):
                     "type": "virtual",
                 },
                 "circuit_enable_disable": True,
-                "circuit_condition": {},
+                # "circuit_condition": {}, # Default
                 "connect_to_logistic_network": True,
-                "logistic_condition": {},
+                # "logistic_condition": {}, # Default
                 "circuit_read_hand_contents": True,
                 "circuit_hand_read_mode": ReadMode.PULSE,
             },
@@ -85,14 +77,18 @@ class FilterInserterTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             FilterInserter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5)
-
-        # Errors
-        # Raises InvalidEntityID when not in containers
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownKeywordWarning):
+            FilterInserter(control_behavior={"unused": "keyword"})
+        with pytest.warns(UnknownKeywordWarning):
+            FilterInserter(
+                "filter-inserter", connections={"this is": ["very", "wrong"]}
+            )
+        with pytest.warns(UnknownEntityWarning):
             FilterInserter("this is not a filter inserter")
 
+        # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             FilterInserter("filter-inserter", id=25)
@@ -100,27 +96,22 @@ class FilterInserterTesting(unittest.TestCase):
         with pytest.raises(TypeError):
             FilterInserter("filter-inserter", position=TypeError)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             FilterInserter("filter-inserter", direction="incorrect")
-
-        # TODO: move to validate
-        # with pytest.raises(TypeError):
-        #     FilterInserter("filter-inserter", override_stack_size="incorrect")
-
-        # with pytest.raises(DataFormatError):
-        #     FilterInserter(
-        #         "filter-inserter", connections={"this is": ["very", "wrong"]}
-        #     )
-
-        # with pytest.raises(DataFormatError):
-        #     FilterInserter(
-        #         "filter-inserter",
-        #         control_behavior={"this is": ["also", "very", "wrong"]},
-        #     )
-
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
+            FilterInserter("filter-inserter", override_stack_size="incorrect")
+        with pytest.raises(DataFormatError):
+            FilterInserter(
+                "filter-inserter", connections="incorrect"
+            )
+        with pytest.raises(DataFormatError):
+            FilterInserter(
+                "filter-inserter",
+                control_behavior="incorrect",
+            )
+        with pytest.raises(DataFormatError):
             FilterInserter(filter_mode=TypeError)
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             FilterInserter("filter-inserter", filter_mode="wrong")
 
     def test_power_and_circuit_flags(self):
@@ -135,10 +126,40 @@ class FilterInserterTesting(unittest.TestCase):
         inserter = FilterInserter()
         inserter.filter_mode = "blacklist"
         assert inserter.filter_mode == "blacklist"
+
         inserter.filter_mode = None
         assert inserter.filter_mode == None
-        with pytest.raises(ValueError):
+
+        with pytest.raises(DataFormatError):
             inserter.filter_mode = "incorrect"
+
+    def test_set_item_filter(self):
+        inserter = FilterInserter("filter-inserter")
+        inserter.set_item_filter(0, "wooden-chest")
+        assert inserter.filters == Filters(root=[{"index": 1, "name": "wooden-chest"}])
+
+        # Modify in place
+        inserter.set_item_filter(0, "iron-chest")
+        assert inserter.filters == Filters(root=[{"index": 1, "name": "iron-chest"}])
+
+        inserter.filters = None
+        assert inserter.filters == None
+        with pytest.raises(IndexError):
+            inserter.set_item_filter(100, "wooden-chest")
+        
+        with pytest.raises(InvalidItemError):
+            inserter.set_item_filter(0, "unknown-item")
+
+        assert inserter.filters == None
+
+        # Init if None
+        inserter.set_item_filter(0, "wooden-chest")
+        inserter.set_item_filter(1, "iron-chest")
+        assert inserter.filters == Filters(root=[{"index": 1, "name": "wooden-chest"}, {"index": 2, "name": "iron-chest"}])
+
+        # Delete if set to None
+        inserter.set_item_filter(1, None)
+        assert inserter.filters == Filters(root=[{"index": 1, "name": "wooden-chest"}])
 
     def test_mergable_with(self):
         inserter1 = FilterInserter("filter-inserter")
@@ -178,7 +199,7 @@ class FilterInserterTesting(unittest.TestCase):
 
         assert inserter1.filter_mode == "whitelist"
         assert inserter1.override_stack_size == 1
-        assert inserter1.filters == [{"name": "coal", "index": 1}]
+        assert inserter1.filters == Filters(root=[{"name": "coal", "index": 1}])
         assert inserter1.tags == {"some": "stuff"}
 
     def test_eq(self):

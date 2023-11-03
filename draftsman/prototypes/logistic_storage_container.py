@@ -1,7 +1,4 @@
 # logistic_storage_container.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
@@ -10,11 +7,14 @@ from draftsman.classes.mixins import (
     RequestFiltersMixin,
     InventoryMixin,
 )
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.signatures import Connections, RequestFilters, uint16, uint32
 
 from draftsman.data.entities import logistic_storage_containers
 
-import warnings
+from typing import Any, Literal, Union
+from pydantic import ConfigDict
 
 
 class LogisticStorageContainer(
@@ -29,38 +29,54 @@ class LogisticStorageContainer(
     logistic network.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **RequestFiltersMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **RequestItemsMixin._exports,
-    #     **InventoryMixin._exports,
-    # }
-    # fmt: on
     class Format(
         InventoryMixin.Format,
         RequestItemsMixin.Format,
         CircuitConnectableMixin.Format,
         RequestFiltersMixin.Format,
-        Entity.Format
+        Entity.Format,
     ):
-        pass
+        model_config = ConfigDict(title="LogisticStorageContainer")
 
-    def __init__(self, name=logistic_storage_containers[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(LogisticStorageContainer, self).__init__(
-            name, logistic_storage_containers, **kwargs
+    def __init__(
+        self,
+        name: str = logistic_storage_containers[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        bar: uint16 = None,
+        request_filters: RequestFilters = RequestFilters([]),
+        items: dict[str, uint32] = {},  # TODO: ItemID
+        connections: Connections = Connections(),
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
+
+        super().__init__(
+            name,
+            logistic_storage_containers,
+            position=position,
+            tile_position=tile_position,
+            bar=bar,
+            request_filters=request_filters,
+            items=items,
+            connections=connections,
+            tags=tags,
+            **kwargs
         )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self.validate_assignment = validate_assignment
 
-        del self.unused_args
+        if validate:
+            self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

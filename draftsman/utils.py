@@ -1,5 +1,4 @@
 # utils.py
-# -*- encoding: utf-8 -*-
 
 """
 Provides a number of common utility functions. These are primarily used 
@@ -7,19 +6,16 @@ internally by Draftsman, but can be useful outside of that scope and are
 provided to the user as-is.
 """
 
-from __future__ import unicode_literals, division
-
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.error import MalformedBlueprintStringError
 
 from abc import ABCMeta, abstractmethod
 import base64
-from collections.abc import Callable
 import json
 import math
 from functools import wraps
 import six
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 import warnings
 import zlib
 
@@ -830,6 +826,59 @@ def flatten_entities(entities: "list[EntityLike | list[EntityLike]]") -> "list[E
 # =============================================================================
 # Miscellaneous
 # =============================================================================
+
+
+def parse_energy(energy_string: str) -> int:
+    """
+    Converts a Factorio energy description string into a integer number of
+    Joules or Watts. Valid inputs match the following regex string::
+
+        "[0..9]+[kKMGTPEZY]?[JW]"
+
+    Correctly formatted strings start with a valid integer, followed by an
+    optional magnitude character, finished with either "J" for Joules or "W" for
+    Watts.
+
+    Behaves identically to ``util.parse_energy`` in Factorio's source; if
+    a Watt string is input, it will convert the output result to Joules/tick
+    instead of Joules/second (1/60th Watts).
+
+    :raises ValueError: If the input string is missing it's Joule/Watt
+        identifier, it's magnitude character is not recognized, or if the string
+        remainder cannot be parsed to an integer.
+
+    :param energy_string: The correctly formatted input string to parse.
+    :returns: a properly-scaled integer representing the Joule or Watt amount
+        input.
+    """
+    energy_chars = {
+        "k": 10**3,
+        "K": 10**3,
+        "M": 10**6,
+        "G": 10**9,
+        "T": 10**12,
+        "P": 10**15,
+        "E": 10**18,
+        "Z": 10**21,
+        "Y": 10**24,
+    }
+
+    ending = energy_string[-1]
+    if not ending in {"J", "W"}:
+        raise ValueError("'{}' missing Joule or Watts specifier".format(energy_string))
+
+    multiplier = 1 / 60 if ending == "W" else 1
+    magnitude = energy_string[-2:-1]
+    if magnitude.isalpha():
+        if magnitude not in energy_chars:
+            raise ValueError("Unrecognized magnitude character '{}'".format(magnitude))
+        multiplier = multiplier * energy_chars[magnitude]
+        digits_string = energy_string[:-2]
+    else:
+        digits_string = energy_string[:-1]
+
+    return int(digits_string) * multiplier
+
 
 # def ignore_traceback(func):
 #     # type: (Any) -> Any

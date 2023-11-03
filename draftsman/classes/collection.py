@@ -19,6 +19,7 @@ from draftsman.error import (
     InvalidAssociationError,
     EntityNotCircuitConnectableError,
 )
+from draftsman.signatures import Connections
 from draftsman.warning import (
     ConnectionSideWarning,
     ConnectionDistanceWarning,
@@ -470,7 +471,7 @@ class EntityCollection(object):
         if entity_1.dual_power_connectable:  # power switch
             # Add copper circuit connection
             str_side = "Cu" + str(side - 1)
-            if str_side not in entity_1.connections:
+            if entity_1.connections[str_side] is None:
                 entity_1.connections[str_side] = []
 
             entry = {"entity_id": Association(entity_2), "wire_id": 0}
@@ -485,7 +486,7 @@ class EntityCollection(object):
         if entity_2.dual_power_connectable:  # power switch
             # Add copper circuit connection
             str_side = "Cu" + str(side - 1)
-            if str_side not in entity_2.connections:
+            if entity_2.connections[str_side] is None:
                 entity_2.connections[str_side] = []
 
             entry = {"entity_id": Association(entity_1), "wire_id": 0}
@@ -537,12 +538,13 @@ class EntityCollection(object):
         # Only worried about self
         if entity_1.dual_power_connectable:  # power switch
             str_side = "Cu" + str(side - 1)
-            entry = {"entity_id": Association(entity_2), "wire_id": 0}
-            if str_side in entity_1.connections:
+            if entity_1.connections[str_side] is not None:
+                entry = {"entity_id": Association(entity_2), "wire_id": 0}
                 if entry in entity_1.connections[str_side]:
                     entity_1.connections[str_side].remove(entry)
                 if len(entity_1.connections[str_side]) == 0:
-                    del entity_1.connections[str_side]
+                    # del entity_1.connections[str_side]
+                    entity_1.connections[str_side] = None
         else:  # electric pole
             if not entity_2.dual_power_connectable:
                 try:
@@ -553,12 +555,13 @@ class EntityCollection(object):
         # Only worried about target
         if entity_2.dual_power_connectable:  # power switch
             str_side = "Cu" + str(side - 1)
-            entry = {"entity_id": Association(entity_1), "wire_id": 0}
-            if str_side in entity_2.connections:
+            if entity_2.connections[str_side] is not None:
+                entry = {"entity_id": Association(entity_1), "wire_id": 0}
                 if entry in entity_2.connections[str_side]:
                     entity_2.connections[str_side].remove(entry)
                 if len(entity_2.connections[str_side]) == 0:
-                    del entity_2.connections[str_side]
+                    # del entity_2.connections[str_side]
+                    entity_2.connections[str_side] = None
         else:  # electric pole
             if not entity_1.dual_power_connectable:
                 try:
@@ -581,12 +584,14 @@ class EntityCollection(object):
             else:
                 # Remove the connections for this particular entity
                 if hasattr(entity, "neighbours"):
-                    entity.neighbours = None
+                    entity.neighbours = []
                 if hasattr(entity, "connections"):
-                    if "Cu0" in entity.connections:
-                        del entity.connections["Cu0"]
-                    if "Cu1" in entity.connections:
-                        del entity.connections["Cu1"]
+                    # if "Cu0" in entity.connections:
+                    #     del entity.connections["Cu0"]
+                    # if "Cu1" in entity.connections:
+                    #     del entity.connections["Cu1"]
+                    entity.connections["Cu0"] = None
+                    entity.connections["Cu1"] = None
 
     def generate_power_connections(self, prefer_axis=True, only_axis=False):
         # type: (bool, bool) -> None
@@ -707,6 +712,8 @@ class EntityCollection(object):
         :exception EntityNotCircuitConnectableError: If either `entity_1` or
             `entity_2` do not have the capability to be circuit wire connected.
         """
+        # TODO: swap these all with pydantic models
+
         if not isinstance(entity_1, EntityLike):
             entity_1 = self.entities[entity_1]
         if not isinstance(entity_2, EntityLike):
@@ -767,12 +774,13 @@ class EntityCollection(object):
 
         # Add entity_2 to entity_1.connections
 
-        if six.text_type(side1) not in entity_1.connections:
-            entity_1.connections[six.text_type(side1)] = dict()
-        current_side = entity_1.connections[six.text_type(side1)]
+        if entity_1.connections[str(side1)] is None:
+            entity_1.connections[str(side1)] = Connections.CircuitConnections()
+        current_side = entity_1.connections[str(side1)]
 
-        if color not in current_side:
-            current_side[color] = list()
+        # if color not in current_side:
+        if current_side[color] is None:
+            current_side[color] = []
         current_color = current_side[color]
 
         # If dual circuit connectable specify the target side
@@ -787,12 +795,13 @@ class EntityCollection(object):
 
         # Add entity_1 to entity_2.connections
 
-        if six.text_type(side2) not in entity_2.connections:
-            entity_2.connections[six.text_type(side2)] = dict()
-        current_side = entity_2.connections[six.text_type(side2)]
+        if entity_2.connections[str(side2)] is None:
+            entity_2.connections[str(side2)] = Connections.CircuitConnections()
+        current_side = entity_2.connections[str(side2)]
 
-        if color not in current_side:
-            current_side[color] = list()
+        # if color not in current_side:
+        if current_side[color] is None:
+            current_side[color] = []
         current_color = current_side[color]
 
         # If dual circuit connectable specify the target side
@@ -865,15 +874,15 @@ class EntityCollection(object):
             entry = {"entity_id": Association(entity_2)}
 
         try:
-            current_side = entity_1.connections[six.text_type(side1)]
+            current_side = entity_1.connections[str(side1)]
             current_color = current_side[color]
             current_color.remove(entry)
             # Remove redundant structures from source if applicable
             if len(current_color) == 0:
-                del entity_1.connections[six.text_type(side1)][color]
-            if len(current_side) == 0:
-                del entity_1.connections[six.text_type(side1)]
-        except (KeyError, ValueError):
+                entity_1.connections[str(side1)][color] = None
+            # if len(current_side) == 0:
+            #     del entity_1.connections[str(side1)]
+        except (TypeError, KeyError, ValueError, AttributeError): # TODO: fix
             pass
 
         # Remove from target
@@ -884,15 +893,15 @@ class EntityCollection(object):
             entry = {"entity_id": Association(entity_1)}
 
         try:
-            current_side = entity_2.connections[six.text_type(side2)]
+            current_side = entity_2.connections[str(side2)]
             current_color = current_side[color]
             current_color.remove(entry)
             # Remove redundant structures from target if applicable
             if len(current_color) == 0:
-                del entity_2.connections[six.text_type(side2)][color]
-            if len(current_side) == 0:
-                del entity_2.connections[six.text_type(side2)]
-        except (KeyError, ValueError):
+                entity_2.connections[str(side2)][color] = None
+            # if len(current_side) == 0:
+            #     del entity_2.connections[str(side2)]
+        except (TypeError, KeyError, ValueError, AttributeError): # TODO: fix
             pass
 
     def remove_circuit_connections(self):
@@ -909,10 +918,12 @@ class EntityCollection(object):
             else:
                 # Remove the connections from this particular entity
                 if hasattr(entity, "connections"):
-                    if "1" in entity.connections:
-                        del entity.connections["1"]
-                    if "2" in entity.connections:
-                        del entity.connections["2"]
+                    # if entity.connections["1"] is not None:
+                    #     entity.connections["1"] = None
+                    # if entity.connections["2"] is not None:
+                    #     entity.connections["2"] = None
+                    entity.connections["1"] = Connections.CircuitConnections()
+                    entity.connections["2"] = Connections.CircuitConnections()
 
     # =========================================================================
     # Trains
@@ -1192,6 +1203,8 @@ class EntityCollection(object):
                 if neighbour in used_wagons:
                     continue
 
+                print(neighbour)
+
                 # If the orientation is +- 45 degrees in either direction from
                 # the current wagon's orientation, it may be connected
                 wagon_dir = float(wagon.orientation)
@@ -1256,8 +1269,6 @@ class EntityCollection(object):
         # right is back
         if all_locos_backwards:
             train.reverse()
-
-        # print("Final train:", train)
 
         return train
 
@@ -1352,9 +1363,6 @@ class EntityCollection(object):
                 used_wagons.add(train_car)
 
             trains.append(train)
-
-        # for train in trains:
-        #     print("\t", train)
 
         def normalize_range(value: int | Sequence) -> tuple[int, int]:
             """

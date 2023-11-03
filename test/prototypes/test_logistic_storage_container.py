@@ -1,27 +1,19 @@
 # test_logistic_storage_container.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import (
     LogisticStorageContainer,
     logistic_storage_containers,
     Container,
 )
-from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.signatures import RequestFilters
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class LogisticStorageContainerTesting(unittest.TestCase):
+class TestLogisticStorageContainer:
     def test_constructor_init(self):
         storage_chest = LogisticStorageContainer(
             "logistic-chest-storage",
@@ -59,13 +51,12 @@ class LogisticStorageContainerTesting(unittest.TestCase):
             "tags": {"A": "B"},
         }
 
-        # TODO: retired; use `set_request_filters` instead
-        # storage_chest = LogisticStorageContainer(request_filters=[("iron-ore", 100)])
-        # assert storage_chest.to_dict() == {
-        #     "name": "logistic-chest-storage",
-        #     "position": {"x": 0.5, "y": 0.5},
-        #     "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
-        # }
+        storage_chest = LogisticStorageContainer(request_filters=[("iron-ore", 100)])
+        assert storage_chest.to_dict() == {
+            "name": "logistic-chest-storage",
+            "position": {"x": 0.5, "y": 0.5},
+            "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
+        }
 
         storage_chest = LogisticStorageContainer(
             request_filters=[{"index": 1, "name": "iron-ore", "count": 100}]
@@ -77,16 +68,18 @@ class LogisticStorageContainerTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             LogisticStorageContainer(
                 "logistic-chest-storage", position=[0, 0], invalid_keyword="100"
             )
-
-        # Errors
-        # Raises InvalidEntityID when not in containers
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownKeywordWarning):
+            LogisticStorageContainer(
+                "logistic-chest-storage", connections={"this is": ["very", "wrong"]}
+            )
+        with pytest.warns(UnknownEntityWarning):
             LogisticStorageContainer("this is not a logistics storage chest")
 
+        # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             LogisticStorageContainer("logistic-chest-storage", id=25)
@@ -94,19 +87,18 @@ class LogisticStorageContainerTesting(unittest.TestCase):
         with pytest.raises(TypeError):
             LogisticStorageContainer("logistic-chest-storage", position=TypeError)
 
-        # TODO: move to validate
-        # with pytest.raises(TypeError):
-        #     LogisticStorageContainer("logistic-chest-storage", bar="not even trying")
+        with pytest.raises(DataFormatError):
+            LogisticStorageContainer("logistic-chest-storage", bar="not even trying")
 
-        # with pytest.raises(DataFormatError):
-        #     LogisticStorageContainer(
-        #         "logistic-chest-storage", connections={"this is": ["very", "wrong"]}
-        #     )
+        with pytest.raises(DataFormatError):
+            LogisticStorageContainer(
+                "logistic-chest-storage", connections="incorrect"
+            )
 
-        # with pytest.raises(DataFormatError):
-        #     LogisticStorageContainer(
-        #         "logistic-chest-storage", request_filters={"this is": ["very", "wrong"]}
-        #     )
+        with pytest.raises(DataFormatError):
+            LogisticStorageContainer(
+                "logistic-chest-storage", request_filters="incorrect"
+            )
 
     def test_power_and_circuit_flags(self):
         for name in logistic_storage_containers:
@@ -146,9 +138,9 @@ class LogisticStorageContainerTesting(unittest.TestCase):
         del container2
 
         assert container1.bar == 10
-        assert container1.request_filters == [
+        assert container1.request_filters == RequestFilters(root=[
             {"name": "utility-science-pack", "index": 1, "count": 0}
-        ]
+        ])
         assert container1.tags == {"some": "stuff"}
 
     def test_eq(self):

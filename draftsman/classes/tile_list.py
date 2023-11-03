@@ -1,41 +1,45 @@
 # tilelist.py
-# -*- encoding: utf-8 -*-
 
 from draftsman.classes.tile import Tile
-from draftsman.error import UnreasonablySizedBlueprintError
-from draftsman import utils
+from draftsman.error import DataFormatError
 
 try:  # pragma: no coverage
     from collections.abc import MutableSequence
 except ImportError:  # pragma: no coverage
     from collections import MutableSequence
 from copy import deepcopy
-from pydantic import BaseModel
-from typing import TYPE_CHECKING
+from pydantic import GetCoreSchemaHandler
+from pydantic_core import CoreSchema, core_schema
+from typing import Any, TYPE_CHECKING
 import six
-import warnings
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.collection import TileCollection
 
 
 class TileList(MutableSequence):
-    class Model(BaseModel):
-        data: list[dict]  # TODO: fix
-
+    """
+    TODO
+    """
+    
     def __init__(self, parent, initlist=None, unknown="error"):
         # type: (TileCollection, list[Tile], str) -> None
+        """
+        TODO
+        """
+
         self.data = []
         self._parent = parent
         if initlist is not None:
             for elem in initlist:
+                print(elem)
                 if isinstance(elem, Tile):
                     self.append(elem, unknown=unknown)
                 elif isinstance(elem, dict):
                     name = elem.pop("name")
                     self.append(name, **elem, unknown=unknown)
                 else:
-                    raise TypeError("Constructor either takes Tile or dict entries")
+                    raise DataFormatError("TileList only takes either Tile or dict entries")
 
     def append(self, tile, copy=True, merge=False, unknown="error", **kwargs):
         # type: (Tile, bool, bool, str, **dict) -> None
@@ -208,3 +212,10 @@ class TileList(MutableSequence):
             if self.data[i] != other.data[i]:
                 return False
         return True
+    
+    def __repr__(self) -> str:
+        return "<TileList>{}".format(self.data)
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _source_type: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
+        return core_schema.no_info_after_validator_function(cls, handler(list[Tile])) # TODO: correct annotation

@@ -1,36 +1,28 @@
 # test_pump.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import Pump, pumps, Container
 from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class PumpTesting(unittest.TestCase):
+class TestPump:
     def test_constructor_init(self):
         # pump = Pump("pump")
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Pump("pump", unused_keyword=10)
+        with pytest.warns(UnknownEntityWarning):
+            Pump("this is not a pump")
+        with pytest.warns(UnknownKeywordWarning):
+            Pump(control_behavior={"unused_key": "something"})
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            Pump("this is not a pump")
-        # TODO: move to validate
-        # with pytest.raises(DataFormatError):
-        #     Pump(control_behavior={"unused_key": "something"})
+        with pytest.raises(DataFormatError):
+            Pump(control_behavior="incorrect")
 
     def test_mergable_with(self):
         pump1 = Pump("pump")

@@ -3,16 +3,20 @@
 
 from __future__ import unicode_literals
 
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.error import DataFormatError
-from draftsman import signatures
+from draftsman.signatures import (
+    Condition,
+    DraftsmanBaseModel,
+    SignalID,
+    int32,
+)
 
-from abc import ABC, ABCMeta, abstractmethod
-from pydantic import BaseModel
-from typing import Union
-from schema import SchemaError
-import six
+import copy
+from pydantic import validate_call
+from typing import Literal, Union
 
-# six.add_metaclass(ABCMeta) # Doesn't work for some reason
+
 class ControlBehaviorMixin:
     """
     Enables the entity to specify control behavior.
@@ -39,35 +43,27 @@ class ControlBehaviorMixin:
     * :py:class:`.mixins.stack_size.StackSizeMixin`
     """
 
-    # _exports = {
-    #     "control_behavior": {
-    #         "format": "TODO",
-    #         "description": "The control behavior of the entity",
-    #         "required": lambda x: x is not None and len(x) != 0,
-    #     }
-    # }
-    class Format(BaseModel):
+    class Format(DraftsmanBaseModel):
         # TODO: It would be nice if we could specify "control_behavior" as an
         # abstract field, so that any sub-Format that inherits ControlBehavior
-        # must implement it 
+        # must implement it
         # `control_behavior: AbstractField` or something
         pass
 
-    def __init__(self, name, similar_entities, **kwargs):
-        # type: (str, list[str], **dict) -> None
-        super(ControlBehaviorMixin, self).__init__(name, similar_entities, **kwargs)
+    def __init__(self, name: str, similar_entities: list[str], **kwargs):
+        self._root: __class__.Format
 
-        self._root["control_behavior"] = {}
-        if "control_behavior" in kwargs:
-            self._root["control_behavior"] = kwargs["control_behavior"]
-            self.unused_args.pop("control_behavior")
-        # self._add_export("control_behavior", lambda x: x is not None and len(x) != 0)
+        super().__init__(name, similar_entities, **kwargs)
+
+        # Have to do a bit of forward-lookahead to grab the correct control_behavior
+        self.control_behavior = kwargs.get(
+            "control_behavior", type(self).Format.ControlBehavior()
+        )
 
     # =========================================================================
 
     @property
     def control_behavior(self):
-        # type: () -> dict
         """
         The ``control_behavior`` of the Entity.
 
@@ -79,62 +75,87 @@ class ControlBehaviorMixin:
         :exception DataFormatError: If set to anything that does not match the
             ``CONTROL_BEHAVIOR`` signature.
         """
-        return self._root["control_behavior"]
+        return self._root.control_behavior
 
     @control_behavior.setter
     def control_behavior(self, value):
-        # type: (dict) -> None
-        if value is None:
-            self._root["control_behavior"] = {}
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "control_behavior", value
+            )
+            self._root.control_behavior = result
         else:
-            self._root["control_behavior"] = value
+            self._root.control_behavior = value
 
     # =========================================================================
 
-    def _set_condition(self, condition_name, a, cmp, b):
-        # type: (str, str, str, Union[str, int]) -> None
+    def merge(self, other):
+        super().merge(other)
+
+        self.control_behavior = other.control_behavior
+
+    # =========================================================================
+
+    @validate_call
+    def _set_condition(
+        self,
+        condition_name: str,
+        a: Union[SignalID, None],
+        cmp: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="],
+        b: Union[SignalID, int32],
+    ):
         """
         Single function for setting a condition. Used in `CircuitConditionMixin`
         as well as `LogisticConditionMixin`. Their functionality is identical,
         just with different key names inside `control_behavior`.
 
         :param condition_name: The string name of the key to set the condition
-            under.
-        :param a: The string name of the first signal.
-        :param cmp: The comparison string.
-        :param b: The string name of the second signal, or some integer constant.
+            under; either ``circuit_condition`` or ``logistic_condition``.
+        :param a: The first signal, it's name, or ``None``.
+        :param cmp: The comparator string.
+        :param b: The second signal, it's name, or some integer constant.
 
         :exception DataFormatError: If ``a`` is not a valid signal name, if
             ``cmp`` is not a valid operation, or if ``b`` is neither a valid
             signal name nor a constant.
         """
-        self.control_behavior[condition_name] = {}
-        condition = self.control_behavior[condition_name]
-
         # Check the inputs
-        try:
-            a = signatures.SIGNAL_ID_OR_NONE.validate(a)
-            cmp = signatures.COMPARATOR.validate(cmp)
-            b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        # try:
+        #     a = signatures.SIGNAL_ID_OR_NONE.validate(a)
+        #     if a is not None:
+        #         a = signatures.SignalID(a)
+        #     cmp = signatures.Comparator(root=cmp)
+        #     b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
+        # except ValidationError as e:
+        #     raise DataFormatError(e) from None
+
+        # self.control_behavior[condition_name] = {}
+        setattr(self.control_behavior, condition_name, Condition())
+        # condition = self.control_behavior[condition_name]
+        condition: Condition = getattr(self.control_behavior, condition_name)
 
         # A
-        if a is None:
-            condition.pop("first_signal", None)
-        else:
-            condition["first_signal"] = a
-
-        # op (should never be None)
-        condition["comparator"] = cmp
+        # if a is None:
+        #     condition.pop("first_signal", None)
+        # else:
+        #     condition["first_signal"] = a
+        condition.first_signal = a
+        condition.comparator = cmp
 
         # B (should never be None)
         if isinstance(b, dict):
-            condition["second_signal"] = b
-            condition.pop("constant", None)
+            condition.second_signal = b
+            condition.constant = None
         else:  # int
-            condition["constant"] = b
-            condition.pop("second_signal", None)
+            condition.constant = b
+            condition.second_signal = None
+
+        # TODO: we need to figure out a way to dirty an entity even if we only
+        # modify it's sub-attributes like control behavior; the above function
+        # does not reset `is_valid` even though it should
+        # We manually set it below, but this is not sufficient for cases where
+        # the user themselves modify subattributes; FIXME
+        self._is_valid = False
 
     # =========================================================================
 

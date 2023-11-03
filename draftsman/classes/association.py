@@ -58,7 +58,8 @@ class Association(weakref.ref):
         if self() is None:
             return "<Association to None>"
 
-        return "<Association to {0} at 0x{1:016X}>".format(
+        return "<Association to {0}{1} at 0x{2:016X}>".format(
             type(self()).__name__,
+            " '{}'".format(self().id) if self().id is not None else "",
             id(self()),
         )

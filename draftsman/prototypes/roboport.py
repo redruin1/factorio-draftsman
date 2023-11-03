@@ -1,22 +1,19 @@
 # roboport.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
+# TODO: can roboports request items?
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMixin
-from draftsman.error import DataFormatError
-from draftsman.signatures import SignalID, ROBOPORT_CONTROL_BEHAVIOR, SIGNAL_ID # TODO remove
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID
 
 from draftsman.data.entities import roboports
 from draftsman.data.signals import signal_dict
 
-from pydantic import BaseModel
-from schema import SchemaError
-import six
-from typing import ClassVar, Union
-import warnings
+from pydantic import ConfigDict, Field
+from typing import Any, Literal, Optional, Union
 
 
 class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
@@ -24,54 +21,98 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     An entity that acts as a node in a logistics network.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    # }
-    # fmt: on
-    class Format(ControlBehaviorMixin.Format, CircuitConnectableMixin.Format, Entity.Format):
-        class ControlBehavior(BaseModel):
-            read_logistics: bool | None = None
-            read_robot_stats: bool | None = None
-            available_logistic_output_signal: SignalID | None = None
-            total_logistic_output_signal: SignalID | None = None
-            available_construction_output_signal: SignalID | None = None
-            total_construction_output_signal: SignalID | None = None
-
-        control_behavior: ControlBehavior | None = None
-
-    def __init__(self, name=roboports[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(Roboport, self).__init__(name, roboports, **kwargs)
-
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
+    class Format(
+        ControlBehaviorMixin.Format, CircuitConnectableMixin.Format, Entity.Format
+    ):
+        class ControlBehavior(DraftsmanBaseModel):
+            read_logistics: Optional[bool] = Field(
+                True,
+                description="""
+                Whether this roboport will broadcast the contents of the 
+                logistic network it is part of to any connected circuit network.
+                """,
+            )
+            read_robot_stats: Optional[bool] = Field(
+                False,
+                description="""
+                Whether this roboport will broadcast the number of robots in the 
+                logistic network it is part of to any connected circuit network.
+                """,
+            )
+            available_logistic_output_signal: Optional[SignalID] = Field(
+                SignalID(name="signal-X", type="virtual"),
+                description="""
+                The signal to broadcast the number of available logistic robots 
+                on.
+                """,
+            )
+            total_logistic_output_signal: Optional[SignalID] = Field(
+                SignalID(name="signal-Y", type="virtual"),
+                description="""
+                The signal to broadcast the total number of logistic robots on.
+                """,
+            )
+            available_construction_output_signal: Optional[SignalID] = Field(
+                SignalID(name="signal-Z", type="virtual"),
+                description="""
+                The signal to broadcast the number of available construction 
+                robots on.
+                """,
+            )
+            total_construction_output_signal: Optional[SignalID] = Field(
+                SignalID(name="signal-T", type="virtual"),
+                description="""
+                The signal to broadcast the total number of construction robots
+                on.
+                """,
             )
 
-        del self.unused_args
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-    # =========================================================================
+        model_config = ConfigDict(title="Roboport")
 
-    # @ControlBehaviorMixin.control_behavior.setter
-    # def control_behavior(self, value):
-    #     # type: (dict) -> None
-    #     try:
-    #         self._control_behavior = ROBOPORT_CONTROL_BEHAVIOR.validate(
-    #             value
-    #         )
-    #     except SchemaError as e:
-    #         six.raise_from(DataFormatError(e), None)
+    def __init__(
+        self,
+        name: str = roboports[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        connections: Connections = Connections(),
+        control_behavior: Format.ControlBehavior() = Format.ControlBehavior(),
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
+
+        self.control_behavior: __class__.Format.ControlBehavior
+
+        super().__init__(
+            name,
+            roboports,
+            position=position,
+            tile_position=tile_position,
+            connections=connections,
+            control_behavior=control_behavior,
+            tags=tags,
+            **kwargs
+        )
+
+        self.validate_assignment = validate_assignment
+
+        if validate:
+            self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
     @property
-    def read_logistics(self):
-        # type: () -> bool
+    def read_logistics(self) -> Optional[bool]:
         """
         Whether or not to read the item contents of the logisitics network.
 
@@ -83,23 +124,26 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
-        return self.control_behavior.get("read_logistics", None)
+        return self.control_behavior.read_logistics
 
     @read_logistics.setter
-    def read_logistics(self, value):
-        # type: (bool) -> None
-        if value is None:
-            self.control_behavior.pop("read_logistics", None)
-        elif isinstance(value, bool):
-            self.control_behavior["read_logistics"] = value
+    def read_logistics(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "read_logistics",
+                value,
+            )
+            self.control_behavior.read_logistics = result
         else:
-            raise TypeError("'read_logistics' must be a bool or None")
+            self.control_behavior.read_logistics = value
 
     # =========================================================================
 
     @property
-    def read_robot_stats(self):
-        # type: () -> bool
+    def read_robot_stats(self) -> Optional[bool]:
         """
         Whether or not to read the number of construction and logistics robots
         in the logisitics network.
@@ -112,23 +156,26 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
-        return self.control_behavior.get("read_robot_stats", None)
+        return self.control_behavior.read_robot_stats
 
     @read_robot_stats.setter
-    def read_robot_stats(self, value):
-        # type: (bool) -> None
-        if value is None:
-            self.control_behavior.pop("read_robot_stats", None)
-        elif isinstance(value, bool):
-            self.control_behavior["read_robot_stats"] = value
+    def read_robot_stats(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "read_robot_stats",
+                value,
+            )
+            self.control_behavior.read_robot_stats = result
         else:
-            raise TypeError("'read_robot_stats' must be a bool or None")
+            self.control_behavior.read_robot_stats = value
 
     # =========================================================================
 
     @property
-    def available_logistic_signal(self):
-        # type: () -> dict
+    def available_logistic_signal(self) -> Optional[SignalID]:
         """
         What signal to output the number of available logistic robots to the
         circuit network with.
@@ -142,30 +189,28 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
             or ``None``.
         """
-        return self.control_behavior.get("available_logistic_output_signal", None)
+        return self.control_behavior.available_logistic_output_signal
 
     @available_logistic_signal.setter
-    def available_logistic_signal(self, value):
-        # type: (Union[str, dict]) -> None
-        if value is None:
-            self.control_behavior.pop("available_logistic_output_signal", None)
-        elif isinstance(value, six.string_types):
-            value = six.text_type(value)
-            self.control_behavior["available_logistic_output_signal"] = signal_dict(
-                value
+    def available_logistic_signal(
+        self, value: Union[str, SignalID, None]
+    ):  # TODO: SignalStr
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "available_logistic_output_signal",
+                value,
             )
-        else:  # dict or other
-            try:
-                value = SIGNAL_ID.validate(value)
-                self.control_behavior["available_logistic_output_signal"] = value
-            except SchemaError as e:
-                raise six.raise_from(TypeError(e), None)
+            self.control_behavior.available_logistic_output_signal = result
+        else:
+            self.control_behavior.available_logistic_output_signal = value
 
     # =========================================================================
 
     @property
-    def total_logistic_signal(self):
-        # type: () -> dict
+    def total_logistic_signal(self) -> Optional[SignalID]:
         """
         What signal to output the total number of logistic robots to the
         circuit network with.
@@ -178,28 +223,28 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
             or ``None``.
         """
-        return self.control_behavior.get("total_logistic_output_signal", None)
+        return self.control_behavior.total_logistic_output_signal
 
     @total_logistic_signal.setter
-    def total_logistic_signal(self, value):
-        # type: (Union[str, dict]) -> None
-        if value is None:
-            self.control_behavior.pop("total_logistic_output_signal", None)
-        elif isinstance(value, six.string_types):
-            value = six.text_type(value)
-            self.control_behavior["total_logistic_output_signal"] = signal_dict(value)
-        else:  # dict or other
-            try:
-                value = SIGNAL_ID.validate(value)
-                self.control_behavior["total_logistic_output_signal"] = value
-            except SchemaError:
-                raise TypeError("Incorrectly formatted SignalID")
+    def total_logistic_signal(
+        self, value: Union[str, SignalID, None]
+    ):  # TODO: SignalStr
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "total_logistic_output_signal",
+                value,
+            )
+            self.control_behavior.total_logistic_output_signal = result
+        else:
+            self.control_behavior.total_logistic_output_signal = value
 
     # =========================================================================
 
     @property
-    def available_construction_signal(self):
-        # type: () -> dict
+    def available_construction_signal(self) -> Optional[SignalID]:
         """
         What signal to output the number of available construction robots to the
         circuit network with.
@@ -213,30 +258,28 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
             or ``None``.
         """
-        return self.control_behavior.get("available_construction_output_signal", None)
+        return self.control_behavior.available_construction_output_signal
 
     @available_construction_signal.setter
-    def available_construction_signal(self, value):
-        # type: (Union[str, dict]) -> None
-        if value is None:
-            self.control_behavior.pop("available_construction_output_signal", None)
-        elif isinstance(value, six.string_types):
-            value = six.text_type(value)
-            self.control_behavior["available_construction_output_signal"] = signal_dict(
-                value
+    def available_construction_signal(
+        self, value: Union[str, SignalID, None]
+    ):  # TODO: SignalStr
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "available_construction_output_signal",
+                value,
             )
-        else:  # dict or other
-            try:
-                value = SIGNAL_ID.validate(value)
-                self.control_behavior["available_construction_output_signal"] = value
-            except SchemaError:
-                raise TypeError("Incorrectly formatted SignalID")
+            self.control_behavior.available_construction_output_signal = result
+        else:
+            self.control_behavior.available_construction_output_signal = value
 
     # =========================================================================
 
     @property
-    def total_construction_signal(self):
-        # type: () -> dict
+    def total_construction_signal(self) -> Optional[SignalID]:
         """
         What signal to output the total number of construction robots to the
         circuit network with.
@@ -250,24 +293,23 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
             or ``None``.
         """
-        return self.control_behavior.get("total_construction_output_signal", None)
+        return self.control_behavior.total_construction_output_signal
 
     @total_construction_signal.setter
-    def total_construction_signal(self, value):
-        # type: (Union[str, dict]) -> None
-        if value is None:
-            self.control_behavior.pop("total_construction_output_signal", None)
-        elif isinstance(value, six.string_types):
-            value = six.text_type(value)
-            self.control_behavior["total_construction_output_signal"] = signal_dict(
-                value
+    def total_construction_signal(
+        self, value: Union[str, SignalID, None]
+    ):  # TODO: SignalStr
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "total_construction_output_signal",
+                value,
             )
-        else:  # dict or other
-            try:
-                value = SIGNAL_ID.validate(value)
-                self.control_behavior["total_construction_output_signal"] = value
-            except SchemaError:
-                raise TypeError("Incorrectly formatted SignalID")
+            self.control_behavior.total_construction_output_signal = result
+        else:
+            self.control_behavior.total_construction_output_signal = value
 
     # =========================================================================
 

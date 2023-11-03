@@ -1,15 +1,11 @@
 # power_connectable.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-from draftsman import signatures
+from draftsman.classes.association import Association
 from draftsman.data import entities
-from draftsman.error import DataFormatError
+from draftsman.signatures import uint64
 
-from pydantic import BaseModel
-from schema import SchemaError
-import six
+from pydantic import BaseModel, Field
+from typing import Optional, Union
 
 
 class PowerConnectableMixin(object):
@@ -17,61 +13,58 @@ class PowerConnectableMixin(object):
     Enables the Entity to be connected to power networks.
     """
 
-    # _exports = {
-    #     "neighbours": {
-    #         "format": "[int, ...]",
-    #         "description": "List of entity_ids of power poles connected to this entity",
-    #         "required": lambda x: x is not None and len(x) != 0,
-    #     }
-    # }
     class Format(BaseModel):
-        neighbours: list[int] | None = []
+        neighbours: Optional[list[uint64]] = Field(
+            [],
+            description="""
+            The 'entity_number's of each neighbouring power pole that this power
+            pole is connected to. Does NOT include power switch copper 
+            connections; see 'connections' key for that.
+            """,
+        )
 
-    def __init__(self, name, similar_entities, **kwargs):
-        # type: (str, list[str], **dict) -> None
+    def __init__(self, name: str, similar_entities: list[str], **kwargs):
+        self._root: __class__.Format
+
         super(PowerConnectableMixin, self).__init__(name, similar_entities, **kwargs)
 
         self._power_connectable = True
 
-        if "maximum_wire_distance" in entities.raw[self.name]:
-            self._maximum_wire_distance = entities.raw[self.name][
-                "maximum_wire_distance"
-            ]
-        else:
-            self._maximum_wire_distance = entities.raw[self.name]["wire_max_distance"]
-
-        self.neighbours = []
-        if "neighbours" in kwargs:
-            self.neighbours = kwargs["neighbours"]
-            self.unused_args.pop("neighbours")
-        # self._add_export("neighbours", lambda x: x is not None and len(x) != 0)
+        self.neighbours = kwargs.get("neighbours", [])
 
     # =========================================================================
 
     @property
-    def maximum_wire_distance(self):
-        # type: () -> float
+    def power_connectable(self) -> bool:
+        return True
+
+    # =========================================================================
+
+    @property
+    def maximum_wire_distance(self) -> float:
         """
         The maximum distance that this entity can reach for power connections.
+        Returns ``None`` if this entity's name is not recognized by Draftsman.
         Not exported; read only.
 
         :type: ``float``
         """
-        return self._maximum_wire_distance
+        return entities.raw.get(self.name, {"maximum_wire_distance": None})[
+            "maximum_wire_distance"
+        ]
 
     # =========================================================================
 
     @property
-    def neighbours(self):
-        # type: () -> list
+    def neighbours(self) -> list:
         """
         The power pole neighbours that this entity connects to.
 
         ``neighbours`` is traditionally specified as a list of ``ints``, each
         one representing the index of the entity in the parent blueprint that
         this Entity connects to, in 1-indexed notation. For example, if
-        ``entity.neighbours == [2, 3]``, then ``entity`` would have power wires
-        to ``blueprint.entities[1]`` and ``blueprint.entities[2]``. If you're
+        ``entity.neighbours == [1, 2]``, then ``entity`` would have power wires
+        to ``blueprint.entities[0]`` and ``blueprint.entities[1]``. If you're
         importing from an already existing blueprint string, then this is the
         format you should expect.
 
@@ -80,7 +73,7 @@ class PowerConnectableMixin(object):
         entries of the ``neighbours`` list. This makes connections independent
         of their location in the parent blueprint, so you can specify power
         connections even before you've placed all the entities in one. Draftsman
-        uses this format when making connections, is still compatible with
+        uses this format when making connections, but is still compatible with
         simple integers.
 
         .. WARNING::
@@ -106,15 +99,56 @@ class PowerConnectableMixin(object):
         :exception DataFormatError: If set to anything that does not match the
             specification above.
         """
-        return self._root["neighbours"]
+        return self._root.neighbours
 
     @neighbours.setter
-    def neighbours(self, value):
-        # type: (list) -> None
+    def neighbours(self, value: list[Union[int, Association]]):
         if value is None:
-            self._root["neighbours"] = []
+            self._root.neighbours = []
         else:
-            self._root["neighbours"] = value
+            self._root.neighbours = value
+
+    # =========================================================================
+
+    def merge(self, other: Format):
+        super().merge(other)
+
+        # Power Neighbours (union of the two sets, not exceeding 5 connections)
+        # Iterate over every association in other (the to-be deleted entity)
+        for association in other.neighbours:
+            # Keep track of whether or not this association was added to self
+            association_added = False
+
+            # Make sure we don't add the same association multiple times
+            if association not in self.neighbours:
+                # Also make sure we don't exceed 5 connections
+                if len(self.neighbours) < 5:
+                    self.neighbours.append(association)
+                    association_added = True
+
+            # However, entities that used to point to `other` still do,
+            # which causes problems since `other` is usually to be deleted
+            # after merging
+            # So we now we find the entity that other used to point to and
+            # iterate over it's neighbours:
+            associated_entity = association()
+            for i, old_association in enumerate(associated_entity.neighbours):
+                # If the association used to point to `other`, make it point
+                # to `self`
+                if old_association == Association(other):
+                    # Only do so, however, if this association is not
+                    # already in the set of neighbours and we added the
+                    # connection before, and if we actually even merged the
+                    # connection in the first place
+                    if (
+                        Association(self) not in associated_entity.neighbours
+                        and association_added
+                    ):
+                        associated_entity.neighbours[i] = Association(self)
+                    else:
+                        # Otherwise, the association points to an entity
+                        # that will likely become invalid, so we remove it
+                        associated_entity.neighbours.remove(old_association)
 
     # =========================================================================
 

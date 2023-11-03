@@ -1,16 +1,18 @@
 # lab.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import ModulesMixin, RequestItemsMixin
-from draftsman import utils
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.signatures import uint32
+from draftsman.utils import reissue_warnings
 from draftsman.warning import DraftsmanWarning, ItemLimitationWarning
 
 from draftsman.data.entities import labs
 from draftsman.data import entities, modules
 
+from pydantic import ConfigDict
+from typing import Any, Literal, Optional, Union
 import warnings
 
 
@@ -19,66 +21,81 @@ class Lab(ModulesMixin, RequestItemsMixin, Entity):
     An entity that consumes items and produces research.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **RequestItemsMixin._exports,
-    #     **ModulesMixin._exports,
-    # }
-    # fmt: on
     class Format(
         ModulesMixin.Format,
         RequestItemsMixin.Format,
         Entity.Format,
     ):
-        pass
+        model_config = ConfigDict(title="Lab")
 
-    def __init__(self, name=labs[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(Lab, self).__init__(name, labs, **kwargs)
+    def __init__(
+        self,
+        name: str = labs[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        items: dict[str, uint32] = {},  # TODO: ItemID
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        super().__init__(
+            name,
+            labs,
+            position=position,
+            tile_position=tile_position,
+            items=items,
+            tags=tags,
+            **kwargs
+        )
 
-        del self.unused_args
+        self.validate_assignment = validate_assignment
+
+        if validate:
+            self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
     @property
-    def inputs(self):
-        # type: () -> list[str]
+    def inputs(self) -> Optional[list[str]]:
         """
-        The inputs that this Lab uses to research. Not exported; read only.
+        The inputs that this Lab uses to research, ordered by their Factorio
+        order. Returns ``None`` if this entity is not recognized by Draftsman.
+        Not exported; read only.
 
         :type: ``list[str]``
         """
-        return entities.raw[self.name]["inputs"]
+        return entities.raw.get(self.name, {"inputs": None})["inputs"]
 
     # =========================================================================
 
-    @utils.reissue_warnings
-    def set_item_request(self, item, count):
-        # type: (str, int) -> None
+    @reissue_warnings
+    def set_item_request(self, item: str, count: Optional[uint32]):  # TODO: ItemID
+        super().set_item_request(item, count)
 
         # TODO: check the lab's limitations to see if the module is allowed
         # ('allowed_effects')
         # This is all for regular labs, but not necessarily modded ones.
-
-        # TODO: check the amount of the science pack passed in; if its greater
-        # than 1 stack issue an ItemCapacityWarning
-
-        super(Lab, self).set_item_request(item, count)
-
         if item not in modules.raw and item not in self.inputs:
             warnings.warn(
-                "Item '{}' cannot be placed in Lab".format(item),
+                "Item '{}' cannot be placed in Lab '{}'".format(item, self.name),
                 ItemLimitationWarning,
                 stacklevel=2,
             )
+
+        # TODO: check the amount of the science pack passed in; if its greater
+        # than 1 stack issue an ItemCapacityWarning
+        # Note that this asserts that each lab can only contain 1 stack of each
+        # science pack it consumes, which might change in a future Factorio
+        # version.
 
     # =========================================================================
 

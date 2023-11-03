@@ -1,9 +1,8 @@
-# collisionobject.py
+# collision_set.py
 
 from draftsman.classes.vector import Vector
 
-from draftsman.constants import Direction
-from draftsman import utils
+from draftsman.utils import AABB, Shape, extend_aabb
 
 
 class CollisionSet:
@@ -17,7 +16,7 @@ class CollisionSet:
     """
 
     def __init__(self, shapes, position=(0, 0)):
-        # type: (list[utils.Shape], Vector) -> None
+        # type: (list[Shape], Vector) -> None
         """
         Create a new collision shape object with the collision shapes ``shapes``.
 
@@ -30,7 +29,7 @@ class CollisionSet:
             shape.position[1] += position[1]
 
     def get_bounding_box(self):
-        # type: () -> utils.AABB
+        # type: () -> AABB
         """
         Gets the minimum-bounding AABB for this :py:class:`CollisionSet`.
 
@@ -42,7 +41,7 @@ class CollisionSet:
 
         bounding_box = None
         for shape in self.shapes:
-            bounding_box = utils.extend_aabb(bounding_box, shape.get_bounding_box())
+            bounding_box = extend_aabb(bounding_box, shape.get_bounding_box())
 
         return bounding_box
 

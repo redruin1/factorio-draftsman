@@ -1,23 +1,15 @@
 # test_cargo_wagon.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import CargoWagon, cargo_wagons, Container
-from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.signatures import Filters
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class CargoWagonTesting(unittest.TestCase):
+class TestCargoWagon:
     def test_constructor_init(self):
         cargo_wagon = CargoWagon(
             "cargo-wagon", tile_position=[0, 0], inventory={"bar": 0}
@@ -79,19 +71,18 @@ class CargoWagonTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             CargoWagon("cargo-wagon", unused_keyword="whatever")
         # Warn if the cargo wagon is not on a rail (close enough to one?)
         # TODO (Complex)
+        with pytest.warns(UnknownEntityWarning):
+            CargoWagon("this is not a cargo-wagon")
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            CargoWagon("this is not a cargo-wagon")
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             CargoWagon("cargo-wagon", orientation="wrong")
-        # TODO: move to validate
-        # with pytest.raises(DataFormatError):
-        #     CargoWagon("cargo-wagon", inventory="incorrect")
+        with pytest.raises(DataFormatError):
+            CargoWagon("cargo-wagon", inventory="incorrect")
 
     def test_mergable_with(self):
         wagon1 = CargoWagon("cargo-wagon")
@@ -124,7 +115,7 @@ class CargoWagonTesting(unittest.TestCase):
 
         assert wagon1.tags == {"some": "stuff"}
         assert wagon1.bar == 1
-        assert wagon1.inventory["filters"] == [{"index": 1, "name": "transport-belt"}]
+        assert wagon1.inventory["filters"] == Filters(root=[{"index": 1, "name": "transport-belt"}])
 
     def test_eq(self):
         generator1 = CargoWagon("cargo-wagon")

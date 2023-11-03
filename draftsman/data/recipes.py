@@ -26,7 +26,6 @@ def add_recipe(name: str, ingredients: list[str], result: str):
 
 
 def get_recipe_ingredients(recipe_name: str, expensive: bool = False):
-    # type: (str, bool) -> set[str]
     """
     Returns a ``set`` of all item types that ``recipe_name`` requires. Discards
     quantities.
@@ -58,6 +57,8 @@ def get_recipe_ingredients(recipe_name: str, expensive: bool = False):
         # {'iron-plate', 'copper-cable'}
 
     """
+    if recipe_name is None or recipe_name not in raw:
+        return None
     if "ingredients" in raw[recipe_name]:
         return {
             x[0] if isinstance(x, list) else x["name"]

@@ -1,24 +1,15 @@
 # test_inserter.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.constants import Direction, ReadMode
 from draftsman.entity import Inserter, inserters, Container
-from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class InserterTesting(unittest.TestCase):
+class TestInserter:
     def test_constructor_init(self):
         # Valid
         inserter = Inserter(
@@ -50,9 +41,9 @@ class InserterTesting(unittest.TestCase):
                     "type": "virtual",
                 },
                 "circuit_enable_disable": True,
-                "circuit_condition": {},
+                # "circuit_condition": {}, # Default
                 "connect_to_logistic_network": True,
-                "logistic_condition": {},
+                # "logistic_condition": {}, # Default
                 "circuit_read_hand_contents": True,
                 "circuit_hand_read_mode": ReadMode.PULSE,
             },
@@ -77,14 +68,16 @@ class InserterTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Inserter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5)
-
-        # Errors
-        # Raises InvalidEntityID when not in containers
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownKeywordWarning):
+            Inserter(
+                "inserter", control_behavior={"this is": ["also", "very", "wrong"]}
+            )
+        with pytest.warns(UnknownEntityWarning):
             Inserter("this is not an inserter")
 
+        # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             Inserter("inserter", id=25)
@@ -92,20 +85,19 @@ class InserterTesting(unittest.TestCase):
         with pytest.raises(TypeError):
             Inserter("inserter", position=TypeError)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             Inserter("inserter", direction="incorrect")
 
-        # TODO: move to validate
-        # with pytest.raises(TypeError):
-        #     Inserter("inserter", override_stack_size="incorrect")
+        with pytest.raises(DataFormatError):
+            Inserter("inserter", override_stack_size="incorrect")
 
-        # with pytest.raises(DataFormatError):
-        #     Inserter("inserter", connections={"this is": ["very", "wrong"]})
+        with pytest.raises(DataFormatError):
+            Inserter("inserter", connections="incorrect")
 
-        # with pytest.raises(DataFormatError):
-        #     Inserter(
-        #         "inserter", control_behavior={"this is": ["also", "very", "wrong"]}
-        #     )
+        with pytest.raises(DataFormatError):
+            Inserter(
+                "inserter", control_behavior="incorrect"
+            )
 
     def test_power_and_circuit_flags(self):
         for name in inserters:

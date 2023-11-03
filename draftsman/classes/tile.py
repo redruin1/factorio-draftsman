@@ -1,5 +1,4 @@
 # tile.py
-# -*- encoding: utf-8 -*-
 
 """
 .. code-block:: python
@@ -10,20 +9,19 @@
     }
 """
 
-from __future__ import unicode_literals
-
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.vector import Vector
 from draftsman.error import InvalidTileError, DraftsmanError
-from draftsman import signatures
+from draftsman.signatures import DraftsmanBaseModel, IntPosition
 from draftsman.utils import AABB
 
 import draftsman.data.tiles as tiles
 
 import difflib
-from pydantic import BaseModel
-from typing import TYPE_CHECKING, Union, Tuple
+from pydantic import ConfigDict, GetCoreSchemaHandler
+from pydantic_core import CoreSchema, core_schema
+from typing import Any, TYPE_CHECKING, Union, Tuple
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.blueprint import Blueprint
@@ -36,9 +34,11 @@ class Tile(SpatialLike):
     Tile class. Used for keeping track of tiles in Blueprints.
     """
 
-    class Model(BaseModel):
+    class Format(DraftsmanBaseModel):
         name: str
-        position: signatures.Position
+        position: IntPosition
+
+        model_config = ConfigDict(title="Tile", )
 
     def __init__(self, name, position=(0, 0)):
         # type: (str, Tuple[int, int]) -> None
@@ -234,6 +234,8 @@ class Tile(SpatialLike):
         """
         return {"name": self.name, "position": self.position.to_dict()}
 
+    # =========================================================================
+
     def __eq__(self, other):
         return (
             isinstance(other, Tile)
@@ -244,3 +246,7 @@ class Tile(SpatialLike):
     def __repr__(self):  # pragma: no coverage
         # type: () -> str
         return "<Tile>{}".format(self.to_dict())
+    
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _source_type: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
+        return core_schema.no_info_after_validator_function(cls, handler(Tile.Format)) # TODO: correct annotation

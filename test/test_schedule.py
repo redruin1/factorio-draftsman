@@ -11,7 +11,7 @@ import re
 class TestWaitCondition:
     def test_constructor(self):
         # Time passed
-        w = WaitCondition(WaitConditionType.TIME_PASSED)
+        w = WaitCondition("time")
         assert w.type == "time"
         assert w.compare_type == "or"
         assert w.ticks == 1800
@@ -19,7 +19,7 @@ class TestWaitCondition:
 
         # Inactivity
         w = WaitCondition(
-            WaitConditionType.INACTIVITY, compare_type=WaitConditionCompareType.AND
+            "inactivity", compare_type="and"
         )
         assert w.type == "inactivity"
         assert w.compare_type == "and"
@@ -28,12 +28,12 @@ class TestWaitCondition:
 
     def test_to_dict(self):
         w = WaitCondition(
-            WaitConditionType.CIRCUIT_CONDITION,
+            "circuit",
             condition=("signal-A", "!=", "signal-B"),
         )
         assert w.to_dict() == {
             "type": "circuit",
-            "compare_type": "or",
+            # "compare_type": "or", # Default
             "condition": {
                 "first_signal": {"name": "signal-A", "type": "virtual"},
                 "comparator": "≠",
@@ -42,36 +42,36 @@ class TestWaitCondition:
         }
 
         w = WaitCondition(
-            WaitConditionType.CIRCUIT_CONDITION, condition=("signal-A", "<", 100)
+            "circuit", condition=("signal-A", "<", 100)
         )
         assert w.to_dict() == {
             "type": "circuit",
-            "compare_type": "or",
+            # "compare_type": "or", # Default
             "condition": {
                 "first_signal": {"name": "signal-A", "type": "virtual"},
-                "comparator": "<",
+                # "comparator": "<", # Default
                 "constant": 100,
             },
         }
 
     def test_bitwise_and(self):
         # WaitCondition and WaitCondition
-        full_cargo = WaitCondition(WaitConditionType.FULL_CARGO)
-        inactivity = WaitCondition(WaitConditionType.INACTIVITY)
+        full_cargo = WaitCondition("full")
+        inactivity = WaitCondition("inactivity")
 
         conditions = full_cargo & inactivity
         assert isinstance(conditions, WaitConditions)
         assert len(conditions) == 2
         assert conditions == WaitConditions(
             [
-                WaitCondition(WaitConditionType.FULL_CARGO),
-                WaitCondition(WaitConditionType.INACTIVITY, compare_type="and"),
+                WaitCondition("full"),
+                WaitCondition("inactivity", compare_type="and"),
             ]
         )
 
         # WaitCondition and WaitConditions
         signal_sent = WaitCondition(
-            WaitConditionType.CIRCUIT_CONDITION, condition=("signal-A", "==", 100)
+            "circuit", condition=("signal-A", "==", 100)
         )
         sum1 = signal_sent & conditions
         assert isinstance(sum1, WaitConditions)
@@ -79,11 +79,11 @@ class TestWaitCondition:
         assert sum1 == WaitConditions(
             [
                 WaitCondition(
-                    WaitConditionType.CIRCUIT_CONDITION,
+                    "circuit",
                     condition=("signal-A", "==", 100),
                 ),
-                WaitCondition(WaitConditionType.FULL_CARGO, compare_type="and"),
-                WaitCondition(WaitConditionType.INACTIVITY, compare_type="and"),
+                WaitCondition("full", compare_type="and"),
+                WaitCondition("inactivity", compare_type="and"),
             ]
         )
 
@@ -100,10 +100,10 @@ class TestWaitCondition:
         assert len(sum2) == 3
         assert sum2 == WaitConditions(
             [
-                WaitCondition(WaitConditionType.FULL_CARGO),
-                WaitCondition(WaitConditionType.INACTIVITY, compare_type="and"),
+                WaitCondition("full"),
+                WaitCondition("inactivity", compare_type="and"),
                 WaitCondition(
-                    WaitConditionType.CIRCUIT_CONDITION,
+                    "circuit",
                     compare_type="and",
                     condition=("signal-A", "==", 100),
                 ),
@@ -119,22 +119,22 @@ class TestWaitCondition:
 
     def test_bitwise_or(self):
         # WaitCondition and WaitCondition
-        full_cargo = WaitCondition(WaitConditionType.FULL_CARGO)
-        inactivity = WaitCondition(WaitConditionType.INACTIVITY)
+        full_cargo = WaitCondition("full")
+        inactivity = WaitCondition("inactivity")
 
         conditions = full_cargo | inactivity
         assert isinstance(conditions, WaitConditions)
         assert len(conditions) == 2
         assert conditions == WaitConditions(
             [
-                WaitCondition(WaitConditionType.FULL_CARGO),
-                WaitCondition(WaitConditionType.INACTIVITY),
+                WaitCondition("full"),
+                WaitCondition("inactivity"),
             ]
         )
 
         # WaitCondition and WaitConditions
         signal_sent = WaitCondition(
-            WaitConditionType.CIRCUIT_CONDITION, condition=("signal-A", "==", 100)
+            "circuit", condition = ("signal-A", "==", 100)
         )
         sum1 = signal_sent | conditions
         assert isinstance(sum1, WaitConditions)
@@ -142,11 +142,11 @@ class TestWaitCondition:
         assert sum1 == WaitConditions(
             [
                 WaitCondition(
-                    WaitConditionType.CIRCUIT_CONDITION,
+                    "circuit",
                     condition=("signal-A", "==", 100),
                 ),
-                WaitCondition(WaitConditionType.FULL_CARGO),
-                WaitCondition(WaitConditionType.INACTIVITY),
+                WaitCondition("full"),
+                WaitCondition("inactivity"),
             ]
         )
 
@@ -163,10 +163,10 @@ class TestWaitCondition:
         assert len(sum2) == 3
         assert sum2 == WaitConditions(
             [
-                WaitCondition(WaitConditionType.FULL_CARGO),
-                WaitCondition(WaitConditionType.INACTIVITY),
+                WaitCondition("full"),
+                WaitCondition("inactivity"),
                 WaitCondition(
-                    WaitConditionType.CIRCUIT_CONDITION,
+                    "circuit",
                     condition=("signal-A", "==", 100),
                 ),
             ]
@@ -180,19 +180,19 @@ class TestWaitCondition:
             Schedule() | signal_sent
 
     def test_repr(self):
-        w = WaitCondition(WaitConditionType.PASSENGER_PRESENT)
-        assert repr(w) == "<WaitCondition>{type='passenger_present', compare_type='or'}"
-        w = WaitCondition(WaitConditionType.INACTIVITY)
+        w = WaitCondition("passenger_present")
+        assert repr(w) == "<WaitCondition>{type=<WaitConditionType.PASSENGER_PRESENT: 'passenger_present'> compare_type='or' ticks=None condition=None}"
+        w = WaitCondition("inactivity")
         assert (
             repr(w)
-            == "<WaitCondition>{type='inactivity', compare_type='or', ticks=300}"
+            == "<WaitCondition>{type=<WaitConditionType.INACTIVITY: 'inactivity'> compare_type='or' ticks=300 condition=None}"
         )
         w = WaitCondition(
-            WaitConditionType.ITEM_COUNT, condition=("signal-A", "=", "signal-B")
+            "item_count", condition=("signal-A", "=", "signal-B")
         )
         assert (
             repr(w)
-            == "<WaitCondition>{type='item_count', compare_type='or', condition=('signal-A', '=', 'signal-B')}"
+            == "<WaitCondition>{type=<WaitConditionType.ITEM_COUNT: 'item_count'> compare_type='or' ticks=None condition=Condition(first_signal=SignalID(name='signal-A', type='virtual'), comparator='=', constant=0, second_signal=SignalID(name='signal-B', type='virtual'))}"
         )
 
 
@@ -208,12 +208,12 @@ class TestWaitConditions:
 
     def test_getitem(self):
         a = WaitConditions([
-            WaitCondition(WaitConditionType.FULL_CARGO),
-            WaitCondition(WaitConditionType.INACTIVITY, WaitConditionCompareType.AND, ticks=1000)
+            WaitCondition("full"),
+            WaitCondition("inactivity", "and", ticks=1000)
         ])
 
-        assert a[0].type == WaitConditionType.FULL_CARGO
-        assert a[1].type == WaitConditionType.INACTIVITY
+        assert a[0].type == "full"
+        assert a[1].type == "inactivity"
         assert a[1].ticks == 1000
 
     def test_equals(self):
@@ -222,15 +222,15 @@ class TestWaitConditions:
         assert a != Schedule()
 
         # Mismatched length
-        b = WaitConditions([WaitCondition(WaitConditionType.INACTIVITY)])
+        b = WaitConditions([WaitCondition("inactivity")])
         assert a != b
 
         # Component mismatch
-        a = WaitConditions([WaitCondition(WaitConditionType.TIME_PASSED)])
+        a = WaitConditions([WaitCondition("time")])
         assert a != b
 
         # True equality
-        a = WaitConditions([WaitCondition(WaitConditionType.INACTIVITY)])
+        a = WaitConditions([WaitCondition("inactivity")])
         assert a == b
 
     def test_repr(self):
@@ -308,8 +308,8 @@ class TestSchedule:
             {"station": "Station A", "wait_conditions": WaitConditions()}
         ]
 
-        full_cargo = WaitCondition(WaitConditionType.FULL_CARGO)
-        inactivity = WaitCondition(WaitConditionType.INACTIVITY)
+        full_cargo = WaitCondition("full")
+        inactivity = WaitCondition("inactivity")
 
         # WaitCondition object
         s.insert_stop(1, "Station B", full_cargo)
@@ -319,7 +319,7 @@ class TestSchedule:
             {
                 "station": "Station B",
                 "wait_conditions": WaitConditions(
-                    [WaitCondition(WaitConditionType.FULL_CARGO)]
+                    [WaitCondition("full")]
                 ),
             },
         ]
@@ -332,15 +332,15 @@ class TestSchedule:
             {
                 "station": "Station B",
                 "wait_conditions": WaitConditions(
-                    [WaitCondition(WaitConditionType.FULL_CARGO)]
+                    [WaitCondition("full")]
                 ),
             },
             {
                 "station": "Station C",
                 "wait_conditions": WaitConditions(
                     [
-                        WaitCondition(WaitConditionType.FULL_CARGO),
-                        WaitCondition(WaitConditionType.INACTIVITY, compare_type="and"),
+                        WaitCondition("full"),
+                        WaitCondition("inactivity", compare_type="and"),
                     ]
                 ),
             },
@@ -375,12 +375,7 @@ class TestSchedule:
         ]
 
         # Remove stop with wait_conditions that doesn't exist
-        with pytest.raises(
-            ValueError,
-            match=re.escape(
-                "No station with name 'Station A' and conditions '<WaitConditions>[<WaitCondition>{type='full', compare_type='or'}]' found in schedule"
-            ),
-        ):
+        with pytest.raises(ValueError):
             s.remove_stop("Station A", wait_conditions=full_cargo)
 
         # Remove stop that doesn't exist

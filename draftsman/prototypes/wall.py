@@ -1,26 +1,21 @@
 # wall.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     CircuitConditionMixin,
     EnableDisableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
 )
-from draftsman.error import DataFormatError
-from draftsman.signatures import SignalID
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import PrimitiveVector, Vector
+from draftsman.constants import ValidationMode
+from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID
 
 from draftsman.data.entities import walls
-from draftsman.data.signals import signal_dict
 
-from schema import SchemaError
-import six
-from typing import ClassVar, Union
-import warnings
+from pydantic import ConfigDict, Field
+from typing import Any, Literal, Optional, Union
 
 
 class Wall(
@@ -34,122 +29,153 @@ class Wall(
     A destructable barrier that acts as protection for static structures.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    #     **EnableDisableMixin._exports,
-    #     **CircuitConditionMixin._exports,
-    # }
-    # fmt: on
     class Format(
         CircuitConditionMixin.Format,
         EnableDisableMixin.Format,
         ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
-        Entity.Format
+        Entity.Format,
     ):
         class ControlBehavior(
             CircuitConditionMixin.ControlFormat,
-            EnableDisableMixin.ControlFormat,
+            DraftsmanBaseModel,  # TODO: is this the way to do it?
         ):
-            circuit_open_gate: bool | None = None
-            circuit_read_sensor: bool | None = None
-            output_signal: SignalID | None = None
-
-        control_behavior: ClassVar[ControlBehavior | None] = None
-
-    def __init__(self, name=walls[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(Wall, self).__init__(name, walls, **kwargs)
-
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
+            circuit_open_gate: Optional[bool] = Field(
+                True,
+                description="""
+                Whether or not this gate should be activated based on an input
+                condition. 'circuit_enable_disable' equivalent, specifically for
+                walls.
+                """,
+            )
+            circuit_read_sensor: Optional[bool] = Field(
+                False,
+                description="""
+                Whether or not to read the state of an adjacent gate and 
+                broadcast it to the circuit network.
+                """,
+            )
+            output_signal: Optional[SignalID] = Field(
+                SignalID(name="signal-G", type="virtual"),
+                description="""
+                The output signal type to send the value from 
+                'circuit_read_sensor'.
+                """,
             )
 
-        del self.unused_args
+            model_config = ConfigDict(title="WallControlBehavior")
+
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+
+        model_config = ConfigDict(title="Wall")
 
     # =========================================================================
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            # self._control_behavior = signatures.WALL_CONTROL_BEHAVIOR.validate(value) # TODO
-            self._control_behavior = value
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    def __init__(
+        self,
+        name: str = walls[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        connections: Connections = Connections(),
+        control_behavior: Format.ControlBehavior = Format.ControlBehavior(),
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
+        self.control_behavior: __class__.Format.ControlBehavior
+
+        super().__init__(
+            name=name,
+            similar_entities=walls,
+            position=position,
+            tile_position=tile_position,
+            connections=connections,
+            control_behavior=control_behavior,
+            tags=tags,
+            **kwargs
+        )
+
+        self.validate_assignment = validate_assignment
+
+        if validate:
+            self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
     @property
-    def enable_disable(self):
-        # type: () -> bool
-        return self.control_behavior.get("circuit_open_gate", None)
+    def enable_disable(self) -> Optional[bool]:
+        return self.control_behavior.circuit_open_gate
 
     @enable_disable.setter
-    def enable_disable(self, value):
-        # type: (bool) -> None
-        if value is None:
-            self.control_behavior.pop("circuit_open_gate", None)
-        elif isinstance(value, bool):
-            self.control_behavior["circuit_open_gate"] = value
+    def enable_disable(self, value: Optional[bool]):
+        if self.validate_assignment is not ValidationMode.NONE:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "circuit_open_gate",
+                value,
+            )
+            self.control_behavior.circuit_open_gate = result
         else:
-            raise TypeError("'enable_disable' must be a bool or None")
+            self.control_behavior.circuit_open_gate = value
 
     # =========================================================================
 
     @property
-    def read_gate(self):
-        # type: () -> bool
+    def read_gate(self) -> Optional[bool]:
         """
         Whether or not to read the state of an adjacent gate, whether it's
         opened or closed.
 
         :type: ``bool``
         """
-        return self.control_behavior.get("circuit_read_sensor", None)
+        return self.control_behavior.circuit_read_sensor
 
     @read_gate.setter
-    def read_gate(self, value):
-        # type: (bool) -> None
-        if value is None:
-            self.control_behavior.pop("circuit_read_sensor", None)
-        elif isinstance(value, bool):
-            self.control_behavior["circuit_read_sensor"] = value
+    def read_gate(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                self.__class__.Format.ControlBehavior,
+                self.control_behavior,
+                "circuit_read_sensor",
+                value,
+            )
+            self.control_behavior.circuit_read_sensor = result
         else:
-            raise TypeError("'read_gate' must be a bool or None")
+            self.control_behavior.circuit_read_sensor = value
 
     # =========================================================================
 
     @property
-    def output_signal(self):
-        # type: () -> dict
+    def output_signal(self) -> Optional[SignalID]:
         """
         What signal to output the state of the adjacent gate.
-
-        :type: :py:class:`.SIGNAL_ID`
         """
-        return self.control_behavior.get("output_signal", None)
+        return self.control_behavior.output_signal
 
     @output_signal.setter
-    def output_signal(self, value):
-        # type: (Union[str, dict]) -> None
-        if value is None:
-            self.control_behavior.pop("output_signal", None)
-        elif isinstance(value, six.string_types):
-            value = six.text_type(value)
-            self.control_behavior["output_signal"] = signal_dict(value)
-        else:  # dict or other
-            try:
-                value = SignalID(**value).model_dump() # TODO better
-                self.control_behavior["output_signal"] = value
-            except SchemaError:
-                raise TypeError("Incorrectly formatted SignalID")
+    def output_signal(self, value: Optional[SignalID]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                self.__class__.Format.ControlBehavior,
+                self.control_behavior,
+                "output_signal",
+                value,
+            )
+            self.control_behavior.output_signal = result
+        else:
+            self.control_behavior.output_signal = value
 
     # =========================================================================
 

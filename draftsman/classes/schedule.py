@@ -1,18 +1,28 @@
 # schedule.py
 
 from draftsman.classes.association import Association
+from draftsman.classes.exportable import (
+    Exportable,
+    ValidationResult,
+    attempt_and_reissue,
+)
+from draftsman.constants import (
+    Ticks,
+    ValidationMode,
+    WaitConditionType,
+    WaitConditionCompareType,
+)
+from draftsman.error import DataFormatError
 from draftsman.prototypes.locomotive import Locomotive
-from draftsman.constants import Ticks, WaitConditionType, WaitConditionCompareType
-from draftsman.signatures import SIGNAL_ID_OR_NONE, COMPARATOR, SIGNAL_ID_OR_CONSTANT
-from draftsman import signatures
+from draftsman.signatures import Condition, DraftsmanBaseModel, Stop, uint32, uint64
 
 import copy
-from pydantic import BaseModel
-from typing import Union
+from pydantic import ConfigDict, Field, ValidationError
+from typing import Literal, Optional, Union
 
 
 # TODO: make dataclass?
-class WaitCondition(object):
+class WaitCondition(Exportable):
     """
     An object that represents a particular criteria to wait for when a train is
     stopped at a station. Multiple :py:class:`WaitCondition` objects can (and
@@ -38,10 +48,79 @@ class WaitCondition(object):
         assert isinstance(conditions, WaitConditions)
     """
 
+    class Format(DraftsmanBaseModel):
+        # type: Literal[
+        #     "time",
+        #     "inactivity",
+        #     "full",
+        #     "empty",
+        #     "item_count",
+        #     "fluid_count",
+        #     "circuit",
+        #     "passenger_present",
+        #     "passenger_not_present",
+        # ] = Field(
+        #     ...,
+        #     description="""
+        #     Exactly what type of behavior this condition is.
+        #     """,
+        # )
+        type: WaitConditionType = Field(...)
+        compare_type: Literal["or", "and"] = Field(
+            "or",
+            description="""
+            The boolean operation to perform in relation to the next condition
+            in the list of wait conditions. Contrary to what you might expect,
+            the 'compare_type' of a wait condition indicates it's relation to 
+            the *previous* wait condition, not the following. This means that if
+            you want to 'and' two wait conditions together, you need to set the
+            'compare_type' of the second condition to 'and'; the value of the
+            first is effectively ignored.
+            """,
+        )
+        ticks: Optional[uint32] = Field(
+            None,
+            description="""
+            The amount of game ticks to wait, if the 'type' of the wait 
+            condition is set to either 'time' or 'inactivity'. Defaults to 30 
+            seconds if type is 'time', 5 seconds if type is  'inactivity', and 
+            null for everything else.
+            """,
+        )
+        condition: Optional[Condition] = Field(
+            Condition(),
+            description="""
+            A condition that must be satisfied in order for the schedule to 
+            progress; only used if 'type' is set to 'item_count', 'fluid_count',
+            or 'circuit'.
+            """,
+        )
+
+        model_config = ConfigDict(title="WaitCondition")
+
     def __init__(
-        self, type, compare_type=WaitConditionCompareType.OR, ticks=None, condition=None
+        self,
+        type: Literal[
+            "time",
+            "inactivity",
+            "full",
+            "empty",
+            "item_count",
+            "fluid_count",
+            "circuit",
+            "passenger_present",
+            "passenger_not_present",
+        ],
+        compare_type: Literal["and", "or"] = "or",
+        ticks: uint32 = None,
+        condition: Condition = None,
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
     ):
-        # type: (WaitConditionType, WaitConditionCompareType, int, list) -> None
         """
         Constructs a new :py:class:`WaitCondition` object.
 
@@ -56,6 +135,12 @@ class WaitCondition(object):
             Specified as a sequence of the format
             ``(first_signal, comparator, second_signal_or_constant)``.
         """
+        self._root: __class__.Format
+
+        super().__init__()
+
+        self._root = self.Format.model_construct()
+
         self.type = type
         self.compare_type = compare_type
         if type == WaitConditionType.TIME_PASSED and ticks is None:
@@ -66,27 +151,154 @@ class WaitCondition(object):
             self.ticks = ticks
         self.condition = condition
 
-    def to_dict(self) -> dict:
-        result = {"type": self.type, "compare_type": self.compare_type}
-        if self.ticks:
-            result["ticks"] = self.ticks
-        if self.condition:
-            result["condition"] = {
-                "first_signal": SIGNAL_ID_OR_NONE.validate(self.condition[0]),
-                "comparator": COMPARATOR.validate(self.condition[1]),
-            }
-            b = SIGNAL_ID_OR_CONSTANT.validate(self.condition[2])
-            if isinstance(b, int):
-                result["condition"]["constant"] = b
-            else:
-                result["condition"]["second_signal"] = b
+        self.validate_assignment = validate_assignment
 
-        return result
+        if validate:
+            self.validate(mode=validate).reissue_all(stacklevel=3)
+
+    # def to_dict(self) -> dict:
+    #     result = {"type": self.type, "compare_type": self.compare_type}
+    #     if self.ticks:
+    #         result["ticks"] = self.ticks
+    #     if self.condition:
+    #         result["condition"] = {
+    #             "first_signal": self.condition[0],
+    #             "comparator": self.condition[1],
+    #         }
+    #         b = self.condition[2]
+    #         if isinstance(b, int):
+    #             result["condition"]["constant"] = b
+    #         else:
+    #             result["condition"]["second_signal"] = b
+
+    #     return result
 
     # =========================================================================
 
-    def __and__(self, other):
-        # type: (Union[WaitCondition, WaitConditions]) -> WaitConditions
+    @property
+    def type(self) -> WaitConditionType:
+        return self._root.type
+
+    @type.setter
+    def type(self, value: WaitConditionType):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, __class__.Format, self._root, "type", value
+            )
+            self._root.type = result
+        else:
+            self._root.type = value
+
+    # =========================================================================
+
+    @property
+    def compare_type(self):
+        return self._root.compare_type
+
+    @compare_type.setter
+    def compare_type(self, value: WaitConditionCompareType):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, __class__.Format, self._root, "compare_type", value
+            )
+            self._root.compare_type = result
+        else:
+            self._root.compare_type = value
+
+    # =========================================================================
+
+    @property
+    def ticks(self) -> Optional[uint32]:
+        """
+        TODO
+        """
+        return self._root.ticks
+
+    @ticks.setter
+    def ticks(self, value: Optional[uint32]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, __class__.Format, self._root, "ticks", value
+            )
+            self._root.ticks = result
+        else:
+            self._root.ticks = value
+
+    # =========================================================================
+
+    @property
+    def condition(self) -> Optional[Condition]:
+        """
+        TODO
+        """
+        return self._root.condition
+
+    @condition.setter
+    def condition(self, value: Optional[Condition]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, __class__.Format, self._root, "condition", value
+            )
+            self._root.condition = result
+        else:
+            self._root.condition = value
+
+    # =========================================================================
+
+    def validate(
+        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    ) -> ValidationResult:
+        mode = ValidationMode(mode)
+
+        output = ValidationResult([], [])
+
+        if mode is ValidationMode.NONE or (self.is_valid and not force):
+            return output
+
+        context = {
+            "mode": mode,
+            "object": self,
+            "warning_list": [],
+            "assignment": False,
+        }
+
+        try:
+            # self.Format(**self._root, position=self.global_position, entity_number=0)
+            # self._root.position = self.global_position
+            result = self.Format.model_validate(
+                self._root, strict=False, context=context
+            )
+            # print("result:", result)
+            # Reassign private attributes
+            # TODO
+            # Acquire the newly converted data
+            self._root = result
+        except ValidationError as e:
+            output.error_list.append(DataFormatError(e))
+
+        if mode is ValidationMode.MINIMUM:
+            return output
+
+        if mode is ValidationMode.PEDANTIC:
+            warning_list = output.error_list
+        else:
+            warning_list = output.warning_list
+
+        warning_list += context["warning_list"]
+
+        if len(output.error_list) == 0:
+            # Set the `is_valid` attribute
+            # This means that if mode="pedantic", an entity that issues only
+            # warnings will still not be considered valid
+            super().validate()
+
+        return output
+
+    # =========================================================================
+
+    def __and__(
+        self, other: Union["WaitCondition", "WaitConditions"]
+    ) -> "WaitConditions":
         self_copy = copy.deepcopy(self)
         other_copy = copy.deepcopy(other)
         if isinstance(other, WaitCondition):
@@ -100,8 +312,9 @@ class WaitCondition(object):
                 "Can only perform this operation on <WaitCondition> or <WaitConditions> objects"
             )
 
-    def __rand__(self, other):
-        # type: (WaitConditions) -> WaitConditions
+    def __rand__(
+        self, other: Union["WaitCondition", "WaitConditions"]
+    ) -> "WaitConditions":
         self_copy = copy.deepcopy(self)
         other_copy = copy.deepcopy(other)
         if isinstance(other, WaitConditions):
@@ -112,8 +325,9 @@ class WaitCondition(object):
                 "Can only perform this operation on <WaitCondition> or <WaitConditions> objects"
             )
 
-    def __or__(self, other):
-        # type: (Union[WaitCondition, WaitConditions]) -> WaitConditions
+    def __or__(
+        self, other: Union["WaitCondition", "WaitConditions"]
+    ) -> "WaitConditions":
         self_copy = copy.deepcopy(self)
         other_copy = copy.deepcopy(other)
         if isinstance(other, WaitCondition):
@@ -127,8 +341,9 @@ class WaitCondition(object):
                 "Can only perform this operation on <WaitCondition> or <WaitConditions> objects"
             )
 
-    def __ror__(self, other):
-        # type: (Union[WaitCondition, WaitConditions]) -> WaitConditions
+    def __ror__(
+        self, other: Union["WaitCondition", "WaitConditions"]
+    ) -> "WaitConditions":
         self_copy = copy.deepcopy(self)
         other_copy = copy.deepcopy(other)
         if isinstance(other, WaitConditions):
@@ -139,7 +354,7 @@ class WaitCondition(object):
                 "Can only perform this operation on <WaitCondition> or <WaitConditions> objects"
             )
 
-    def __eq__(self, other):
+    def __eq__(self, other: "WaitCondition") -> bool:
         return (
             isinstance(other, WaitCondition)
             and self.type == other.type
@@ -156,15 +371,13 @@ class WaitCondition(object):
             WaitConditionType.FLUID_COUNT,
             WaitConditionType.CIRCUIT_CONDITION,
         }:
-            optional = ", condition={}".format(self.condition)
+            optional = ", condition={}".format(repr(self.condition))
         else:
             optional = ""
-        return "<WaitCondition>{{type='{}', compare_type='{}'{}}}".format(
-            self.type, self.compare_type, optional
-        )
+        return "<WaitCondition>{{{}}}".format(str(self._root))
 
 
-class WaitConditions(object):
+class WaitConditions:
     """
     A list of :py:class:`WaitCondition` objects.
 
@@ -204,16 +417,16 @@ class WaitConditions(object):
         return "<WaitConditions>{}".format(repr(self._conditions))
 
 
-class Schedule(object):
+class Schedule(Exportable):
     """
     An object representing a particular train schedule. Schedules contain
     :py:class:`Association`s to the Locomotives that inherit them, as well as
     the order of stops and their conditions.
     """
 
-    class Model(BaseModel):
-        locomotives: list[int] = []
-        stops: list[signatures.Stop] = []
+    class Format(DraftsmanBaseModel):
+        locomotives: list[uint64] = []
+        stops: list[Stop] = []
 
     def __init__(self, locomotives=[], schedule=[]):
         """
@@ -370,8 +583,12 @@ class Schedule(object):
                 )
             )
 
-    def to_dict(self):
-        # type: () -> dict
+    def validate(
+        self,
+    ) -> ValidationResult:
+        return ValidationResult([], [])  # TODO
+
+    def to_dict(self) -> dict:  # TODO: replace with parent
         """
         Converts this Schedule into it's JSON dict form.
 
@@ -391,6 +608,8 @@ class Schedule(object):
                 }
             )
         return {"locomotives": list(self._locomotives), "schedule": stop_list}
+
+    # =========================================================================
 
     def __eq__(self, other) -> bool:
         return (

@@ -1,5 +1,4 @@
 # blueprintbook.py
-# -*- encoding: utf-8 -*-
 
 """
 .. code-block:: python
@@ -59,25 +58,21 @@
     }
 """
 
-from __future__ import unicode_literals
-
 from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.deconstruction_planner import DeconstructionPlanner
-from draftsman.classes.exportable import ValidationResult
+from draftsman.classes.exportable import ValidationResult, attempt_and_reissue
 from draftsman.classes.upgrade_planner import UpgradePlanner
+from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
-from draftsman.signatures import BaseModel, Color, Icons, uint16
-from draftsman import utils
+from draftsman.signatures import Color, DraftsmanBaseModel, Icons, uint16
+from draftsman.utils import encode_version, reissue_warnings
 from draftsman.warning import DraftsmanWarning, IndexWarning
 
 from builtins import int
-import copy
-from pydantic import ConfigDict, Field, field_validator, ValidationError
-from schema import SchemaError
-import six
-from typing import Union, Literal, overload
+from pydantic import ConfigDict, Field, PrivateAttr, field_validator, ValidationError
+from typing import Literal, Optional, Union
 import warnings
 
 try:  # pragma: no coverage
@@ -93,7 +88,7 @@ class BlueprintableList(MutableSequence):
     can exist inside other BlueprintBook instances.
     """
 
-    def __init__(self, initlist=None, unknown="error"):
+    def __init__(self, initlist=None):
         # type: (list[Blueprint], str) -> None
         self.data: list[Blueprintable] = []
         if initlist is not None:
@@ -104,32 +99,28 @@ class BlueprintableList(MutableSequence):
                         self.append(
                             Blueprint(
                                 elem, 
-                                unknown=unknown
                             )
                         )
                     elif "deconstruction_planner" in elem:
                         self.append(
                             DeconstructionPlanner(
                                 elem, 
-                                unknown=unknown
                             )
                         )
                     elif "upgrade_planner" in elem:
                         self.append(
                             UpgradePlanner(
                                 elem, 
-                                unknown=unknown
                             )
                         )
                     elif "blueprint_book" in elem:
                         self.append(
                             BlueprintBook(
                                 elem, 
-                                unknown=unknown
                             )
                         )
                     else:
-                        raise TypeError(
+                        raise DataFormatError(
                             "Dictionary input cannot be resolve to a blueprintable"
                         )
                     # fmt: on
@@ -181,8 +172,10 @@ class BlueprintBook(Blueprintable):
     # Format
     # =========================================================================
 
-    class Format(BaseModel):
-        class BlueprintBookObject(BaseModel):
+    class Format(DraftsmanBaseModel):
+        _blueprints: BlueprintableList = PrivateAttr()
+
+        class BlueprintBookObject(DraftsmanBaseModel):
             item: Literal["blueprint-book"]
             label: str | None = None
             label_color: Color | None = None
@@ -190,20 +183,22 @@ class BlueprintBook(Blueprintable):
             icons: Icons | None = None
             active_index: int
             version: int | None = Field(None, ge=0, lt=2**64)
-            
+
             blueprints: list[
-                    Union[
-                        # TODO: implement __get_pydantic_core_schema__ for all of these
-                        # so we can just write "Union[Blueprint, DeconstructionPlanner, ...]",
-                        Blueprint.Format,
-                        DeconstructionPlanner.Format, 
-                        UpgradePlanner.Format,
-                        "BlueprintBook.Format"
-                    ]
-                ] = []
+                Union[
+                    # TODO: implement __get_pydantic_core_schema__ for all of these
+                    # so we can just write "Union[Blueprint, DeconstructionPlanner, ...]",
+                    Blueprint.Format,
+                    DeconstructionPlanner.Format,
+                    UpgradePlanner.Format,
+                    "BlueprintBook.Format",
+                ]
+            ] = []
 
         blueprint_book: BlueprintBookObject
-        index: uint16 | None = Field(None, description="Only present when inside a BlueprintBook")
+        index: uint16 | None = Field(
+            None, description="Only present when inside a BlueprintBook"
+        )
 
         model_config = ConfigDict(title="ExternalObject")
 
@@ -211,9 +206,18 @@ class BlueprintBook(Blueprintable):
     # Constructors
     # =========================================================================
 
-    @utils.reissue_warnings
-    def __init__(self, blueprint_book=None, unknown="error"):
-        # type: (str, Union[str, dict]) -> None
+    @reissue_warnings
+    def __init__(
+        self, 
+        blueprint_book: Union[str, dict]=None, 
+        index: uint16 = None,
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+    ):
         """
         Creates a ``BlueprintBook`` class. Will load the data from
         ``blueprint_book`` if provided, otherwise initializes with defaults.
@@ -221,16 +225,24 @@ class BlueprintBook(Blueprintable):
         :param blueprint_book: Either a Factorio-format blueprint string or a
             ``dict`` object with the desired keys in the correct format.
         """
-        super(BlueprintBook, self).__init__(
-            # format=BlueprintBookModel,
+        self._root: __class__.Format
+
+        super().__init__(
             root_item="blueprint_book",
+            root_format=self.Format.BlueprintBookObject,
             item="blueprint-book",
             init_data=blueprint_book,
-            unknown=unknown,
+            index=index,
+            blueprints=[],
         )
 
-    @utils.reissue_warnings
-    def setup(self, unknown="error", **kwargs):
+        self.validate_assignment = validate_assignment
+
+        if validate:
+            self.validate(mode=validate).reissue_all(stacklevel=3)
+
+    @reissue_warnings
+    def setup(self, **kwargs):
         # self._root = {}
 
         # self._root["item"] = "blueprint-book"
@@ -245,14 +257,18 @@ class BlueprintBook(Blueprintable):
         if "version" in kwargs:
             self.version = kwargs.pop("version")
         else:
-            self.version = utils.encode_version(*__factorio_version_info__)
+            self.version = encode_version(*__factorio_version_info__)
 
         if "blueprints" in kwargs:
-            self._root[self._root_item]["blueprints"] = BlueprintableList(
-                kwargs.pop("blueprints"), unknown=unknown
+            # self._root[self._root_item]["blueprints"] = BlueprintableList(
+            #     kwargs.pop("blueprints"), unknown=unknown
+            # )
+            self._root._blueprints = BlueprintableList(
+                kwargs.pop("blueprints")
             )
         else:
-            self._root[self._root_item]["blueprints"] = BlueprintableList()
+            # self._root[self._root_item]["blueprints"] = BlueprintableList()
+            self._root._blueprints = BlueprintableList()
 
         # Issue warnings for any keyword not recognized by BlueprintBook
         for unused_arg in kwargs:
@@ -267,8 +283,7 @@ class BlueprintBook(Blueprintable):
     # =========================================================================
 
     @property
-    def label_color(self):
-        # type: () -> dict
+    def label_color(self) -> Optional[Color]:
         """
         The color of the BlueprintBook's label.
 
@@ -301,10 +316,16 @@ class BlueprintBook(Blueprintable):
         return self._root[self._root_item].get("label_color", None)
 
     @label_color.setter
-    def label_color(self, value):
-        # type: (dict) -> None
-        if value is None:
-            self._root[self._root_item].pop("label_color", None)
+    def label_color(self, value: Optional[Color]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                self._root_format,
+                self._root[self._root_item],
+                "label_color",
+                value,
+            )
+            self._root[self._root_item]["label_color"] = result
         else:
             self._root[self._root_item]["label_color"] = value
 
@@ -315,8 +336,6 @@ class BlueprintBook(Blueprintable):
         try:
             self._root[self._root_item]["label_color"] = Color(
                 r=r, g=g, b=b, a=a
-            ).model_dump(
-                exclude_none=True
             )
         except ValidationError as e:
             raise DataFormatError from e
@@ -368,39 +387,73 @@ class BlueprintBook(Blueprintable):
         :exception TypeError: If set to anything other than ``list`` or
             ``None``.
         """
-        return self._root[self._root_item]["blueprints"]
+        # return self._root[self._root_item]["blueprints"]
+        return self._root._blueprints
 
     @blueprints.setter
     def blueprints(self, value):
-        # TODO: handle BlueprintableList as input value
         if value is None:
-            self._root[self._root_item]["blueprints"] = BlueprintableList()
+            # self._root[self._root_item]["blueprints"] = BlueprintableList()
+            self._root._blueprints = BlueprintableList()
+        elif isinstance(value, BlueprintableList):
+            self._root._blueprints = value
         elif isinstance(value, list):
-            self._root[self._root_item]["blueprints"] = BlueprintableList(value)
+            # self._root[self._root_item]["blueprints"] = BlueprintableList(value)
+            self._root._blueprints = BlueprintableList(value)
         else:
-            raise TypeError("'blueprints' must be a list or None")
+            raise DataFormatError("'blueprints' must be a BlueprintableList, a list, or None")
 
     # =========================================================================
     # Utility functions
     # =========================================================================
 
-    def validate(self):
-        """
-        TODO
-        """
-        if not 0 <= self.active_index < 65536:
-            raise IndexError(
-                "'active_index' ({}) not in range [0, 65536)".format(self.active_index)
+    def validate(
+        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    ) -> ValidationResult:
+        mode = ValidationMode(mode)
+
+        output = ValidationResult([], [])
+
+        if mode is ValidationMode.NONE or (self.is_valid and not force):
+            return output
+
+        context = {
+            "mode": mode,
+            "object": self,
+            "warning_list": [],
+            "assignment": False,
+        }
+
+        try:
+            # self.Format(**self._root, position=self.global_position, entity_number=0)
+            # self._root.position = self.global_position
+            result = self.Format.model_validate(
+                self._root, strict=True, context=context
             )
-        elif len(self.blueprints) > 0 and self.active_index >= len(self.blueprints):
-            warnings.warn(
-                "'active_index' ({}) not in range [0, {})".format(
-                    self.active_index, len(self.blueprints)
-                ),
-                IndexWarning,
-                stacklevel=2,
-            )
-        pass
+            # Reassign private attributes
+            result._blueprints = self._root._blueprints
+            # Acquire the newly converted data
+            self._root = result
+        except ValidationError as e:
+            output.error_list.append(DataFormatError(e))
+
+        if mode is ValidationMode.MINIMUM:
+            return output
+
+        if mode is ValidationMode.PEDANTIC:
+            warning_list = output.error_list
+        else:
+            warning_list = output.warning_list
+
+        warning_list += context["warning_list"]
+
+        # if len(output.error_list) == 0:
+        #     # Set the `is_valid` attribute
+        #     # This means that if mode="pedantic", an entity that issues only
+        #     # warnings will still not be considered valid
+        #     super().validate()
+
+        return output
 
     def inspect(self) -> ValidationResult:
         result = super().inspect()
@@ -437,8 +490,7 @@ class BlueprintBook(Blueprintable):
 
         return result
 
-    def to_dict(self):
-        # type: () -> dict
+    def to_dict(self, exclude_none: bool=True, exclude_defaults: bool=True) -> dict:
         """
         Returns the blueprint as a dictionary. Intended for getting the
         precursor to a Factorio blueprint string before encoding and compression
@@ -447,32 +499,23 @@ class BlueprintBook(Blueprintable):
         :returns: The dict representation of the BlueprintBook.
         """
         # Create a copy, omitting blueprints because that part is special
-        root_copy = {
-            self._root_item: {k: v for k, v in self._root[self._root_item].items() if k != "blueprints"}
-        }
-        if self.index is not None:
-            root_copy["index"] = self.index
+        result = super().to_dict(exclude_none=exclude_none, exclude_defaults=exclude_defaults)
 
         # Transform blueprints
-        root_copy[self._root_item]["blueprints"] = []
+        converted_blueprints = []
         for i, blueprintable in enumerate(self.blueprints):
-            blueprintable_entry = blueprintable.to_dict()
-            print("blueprintable entry:", blueprintable_entry)
+            blueprintable_entry = blueprintable.to_dict(exclude_none=exclude_none, exclude_defaults=exclude_defaults)
             # Users can manually customize index, we only override if none is found
             if "index" not in blueprintable_entry:
                 blueprintable_entry["index"] = i
-            root_copy[self._root_item]["blueprints"].append(blueprintable_entry)
+            converted_blueprints.append(blueprintable_entry)
 
-        # The following should make sense, but it's actually just dumb
-
-        print("\tROOT_COPY: ", root_copy)
+        result[self._root_item]["blueprints"] = converted_blueprints
 
         # out_model = BlueprintBook.Format.model_construct(
         #     **{self._root_item: root_copy}, _recursive=True
         # )
 
-        # print("\tOUT_MODEL: ", out_model)
-        
         # out_dict = out_model.model_dump(
         #     by_alias=True,
         #     exclude_none=True,
@@ -480,9 +523,7 @@ class BlueprintBook(Blueprintable):
         #     warnings=False  # Ignore warnings until model_construct is recursive
         # )
 
-        # print("\tOUT_DICT:", out_dict)
+        if len(result[self._root_item]["blueprints"]) == 0:
+            del result[self._root_item]["blueprints"]
 
-        if len(root_copy[self._root_item]["blueprints"]) == 0:
-            del root_copy[self._root_item]["blueprints"]
-
-        return root_copy
+        return result

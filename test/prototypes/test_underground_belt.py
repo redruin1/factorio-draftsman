@@ -5,20 +5,14 @@ from __future__ import unicode_literals
 
 from draftsman.constants import Direction
 from draftsman.entity import UndergroundBelt, underground_belts, Container
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError, InvalidEntityError
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class UndergroundBeltTesting(unittest.TestCase):
+class TestUndergroundBelt:
     def test_constructor_init(self):
         # Valid
         underground_belt = UndergroundBelt(
@@ -42,14 +36,14 @@ class UndergroundBeltTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             UndergroundBelt(
                 position=[0, 0], direction=Direction.WEST, invalid_keyword=5
             )
 
         # Errors
         # Raises InvalidEntityID when not in containers
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             UndergroundBelt("this is not an underground belt")
 
         # Raises schema errors when any of the associated data is incorrect
@@ -59,13 +53,13 @@ class UndergroundBeltTesting(unittest.TestCase):
         with pytest.raises(TypeError):
             UndergroundBelt("underground-belt", position=TypeError)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             UndergroundBelt("underground-belt", direction="incorrect")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             UndergroundBelt("underground-belt", type="incorrect")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             UndergroundBelt("underground-belt", io_type="incorrect")
 
     def test_power_and_circuit_flags(self):

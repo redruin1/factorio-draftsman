@@ -1,75 +1,66 @@
 # test_accumulator.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.vector import Vector
 from draftsman.entity import Accumulator, accumulators, Container
-from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.signatures import SignalID
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class AccumulatorTesting(unittest.TestCase):
+class TestAccumulator:
     def test_constructor_init(self):
-        accumulator = Accumulator(control_behavior={"output_signal": "signal-A"})
+        accumulator = Accumulator(control_behavior={"output_signal": "signal-B"})
         assert accumulator.to_dict() == {
             "name": accumulators[0],
             "position": accumulator.position.to_dict(),
             "control_behavior": {
-                "output_signal": {"name": "signal-A", "type": "virtual"}
+                "output_signal": {"name": "signal-B", "type": "virtual"}
             },
         }
         accumulator = Accumulator(
-            control_behavior={"output_signal": {"name": "signal-A", "type": "virtual"}}
+            control_behavior={"output_signal": {"name": "signal-B", "type": "virtual"}}
         )
         assert accumulator.to_dict() == {
             "name": accumulators[0],
             "position": accumulator.position.to_dict(),
             "control_behavior": {
-                "output_signal": {"name": "signal-A", "type": "virtual"}
+                "output_signal": {"name": "signal-B", "type": "virtual"}
             },
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Accumulator(unused_keyword="whatever")
+        with pytest.warns(UnknownKeywordWarning):
+            Accumulator(control_behavior={"unused_keyword": "whatever"})
+        with pytest.warns(UnknownEntityWarning):
+            Accumulator("not an accumulator")
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            Accumulator("not an accumulator")
-        # TODO: move to validate
-        # with pytest.raises(DataFormatError):
-        #     Accumulator(control_behavior={"output_signal": "incorrect"})
+        with pytest.raises(DataFormatError):
+            Accumulator(control_behavior="incorrect")
+        with pytest.raises(DataFormatError):
+            Accumulator(control_behavior={"output_signal": "incorrect"})
 
     def test_output_signal(self):
         accumulator = Accumulator()
         # String case
         accumulator.output_signal = "signal-D"
-        assert accumulator.output_signal == {"name": "signal-D", "type": "virtual"}
-        assert accumulator.control_behavior == {
-            "output_signal": {"name": "signal-D", "type": "virtual"}
-        }
+        assert accumulator.output_signal == SignalID(**{"name": "signal-D", "type": "virtual"})
+        
         # Dict case
         accumulator2 = Accumulator()
         accumulator2.output_signal = accumulator.output_signal
         assert accumulator2.output_signal == accumulator.output_signal
-        assert accumulator2.control_behavior == {
-            "output_signal": {"name": "signal-D", "type": "virtual"}
-        }
 
         # None case
         accumulator.output_signal = None
-        assert accumulator.control_behavior == {}
-        with pytest.raises(InvalidSignalError):
+        assert accumulator.output_signal == None
+
+        with pytest.raises(DataFormatError):
             accumulator.output_signal = "incorrect"
         with pytest.raises(DataFormatError):
             accumulator.output_signal = {"incorrectly": "formatted"}
@@ -103,7 +94,7 @@ class AccumulatorTesting(unittest.TestCase):
         assert accumulatorA.name == "accumulator"
         assert accumulatorA.tile_position == Vector(0, 0)
         assert accumulatorA.tile_position.to_dict() == {"x": 0, "y": 0}
-        assert accumulatorA.output_signal == {"name": "signal-A", "type": "virtual"}
+        assert accumulatorA.output_signal == SignalID(**{"name": "signal-A", "type": "virtual"})
 
     def test_eq(self):
         accumulatorA = Accumulator("accumulator", tile_position=(0, 0))
@@ -111,7 +102,7 @@ class AccumulatorTesting(unittest.TestCase):
 
         assert accumulatorA == accumulatorB
 
-        accumulatorA.output_signal = "signal-A"
+        accumulatorA.output_signal = "signal-B" # Make sure it's not default!
 
         assert accumulatorA != accumulatorB
 

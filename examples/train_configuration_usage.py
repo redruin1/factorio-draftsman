@@ -47,7 +47,8 @@ def main():
     # Fuel the locomotive
     config.cars[0].set_item_request("nuclear-fuel", 3)
     # Set cargo filters
-    config.cars[1].set_inventory_filters(["iron-ore", "copper-ore", "stone", "coal"])
+    # config.cars[1].set_inventory_filters(["iron-ore", "copper-ore", "stone", "coal"])
+    config.cars[1].inventory_filters = ["iron-ore", "copper-ore", "stone", "coal"]
     # Set the modding tags for them
     config.cars[2].tags = {"some": "stuff"}
     # Even preload the artillery wagons on construction

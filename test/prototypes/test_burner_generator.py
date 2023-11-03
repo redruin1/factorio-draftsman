@@ -1,30 +1,21 @@
 # test_burner_generator.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import BurnerGenerator, burner_generators, Container
 from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class BurnerGeneratorTesting(unittest.TestCase):
+class TestBurnerGenerator:
     def test_contstructor_init(self):
         generator = BurnerGenerator("burner-generator")
 
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             BurnerGenerator(unused_keyword="whatever")
 
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             BurnerGenerator("this is not a burner generator")
 
     def test_mergable_with(self):

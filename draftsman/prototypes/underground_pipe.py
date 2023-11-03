@@ -1,15 +1,14 @@
 # underground_pipe.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
 
 from draftsman.data.entities import underground_pipes
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Union
 
 
 class UndergroundPipe(DirectionalMixin, Entity):
@@ -17,27 +16,42 @@ class UndergroundPipe(DirectionalMixin, Entity):
     A pipe that transports fluids underneath other entities.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports
-    # }
-    # fmt: on
     class Format(DirectionalMixin.Format, Entity.Format):
-        pass
+        model_config = ConfigDict(title="UndergroundPipe")
 
-    def __init__(self, name=underground_pipes[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(UndergroundPipe, self).__init__(name, underground_pipes, **kwargs)
+    def __init__(
+        self,
+        name: str = underground_pipes[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        Construct a new underground pipe.
+        TODO
+        """
+        super().__init__(
+            name,
+            underground_pipes,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            tags=tags,
+            **kwargs
+        )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self.validate_assignment = validate_assignment
 
-        del self.unused_args
+        if validate:
+            self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

@@ -1,14 +1,13 @@
 # solar_panel.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
 
 from draftsman.data.entities import solar_panels
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Union
 
 
 class SolarPanel(Entity):
@@ -16,26 +15,40 @@ class SolarPanel(Entity):
     An entity that produces electricity depending on the presence of the sun.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports
-    # }
-    # fmt: on
     class Format(Entity.Format):
-        pass
+        model_config = ConfigDict(title="SolarPanel")
 
-    def __init__(self, name=solar_panels[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(SolarPanel, self).__init__(name, solar_panels, **kwargs)
+    def __init__(
+        self,
+        name: str = solar_panels[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        super().__init__(
+            name,
+            solar_panels,
+            position=position,
+            tile_position=tile_position,
+            tags=tags,
+            **kwargs
+        )
 
-        del self.unused_args
+        self.validate_assignment = validate_assignment
+
+        if validate:
+            self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

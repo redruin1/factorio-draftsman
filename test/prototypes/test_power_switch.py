@@ -1,25 +1,16 @@
 # test_power_switch.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.group import Group
 from draftsman.entity import PowerSwitch, power_switches, Container
 from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class PowerSwitchTesting(unittest.TestCase):
+class TestPowerSwitch:
     def test_constructor_init(self):
         switch = PowerSwitch("power-switch", tile_position=[0, 0], switch_state=True)
         assert switch.to_dict() == {
@@ -29,15 +20,16 @@ class PowerSwitchTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             PowerSwitch(unused_keyword="whatever")
+        with pytest.warns(UnknownKeywordWarning):
+            PowerSwitch(control_behavior={"unused_key": "something"})
+        with pytest.warns(UnknownEntityWarning):
+            PowerSwitch("this is not a power switch")
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            PowerSwitch("this is not a power switch")
-        # TODO: move to validate
-        # with pytest.raises(DataFormatError):
-        #     PowerSwitch(control_behavior={"unused_key": "something"})
+        with pytest.raises(DataFormatError):
+            PowerSwitch(control_behavior="incorrect")
 
     def test_flags(self):
         for name in power_switches:

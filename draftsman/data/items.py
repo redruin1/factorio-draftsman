@@ -16,6 +16,10 @@ with pkg_resources.open_binary(data, "items.pkl") as inp:
     raw: dict[str, dict] = _data[0]
     subgroups: dict[str, dict] = _data[1]
     groups: dict[str, dict] = _data[2]
+    fuels: dict[str, set[str]] = _data[3]
+    all_fuel_items: set[str] = set(
+        item for category in fuels for item in fuels[category]
+    )
 
 
 def add_item(name: str, subgroup: str, group: str):

@@ -1,30 +1,33 @@
 # mode_of_operation.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import InserterModeOfOperation, LogisticModeOfOperation
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Optional
 
 
-class InserterModeOfOperationMixin(object):  # (ControlBehaviorMixin)
+class InserterModeOfOperationMixin:  # (ControlBehaviorMixin)
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
 
     Gives the Inserter a mode of operation constant.
     """
 
-    # _exports = {}
     class ControlFormat(BaseModel):
-        circuit_mode_of_operation: InserterModeOfOperation | None = None
+        circuit_mode_of_operation: Optional[InserterModeOfOperation] = Field(
+            None,
+            description="""
+            The manner in which this inserter should react when connected to a 
+            circuit network.
+            """,
+        )
 
     class Format(BaseModel):
         pass
 
     @property
-    def mode_of_operation(self):
-        # type: () -> InserterModeOfOperation
+    def mode_of_operation(self) -> InserterModeOfOperation:
         """
         The behavior that the inserter should follow when connected to a circuit
         network.
@@ -36,35 +39,37 @@ class InserterModeOfOperationMixin(object):  # (ControlBehaviorMixin)
         :exception ValueError: If set to a value that cannot be interpreted as a
             valid ``InserterModeOfOperation``.
         """
-        return self.control_behavior.get("circuit_mode_of_operation", None)
+        return self.control_behavior.circuit_mode_of_operation
 
     @mode_of_operation.setter
-    def mode_of_operation(self, value):
-        # type: (InserterModeOfOperation) -> None
-        if value is None:
-            self.control_behavior.pop("circuit_mode_of_operation", None)
-        else:
-            value = InserterModeOfOperation(value)
-            self.control_behavior["circuit_mode_of_operation"] = value
+    def mode_of_operation(self, value: InserterModeOfOperation):
+        if self.validate_assignment:
+            attempt_and_reissue(self, "circuit_mode_of_operation", value)
+
+        self.control_behavior.circuit_mode_of_operation = value
 
 
-class LogisticModeOfOperationMixin(object):  # (ControlBehaviorMixin)
+class LogisticModeOfOperationMixin:  # (ControlBehaviorMixin)
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
 
     Gives the Logistics container a mode of operation constant.
     """
 
-    # _exports = {}
     class ControlFormat(BaseModel):
-        circuit_mode_of_operation: LogisticModeOfOperation | None = None
+        circuit_mode_of_operation: Optional[LogisticModeOfOperation] = Field(
+            None,
+            description="""
+            The manner in which this logistics container should react when 
+            connected to a circuit network.
+            """,
+        )
 
     class Format(BaseModel):
         pass
 
     @property
-    def mode_of_operation(self):
-        # type: () -> LogisticModeOfOperation
+    def mode_of_operation(self) -> LogisticModeOfOperation:
         """
         The behavior that the logistic container should follow when connected to
         a circuit network.
@@ -76,13 +81,11 @@ class LogisticModeOfOperationMixin(object):  # (ControlBehaviorMixin)
         :exception ValueError: If set to a value that cannot be interpreted as a
             valid ``LogisticModeOfOperation``.
         """
-        return self.control_behavior.get("circuit_mode_of_operation", None)
+        return self.control_behavior.circuit_mode_of_operation
 
     @mode_of_operation.setter
-    def mode_of_operation(self, value):
-        # type: (LogisticModeOfOperation) -> None
-        if value is None:
-            self.control_behavior.pop("circuit_mode_of_operation", None)
-        else:
-            value = LogisticModeOfOperation(value)
-            self.control_behavior["circuit_mode_of_operation"] = value
+    def mode_of_operation(self, value: LogisticModeOfOperation):
+        if self.validate_assignment:
+            attempt_and_reissue(self, "circuit_mode_of_operation", value)
+
+        self.control_behavior.circuit_mode_of_operation = value

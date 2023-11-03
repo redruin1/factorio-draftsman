@@ -1101,6 +1101,29 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
 # =============================================================================
 
 
+def extract_fluids(lua, data_location, verbose, sort_tuple):
+    """
+    Extracts the fluids to ``fluids.pkl`` in :py:mod:`draftsman.data`.
+    """
+    data = lua.globals().data
+
+    unordered_fluids_raw = convert_table_to_dict(data.raw["fluid"])
+    raw_order = get_order(unordered_fluids_raw, *sort_tuple)
+
+    fluids_raw = OrderedDict()
+    for name in raw_order:
+        fluids_raw[name] = unordered_fluids_raw[name]
+
+    with open(os.path.join(data_location, "fluids.pkl"), "wb") as out:
+        pickle.dump((fluids_raw,), out, 2)
+
+    if verbose:
+        print("Extracted fluids...")
+
+
+# =============================================================================
+
+
 def extract_instruments(lua, data_location, verbose):
     """
     Extracts the instruments to ``instruments.pkl`` in :py:mod:`draftsman.data`.
@@ -1143,8 +1166,20 @@ def extract_items(lua, data_location, verbose, sort_tuple):
     Extracts the items to ``items.pkl`` in :py:mod:`draftsman.data`.
     """
     sorted_items, sorted_subgroups, sorted_groups = sort_tuple
+
+    data = lua.globals().data
+
+    # Grab fuel items
+    fuel_categories = convert_table_to_dict(data.raw["fuel-category"])
+
+    fuels = {category: set() for category in fuel_categories}
+
+    for item_name, item in sorted_items.items():
+        if "fuel_category" in item:
+            fuels[item["fuel_category"]].add(item_name)
+
     with open(os.path.join(data_location, "items.pkl"), "wb") as out:
-        items = [sorted_items, sorted_subgroups, sorted_groups]
+        items = [sorted_items, sorted_subgroups, sorted_groups, fuels]
         pickle.dump(items, out, 2)
 
     if verbose:
@@ -1985,6 +2020,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
     items = get_items(lua)
 
     extract_entities(lua, data_location, verbose, items)
+    extract_fluids(lua, data_location, verbose, items)
     extract_instruments(lua, data_location, verbose)
     extract_items(lua, data_location, verbose, items)
     extract_modules(lua, data_location, verbose, items)

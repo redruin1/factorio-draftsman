@@ -6,8 +6,13 @@
     * Format for specifying schemas is now much clearer
     * Because the backend of `pydantic` is in Rust, it should also be faster
     * Both blueprintables and entities now share the same exporting code, overall making more sense
-    * Can now create a JSON schema of any entity or blueprintable which can be exported and used in any other program that reads JSON schema(!)
+    * Can now create a JSON schema of any entity or blueprintable (by calling `Object.json_schema()`), which can be exported and used in any other program that reads JSON schema(!)
     * However, minimum Python version is now 3.7 to support type hints
+
+* Switched from `unittest` to `pytest` (more features with similar syntax; `coverage run` still works the same)
+* Changed the code to be primarily Python3 compatible
+* Added `data.fluids` module with some useful helpers
+* Added `data.items.fuels` which is dict of sets of item names that fall under their respective fuel categories
 * Added `extras` module which implements some handy new features:
     * Added `flip_belts(blueprint)` which flips all belt entities inside the blueprint (preserving continuity)
 * Added a bunch of equivalent functions from Factorio StdLib:
@@ -41,8 +46,6 @@
 * Added a README.md to the `examples` folder which provides short descriptions for all of the examples
 * Integrated aforementioned examples into the test suite
 * Normalized all import filenames to use underscores consistently (potentially breaking change!)
-* Changed the code to be primarily Python3 compatible
-* Switched from `unittest` to `pytest` (more features with similar syntax; `coverage run` still works the same)
 * Finished up documentation on `DeconstructionPlanner`
 * [PERF] Reduced memory consumption by up to ~80 percent(!) (This also made it quite a bit faster to boot)
 * Made it so that default `collision_mask` keys are resolved at once at the data level when you call `draftsman-update`, so you can query `entities.raw` for the correct default value

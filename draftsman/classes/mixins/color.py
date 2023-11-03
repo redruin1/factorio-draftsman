@@ -1,15 +1,10 @@
 # color.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-from draftsman.error import DataFormatError
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.signatures import Color
 
-from pydantic import BaseModel
-from typing import Union
-from schema import SchemaError
-import six
+from pydantic import BaseModel, Field
+from typing import Optional, Union
 
 from typing import TYPE_CHECKING
 
@@ -17,34 +12,30 @@ if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
-class ColorMixin(object):
+class ColorMixin:
     """
     Gives the entity an editable color.
     """
 
-    # _exports = {
-    #     "color": {
-    #         "format": "{'r': r, 'g': g, 'b': b, 'a': a}",
-    #         "description": "The color property of the entity if colorable",
-    #         "required": lambda x: x is not None,
-    #     }
-    # }
     class Format(BaseModel):
-        color: Color | None = None
+        color: Optional[Color] = Field(
+            None,
+            description="""
+            The color modifier used to alter this entity's appearence.            
+            """,
+        )
 
-    def __init__(self, name, similar_entities, **kwargs):
-        # type: (str, list[str], **dict) -> None
-        super(ColorMixin, self).__init__(name, similar_entities, **kwargs)
+    def __init__(self, name: str, similar_entities: list[str], **kwargs):
+        self._root: __class__.Format
 
-        self.color = None
-        if "color" in kwargs:
-            self.color = kwargs["color"]
-            self.unused_args.pop("color")
-        # self._add_export("color", lambda x: x is not None)
+        super().__init__(name, similar_entities, **kwargs)
+
+        self.color = kwargs.get("color", None)
+
+    # =========================================================================
 
     @property
-    def color(self):
-        # type: () -> dict
+    def color(self) -> Color:
         """
         The color of the Entity.
 
@@ -66,22 +57,22 @@ class ColorMixin(object):
         :exception DataFormatError: If the set ``color`` does not match the
             above specification.
         """
-        return self._root.get("color", None)
+        return self._root.color
 
     @color.setter
-    def color(self, value):
-        # type: (Union[list, dict]) -> None
-        if value is None:
-            self._root.pop("color", None)
-            return
-        try:
-            self._root["color"] = value
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    def color(self, value: Union[list[float], Color]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "color", value
+            )
+            self._root.color = result
+        else:
+            self._root.color = value
 
-    def merge(self, other):
-        # type: (Entity) -> None
-        super(ColorMixin, self).merge(other)
+    # =========================================================================
+
+    def merge(self, other: "Entity"):
+        super().merge(other)
 
         self.color = other.color
 

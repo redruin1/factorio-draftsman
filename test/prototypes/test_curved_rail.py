@@ -1,28 +1,21 @@
 # test_curved_rail.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.constants import Direction
 from draftsman.entity import CurvedRail, curved_rails, Container
 from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning, RailAlignmentWarning
+from draftsman.warning import GridAlignmentWarning, UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class CurvedRailTesting(unittest.TestCase):
+class TestCurvedRail:
     def test_constructor_init(self):
         curved_rail = CurvedRail(
             "curved-rail", tile_position=[0, 0], direction=Direction.NORTHWEST
         )
+        print(curved_rail.tile_width, curved_rail.tile_height)
+        print(curved_rail.collision_set)
         assert curved_rail.to_dict() == {
             "name": "curved-rail",
             "position": {"x": 4.0, "y": 2.5},
@@ -30,15 +23,13 @@ class CurvedRailTesting(unittest.TestCase):
         }
 
         # Warnings:
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             CurvedRail("curved-rail", invalid_keyword="whatever")
         # if entity is not on a grid pos / 2, then warn the user of the incoming
         # shift
-        with pytest.warns(RailAlignmentWarning):
+        with pytest.warns(GridAlignmentWarning):
             CurvedRail("curved-rail", tile_position=[1, 1])
-
-        # Errors
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             CurvedRail("this is not a curved rail")
 
     def test_mergable_with(self):

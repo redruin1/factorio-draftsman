@@ -2,9 +2,12 @@
 
 ### For backwards compat, allow indexing a blueprintable to point to its `_root[_root_item]` sub-index instead of it's true `_root`?
 
-### Rename `InvalidSignalError` to `UnknownSignalError` (do the same with everything else to indicate change in functionality)
+### More elegantly handle when a prototype has no valid members (like `LinkedBelt`)
 
-### Add bool `validate` parameter to the constructor of `Entity`; indicates whether or not to validate the entity after construction
+### Change all internal attribute accesses to use `["element"]` and `.get("element", None)` instead so that functionality should remain constant when importing dicts when `validate="none"`
+
+### Add keyword arguments to all draftsman entities and blueprintables
+So the user can quickly determine what keys are allowed without having to consult the docs firsthand, or create an instance of it and check it's members
 
 ### Add as many of the example programs to the test suite as possible
 To help ensure that they're behaving correctly over any API changes, so they stay up-to-date
@@ -24,10 +27,6 @@ General constraints on parameters and inputs; what you can deconstruct, what you
 ---
 ### Write `__repr__` function for everything
 For most of the commonly-used things this is already the case, but would be nice if every Draftsman object had a nice, user-readable formatted output.
-
----
-### Unify entity validation into one monolithic thing
-Currently `Entity` and `Blueprintable` have two slightly different methods of converting their Python object representation to their output JSON dict/string format. Ideally this would be one single method (and thus one single point of failure to maintain).
 
 ---
 ### Write `dump_format` (and test_cases)
@@ -89,11 +88,7 @@ Documentation is currently written in [reStructuredText](https://docutils.source
 Currently all the data being extracted from the Factorio load process is all "hard-coded"; you have to manually edit `env.py` in order to change what it extracts. This is alright for the maintainers of Draftsman as we can simply edit it if we need more/less information from `data.raw`, but what if the user wants some data from Factorio that Draftsman doesn't bother extracting? In this case Draftsman would benefit from a generic editable interface where people can configure and modify exactly the information they want from the game for whatever their purposes are.
 
 ---
-### Maybe integrate defaults for more succinct blueprint strings?
-A bootleg version of this currently exists already, where null entries are removed, but there should also be some kind of control for the "verbosity" of the output blueprint dict/string
-
----
-### In the same vein as above, also perhaps an option for blueprint canonicalization
+### Perhaps add an option for blueprint canonicalization
 Ordering objects inside blueprints in regular ways for best compression, minimal git diff, etc.
 
 ---
@@ -108,5 +103,5 @@ Should also probably subdivide the examples folder into subfolders like `rail`, 
 And give each folder their own README.md that describes what each one does
 
 ---
-### Investigate a Cython rewrite in efforts to make the library as performant as possible
+### Investigate a Cython/Rust rewrite in efforts to make the library as performant as possible
 Likely the last-most step, once all other feature requests and optimization passes are complete, to help squeeze as much out of the code-base as possible

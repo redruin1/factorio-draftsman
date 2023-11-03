@@ -4,8 +4,8 @@
 from __future__ import unicode_literals
 
 from draftsman.entity import RocketSilo, rocket_silos, Container
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import sys
@@ -26,13 +26,23 @@ class RocketSiloTesting(unittest.TestCase):
             "auto_launch": True,
         }
 
-        with pytest.warns(DraftsmanWarning):
+        # Warnings
+        with pytest.warns(UnknownKeywordWarning):
             RocketSilo(unused_keyword="whatever")
-
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             RocketSilo("this is not a rocket silo")
-        with pytest.raises(TypeError):
+
+        # Errors
+        with pytest.raises(DataFormatError):
             RocketSilo(auto_launch="incorrect")
+
+    def test_power_and_circuit_flags(self):
+        for name in rocket_silos:
+            silo = RocketSilo(name)
+            assert silo.power_connectable == False
+            assert silo.dual_power_connectable == False
+            assert silo.circuit_connectable == False
+            assert silo.dual_circuit_connectable == False
 
     def test_mergable_with(self):
         silo1 = RocketSilo("rocket-silo")

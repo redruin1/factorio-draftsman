@@ -1,15 +1,16 @@
 # storage_tank.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import CircuitConnectableMixin, DirectionalMixin
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
+from draftsman.signatures import Connections
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import storage_tanks
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Union
 
 
 class StorageTank(CircuitConnectableMixin, DirectionalMixin, Entity):
@@ -17,32 +18,48 @@ class StorageTank(CircuitConnectableMixin, DirectionalMixin, Entity):
     An entity that stores a fluid.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    # }
-    # fmt: on
     class Format(
         CircuitConnectableMixin.Format,
         DirectionalMixin.Format,
         Entity.Format,
     ):
-        pass
+        model_config = ConfigDict(title="StorageTank")
 
-    def __init__(self, name=storage_tanks[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(StorageTank, self).__init__(name, storage_tanks, **kwargs)
+    def __init__(
+        self,
+        name: str = storage_tanks[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        connections: Connections = Connections(),
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        super().__init__(
+            name,
+            storage_tanks,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            connections=connections,
+            tags=tags,
+            **kwargs,
+        )
 
-        del self.unused_args
+        self.validate_assignment = validate_assignment
+
+        if validate:
+            self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

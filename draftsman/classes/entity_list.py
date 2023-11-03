@@ -9,6 +9,7 @@ from draftsman.error import (
     InvalidEntityError,
 )
 from draftsman import utils
+from draftsman.signatures import Connections
 from draftsman.warning import HiddenEntityWarning
 
 try:  # pragma: no coverage
@@ -16,7 +17,9 @@ try:  # pragma: no coverage
 except ImportError:  # pragma: no coverage
     from collections import MutableSequence
 from copy import deepcopy
-from pydantic import BaseModel
+from pydantic import BaseModel, GetCoreSchemaHandler, GetJsonSchemaHandler
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import CoreSchema, core_schema
 import six
 from typing import Union, Any, TYPE_CHECKING
 import warnings
@@ -34,12 +37,11 @@ class EntityList(MutableSequence):
     :py:class:`.EntityCollection` classes.
     """
 
-    class Model(BaseModel):
+    class Format(BaseModel):
         data: list[dict]  # TODO: fix
 
     @utils.reissue_warnings
-    def __init__(self, parent=None, initlist=None, unknown="error"):
-        # type: (EntityCollection, Any, str) -> None
+    def __init__(self, parent: "EntityCollection"=None, initlist: list[EntityLike]=None):
         """
         Instantiates a new ``EntityList``.
 
@@ -50,7 +52,7 @@ class EntityList(MutableSequence):
         :exception TypeError: If any of the entries in ``initlist`` are neither
             a ``dict`` nor an ``EntityLike``.
         """
-        self.data = []  # type: list[EntityLike]
+        self.data: list[EntityLike] = []
         self.key_map = {}
         self.key_to_idx = {}
         self.idx_to_key = {}
@@ -60,18 +62,18 @@ class EntityList(MutableSequence):
         if initlist is not None:
             for elem in initlist:
                 if isinstance(elem, EntityLike):
-                    self.append(elem, unknown=unknown)
+                    self.append(elem)
                 elif isinstance(elem, dict):
                     name = elem.pop("name")
-                    self.append(name, **elem, unknown=unknown)
+                    self.append(name, **elem)
                 else:
                     raise TypeError(
                         "Constructor either takes EntityLike or dict entries"
                     )
 
     @utils.reissue_warnings
-    def append(self, name, copy=True, merge=False, unknown="error", **kwargs):
-        # type: (Union[str, EntityLike], bool, bool, str, **dict) -> None
+    def append(self, name, copy=True, merge=False, **kwargs):
+        # type: (Union[str, EntityLike], bool, bool, **dict) -> None
         """
         Appends the ``EntityLike`` to the end of the sequence.
 
@@ -132,12 +134,12 @@ class EntityList(MutableSequence):
             assert blueprint.entities[-1].stack_size_override == 1
         """
         self.insert(
-            len(self.data), name, copy=copy, merge=merge, unknown=unknown, **kwargs
+            len(self.data), name, copy=copy, merge=merge, **kwargs
         )
 
     @utils.reissue_warnings
-    def insert(self, idx, name, copy=True, merge=False, unknown="error", **kwargs):
-        # type: (int, Union[str, EntityLike], bool, bool, str, **dict) -> None
+    def insert(self, idx, name, copy=True, merge=False, **kwargs):
+        # type: (int, Union[str, EntityLike], bool, bool, **dict) -> None
         """
         Inserts an ``EntityLike`` into the sequence.
 
@@ -192,7 +194,7 @@ class EntityList(MutableSequence):
         # Convert to new Entity if constructed via string keyword
         new = False
         if isinstance(name, six.string_types):
-            entitylike = new_entity(name, unknown=unknown, **kwargs)
+            entitylike = new_entity(name, **kwargs)
             if entitylike is None:
                 return
             new = True
@@ -485,8 +487,7 @@ class EntityList(MutableSequence):
         # type: () -> int
         return len(self.data)
 
-    def __contains__(self, item):
-        # type: (EntityLike) -> bool
+    def __contains__(self, item: EntityLike) -> bool:
         if item in self.data:
             return True
         else:  # Check every entity for sublists
@@ -497,32 +498,28 @@ class EntityList(MutableSequence):
         # Nothing was found
         return False
 
-    def __or__(self, other):
-        # type: (EntityList) -> EntityList
+    def __or__(self, other: "EntityList") -> "EntityList":
         return self.union(other)
 
     # def __ior__(self, other):
     #     # type: (EntityList) -> None
     #     self.union(other)
 
-    def __and__(self, other):
-        # type: (EntityList) -> EntityList
+    def __and__(self, other: "EntityList") -> "EntityList":
         return self.intersection(other)
 
     # def __iand__(self, other):
     #     # type: (EntityList) -> None
     #     self.intersection(other)
 
-    def __sub__(self, other):
-        # type: (EntityList) -> EntityList
+    def __sub__(self, other: "EntityList") -> "EntityList":
         return self.difference(other)
 
     # def __isub__(self, other):
     #     # type: (EntityList) -> None
     #     self.difference(other)
 
-    def __eq__(self, other):
-        # type: (EntityList) -> bool
+    def __eq__(self, other: "EntityList") -> bool:
         if not isinstance(other, EntityList):
             return False
 
@@ -535,8 +532,7 @@ class EntityList(MutableSequence):
 
         return True
 
-    def __deepcopy__(self, memo):
-        # type: (dict) -> EntityList
+    def __deepcopy__(self, memo: dict) -> "EntityList":
         """
         Creates a deepcopy of the EntityList. Also copies Associations such that
         they are preserved.
@@ -551,7 +547,7 @@ class EntityList(MutableSequence):
         # if id(self) in memo:
         #     return memo[id(self)]
 
-        # We create a new entity with no parent; this is important because we
+        # We create a new list with no parent; this is important because we
         # don't want two EntityLists pointing at the same parent, as this often
         # leads to overlapping entity warnings
         # Anything to do with EntityCollection specific things has to be
@@ -583,15 +579,16 @@ class EntityList(MutableSequence):
         # Then, we iterate over all the associations in every Entity in the new
         # EntityList and replace them with associations to the new Entities
         for entity in new:
-            # swap linked position lmao
-            # entity._position.linked = entity._tile_position
-            # entity._tile_position.linked = entity._position
             if hasattr(entity, "connections"):
-                connections = entity.connections
-                for side in connections:
+                connections: Connections = entity.connections
+                for side in connections.true_model_fields():
+                    if connections[side] is None:
+                        continue
                     if side in {"1", "2"}:
-                        for color in connections[side]:
+                        for color, _ in connections[side]:
                             connection_points = connections[side][color]
+                            if connection_points is None:
+                                continue
                             for point in connection_points:
                                 old = point["entity_id"]
                                 point["entity_id"] = try_to_replace_association(old)
@@ -607,8 +604,13 @@ class EntityList(MutableSequence):
 
         return new
 
-    # def __repr__(self) -> str:
-    #     return "TODO"
+    def __repr__(self) -> str:
+        return "<EntityList>{}".format(self.data)
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _source_type: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
+        return core_schema.no_info_after_validator_function(cls, handler(list[dict])) # TODO: correct annotation
+
 
     # =========================================================================
     # Internal functions
@@ -655,9 +657,9 @@ class EntityList(MutableSequence):
     def _shift_key_indices(self, idx, amt):
         # type: (int, int) -> None
         """
-        Shifts all of the key mappings above or equal to``idx`` by ``amt``. Used
-        when inserting or removing elements before the end, which moves what
-        index each key should point to.
+        Shifts all of the key mappings above or equal to ``idx`` by ``amt``.
+        Used when inserting or removing elements before the end, which moves
+        what index each key should point to.
         """
 
         # Shift the indices for key_to_idx

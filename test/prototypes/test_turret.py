@@ -5,26 +5,20 @@ from __future__ import unicode_literals
 
 from draftsman.entity import Turret, turrets, Container
 from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
+class TestTurret:
+    def test_constructor_init(self):
+        turret = Turret("gun-turret")
 
-class TurretTesting(unittest.TestCase):
-    def test_contstructor_init(self):
-        turret = Turret()
+        with pytest.warns(UnknownKeywordWarning):
+            Turret("gun-turret", unused_keyword="whatever")
 
-        with pytest.warns(DraftsmanWarning):
-            Turret(unused_keyword="whatever")
-
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             Turret("this is not a turret")
 
     def test_mergable_with(self):

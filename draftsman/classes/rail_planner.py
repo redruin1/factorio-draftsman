@@ -395,6 +395,7 @@ class RailPlanner(Group):
         rail_pos = self.last_rail_added.position
         rail_dir = self.last_rail_added.direction
         if self.last_rail_added.name == self.straight_rail:
+            print(rail_dir)
             if rail_dir in diagonals:
                 # Diagonal Straight Rail
                 # `front` has no effect, since there's only two valid spots
@@ -426,6 +427,8 @@ class RailPlanner(Group):
                 else:
                     signal_dir = self.head_direction
 
+                print(rail_pos, offset)
+                print(rail_pos + offset, signal_dir)
                 self.entities.append(
                     name=entity, tile_position=rail_pos + offset, direction=signal_dir
                 )

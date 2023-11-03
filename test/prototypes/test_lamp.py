@@ -1,23 +1,14 @@
 # test_lamp.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import Lamp, lamps, Container
-from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class LampTesting(unittest.TestCase):
+class TestLamp:
     def test_constructor_init(self):
         lamp = Lamp("small-lamp", control_behavior={"use_colors": True})
         assert lamp.to_dict() == {
@@ -27,24 +18,27 @@ class LampTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Lamp("small-lamp", unused_keyword="whatever")
-
-        # Errors
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownKeywordWarning):
+            Lamp(control_behavior={"unused_key": "something"})
+        with pytest.warns(UnknownEntityWarning):
             Lamp("this is not a lamp")
-        # TODO: move to validate
-        # with pytest.raises(DataFormatError):
-        #     Lamp(control_behavior={"unused_key": "something"})
+        
+        # Errors
+        with pytest.raises(DataFormatError):
+            Lamp(control_behavior="incorrect")
 
     def test_set_use_colors(self):
         lamp = Lamp("small-lamp")
         lamp.use_colors = True
-        assert lamp.control_behavior == {"use_colors": True}
+        assert lamp.use_colors == True
+        assert lamp.control_behavior == Lamp.Format.ControlBehavior(**{"use_colors": True})
+        
         lamp.use_colors = None
         assert lamp.use_colors == None
-        assert lamp.control_behavior == {}
-        with pytest.raises(TypeError):
+        
+        with pytest.raises(DataFormatError):
             lamp.use_colors = "incorrect"
 
     def test_mergable_with(self):

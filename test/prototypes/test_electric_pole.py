@@ -1,35 +1,29 @@
 # test_electric_pole.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.group import Group
 from draftsman.entity import ElectricPole, electric_poles, Container
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class ElectricPoleTesting(unittest.TestCase):
+class TestElectricPole:
     def test_constructor_init(self):
         electric_pole = ElectricPole("substation", position=[1, 1], neighbours=[1, 2])
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             ElectricPole("small-electric-pole", unused_keyword=10)
+        with pytest.warns(UnknownEntityWarning):
+            ElectricPole("this is not an electric pole")
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            ElectricPole("this is not an electric pole")
+        with pytest.raises(DataFormatError):
+            ElectricPole(neighbours="incorrect")
 
     def test_mergable_with(self):
         group = Group()
@@ -69,7 +63,6 @@ class ElectricPoleTesting(unittest.TestCase):
         blueprint.entities.append(group, merge=True)
         blueprint.add_power_connection((0, 0), (1, 0))
 
-        self.maxDiff = None
         assert len(blueprint.entities) == 2
         assert len(blueprint.entities[0].entities) == 2
         assert len(blueprint.entities[1].entities) == 1

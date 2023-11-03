@@ -1,24 +1,15 @@
 # test_transport_belt.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.constants import Direction, ReadMode
 from draftsman.entity import TransportBelt, transport_belts, Container
 from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class TransportBeltTesting(unittest.TestCase):
+class TestTransportBelt:
     def test_constructor_init(self):
         # Valid
         fast_belt = TransportBelt(
@@ -66,7 +57,7 @@ class TransportBeltTesting(unittest.TestCase):
                         "type": "item",
                     },
                     "comparator": "≥",
-                    "constant": 0,
+                    # "constant": 0, # Default
                 },
                 "circuit_read_hand_contents": False,
                 "circuit_contents_read_mode": ReadMode.HOLD,
@@ -74,33 +65,30 @@ class TransportBeltTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             temp = TransportBelt("fast-transport-belt", invalid_param=100)
 
-        # Errors
-        # Raises InvalidEntityID when not in transport_belts
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             TransportBelt("this is not a storage tank")
 
-        # Raises schema errors when any of the associated data is incorrect
+        # Errors
         with pytest.raises(TypeError):
             TransportBelt("transport-belt", id=25)
 
         with pytest.raises(TypeError):
             TransportBelt("transport-belt", position=TypeError)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             TransportBelt("transport-belt", direction="incorrect")
 
-        # TODO: move these to validation
-        # with pytest.raises(DataFormatError):
-        #     TransportBelt("transport-belt", connections={"this is": ["very", "wrong"]})
+        with pytest.raises(DataFormatError):
+            TransportBelt("transport-belt", connections=["very", "wrong"])
 
-        # with pytest.raises(DataFormatError):
-        #     TransportBelt(
-        #         "transport-belt",
-        #         control_behavior={"this is": ["also", "very", "wrong"]},
-        #     )
+        with pytest.raises(DataFormatError):
+            TransportBelt(
+                "transport-belt",
+                control_behavior=["also", "very", "wrong"],
+            )
 
     def test_power_and_circuit_flags(self):
         for transport_belt in transport_belts:
@@ -170,7 +158,7 @@ class TransportBeltTesting(unittest.TestCase):
         belt1.merge(belt2)
         del belt2
 
-        assert belt1.control_behavior == {
+        assert belt1.to_dict()["control_behavior"] == {
             "circuit_enable_disable": True,
             "circuit_condition": {
                 "first_signal": {"name": "signal-blue", "type": "virtual"},
@@ -183,8 +171,8 @@ class TransportBeltTesting(unittest.TestCase):
                     "name": "fast-underground-belt",
                     "type": "item",
                 },
-                "comparator": ">=",
-                "constant": 0,
+                "comparator": "≥",
+                # "constant": 0, # Default
             },
             "circuit_read_hand_contents": False,
             "circuit_contents_read_mode": ReadMode.HOLD,

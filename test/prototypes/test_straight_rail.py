@@ -1,29 +1,20 @@
 # test_straight_rail.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.blueprintable import Blueprint
 from draftsman.constants import Direction
 from draftsman.entity import StraightRail, straight_rails, Container
-from draftsman.error import InvalidEntityError
 from draftsman.warning import (
     DraftsmanWarning,
-    RailAlignmentWarning,
+    GridAlignmentWarning,
     OverlappingObjectsWarning,
+    UnknownEntityWarning,
 )
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class StraightRailTesting(unittest.TestCase):  # Hoo boy
+class TestStraightRail:
     def test_constructor_init(self):
         straight_rail = StraightRail(
             "straight-rail", tile_position=[0, 0], direction=Direction.NORTHWEST
@@ -48,11 +39,11 @@ class StraightRailTesting(unittest.TestCase):  # Hoo boy
             StraightRail("straight-rail", invalid_keyword="whatever")
         # if entity is not on a grid pos / 2, then warn the user of the incoming
         # shift
-        with pytest.warns(RailAlignmentWarning):
+        with pytest.warns(GridAlignmentWarning):
             StraightRail("straight-rail", tile_position=[1, 1])
 
         # Errors
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             StraightRail("this is not a straight rail")
 
     def test_overlapping(self):
@@ -72,8 +63,16 @@ class StraightRailTesting(unittest.TestCase):  # Hoo boy
         blueprint.entities.pop()
 
         # But this should
-        with self.assertWarns(OverlappingObjectsWarning):
+        with pytest.warns(OverlappingObjectsWarning):
             blueprint.entities.append("gate", direction=Direction.NORTH)
+
+    def test_power_and_circuit_flags(self):
+        for name in straight_rails:
+            rail = StraightRail(name)
+            assert rail.power_connectable == False
+            assert rail.dual_power_connectable == False
+            assert rail.circuit_connectable == False
+            assert rail.dual_circuit_connectable == False
 
     def test_mergable_with(self):
         rail1 = StraightRail("straight-rail")

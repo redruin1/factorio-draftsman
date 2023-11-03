@@ -1,31 +1,21 @@
 # test_gate.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.constants import Direction
 from draftsman.entity import Gate, gates, Container
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class GateTesting(unittest.TestCase):
+class TestGate:
     def test_contstructor_init(self):
         gate = Gate("gate")
 
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Gate("gate", unused_keyword="whatever")
 
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             Gate("this is not a gate")
 
     def test_mergable_with(self):

@@ -1,5 +1,4 @@
 # entity.py
-# -*- encoding: utf-8 -*-
 
 from draftsman.blueprintable import *
 from draftsman.classes.vector import Vector
@@ -9,16 +8,10 @@ from draftsman.error import *
 from draftsman.warning import *
 from draftsman.utils import AABB
 
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class EntityTesting(unittest.TestCase):
+class TestEntity:
     def test_get_type(self):
         container = Container("wooden-chest")
         assert container.type == "container"
@@ -49,7 +42,7 @@ class EntityTesting(unittest.TestCase):
 
         # Errors
         # Setting tags to anything other than a dict raises errors
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             container.tags = "incorrect"
 
     def test_get_world_bounding_box(self):
@@ -59,17 +52,26 @@ class EntityTesting(unittest.TestCase):
     def test_set_name(self):
         iron_chest = Container("iron-chest")
         iron_chest.name = "steel-chest"
-        self.assertEqual(iron_chest.name, "steel-chest")
+        assert iron_chest.name == "steel-chest"
 
-        with pytest.raises(InvalidEntityError):
-            iron_chest.name = "incorrect"
+        with pytest.warns(UnknownEntityWarning):
+            iron_chest.name = "unknown"
+
+        assert iron_chest.collision_set == None
+        assert iron_chest.collision_mask == None
+        assert (iron_chest.tile_width, iron_chest.tile_height) == (0, 0)
+        assert iron_chest.inventory_bar_enabled == None
+        assert iron_chest.allowed_items == None
+
+        with pytest.raises(DataFormatError):
+            iron_chest.name = {"wrong"}
 
     def test_suggest_similar_name(self):
-        with pytest.raises(
-            InvalidEntityError,
-            match="'wodenchest' is not a valid name for this Container; did you mean 'wooden-chest'?",
+        with pytest.warns(
+            UnknownEntityWarning,
+            match="'wodenchest' is not a known name for this Container; did you mean 'wooden-chest'?",
         ):
-            wooden_chest = Container("wodenchest")
+            Container("wodenchest")
 
     def test_set_position(self):
         iron_chest = Container("iron-chest")
@@ -182,7 +184,7 @@ class EntityTesting(unittest.TestCase):
 # =============================================================================
 
 # fmt: off
-class EntityFactoryTesting(unittest.TestCase):
+class TestEntityFactory:
     def test_container(self):
         assert isinstance(new_entity("wooden-chest"), Container)
 
@@ -337,10 +339,10 @@ class EntityFactoryTesting(unittest.TestCase):
         assert isinstance(new_entity("radar"), Radar)
 
     def test_simple_entity_with_owner(self):
-        self.assertIsInstance(new_entity("simple-entity-with-owner"), SimpleEntityWithOwner)
+        assert isinstance(new_entity("simple-entity-with-owner"), SimpleEntityWithOwner)
 
     def test_simple_entity_with_force(self):
-        self.assertIsInstance(new_entity("simple-entity-with-force"), SimpleEntityWithForce)
+        assert isinstance(new_entity("simple-entity-with-force"), SimpleEntityWithForce)
 
     def test_electric_energy_interface(self):
         assert isinstance(new_entity("electric-energy-interface"), ElectricEnergyInterface)
@@ -366,7 +368,7 @@ class EntityFactoryTesting(unittest.TestCase):
         assert isinstance(new_entity("burner-generator"), BurnerGenerator)
 
     def test_player_port(self):
-        self.assertIsInstance(new_entity("player-port"), PlayerPort)
+        assert isinstance(new_entity("player-port"), PlayerPort)
 
     def test_errors(self):
         with pytest.raises(InvalidEntityError, match="'incorrect' is not a recognized entity"):

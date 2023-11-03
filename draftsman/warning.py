@@ -83,7 +83,7 @@ class TooManyConnectionsWarning(DraftsmanWarning):
     pass
 
 
-class RailAlignmentWarning(DraftsmanWarning):
+class GridAlignmentWarning(DraftsmanWarning):
     """
     Raised when an Entity is placed on odd coordinates when it's type restricts
     it's placement to the rail grid (even coordinates).
@@ -120,10 +120,27 @@ class ModuleLimitationWarning(DraftsmanWarning):
     pass
 
 
+class ModuleNotAllowedWarning(DraftsmanWarning):
+    """
+    Raised when attempting to add a module to an entity that does not support
+    the effect it gives, such as requesting productivity modules to a beacon.
+    """
+
+    pass
+
+
 class ModuleCapacityWarning(DraftsmanWarning):
     """
     Raised when the number of modules in an :py:class:`.Entity` with module slots
     exceeds the total module capacity.
+    """
+
+    pass
+
+
+class RecipeLimitationWarning(DraftsmanWarning):
+    """
+    TODO
     """
 
     pass
@@ -149,7 +166,8 @@ class VolumeRangeWarning(DraftsmanWarning):
 
 class HiddenEntityWarning(DraftsmanWarning):
     """
-    Raised when an Entity that is marked as hidden is placed within a blueprint.
+    Raised when an Entity that is marked as hidden is placed within a blueprint,
+    since these entities cannot usually be placed with a blueprint.
     """
 
     pass
@@ -167,33 +185,140 @@ class OverlappingObjectsWarning(DraftsmanWarning):
     pass
 
 
-class UselessOperationWarning(DraftsmanWarning):
-    """
-    Raised when an action of some kind is functionally useless, such as when a
-    wall is connected with a circuit wire without an adjacent :py:class:`.Gate`.
-    """
-
-    pass
-
-
-class RedundantOperationWarning(DraftsmanWarning):
+class NoEffectWarning(DraftsmanWarning):
     """
     Raised when an action is performed who's operation would not have any
     noticable change, making it's execution needless. For example, setting a
     mapping in an upgrade planner to upgrade "transport-belt" to
-    "transport-belt" is possible, but performs no upgrade operation when used.
+    "transport-belt" is possible, but is prohibited in Factorio's GUI and is
+    functionally useless.
     """
 
     pass
 
 
-class UnrecognizedElementWarning(DraftsmanWarning):
+class UnknownKeywordWarning(DraftsmanWarning):
+    """
+    Raised when a keyword is passed to an Entity/Tile constructor that is not
+    known by Draftsman, likely indicating a mismatched or extra field.
+    """
+
+    pass
+
+
+class UnknownElementWarning(DraftsmanWarning):
     """
     Raised when Draftsman detects a entity/item/signal/tile or any other
     Factorio construct that it cannot resolve under it's current data
     configuration. This is usually either because the identifier was mistyped,
     or because the element in question belongs to a mod that Draftsman has not
     been updated to recognize.
+
+    This warning acts a superclass to a number of more specific versions, so you
+    can catch/filter this warning and all child classes will follow suit.
+    """
+
+    pass
+
+
+class UnknownEntityWarning(UnknownElementWarning):
+    """
+    TODO
+    """
+
+    pass
+
+
+class UnknownItemWarning(UnknownElementWarning):
+    """
+    TODO
+    """
+
+    pass
+
+
+class UnknownInstrumentWarning(UnknownElementWarning):
+    """
+    TODO
+    """
+
+    pass
+
+
+class UnknownNoteWarning(UnknownElementWarning):
+    """
+    TODO
+    """
+
+    pass
+
+
+class UnknownRecipeWarning(UnknownElementWarning):
+    """
+    TODO
+    """
+
+    pass
+
+
+class UnknownSignalWarning(UnknownElementWarning):
+    """
+    TODO
+    """
+
+    pass
+
+
+class MalformedSignalWarning(DraftsmanWarning):
+    """
+    TODO
+    """
+
+    pass
+
+
+class UnknownTileWarning(UnknownElementWarning):
+    """
+    TODO
+    """
+
+    pass
+
+
+class UpgradeProhibitedWarning(DraftsmanWarning):
+    """
+    Raised when a upgrade from one entity to another in a
+    :py:class:`~.UpgradePlanner` is prohibited due to the properties of one or
+    both of the upgrade targets.
+    """
+
+    pass
+
+
+class SignalConfigurationWarning(DraftsmanWarning):
+    """
+    Raised when a particular ordering of signals in a combinator lies outside of
+    the available configurations permitted in-game, such as setting both the
+    first and second signal of an arithmetic combinator to "signal-each".
+    """
+
+    pass
+
+
+class PureVirtualDisallowedWarning(DraftsmanWarning):
+    """
+    Raised when a signal slot is set to a pure virtual signal in a situation
+    where it is disallowed, such as an entry in a constant combinator.
+    """
+
+    pass
+
+
+class BarWarning(DraftsmanWarning):
+    """
+    Raised when the inventory bar is set on an entity which does not have bar
+    control, or when the bar amount exceeds the inventory size of the entity and
+    thus would have no effect.
     """
 
     pass

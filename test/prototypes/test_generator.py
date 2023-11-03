@@ -1,33 +1,23 @@
 # test_generator.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import Generator, generators, Container
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class GeneratorTesting(unittest.TestCase):
+class TestGenerator:
     def test_constructor_init(self):
         generator = Generator("steam-engine")
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Generator("steam-engine", unused_keyword="whatever")
+        with pytest.warns(UnknownEntityWarning):
+            Generator("not a generator")
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            Generator("not a generator")
 
     def test_mergable_with(self):
         gen1 = Generator("steam-engine")

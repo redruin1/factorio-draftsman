@@ -1,19 +1,19 @@
 # curved_rail.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
+# TODO: the width of the curved rail is calculated to be 5 when it's probably
+# actually 4 internally; thus we should manually overwrite it here... somehow
 
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DoubleGridAlignedMixin, EightWayDirectionalMixin
-from draftsman.constants import Direction
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
 from draftsman.utils import AABB, Rectangle
-from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import curved_rails
-from draftsman.data import entities
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Optional, Union
 
 _left_turn = CollisionSet(
     [AABB(0.25, 1.8, 1.75, 3.9), Rectangle((-0.375, -0.7175), 1.4, 5.45, -35)]
@@ -37,18 +37,26 @@ class CurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     A curved rail entity.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **EightWayDirectionalMixin._exports,
-    #     **DoubleGridAlignedMixin._exports,
-    # }
-    # fmt: on
-    class Format(DoubleGridAlignedMixin.Format, EightWayDirectionalMixin.Format, Entity.Format):
-        pass
+    class Format(
+        DoubleGridAlignedMixin.Format, EightWayDirectionalMixin.Format, Entity.Format
+    ):
+        model_config = ConfigDict(title="CurvedRail")
 
-    def __init__(self, name=curved_rails[0], **kwargs):
-        # type: (str, **dict) -> None
+    def __init__(
+        self,
+        name: str = curved_rails[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
         """
         TODO
         """
@@ -57,26 +65,44 @@ class CurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
         # values for collision boxes. We have to do this before initialization
         # of the rest of the class because certain things like tile position are
         # dependent on this information and can be set during initialization
-        # (if we pass in arguments in **kwargs).
+        # (if we pass in keyword arguments).
 
         # We set a (private) flag to ignore the dummy collision box that
         # Factorio provides
         self._overwritten_collision_set = True
 
-        # We then provide a list of all the custom rotations
-        self._collision_set = _left_turn
-        self._collision_set_rotation = _collision_set_rotation
+        super().__init__(
+            name,
+            curved_rails,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            tags=tags,
+            **kwargs
+        )
 
-        super(CurvedRail, self).__init__(name, curved_rails, **kwargs)
+        self.validate_assignment = validate_assignment
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        if validate:
+            self.validate(mode=validate).reissue_all(stacklevel=3)
 
-        del self.unused_args
+    # =========================================================================
+
+    @property
+    def double_grid_aligned(self) -> bool:
+        return True
+
+    # =========================================================================
+
+    @property
+    def static_collision_set(self) -> Optional[CollisionSet]:
+        return _collision_set_rotation.get(Direction.NORTH, None)
+
+    # =========================================================================
+
+    @property
+    def collision_set(self) -> Optional[CollisionSet]:
+        return _collision_set_rotation.get(self.direction, None)
 
     # =========================================================================
 

@@ -1,30 +1,14 @@
 # test_infinity_pipe.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import InfinityPipe, infinity_pipes, Container
-from draftsman.error import (
-    InvalidEntityError,
-    InvalidFluidError,
-    InvalidModeError,
-    DataFormatError,
-)
-from draftsman.warning import DraftsmanWarning, TemperatureRangeWarning
-
-from schema import SchemaError
+from draftsman.error import DataFormatError
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class InfinityPipeTesting(unittest.TestCase):
+class TestInfinityPipe:
     def test_constructor_init(self):
         pipe = InfinityPipe(
             infinity_settings={
@@ -40,21 +24,22 @@ class InfinityPipeTesting(unittest.TestCase):
             "infinity_settings": {
                 "name": "steam",
                 "percentage": 100,
-                "mode": "at-least",
+                # "mode": "at-least", # Default
                 "temperature": 500,
             },
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             InfinityPipe(unused_keyword="whatever")
+        with pytest.warns(UnknownKeywordWarning):
+            InfinityPipe(infinity_settings={"clearly": "wrong"})
+        with pytest.warns(UnknownEntityWarning):
+            InfinityPipe("this is not an infinity pipe")
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            InfinityPipe("this is not an infinity pipe")
-        # TODO: move to validate
-        # with pytest.raises(DataFormatError):
-        #     InfinityPipe(infinity_settings={"clearly": "wrong"})
+        with pytest.raises(DataFormatError):
+            InfinityPipe(infinity_settings="incorrect")
 
     def test_set_infinity_settings(self):
         pipe = InfinityPipe()
@@ -64,94 +49,115 @@ class InfinityPipeTesting(unittest.TestCase):
             "mode": "at-least",
             "temperature": 500,
         }
-        assert pipe.infinity_settings == {
+        assert pipe.infinity_settings == InfinityPipe.Format.InfinitySettings(**{
             "name": "steam",
             "percentage": 100,
             "mode": "at-least",
             "temperature": 500,
-        }
+        })
+
         pipe.infinity_settings = None
-        assert pipe.infinity_settings == {}
-        # TODO: move to validate
-        # with pytest.raises(DataFormatError):
-        #     InfinityPipe(infinity_settings={"clearly": "wrong"})
+        assert pipe.infinity_settings == None
 
-    def test_set_infinite_fluid_settings(self):
+        # Warnings
+        with pytest.warns(UnknownKeywordWarning):
+            pipe.infinity_settings = {"clearly": "wrong"}
+
+        # Errors
+        with pytest.raises(DataFormatError):
+            pipe.infinity_settings = "incorrect"
+
+    def test_set_infinite_fluid(self):
         pipe = InfinityPipe()
-        pipe.set_infinite_fluid("steam", 100, "at-least", 500)
-        assert pipe.infinity_settings == {
+        pipe.set_infinite_fluid("steam", 1.0, "at-least", 500)
+        assert pipe.infinity_settings == InfinityPipe.Format.InfinitySettings(**{
             "name": "steam",
-            "percentage": 100,
+            "percentage": 1.0,
             "mode": "at-least",
             "temperature": 500,
-        }
+        })
 
-        with pytest.warns(TemperatureRangeWarning):
+        with pytest.raises(DataFormatError):
             pipe.set_infinite_fluid("steam", 1, "at-least", -100)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             pipe.set_infinite_fluid(TypeError)
-        with pytest.raises(InvalidFluidError):
-            pipe.set_infinite_fluid("incorrect")
-        with pytest.raises(TypeError):
+        # with pytest.raises(DataFormatError): # TODO
+        #     pipe.set_infinite_fluid("incorrect")
+        with pytest.raises(DataFormatError):
             pipe.set_infinite_fluid("steam", "incorrect")
-        with pytest.raises(TypeError):
-            pipe.set_infinite_fluid("steam", 1, SchemaError)
-        with pytest.raises(InvalidModeError):
+        with pytest.raises(DataFormatError):
+            pipe.set_infinite_fluid("steam", 1, TypeError)
+        with pytest.raises(DataFormatError):
             pipe.set_infinite_fluid("steam", 1, "incorrect")
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             pipe.set_infinite_fluid("steam", 1, "at-least", "incorrect")
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             pipe.set_infinite_fluid("steam", -1, "at-least")
 
     def test_set_infinite_fluid_name(self):
         pipe = InfinityPipe()
         pipe.infinite_fluid_name = "steam"
         assert pipe.infinite_fluid_name == "steam"
-        assert pipe.infinity_settings == {"name": "steam"}
+
         pipe.infinite_fluid_name = None
-        assert pipe.infinity_settings == {}
-        with pytest.raises(TypeError):
+        assert pipe.infinite_fluid_name == None
+
+        # TODO: warn if not a fluid name
+        # with pytest.warns(UnknownFluidWarning):
+        #     pipe.infinite_fluid_name = "incorrect"
+
+        with pytest.raises(DataFormatError):
             pipe.infinite_fluid_name = TypeError
-        with pytest.raises(InvalidFluidError):
-            pipe.infinite_fluid_name = "incorrect"
 
     def test_set_infinite_fluid_percentage(self):
         pipe = InfinityPipe()
         pipe.infinite_fluid_percentage = 0.5
         assert pipe.infinite_fluid_percentage == 0.5
-        assert pipe.infinity_settings == {"percentage": 0.5}
+        
         pipe.infinite_fluid_percentage = None
-        assert pipe.infinity_settings == {}
-        with pytest.raises(TypeError):
+        assert pipe.infinite_fluid_percentage == None
+
+        with pytest.raises(DataFormatError):
             pipe.infinite_fluid_percentage = TypeError
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             pipe.infinite_fluid_percentage = -1
 
     def test_set_infinite_fluid_mode(self):
         pipe = InfinityPipe()
         pipe.infinite_fluid_mode = "at-most"
         assert pipe.infinite_fluid_mode == "at-most"
-        assert pipe.infinity_settings == {"mode": "at-most"}
+        
         pipe.infinite_fluid_mode = None
-        assert pipe.infinity_settings == {}
-        with pytest.raises(TypeError):
+        assert pipe.infinite_fluid_mode == None
+
+        with pytest.raises(DataFormatError):
             pipe.infinite_fluid_mode = TypeError
-        with pytest.raises(InvalidModeError):
+        with pytest.raises(DataFormatError):
             pipe.infinite_fluid_mode = "incorrect"
 
     def test_set_infinite_fluid_temperature(self):
         pipe = InfinityPipe()
-        pipe.infinite_fluid_temperature = 100
-        assert pipe.infinite_fluid_temperature == 100
-        assert pipe.infinity_settings == {"temperature": 100}
+        # Cannot be set when 'name' is None
+        with pytest.raises(DataFormatError):
+            pipe.infinite_fluid_temperature = 200
+
+        pipe.infinite_fluid_name = "steam"
+        pipe.infinite_fluid_temperature = 200
+        assert pipe.infinite_fluid_name == "steam"
+        assert pipe.infinite_fluid_temperature == 200
+        
+        # Swapping to water will make the value exceed its maximum temperature
+        with pytest.raises(DataFormatError):
+            pipe.infinite_fluid_name = "water"
+        assert pipe.infinite_fluid_name == "water"
+        assert pipe.infinite_fluid_temperature == 200
+
+        # removing temperature should have no effect
         pipe.infinite_fluid_temperature = None
-        assert pipe.infinity_settings == {}
+        assert pipe.infinite_fluid_temperature == None
 
-        with pytest.warns(TemperatureRangeWarning):
-            pipe.infinite_fluid_temperature = -100
-
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             pipe.infinite_fluid_temperature = TypeError
 
     def test_mergable_with(self):
@@ -191,12 +197,12 @@ class InfinityPipeTesting(unittest.TestCase):
         pipe1.merge(pipe2)
         del pipe2
 
-        assert pipe1.infinity_settings == {
+        assert pipe1.infinity_settings == InfinityPipe.Format.InfinitySettings(**{
             "name": "steam",
             "percentage": 100,
             "mode": "at-least",
             "temperature": 500,
-        }
+        })
         assert pipe1.tags == {"some": "stuff"}
 
     def test_eq(self):

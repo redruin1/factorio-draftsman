@@ -1,33 +1,25 @@
 # test_boiler.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import Boiler, boilers, Container
 from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class BoilerTesting(unittest.TestCase):
+class TestBoiler:
     def test_constructor_init(self):
         boiler = Boiler("boiler")
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Boiler(unused_keyword="whatever")
 
-        # Errors
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             Boiler("not a boiler")
+
+        # Errors
 
     def test_mergable_with(self):
         boiler1 = Boiler("boiler")

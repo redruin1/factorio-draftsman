@@ -6,8 +6,10 @@ Enumerations of frequently used constants.
 
 from draftsman.classes.vector import Vector
 
+from datetime import timedelta
 from enum import IntEnum, Enum
 import math
+from pydantic_core import core_schema
 
 
 class Direction(IntEnum):
@@ -121,7 +123,7 @@ class Direction(IntEnum):
         Converts a :py:class:`Direction` into an equivalent 2-dimensional vector,
         for various linear operations. Works with both four-way and eight-way
         directions. Returned vectors are unit-length, unless ``magnitude`` is
-        altered.
+        specified.
 
         .. example:: python
 
@@ -298,6 +300,10 @@ class Orientation(float):
         else:
             special_name = ""
         return "<%s%s: %r>" % (self.__class__.__name__, special_name, self._value_)
+    
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _):
+        return core_schema.float_schema()
 
 
 # Note: this is a bit scuffed
@@ -319,9 +325,9 @@ class ReadMode(IntEnum):
     """
     Determines what manner belts and inserters should send their content signal.
 
-    * ``PULSE``: (0) Pulse the signal for one tick when first detected.
+    * ``PULSE (0)``: Pulse the signal for one tick when first detected.
         (Default)
-    * ``HOLD``: (1) Hold the signal for as long as the item is present.
+    * ``HOLD (1)``: Hold the signal for as long as the item is present.
     """
 
     PULSE = 0
@@ -330,14 +336,12 @@ class ReadMode(IntEnum):
 
 class MiningDrillReadMode(IntEnum):
     """
-    Used to specify whether the mining drill will read the contents beneath it
-    or the entire resource patch.
+    Used to specify whether the mining drill will read just the resources
+    accessible to it or the entire resource patch.
 
-    Determines the manner in which a mining drill reads the resources beneath it.
-
-    * ``UNDER_DRILL``: (0) Only return the resources directly minable by this
+    * ``UNDER_DRILL (0)``: Only return the resources directly minable by this
         drill. (Default)
-    * ``TOTAL_PATCH``: (1) Return the entire contents of the ore patches the
+    * ``TOTAL_PATCH (1)``: Return the entire contents of the ore patches the
         drill is over.
     """
 
@@ -350,14 +354,14 @@ class InserterModeOfOperation(IntEnum):
     Inserter circuit control constants. Determines how the Entity should behave
     when connected to a circuit network.
 
-    * ``ENABLE_DISABLE``: (0) Turns the inserter on or off depending on the
+    * ``ENABLE_DISABLE (0)``: Turns the inserter on or off depending on the
         circuit condition. (Default)
-    * ``SET_FILTERS``: (1) Sets the inserter's filter signals based on read
+    * ``SET_FILTERS (1)``: Sets the inserter's filter signals based on read
         signals.
-    * ``READ_HAND_CONTENTS``: (2) Reads the contents of the inserter's hand and
+    * ``READ_HAND_CONTENTS (2)``: Reads the contents of the inserter's hand and
         sends it to the connected wire(s).
-    * ``NONE``: (3) Does nothing.
-    * ``SET_STACK_SIZE``: (4) Sets the stack size override to the value of an
+    * ``NONE (3)``: Does nothing.
+    * ``SET_STACK_SIZE (4)``: Sets the stack size override to the value of an
         input signal.
     """
 
@@ -373,9 +377,9 @@ class LogisticModeOfOperation(IntEnum):
     Logistics container circuit control constants. Determines how the Entity
     should behave when connected to a circuit network.
 
-    * ``SEND_CONTENTS``: (0) Reads the inventory of the container and sends it
+    * ``SEND_CONTENTS (0)``: Reads the inventory of the container and sends it
         to the connected circuit network. (Default)
-    * ``SET_REQUESTS``: (1) Sets the item requests based on the input signals to
+    * ``SET_REQUESTS (1)``: Sets the item requests based on the input signals to
         the container.
     """
 
@@ -387,8 +391,8 @@ class FilterMode(IntEnum):
     """
     Filter mode constant.
 
-    * ``WHITELIST``: (0) Include only the listed items. (Default)
-    * ``BLACKLIST``: (1) Exclude only the listed items.
+    * ``WHITELIST (0)``: Include only the listed items. (Default)
+    * ``BLACKLIST (1)``: Exclude only the listed items.
     """
 
     WHITELIST = 0
@@ -418,7 +422,7 @@ class TileSelectionMode(IntEnum):
 class Ticks(IntEnum):
     """
     Constant values that correspond to the number of Factorio ticks for that
-    measure of time at 1.0 game-speed.
+    measure of time at normal game-speed.
 
     * ``SECOND``: 60
     * ``MINUTE``: 60 * ``SECOND``
@@ -431,6 +435,22 @@ class Ticks(IntEnum):
     HOUR = 60 * MINUTE
     DAY = 24 * HOUR
 
+    @classmethod
+    def from_timedelta(cls, td: timedelta) -> int:
+        """
+        Converts a :py:class:`.timedelta` into the closest number of Factorio
+        ticks that measures that duration.
+
+        :param timedelta: The difference in time between two points.
+        :returns: The equivalent number of ticks representing this difference,
+            rounded to the nearest tick.
+        """
+        return (
+            td.days * Ticks.DAY
+            + td.seconds * Ticks.SECOND
+            + round(td.microseconds * 60 / 1_000_000)
+        )
+
 
 class WaitConditionType(str, Enum):
     """
@@ -440,14 +460,14 @@ class WaitConditionType(str, Enum):
     * ``TIME_PASSED``: Triggered when a certain number of ticks has passed.
     * ``INACTIVITY``: Triggered when the state of the train currently at the
         station is unaltered for a number of ticks.
-    * ``FULL_CARGO``: Triggered when there is no more room in any of the stopped
-        train's wagons.
+    * ``FULL_CARGO``: Triggered when there is no more room for any new cargo in
+        any of the stopped train's wagons.
     * ``EMPTY_CARGO``: Triggered when there is no more cargo in any of the
         stopped train's wagons.
-    * ``ITEM_COUNT``: Triggered when the count of some contained item passes
-        some specified condition.
-    * ``FLUID_COUNT``: Triggered when the count of some contained fluid passes
-        some specified condition.
+    * ``ITEM_COUNT``: Triggered when the count of some loaded item passes some
+        specified condition.
+    * ``FLUID_COUNT``: Triggered when the count of some loaded fluid passes some
+        specified condition.
     * ``CIRCUIT_CONDITION``: Triggered when a circuit signal passed to the
         train stop passes some specified condition.
     * ``PASSENGER_PRESENT``: Triggered if a player is inside any of the stopped
@@ -491,3 +511,18 @@ class WireColor(str, Enum):
 
     RED = "red"
     GREEN = "green"
+
+
+class ValidationMode(str, Enum):
+    """
+    The manner in which to validate a given Draftsman object.
+    TODO
+    """
+
+    NONE = ("none",)
+    MINIMUM = "minimum"
+    STRICT = "strict"
+    PEDANTIC = "pedantic"
+
+    def __bool__(self):
+        return self is not ValidationMode.NONE

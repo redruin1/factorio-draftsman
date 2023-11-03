@@ -96,6 +96,8 @@ def main():
     # Decider
     decider = DeciderCombinator("decider-combinator", tile_position=[0, 1])
     decider.direction = Direction.EAST
+    print(decider.collision_set)
+    print(decider.tile_width, decider.tile_height)
     decider.set_decider_conditions("signal-each", "=", input_signal, "signal-each")
     decider.copy_count_from_input = False
     decider.id = "decider"
@@ -104,6 +106,8 @@ def main():
     # Output stabilizer
     stabilizer = ArithmeticCombinator("arithmetic-combinator", tile_position=[0, 2])
     stabilizer.direction = Direction.EAST
+    print(stabilizer.collision_set)
+    print(stabilizer.tile_width, stabilizer.tile_height)
     stabilizer.set_arithmetic_conditions(-1, "%", input_signal, input_signal)
     stabilizer.id = "stabilizer"
     blueprint.entities.append(stabilizer)

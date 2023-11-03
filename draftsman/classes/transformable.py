@@ -3,7 +3,7 @@
 
 from draftsman.error import RotationError, FlippingError
 from draftsman.classes.vector import Vector
-from draftsman.warning import RailAlignmentWarning, FlippingWarning
+from draftsman.warning import GridAlignmentWarning, FlippingWarning
 
 import warnings
 
@@ -34,7 +34,7 @@ class Transformable(object):
                 "Attempting to translate an odd number of tiles when this "
                 "Transformable contains double grid-aligned entities; Their "
                 "positions will be cast to the nearest grid square on export",
-                RailAlignmentWarning,
+                GridAlignmentWarning,
                 stacklevel=2,
             )
 

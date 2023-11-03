@@ -1,7 +1,4 @@
 # offshore_pump.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
@@ -11,16 +8,14 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     DirectionalMixin,
 )
-from draftsman.error import DataFormatError
-from draftsman import signatures
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
+from draftsman.signatures import Connections, DraftsmanBaseModel
 
 from draftsman.data.entities import offshore_pumps
 
-from schema import SchemaError
-import six
-from typing import ClassVar
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Optional, Union
 
 
 class OffshorePump(
@@ -35,16 +30,6 @@ class OffshorePump(
     An entity that pumps a fluid from the environment.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    #     **LogisticConditionMixin._exports,
-    #     **CircuitConditionMixin._exports,
-    # }
-    # fmt: on
     class Format(
         CircuitConditionMixin.Format,
         LogisticConditionMixin.Format,
@@ -56,35 +41,51 @@ class OffshorePump(
         class ControlBehavior(
             CircuitConditionMixin.ControlFormat,
             LogisticConditionMixin.ControlFormat,
+            DraftsmanBaseModel,
         ):
             pass
 
-        control_behavior: ClassVar[ControlBehavior | None] = None
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-    def __init__(self, name=offshore_pumps[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(OffshorePump, self).__init__(name, offshore_pumps, **kwargs)
+        model_config = ConfigDict(title="OffshorePump")
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+    def __init__(
+        self,
+        name: str = offshore_pumps[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        connections: Connections = Connections(),
+        control_behavior: Format.ControlBehavior = Format.ControlBehavior(),
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
 
-        del self.unused_args
+        super().__init__(
+            name,
+            offshore_pumps,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            connections=connections,
+            control_behavior=control_behavior,
+            tags=tags,
+            **kwargs
+        )
 
-    # =========================================================================
+        self.validate_assignment = validate_assignment
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = signatures.OFFSHORE_PUMP_CONTROL_BEHAVIOR.validate(
-                value
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        if validate:
+            self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

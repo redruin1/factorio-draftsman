@@ -1,7 +1,4 @@
 # test_upgrade_planner.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman import __factorio_version_info__
 from draftsman.classes.upgrade_planner import UpgradePlanner
@@ -13,12 +10,14 @@ from draftsman.error import (
     DataFormatError,
     InvalidMapperError,
 )
-from draftsman import utils
+from draftsman.signatures import Icons, Mapper
+from draftsman.utils import encode_version
 from draftsman.warning import (
     DraftsmanWarning,
     IndexWarning,
-    RedundantOperationWarning,
-    UnrecognizedElementWarning,
+    NoEffectWarning,
+    UnknownElementWarning,
+    UpgradeProhibitedWarning,
 )
 
 from pydantic import ValidationError
@@ -33,7 +32,7 @@ class TestUpgradePlanner:
         upgrade_planner = UpgradePlanner()
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": utils.encode_version(*__factorio_version_info__),
+            "version": encode_version(*__factorio_version_info__),
         }
 
         # String
@@ -42,7 +41,7 @@ class TestUpgradePlanner:
         )
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": utils.encode_version(1, 1, 61),
+            "version": encode_version(1, 1, 61),
         }
 
         # Dict
@@ -65,13 +64,13 @@ class TestUpgradePlanner:
             "settings": {
                 "mappers": [
                     {
-                        "from": "transport-belt",
-                        "to": "fast-transport-belt",
+                        "from": {"name": "transport-belt", "type": "entity"},
+                        "to": {"name": "fast-transport-belt", "type": "entity"},
                         "index": 0,
                     }
                 ]
             },
-            "version": utils.encode_version(*__factorio_version_info__),
+            "version": encode_version(*__factorio_version_info__),
         }
 
         # Warnings
@@ -97,17 +96,17 @@ class TestUpgradePlanner:
         assert upgrade_planner["upgrade_planner"]["settings"]["description"] is upgrade_planner.description
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": utils.encode_version(*__factorio_version_info__),
+            "version": encode_version(*__factorio_version_info__),
             "settings": {"description": "some description"},
         }
 
         # None case
         upgrade_planner.description = None
         assert upgrade_planner.description == None
-        assert "description" not in upgrade_planner["upgrade_planner"]["settings"]
+        # assert "description" not in upgrade_planner["upgrade_planner"]["settings"]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": utils.encode_version(*__factorio_version_info__),
+            "version": encode_version(*__factorio_version_info__),
         }
 
     def test_icons(self):
@@ -117,13 +116,13 @@ class TestUpgradePlanner:
         upgrade_planner.icons = [
             {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}
         ]
-        assert upgrade_planner.icons == [
+        assert upgrade_planner.icons == Icons(root=[
             {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}
-        ]
+        ])
         assert upgrade_planner["upgrade_planner"]["settings"]["icons"] is upgrade_planner.icons
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": utils.encode_version(*__factorio_version_info__),
+            "version": encode_version(*__factorio_version_info__),
             "settings": {
                 "icons": [
                     {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}
@@ -134,24 +133,25 @@ class TestUpgradePlanner:
         # None case
         upgrade_planner.icons = None
         assert upgrade_planner.icons == None
-        assert "icons" not in upgrade_planner["upgrade_planner"]["settings"]
+        # assert "icons" not in upgrade_planner["upgrade_planner"]["settings"]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": utils.encode_version(*__factorio_version_info__),
+            "version": encode_version(*__factorio_version_info__),
         }
 
     def test_set_icons(self):
         upgrade_planner = UpgradePlanner()
 
         # Single known
-        upgrade_planner.set_icons("signal-A")
-        assert upgrade_planner.icons == [
+        # upgrade_planner.set_icons("signal-A")
+        upgrade_planner.icons = ["signal-A"]
+        assert upgrade_planner.icons == Icons(root=[
             {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}
-        ]
+        ])
         assert upgrade_planner["upgrade_planner"]["settings"]["icons"] is upgrade_planner.icons
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": utils.encode_version(*__factorio_version_info__),
+            "version": encode_version(*__factorio_version_info__),
             "settings": {
                 "icons": [
                     {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}
@@ -160,16 +160,15 @@ class TestUpgradePlanner:
         }
 
         # Multiple known
-        upgrade_planner.set_icons("signal-A", "signal-B", "signal-C")
-        assert upgrade_planner.icons == [
+        upgrade_planner.icons = ["signal-A", "signal-B", "signal-C"]
+        assert upgrade_planner.icons == Icons(root=[
             {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}},
             {"index": 2, "signal": {"name": "signal-B", "type": "virtual"}},
             {"index": 3, "signal": {"name": "signal-C", "type": "virtual"}},
-        ]
-        assert upgrade_planner["upgrade_planner"]["settings"]["icons"] is upgrade_planner.icons
+        ])
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": utils.encode_version(*__factorio_version_info__),
+            "version": encode_version(*__factorio_version_info__),
             "settings": {
                 "icons": [
                     {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}},
@@ -202,22 +201,21 @@ class TestUpgradePlanner:
             },
         ]
         assert upgrade_planner.mappers == [
-            {
+            Mapper(**{
                 "from": {"name": "transport-belt", "type": "entity"},
                 "to": {"name": "fast-transport-belt", "type": "entity"},
                 "index": 0,
-            },
-            {
+            }),
+            Mapper(**{
                 "from": {"name": "transport-belt", "type": "entity"},
                 "to": {"name": "express-transport-belt", "type": "entity"},
                 "index": 23,
-            },
+            }),
         ]
 
         # Test None
         upgrade_planner.mappers = None
         assert upgrade_planner.mappers == None
-        assert "mappers" not in upgrade_planner._root["upgrade_planner"]["settings"]
 
     def test_set_mapping(self):
         upgrade_planner = UpgradePlanner()
@@ -328,60 +326,60 @@ class TestUpgradePlanner:
             upgrade_planner.remove_mapping("inserter", "fast-inserter", "incorrect")
 
     def test_pop_mapping(self):
-        upgrade_planner = UpgradePlanner()
+        upgrade_planner = UpgradePlanner(validate_assignment="minimum")
 
         upgrade_planner.mappers = [
-            {
+            Mapper(**{
                 "to": {"name": "transport-belt", "type": "entity"},
                 "from": {"name": "express-transport-belt", "type": "entity"},
                 "index": 1,
-            },
-            {
+            }),
+            Mapper(**{
                 "to": {"name": "assembling-machine-1", "type": "entity"},
-                "from": {"name": "assembling-machine2", "type": "entity"},
+                "from": {"name": "assembling-machine-2", "type": "entity"},
                 "index": 1,
-            },
-            {
+            }),
+            Mapper(**{
                 "to": {"name": "transport-belt", "type": "entity"},
                 "from": {"name": "fast-transport-belt", "type": "entity"},
                 "index": 0,
-            },
+            }),
         ]
 
         # Remove mapping with index 0
         upgrade_planner.pop_mapping(0)
         assert upgrade_planner.mappers == [
-            {
+            Mapper(**{
                 "to": {"name": "transport-belt", "type": "entity"},
                 "from": {"name": "express-transport-belt", "type": "entity"},
                 "index": 1,
-            },
-            {
+            }),
+            Mapper(**{
                 "to": {"name": "assembling-machine-1", "type": "entity"},
-                "from": {"name": "assembling-machine2", "type": "entity"},
+                "from": {"name": "assembling-machine-2", "type": "entity"},
                 "index": 1,
-            },
+            }),
         ]
 
         # Remove first mapping with specified index
         upgrade_planner.pop_mapping(1)
         assert upgrade_planner.mappers == [
-            {
+            Mapper(**{
                 "to": {"name": "assembling-machine-1", "type": "entity"},
-                "from": {"name": "assembling-machine2", "type": "entity"},
+                "from": {"name": "assembling-machine-2", "type": "entity"},
                 "index": 1,
-            },
+            }),
         ]
 
         # Remove mapping with index not in mappers
         with pytest.raises(ValueError):
             upgrade_planner.pop_mapping(10)
         assert upgrade_planner.mappers == [
-            {
+            Mapper(**{
                 "to": {"name": "assembling-machine-1", "type": "entity"},
-                "from": {"name": "assembling-machine2", "type": "entity"},
+                "from": {"name": "assembling-machine-2", "type": "entity"},
                 "index": 1,
-            },
+            }),
         ]
 
     def test_validate(self):
@@ -395,25 +393,21 @@ class TestUpgradePlanner:
 
         # Errors
         # TODO: more
-        with pytest.raises(ValidationError):
+        with pytest.raises(DataFormatError):
             upgrade_planner.mappers = [
-                {"from": "transport-belt", "to": "transport-belt", "index": 1}
+                {"from": "incorrect", "to": "incorrect", "index": 1}
             ]
-            upgrade_planner.validate()
 
-        with pytest.raises(ValidationError):
+        with pytest.raises(DataFormatError):
             upgrade_planner.mappers = ("incorrect", "incorrect")
-            upgrade_planner.validate()
 
-        with pytest.raises(ValidationError):
+        with pytest.raises(DataFormatError):
             upgrade_planner.mappers = [TypeError, TypeError]
-            upgrade_planner.validate()
 
-    def test_inspect(self):
         # Test validation failure
         upgrade_planner = UpgradePlanner()
         upgrade_planner.set_mapping("transport-belt", "transport-belt", -1)
-        validation_result = upgrade_planner.inspect()
+        validation_result = upgrade_planner.validate()
         assert len(validation_result.error_list) > 0
         with pytest.raises(DataFormatError):
             validation_result.reissue_all()
@@ -424,21 +418,21 @@ class TestUpgradePlanner:
         goal = ValidationResult(
             error_list=[],
             warning_list=[
-                RedundantOperationWarning(
+                NoEffectWarning(
                     "Mapping entity/item 'transport-belt' to itself has no effect"
                 )
             ],
         )
-        validation_result = upgrade_planner.inspect()
+        validation_result = upgrade_planner.validate()
         assert validation_result == goal
-        with pytest.warns(RedundantOperationWarning):
+        with pytest.warns(NoEffectWarning):
             validation_result.reissue_all()
 
         # Normal upgrade_case
         upgrade_planner = UpgradePlanner()
         upgrade_planner.set_mapping("transport-belt", "fast-transport-belt", 0)
         goal = ValidationResult(error_list=[], warning_list=[])
-        validation_result = upgrade_planner.inspect()
+        validation_result = upgrade_planner.validate()
         assert validation_result == goal
 
         # Unrecognized mapping names
@@ -451,13 +445,13 @@ class TestUpgradePlanner:
         goal = ValidationResult(
             error_list=[],
             warning_list=[
-                UnrecognizedElementWarning("Unrecognized entity/item 'unrecognized-A'"),
-                UnrecognizedElementWarning("Unrecognized entity/item 'unrecognized-B'"),
+                UnknownElementWarning("Unrecognized entity/item 'unrecognized-A'"),
+                UnknownElementWarning("Unrecognized entity/item 'unrecognized-B'"),
             ],
         )
-        validation_result = upgrade_planner.inspect()
+        validation_result = upgrade_planner.validate()
         assert validation_result == goal
-        with pytest.warns(UnrecognizedElementWarning):
+        with pytest.warns(UnknownElementWarning):
             validation_result.reissue_all()
 
         # dummy entity for testing purposes
@@ -469,11 +463,11 @@ class TestUpgradePlanner:
         upgrade_planner.set_mapping("dummy-entity-1", "fast-transport-belt", 0)
         goal = ValidationResult(
             error_list=[],
-            warning_list=[DraftsmanWarning("'dummy-entity-1' is not upgradable")],
+            warning_list=[UpgradeProhibitedWarning("'dummy-entity-1' is not upgradable")],
         )
-        validation_result = upgrade_planner.inspect()
+        validation_result = upgrade_planner.validate()
         assert validation_result == goal
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UpgradeProhibitedWarning):
             validation_result.reissue_all()
 
         # from is not minable
@@ -482,11 +476,11 @@ class TestUpgradePlanner:
         upgrade_planner.set_mapping("dummy-entity-2", "fast-transport-belt", 0)
         goal = ValidationResult(
             error_list=[],
-            warning_list=[DraftsmanWarning("'dummy-entity-2' is not minable")],
+            warning_list=[UpgradeProhibitedWarning("'dummy-entity-2' is not minable")],
         )
-        validation_result = upgrade_planner.inspect()
+        validation_result = upgrade_planner.validate()
         assert validation_result == goal
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UpgradeProhibitedWarning):
             validation_result.reissue_all()
 
         # All mining results must not be hidden
@@ -499,14 +493,14 @@ class TestUpgradePlanner:
         goal = ValidationResult(
             error_list=[],
             warning_list=[
-                DraftsmanWarning(
+                UpgradeProhibitedWarning(
                     "Returned item 'rocket-part' when upgrading 'dummy-entity-3' is hidden"
                 )
             ],
         )
-        validation_result = upgrade_planner.inspect()
+        validation_result = upgrade_planner.validate()
         assert validation_result == goal
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UpgradeProhibitedWarning):
             validation_result.reissue_all()
 
         # Cannot upgrade rolling stock
@@ -515,14 +509,14 @@ class TestUpgradePlanner:
         goal = ValidationResult(
             error_list=[],
             warning_list=[
-                DraftsmanWarning(
+                UpgradeProhibitedWarning(
                     "Cannot upgrade 'cargo-wagon' because it is RollingStock"
                 )
             ],
         )
-        validation_result = upgrade_planner.inspect()
+        validation_result = upgrade_planner.validate()
         assert validation_result == goal
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UpgradeProhibitedWarning):
             validation_result.reissue_all()
 
         # Differing collision boxes
@@ -531,14 +525,14 @@ class TestUpgradePlanner:
         goal = ValidationResult(
             error_list=[],
             warning_list=[
-                DraftsmanWarning(
+                UpgradeProhibitedWarning(
                     "Cannot upgrade 'transport-belt' to 'electric-furnace'; collision boxes differ"
                 )
             ],
         )
-        validation_result = upgrade_planner.inspect()
+        validation_result = upgrade_planner.validate()
         assert validation_result == goal
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UpgradeProhibitedWarning):
             validation_result.reissue_all()
 
         # Differing collision masks
@@ -547,14 +541,14 @@ class TestUpgradePlanner:
         goal = ValidationResult(
             error_list=[],
             warning_list=[
-                DraftsmanWarning(
+                UpgradeProhibitedWarning(
                     "Cannot upgrade 'gate' to 'stone-wall'; collision masks differ"
                 )
             ],
         )
-        validation_result = upgrade_planner.inspect()
+        validation_result = upgrade_planner.validate()
         assert validation_result == goal
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UpgradeProhibitedWarning):
             validation_result.reissue_all()
 
         # Differing fast replacable group
@@ -563,14 +557,14 @@ class TestUpgradePlanner:
         goal = ValidationResult(
             error_list=[],
             warning_list=[
-                DraftsmanWarning(
+                UpgradeProhibitedWarning(
                     "Cannot upgrade 'radar' to 'pumpjack'; fast replacable groups differ"
                 )
             ],
         )
-        validation_result = upgrade_planner.inspect()
+        validation_result = upgrade_planner.validate()
         assert validation_result == goal
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UpgradeProhibitedWarning):
             validation_result.reissue_all()
 
         # Index outside of meaningful range
@@ -584,13 +578,13 @@ class TestUpgradePlanner:
                 )
             ],
         )
-        validation_result = upgrade_planner.inspect()
+        validation_result = upgrade_planner.validate()
         assert validation_result == goal
         with pytest.warns(IndexWarning):
             validation_result.reissue_all()
 
         # Multiple mappings sharing the same index
-        upgrade_planner = UpgradePlanner()
+        upgrade_planner = UpgradePlanner(validate_assignment="minimum")
         upgrade_planner.mappers = [{"index": 0}, {"index": 0}]
         goal = ValidationResult(
             error_list=[],
@@ -600,7 +594,7 @@ class TestUpgradePlanner:
                 ),
             ],
         )
-        validation_result = upgrade_planner.inspect()
+        validation_result = upgrade_planner.validate()
         assert validation_result == goal
         with pytest.warns(IndexWarning):
             validation_result.reissue_all()

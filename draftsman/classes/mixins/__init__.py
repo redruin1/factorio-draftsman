@@ -1,5 +1,6 @@
 # __init__.py
 
+from draftsman.classes.mixins.burner_energy_source import BurnerEnergySourceMixin
 from draftsman.classes.mixins.circuit_condition import CircuitConditionMixin
 from draftsman.classes.mixins.circuit_connectable import CircuitConnectableMixin
 from draftsman.classes.mixins.circuit_read_contents import CircuitReadContentsMixin
@@ -12,6 +13,7 @@ from draftsman.classes.mixins.double_grid_aligned import DoubleGridAlignedMixin
 from draftsman.classes.mixins.eight_way_directional import EightWayDirectionalMixin
 from draftsman.classes.mixins.enable_disable import EnableDisableMixin
 from draftsman.classes.mixins.filters import FiltersMixin
+from draftsman.classes.mixins.input_ingredients import InputIngredientsMixin
 from draftsman.classes.mixins.inventory_filter import InventoryFilterMixin
 from draftsman.classes.mixins.inventory import InventoryMixin
 from draftsman.classes.mixins.io_type import IOTypeMixin

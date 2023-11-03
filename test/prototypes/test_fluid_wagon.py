@@ -1,23 +1,14 @@
 # test_fluid_wagon.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import FluidWagon, fluid_wagons, Container
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class FluidWagonTesting(unittest.TestCase):
+class TestFluidWagon:
     def test_constructor_init(self):
         fluid_wagon = FluidWagon(
             "fluid-wagon",
@@ -31,15 +22,15 @@ class FluidWagonTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             FluidWagon("fluid-wagon", unused_keyword="whatever")
+        with pytest.warns(UnknownEntityWarning):
+            FluidWagon("this is not a fluid wagon")
         # Warn if the locomotive is not on a rail (close enough to one?)
         # TODO (Complex)
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            FluidWagon("this is not a fluid wagon")
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             FluidWagon("fluid-wagon", orientation="wrong")
 
     def test_mergable_with(self):

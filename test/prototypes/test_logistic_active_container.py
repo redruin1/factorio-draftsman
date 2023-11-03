@@ -1,7 +1,4 @@
 # test_logistic_active_container.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import (
     LogisticActiveContainer,
@@ -9,19 +6,13 @@ from draftsman.entity import (
     Container,
 )
 from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class ContainerTesting(unittest.TestCase):
+class TestContainer:
     def test_constructor_init(self):
         active_chest = LogisticActiveContainer(
             "logistic-chest-active-provider",
@@ -62,15 +53,19 @@ class ContainerTesting(unittest.TestCase):
             "tags": {"A": "B"},
         }
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             LogisticActiveContainer(
                 "logistic-chest-active-provider", position=[0, 0], invalid_keyword="100"
             )
-        # Errors
-        # Raises InvalidEntityID when not in containers
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownKeywordWarning):
+            LogisticActiveContainer(
+                "logistic-chest-active-provider",
+                connections={"this is": ["very", "wrong"]},
+            )
+        with pytest.warns(UnknownEntityWarning):
             LogisticActiveContainer("this is not an active provider chest")
 
+        # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             LogisticActiveContainer("logistic-chest-active-provider", id=25)
@@ -80,17 +75,16 @@ class ContainerTesting(unittest.TestCase):
                 "logistic-chest-active-provider", position=TypeError
             )
 
-        # TODO: move to validate
-        # with pytest.raises(TypeError):
-        #     LogisticActiveContainer(
-        #         "logistic-chest-active-provider", bar="not even trying"
-        #     )
+        with pytest.raises(DataFormatError):
+            LogisticActiveContainer(
+                "logistic-chest-active-provider", bar="not even trying"
+            )
 
-        # with pytest.raises(DataFormatError):
-        #     LogisticActiveContainer(
-        #         "logistic-chest-active-provider",
-        #         connections={"this is": ["very", "wrong"]},
-        #     )
+        with pytest.raises(DataFormatError):
+            LogisticActiveContainer(
+                "logistic-chest-active-provider",
+                connections="incorrect",
+            )
 
     def test_power_and_circuit_flags(self):
         for container_name in logistic_active_containers:

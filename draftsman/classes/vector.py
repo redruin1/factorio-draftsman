@@ -10,7 +10,7 @@ from __future__ import unicode_literals, division
 from pydantic import BaseModel, ConfigDict
 from typing import Union, Callable
 
-PrimitiveVector = "Sequence[float, float]"
+PrimitiveVector = tuple[int, int]
 
 
 class Vector(object):

@@ -1,27 +1,19 @@
 # test_logistic_request_container.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import (
     LogisticRequestContainer,
     logistic_request_containers,
     Container,
 )
-from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.signatures import RequestFilters
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class LogisticRequestContainerTesting(unittest.TestCase):
+class TestLogisticRequestContainer:
     def test_constructor_init(self):
         request_chest = LogisticRequestContainer(
             "logistic-chest-requester",
@@ -62,16 +54,15 @@ class LogisticRequestContainerTesting(unittest.TestCase):
             "tags": {"A": "B"},
         }
 
-        # TODO: retired; use `set_request_filters` instead
-        # request_chest = LogisticRequestContainer(
-        #     request_from_buffers=True, request_filters=[("iron-ore", 100)]
-        # )
-        # assert request_chest.to_dict() == {
-        #     "name": "logistic-chest-requester",
-        #     "position": {"x": 0.5, "y": 0.5},
-        #     "request_from_buffers": True,
-        #     "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
-        # }
+        request_chest = LogisticRequestContainer(
+            request_from_buffers=True, request_filters=[("iron-ore", 100)]
+        )
+        assert request_chest.to_dict() == {
+            "name": "logistic-chest-requester",
+            "position": {"x": 0.5, "y": 0.5},
+            "request_from_buffers": True,
+            "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
+        }
 
         request_chest = LogisticRequestContainer(
             request_filters=[{"index": 1, "name": "iron-ore", "count": 100}]
@@ -83,45 +74,38 @@ class LogisticRequestContainerTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             LogisticRequestContainer(
                 "logistic-chest-requester", position=[0, 0], invalid_keyword="100"
             )
-
-        # Errors
-        # Raises InvalidEntityID when not in containers
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownKeywordWarning):
+            LogisticRequestContainer(control_behavior={"unused_key": "something"})
+        with pytest.warns(UnknownEntityWarning):
             LogisticRequestContainer("this is not a logistics storage chest")
 
+        # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             LogisticRequestContainer("logistic-chest-requester", id=25)
-
         with pytest.raises(TypeError):
             LogisticRequestContainer("logistic-chest-requester", position=TypeError)
-
-        # TODO: move to validate
-        # with pytest.raises(TypeError):
-        #     LogisticRequestContainer("logistic-chest-requester", bar="not even trying")
-
-        # with pytest.raises(DataFormatError):
-        #     LogisticRequestContainer(
-        #         "logistic-chest-requester", connections={"this is": ["very", "wrong"]}
-        #     )
-
-        # with pytest.raises(DataFormatError):
-        #     LogisticRequestContainer(
-        #         "logistic-chest-requester",
-        #         request_filters={"this is": ["very", "wrong"]},
-        #     )
-
-        # with pytest.raises(TypeError):
-        #     LogisticRequestContainer(
-        #         "logistic-chest-requester", request_from_buffers="invalid"
-        #     )
-
-        # with pytest.raises(DataFormatError):
-        #     LogisticRequestContainer(control_behavior={"unused_key": "something"})
+        with pytest.raises(DataFormatError):
+            LogisticRequestContainer("logistic-chest-requester", bar="not even trying")
+        with pytest.raises(DataFormatError):
+            LogisticRequestContainer(
+                "logistic-chest-requester", connections="incorrect"
+            )
+        with pytest.raises(DataFormatError):
+            LogisticRequestContainer(
+                "logistic-chest-requester",
+                request_filters={"this is": ["very", "wrong"]},
+            )
+        with pytest.raises(DataFormatError):
+            LogisticRequestContainer(
+                "logistic-chest-requester", request_from_buffers="invalid"
+            )
+        with pytest.raises(DataFormatError):
+            LogisticRequestContainer(control_behavior="incorrect")
 
     def test_power_and_circuit_flags(self):
         for name in logistic_request_containers:
@@ -161,9 +145,9 @@ class LogisticRequestContainerTesting(unittest.TestCase):
         del container2
 
         assert container1.bar == 10
-        assert container1.request_filters == [
+        assert container1.request_filters == RequestFilters(root=[
             {"name": "utility-science-pack", "index": 1, "count": 10}
-        ]
+        ])
         assert container1.tags == {"some": "stuff"}
 
     def test_eq(self):

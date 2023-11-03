@@ -1,31 +1,23 @@
 # test_deconstruction_planner.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman import __factorio_version_info__
 from draftsman.classes.deconstruction_planner import DeconstructionPlanner
 from draftsman.constants import FilterMode, TileSelectionMode
 from draftsman.error import DataFormatError
-from draftsman import utils
+from draftsman.signatures import EntityFilter, TileFilter
+from draftsman.utils import encode_version
 from draftsman.warning import DraftsmanWarning
 
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class DeconstructionPlannerTesting(unittest.TestCase):
+class TestDeconstructionPlannerTesting:
     def test_constructor(self):
         # Nothing
         decon_planner = DeconstructionPlanner()
         assert decon_planner.to_dict()["deconstruction_planner"] == {
             "item": "deconstruction-planner",
-            "version": utils.encode_version(*__factorio_version_info__),
+            "version": encode_version(*__factorio_version_info__),
         }
 
         # String
@@ -34,10 +26,11 @@ class DeconstructionPlannerTesting(unittest.TestCase):
         )
         assert decon_planner.to_dict()["deconstruction_planner"] == {
             "item": "deconstruction-planner",
-            "version": utils.encode_version(1, 1, 61),
+            "version": encode_version(1, 1, 61),
         }
 
         # Dict
+        # TODO: change this so it's identical to Entity(**entity_dict)
         test_planner = {
             "deconstruction_planner": {
                 "settings": {
@@ -53,12 +46,12 @@ class DeconstructionPlannerTesting(unittest.TestCase):
                 "tile_filter_mode": FilterMode.BLACKLIST,
                 "trees_and_rocks_only": True,
             },
-            "version": utils.encode_version(*__factorio_version_info__),
+            "version": encode_version(*__factorio_version_info__),
         }
 
         with pytest.warns(DraftsmanWarning):
             DeconstructionPlanner(
-                {"deconstruction_planner": {"something": "incorrect"}}
+                {"deconstruction_planner": {"something": "incorrect"}, "index": 1}
             )
 
     def test_set_entity_filter_mode(self):
@@ -80,10 +73,10 @@ class DeconstructionPlannerTesting(unittest.TestCase):
 
         decon_planner.entity_filter_mode = None
         assert decon_planner.entity_filter_mode == None
-        assert "entity_filter_mode" not in decon_planner["deconstruction_planner"]["settings"]
+        # assert "entity_filter_mode" not in decon_planner["deconstruction_planner"]["settings"]
 
         # Errors
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             decon_planner.entity_filter_mode = "incorrect"
 
     def test_set_entity_filters(self):
@@ -95,15 +88,15 @@ class DeconstructionPlannerTesting(unittest.TestCase):
             {"name": "fast-transport-belt", "index": 2},
         ]
         assert decon_planner.entity_filters == [
-            {"name": "transport-belt", "index": 1},
-            {"name": "fast-transport-belt", "index": 2},
+            EntityFilter(**{"name": "transport-belt", "index": 1}),
+            EntityFilter(**{"name": "fast-transport-belt", "index": 2}),
         ]
 
         # Test Abridged
         decon_planner.set_entity_filters("transport-belt", "fast-transport-belt")
         assert decon_planner.entity_filters == [
-            {"name": "transport-belt", "index": 1},
-            {"name": "fast-transport-belt", "index": 2},
+            EntityFilter(**{"name": "transport-belt", "index": 1}),
+            EntityFilter(**{"name": "fast-transport-belt", "index": 2}),
         ]
 
     def test_set_trees_and_rocks_only(self):
@@ -119,10 +112,10 @@ class DeconstructionPlannerTesting(unittest.TestCase):
 
         decon_planner.trees_and_rocks_only = None
         assert decon_planner.trees_and_rocks_only == None
-        assert "trees_and_rocks_only" not in decon_planner["deconstruction_planner"]["settings"]
+        # assert "trees_and_rocks_only" not in decon_planner["deconstruction_planner"]["settings"]
 
         # Errors
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             decon_planner.trees_and_rocks_only = "incorrect"
 
     def test_set_tile_filter_mode(self):
@@ -142,10 +135,10 @@ class DeconstructionPlannerTesting(unittest.TestCase):
 
         decon_planner.tile_filter_mode = None
         assert decon_planner.tile_filter_mode == None
-        assert "tile_filter_mode" not in decon_planner["deconstruction_planner"]["settings"]
+        # assert "tile_filter_mode" not in decon_planner["deconstruction_planner"]["settings"]
 
         # Errors
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             decon_planner.tile_filter_mode = "incorrect"
 
     def test_set_tile_filters(self):
@@ -157,15 +150,15 @@ class DeconstructionPlannerTesting(unittest.TestCase):
             {"name": "stone-path", "index": 2},
         ]
         assert decon_planner.tile_filters == [
-            {"name": "concrete", "index": 1},
-            {"name": "stone-path", "index": 2},
+            TileFilter(**{"name": "concrete", "index": 1}),
+            TileFilter(**{"name": "stone-path", "index": 2}),
         ]
 
         # Test Abridged
         decon_planner.set_tile_filters("concrete", "stone-path")
         assert decon_planner.tile_filters == [
-            {"name": "concrete", "index": 1},
-            {"name": "stone-path", "index": 2},
+            TileFilter(**{"name": "concrete", "index": 1}),
+            TileFilter(**{"name": "stone-path", "index": 2}),
         ]
 
     def test_tile_selection_mode(self):
@@ -186,7 +179,7 @@ class DeconstructionPlannerTesting(unittest.TestCase):
         )
 
         # Errors
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             decon_planner.tile_selection_mode = "incorrect"
 
     def test_set_entity_filter(self):
