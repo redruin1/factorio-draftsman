@@ -16,11 +16,29 @@ with pkg_resources.open_binary(data, "fluids.pkl") as inp:
     raw: dict[str, dict] = _data[0]
 
 
-def add_fluid(name, order, default_temperature, maximum_temperature=None, **kwargs):
+def add_fluid(name: str, order: str = None, **kwargs):
     """
-    Add a fluid. TODO
+    Add a new fluid, or modify the properties of an existing fluid. Useful for
+    simulating a modded environment without having to fully supply an entire
+    mod configuration for simple scripts.
+
+    TODO
     """
-    pass  # TODO
+    existing_data = raw.get(name, {})
+    default_temperature = existing_data.get(
+        "default_temperature", kwargs.get("default_temperature", 25)
+    )
+    raw[name] = {
+        **existing_data,
+        "type": "fluid",
+        "name": name,
+        "order": order if order is not None else "",
+        "default_temperature": default_temperature,
+        **kwargs,
+    }
+    # TODO: this should also update signals
+    # TODO: what if the user sets auto-barrel to true in this function? Ideally
+    # it would also generate barreling recipes and update them accordingly
 
 
 def get_temperature_range(fluid_name: str) -> tuple[float, float]:

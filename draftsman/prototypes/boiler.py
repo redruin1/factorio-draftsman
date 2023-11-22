@@ -55,8 +55,7 @@ class Boiler(RequestItemsMixin, DirectionalMixin, Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # TODO: ensure fuel requests to this entity match it's allowed fuel categories
 

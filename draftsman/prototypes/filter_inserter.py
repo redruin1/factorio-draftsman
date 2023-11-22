@@ -19,11 +19,11 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import Connections, DraftsmanBaseModel, Filters, uint8
+from draftsman.signatures import Connections, DraftsmanBaseModel, FilterEntry, uint8
 
 from draftsman.data.entities import filter_inserters
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, field_validator
 from typing import Any, Literal, Optional, Union
 
 
@@ -86,6 +86,22 @@ class FilterInserter(
             """,
         )
 
+        # @field_validator("filters", mode="before")
+        # @classmethod
+        # def handle_filter_shorthand(cls, value: Any):
+        #     print("input:", value)
+        #     if isinstance(value, (list, tuple)):
+        #         result = []
+        #         for i, entry in enumerate(value):
+        #             if isinstance(entry, str):
+        #                 result.append({"index": i + 1, "name": entry})
+        #             else:
+        #                 result.append(entry)
+        #         print("result:", result)
+        #         return result
+        #     else:
+        #         return value
+
         model_config = ConfigDict(title="FilterInserter")
 
     def __init__(
@@ -95,10 +111,10 @@ class FilterInserter(
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
         override_stack_size: uint8 = None,
-        filters: Filters = Filters(),
+        filters: list[FilterEntry] = [],
         filter_mode: Literal["whitelist", "blacklist"] = "whitelist",
-        connections: Connections = Connections(),
-        control_behavior: Format.ControlBehavior = Format.ControlBehavior(),
+        connections: Connections = {},
+        control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -132,8 +148,7 @@ class FilterInserter(
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

@@ -9,6 +9,8 @@ import pytest
 
 # For compatibility with versions of Factorio prior to 1.1.6
 pytest.mark.skipif(len(linked_belts) == 0, "No linked belts to test")
+
+
 class TestLinkedBelt:
     def test_constructor_init(self):
         linked_belt = LinkedBelt("linked-belt")

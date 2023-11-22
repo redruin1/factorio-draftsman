@@ -13,9 +13,7 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.data import entities
-from draftsman.error import DataFormatError
 from draftsman.signatures import Connections, DraftsmanBaseModel
-from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import power_switches
 
@@ -70,8 +68,8 @@ class PowerSwitch(
         name=power_switches[0],
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        connections: Connections = Connections(),
-        control_behavior: Format.ControlBehavior = Format.ControlBehavior(),
+        connections: Connections = {},
+        control_behavior: Format.ControlBehavior = {},
         switch_state: bool = False,
         tags: dict[str, Any] = {},
         validate: Union[
@@ -97,8 +95,7 @@ class PowerSwitch(
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

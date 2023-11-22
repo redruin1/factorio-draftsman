@@ -15,9 +15,9 @@ from draftsman.data import entities, items
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
     DraftsmanBaseModel,
-    Icons,
+    Icon,
     Mapper,
-    Mappers,
+    MapperID,
     mapper_dict,
     uint8,
     uint16,
@@ -97,6 +97,24 @@ def check_valid_upgrade_pair(
                 )
             )
         ]
+
+    # The types of both need to match in order to make sense
+    if from_obj["type"] != to_obj["type"]:
+        return [
+            UpgradeProhibitedWarning(
+                "'{}' is an {} but '{}' is an {}".format(
+                    from_obj["name"],
+                    from_obj["type"],
+                    to_obj["name"],
+                    to_obj["type"],
+                )
+            )
+        ]
+
+    # TODO: currently we don't check for item mapping correctness
+    # For now we just ignore it and early exit
+    if from_obj["type"] == "item" and to_obj["type"] == "item":
+        return None
 
     # To quote Entity prototype documentation for the "next_upgrade" key:
 
@@ -243,7 +261,7 @@ class UpgradePlanner(Blueprintable):
                     description="""
                     A string description given to this UpgradePlanner.""",
                 )
-                icons: Optional[Icons] = Field(
+                icons: Optional[list[Icon]] = Field(
                     None,
                     description="""
                     A set of signal pictures to associate with this 
@@ -256,6 +274,20 @@ class UpgradePlanner(Blueprintable):
                     The set of mappings from one item/entity to another.
                     """,
                 )
+
+                @field_validator("icons", mode="before")
+                @classmethod
+                def normalize_icons(cls, value: Any):
+                    if isinstance(value, Sequence):
+                        result = [None] * len(value)
+                        for i, signal in enumerate(value):
+                            if isinstance(signal, str):
+                                result[i] = {"index": i + 1, "signal": signal}
+                            else:
+                                result[i] = signal
+                        return result
+                    else:
+                        return value
 
                 @field_validator("mappers", mode="before")
                 @classmethod
@@ -281,13 +313,11 @@ class UpgradePlanner(Blueprintable):
                 def ensure_mappers_valid(self, info: ValidationInfo):
                     if not info.context or self.mappers is None:
                         return self
-                    elif info.context["mode"] is ValidationMode.MINIMUM:
+                    elif info.context["mode"] <= ValidationMode.MINIMUM:
                         return self
 
                     warning_list: list = info.context["warning_list"]
                     upgrade_planner: UpgradePlanner = info.context["object"]
-
-                    print(self.mappers)
 
                     # Keep track to see if multiple entries exist with the same index
                     occupied_indices = {}
@@ -296,8 +326,6 @@ class UpgradePlanner(Blueprintable):
                         # Ensure that "from" and "to" are a valid pair
                         # We assert that index must exist in each mapper, but both "from"
                         # and "to" may be omitted
-                        print("\t", mapper)
-                        print(mapper.get("from", None), mapper.get("to", None))
                         reasons = check_valid_upgrade_pair(
                             mapper.get("from", None), mapper.get("to", None)
                         )
@@ -367,11 +395,11 @@ class UpgradePlanner(Blueprintable):
 
         upgrade_planner: UpgradePlannerObject
         index: Optional[uint16] = Field(
-            None, 
+            None,
             description="""
             The index of the blueprint inside a parent BlueprintBook's blueprint
             list. Only meaningful when this object is inside a BlueprintBook.
-            """
+            """,
         )
 
         model_config = ConfigDict(title="UpgradePlanner")
@@ -419,8 +447,7 @@ class UpgradePlanner(Blueprintable):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     @reissue_warnings
     def setup(
@@ -483,11 +510,11 @@ class UpgradePlanner(Blueprintable):
     # =========================================================================
 
     @property
-    def icons(self) -> Optional[Icons]:
+    def icons(self) -> Optional[list[Icon]]:
         return self._root[self._root_item]["settings"].get("icons", None)
 
     @icons.setter
-    def icons(self, value: Union[list[str], Icons, None]):
+    def icons(self, value: Union[list[str], list[Icon], None]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -547,8 +574,9 @@ class UpgradePlanner(Blueprintable):
     # =========================================================================
 
     @reissue_warnings
-    def set_mapping(self, from_obj, to_obj, index):
-        # type: (Union[str, dict], Union[str, dict], int) -> None
+    def set_mapping(
+        self, from_obj: Union[str, MapperID], to_obj: Union[str, MapperID], index: int
+    ):
         """
         Sets a single mapping in the :py:class:`.UpgradePlanner`. Setting
         multiple mappers at the same index overwrites the entry at that index
@@ -591,8 +619,12 @@ class UpgradePlanner(Blueprintable):
         # TODO: make backwards compatible
         bisect.insort(self.mappers, new_mapping, key=lambda x: x["index"])
 
-    def remove_mapping(self, from_obj, to_obj, index=None):
-        # type: (Union[str, dict], Union[str, dict], int) -> None
+    def remove_mapping(
+        self,
+        from_obj: Union[str, MapperID],
+        to_obj: Union[str, MapperID],
+        index: Optional[int] = None,
+    ):
         """
         Removes a specified upgrade planner mapping. If ``index`` is not
         specified, the function searches for the first occurrence where both
@@ -638,8 +670,7 @@ class UpgradePlanner(Blueprintable):
             mapper = {"from": from_obj, "to": to_obj, "index": index}
             self.mappers.remove(mapper)
 
-    def pop_mapping(self, index):
-        # type: (int) -> Mapper
+    def pop_mapping(self, index: int) -> Mapper:
         """
         Removes a mapping at a specific mapper index. Note that this is not the
         position of the mapper in the :py:attr:`.mappers` list; it is the value

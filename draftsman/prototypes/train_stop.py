@@ -20,7 +20,13 @@ from draftsman.warning import DraftsmanWarning
 from draftsman.data.entities import train_stops
 from draftsman.data.signals import signal_dict
 
-from pydantic import ConfigDict, Field
+from pydantic import (
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    ValidatorFunctionWrapHandler,
+    field_validator,
+)
 from typing import Any, Literal, Optional, Union
 
 
@@ -138,8 +144,8 @@ class TrainStop(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
-        connections: Connections = Connections(),
-        control_behavior: Format.ControlBehavior = Format.ControlBehavior(),
+        connections: Connections = {},
+        control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -173,8 +179,7 @@ class TrainStop(
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
@@ -185,7 +190,7 @@ class TrainStop(
     # =========================================================================
 
     @property
-    def station(self) -> str:
+    def station(self) -> Optional[str]:
         """
         The name of this station.
         TODO more
@@ -193,7 +198,7 @@ class TrainStop(
         return self._root.station
 
     @station.setter
-    def station(self, value: str):
+    def station(self, value: Optional[str]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self, type(self).Format, self._root, "station", value
@@ -205,7 +210,7 @@ class TrainStop(
     # =========================================================================
 
     @property
-    def manual_trains_limit(self) -> uint32:
+    def manual_trains_limit(self) -> Optional[uint32]:
         """
         A limit to the amount of trains that can use this stop. Overridden by
         the circuit signal set train limit (if present).
@@ -213,7 +218,7 @@ class TrainStop(
         return self._root.manual_trains_limit
 
     @manual_trains_limit.setter
-    def manual_trains_limit(self, value: uint32):
+    def manual_trains_limit(self, value: Optional[uint32]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self, type(self).Format, self._root, "manual_trains_limit", value
@@ -225,7 +230,7 @@ class TrainStop(
     # =========================================================================
 
     @property
-    def send_to_train(self) -> bool:
+    def send_to_train(self) -> Optional[bool]:
         """
         Whether or not to send the contents of any connected circuit network to
         the train to determine it's schedule.
@@ -233,7 +238,7 @@ class TrainStop(
         return self.control_behavior.send_to_train
 
     @send_to_train.setter
-    def send_to_train(self, value: bool):
+    def send_to_train(self, value: Optional[bool]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -249,7 +254,7 @@ class TrainStop(
     # =========================================================================
 
     @property
-    def read_from_train(self) -> bool:
+    def read_from_train(self) -> Optional[bool]:
         """
         Whether or not to read the train's contents when stopped at this train
         stop.
@@ -257,7 +262,7 @@ class TrainStop(
         return self.control_behavior.read_from_train
 
     @read_from_train.setter
-    def read_from_train(self, value: bool):
+    def read_from_train(self, value: Optional[bool]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -273,7 +278,7 @@ class TrainStop(
     # =========================================================================
 
     @property
-    def read_stopped_train(self) -> bool:
+    def read_stopped_train(self) -> Optional[bool]:
         """
         Whether or not to read a unique number associated with the train
         currently stopped at the station.
@@ -281,7 +286,7 @@ class TrainStop(
         return self.control_behavior.read_stopped_train
 
     @read_stopped_train.setter
-    def read_stopped_train(self, value: bool):
+    def read_stopped_train(self, value: Optional[bool]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -297,7 +302,7 @@ class TrainStop(
     # =========================================================================
 
     @property
-    def train_stopped_signal(self) -> SignalID:
+    def train_stopped_signal(self) -> Optional[SignalID]:
         """
         What signal to output the unique train ID if a train is currently
         stopped at a station.
@@ -305,7 +310,7 @@ class TrainStop(
         return self.control_behavior.train_stopped_signal
 
     @train_stopped_signal.setter
-    def train_stopped_signal(self, value: Union[str, SignalID]):
+    def train_stopped_signal(self, value: Union[str, SignalID, None]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -321,7 +326,7 @@ class TrainStop(
     # =========================================================================
 
     @property
-    def signal_limits_trains(self) -> bool:
+    def signal_limits_trains(self) -> Optional[bool]:
         """
         Whether or not an external signal should limit the number of trains that
         can use this stop.
@@ -329,7 +334,7 @@ class TrainStop(
         return self.control_behavior.set_trains_limit
 
     @signal_limits_trains.setter
-    def signal_limits_trains(self, value: bool):
+    def signal_limits_trains(self, value: Optional[bool]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -345,14 +350,14 @@ class TrainStop(
     # =========================================================================
 
     @property
-    def trains_limit_signal(self) -> SignalID:
+    def trains_limit_signal(self) -> Optional[SignalID]:
         """
         What signal to read to limit the number of trains that can use this stop.
         """
         return self.control_behavior.trains_limit_signal
 
     @trains_limit_signal.setter
-    def trains_limit_signal(self, value: Union[str, SignalID]):
+    def trains_limit_signal(self, value: Union[str, SignalID, None]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -368,14 +373,14 @@ class TrainStop(
     # =========================================================================
 
     @property
-    def read_trains_count(self) -> bool:
+    def read_trains_count(self) -> Optional[bool]:
         """
         Whether or not to read the number of trains that currently use this stop.
         """
         return self.control_behavior.read_trains_count
 
     @read_trains_count.setter
-    def read_trains_count(self, value: bool):
+    def read_trains_count(self, value: Optional[bool]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -391,7 +396,7 @@ class TrainStop(
     # =========================================================================
 
     @property
-    def trains_count_signal(self) -> SignalID:
+    def trains_count_signal(self) -> Optional[SignalID]:
         """
         What signal to use to output the current number of trains that use this
         stop.
@@ -399,7 +404,7 @@ class TrainStop(
         return self.control_behavior.trains_count_signal
 
     @trains_count_signal.setter
-    def trains_count_signal(self, value: Union[str, SignalID]):
+    def trains_count_signal(self, value: Union[str, SignalID, None]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -414,8 +419,7 @@ class TrainStop(
 
     # =========================================================================
 
-    def merge(self, other):
-        # type: (TrainStop) -> None
+    def merge(self, other: "TrainStop"):
         super(TrainStop, self).merge(other)
 
         self.station = other.station
@@ -425,7 +429,7 @@ class TrainStop(
 
     __hash__ = Entity.__hash__
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: "TrainStop") -> bool:
         return (
             super().__eq__(other)
             and self.station == other.station

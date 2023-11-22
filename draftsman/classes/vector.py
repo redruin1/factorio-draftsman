@@ -1,5 +1,4 @@
 # vector.py
-# -*- encoding: utf-8 -*-
 
 """
 TODO
@@ -10,7 +9,9 @@ from __future__ import unicode_literals, division
 from pydantic import BaseModel, ConfigDict
 from typing import Union, Callable
 
-PrimitiveVector = tuple[int, int]
+PrimitiveVector = tuple[Union[int, float], Union[int, float]]
+PrimitiveIntVector = tuple[int, int]
+PrimitiveFloatVector = tuple[float, float]
 
 
 class Vector(object):
@@ -18,14 +19,7 @@ class Vector(object):
     A simple 2d vector class, used to aid in developent and user experience.
     """
 
-    class Model(BaseModel):
-        x: float
-        y: float
-
-        model_config = ConfigDict(extra="forbid")
-
-    def __init__(self, x, y):
-        # type: (float, float, Vector) -> None
+    def __init__(self, x: Union[float, int], y: Union[float, int]):
         """
         Constructs a new :py:class:`.Vector`.
 
@@ -36,8 +30,7 @@ class Vector(object):
         self.update(x, y)
 
     @property
-    def x(self):
-        # type: () -> Union[float, int]
+    def x(self) -> Union[float, int]:
         """
         The x-coordinate of the point. Returns either a ``float`` or an ``int``,
         depending on the :py:class:`.Vector` queried.
@@ -49,16 +42,11 @@ class Vector(object):
         return self._data[0]
 
     @x.setter
-    def x(self, value):
-        # type: (Union[float, int]) -> None
+    def x(self, value: Union[float, int]):
         self._data[0] = value
 
-        # if self.linked:
-        #     self.linked._data[0] = self.linked.transform_x(self._entity, value)
-
     @property
-    def y(self):
-        # type: () -> float
+    def y(self) -> Union[float, int]:
         """
         The y-coordinate of the vector. Returns either a ``float`` or an ``int``,
         depending on the :py:class:`.Vector` queried.
@@ -70,32 +58,8 @@ class Vector(object):
         return self._data[1]
 
     @y.setter
-    def y(self, value):
-        # type: (Union[float, int]) -> None
+    def y(self, value: Union[float, int]):
         self._data[1] = value
-
-        # if self.linked:
-        #     self.linked._data[1] = self.linked.transform_y(self._entity, value)
-
-    def transform_x(self, x):
-        # type: (float) -> float
-        """
-        Calculates the value to set the linked vector's x coordinate with. Used
-        to transform a change in the parent vector into a different change in
-        the linked vector. Defaults to just setting the x value of the linked
-        vector to the x value of the parent.
-        """
-        return x
-
-    def transform_y(self, y):
-        # type: (float) -> float
-        """
-        Calculates the value to set the linked vector's y coordinate with. Used
-        to transform a change in the parent vector into a different change in
-        the linked vector. Defaults to just setting the y value of the linked
-        vector to the y value of the parent.
-        """
-        return y
 
     # =========================================================================
 
@@ -153,8 +117,7 @@ class Vector(object):
         else:
             raise TypeError("Could not resolve '{}' to a Vector object".format(other))
 
-    def to_dict(self):
-        # type: () -> dict
+    def to_dict(self) -> dict:
         """
         Convert this vector to a Factorio-parseable dict with "x" and "y" keys.
 
@@ -164,8 +127,7 @@ class Vector(object):
 
     # =========================================================================
 
-    def __getitem__(self, index):
-        # type: (int) -> Union[float, int]
+    def __getitem__(self, index: Union[str, int]) -> Union[float, int]:
         if index == "x":
             return self._data[0]
         elif index == "y":
@@ -173,8 +135,7 @@ class Vector(object):
         else:
             return self._data[index]
 
-    def __setitem__(self, index, value):
-        # type: (int, Union[float, int]) -> None
+    def __setitem__(self, index: Union[str, int], value: Union[float, int]):
         if index == "x":
             self._data[0] = value
         elif index == "y":
@@ -182,29 +143,27 @@ class Vector(object):
         else:
             self._data[index] = value
 
-    def __add__(self, other):
-        # type: (Union[Vector, PrimitiveVector, float, int]) -> Vector
+    def __add__(self, other: Union["Vector", PrimitiveVector, float, int]) -> "Vector":
         try:
             return Vector(self[0] + other[0], self[1] + other[1])
         except TypeError:
             return Vector(self[0] + other, self[1] + other)
 
-    def __sub__(self, other):
-        # type: (Union[Vector, PrimitiveVector, float, int]) -> Vector
+    def __sub__(self, other: Union["Vector", PrimitiveVector, float, int]) -> "Vector":
         try:
             return Vector(self[0] - other[0], self[1] - other[1])
         except TypeError:
             return Vector(self[0] - other, self[1] - other)
 
-    def __mul__(self, other):
-        # type: (Union[Vector, PrimitiveVector, float, int]) -> Vector
+    def __mul__(self, other: Union["Vector", PrimitiveVector, float, int]) -> "Vector":
         try:
             return Vector(self[0] * other[0], self[1] * other[1])
         except TypeError:
             return Vector(self[0] * other, self[1] * other)
 
-    def __truediv__(self, other):
-        # type: (Union[Vector, float, int]) -> Vector
+    def __truediv__(
+        self, other: Union["Vector", PrimitiveVector, float, int]
+    ) -> "Vector":
         try:
             return Vector(self[0] / other[0], self[1] / other[1])
         except TypeError:
@@ -212,29 +171,25 @@ class Vector(object):
 
     __div__ = __truediv__
 
-    def __floordiv__(self, other):
-        # type: (Union[Vector, float, int]) -> Vector
+    def __floordiv__(
+        self, other: Union["Vector", PrimitiveVector, float, int]
+    ) -> "Vector":
         try:
             return Vector(self[0] // other[0], self[1] // other[1])
         except TypeError:
             return Vector(self[0] // other, self[1] // other)
 
-    def __eq__(self, other):
-        # type: (Vector) -> bool
+    def __eq__(self, other) -> bool:
         return isinstance(other, Vector) and self.x == other.x and self.y == other.y
 
-    def __abs__(self):
-        # type: () -> Vector
+    def __abs__(self) -> "Vector":
         return Vector(abs(self[0]), abs(self[1]))
 
-    def __round__(self, precision=0):
-        # type: (int) -> Vector
+    def __round__(self, precision: int = 0) -> "Vector":
         return Vector(round(self[0], precision), round(self[1], precision))
 
-    def __str__(self):  # pragma: no coverage
-        # type: () -> str
+    def __str__(self) -> str:  # pragma: no coverage
         return "({}, {})".format(self._data[0], self._data[1])
 
-    def __repr__(self):  # pragma: no coverage
-        # type: () -> str
+    def __repr__(self) -> str:  # pragma: no coverage
         return "<Vector>({}, {})".format(self._data[0], self._data[1])

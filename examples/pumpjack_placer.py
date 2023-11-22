@@ -8,22 +8,24 @@ Can be expanded as much as you dare.
 
 # TODO: speed this thing up, shouldn't take 10+ seconds
 
-import warnings
 from draftsman.blueprintable import Blueprint
+from draftsman.constants import ValidationMode
 from draftsman.warning import OverlappingObjectsWarning
+import warnings
 
 
 def main():
-    blueprint = Blueprint()
+    blueprint = Blueprint(validate_assignment=ValidationMode.NONE)
     blueprint.label = "Huge Pumpjacks"
     blueprint.set_icons("pumpjack")
 
-    # Do this unless you want your stdout flooded with warnings
+    # We intentionally create a blueprint which has overlapping entities, so we
+    # suppress this warning here
     warnings.simplefilter("ignore", OverlappingObjectsWarning)
 
-    dim = 64
-    for y in range(dim):
-        for x in range(dim):
+    dimension = 64
+    for y in range(dimension):
+        for x in range(dimension):
             blueprint.entities.append("pumpjack", position=[x, y])
 
     # If you want to see all the OverlappingObjectsWarning, do this:

@@ -22,12 +22,15 @@ class ScheduleList(MutableSequence):
             if not isinstance(initlist, list):
                 raise TypeError("'initlist' must be either a list or None")
             for elem in initlist:
+                print(elem)
                 if isinstance(elem, Schedule):
                     self.append(elem)
                 elif isinstance(elem, dict):
                     self.append(Schedule(**elem))
                 else:
-                    raise DataFormatError("ScheduleList only accepts Schedule or dict entries")
+                    raise DataFormatError(
+                        "ScheduleList only accepts Schedule or dict entries"
+                    )
 
     def insert(self, index, schedule):
         """
@@ -38,12 +41,10 @@ class ScheduleList(MutableSequence):
 
         self.data.insert(index, schedule)
 
-    def __getitem__(self, index):
-        # type: (int) -> Schedule
+    def __getitem__(self, index: int) -> Schedule:
         return self.data[index]
 
-    def __setitem__(self, index, item):
-        # type: (int, Schedule) -> None
+    def __setitem__(self, index: int, item: Schedule):
         if isinstance(item, MutableSequence):
             for i in range(len(item)):
                 if not isinstance(item[i], Schedule):
@@ -58,16 +59,13 @@ class ScheduleList(MutableSequence):
 
         self.data[index] = item
 
-    def __delitem__(self, index):
-        # type: (int) -> None
+    def __delitem__(self, index: int):
         del self.data[index]
 
-    def __len__(self):
-        # type: () -> int
+    def __len__(self) -> int:
         return len(self.data)
 
-    def __eq__(self, other):
-        # type: (ScheduleList) -> bool
+    def __eq__(self, other: "ScheduleList") -> bool:
         if not isinstance(other, ScheduleList):
             return False
         if len(self.data) != len(other.data):
@@ -77,13 +75,16 @@ class ScheduleList(MutableSequence):
                 return False
         return True
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "<ScheduleList>{}".format(repr(self.data))
 
     # def __deepcopy__(self, memo):
     #     pass # TODO, I think
 
     @classmethod
-    def __get_pydantic_core_schema__(cls, _source_type: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(cls, handler(list[dict])) # TODO: correct annotation
+    def __get_pydantic_core_schema__(
+        cls, _: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        return core_schema.no_info_after_validator_function(
+            cls, handler(list[Schedule.Format])
+        )  # pragma: no coverage

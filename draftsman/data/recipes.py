@@ -1,7 +1,5 @@
 # recipes.py
-# -*- encoding: utf-8 -*-
 
-import os
 import pickle
 
 try:  # pragma: no coverage
@@ -21,7 +19,7 @@ with pkg_resources.open_binary(data, "recipes.pkl") as inp:
     for_machine: dict[str, list[str]] = _data[2]
 
 
-def add_recipe(name: str, ingredients: list[str], result: str):
+def add_recipe(name: str, ingredients: list[str], result: str, **kwargs):
     raise NotImplementedError  # TODO
 
 

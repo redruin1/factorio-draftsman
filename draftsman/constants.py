@@ -8,6 +8,7 @@ from draftsman.classes.vector import Vector
 
 from datetime import timedelta
 from enum import IntEnum, Enum
+from functools import total_ordering
 import math
 from pydantic_core import core_schema
 
@@ -153,27 +154,28 @@ class Direction(IntEnum):
         return mapping[self] * magnitude
 
 
-class OrientationMeta(type):
-    _mapping = {
-        "NORTH": 0.0,
-        "NORTHEAST": 0.125,
-        "EAST": 0.25,
-        "SOUTHEAST": 0.375,
-        "SOUTH": 0.5,
-        "SOUTHWEST": 0.625,
-        "WEST": 0.75,
-        "NORTHWEST": 0.875,
-    }
+# class OrientationMeta(type):
+#     _mapping = {
+#         "NORTH": 0.0,
+#         "NORTHEAST": 0.125,
+#         "EAST": 0.25,
+#         "SOUTHEAST": 0.375,
+#         "SOUTH": 0.5,
+#         "SOUTHWEST": 0.625,
+#         "WEST": 0.75,
+#         "NORTHWEST": 0.875,
+#     }
 
-    def __getattr__(cls, name):
-        if name in cls._mapping:
-            return Orientation(cls._mapping[name])
-        else:
-            super().__getattr__(name)
+#     def __getattr__(cls, name):
+#         if name in cls._mapping:
+#             return Orientation(cls._mapping[name])
+#         else:
+#             super().__getattr__(name)
 
-    # NORTH = Orientation(0.0)
+#     # NORTH = Orientation(0.0)
 
 
+@total_ordering
 class Orientation(float):
     """
     Factorio orientation enum. Represents the direction an object is facing with
@@ -198,17 +200,17 @@ class Orientation(float):
     """
 
     # Note: These are overwritten with Orientation() instances after definition
-    NORTH = 0.0
-    NORTHEAST = 0.125
-    EAST = 0.25
-    SOUTHEAST = 0.375
-    SOUTH = 0.5
-    SOUTHWEST = 0.625
-    WEST = 0.75
-    NORTHWEST = 0.875
+    NORTH: "Orientation" = 0.0
+    NORTHEAST: "Orientation" = 0.125
+    EAST: "Orientation" = 0.25
+    SOUTHEAST: "Orientation" = 0.375
+    SOUTH: "Orientation" = 0.5
+    SOUTHWEST: "Orientation" = 0.625
+    WEST: "Orientation" = 0.75
+    NORTHWEST: "Orientation" = 0.875
 
-    def __init__(self, value):
-        self._value_ = value
+    def __init__(self, value: float):
+        self._value_ = value % 1.0
         _reverse_mapping = {
             0.0: "NORTH",
             0.125: "NORTHEAST",
@@ -224,8 +226,7 @@ class Orientation(float):
         else:
             self._name_ = None
 
-    def opposite(self):
-        # type: () -> Orientation
+    def opposite(self) -> "Orientation":
         """
         Returns the direction opposite this one. For cardinal four-way and eight-
         way directions calling this function should always return the "true"
@@ -243,10 +244,9 @@ class Orientation(float):
 
         :returns: A new :py:class:`Orientation` object.
         """
-        return self + 0.5
+        return Orientation((self._value_ + 0.5) % 1.0)
 
-    def to_direction(self, eight_way=False):
-        # type: (bool) -> Direction
+    def to_direction(self, eight_way: bool = False) -> Direction:
         """
         Converts the orientation to a :py:class:`Direction` instance. If the
         orientation is imprecise, the orientation will be rounded to either the
@@ -262,8 +262,7 @@ class Orientation(float):
         else:
             return Direction(round(self._value_ * 4) * 2)
 
-    def to_vector(self, magnitude=1):
-        # type: (float) -> Vector
+    def to_vector(self, magnitude=1) -> Vector:
         """
         Converts a :py:class:`Orientation` into an equivalent 2-dimensional
         vector, for various linear operations. Returned vectors are unit-length,
@@ -278,19 +277,60 @@ class Orientation(float):
 
         :param magnitude: The magnitude (total length) of the vector to create.
 
-        :returns: A new :py:class:`Vector` object pointing in the correct
+        :returns: A new :py:class:`Vector` object pointing in the corresponding
             direction.
         """
         angle = self._value_ * math.pi * 2
         return Vector(math.sin(angle), -math.cos(angle)) * magnitude
 
-    def __add__(self, other):
-        other = Orientation(other)
-        return Orientation((self._value_ + other._value_) % 1.0)
+    # =========================================================================
 
-    def __sub__(self, other):
-        other = Orientation(other)
-        return Orientation((self._value_ - other._value_) % 1.0)
+    def __add__(self, other) -> "Orientation":
+        if isinstance(other, Orientation):
+            return Orientation(self._value_ + other._value_)
+        elif isinstance(other, float):
+            return Orientation(self._value_ + other)
+        else:
+            return NotImplemented
+
+    def __radd__(self, other) -> "Orientation":
+        if isinstance(other, float):
+            return Orientation(other + self._value_)
+        else:
+            return NotImplemented
+
+    def __sub__(self, other) -> "Orientation":
+        if isinstance(other, Orientation):
+            return Orientation(self._value_ - other._value_)
+        elif isinstance(other, float):
+            return Orientation(self._value_ - other)
+        else:
+            return NotImplemented
+
+    def __rsub__(self, other) -> "Orientation":
+        if isinstance(other, float):
+            return Orientation(other - self._value_)
+        else:
+            return NotImplemented
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, Orientation):
+            return self._value_ == other._value_
+        elif isinstance(other, float):
+            return self._value_ == other
+        else:
+            return NotImplemented
+
+    def __lt__(self, other) -> bool:
+        if isinstance(other, Orientation):
+            return self._value_ < other._value_
+        elif isinstance(other, float):
+            return self._value_ < other
+        else:
+            return NotImplemented
+
+    def __hash__(self) -> int:
+        return id(self) >> 4  # Default
 
     def __repr__(self) -> str:
         # Matches the format of Enum unless the value isn't one of the special
@@ -300,7 +340,7 @@ class Orientation(float):
         else:
             special_name = ""
         return "<%s%s: %r>" % (self.__class__.__name__, special_name, self._value_)
-    
+
     @classmethod
     def __get_pydantic_core_schema__(cls, _):
         return core_schema.float_schema()
@@ -419,7 +459,7 @@ class TileSelectionMode(IntEnum):
     ONLY = 3
 
 
-class Ticks(IntEnum):
+class Ticks(int, Enum):
     """
     Constant values that correspond to the number of Factorio ticks for that
     measure of time at normal game-speed.
@@ -513,16 +553,31 @@ class WireColor(str, Enum):
     GREEN = "green"
 
 
-class ValidationMode(str, Enum):
+@total_ordering
+class ValidationMode(Enum):
     """
     The manner in which to validate a given Draftsman object.
     TODO
     """
 
-    NONE = ("none",)
+    NONE = "none"
     MINIMUM = "minimum"
     STRICT = "strict"
     PEDANTIC = "pedantic"
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return self is not ValidationMode.NONE
+
+    def __eq__(self, other):
+        if isinstance(other, ValidationMode):
+            return self._member_names_.index(self.name) == self._member_names_.index(
+                other.name
+            )
+        return NotImplemented
+
+    def __gt__(self, other):
+        if isinstance(other, ValidationMode):
+            return self._member_names_.index(self.name) > self._member_names_.index(
+                other.name
+            )
+        return NotImplemented

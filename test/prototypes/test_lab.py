@@ -1,12 +1,13 @@
 # test_lab.py
 
 from draftsman.entity import Lab, labs, Container
-from draftsman.error import InvalidEntityError, InvalidItemError
+from draftsman.error import DataFormatError
 from draftsman.warning import (
     ModuleCapacityWarning,
     ItemLimitationWarning,
     UnknownEntityWarning,
-    UnknownKeywordWarning
+    UnknownItemWarning,
+    UnknownKeywordWarning,
 )
 
 from collections.abc import Hashable
@@ -69,16 +70,16 @@ class TestLab:
         lab.items = {}
         assert lab.module_slots_occupied == 0
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             lab.set_item_request(TypeError, 100)
-        # with pytest.raises(InvalidItemError): # TODO
-        #     lab.set_item_request("incorrect", 100)
-        with pytest.raises(TypeError):
+        with pytest.warns(UnknownItemWarning):
+            lab.set_item_request("unknown", 100)
+        with pytest.raises(DataFormatError):
             lab.set_item_request("logistic-science-pack", TypeError)
-        # with pytest.raises(ValueError): # TODO
-        #     lab.set_item_request("logistic-science-pack", -1)
+        with pytest.raises(DataFormatError):
+            lab.set_item_request("logistic-science-pack", -1)
 
-        assert lab.items == {}
+        assert lab.items == {"unknown": 100}
         assert lab.module_slots_occupied == 0
 
     def test_mergable_with(self):

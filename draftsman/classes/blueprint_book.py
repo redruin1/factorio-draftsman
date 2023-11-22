@@ -66,19 +66,24 @@ from draftsman.classes.exportable import ValidationResult, attempt_and_reissue
 from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
-from draftsman.signatures import Color, DraftsmanBaseModel, Icons, uint16
+from draftsman.signatures import Color, DraftsmanBaseModel, Icon, uint16, uint64
 from draftsman.utils import encode_version, reissue_warnings
 from draftsman.warning import DraftsmanWarning, IndexWarning
 
 from builtins import int
-from pydantic import ConfigDict, Field, PrivateAttr, field_validator, ValidationError
-from typing import Literal, Optional, Union
+from pydantic import (
+    ConfigDict,
+    Field,
+    PrivateAttr,
+    ValidatorFunctionWrapHandler,
+    ValidationInfo,
+    field_validator,
+    ValidationError,
+)
+from typing import Any, Literal, Optional, Sequence, Union
 import warnings
 
-try:  # pragma: no coverage
-    from collections.abc import MutableSequence
-except ImportError:  # pragma: no coverage
-    from collections import MutableSequence
+from collections.abc import MutableSequence
 
 
 class BlueprintableList(MutableSequence):
@@ -88,44 +93,42 @@ class BlueprintableList(MutableSequence):
     can exist inside other BlueprintBook instances.
     """
 
-    def __init__(self, initlist=None):
-        # type: (list[Blueprint], str) -> None
+    def __init__(self, initlist: list[Union[dict, Blueprintable]]=[]):
         self.data: list[Blueprintable] = []
-        if initlist is not None:
-            for elem in initlist:
-                if isinstance(elem, dict):
-                    # fmt: off
-                    if "blueprint" in elem:
-                        self.append(
-                            Blueprint(
-                                elem, 
-                            )
+        for elem in initlist:
+            if isinstance(elem, dict):
+                # fmt: off
+                if "blueprint" in elem:
+                    self.append(
+                        Blueprint(
+                            elem, 
                         )
-                    elif "deconstruction_planner" in elem:
-                        self.append(
-                            DeconstructionPlanner(
-                                elem, 
-                            )
+                    )
+                elif "deconstruction_planner" in elem:
+                    self.append(
+                        DeconstructionPlanner(
+                            elem, 
                         )
-                    elif "upgrade_planner" in elem:
-                        self.append(
-                            UpgradePlanner(
-                                elem, 
-                            )
+                    )
+                elif "upgrade_planner" in elem:
+                    self.append(
+                        UpgradePlanner(
+                            elem, 
                         )
-                    elif "blueprint_book" in elem:
-                        self.append(
-                            BlueprintBook(
-                                elem, 
-                            )
+                    )
+                elif "blueprint_book" in elem:
+                    self.append(
+                        BlueprintBook(
+                            elem, 
                         )
-                    else:
-                        raise DataFormatError(
-                            "Dictionary input cannot be resolve to a blueprintable"
-                        )
-                    # fmt: on
+                    )
                 else:
-                    self.append(elem)
+                    raise DataFormatError(
+                        "Dictionary input cannot be resolve to a blueprintable"
+                    )
+                # fmt: on
+            else:
+                self.append(elem)
 
     def insert(self, idx: int, value: Blueprintable):
         # Make sure the blueprintable is valid
@@ -133,16 +136,15 @@ class BlueprintableList(MutableSequence):
 
         self.data.insert(idx, value)
 
-    def __getitem__(self, idx: int) -> Blueprintable:
+    def __getitem__(self, idx: Union[int, slice]) -> Union[Any, MutableSequence[Any]]:
         return self.data[idx]
 
-    def __setitem__(self, idx: int, value: Blueprintable):
-        # Make sure the blueprintable is valid
+    def __setitem__(self, idx: Union[int, slice], value: Any) -> None:
         self.check_blueprintable(value)
 
         self.data[idx] = value
 
-    def __delitem__(self, idx: int):
+    def __delitem__(self, idx: Union[int, slice]) -> None:
         del self.data[idx]
 
     def __len__(self) -> int:
@@ -176,13 +178,56 @@ class BlueprintBook(Blueprintable):
         _blueprints: BlueprintableList = PrivateAttr()
 
         class BlueprintBookObject(DraftsmanBaseModel):
-            item: Literal["blueprint-book"]
-            label: str | None = None
-            label_color: Color | None = None
-            description: str | None = None
-            icons: Icons | None = None
-            active_index: int
-            version: int | None = Field(None, ge=0, lt=2**64)
+            item: Literal["blueprint-book"] = Field(
+                ...,
+                description="""
+                The item that this BlueprintBookItem object is associated with. 
+                Always equivalent to 'blueprint-book'.
+                """,
+            )
+            label: Optional[str] = Field(
+                None,
+                description="""
+                A string title for this BlueprintBook.
+                """,
+            )
+            label_color: Optional[Color] = Field(
+                None,
+                description="""
+                The color to draw the label of this blueprint book with, if 
+                'label' is present. Defaults to white if omitted.
+                """,
+            )
+            description: Optional[str] = Field(
+                None,
+                description="""
+                A string description given to this BlueprintBook.
+                """,
+            )
+            icons: Optional[list[Icon]] = Field(
+                None,
+                description="""
+                A set of signal pictures to associate with this BlueprintBook.
+                """,
+            )
+            active_index: Optional[uint16] = Field(
+                0,
+                description="""
+                The numerical index of the currently selected blueprint in the
+                blueprint book.
+                """,
+            )
+            version: Optional[uint64] = Field(
+                None,
+                description="""
+                What version of Factorio this UpgradePlanner was made 
+                in/intended for. Specified as 4 unsigned 16-bit numbers combined, 
+                representing the major version, the minor version, the patch 
+                number, and the internal development version respectively. The 
+                most significant digits correspond to the major version, and the 
+                least to the development number. 
+                """,
+            )
 
             blueprints: list[
                 Union[
@@ -193,14 +238,35 @@ class BlueprintBook(Blueprintable):
                     UpgradePlanner.Format,
                     "BlueprintBook.Format",
                 ]
-            ] = []
+            ] = Field(
+                [],
+                description="""
+                The list of blueprintable objects enclosed within this blueprint
+                book. Can be blueprints, deconstruction planners, upgrade 
+                planners or even other blueprint books. If multiple blueprintable
+                objects share the same 'index', the last one which was added at
+                that index is imported into the book.
+                """,
+            )
+
+            @field_validator("version", mode="before")
+            @classmethod
+            def normalize_to_int(cls, value: Any):
+                # TODO: improve this
+                if isinstance(value, Sequence) and not isinstance(value, str):
+                    return encode_version(*value)
+                return value
 
         blueprint_book: BlueprintBookObject
-        index: uint16 | None = Field(
-            None, description="Only present when inside a BlueprintBook"
+        index: Optional[uint16] = Field(
+            None,
+            description="""
+            The index of the blueprint inside a parent BlueprintBook's blueprint
+            list. Only meaningful when this object is inside a BlueprintBook.
+            """,
         )
 
-        model_config = ConfigDict(title="ExternalObject")
+        model_config = ConfigDict(title="BlueprintBook")
 
     # =========================================================================
     # Constructors
@@ -208,9 +274,9 @@ class BlueprintBook(Blueprintable):
 
     @reissue_warnings
     def __init__(
-        self, 
-        blueprint_book: Union[str, dict]=None, 
-        index: uint16 = None,
+        self,
+        blueprint_book: Optional[Union[str, dict]] = None,
+        index: Optional[uint16] = None,
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -225,7 +291,7 @@ class BlueprintBook(Blueprintable):
         :param blueprint_book: Either a Factorio-format blueprint string or a
             ``dict`` object with the desired keys in the correct format.
         """
-        self._root: __class__.Format
+        self._root: BlueprintBook.Format
 
         super().__init__(
             root_item="blueprint_book",
@@ -234,12 +300,12 @@ class BlueprintBook(Blueprintable):
             init_data=blueprint_book,
             index=index,
             blueprints=[],
+            active_index=0,
         )
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     @reissue_warnings
     def setup(self, **kwargs):
@@ -263,9 +329,7 @@ class BlueprintBook(Blueprintable):
             # self._root[self._root_item]["blueprints"] = BlueprintableList(
             #     kwargs.pop("blueprints"), unknown=unknown
             # )
-            self._root._blueprints = BlueprintableList(
-                kwargs.pop("blueprints")
-            )
+            self._root._blueprints = BlueprintableList(kwargs.pop("blueprints"))
         else:
             # self._root[self._root_item]["blueprints"] = BlueprintableList()
             self._root._blueprints = BlueprintableList()
@@ -334,17 +398,14 @@ class BlueprintBook(Blueprintable):
         TODO
         """
         try:
-            self._root[self._root_item]["label_color"] = Color(
-                r=r, g=g, b=b, a=a
-            )
+            self._root[self._root_item]["label_color"] = Color(r=r, g=g, b=b, a=a)
         except ValidationError as e:
             raise DataFormatError from e
 
     # =========================================================================
 
     @property
-    def active_index(self):
-        # type: () -> int
+    def active_index(self) -> Optional[uint16]:
         """
         The currently selected Blueprintable in the BlueprintBook. Zero-indexed,
         from ``0`` to ``len(blueprint_book.blueprints) - 1``.
@@ -361,20 +422,23 @@ class BlueprintBook(Blueprintable):
         return self._root[self._root_item].get("active_index", None)
 
     @active_index.setter
-    def active_index(self, value):
-        # type: (int) -> None
-        if value is None:
-            self._root[self._root_item]["active_index"] = 0
-        elif isinstance(value, int):
-            self._root[self._root_item]["active_index"] = value
+    def active_index(self, value: Optional[uint16]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                self._root_format,
+                self._root[self._root_item],
+                "active_index",
+                value,
+            )
+            self._root[self._root_item]["active_index"] = result
         else:
-            raise TypeError("'active_index' must be a int or None")
+            self._root[self._root_item]["active_index"] = value
 
     # =========================================================================
 
     @property
-    def blueprints(self):
-        # type: () -> BlueprintableList
+    def blueprints(self) -> BlueprintableList:
         """
         The list of Blueprints or BlueprintBooks contained within this
         BlueprintBook.
@@ -391,7 +455,7 @@ class BlueprintBook(Blueprintable):
         return self._root._blueprints
 
     @blueprints.setter
-    def blueprints(self, value):
+    def blueprints(self, value: Union[list, BlueprintableList, None]):
         if value is None:
             # self._root[self._root_item]["blueprints"] = BlueprintableList()
             self._root._blueprints = BlueprintableList()
@@ -401,14 +465,20 @@ class BlueprintBook(Blueprintable):
             # self._root[self._root_item]["blueprints"] = BlueprintableList(value)
             self._root._blueprints = BlueprintableList(value)
         else:
-            raise DataFormatError("'blueprints' must be a BlueprintableList, a list, or None")
+            raise DataFormatError(
+                "'blueprints' must be a BlueprintableList, a list, or None"
+            )
 
     # =========================================================================
     # Utility functions
     # =========================================================================
 
     def validate(
-        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+        self, 
+        mode: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT, 
+        force: bool = False
     ) -> ValidationResult:
         mode = ValidationMode(mode)
 
@@ -417,7 +487,7 @@ class BlueprintBook(Blueprintable):
         if mode is ValidationMode.NONE or (self.is_valid and not force):
             return output
 
-        context = {
+        context: dict[str, Any] = {
             "mode": mode,
             "object": self,
             "warning_list": [],
@@ -437,15 +507,13 @@ class BlueprintBook(Blueprintable):
         except ValidationError as e:
             output.error_list.append(DataFormatError(e))
 
-        if mode is ValidationMode.MINIMUM:
-            return output
+        output.warning_list += context["warning_list"]
 
-        if mode is ValidationMode.PEDANTIC:
-            warning_list = output.error_list
-        else:
-            warning_list = output.warning_list
-
-        warning_list += context["warning_list"]
+        # Inspect every sub-blueprint and concatenate all errors and warnings
+        for blueprintable in self.blueprints:
+            subresult = blueprintable.validate(mode, force)
+            output.error_list.extend(subresult.error_list)
+            output.warning_list.extend(subresult.warning_list)
 
         # if len(output.error_list) == 0:
         #     # Set the `is_valid` attribute
@@ -455,42 +523,42 @@ class BlueprintBook(Blueprintable):
 
         return output
 
-    def inspect(self) -> ValidationResult:
-        result = super().inspect()
+    # def inspect(self) -> ValidationResult:
+    #     result = super().inspect()
 
-        # By nature of necessity, we must ensure that all members of upgrade
-        # planner are in a correct and known format, so we must call:
-        try:
-            self.validate()
-        except Exception as e:
-            # If validation fails, it's in a format that we do not expect; and
-            # therefore unreasonable for us to assume that we can continue
-            # checking for issues relating to that non-existent format.
-            # Therefore, we add the errors to the error list and early exit
-            # TODO: figure out the proper way to reraise
-            result.error_list.append(DataFormatError(str(e)))
-            return result
+    #     # By nature of necessity, we must ensure that all members of upgrade
+    #     # planner are in a correct and known format, so we must call:
+    #     try:
+    #         self.validate()
+    #     except Exception as e:
+    #         # If validation fails, it's in a format that we do not expect; and
+    #         # therefore unreasonable for us to assume that we can continue
+    #         # checking for issues relating to that non-existent format.
+    #         # Therefore, we add the errors to the error list and early exit
+    #         # TODO: figure out the proper way to reraise
+    #         result.error_list.append(DataFormatError(str(e)))
+    #         return result
 
-        # Warn if active_index is out of reasonable bounds
-        if not 0 <= self.active_index < len(self.blueprints):
-            result.warning_list.append(
-                IndexWarning(
-                    "'active_index' ({}) must be in range [0, {}) or else it will have no effect".format(
-                        self.active_index,
-                        len(self.blueprints),
-                    )
-                )
-            )
+    #     # Warn if active_index is out of reasonable bounds
+    #     if not 0 <= self.active_index < len(self.blueprints):
+    #         result.warning_list.append(
+    #             IndexWarning(
+    #                 "'active_index' ({}) must be in range [0, {}) or else it will have no effect".format(
+    #                     self.active_index,
+    #                     len(self.blueprints),
+    #                 )
+    #             )
+    #         )
 
-        # Inspect every sub-blueprint and concatenate all errors and warnings
-        for blueprintable in self.blueprints:
-            subresult = blueprintable.inspect()
-            result.error_list.extend(subresult.error_list)
-            result.warning_list.extend(subresult.warning_list)
+    #     # Inspect every sub-blueprint and concatenate all errors and warnings
+    #     for blueprintable in self.blueprints:
+    #         subresult = blueprintable.inspect()
+    #         result.error_list.extend(subresult.error_list)
+    #         result.warning_list.extend(subresult.warning_list)
 
-        return result
+    #     return result
 
-    def to_dict(self, exclude_none: bool=True, exclude_defaults: bool=True) -> dict:
+    def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
         """
         Returns the blueprint as a dictionary. Intended for getting the
         precursor to a Factorio blueprint string before encoding and compression
@@ -499,12 +567,16 @@ class BlueprintBook(Blueprintable):
         :returns: The dict representation of the BlueprintBook.
         """
         # Create a copy, omitting blueprints because that part is special
-        result = super().to_dict(exclude_none=exclude_none, exclude_defaults=exclude_defaults)
+        result = super().to_dict(
+            exclude_none=exclude_none, exclude_defaults=exclude_defaults
+        )
 
         # Transform blueprints
         converted_blueprints = []
         for i, blueprintable in enumerate(self.blueprints):
-            blueprintable_entry = blueprintable.to_dict(exclude_none=exclude_none, exclude_defaults=exclude_defaults)
+            blueprintable_entry = blueprintable.to_dict(
+                exclude_none=exclude_none, exclude_defaults=exclude_defaults
+            )
             # Users can manually customize index, we only override if none is found
             if "index" not in blueprintable_entry:
                 blueprintable_entry["index"] = i

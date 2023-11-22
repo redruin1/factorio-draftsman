@@ -47,8 +47,7 @@ class SolarPanel(Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

@@ -1,13 +1,17 @@
 # test_container.py
 
+from draftsman.constants import ValidationMode
 from draftsman.entity import Container, containers, Accumulator
 from draftsman.error import (
-    DraftsmanError,
-    InvalidEntityError,
     DataFormatError,
-    InvalidItemError,
 )
-from draftsman.warning import BarWarning, ItemCapacityWarning, UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import (
+    BarWarning,
+    ItemCapacityWarning,
+    UnknownEntityWarning,
+    UnknownItemWarning,
+    UnknownKeywordWarning,
+)
 
 from collections.abc import Hashable
 import pytest
@@ -78,10 +82,33 @@ class TestContainer:
             assert container.circuit_connectable == True
             assert container.dual_circuit_connectable == False
 
-    def test_bar_with_disabled_containers(self):
+    def test_bar(self):
+        container = Container("wooden-chest")
+
+        # No warning, because it's pedantic level
+        container.bar = 100
+        assert container.bar == 100
+
+        container.validate_assignment = "pedantic"
+        assert container.validate_assignment == ValidationMode.PEDANTIC
+
+        container.bar = 10
+        assert container.bar == 10
+
+        with pytest.warns(BarWarning):
+            container.bar = 100
+        assert container.bar == 100
+
+        # Disabled bar
         container = Container("big-ship-wreck-1")
         with pytest.warns(BarWarning):
             container.bar = 2
+
+        container.validate_assignment = "none"
+        assert container.validate_assignment == ValidationMode.NONE
+
+        container.bar = 2
+        assert container.bar == 2
 
     def test_set_item_request(self):
         container = Container("wooden-chest")
@@ -105,17 +132,21 @@ class TestContainer:
         assert container.items == {}
         assert container.inventory_slots_occupied == 0
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             container.set_item_request(TypeError, 100)
-        # with pytest.raises(InvalidItemError): # TODO
-        #     container.set_item_request("incorrect", 100)
-        with pytest.raises(TypeError):
+        with pytest.warns(UnknownItemWarning):
+            container.set_item_request("unknown", 100)
+        with pytest.raises(DataFormatError):
             container.set_item_request("iron-plate", TypeError)
-        # with pytest.raises(ValueError): # TODO
-        #     container.set_item_request("iron-plate", -1)
+        with pytest.raises(DataFormatError):
+            container.set_item_request("iron-plate", -1)
 
-        assert container.items == {}
+        assert container.items == {"unknown": 100}
         assert container.inventory_slots_occupied == 0
+
+        with pytest.raises(DataFormatError):
+            container.items = {"incorrect", "format"}
+        assert container.items == {"unknown": 100}
 
     def test_mergable_with(self):
         container1 = Container("wooden-chest")

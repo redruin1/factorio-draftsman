@@ -1,7 +1,11 @@
 # test_blueprintable.py
 
 from draftsman.blueprintable import *
-from draftsman.error import DataFormatError, MalformedBlueprintStringError, IncorrectBlueprintTypeError
+from draftsman.error import (
+    DataFormatError,
+    MalformedBlueprintStringError,
+    IncorrectBlueprintTypeError,
+)
 from draftsman.utils import JSON_to_string
 
 import pytest

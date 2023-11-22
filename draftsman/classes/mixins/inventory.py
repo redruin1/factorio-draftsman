@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 from draftsman.data import entities, items
 from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.constants import ValidationMode
 from draftsman.signatures import (
     DraftsmanBaseModel,
     ensure_bar_less_than_inventory_size,
@@ -45,18 +46,13 @@ class InventoryMixin:
         ):
             if not info.context or bar is None:
                 return bar
-            if info.context["mode"] == "minimum":  # TODO: enum
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return bar
 
             warning_list: list = info.context["warning_list"]
             entity = info.context["object"]
             if not entity.inventory_bar_enabled:
-                issue = BarWarning("This entity does not have bar control")
-
-                if info.context["mode"] == "pedantic":
-                    raise issue
-                else:
-                    warning_list.append(issue)
+                warning_list.append(BarWarning("This entity does not have bar control"))
 
             return bar
 
@@ -97,12 +93,14 @@ class InventoryMixin:
         """
         Whether or not this Entity has its inventory limiting bar enabled.
         Equivalent to the ``"enable_inventory_bar"`` key in Factorio's
-        ``data.raw``, or ``True`` if not present. Returns ``None`` if this 
+        ``data.raw``, or ``True`` if not present. Returns ``None`` if this
         entity is not recognized by Draftsman. Not exported; read only.
 
         :type: ``bool``
         """
-        return entities.raw.get(self.name, {"enable_inventory_bar": None}).get("enable_inventory_bar", True)
+        return entities.raw.get(self.name, {"enable_inventory_bar": None}).get(
+            "enable_inventory_bar", True
+        )
 
     # =========================================================================
 

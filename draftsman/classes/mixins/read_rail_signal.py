@@ -62,7 +62,7 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
         return self.control_behavior.red_output_signal
 
     @red_output_signal.setter
-    def red_output_signal(self, value: Union[str, SignalID, None]):  # TODO: SignalStr
+    def red_output_signal(self, value: Union[str, SignalID, None]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -103,9 +103,7 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
         return self.control_behavior.yellow_output_signal
 
     @yellow_output_signal.setter
-    def yellow_output_signal(
-        self, value: Union[str, SignalID, None]
-    ):  # TODO: SignalStr
+    def yellow_output_signal(self, value: Union[str, SignalID, None]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -145,7 +143,7 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
         return self.control_behavior.green_output_signal
 
     @green_output_signal.setter
-    def green_output_signal(self, value: Union[str, SignalID, None]):  # TODO: SignalStr
+    def green_output_signal(self, value: Union[str, SignalID, None]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,

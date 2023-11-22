@@ -24,7 +24,7 @@ class TestLamp:
             Lamp(control_behavior={"unused_key": "something"})
         with pytest.warns(UnknownEntityWarning):
             Lamp("this is not a lamp")
-        
+
         # Errors
         with pytest.raises(DataFormatError):
             Lamp(control_behavior="incorrect")
@@ -33,13 +33,25 @@ class TestLamp:
         lamp = Lamp("small-lamp")
         lamp.use_colors = True
         assert lamp.use_colors == True
-        assert lamp.control_behavior == Lamp.Format.ControlBehavior(**{"use_colors": True})
-        
+        assert lamp.control_behavior == Lamp.Format.ControlBehavior(
+            **{"use_colors": True}
+        )
+
         lamp.use_colors = None
         assert lamp.use_colors == None
-        
+
         with pytest.raises(DataFormatError):
             lamp.use_colors = "incorrect"
+
+        lamp.validate_assignment = "none"
+
+        lamp.use_colors = "incorrect"
+        assert lamp.use_colors == "incorrect"
+        assert lamp.to_dict() == {
+            "name": "small-lamp",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"use_colors": "incorrect"},
+        }
 
     def test_mergable_with(self):
         lamp1 = Lamp("small-lamp")

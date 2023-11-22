@@ -21,7 +21,13 @@ from draftsman.data.entities import programmable_speakers
 import draftsman.data.instruments as instruments_data
 from draftsman.data.signals import signal_dict
 
-from pydantic import ConfigDict, Field, ValidationInfo, field_validator
+from pydantic import (
+    ConfigDict,
+    Field,
+    ValidatorFunctionWrapHandler,
+    ValidationInfo,
+    field_validator,
+)
 import six
 from typing import Any, Literal, Optional, Union
 import warnings
@@ -41,11 +47,16 @@ class ProgrammableSpeaker(
 
     class Format(
         CircuitConditionMixin.Format,
+        EnableDisableMixin.Format,
         ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
         Entity.Format,
     ):
-        class ControlBehavior(CircuitConditionMixin.ControlFormat, DraftsmanBaseModel):
+        class ControlBehavior(
+            CircuitConditionMixin.ControlFormat,
+            EnableDisableMixin.ControlFormat,
+            DraftsmanBaseModel,
+        ):
             class CircuitParameters(DraftsmanBaseModel):
                 signal_value_is_pitch: Optional[bool] = Field(
                     False,
@@ -94,7 +105,7 @@ class ProgrammableSpeaker(
                 ):
                     if not info.context:
                         return value
-                    if info.context["mode"] is ValidationMode.MINIMUM:
+                    if info.context["mode"] <= ValidationMode.MINIMUM:
                         return value
 
                     entity: "ProgrammableSpeaker" = info.context["object"]
@@ -102,23 +113,20 @@ class ProgrammableSpeaker(
 
                     # If we don't recognize entity.name, then we can't know that
                     # the ID is invalid
-                    if entity.name not in instruments_data.names:
+                    if entity.name not in instruments_data.name_of:
                         return value
 
                     if (
                         value is not None
-                        and value not in instruments_data.names[entity.name]
+                        and value not in instruments_data.name_of[entity.name]
                     ):
-                        issue = UnknownInstrumentWarning(
-                            "ID '{}' is not a known instrument for this programmable speaker".format(
-                                value
+                        warning_list.append(
+                            UnknownInstrumentWarning(
+                                "ID '{}' is not a known instrument for this programmable speaker".format(
+                                    value
+                                )
                             )
                         )
-
-                        if info.context["mode"] is ValidationMode.PEDANTIC:
-                            raise ValueError(issue) from None
-                        else:
-                            warning_list.append(issue)
 
                     return value
 
@@ -129,7 +137,7 @@ class ProgrammableSpeaker(
                 ):
                     if not info.context:
                         return value
-                    if info.context["mode"] is ValidationMode.MINIMUM:
+                    if info.context["mode"] <= ValidationMode.MINIMUM:
                         return value
 
                     entity: "ProgrammableSpeaker" = info.context["object"]
@@ -137,23 +145,20 @@ class ProgrammableSpeaker(
 
                     # If we don't recognize entity.name, then we can't know that
                     # the ID is invalid
-                    if entity.name not in instruments_data.index:
+                    if entity.name not in instruments_data.index_of:
                         return value
 
                     if (
                         value is not None
-                        and value not in instruments_data.index[entity.name]
+                        and value not in instruments_data.index_of[entity.name]
                     ):
-                        issue = UnknownInstrumentWarning(
-                            "Name '{}' is not a known instrument for this programmable speaker".format(
-                                value
+                        warning_list.append(
+                            UnknownInstrumentWarning(
+                                "Name '{}' is not a known instrument for this programmable speaker".format(
+                                    value
+                                )
                             )
                         )
-
-                        if info.context["mode"] is ValidationMode.PEDANTIC:
-                            raise ValueError(issue) from None
-                        else:
-                            warning_list.append(issue)
 
                     return value
 
@@ -164,7 +169,7 @@ class ProgrammableSpeaker(
                 ):
                     if not info.context:
                         return value
-                    if info.context["mode"] is ValidationMode.MINIMUM:
+                    if info.context["mode"] <= ValidationMode.MINIMUM:
                         return value
 
                     entity: "ProgrammableSpeaker" = info.context["object"]
@@ -172,26 +177,28 @@ class ProgrammableSpeaker(
 
                     # If we don't recognize entity.name or instrument_id, then
                     # we can't know that the ID is invalid
-                    if entity.name not in instruments_data.names:
+                    if entity.name not in instruments_data.name_of:
                         return value
-                    if entity.instrument_id not in instruments_data.names[entity.name]:
+                    if (
+                        entity.instrument_id
+                        not in instruments_data.name_of[entity.name]
+                    ):
                         return value
 
                     if (
                         value is not None
                         and value
-                        not in instruments_data.names[entity.name][entity.instrument_id]
+                        not in instruments_data.name_of[entity.name][
+                            entity.instrument_id
+                        ]
                     ):
-                        issue = UnknownNoteWarning(
-                            "ID '{}' is not a known note for this instrument and/or programmable speaker".format(
-                                value
+                        warning_list.append(
+                            UnknownNoteWarning(
+                                "ID '{}' is not a known note for this instrument and/or programmable speaker".format(
+                                    value
+                                )
                             )
                         )
-
-                        if info.context["mode"] is ValidationMode.PEDANTIC:
-                            raise ValueError(issue) from None
-                        else:
-                            warning_list.append(issue)
 
                     return value
 
@@ -202,7 +209,7 @@ class ProgrammableSpeaker(
                 ):
                     if not info.context:
                         return value
-                    if info.context["mode"] is ValidationMode.MINIMUM:
+                    if info.context["mode"] <= ValidationMode.MINIMUM:
                         return value
 
                     entity: "ProgrammableSpeaker" = info.context["object"]
@@ -210,31 +217,28 @@ class ProgrammableSpeaker(
 
                     # If we don't recognize entity.name or instrument_id, then
                     # we can't know that the ID is invalid
-                    if entity.name not in instruments_data.index:
+                    if entity.name not in instruments_data.index_of:
                         return value
                     if (
                         entity.instrument_name
-                        not in instruments_data.index[entity.name]
+                        not in instruments_data.index_of[entity.name]
                     ):
                         return value
 
                     if (
                         value is not None
                         and value
-                        not in instruments_data.index[entity.name][
+                        not in instruments_data.index_of[entity.name][
                             entity.instrument_name
                         ]
                     ):
-                        issue = UnknownNoteWarning(
-                            "Name '{}' is not a known note for this instrument and/or programmable speaker".format(
-                                value
+                        warning_list.append(
+                            UnknownNoteWarning(
+                                "Name '{}' is not a known note for this instrument and/or programmable speaker".format(
+                                    value
+                                )
                             )
                         )
-
-                        if info.context["mode"] is ValidationMode.PEDANTIC:
-                            raise ValueError(issue) from None
-                        else:
-                            warning_list.append(issue)
 
                     return value
 
@@ -334,10 +338,10 @@ class ProgrammableSpeaker(
         name=programmable_speakers[0],
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        connections: Connections = Connections(),
-        control_behavior: Format.ControlBehavior = Format.ControlBehavior(),
-        parameters: Format.Parameters = Format.Parameters(),
-        alert_parameters: Format.AlertParameters = Format.AlertParameters(),
+        connections: Connections = {},
+        control_behavior: Format.ControlBehavior = {},
+        parameters: Format.Parameters = {},
+        alert_parameters: Format.AlertParameters = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -378,8 +382,7 @@ class ProgrammableSpeaker(
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
@@ -737,7 +740,7 @@ class ProgrammableSpeaker(
         :exception TypeError: If set to anything other than a ``str`` or ``None``.
         """
         return (
-            instruments_data.names.get(self.name, {})
+            instruments_data.name_of.get(self.name, {})
             .get(self.instrument_id, {})
             .get("self", None)
         )
@@ -757,7 +760,7 @@ class ProgrammableSpeaker(
             self.control_behavior.circuit_parameters.instrument_id = None
         else:
             new_id = (
-                instruments_data.index.get(self.name, {})
+                instruments_data.index_of.get(self.name, {})
                 .get(value, {})
                 .get("self", None)
             )
@@ -810,16 +813,8 @@ class ProgrammableSpeaker(
             as a valid instrument name for this speaker.
         :exception TypeError: If set to anything other than a ``str`` or ``None``.
         """
-        # entity = instruments_data.names.get(self.name, {})
-        # print("start")
-        # print(entity)
-        # print(self.instrument_id)
-        # instrument = entity.get(self.instrument_id, {})
-        # print(instrument)
-        # print(self.note_id)
-        # return instrument.get(self.note_id, None)
         return (
-            instruments_data.names.get(self.name, {})
+            instruments_data.name_of.get(self.name, {})
             .get(self.instrument_id, {})
             .get(self.note_id, None)
         )
@@ -843,7 +838,7 @@ class ProgrammableSpeaker(
             self.control_behavior.circuit_parameters.note_id = None
         else:
             new_id = (
-                instruments_data.index.get(self.name, {})
+                instruments_data.index_of.get(self.name, {})
                 .get(self.instrument_name, {})
                 .get(value, None)
             )

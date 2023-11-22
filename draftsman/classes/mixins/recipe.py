@@ -34,19 +34,19 @@ class RecipeMixin:
         def ensure_recipe_known(cls, value: Optional[str], info: ValidationInfo):
             if not info.context or value is None:
                 return value
-            if info.context["mode"] is ValidationMode.MINIMUM:
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return value
 
             warning_list: list = info.context["warning_list"]
 
             if value not in recipes.raw:
-                issue = UnknownRecipeWarning(
-                    "'{}' is not a known recipe;{}".format(
-                        value, get_suggestion(value, recipes.raw.keys(), 1)
+                warning_list.append(
+                    UnknownRecipeWarning(
+                        "'{}' is not a known recipe;{}".format(
+                            value, get_suggestion(value, recipes.raw.keys(), 1)
+                        )
                     )
                 )
-
-                warning_list.append(issue)
 
             return value
 
@@ -57,7 +57,7 @@ class RecipeMixin:
         ):
             if not info.context or value is None:
                 return value
-            if info.context["mode"] is ValidationMode.MINIMUM:
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return value
 
             entity: "RecipeMixin" = info.context["object"]
@@ -67,13 +67,13 @@ class RecipeMixin:
                 return value
 
             if value in recipes.raw and value not in entity.allowed_recipes:
-                issue = RecipeLimitationWarning(
-                    "'{}' is not a valid recipe for '{}'; allowed recipes are: {}".format(
-                        value, entity.name, entity.allowed_recipes
+                warning_list.append(
+                    RecipeLimitationWarning(
+                        "'{}' is not a valid recipe for '{}'; allowed recipes are: {}".format(
+                            value, entity.name, entity.allowed_recipes
+                        )
                     )
                 )
-
-                warning_list.append(issue)
 
             return value
 
@@ -82,17 +82,17 @@ class RecipeMixin:
         def check_items_fit_in_recipe(cls, value: Optional[str], info: ValidationInfo):
             if not info.context or value is None:
                 return value
-            if info.context["mode"] is ValidationMode.MINIMUM:
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return value
 
-            print("run")
-
             entity: "RecipeMixin" = info.context["object"]
-            if entity.recipe is None or entity.items is None:
+            if entity.items == {}:
                 return value
 
             warning_list: list = info.context["warning_list"]
 
+            # TODO: display all items that don't fit with the current recipe in
+            # one warnings
             for item in entity.items:
                 if item not in entity.allowed_items:
                     warning_list.append(

@@ -52,6 +52,8 @@ class AssemblingMachine(
         ):
             if not info.context or value is None:
                 return value
+            if info.context["mode"] <= ValidationMode.MINIMUM:
+                return value
 
             entity: "AssemblingMachine" = info.context["object"]
             warning_list: list = info.context["warning_list"]
@@ -59,23 +61,23 @@ class AssemblingMachine(
             if entity.recipe is None:  # Cannot check in this case
                 return value
 
-            for item in entity.module_items:
+            for item in entity.items:
                 # Check to make sure the recipe is within the module's limitations
                 # (If it has any)
-                module = modules.raw[item]
+                module = modules.raw.get(item, {})
                 if "limitation" in module:
-                    if (
+                    if (  # pragma: no branch
                         entity.recipe is not None
                         and entity.recipe not in module["limitation"]
                     ):
                         tooltip = module.get("limitation_message_key", "no message key")
-                        issue = ModuleLimitationWarning(
-                            "Cannot use module '{}' with recipe '{}' ({})".format(
-                                item, entity.recipe, tooltip
-                            ),
+                        warning_list.append(
+                            ModuleLimitationWarning(
+                                "Cannot use module '{}' with recipe '{}' ({})".format(
+                                    item, entity.recipe, tooltip
+                                ),
+                            )
                         )
-
-                        warning_list.append(issue)
 
             return value
 
@@ -116,8 +118,7 @@ class AssemblingMachine(
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # @utils.reissue_warnings
     # def set_item_request(self, item: str, count: uint32):

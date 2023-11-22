@@ -1,21 +1,18 @@
 # railplanner.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-from draftsman.classes.association import Association
 from draftsman.classes.group import Group
 from draftsman.classes.entity_like import EntityLike
-from draftsman.classes.vector import Vector
+from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction
 from draftsman.error import DraftsmanError
 from draftsman.data import items
 from draftsman.prototypes.straight_rail import StraightRail
 from draftsman.prototypes.curved_rail import CurvedRail
 
-import math
+from typing import Optional, Union
+from typing import cast as typing_cast
+import weakref
 from weakref import ReferenceType as Ref
-from typing import Union
 
 
 class RailPlanner(Group):
@@ -26,12 +23,14 @@ class RailPlanner(Group):
 
     def __init__(
         self,
-        name="rail",
-        head_position=[0, 0],
-        head_direction=Direction.NORTH,
+        name: str="rail",
+        head_position: Union[Vector, PrimitiveVector]=(0, 0),
+        head_direction: Direction=Direction.NORTH,
         **kwargs
     ):
-        # type: (str, Union[list, dict, tuple], int, **dict) -> None
+        """
+        TODO
+        """
         super(RailPlanner, self).__init__(**kwargs)
         if name in items.raw and items.raw[name]["type"] == "rail-planner":
             self.name = name
@@ -42,17 +41,16 @@ class RailPlanner(Group):
 
         self._head_position = Vector(0, 0)
 
-        self.head_position = head_position
+        self.head_position = head_position  # type: ignore
         self.head_direction = head_direction
-        self._last_rail_added: Association | None = None
+        self._last_rail_added: Optional[Ref] = None
 
         self.diagonal_side = 0  # left
 
     # =========================================================================
 
     @property
-    def head_position(self):
-        # type: () -> Vector
+    def head_position(self) -> Vector:
         """
         The turtle "head" of the rail planner. This is the rail-tile position
         where the next placed rail will go.
@@ -68,18 +66,15 @@ class RailPlanner(Group):
         return self._head_position
 
     @head_position.setter
-    def head_position(self, value):
-        # type: (Union[dict, list, tuple]) -> None
+    def head_position(self, value: Union[Vector, PrimitiveVector]) -> None:
         # TODO: issue rail alignment warning if not on rail grid
-
         self._head_position.update_from_other(value, int)
         self.diagonal_side = 0
 
     # =========================================================================
 
     @property
-    def head_direction(self):
-        # type: () -> Direction
+    def head_direction(self) -> Direction:
         """
         The :py:enum:`.Direction` that the user intends to build the next rails
         in. Note that this direction is not necessarily equal to the direction
@@ -96,15 +91,14 @@ class RailPlanner(Group):
         return self._head_direction
 
     @head_direction.setter
-    def head_direction(self, value):
-        # type: (Direction) -> None
+    def head_direction(self, value: Direction) -> None:
         self._head_direction = Direction(value)
         self._direction = self._head_direction.next(eight_way=False)
 
     # =========================================================================
 
     @property
-    def last_rail_added(self) -> Ref[StraightRail | CurvedRail] | None:
+    def last_rail_added(self) -> Optional[Ref[StraightRail | CurvedRail]]:
         """
         Reference to the last rail entity that was added in the RailPlanner, or
         ``None`` if no entities have been added yet. Used internally, but
@@ -117,8 +111,7 @@ class RailPlanner(Group):
 
     # =========================================================================
 
-    def move_forward(self, amount=1):
-        # type: (int) -> None
+    def move_forward(self, amount: int=1) -> None:
         """
         Moves the :py:class:`.RailPlanner`'s head ``amount`` rail-tiles in the
         direction :py:attr:`.head_direction`.
@@ -142,32 +135,14 @@ class RailPlanner(Group):
 
         :param amount: The amount of rails to place going in that direction.
         """
-        cardinal_matrix = {
-            Direction.NORTH: {"x": 0, "y": -2},
-            Direction.EAST: {"x": 2, "y": 0},
-            Direction.SOUTH: {"x": 0, "y": 2},
-            Direction.WEST: {"x": -2, "y": 0},
-        }
-        diagonal_matrix = {
-            Direction.NORTHEAST: {
-                Direction.NORTHWEST: {"x": 0, "y": -2, "d": Direction.SOUTHEAST},
-                Direction.SOUTHEAST: {"x": 2, "y": 0, "d": Direction.NORTHWEST},
-            },
-            Direction.SOUTHEAST: {
-                Direction.NORTHEAST: {"x": 2, "y": 0, "d": Direction.SOUTHWEST},
-                Direction.SOUTHWEST: {"x": 0, "y": 2, "d": Direction.NORTHEAST},
-            },
-            Direction.SOUTHWEST: {
-                Direction.SOUTHEAST: {"x": 0, "y": 2, "d": Direction.NORTHWEST},
-                Direction.NORTHWEST: {"x": -2, "y": 0, "d": Direction.SOUTHEAST},
-            },
-            Direction.NORTHWEST: {
-                Direction.SOUTHWEST: {"x": -2, "y": 0, "d": Direction.NORTHEAST},
-                Direction.NORTHEAST: {"x": 0, "y": -2, "d": Direction.SOUTHWEST},
-            },
-        }
         if self.head_direction in {0, 2, 4, 6}:  # Straight rails, easy
-            offset = cardinal_matrix[self.head_direction]
+            cardinal_matrix = {
+                Direction.NORTH: (0, -2),
+                Direction.EAST: (2, 0),
+                Direction.SOUTH: (0, 2),
+                Direction.WEST: (-2, 0),
+            }
+            cardinal_offset = cardinal_matrix[self.head_direction]
             for _ in range(amount):
                 self.entities.append(
                     self.straight_rail,
@@ -175,30 +150,47 @@ class RailPlanner(Group):
                     direction=self.head_direction,
                     merge=True,
                 )
-                self._last_rail_added = Association(self.entities[-1])
-                self.head_position["x"] += offset["x"]
-                self.head_position["y"] += offset["y"]
+                self._last_rail_added = weakref.ref(self.entities[-1])
+                self.head_position.x += cardinal_offset[0]
+                self.head_position.y += cardinal_offset[1]
         else:  # Diagonal rails, hard
+            diagonal_matrix: dict[Direction, dict[Direction, tuple[int, int, Direction]]] = {
+                Direction.NORTHEAST: {
+                    Direction.NORTHWEST: (0, -2, Direction.SOUTHEAST),
+                    Direction.SOUTHEAST: (2, 0, Direction.NORTHWEST),
+                },
+                Direction.SOUTHEAST: {
+                    Direction.NORTHEAST: (2, 0, Direction.SOUTHWEST),
+                    Direction.SOUTHWEST: (0, 2, Direction.NORTHEAST),
+                },
+                Direction.SOUTHWEST: {
+                    Direction.SOUTHEAST: (0, 2, Direction.NORTHWEST),
+                    Direction.NORTHWEST: (-2, 0, Direction.SOUTHEAST),
+                },
+                Direction.NORTHWEST: {
+                    Direction.SOUTHWEST: (-2, 0, Direction.NORTHEAST),
+                    Direction.NORTHEAST: (0, -2, Direction.SOUTHWEST),
+                },
+            }
             if self.diagonal_side == 0:
                 real_direction = self.head_direction.previous(eight_way=False)
             else:
                 real_direction = self.head_direction.next(eight_way=False)
             for _ in range(amount):
-                offset = diagonal_matrix[self.head_direction][real_direction]
+                diagonal_offset = diagonal_matrix[self.head_direction][real_direction]
                 self.entities.append(
                     self.straight_rail,
                     tile_position=self.head_position,
                     direction=real_direction,
                     merge=True,
                 )
-                self._last_rail_added = Association(self.entities[-1])
-                self.head_position.x += offset["x"]
-                self.head_position.y += offset["y"]
-                real_direction = offset["d"]
+                self._last_rail_added = weakref.ref(self.entities[-1])
+                self.head_position.x += diagonal_offset[0]
+                self.head_position.y += diagonal_offset[1]
+                real_direction = diagonal_offset[2]
                 self.diagonal_side = int(not self.diagonal_side)
 
-    def turn_left(self, amount=1):
-        # type: (int) -> None
+    def turn_left(self, amount: int=1) -> None:
         """
         Places ``amount`` curved rails turning left from :py:attr:`head_position`,
         and places the head at the point just after the rails. Each increment of
@@ -210,47 +202,47 @@ class RailPlanner(Group):
 
         :param amount: The amount of rails to place going in that direction.
         """
-        matrix = {
-            Direction.NORTH: {
-                "offset": Vector(0, -2),
-                "head_offset": Vector(-4, -6),
-                "direction": Direction.NORTH,
-            },
-            Direction.NORTHEAST: {
-                "offset": Vector(2, -2),
-                "head_offset": Vector(2, -8),
-                "direction": Direction.SOUTHWEST,
-            },
-            Direction.EAST: {
-                "offset": Vector(4, 0),
-                "head_offset": Vector(6, -4),
-                "direction": Direction.EAST,
-            },
-            Direction.SOUTHEAST: {
-                "offset": Vector(4, 2),
-                "head_offset": Vector(8, 2),
-                "direction": Direction.NORTHWEST,
-            },
-            Direction.SOUTH: {
-                "offset": Vector(2, 4),
-                "head_offset": Vector(4, 6),
-                "direction": Direction.SOUTH,
-            },
-            Direction.SOUTHWEST: {
-                "offset": Vector(0, 4),
-                "head_offset": Vector(-2, 8),
-                "direction": Direction.NORTHEAST,
-            },
-            Direction.WEST: {
-                "offset": Vector(-2, 2),
-                "head_offset": Vector(-6, 4),
-                "direction": Direction.WEST,
-            },
-            Direction.NORTHWEST: {
-                "offset": Vector(-2, 0),
-                "head_offset": Vector(-8, -2),
-                "direction": Direction.SOUTHEAST,
-            },
+        matrix: dict[Direction, tuple[Vector, Vector, Direction]] = {
+            Direction.NORTH: (
+                Vector(0, -2), # "offset"
+                Vector(-4, -6), # "head_offset"
+                Direction.NORTH, # "direction"
+            ),
+            Direction.NORTHEAST: (
+                Vector(2, -2),
+                Vector(2, -8),
+                Direction.SOUTHWEST,
+            ),
+            Direction.EAST: (
+                Vector(4, 0),
+                Vector(6, -4),
+                Direction.EAST,
+            ),
+            Direction.SOUTHEAST: (
+                Vector(4, 2),
+                Vector(8, 2),
+                Direction.NORTHWEST,
+            ),
+            Direction.SOUTH: (
+                Vector(2, 4),
+                Vector(4, 6),
+                Direction.SOUTH,
+            ),
+            Direction.SOUTHWEST: (
+                Vector(0, 4),
+                Vector(-2, 8),
+                Direction.NORTHEAST,
+            ),
+            Direction.WEST: (
+                Vector(-2, 2),
+                Vector(-6, 4),
+                Direction.WEST,
+            ),
+            Direction.NORTHWEST: (
+                Vector(-2, 0),
+                Vector(-8, -2),
+                Direction.SOUTHEAST,
+            ),
         }
         diagonals = {
             Direction.NORTHEAST,
@@ -269,61 +261,60 @@ class RailPlanner(Group):
             self.head_direction = self.head_direction.previous(eight_way=True)
             self.entities.append(
                 self.curved_rail,
-                position=self.head_position + entry["offset"],
-                direction=entry["direction"],
+                position=self.head_position + entry[0],
+                direction=entry[2],
                 merge=True,
             )
-            self._last_rail_added = Association(self.entities[-1])
-            self.head_position += entry["head_offset"]
+            self._last_rail_added = weakref.ref(self.entities[-1])
+            self.head_position += entry[1]
             if self.head_direction in diagonals:
                 self.diagonal_side = 1  # right
 
-    def turn_right(self, amount=1):
-        # type: (int) -> None
+    def turn_right(self, amount: int=1) -> None:
         """
         TODO
         """
-        matrix = {
-            Direction.NORTH: {
-                "offset": Vector(2, -2),
-                "head_offset": Vector(4, -6),
-                "direction": Direction.NORTHEAST,
-            },
-            Direction.NORTHEAST: {
-                "offset": Vector(4, 0),
-                "head_offset": Vector(8, -2),
-                "direction": Direction.WEST,
-            },
-            Direction.EAST: {
-                "offset": Vector(4, 2),
-                "head_offset": Vector(6, 4),
-                "direction": Direction.SOUTHEAST,
-            },
-            Direction.SOUTHEAST: {
-                "offset": Vector(2, 4),
-                "head_offset": Vector(2, 8),
-                "direction": Direction.NORTH,
-            },
-            Direction.SOUTH: {
-                "offset": Vector(0, 4),
-                "head_offset": Vector(-4, 6),
-                "direction": Direction.SOUTHWEST,
-            },
-            Direction.SOUTHWEST: {
-                "offset": Vector(-2, 2),
-                "head_offset": Vector(-8, 2),
-                "direction": Direction.EAST,
-            },
-            Direction.WEST: {
-                "offset": Vector(-2, 0),
-                "head_offset": Vector(-6, -4),
-                "direction": Direction.NORTHWEST,
-            },
-            Direction.NORTHWEST: {
-                "offset": Vector(0, -2),
-                "head_offset": Vector(-2, -8),
-                "direction": Direction.SOUTH,
-            },
+        matrix: dict[Direction, tuple[Vector, Vector, Direction]] = {
+            Direction.NORTH: (
+                Vector(2, -2), # "offset"
+                Vector(4, -6), # "head_offset"
+                Direction.NORTHEAST, # "direction"
+            ),
+            Direction.NORTHEAST: (
+                Vector(4, 0),
+                Vector(8, -2),
+                Direction.WEST,
+            ),
+            Direction.EAST: (
+                Vector(4, 2),
+                Vector(6, 4),
+                Direction.SOUTHEAST,
+            ),
+            Direction.SOUTHEAST: (
+                Vector(2, 4),
+                Vector(2, 8),
+                Direction.NORTH,
+            ),
+            Direction.SOUTH: (
+                Vector(0, 4),
+                Vector(-4, 6),
+                Direction.SOUTHWEST,
+            ),
+            Direction.SOUTHWEST: (
+                Vector(-2, 2),
+                Vector(-8, 2),
+                Direction.EAST,
+            ),
+            Direction.WEST: (
+                Vector(-2, 0),
+                Vector(-6, -4),
+                Direction.NORTHWEST,
+            ),
+            Direction.NORTHWEST: (
+                Vector(0, -2),
+                Vector(-2, -8),
+                Direction.SOUTH,
+            ),
         }
         diagonals = {
             Direction.NORTHEAST,
@@ -342,17 +333,16 @@ class RailPlanner(Group):
             self.head_direction = self.head_direction.next(eight_way=True)
             self.entities.append(
                 self.curved_rail,
-                position=self.head_position + entry["offset"],
-                direction=entry["direction"],
+                position=self.head_position + entry[0],
+                direction=entry[2],
                 merge=True,
             )
-            self._last_rail_added = Association(self.entities[-1])
-            self.head_position += entry["head_offset"]
+            self._last_rail_added = weakref.ref(self.entities[-1])
+            self.head_position += entry[1]
             if self.head_direction in diagonals:
                 self.diagonal_side = 0  # left
 
-    def add_signal(self, entity, right=True, front=True):
-        # type: (Union[str, EntityLike], bool, bool) -> None
+    def add_signal(self, entity: Union[str, EntityLike], right: bool=True, front: bool=True) -> None:
         """
         Adds a rail signal to the last placed rail. Defaults to the front right
         side of the last placed rail entity, determined by the current
@@ -385,6 +375,8 @@ class RailPlanner(Group):
         # before placing any rail
         if self.last_rail_added is None:
             return
+        
+        last_rail_added = typing_cast(Union[CurvedRail, StraightRail], self.last_rail_added)
 
         diagonals = {
             Direction.NORTHEAST,
@@ -392,15 +384,14 @@ class RailPlanner(Group):
             Direction.SOUTHWEST,
             Direction.NORTHWEST,
         }
-        rail_pos = self.last_rail_added.position
-        rail_dir = self.last_rail_added.direction
-        if self.last_rail_added.name == self.straight_rail:
-            print(rail_dir)
+        rail_pos = last_rail_added.position
+        rail_dir = last_rail_added.direction
+        if last_rail_added.name == self.straight_rail:
             if rail_dir in diagonals:
                 # Diagonal Straight Rail
                 # `front` has no effect, since there's only two valid spots
-                offset = (1, 0)
-                matrix = {
+                # diagonal_offset = (1, 0)
+                diagonal_matrix = {
                     Direction.NORTHEAST: {
                         Direction.SOUTHEAST: [Vector(-1, -1), Vector(1, 1)],
                         Direction.NORTHWEST: [Vector(-2, -2), Vector(0, 0)],
@@ -419,22 +410,22 @@ class RailPlanner(Group):
                     },
                 }
 
-                index = int(right)
-                offset = matrix[self.head_direction][rail_dir][index]
+                diagonal_index = int(right)
+                diagonal_offset = diagonal_matrix[self.head_direction][rail_dir][diagonal_index]
 
                 if right:
-                    signal_dir = self.head_direction.opposite()
+                    diagonal_signal_dir = self.head_direction.opposite()
                 else:
-                    signal_dir = self.head_direction
+                    diagonal_signal_dir = self.head_direction
 
-                print(rail_pos, offset)
-                print(rail_pos + offset, signal_dir)
                 self.entities.append(
-                    name=entity, tile_position=rail_pos + offset, direction=signal_dir
+                    entity, 
+                    tile_position=rail_pos + diagonal_offset, 
+                    direction=diagonal_signal_dir
                 )
             else:
                 # Horizontal/Vertical straight rail
-                matrix = {
+                straight_matrix = {
                     Direction.NORTH: [
                         Vector(-2, 0),
                         Vector(-2, -1),
@@ -461,21 +452,23 @@ class RailPlanner(Group):
                     ],
                 }
 
-                index = (int(right) << 1) | int(front)
-                offset = matrix[rail_dir][index]
+                straight_index = (int(right) << 1) | int(front)
+                straight_offset = straight_matrix[rail_dir][straight_index]
 
                 if right:
-                    signal_dir = rail_dir.opposite()
+                    straight_signal_dir = rail_dir.opposite()
                 else:
-                    signal_dir = rail_dir
+                    straight_signal_dir = rail_dir
 
                 self.entities.append(
-                    name=entity, tile_position=rail_pos + offset, direction=signal_dir
+                    entity, 
+                    tile_position=rail_pos + straight_offset, 
+                    direction=straight_signal_dir
                 )
         else:
             # Curved rail
             # fmt: off
-            matrix = {
+            curved_matrix = {
                 (Direction.NORTH, Direction.SOUTH): [
                     {"offset": Vector(-1, -4), "direction": Direction.SOUTHEAST},
                     {"offset": Vector(2, 3), "direction": Direction.SOUTH},
@@ -575,17 +568,18 @@ class RailPlanner(Group):
             }
             # fmt: on
 
-            index = (int(right) << 1) | int(front)
+            curved_index = (int(right) << 1) | int(front)
             permutation = (rail_dir, self.head_direction)
 
-            offset = matrix[permutation][index]["offset"]
-            signal_dir = matrix[permutation][index]["direction"]
+            curved_offset = curved_matrix[permutation][curved_index]["offset"]
+            curved_signal_dir = curved_matrix[permutation][curved_index]["direction"]
             self.entities.append(
-                entity, tile_position=rail_pos + offset, direction=signal_dir
+                entity, 
+                tile_position=rail_pos + curved_offset, 
+                direction=curved_signal_dir
             )
 
-    def add_station(self, entity, station=None, right=True):
-        # type: (Union[str, EntityLike], str, bool) -> None
+    def add_station(self, entity: Union[str, EntityLike], station: Optional[str]=None, right: bool=True) -> None:
         """
         Adds a train station at the :py:attr:`head_position` on the specified
         side.
@@ -606,21 +600,23 @@ class RailPlanner(Group):
         # before placing any rail
         if self.last_rail_added is None:
             return
+    
+        last_rail_added = typing_cast(Union[CurvedRail, StraightRail], self.last_rail_added)
 
-        if self.last_rail_added.name == self.curved_rail:
-            raise DraftsmanError(
+        if last_rail_added.name == self.curved_rail:
+            raise DraftsmanError(  # TODO: more descriptive error
                 "Cannot place train stop on a curved rail"
-            )  # TODO: fixme
+            )
         diagonals = {
             Direction.NORTHEAST,
             Direction.SOUTHEAST,
             Direction.SOUTHWEST,
             Direction.NORTHWEST,
         }
-        if self.last_rail_added.direction in diagonals:
-            raise DraftsmanError(
+        if last_rail_added.direction in diagonals:
+            raise DraftsmanError(  # TODO: more descriptive error
                 "Cannot place train stop on a diagonal rail"
-            )  # TODO: fixme
+            )
 
         matrix = {
             Direction.NORTH: Vector(2, 0),
@@ -629,15 +625,15 @@ class RailPlanner(Group):
             Direction.WEST: Vector(0, -2),
         }
         if right:
-            rail_dir = self.last_rail_added.direction
+            rail_dir = last_rail_added.direction
         else:
-            rail_dir = self.last_rail_added.direction.opposite()
+            rail_dir = last_rail_added.direction.opposite()
 
         offset = matrix[rail_dir]
 
         self.entities.append(
             entity,
-            position=self.last_rail_added.position + offset,
+            position=last_rail_added.position + offset,
             direction=rail_dir,
             station=station,
         )

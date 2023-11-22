@@ -32,7 +32,7 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         neighbours: list[uint64] = [],
-        connections: Connections = Connections(),
+        connections: Connections = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -59,8 +59,7 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

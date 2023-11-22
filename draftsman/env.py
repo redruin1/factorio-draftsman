@@ -1205,13 +1205,14 @@ def extract_modules(lua, data_location, verbose, sort_tuple):
     unsorted_modules_raw = {}
     for module in modules:
         unsorted_modules_raw[module] = modules[module]
-        module_type = modules[module]["category"]
-        out_categories[module_type].append(module)
 
     raw_order = get_order(unsorted_modules_raw, *sort_tuple)
     modules_raw = OrderedDict()
     for name in raw_order:
         modules_raw[name] = unsorted_modules_raw[name]
+        # Create the categories using the (now sorted) modules
+        module_type = unsorted_modules_raw[name]["category"]
+        out_categories[module_type].append(name)
 
     with open(os.path.join(data_location, "modules.pkl"), "wb") as out:
         pickle.dump([modules_raw, out_categories], out, 2)

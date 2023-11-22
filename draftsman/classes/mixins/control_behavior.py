@@ -1,7 +1,4 @@
 # control_behavior.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.error import DataFormatError
@@ -12,9 +9,14 @@ from draftsman.signatures import (
     int32,
 )
 
-import copy
-from pydantic import validate_call
-from typing import Literal, Union
+from pydantic import (
+    ValidationInfo,
+    ValidationError,
+    ValidatorFunctionWrapHandler,
+    field_validator,
+    validate_call,
+)
+from typing import Any, Literal, Union
 
 
 class ControlBehaviorMixin:
@@ -56,9 +58,9 @@ class ControlBehaviorMixin:
         super().__init__(name, similar_entities, **kwargs)
 
         # Have to do a bit of forward-lookahead to grab the correct control_behavior
-        self.control_behavior = kwargs.get(
-            "control_behavior", type(self).Format.ControlBehavior()
-        )
+        # self.control_behavior = kwargs.get(
+        #     "control_behavior", type(self).Format.ControlBehavior()
+        # )
 
     # =========================================================================
 
@@ -94,6 +96,12 @@ class ControlBehaviorMixin:
 
         self.control_behavior = other.control_behavior
 
+    def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
+        result = super().to_dict(exclude_none, exclude_defaults)
+        if "control_behavior" in result and result["control_behavior"] == {}:
+            del result["control_behavior"]
+        return result
+
     # =========================================================================
 
     @validate_call
@@ -119,43 +127,40 @@ class ControlBehaviorMixin:
             ``cmp`` is not a valid operation, or if ``b`` is neither a valid
             signal name nor a constant.
         """
-        # Check the inputs
-        # try:
-        #     a = signatures.SIGNAL_ID_OR_NONE.validate(a)
-        #     if a is not None:
-        #         a = signatures.SignalID(a)
-        #     cmp = signatures.Comparator(root=cmp)
-        #     b = signatures.SIGNAL_ID_OR_CONSTANT.validate(b)
-        # except ValidationError as e:
-        #     raise DataFormatError(e) from None
-
-        # self.control_behavior[condition_name] = {}
-        setattr(self.control_behavior, condition_name, Condition())
-        # condition = self.control_behavior[condition_name]
-        condition: Condition = getattr(self.control_behavior, condition_name)
+        new_condition = Condition()
 
         # A
         # if a is None:
         #     condition.pop("first_signal", None)
         # else:
         #     condition["first_signal"] = a
-        condition.first_signal = a
-        condition.comparator = cmp
+        new_condition.first_signal = a
+        new_condition.comparator = cmp
 
         # B (should never be None)
-        if isinstance(b, dict):
-            condition.second_signal = b
-            condition.constant = None
-        else:  # int
-            condition.constant = b
-            condition.second_signal = None
+        if isinstance(b, int):
+            new_condition.constant = b
+        else:
+            new_condition.second_signal = b
 
         # TODO: we need to figure out a way to dirty an entity even if we only
         # modify it's sub-attributes like control behavior; the above function
         # does not reset `is_valid` even though it should
         # We manually set it below, but this is not sufficient for cases where
         # the user themselves modify subattributes; FIXME
-        self._is_valid = False
+        # self._is_valid = False
+
+        # Check if the condition is valid, and raise/warn if not
+        result = attempt_and_reissue(
+            self,
+            type(self).Format.ControlBehavior,
+            self.control_behavior,
+            condition_name,
+            new_condition,
+        )
+
+        # Success, so assign
+        self.control_behavior[condition_name] = result
 
     # =========================================================================
 

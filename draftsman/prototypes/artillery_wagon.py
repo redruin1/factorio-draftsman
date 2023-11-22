@@ -53,8 +53,7 @@ class ArtilleryWagon(RequestItemsMixin, OrientationMixin, Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # TODO: read the gun prototype for this entity and use that to determine the
     # kinds of ammo it uses

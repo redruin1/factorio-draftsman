@@ -8,14 +8,14 @@ from draftsman.classes.exportable import (
 from draftsman.constants import ValidationMode
 from draftsman.data.signals import signal_dict
 from draftsman.error import DataFormatError, IncorrectBlueprintTypeError
-from draftsman.signatures import DraftsmanBaseModel, Icons, uint16, uint64
+from draftsman.signatures import DraftsmanBaseModel, Icon, uint16, uint64
 from draftsman.utils import (
-    encode_version, 
-    decode_version, 
-    JSON_to_string, 
-    string_to_JSON, 
-    reissue_warnings, 
-    version_tuple_to_string
+    encode_version,
+    decode_version,
+    JSON_to_string,
+    string_to_JSON,
+    reissue_warnings,
+    version_tuple_to_string,
 )
 
 from abc import ABCMeta, abstractmethod
@@ -61,7 +61,14 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         self._root_item = root_item
         # self._root_format = (root_format,)
         self._root_format = root_format
-        self._root = self.Format.model_construct(**{self._root_item: {"item": item, **kwargs}})
+        # self._root = self.Format.model_construct(**{self._root_item: {"item": item, **kwargs}})
+        # self._root[self._root_item] = root_format.model_construct(self._root[self._root_item])
+        self._root = self.Format.model_validate(
+            {self._root_item: {"item": item, **kwargs}},
+            context={"construction": True, "mode": ValidationMode.MINIMUM},
+        )
+        # print("blueprintable")
+        # print(self._root)
 
         # self._root = {}
         # self._root[self._root_item] = {}
@@ -238,7 +245,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     # =========================================================================
 
     @property
-    def icons(self) -> Optional[Icons]:
+    def icons(self) -> Optional[list[Icon]]:
         """
         The visible icons of the blueprintable, shown in as the objects icon.
 
@@ -272,7 +279,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         return self._root[self._root_item]["icons"]
 
     @icons.setter
-    def icons(self, value: Union[list[str], Icons, None]):
+    def icons(self, value: Union[list[str], list[Icon], None]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self, self._root_format, self._root[self._root_item], "icons", value
@@ -336,7 +343,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         return self._root[self._root_item].get("version", None)
 
     @version.setter
-    def version(self, value: Union[int, Sequence[int]]):
+    def version(self, value: Union[uint64, Sequence[uint16]]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self, self._root_format, self._root[self._root_item], "version", value
@@ -497,15 +504,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         except ValidationError as e:
             output.error_list.append(DataFormatError(e))
 
-        if mode is ValidationMode.MINIMUM:
-            return output
-
-        if mode is ValidationMode.PEDANTIC:
-            warning_list = output.error_list
-        else:
-            warning_list = output.warning_list
-
-        warning_list += context["warning_list"]
+        output.warning_list += context["warning_list"]
 
         # if len(output.error_list) == 0:
         #     # Set the `is_valid` attribute

@@ -81,8 +81,8 @@ class ConstantCombinator(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
-        connections: Connections = Connections(),
-        control_behavior: Format.ControlBehavior = Format.ControlBehavior(),
+        connections: Connections = {},
+        control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -113,8 +113,7 @@ class ConstantCombinator(
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
@@ -224,28 +223,35 @@ class ConstantCombinator(
         """
 
         try:
-            new_entry = SignalFilter(index=index + 1, signal=signal, count=count)
+            new_entry = SignalFilter(index=index, signal=signal, count=count)
+            new_entry.index += 1
         except ValidationError as e:
             raise DataFormatError(e) from None
 
-        if self.control_behavior.filters is None:
-            self.control_behavior.filters = []
+        new_filters = [] if self.signals is None else self.signals
 
         # Check to see if filters already contains an entry with the same index
         existing_index = None
-        for i, signal_filter in enumerate(self.control_behavior.filters):
+        for i, signal_filter in enumerate(new_filters):
             if index + 1 == signal_filter["index"]:  # Index already exists in the list
                 if signal is None:  # Delete the entry
-                    del self.control_behavior["filters"][i]
-                    return
+                    del new_filters[i]
                 else:
-                    existing_index = i
-                    break
+                    new_filters[i] = new_entry
+                existing_index = i
+                break
 
-        if existing_index is not None:
-            self.control_behavior.filters[existing_index] = new_entry
-        else:
-            self.control_behavior.filters.append(new_entry)
+        if existing_index is None:
+            new_filters.append(new_entry)
+
+        result = attempt_and_reissue(
+            self,
+            type(self).Format.ControlBehavior,
+            self.control_behavior,
+            "filters",
+            new_filters,
+        )
+        self.control_behavior.filters = result
 
     def get_signal(self, index: int64) -> Optional[SignalFilter]:
         """

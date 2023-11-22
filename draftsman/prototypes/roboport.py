@@ -10,7 +10,6 @@ from draftsman.constants import ValidationMode
 from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID
 
 from draftsman.data.entities import roboports
-from draftsman.data.signals import signal_dict
 
 from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
@@ -76,8 +75,8 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         name: str = roboports[0],
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        connections: Connections = Connections(),
-        control_behavior: Format.ControlBehavior() = Format.ControlBehavior(),
+        connections: Connections = {},
+        control_behavior: Format.ControlBehavior() = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -106,8 +105,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
@@ -192,9 +190,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         return self.control_behavior.available_logistic_output_signal
 
     @available_logistic_signal.setter
-    def available_logistic_signal(
-        self, value: Union[str, SignalID, None]
-    ):  # TODO: SignalStr
+    def available_logistic_signal(self, value: Union[str, SignalID, None]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -226,9 +222,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         return self.control_behavior.total_logistic_output_signal
 
     @total_logistic_signal.setter
-    def total_logistic_signal(
-        self, value: Union[str, SignalID, None]
-    ):  # TODO: SignalStr
+    def total_logistic_signal(self, value: Union[str, SignalID, None]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -261,9 +255,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         return self.control_behavior.available_construction_output_signal
 
     @available_construction_signal.setter
-    def available_construction_signal(
-        self, value: Union[str, SignalID, None]
-    ):  # TODO: SignalStr
+    def available_construction_signal(self, value: Union[str, SignalID, None]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -296,9 +288,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         return self.control_behavior.total_construction_output_signal
 
     @total_construction_signal.setter
-    def total_construction_signal(
-        self, value: Union[str, SignalID, None]
-    ):  # TODO: SignalStr
+    def total_construction_signal(self, value: Union[str, SignalID, None]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,

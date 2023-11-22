@@ -18,30 +18,62 @@ with pkg_resources.open_binary(data, "modules.pkl") as inp:
     categories: dict[str, list[str]] = _data[1]
 
 
-def add_module(name: str, category: str):
-    raise NotImplementedError
+def add_module_category(name: str, order: str = ""):
+    """
+    TODO
+    """
+    # TODO: insert sorted
+    categories[name] = []
+
+
+def add_module(module_name: str, category_name: str, **kwargs):
+    """
+    TODO
+    """
+    if category_name not in categories:
+        raise TypeError(
+            "Cannot add new module to unknown category '{}'".format(category_name)
+        )
+
+    existing_data = raw.get(module_name, {})
+    effect = existing_data.get("effect", kwargs.pop("effect", {}))
+    tier = existing_data.get("tier", kwargs.pop("tier", 0))
+    # Add to `raw`
+    new_entry = {
+        **existing_data,
+        "name": module_name,
+        "category": category_name,
+        "effect": effect,
+        "tier": tier,
+        **kwargs,
+    }
+    raw[module_name] = new_entry
+    # Add to `categories`
+    # TODO: insert sorted
+    categories[category_name].append(module_name)
 
 
 def get_modules_from_effects(allowed_effects: set[str], recipe: str = None) -> set[str]:
     """
-    Given a list of string effect names, provide the list of available modules
+    Given a set of string effect names, provide the set of available modules
     under the current Draftsman configuration that would fit in an entity with
-    those effects.
+    those effects. If a recipe is provided, limit the available modules to ones
+    that can only be used with that recipe selected.
     """
     if allowed_effects is None:
         return None
     output = set()
     for module_name, module in raw.items():
         if recipe is not None:
-            # Skip addint this module if the recipe provided does not fit within
+            # Skip adding this module if the recipe provided does not fit within
             # this module's limitations
             if "limitation" in module and recipe not in module["limitation"]:
                 continue
-            elif (
+            elif (  # pragma: no branch
                 "limitation_blacklist" in module
                 and recipe in module["limitation_blacklist"]
             ):
-                continue
+                continue  # pragma: no coverage
         # I think the effects module has to be a subset of the allowed effects
         # in order to be included
         if set(module["effect"]).issubset(allowed_effects):

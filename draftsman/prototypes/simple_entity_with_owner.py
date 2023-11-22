@@ -2,8 +2,9 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.mixins import DirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode
+from draftsman.constants import Direction, ValidationMode
 from draftsman.signatures import uint16
 
 from draftsman.data.entities import simple_entities_with_owner
@@ -12,12 +13,12 @@ from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
-class SimpleEntityWithOwner(Entity):
+class SimpleEntityWithOwner(DirectionalMixin, Entity):
     """
     A generic entity owned by some other entity.
     """
 
-    class Format(Entity.Format):
+    class Format(DirectionalMixin.Format, Entity.Format):
         variation: Optional[uint16] = Field(
             1,  # I think this is the default
             description="""
@@ -34,6 +35,7 @@ class SimpleEntityWithOwner(Entity):
         name: str = simple_entities_with_owner[0],
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
         tags: dict[str, Any] = {},
         variation: uint16 = 1,
         validate: Union[
@@ -50,11 +52,12 @@ class SimpleEntityWithOwner(Entity):
 
         self._root: __class__.Format
 
-        super(SimpleEntityWithOwner, self).__init__(
+        super().__init__(
             name,
             simple_entities_with_owner,
             position=position,
             tile_position=tile_position,
+            direction=direction,
             tags=tags,
             **kwargs
         )
@@ -63,8 +66,7 @@ class SimpleEntityWithOwner(Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

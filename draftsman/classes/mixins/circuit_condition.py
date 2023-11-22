@@ -3,7 +3,7 @@
 from draftsman.signatures import Condition, SignalID, int32
 
 from pydantic import BaseModel, Field
-from typing import Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 
 class CircuitConditionMixin:  # (ControlBehaviorMixin)

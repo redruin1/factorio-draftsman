@@ -64,7 +64,7 @@ class TestLocomotive:
             "name": "locomotive",
             "position": {"x": 1.0, "y": 3.0},
             "color": {"r": 100, "g": 100, "b": 100},
-            "tags": {"some": "stuff"}
+            "tags": {"some": "stuff"},
         }
 
     def test_eq(self):

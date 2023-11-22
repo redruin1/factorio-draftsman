@@ -1,7 +1,4 @@
 # group.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.association import Association
 from draftsman.classes.collision_set import CollisionSet
@@ -12,12 +9,10 @@ from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.classes.transformable import Transformable
-from draftsman.classes.vector import Vector
+from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.error import (
     DraftsmanError,
     IncorrectBlueprintTypeError,
-    DataFormatError,
-    MalformedBlueprintStringError,
 )
 from draftsman.signatures import Connections
 from draftsman.utils import (
@@ -29,7 +24,7 @@ from draftsman.utils import (
 )
 
 import copy
-from typing import Union
+from typing import Optional, Union
 import six
 
 
@@ -84,14 +79,13 @@ class Group(Transformable, EntityCollection, EntityLike):
     @reissue_warnings
     def __init__(
         self,
-        id=None,
-        name="group",
-        type="group",
-        position=(0, 0),
-        entities=[],
-        string=None,
+        id: str = None,
+        name: str = "group",
+        type: str = "group",
+        position: Union[Vector, PrimitiveVector] = (0, 0),
+        entities: Union[list[EntityLike], EntityList] = [],
+        string: str = None,
     ):
-        # type: (str, str, str, Union[dict, list, tuple], list, str) -> None
         """
         TODO
         """
@@ -166,7 +160,7 @@ class Group(Transformable, EntityCollection, EntityLike):
                     elif side in {"Cu0", "Cu1"}:  # pragma: no branch
                         connection_points = connections[side]
                         if connection_points is None:
-                            continue
+                            continue  # pragma: no coverage
                         for point in connection_points:
                             old = point["entity_id"] - 1
                             point["entity_id"] = Association(self.entities[old])
@@ -183,7 +177,6 @@ class Group(Transformable, EntityCollection, EntityLike):
 
     @reissue_warnings
     def setup(self, **kwargs):
-        # type: (dict) -> None
         """
         Sets up a Group using a blueprint JSON dict. Currently only reads the
         ``"entities"`` and ``"schedules"`` keys and loads them into
@@ -204,8 +197,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def name(self):
-        # type: () -> str
+    def name(self) -> str:
         """
         The name of the Group. Defaults to ``"group"``. Can be specified to any
         string to aid in organization. For example:
@@ -227,8 +219,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         return self._name
 
     @name.setter
-    def name(self, value):
-        # type: (str) -> None
+    def name(self, value: str):
         if isinstance(value, six.string_types):
             self._name = six.text_type(value)
         else:
@@ -259,8 +250,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         return self._type
 
     @type.setter
-    def type(self, value):
-        # type: (str) -> None
+    def type(self, value: str):
         if isinstance(value, six.string_types):
             self._type = six.text_type(value)
         else:
@@ -269,8 +259,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def id(self):
-        # type: () -> str
+    def id(self) -> Optional[str]:
         """
         The ID of the Group. The most local form of identification between
         Groups.
@@ -284,8 +273,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         return self._id
 
     @id.setter
-    def id(self, value):
-        # type: (str) -> None
+    def id(self, value: Optional[str]):
         if value is None or isinstance(value, six.string_types):
             old_id = getattr(self, "id", None)
             self._id = six.text_type(value) if value is not None else value
@@ -300,8 +288,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def position(self):
-        # type: () -> dict
+    def position(self) -> Vector:
         """
         The position of the Group. Acts as the origin of all the entities
         contained within, and offsets them on export.
@@ -323,8 +310,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         return self._position
 
     @position.setter
-    def position(self, value):
-        # type: (Union[list, dict]) -> None
+    def position(self, value: Union[Vector, PrimitiveVector]):
         if self.parent:
             raise DraftsmanError(
                 "Cannot change position of Group while it's inside a Collection"
@@ -342,8 +328,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def global_position(self):
-        # type: () -> dict
+    def global_position(self) -> Vector:
         """
         The "global", or root-most position of the Group. This value is always
         equivalent to :py:attr:`~.Group.position`, unless the group exists
@@ -381,8 +366,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     #     self._collision_box = signatures.AABB.validate(value)
 
     @property
-    def collision_set(self):
-        # type: () -> CollisionSet
+    def collision_set(self) -> CollisionSet:
         """
         TODO: is this even a good idea to have in the first place? It seems like
         having this set be the union of all entities it contains would make the
@@ -405,8 +389,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def collision_mask(self):
-        # type: () -> set
+    def collision_mask(self) -> set[str]:
         """
         The set of all collision layers that this Entity collides with,
         specified as strings. Defaults to an empty ``set``. Not exported.
@@ -421,8 +404,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         return self._collision_mask
 
     @collision_mask.setter
-    def collision_mask(self, value):
-        # type: (set) -> None
+    def collision_mask(self, value: Optional[set[str]]):
         if value is None:
             self._collision_mask = set()
         elif isinstance(value, set):
@@ -433,8 +415,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def tile_width(self):
-        # type: () -> int
+    def tile_width(self) -> int:
         """
         The width of the Group's ``collision_box``, rounded up to the nearest
         tile. Read only.
@@ -444,8 +425,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         return self._tile_width
 
     @tile_width.setter
-    def tile_width(self, value):
-        # type: (int) -> None
+    def tile_width(self, value: int):
         if isinstance(value, six.integer_types):
             self._tile_width = value
         else:
@@ -454,8 +434,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def tile_height(self):
-        # type: () -> int
+    def tile_height(self) -> int:
         """
         The width of the Group's ``collision_box``, rounded up to the nearest
         tile. Read only.
@@ -465,8 +444,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         return self._tile_height
 
     @tile_height.setter
-    def tile_height(self, value):
-        # type: (int) -> None
+    def tile_height(self, value: int):
         if isinstance(value, six.integer_types):
             self._tile_height = value
         else:
@@ -477,7 +455,6 @@ class Group(Transformable, EntityCollection, EntityLike):
     @property
     def double_grid_aligned(self) -> bool:
         for entity in self.entities:
-            print(entity.double_grid_aligned)
             if entity.double_grid_aligned:
                 return True
         return False
@@ -497,8 +474,7 @@ class Group(Transformable, EntityCollection, EntityLike):
 
     @entities.setter
     @reissue_warnings
-    def entities(self, value):
-        # type: (Union[list[EntityLike], EntityList]) -> None
+    def entities(self, value: Union[list[EntityLike], EntityList]):
         self._entity_map.clear()
 
         if value is None:
@@ -516,8 +492,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def entity_map(self):
-        # type: () -> SpatialDataStructure
+    def entity_map(self) -> SpatialDataStructure:
         """
         An implementation of :py:class:`.SpatialDataStructure` for ``entities``.
         Not exported; read only.
@@ -526,8 +501,9 @@ class Group(Transformable, EntityCollection, EntityLike):
 
     # =========================================================================
 
-    def on_entity_insert(self, entitylike, merge):
-        # type: (EntityLike, bool) -> EntityLike
+    def on_entity_insert(
+        self, entitylike: EntityLike, merge: bool
+    ) -> Optional[EntityLike]:
         """
         Callback function for when an ``EntityLike`` is added to this
         Group's ``entities`` list. Handles the addition of the entity into
@@ -552,8 +528,7 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         return entitylike
 
-    def on_entity_set(self, old_entitylike, new_entitylike):
-        # type: (EntityLike, EntityLike) -> None
+    def on_entity_set(self, old_entitylike: EntityLike, new_entitylike: EntityLike):
         """
         Callback function for when an entity is overwritten in a Group's
         ``entities`` list. Handles the removal of the old ``EntityLike`` from
@@ -570,8 +545,7 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         self.recalculate_area()
 
-    def on_entity_remove(self, entitylike):
-        # type: (EntityLike) -> None
+    def on_entity_remove(self, entitylike: EntityLike):
         """
         Callback function for when an entity is removed from a Blueprint's
         ``entities`` list. Handles the removal of the ``EntityLike`` from the
@@ -585,8 +559,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def schedules(self):
-        # type: () -> list
+    def schedules(self) -> ScheduleList:
         """
         A list of the Blueprint's train schedules.
 
@@ -612,8 +585,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         return self._schedules
 
     @schedules.setter
-    def schedules(self, value):
-        # type: (list) -> None
+    def schedules(self, value: Union[list, ScheduleList]):
         if value is None:
             self._schedules = ScheduleList()
         elif isinstance(value, ScheduleList):
@@ -623,7 +595,7 @@ class Group(Transformable, EntityCollection, EntityLike):
 
     # =========================================================================
 
-    def get(self):
+    def get(self) -> list[EntityLike]:
         """
         Gets all the child-most ``Entity`` instances in this ``Group`` and
         returns them as a "flattened" 1-dimensional list. Offsets all of their
@@ -635,7 +607,6 @@ class Group(Transformable, EntityCollection, EntityLike):
         return flatten_entities(self.entities)
 
     def recalculate_area(self):
-        # type: () -> None
         """
         Recalculates the dimensions of the area and tile_width and
         height. Called when an ``EntityLike`` object is altered or removed.
@@ -648,8 +619,7 @@ class Group(Transformable, EntityCollection, EntityLike):
             self._collision_set.get_bounding_box()
         )
 
-    def get_world_bounding_box(self):
-        # type: () -> AABB
+    def get_world_bounding_box(self) -> AABB:
         """
         TODO
         """
@@ -666,26 +636,14 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         return bounding_box
 
-    def inspect(self):
-        # type: () -> list[Exception]
-        issues = []
-
-        for entity in self.entities:
-            issues += entity.inspect()
-
-        return issues
-
-    def mergable_with(self, other):
-        # type: (Group) -> bool
+    def mergable_with(self, other: "Group") -> bool:
         # For now, we assume that Groups themselves are not mergable
         # return type(self) == type(other) and self.id == other.id
         return False
 
-    def merge(self, other):
-        # type: (Group) -> None
+    def merge(self, other: "Group"):
         # For now, we assume that Groups themselves are not mergable
         # TODO: is this the case?
-        # print("group.merge")
         return  # Do nothing
 
     def __str__(self) -> str:  # pragma: no coverage
@@ -695,8 +653,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     def __repr__(self) -> str:  # pragma: no coverage
         return "<Group>{}".format(self.entities.data)
 
-    def __deepcopy__(self, memo):
-        # type: (dict) -> Group
+    def __deepcopy__(self, memo: dict) -> "Group":
         """
         Creates a deepcopy of a :py:class:`.Group` and it's contents. Preserves
         all Entities and Associations within the copied group, *except* for

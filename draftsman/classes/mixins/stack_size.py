@@ -58,7 +58,7 @@ class StackSizeMixin:  # (ControlBehaviorMixin)
     # =========================================================================
 
     @property
-    def override_stack_size(self) -> int:
+    def override_stack_size(self) -> Optional[uint8]:
         """
         The inserter's stack size override. Will use this unless a circuit
         stack size is set and enabled.
@@ -72,7 +72,7 @@ class StackSizeMixin:  # (ControlBehaviorMixin)
         return self._root.override_stack_size
 
     @override_stack_size.setter
-    def override_stack_size(self, value: int):  # TODO: dimension
+    def override_stack_size(self, value: Optional[uint8]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self, type(self).Format, self._root, "override_stack_size", value
@@ -103,11 +103,11 @@ class StackSizeMixin:  # (ControlBehaviorMixin)
     def circuit_stack_size_enabled(self, value: Optional[bool]):
         if self.validate_assignment:
             result = attempt_and_reissue(
-                self, 
+                self,
                 self.Format.ControlBehavior,
                 self.control_behavior,
-                "circuit_set_stack_size", 
-                value
+                "circuit_set_stack_size",
+                value,
             )
             self.control_behavior.circuit_set_stack_size = result
         else:
@@ -148,9 +148,9 @@ class StackSizeMixin:  # (ControlBehaviorMixin)
             result = attempt_and_reissue(
                 self,
                 self.Format.ControlBehavior,
-                self.control_behavior, 
-                "stack_control_input_signal", 
-                value
+                self.control_behavior,
+                "stack_control_input_signal",
+                value,
             )
             self.control_behavior.stack_control_input_signal = result
         else:

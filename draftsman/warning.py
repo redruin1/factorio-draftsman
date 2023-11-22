@@ -111,6 +111,22 @@ class ItemCapacityWarning(DraftsmanWarning):
     pass
 
 
+class FuelLimitationWarning(DraftsmanWarning):
+    """
+    TODO
+    """
+
+    pass
+
+
+class FuelCapacityWarning(DraftsmanWarning):
+    """
+    TODO
+    """
+
+    pass
+
+
 class ModuleLimitationWarning(DraftsmanWarning):
     """
     Raised when the modules inside of an :py:class:`.Entity` conflict, either
@@ -222,6 +238,14 @@ class UnknownElementWarning(DraftsmanWarning):
 
 
 class UnknownEntityWarning(UnknownElementWarning):
+    """
+    TODO
+    """
+
+    pass
+
+
+class UnknownFluidWarning(UnknownElementWarning):
     """
     TODO
     """

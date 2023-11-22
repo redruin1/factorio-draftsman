@@ -17,14 +17,18 @@ from draftsman.data.signals import (
     get_signal_type,
     pure_virtual,
 )
-from draftsman.data import items, signals
+from draftsman.data import entities, fluids, items, signals, tiles
 from draftsman.error import InvalidMapperError, InvalidSignalError
 from draftsman.warning import (
     BarWarning,
     MalformedSignalWarning,
     PureVirtualDisallowedWarning,
+    UnknownEntityWarning,
+    UnknownFluidWarning,
     UnknownKeywordWarning,
+    UnknownItemWarning,
     UnknownSignalWarning,
+    UnknownTileWarning,
 )
 
 from typing_extensions import Annotated
@@ -34,9 +38,11 @@ from pydantic import (
     ConfigDict,
     Field,
     GetJsonSchemaHandler,
-    PrivateAttr,
     RootModel,
     ValidationInfo,
+    ValidationError,
+    ValidatorFunctionWrapHandler,
+    WrapValidator,
     field_validator,
     model_validator,
     model_serializer,
@@ -46,138 +52,134 @@ from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema
 from textwrap import dedent
 from thefuzz import process
-from typing import Any, ClassVar, Literal, Optional, Sequence
-from functools import lru_cache
-import sys
-import types
-import typing
+from typing import Any, Literal, Optional, Sequence
 
-try:
-    from typing import get_args, get_origin  # type: ignore
-except ImportError:
-    from typing_extensions import get_args, get_origin
+# try:
+#     from typing import get_args, get_origin  # type: ignore
+# except ImportError:
+#     from typing_extensions import get_args, get_origin
 
 
-if sys.version_info >= (3, 10):
+# if sys.version_info >= (3, 10):
 
-    def _is_union(origin):
-        return origin is typing.Union or origin is types.UnionType
+#     def _is_union(origin):
+#         return origin is typing.Union or origin is types.UnionType
 
-else:
+# else:
 
-    def _is_union(origin):
-        return origin is typing.Union
+#     def _is_union(origin):
+#         return origin is typing.Union
 
 
-def recursive_construct(model_class: BaseModel, **input_data) -> BaseModel:
-    def handle_annotation(annotation: type, value: Any):
-        # print(annotation, value)
-        try:
-            if issubclass(annotation, BaseModel):
-                # print("yes!")
-                return recursive_construct(annotation, **value)
-        except Exception as e:
-            # print(type(e).__name__, e)
-            # print("issue with BaseModel".format(annotation))
-            pass
-        try:
-            if issubclass(annotation, RootModel):
-                # print("rootyes!")
-                return recursive_construct(annotation, root=value)
-        except Exception as e:
-            # print(type(e).__name__, e)
-            # print("issue with RootModel")
-            pass
+# def recursive_construct(model_class: BaseModel, **input_data) -> BaseModel:
+#     def handle_annotation(annotation: type, value: Any):
+#         # print(annotation, value)
+#         try:
+#             if issubclass(annotation, BaseModel):
+#                 # print("yes!")
+#                 return recursive_construct(annotation, **value)
+#         except Exception as e:
+#             # print(type(e).__name__, e)
+#             # print("issue with BaseModel".format(annotation))
+#             pass
+#         try:
+#             if issubclass(annotation, RootModel):
+#                 # print("rootyes!")
+#                 return recursive_construct(annotation, root=value)
+#         except Exception as e:
+#             # print(type(e).__name__, e)
+#             # print("issue with RootModel")
+#             pass
 
-        origin = get_origin(annotation)
-        # print(origin)
+#         origin = get_origin(annotation)
+#         # print(origin)
 
-        if origin is None:
-            return value
-        elif _is_union(origin):
-            # print("optional")
-            args = get_args(annotation)
-            for arg in args:
-                # print("\t", arg)
-                result = handle_annotation(arg, value)
-                # print("union result: {}".format(result))
-                if result != value:
-                    # print("early exit")
-                    return result
-            # Otherwise
-            # print("otherwise")
-            return value
-        elif origin is typing.Literal:
-            # print("literal")
-            return value
-        elif isinstance(origin, (str, bytes)):
-            # print("string")
-            return value
-        elif issubclass(origin, typing.Tuple):
-            # print("tuple")
-            args = get_args(annotation)
-            if isinstance(args[-1], type(Ellipsis)):
-                # format: tuple[T, ...]
-                member_type = args[0]
-                return tuple(handle_annotation(member_type, v) for v in value)
-            else:
-                # format: tuple[A, B, C]
-                return tuple(
-                    handle_annotation(member_type, value[i])
-                    for i, member_type in enumerate(args)
-                )
-        elif issubclass(origin, typing.Sequence):
-            # print("list")
-            member_type = get_args(annotation)[0]
-            # print(member_type)
-            # print(value)
-            result = [handle_annotation(member_type, v) for v in value]
-            # print("result: {}".format(result))
-            return result
-        else:
-            return value
+#         if origin is None:
+#             return value
+#         elif _is_union(origin):
+#             # print("optional")
+#             args = get_args(annotation)
+#             for arg in args:
+#                 # print("\t", arg)
+#                 result = handle_annotation(arg, value)
+#                 # print("union result: {}".format(result))
+#                 if result != value:
+#                     # print("early exit")
+#                     return result
+#             # Otherwise
+#             # print("otherwise")
+#             return value
+#         elif origin is typing.Literal:
+#             # print("literal")
+#             return value
+#         elif isinstance(origin, (str, bytes)):
+#             # print("string")
+#             return value
+#         elif issubclass(origin, typing.Tuple):
+#             # print("tuple")
+#             args = get_args(annotation)
+#             if isinstance(args[-1], type(Ellipsis)):
+#                 # format: tuple[T, ...]
+#                 member_type = args[0]
+#                 return tuple(handle_annotation(member_type, v) for v in value)
+#             else:
+#                 # format: tuple[A, B, C]
+#                 return tuple(
+#                     handle_annotation(member_type, value[i])
+#                     for i, member_type in enumerate(args)
+#                 )
+#         elif issubclass(origin, typing.Sequence):
+#             # print("list")
+#             member_type = get_args(annotation)[0]
+#             # print(member_type)
+#             # print(value)
+#             result = [handle_annotation(member_type, v) for v in value]
+#             # print("result: {}".format(result))
+#             return result
+#         else:
+#             return value
 
-    m = model_class.__new__(model_class)
-    fields_values: dict[str, typing.Any] = {}
-    defaults: dict[str, typing.Any] = {}
-    for name, field in model_class.model_fields.items():
-        # print("\t", name, field.annotation)
-        if field.alias and field.alias in input_data:
-            fields_values[name] = handle_annotation(
-                field.annotation, input_data.pop(field.alias)
-            )
-        elif name in input_data:
-            result = handle_annotation(field.annotation, input_data.pop(name))
-            # print("outer_result: {}".format(result))
-            fields_values[name] = result
-        elif not field.is_required():
-            # print("\tdefault")
-            defaults[name] = field.get_default(call_default_factory=True)
-    _fields_set = set(fields_values.keys())
-    fields_values.update(defaults)
+#     m = model_class.__new__(model_class)
+#     fields_values: dict[str, typing.Any] = {}
+#     defaults: dict[str, typing.Any] = {}
+#     for name, field in model_class.model_fields.items():
+#         # print("\t", name, field.annotation)
+#         if field.alias and field.alias in input_data:
+#             fields_values[name] = handle_annotation(
+#                 field.annotation, input_data.pop(field.alias)
+#             )
+#         elif name in input_data:
+#             result = handle_annotation(field.annotation, input_data.pop(name))
+#             # print("outer_result: {}".format(result))
+#             fields_values[name] = result
+#         elif not field.is_required():
+#             # print("\tdefault")
+#             defaults[name] = field.get_default(call_default_factory=True)
+#     _fields_set = set(fields_values.keys())
+#     fields_values.update(defaults)
 
-    # print(fields_values)
+#     # print(fields_values)
 
-    _extra: dict[str, typing.Any] | None = None
-    if model_class.model_config.get("extra") == "allow":
-        _extra = {}
-        for k, v in input_data.items():
-            _extra[k] = v
-    else:
-        fields_values.update(input_data)
-    object.__setattr__(m, "__dict__", fields_values)
-    object.__setattr__(m, "__pydantic_fields_set__", _fields_set)
-    if not model_class.__pydantic_root_model__:
-        object.__setattr__(m, "__pydantic_extra__", _extra)
+#     _extra: dict[str, typing.Any] | None = None
+#     if model_class.model_config.get("extra") == "allow":
+#         _extra = {}
+#         for k, v in input_data.items():
+#             _extra[k] = v
+#     else:
+#         fields_values.update(input_data)
+#     object.__setattr__(m, "__dict__", fields_values)
+#     object.__setattr__(m, "__pydantic_fields_set__", _fields_set)
+#     if not model_class.__pydantic_root_model__:
+#         object.__setattr__(m, "__pydantic_extra__", _extra)
 
-    if model_class.__pydantic_post_init__:
-        m.model_post_init(None)
-    elif not model_class.__pydantic_root_model__:
-        # Note: if there are any private attributes, cls.__pydantic_post_init__ would exist
-        # Since it doesn't, that means that `__pydantic_private__` should be set to None
-        object.__setattr__(m, "__pydantic_private__", None)
+#     if model_class.__pydantic_post_init__:
+#         m.model_post_init(None)
+#     elif not model_class.__pydantic_root_model__:
+#         # Note: if there are any private attributes, cls.__pydantic_post_init__ would exist
+#         # Since it doesn't, that means that `__pydantic_private__` should be set to None
+#         object.__setattr__(m, "__pydantic_private__", None)
 
-    return m
+#     return m
 
 
 def get_suggestion(name, choices, n=3, cutoff=60):
@@ -191,7 +193,7 @@ def get_suggestion(name, choices, n=3, cutoff=60):
     elif len(suggestions) == 1:
         return "; did you mean '{}'?".format(suggestions[0])
     else:
-        return "; did you mean one of {}?".format(suggestions)
+        return "; did you mean one of {}?".format(suggestions)  # pragma: no coverage
         # return "; did you mean one of {}?".format(", ".join(["or " + str(item) if i == len(suggestions) - 1 else str(item) for i, item in enumerate(suggestions)]))
 
 
@@ -206,11 +208,48 @@ uint32 = Annotated[int, Field(..., ge=0, lt=2**32)]
 uint64 = Annotated[int, Field(..., ge=0, lt=2**64)]
 
 
-def known_item(v: str) -> str:
-    if v not in items.raw:
-        raise ValueError(v)
-    return v
-ItemName = Annotated[str, AfterValidator(known_item)]
+def known_name(type: str, structure: dict, issued_warning):
+    """
+    Validator function builder for any type of unknown name.
+    """
+
+    def inside_func(value: str, info: ValidationInfo) -> str:
+        if not info.context:
+            return value
+        if info.context["mode"] <= ValidationMode.MINIMUM:
+            return value
+
+        warning_list: list = info.context["warning_list"]
+
+        if value not in structure:
+            warning_list.append(
+                issued_warning(
+                    "Unknown {} '{}'{}".format(
+                        type, value, get_suggestion(value, structure.keys(), n=1)
+                    )
+                )
+            )
+
+        return value
+
+    return inside_func
+
+
+ItemName = Annotated[
+    str, AfterValidator(known_name("item", items.raw, UnknownItemWarning))
+]
+SignalName = Annotated[
+    str, AfterValidator(known_name("signal", signals.raw, UnknownSignalWarning))
+]
+EntityName = Annotated[
+    str, AfterValidator(known_name("entity", entities.raw, UnknownEntityWarning))
+]
+FluidName = Annotated[
+    str, AfterValidator(known_name("fluid", fluids.raw, UnknownFluidWarning))
+]
+TileName = Annotated[
+    str, AfterValidator(known_name("tile", tiles.raw, UnknownTileWarning))
+]
 
 
 class DraftsmanBaseModel(BaseModel):
@@ -230,8 +269,27 @@ class DraftsmanBaseModel(BaseModel):
     #     ]
     def true_model_fields(cls):
         return {
-            (v.alias if v.alias is not None else k): k for k, v in cls.model_fields.items()
+            (v.alias if v.alias is not None else k): k
+            for k, v in cls.model_fields.items()
         }
+
+    @field_validator("*", mode="wrap")
+    def construct_fields(
+        cls, value: Any, handler: ValidatorFunctionWrapHandler, info: ValidationInfo
+    ):
+        if info.context and "construction" in info.context:
+            try:
+                return handler(value)
+            except ValidationError:
+                return value
+            # TODO: swap the above with just returning the value
+            # Currently we're doing the validation twice, first a minimum pass to coerce
+            # everything we can to their respective BaseModels, and the second time to
+            # actually validate all the data and run the custom validation functions
+            # Ideally, this could all happen in one step if we copy the code from
+            # validate/add the "construction" keyword to the context of validate
+        else:
+            return handler(value)
 
     @model_validator(mode="after")
     def warn_unused_arguments(self, info: ValidationInfo):
@@ -242,31 +300,36 @@ class DraftsmanBaseModel(BaseModel):
         """
         if not info.context:
             return self
-        if info.context["mode"] is ValidationMode.MINIMUM:
+        if info.context["mode"] <= ValidationMode.MINIMUM:
             return self
 
-        # We only want to issue this particular warning if we're setting an
+        obj = info.context["object"]
+
+        # If we're creating a generic `Entity` (in the case where Draftsman
+        # cannot really know what entity is being imported) then we don't want
+        # to issue the following warnings, since we don't want to make
+        # assertions where we don't have enough information
+        if obj.unknown_format:
+            return self
+
+        # We also only want to issue this particular warning if we're setting an
         # assignment of a subfield, or if we're doing a full scale `validate()`
         # function call
-        obj = info.context["object"]
         if type(obj).Format is type(self) and info.context["assignment"]:
             return self
 
         if self.model_extra:
             warning_list: list = info.context["warning_list"]
 
-            issue = UnknownKeywordWarning(
-                "'{}' object has no attribute(s) {}; allowed fields are {}".format(
-                    self.model_config.get("title", type(self).__name__),
-                    list(self.model_extra.keys()),
-                    self.true_model_fields(),
+            warning_list.append(
+                UnknownKeywordWarning(
+                    "'{}' object has no attribute(s) {}; allowed fields are {}".format(
+                        self.model_config.get("title", type(self).__name__),
+                        list(self.model_extra.keys()),
+                        self.true_model_fields().keys(),
+                    )
                 )
             )
-
-            if info.context["mode"] is ValidationMode.PEDANTIC:
-                raise ValueError(issue) from None
-            else:
-                warning_list.append(issue)
 
         return self
 
@@ -298,14 +361,14 @@ class DraftsmanBaseModel(BaseModel):
                 input_obj["description"] = dedent(input_obj["description"]).strip()
 
         normalize_description(json_schema)
-        if "properties" in json_schema:
-            for property_spec in json_schema["properties"].values():
-                normalize_description(property_spec)
-        if "items" in json_schema:
-            normalize_description(json_schema["items"])
+        # if "properties" in json_schema: # Maybe not needed?
+        for property_spec in json_schema["properties"].values():
+            normalize_description(property_spec)
+        # if "items" in json_schema: # Maybe not needed?
+        #     normalize_description(json_schema["items"])
 
         return json_schema
-    
+
     # def __repr__(self): # TODO
     #     return "{}{{{}}}".format(__class__.__name__, super().__repr__())
 
@@ -318,19 +381,25 @@ class DraftsmanBaseModel(BaseModel):
     )
 
 
-class DraftsmanRootModel(RootModel):
-    """
-    TODO
-    """
+# class DraftsmanRootModel(RootModel):
+#     """
+#     TODO
+#     """
 
-    # Permit accessing via indexing
-    def __getitem__(self, key):
-        getattr(self.root, key)
+#     # Permit accessing via indexing
+#     def __getitem__(self, key):
+#         return self.root[key]
 
-    def __setitem__(self, key, value):
-        setattr(self.root, key, value)
+#     def __setitem__(self, key, value):
+#         self.root[key] = value
 
-    model_config = ConfigDict(revalidate_instances="always")
+#     def __delitem__(self, key):
+#         del self.root[key]
+
+#     def __len__(self) -> int:
+#         return len(self.root)
+
+#     model_config = ConfigDict(revalidate_instances="always")
 
 
 # ACCUMULATOR_CONTROL_BEHAVIOR = Schema(
@@ -700,37 +769,37 @@ class Mapper(DraftsmanBaseModel):
     #     super().__setitem__(self._alias_map[key], value)
 
 
-class Mappers(DraftsmanRootModel):
-    root: list[Mapper]
+# class Mappers(DraftsmanRootModel):
+#     root: list[Mapper]
 
-    # @model_validator(mode="before")
-    # @classmethod
-    # def normalize_mappers(cls, value: Any):
-    #     if isinstance(value, Sequence):
-    #         for i, mapper in enumerate(value):
-    #             if isinstance(value, (tuple, list)):
-    #                 value[i] = {"index": i}
-    #                 if mapper[0]:
-    #                     value[i]["from"] = mapper_dict(mapper[0])
-    #                 if mapper[1]:
-    #                     value[i]["to"] = mapper_dict(mapper[1])
+#     # @model_validator(mode="before")
+#     # @classmethod
+#     # def normalize_mappers(cls, value: Any):
+#     #     if isinstance(value, Sequence):
+#     #         for i, mapper in enumerate(value):
+#     #             if isinstance(value, (tuple, list)):
+#     #                 value[i] = {"index": i}
+#     #                 if mapper[0]:
+#     #                     value[i]["from"] = mapper_dict(mapper[0])
+#     #                 if mapper[1]:
+#     #                     value[i]["to"] = mapper_dict(mapper[1])
 
-    # @validator("__root__", pre=True)
-    # def normalize_mappers(cls, mappers):
-    #     if mappers is None:
-    #         return mappers
-    #     for i, mapper in enumerate(mappers):
-    #         if isinstance(mapper, (tuple, list)):
-    #             mappers[i] = {"index": i}
-    #             if mapper[0]:
-    #                 mappers[i]["from"] = mapping_dict(mapper[0])
-    #             if mapper[1]:
-    #                 mappers[i]["to"] = mapping_dict(mapper[1])
-    #     return mappers
+#     # @validator("__root__", pre=True)
+#     # def normalize_mappers(cls, mappers):
+#     #     if mappers is None:
+#     #         return mappers
+#     #     for i, mapper in enumerate(mappers):
+#     #         if isinstance(mapper, (tuple, list)):
+#     #             mappers[i] = {"index": i}
+#     #             if mapper[0]:
+#     #                 mappers[i]["from"] = mapping_dict(mapper[0])
+#     #             if mapper[1]:
+#     #                 mappers[i]["to"] = mapping_dict(mapper[1])
+#     #     return mappers
 
 
 class SignalID(DraftsmanBaseModel):
-    name: Optional[str] = Field(
+    name: Optional[SignalName] = Field(
         ...,
         description="""
         Name of the signal. If omitted, the signal is treated as no signal and 
@@ -762,37 +831,37 @@ class SignalID(DraftsmanBaseModel):
         else:
             return input
 
-    @field_validator("name")
-    @classmethod
-    def check_name_recognized(cls, value: str, info: ValidationInfo):
-        """
-        We might be provided with a signal which has all the information
-        necessary to pass validation, but will be otherwise unrecognized by
-        Draftsman (in it's current configuration at least). Issue a warning
-        for every unknown signal.
-        """
-        # TODO: check a table to make sure we don't warn about the same unknown
-        # signal multiple times
-        if not info.context:
-            return value
-        if info.context["mode"] is ValidationMode.MINIMUM:
-            return value
+    # @field_validator("name")
+    # @classmethod
+    # def check_name_recognized(cls, value: str, info: ValidationInfo):
+    #     """
+    #     We might be provided with a signal which has all the information
+    #     necessary to pass validation, but will be otherwise unrecognized by
+    #     Draftsman (in it's current configuration at least). Issue a warning
+    #     for every unknown signal.
+    #     """
+    #     # TODO: check a table to make sure we don't warn about the same unknown
+    #     # signal multiple times
+    #     if not info.context:
+    #         return value
+    #     if info.context["mode"] is ValidationMode.MINIMUM:
+    #         return value
 
-        warning_list: list = info.context["warning_list"]
+    #     warning_list: list = info.context["warning_list"]
 
-        if value not in signals.raw:
-            issue = UnknownSignalWarning(
-                "Unknown signal '{}'{}".format(
-                    value, get_suggestion(value, signals.raw.keys(), n=1)
-                )
-            )
+    #     if value not in signals.raw:
+    #         issue = UnknownSignalWarning(
+    #             "Unknown signal '{}'{}".format(
+    #                 value, get_suggestion(value, signals.raw.keys(), n=1)
+    #             )
+    #         )
 
-            if info.context["mode"] is ValidationMode.PEDANTIC:
-                raise ValueError(issue) from None
-            else:
-                warning_list.append(issue)
+    #         if info.context["mode"] is ValidationMode.PEDANTIC:
+    #             raise ValueError(issue) from None
+    #         else:
+    #             warning_list.append(issue)
 
-        return value
+    #     return value
 
     @model_validator(mode="after")
     @classmethod
@@ -805,7 +874,7 @@ class SignalID(DraftsmanBaseModel):
         """
         if not info.context:
             return value
-        if info.context["mode"] is ValidationMode.MINIMUM:
+        if info.context["mode"] <= ValidationMode.MINIMUM:
             return value
 
         warning_list: list = info.context["warning_list"]
@@ -813,16 +882,13 @@ class SignalID(DraftsmanBaseModel):
         if value["name"] in signals.raw:
             expected_type = get_signal_type(value["name"])
             if expected_type != value["type"]:
-                issue = MalformedSignalWarning(
-                    "Known signal '{}' was given a mismatching type (expected '{}', found '{}')".format(
-                        value["name"], expected_type, value["type"]
+                warning_list.append(
+                    MalformedSignalWarning(
+                        "Known signal '{}' was given a mismatching type (expected '{}', found '{}')".format(
+                            value["name"], expected_type, value["type"]
+                        )
                     )
                 )
-
-                if info.context["mode"] is ValidationMode.PEDANTIC:
-                    raise AssertionError(issue) from None
-                else:
-                    warning_list.append(issue)
 
         return value
 
@@ -853,28 +919,28 @@ class Icon(DraftsmanBaseModel):
     )  # TODO: is it numerical order which determines appearance, or order in parent list?
 
 
-class Icons(DraftsmanRootModel):
-    root: list[Icon] = Field(
-        ...,
-        max_length=4,
-        description="""
-        The list of all icons used by this object. Hard-capped to 4 entries 
-        total; having more than 4 will raise an error in import.
-        """,
-    )
+# class Icons(DraftsmanRootModel):
+#     root: list[Icon] = Field(
+#         ...,
+#         max_length=4,
+#         description="""
+#         The list of all icons used by this object. Hard-capped to 4 entries
+#         total; having more than 4 will raise an error in import.
+#         """,
+#     )
 
-    @model_validator(mode="before")
-    def normalize_icons(cls, value: Any):
-        if isinstance(value, Sequence):
-            result = [None] * len(value)
-            for i, signal in enumerate(value):
-                if isinstance(signal, str):
-                    result[i] = {"index": i + 1, "signal": signal}
-                else:
-                    result[i] = signal
-            return result
-        else:
-            return value
+#     @model_validator(mode="before")
+#     def normalize_icons(cls, value: Any):
+#         if isinstance(value, Sequence):
+#             result = [None] * len(value)
+#             for i, signal in enumerate(value):
+#                 if isinstance(signal, str):
+#                     result[i] = {"index": i + 1, "signal": signal}
+#                 else:
+#                     result[i] = signal
+#             return result
+#         else:
+#             return value
 
 
 class Color(DraftsmanBaseModel):
@@ -1032,24 +1098,12 @@ class Condition(DraftsmanBaseModel):
             return input
 
 
-class WaitCondition(DraftsmanBaseModel):
-    type: str
-    compare_type: str
-    ticks: Optional[int] = None  # TODO dimension
-    condition: Optional[Condition] = None  # TODO: correct annotation
-
-
-class Stop(DraftsmanBaseModel):
-    station: str
-    wait_conditions: list[WaitCondition]  # TODO: optional?
-
-
 class EntityFilter(DraftsmanBaseModel):
-    name: str = Field(
+    name: EntityName = Field(
         ...,
         description="""
         The name of a valid deconstructable entity.
-        """
+        """,
     )
     index: Optional[uint64] = Field(
         description="""
@@ -1062,11 +1116,11 @@ class EntityFilter(DraftsmanBaseModel):
 
 
 class TileFilter(DraftsmanBaseModel):
-    name: str = Field(
+    name: TileName = Field(
         ...,
         description="""
         The name of a valid deconstructable tile.
-        """
+        """,
     )
     index: Optional[uint64] = Field(
         description="""
@@ -1079,12 +1133,12 @@ class TileFilter(DraftsmanBaseModel):
 
 
 class CircuitConnectionPoint(DraftsmanBaseModel):
-    entity_id: uint64
+    entity_id: Association.Format
     circuit_id: Optional[Literal[1, 2]] = None
 
 
 class WireConnectionPoint(DraftsmanBaseModel):
-    entity_id: uint64
+    entity_id: Association.Format
     wire_id: Optional[Literal[0, 1]] = None
 
 
@@ -1120,44 +1174,48 @@ class Connections(DraftsmanBaseModel):
     #     return item in self._alias_map and
 
 
-class Filters(DraftsmanRootModel):
-    class FilterEntry(DraftsmanBaseModel):
-        index: int64 = Field(
-            ..., description="""Numeric index of a filter entry, 1-based."""
-        )
-        name: str = Field(  # TODO: ItemID
-            ..., description="""Name of the item to filter."""
-        )
+# class Filters(DraftsmanRootModel):
+class FilterEntry(DraftsmanBaseModel):
+    index: int64 = Field(
+        ..., description="""Numeric index of a filter entry, 1-based."""
+    )
+    name: ItemName = Field(..., description="""Name of the item to filter.""")
 
-        @field_validator("index")
-        @classmethod
-        def ensure_within_filter_count(cls, value: int, info: ValidationInfo):
-            if not info.context:
-                return value
-
-            entity = info.context["object"]
-            if entity.filter_count is not None and value >= entity.filter_count:
-                raise ValueError(
-                    "'{}' exceeds the allowable range for filter slot indices [0, {}) for this entity ('{}')".format(
-                        value, entity.filter_count, entity.name
-                    )
-                )
-
+    @field_validator("index")
+    @classmethod
+    def ensure_within_filter_count(cls, value: int, info: ValidationInfo):
+        """ """
+        if not info.context:
+            return value
+        if info.context["mode"] <= ValidationMode.MINIMUM:
             return value
 
-    root: list[FilterEntry]
+        entity = info.context["object"]
 
-    @model_validator(mode="before")
-    @classmethod
-    def normalize_validate(cls, value: Any):
-        result = []
-        if isinstance(value, (list, tuple)):
-            for i, entry in enumerate(value):
-                if isinstance(entry, str):
-                    result.append({"index": i + 1, "name": entry})
-                else:
-                    result.append(entry)
-        return result
+        if entity.filter_count is not None and value > entity.filter_count:
+            raise ValueError(
+                "'{}' exceeds the allowable range for filter slot indices [0, {}) for this entity ('{}')".format(
+                    value, entity.filter_count, entity.name
+                )
+            )
+
+        return value
+
+    # root: list[FilterEntry]
+
+    # @model_validator(mode="before")
+    # @classmethod
+    # def normalize_validate(cls, value: Any):
+    #     if isinstance(value, (list, tuple)):
+    #         result = []
+    #         for i, entry in enumerate(value):
+    #             if isinstance(entry, str):
+    #                 result.append({"index": i + 1, "name": entry})
+    #             else:
+    #                 result.append(entry)
+    #         return result
+    #     else:
+    #         return value
 
     # @model_serializer
     # def normalize_construct(self):
@@ -1175,22 +1233,19 @@ def ensure_bar_less_than_inventory_size(
 ):
     if not info.context or value is None:
         return value
-    if info.context["mode"] == ValidationMode.MINIMUM:
+    if info.context["mode"] <= ValidationMode.STRICT:
         return value
 
     warning_list: list = info.context["warning_list"]
     entity = info.context["object"]
     if entity.inventory_size and value >= entity.inventory_size:
-        issue = BarWarning(
-            "Bar index ({}) exceeds the container's inventory size ({})".format(
-                value, entity.inventory_size
-            ),
+        warning_list.append(
+            BarWarning(
+                "Bar index ({}) exceeds the container's inventory size ({})".format(
+                    value, entity.inventory_size
+                ),
+            )
         )
-
-        if info.context["mode"] is ValidationMode.PEDANTIC:
-            raise issue
-        else:
-            warning_list.append(issue)
 
     return value
 
@@ -1223,63 +1278,77 @@ def ensure_bar_less_than_inventory_size(
 #         return bar
 
 
-class InventoryFilters(DraftsmanBaseModel):
-    filters: Optional[Filters] = Field(
-        None,
+# class InventoryFilters(DraftsmanBaseModel):
+#     filters: Optional[list[FilterEntry]] = Field(
+#         None,
+#         description="""
+#         Any reserved item filter slots in the container's inventory.
+#         """,
+#     )
+#     bar: Optional[uint16] = Field(
+#         None,
+#         description="""
+#         Limiting bar on this container's inventory.
+#         """,
+#     )
+
+#     @field_validator("filters", mode="before")
+#     @classmethod
+#     def normalize_filters(cls, value: Any):
+#         if isinstance(value, (list, tuple)):
+#             result = []
+#             for i, entry in enumerate(value):
+#                 if isinstance(entry, str):
+#                     result.append({"index": i + 1, "name": entry})
+#                 else:
+#                     result.append(entry)
+#             return result
+#         else:
+#             return value
+
+#     @field_validator("bar")
+#     @classmethod
+#     def ensure_less_than_inventory_size(
+#         cls, bar: Optional[uint16], info: ValidationInfo
+#     ):
+#         return ensure_bar_less_than_inventory_size(cls, bar, info)
+
+
+# class RequestFilters(DraftsmanRootModel):
+class RequestFilter(DraftsmanBaseModel):
+    index: int64 = Field(
+        ..., description="""Numeric index of the logistics request, 1-based."""
+    )
+    name: ItemName = Field(
+        ..., description="""The name of the item to request from logistics."""
+    )
+    count: Optional[int64] = Field(
+        1,
         description="""
-        Any reserved item filter slots in the container's inventory.
+        The amount of the item to request. Optional on import to Factorio, 
+        but always included on export from Factorio. If omitted, will 
+        default to a count of 1.
         """,
     )
-    bar: Optional[uint16] = Field(
-        None,
-        description="""
-        Limiting bar on this container's inventory.
-        """,
-    )
 
-    @field_validator("bar")
-    @classmethod
-    def ensure_less_than_inventory_size(
-        cls, bar: Optional[uint16], info: ValidationInfo
-    ):
-        return ensure_bar_less_than_inventory_size(cls, bar, info)
+    # root: list[Request]
 
+    # @model_validator(mode="before")
+    # @classmethod
+    # def normalize_validate(cls, value: Any):
+    #     if value is None:
+    #         return value
 
-class RequestFilters(DraftsmanRootModel):
-    class Request(DraftsmanBaseModel):
-        index: int64 = Field(
-            ..., description="""Numeric index of the logistics request, 1-based."""
-        )
-        name: str = Field(  # TODO: ItemName
-            ..., description="""The name of the item to request from logistics."""
-        )
-        count: Optional[int64] = Field(
-            1,
-            description="""
-            The amount of the item to request. Optional on import to Factorio, 
-            but always included on export from Factorio. If omitted, will 
-            default to a count of 1.
-            """,
-        )
-
-    root: list[Request]
-
-    @model_validator(mode="before")
-    @classmethod
-    def normalize_validate(cls, value: Any):
-        if value is None:
-            return value
-
-        result = []
-        if isinstance(value, list):
-            for i, entry in enumerate(value):
-                if isinstance(entry, (tuple, list)):
-                    result.append({"index": i + 1, "name": entry[0], "count": entry[1]})
-                else:
-                    result.append(entry)
-            return result
-        else:
-            return value
+    #     result = []
+    #     if isinstance(value, list):
+    #         for i, entry in enumerate(value):
+    #             if isinstance(entry, (tuple, list)):
+    #                 result.append({"index": i + 1, "name": entry[0], "count": entry[1]})
+    #             else:
+    #                 result.append(entry)
+    #         return result
+    #     else:
+    #         return value
 
     # @model_serializer
     # def normalize_construct(self):
@@ -1328,6 +1397,8 @@ class SignalFilter(DraftsmanBaseModel):
         """
         if not info.context:
             return value
+        if info.context["mode"] <= ValidationMode.MINIMUM:
+            return value
 
         entity = info.context["object"]
 
@@ -1335,7 +1406,8 @@ class SignalFilter(DraftsmanBaseModel):
         if entity.item_slot_count is None:
             return value
 
-        if not 0 <= value < entity.item_slot_count:
+        # TODO: what happens if index is 0?
+        if not 0 < value <= entity.item_slot_count:
             raise ValueError(
                 "Signal 'index' ({}) must be in the range [0, {})".format(
                     value, entity.item_slot_count
@@ -1353,21 +1425,18 @@ class SignalFilter(DraftsmanBaseModel):
         """
         if not info.context or value is None:
             return value
-        if info.context["mode"] is ValidationMode.MINIMUM:
+        if info.context["mode"] <= ValidationMode.MINIMUM:
             return value
 
         warning_list: list = info.context["warning_list"]
 
         if value.name in pure_virtual:
-            issue = PureVirtualDisallowedWarning(
-                "Cannot set pure virtual signal '{}' in a constant combinator".format(
-                    value.name
+            warning_list.append(
+                PureVirtualDisallowedWarning(
+                    "Cannot set pure virtual signal '{}' in a constant combinator".format(
+                        value.name
+                    )
                 )
             )
-
-            if info.context["mode"] is ValidationMode.PEDANTIC:
-                raise ValueError(issue) from None
-            else:
-                warning_list.append(issue)
 
         return value

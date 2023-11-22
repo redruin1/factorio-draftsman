@@ -46,6 +46,9 @@ class TestStraightRail:
         with pytest.warns(UnknownEntityWarning):
             StraightRail("this is not a straight rail")
 
+        # Assert validation with no context still works
+        StraightRail.Format.model_validate(straight_rail._root)
+
     def test_overlapping(self):
         blueprint = Blueprint()
         blueprint.entities.append("straight-rail")

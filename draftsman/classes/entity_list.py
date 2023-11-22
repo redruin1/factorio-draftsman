@@ -41,7 +41,9 @@ class EntityList(MutableSequence):
         data: list[dict]  # TODO: fix
 
     @utils.reissue_warnings
-    def __init__(self, parent: "EntityCollection"=None, initlist: list[EntityLike]=None):
+    def __init__(
+        self, parent: "EntityCollection" = None, initlist: list[EntityLike] = None
+    ):
         """
         Instantiates a new ``EntityList``.
 
@@ -72,14 +74,23 @@ class EntityList(MutableSequence):
                     )
 
     @utils.reissue_warnings
-    def append(self, name, copy=True, merge=False, **kwargs):
-        # type: (Union[str, EntityLike], bool, bool, **dict) -> None
+    def append(
+        self,
+        name: Union[str, "EntityLike"],
+        copy: bool = True,
+        merge: bool = False,
+        **kwargs
+    ):
         """
         Appends the ``EntityLike`` to the end of the sequence.
 
         Supports an optional shorthand where you can specify the string name of
         an Entity as ``entity`` and any keyword arguments, which are appended to
         the constructor of that entity.
+
+        If ``copy`` is specified, a deepcopy of the passed in entity is created.
+        If any additional keyword arguments are specified alongside, the
+        attributes of that newly copied entity are overwritten with them.
 
         :param name: Either a string reprenting the name of an ``Entity``, or an
             :py:class:`.EntityLike` instance.
@@ -133,19 +144,28 @@ class EntityList(MutableSequence):
             assert inserter is blueprint.entities[-1]
             assert blueprint.entities[-1].stack_size_override == 1
         """
-        self.insert(
-            len(self.data), name, copy=copy, merge=merge, **kwargs
-        )
+        # TODO: validate
+        self.insert(len(self.data), name, copy=copy, merge=merge, **kwargs)
 
     @utils.reissue_warnings
-    def insert(self, idx, name, copy=True, merge=False, **kwargs):
-        # type: (int, Union[str, EntityLike], bool, bool, **dict) -> None
+    def insert(
+        self,
+        idx: int,
+        name: Union[str, "EntityLike"],
+        copy: bool = True,
+        merge: bool = False,
+        **kwargs
+    ):
         """
         Inserts an ``EntityLike`` into the sequence.
 
         Supports an optional shorthand where you can specify the string name of
         an Entity as ``entity`` and any keyword arguments, which are appended to
         the constructor of that entity.
+
+        If ``copy`` is specified, a deepcopy of the passed in entity is created.
+        If any additional keyword arguments are specified alongside, the
+        attributes of that newly copied entity are overwritten with them.
 
         :param idx: The integer index to put the ``EntityLike``.
         :param name: Either a string reprenting the name of an ``Entity``, or an
@@ -190,19 +210,18 @@ class EntityList(MutableSequence):
             assert inserter is blueprint.entities[0]
             assert blueprint.entities[0].stack_size_override == 1
         """
+        # TODO: validate
 
         # Convert to new Entity if constructed via string keyword
         new = False
         if isinstance(name, six.string_types):
             entitylike = new_entity(name, **kwargs)
-            if entitylike is None:
-                return
             new = True
         else:
             entitylike = name
 
         if copy and not new:
-            # Create a DEEPCopy of the entity if desired
+            # Create a DEEPcopy of the entity if desired
             entitylike = deepcopy(entitylike)
             # Overwrite any user keywords if specified in the function signature
             for k, v in kwargs.items():
@@ -243,8 +262,7 @@ class EntityList(MutableSequence):
         # that it's inserted
         entitylike._parent = self._parent
 
-    def recursive_remove(self, item):
-        # type: (EntityLike) -> None
+    def recursive_remove(self, item: "EntityLike"):
         """
         Removes an EntityLike from the EntityList. Recurses through any
         subgroups to see if ``item`` is there, removing the root-most entity
@@ -270,8 +288,7 @@ class EntityList(MutableSequence):
         # If we've made it this far, it's not anywhere in the list
         raise ValueError
 
-    def check_entitylike(self, entitylike):
-        # type: (EntityLike) -> None
+    def check_entitylike(self, entitylike: "EntityLike"):
         """
         A set of universal checks that all :py:class:`.EntityLike`s have to
         follow if they are to be added to this ``EntityList``.
@@ -293,6 +310,10 @@ class EntityList(MutableSequence):
             raise DuplicateIDError(entitylike.id)
 
         # Warn if the placed entity is hidden
+        # TODO: move this elsewhere, perhaps to entity itself in case the user
+        # accidentally creates an instance of a hidden entity
+        # If not in the entity itself it would likely live in the `Format` of
+        # this class
         if getattr(entitylike, "hidden", False):
             warnings.warn(
                 "Attempting to add hidden entity '{}'".format(entitylike.name),
@@ -300,8 +321,7 @@ class EntityList(MutableSequence):
                 stacklevel=2,
             )
 
-    def get_pair(self, item):
-        # type: (Union[int, str]) -> tuple[int, str]
+    def get_pair(self, item: Union[int, str]) -> tuple[int, str]:
         """
         Takes either an index or a key, finds the converse entry associated with
         it, and returns them both as a pair.
@@ -318,44 +338,36 @@ class EntityList(MutableSequence):
         else:
             return (item, self.idx_to_key.get(item, None))
 
-    def union(self, other):
-        # type: (EntityList) -> EntityList
+    def union(self, other: "EntityList") -> "EntityList":
         """
         TODO
         """
-        if not isinstance(other, EntityList):  # TODO: needed?
-            other = EntityList(initlist=other)
-
         new_entity_list = EntityList()
 
-        for entity in self.data:
+        for entity in self:
             new_entity_list.append(entity)
             new_entity_list[-1]._parent = None
 
-        for other_entity in other.data:
+        for other_entity in other:
             already_in = False
-            for entity in self.data:
+            for entity in self:
                 if entity == other_entity:
                     already_in = True
                     break
             if not already_in:
-                new_entity_list.append()
+                new_entity_list.append(other_entity)
 
         return new_entity_list
 
-    def intersection(self, other):
-        # type: (EntityList) -> EntityList
+    def intersection(self, other: "EntityList") -> "EntityList":
         """
         TODO
         """
-        if not isinstance(other, EntityList):  # TODO: needed?
-            other = EntityList(initlist=other)
-
         new_entity_list = EntityList()
 
-        for entity in self.data:
+        for entity in self:
             in_both = False
-            for other_entity in other.data:
+            for other_entity in other:
                 if other_entity == entity:
                     in_both = True
                     break
@@ -364,19 +376,15 @@ class EntityList(MutableSequence):
 
         return new_entity_list
 
-    def difference(self, other):
-        # type: (EntityList) -> EntityList
+    def difference(self, other: "EntityList") -> "EntityList":
         """
         TODO
         """
-        if not isinstance(other, EntityList):  # TODO: needed?
-            other = EntityList(initlist=other)
-
         new_entity_list = EntityList()
 
-        for entity in self.data:
+        for entity in self:
             different = True
-            for other_entity in other.data:
+            for other_entity in other:
                 if other_entity == entity:
                     different = False
                     break
@@ -395,8 +403,9 @@ class EntityList(MutableSequence):
     # Metamethods
     # =========================================================================
 
-    def __getitem__(self, item):
-        # type: (Union[int, str, slice]) -> Union[EntityLike, list[EntityLike]]
+    def __getitem__(
+        self, item: Union[int, str, slice]
+    ) -> Union[EntityLike, list[EntityLike]]:
         if isinstance(item, (list, tuple)):
             new_base = self[item[0]]
             item = item[1:]
@@ -409,8 +418,7 @@ class EntityList(MutableSequence):
             return self.key_map[item]  # Raises KeyError
 
     @utils.reissue_warnings
-    def __setitem__(self, item, value):
-        # type: (Union[int, str], EntityLike) -> None
+    def __setitem__(self, item: Union[int, str], value: "EntityLike"):
         # TODO: handle slices
 
         # Get the key and index of the item
@@ -438,8 +446,7 @@ class EntityList(MutableSequence):
         # TODO: this sucks man
         self._parent.recalculate_area()
 
-    def __delitem__(self, item):
-        # type: (Union[int, str]) -> None
+    def __delitem__(self, item: Union[int, str]):
         if isinstance(item, slice):
             # Get slice parameters
             start, stop, step = item.indices(len(self))
@@ -483,8 +490,7 @@ class EntityList(MutableSequence):
             # TODO: this sucks man
             self._parent.recalculate_area()
 
-    def __len__(self):
-        # type: () -> int
+    def __len__(self) -> int:
         return len(self.data)
 
     def __contains__(self, item: EntityLike) -> bool:
@@ -604,20 +610,22 @@ class EntityList(MutableSequence):
 
         return new
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no coverage
         return "<EntityList>{}".format(self.data)
 
     @classmethod
-    def __get_pydantic_core_schema__(cls, _source_type: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(cls, handler(list[dict])) # TODO: correct annotation
-
+    def __get_pydantic_core_schema__(  # pragma: no coverage
+        cls, _source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        return core_schema.no_info_after_validator_function(
+            cls, handler(list[dict])  # TODO: correct annotation
+        )  # pragma: no coverage
 
     # =========================================================================
     # Internal functions
     # =========================================================================
 
-    def _remove_key(self, key):
-        # type: (str) -> None
+    def _remove_key(self, key: str):
         """
         Shorthand to remove ``key`` from the key mapping dictionaries. Does
         nothing if key is ``None``.
@@ -633,8 +641,7 @@ class EntityList(MutableSequence):
             del self.key_to_idx[key]
             del self.idx_to_key[idx]
 
-    def _set_key(self, key, value):
-        # type: (str, EntityLike) -> None
+    def _set_key(self, key: str, value: "EntityLike"):
         """
         Shorthand to set ``key`` in the key mapping dictionaries to point to
         ``value``.
@@ -654,8 +661,7 @@ class EntityList(MutableSequence):
         self.key_to_idx[key] = idx
         self.idx_to_key[idx] = key
 
-    def _shift_key_indices(self, idx, amt):
-        # type: (int, int) -> None
+    def _shift_key_indices(self, idx: int, amt: int):
         """
         Shifts all of the key mappings above or equal to ``idx`` by ``amt``.
         Used when inserting or removing elements before the end, which moves

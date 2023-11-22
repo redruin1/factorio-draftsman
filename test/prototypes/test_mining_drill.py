@@ -1,6 +1,6 @@
 # test_mining_drill.py
 
-from draftsman.constants import MiningDrillReadMode
+from draftsman.constants import MiningDrillReadMode, ValidationMode
 from draftsman.entity import MiningDrill, mining_drills, Container
 from draftsman.error import InvalidEntityError, InvalidItemError, DataFormatError
 from draftsman.warning import (
@@ -8,7 +8,7 @@ from draftsman.warning import (
     ItemLimitationWarning,
     UnknownEntityWarning,
     UnknownItemWarning,
-    UnknownKeywordWarning
+    UnknownKeywordWarning,
 )
 
 from collections.abc import Hashable
@@ -24,7 +24,7 @@ class TestMiningDrill:
         assert drill.to_dict() == {
             "name": "electric-mining-drill",
             "position": {"x": 1.5, "y": 1.5},
-            "items": {"productivity-module": 1, "productivity-module-2": 1}
+            "items": {"productivity-module": 1, "productivity-module-2": 1},
         }
 
         # Warnings
@@ -67,7 +67,7 @@ class TestMiningDrill:
 
         mining_drill.set_item_request("speed-module-3", None)
         assert mining_drill.items == {"productivity-module-3": 3}
-        
+
         with pytest.warns(ItemLimitationWarning):
             mining_drill.set_item_request("iron-ore", 2)
 
@@ -78,23 +78,45 @@ class TestMiningDrill:
         mining_drill = MiningDrill()
         mining_drill.read_resources = True
         assert mining_drill.read_resources == True
-        
+
         mining_drill.read_resources = None
         assert mining_drill.read_resources == None
 
         with pytest.raises(DataFormatError):
             mining_drill.read_resources = "incorrect"
 
+        mining_drill.validate_assignment = "none"
+        assert mining_drill.validate_assignment == ValidationMode.NONE
+
+        mining_drill.read_resources = "incorrect"
+        assert mining_drill.read_resources == "incorrect"
+        assert mining_drill.to_dict() == {
+            "name": "burner-mining-drill",
+            "position": {"x": 1, "y": 1},
+            "control_behavior": {"circuit_read_resources": "incorrect"},
+        }
+
     def test_set_read_mode(self):
         mining_drill = MiningDrill()
         mining_drill.read_mode = MiningDrillReadMode.UNDER_DRILL
         assert mining_drill.read_mode == MiningDrillReadMode.UNDER_DRILL
-        
+
         mining_drill.read_mode = None
         assert mining_drill.read_mode == None
 
         with pytest.raises(DataFormatError):
             mining_drill.read_mode = "incorrect"
+
+        mining_drill.validate_assignment = "none"
+        assert mining_drill.validate_assignment == ValidationMode.NONE
+
+        mining_drill.read_mode = "incorrect"
+        assert mining_drill.read_mode == "incorrect"
+        assert mining_drill.to_dict() == {
+            "name": "burner-mining-drill",
+            "position": {"x": 1, "y": 1},
+            "control_behavior": {"circuit_resource_read_mode": "incorrect"},
+        }
 
     def test_mergable_with(self):
         drill1 = MiningDrill("electric-mining-drill")

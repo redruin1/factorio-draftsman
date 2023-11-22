@@ -29,6 +29,7 @@ output wire for a single tick, which can then be stored in a memory cell if
 needed for longer periods.
 """
 
+
 def main():
     # Parse args
 
@@ -36,6 +37,7 @@ def main():
     encoded_data = list(range(256))
 
     pass
+
 
 if __name__ == "__main__":
     main()

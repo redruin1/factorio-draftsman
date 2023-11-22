@@ -1,6 +1,35 @@
 # TODO
 
-### For backwards compat, allow indexing a blueprintable to point to its `_root[_root_item]` sub-index instead of it's true `_root`?
+### Redo validation (again)
+Swapping to Pydantic was very illuminating in the benefits that it can provide:
+
+* Ergonomic class definitions to define schemas (very nice)
+* Being able to inject custom functions at any point of the validation process to massage inputs, discredit validation, and add new criteria (possibly on the fly!) This is probably going to be required by any further implementation going forward
+* All of these validation functions are localized to the classes that use them, and everything is in one place; only a single method has to be called for any member modification.
+* Validation backend is written in Rust for speed (tempting)
+
+However, it is still not quite entirely perfect:
+
+* RootModel syntax cannot be serialized if not in the correct model format (unacceptable, currently this is sidestepped but suboptimal)
+* RootModel syntax is unwieldly; everything is accessed via it's `root` attribute and any methods that you would want to use on `root` have to be reimplemented in the parent class
+* I HAVE to use RootModels if I want to be able to reliably validate these members (and ideally propagate their `is_valid` flags)
+* Per instance validate assignment is not permitted (even though totally functional), meaning I have to use the model's backend which might be subject to change
+* No in-built handling for warnings, which ideally would behave very similarly to errors as Pydantic currently implements them
+
+Based on my search, I can't think of a validation library that has all of these features at once, implying that I would have to roll my own. I'm not really looking forward to this, and especially not to *testing* it, so if there is one out there please message me.
+
+---
+
+### Validation caching
+Ideally, whether or not a entity or blueprint is considered valid can be retained as long as the entity does not change after validation. For example, if you validate a single entity, and then add that entity to a blueprint 1000 times, you only have to validate the attributes of the blueprint itself, since the entities are guaranteed to already be in a valid state. Ideally, each exportable object would have a `is_valid` attribute which would be set to false when an attribute is set, which can then be quickly checked in any parent
+`validate()` function.
+
+### Integrate with `mypy`
+
+### Revamp the `add_x` data functions so that they support more features
+* Inline sorting
+* Support additional keyword arguments in line with the prototype documentation
+* Perhaps there might be a way to redesign `env.py` such that it can use the data functions, encouraging code reuse
 
 ### More elegantly handle when a prototype has no valid members (like `LinkedBelt`)
 

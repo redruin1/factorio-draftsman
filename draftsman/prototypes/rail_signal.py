@@ -46,7 +46,7 @@ class RailSignal(
         class ControlBehavior(
             ReadRailSignalMixin.ControlFormat,
             CircuitConditionMixin.ControlFormat,
-            DraftsmanBaseModel,  # TODO: FIXME?
+            DraftsmanBaseModel,
         ):
 
             circuit_close_signal: Optional[bool] = Field(
@@ -74,8 +74,8 @@ class RailSignal(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
-        connections: Connections() = Connections(),
-        control_behavior: Format.ControlBehavior() = Format.ControlBehavior(),
+        connections: Connections() = {},
+        control_behavior: Format.ControlBehavior() = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -110,8 +110,7 @@ class RailSignal(
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

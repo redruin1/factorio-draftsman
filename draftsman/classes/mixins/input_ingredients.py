@@ -21,7 +21,7 @@ class InputIngredientsMixin:
             """
             if not info.context or value is None:
                 return value
-            if info.context["mode"] is ValidationMode.MINIMUM:
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return value
 
             entity: "InputIngredientsMixin" = info.context["object"]
@@ -35,13 +35,13 @@ class InputIngredientsMixin:
                 if item in entity.allowed_modules:
                     continue
                 if item not in entity.allowed_input_ingredients:
-                    issue = ItemLimitationWarning(
-                        "Cannot request item '{}' to '{}'; this recipe cannot consume it".format(
-                            item, entity.name
+                    warning_list.append(
+                        ItemLimitationWarning(
+                            "Cannot request item '{}' to '{}'; this recipe cannot consume it".format(
+                                item, entity.name
+                            )
                         )
                     )
-
-                    warning_list.append(issue)
 
             return value
 

@@ -15,6 +15,12 @@ import pytest
 class TestUndergroundBelt:
     def test_constructor_init(self):
         # Valid
+        underground_belt = UndergroundBelt("underground-belt")
+        assert underground_belt.to_dict() == {
+            "name": "underground-belt",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
         underground_belt = UndergroundBelt(
             "underground-belt",
             direction=Direction.EAST,

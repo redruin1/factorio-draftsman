@@ -54,8 +54,7 @@ class Locomotive(RequestItemsMixin, ColorMixin, OrientationMixin, Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # TODO: check if item requests are valid fuel sources or not
 

@@ -39,20 +39,19 @@ class HeatInterface(Entity):
         def clamp_temperature(cls, value: Optional[float], info: ValidationInfo):
             if not info.context or value is None:
                 return value
-            if info.context["mode"] is ValidationMode.MINIMUM:
+            if info.context["mode"] <= ValidationMode.STRICT:
                 return value
 
             warning_list: list = info.context["warning_list"]
 
             if not 0.0 <= value <= 1000.0:
-                issue = TemperatureRangeWarning(
-                    "Temperature '{}' exceeds allowed range [0.0, 1000.0]; will be clamped to this range on import"
+                warning_list.append(
+                    TemperatureRangeWarning(
+                        "Temperature '{}' exceeds allowed range [0.0, 1000.0]; will be clamped to this range on import".format(
+                            value
+                        )
+                    )
                 )
-
-                if info.context["mode"] is ValidationMode.PEDANTIC:
-                    raise ValueError(issue) from None
-                else:
-                    warning_list.append(issue)
 
             return value
 
@@ -93,8 +92,7 @@ class HeatInterface(Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

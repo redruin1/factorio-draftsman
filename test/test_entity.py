@@ -178,6 +178,9 @@ class TestEntity:
         belt = TransportBelt()
         assert belt.flippable == True
 
+    def test_contains(self):
+        assert "name" in TransportBelt()
+
 
 # =============================================================================
 # Factory function new_entity()
@@ -370,12 +373,54 @@ class TestEntityFactory:
     def test_player_port(self):
         assert isinstance(new_entity("player-port"), PlayerPort)
 
-    def test_errors(self):
-        with pytest.raises(InvalidEntityError, match="'incorrect' is not a recognized entity"):
-            new_entity("incorrect")
+    def test_unknown(self):
+        # Invalid unknown value
+        with pytest.raises(ValueError):
+            new_entity("unknown", if_unknown="wrong")
 
-    def test_suggestion_error(self):
-        with pytest.raises(InvalidEntityError, match="'sgtorage-tank' is not a recognized entity; did you mean 'storage-tank'?"):
-            new_entity("sgtorage-tank")
+        # Default behavior is error
+        # Raise errors (if desired)
+        with pytest.raises(InvalidEntityError, match="Unknown entity 'unknown'"):
+            new_entity("unknown")
+
+        # Ignore
+        assert new_entity("unknown", if_unknown="ignore") == None
+
+        # Try and treat as a generic entity
+        result = new_entity("unknown", position=(0.5, 0.5), if_unknown="accept")
+        assert isinstance(result, Entity)
+        
+        # Generic entities should be able to handle attribute access and serialization
+        assert result.name == "unknown"
+        assert result.position == Vector(0.5, 0.5)
+        assert result.to_dict() == {
+            "name": "unknown",
+            "position": {"x": 0.5, "y": 0.5}
+        }
+        
+        # You should also be able to set new attributes to them without Draftsman
+        # complaining
+        result = new_entity("unknown", position=(0.5, 0.5), direction=4, if_unknown="accept")
+        assert result.to_dict() == {
+            "name": "unknown",
+            "position": {"x": 0.5, "y": 0.5},
+            "direction": 4
+        }
+
+        # After construction, as well
+        result["new_thing"] = "extra!"
+        assert result.to_dict() == {
+            "name": "unknown",
+            "position": {"x": 0.5, "y": 0.5},
+            "direction": 4,
+            "new_thing": "extra!"
+        }
+        result.validate(mode=ValidationMode.PEDANTIC).reissue_all()
+
+        # However, setting known attributes incorrectly should still create
+        # issues
+        with pytest.raises(DataFormatError):
+            result.tags = "incorrect"
+
 
 # fmt: on

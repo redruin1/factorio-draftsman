@@ -3,12 +3,17 @@
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.signatures import IntPosition
-from draftsman.constants import Direction
+from draftsman.constants import Direction, ValidationMode
 from draftsman.error import DraftsmanError
 from draftsman.warning import DirectionWarning
 
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
-from typing import Optional, Union
+from pydantic import (
+    BaseModel,
+    Field,
+    ValidationInfo,
+    field_validator,
+)
+from typing import Optional
 
 from typing import TYPE_CHECKING
 
@@ -45,7 +50,7 @@ class DirectionalMixin:
         def ensure_4_way(cls, input: Optional[Direction], info: ValidationInfo):
             if not info.context:
                 return input
-            if info.context["mode"] == "minimum":
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return input
 
             warning_list: list = info.context["warning_list"]
@@ -55,18 +60,13 @@ class DirectionalMixin:
                 # Default to a known orientation
                 output = Direction(int(input / 2) * 2)
 
-                if info.context["mode"] == "pedantic":
-                    raise ValueError(
-                        "'{}' only has 4-way rotation".format(type(entity).__name__)
+                warning_list.append(
+                    DirectionWarning(
+                        "'{}' only has 4-way rotation; defaulting to {}".format(
+                            type(entity).__name__, output
+                        ),
                     )
-                else:
-                    warning_list.append(
-                        DirectionWarning(
-                            "'{}' only has 4-way rotation; defaulting to {}".format(
-                                type(entity).__name__, output
-                            ),
-                        )
-                    )
+                )
 
                 return output
             else:
@@ -76,7 +76,7 @@ class DirectionalMixin:
         self,
         name: str,
         similar_entities: list[str],
-        tile_position: IntPosition = [0, 0],
+        tile_position: IntPosition = (0, 0),
         **kwargs
     ):
         self._root: __class__.Format
@@ -107,9 +107,9 @@ class DirectionalMixin:
                 if super().collision_set:
                     _rotated_collision_sets[name] = {}
                     for i in {0, 2, 4, 6}:
-                        _rotated_collision_sets[name][
+                        _rotated_collision_sets[name][i] = super().collision_set.rotate(
                             i
-                        ] = super().collision_set.rotate(i)
+                        )
                 else:
                     _rotated_collision_sets[name] = {}
                     for i in {0, 2, 4, 6}:
@@ -153,7 +153,7 @@ class DirectionalMixin:
     @property
     def collision_set(self) -> Optional[CollisionSet]:
         return _rotated_collision_sets.get(self.name, {}).get(self.direction, None)
-    
+
     # =========================================================================
 
     @property

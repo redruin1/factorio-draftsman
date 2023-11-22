@@ -1,8 +1,13 @@
 # test_heat_interface.py
 
+from draftsman.constants import ValidationMode
 from draftsman.entity import HeatInterface, heat_interfaces, Container
-from draftsman.error import DataFormatError, InvalidModeError
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning, TemperatureRangeWarning
+from draftsman.error import DataFormatError
+from draftsman.warning import (
+    UnknownEntityWarning,
+    UnknownKeywordWarning,
+    TemperatureRangeWarning,
+)
 
 from collections.abc import Hashable
 import pytest
@@ -21,10 +26,11 @@ class TestHeatInterface:
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
             HeatInterface(unused_keyword="whatever")
-        with pytest.warns(TemperatureRangeWarning):
-            HeatInterface(temperature=100_000)
         with pytest.warns(UnknownEntityWarning):
             HeatInterface("this is not a heat interface")
+
+        with pytest.warns(TemperatureRangeWarning):
+            HeatInterface(temperature=100_000, validate="pedantic")
 
         # Errors
         with pytest.raises(DataFormatError):
@@ -38,10 +44,19 @@ class TestHeatInterface:
         interface.temperature = None
         assert interface.temperature == None
 
-        # Warnings
+        # No warnings on strict
+        interface.temperature = -1000
+        assert interface.temperature == -1000
+
+        # Single warning on pedantic
+        interface.validate_assignment = "pedantic"
+        assert interface.validate_assignment == ValidationMode.PEDANTIC
+        interface.temperature = 100
+        assert interface.temperature == 100
         with pytest.warns(TemperatureRangeWarning):
             interface.temperature = -1000
-        
+        assert interface.temperature == -1000
+
         # Errors
         with pytest.raises(DataFormatError):
             interface.temperature = "incorrect"
@@ -50,7 +65,7 @@ class TestHeatInterface:
         interface = HeatInterface()
         interface.mode = "exactly"
         assert interface.mode == "exactly"
-        
+
         interface.mode = None
         assert interface.mode == None
 

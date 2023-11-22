@@ -2,12 +2,19 @@
 
 from draftsman.constants import Direction
 from draftsman.entity import AssemblingMachine, assembling_machines, Container
-from draftsman.error import InvalidEntityError, InvalidRecipeError, InvalidItemError, DataFormatError
+from draftsman.error import (
+    InvalidEntityError,
+    InvalidRecipeError,
+    InvalidItemError,
+    DataFormatError,
+)
 from draftsman.warning import (
     ModuleCapacityWarning,
     ModuleLimitationWarning,
     ItemLimitationWarning,
+    RecipeLimitationWarning,
     UnknownEntityWarning,
+    UnknownItemWarning,
     UnknownKeywordWarning,
     UnknownRecipeWarning,
 )
@@ -47,41 +54,41 @@ class TestAssemblingMachine:
     def test_set_recipe(self):
         machine = AssemblingMachine("assembling-machine-3")
         assert machine.allowed_modules == {
-            'speed-module',
-            'speed-module-2',
-            'speed-module-3',
-            'effectivity-module',
-            'effectivity-module-2',
-            'effectivity-module-3',
-            'productivity-module',
-            'productivity-module-2',
-            'productivity-module-3'
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "effectivity-module",
+            "effectivity-module-2",
+            "effectivity-module-3",
+            "productivity-module",
+            "productivity-module-2",
+            "productivity-module-3",
         }
         machine.set_item_request("productivity-module-3", 2)
-        
+
         machine.recipe = "iron-gear-wheel"
         assert machine.recipe == "iron-gear-wheel"
         assert machine.allowed_modules == {
-            'speed-module',
-            'speed-module-2',
-            'speed-module-3',
-            'effectivity-module',
-            'effectivity-module-2',
-            'effectivity-module-3',
-            'productivity-module',
-            'productivity-module-2',
-            'productivity-module-3'
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "effectivity-module",
+            "effectivity-module-2",
+            "effectivity-module-3",
+            "productivity-module",
+            "productivity-module-2",
+            "productivity-module-3",
         }
 
         with pytest.warns(ItemLimitationWarning):
             machine.recipe = "wooden-chest"
         assert machine.allowed_modules == {
-            'speed-module',
-            'speed-module-2',
-            'speed-module-3',
-            'effectivity-module',
-            'effectivity-module-2',
-            'effectivity-module-3',
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "effectivity-module",
+            "effectivity-module-2",
+            "effectivity-module-3",
         }
 
         machine.items = None
@@ -90,15 +97,36 @@ class TestAssemblingMachine:
         # with pytest.warns(ModuleLimitationWarning):
         #     machine.recipe = "iron-chest"
 
+        # particular recipe not allowed in machine
+        with pytest.warns(RecipeLimitationWarning):
+            machine.recipe = "sulfur"
+        assert machine.recipe == "sulfur"
+
+        # Unknown recipe in an unknown machine
+        machine = AssemblingMachine("unknown", validate="none")
+        with pytest.warns(UnknownRecipeWarning):
+            machine.recipe = "unknown"
+
+        # Known recipe in an unknown machine
+        machine.recipe = "sulfur"
+
     def test_set_item_request(self):
         machine = AssemblingMachine("assembling-machine-3")
         machine.recipe = "wooden-chest"
         with pytest.warns(ModuleLimitationWarning):
             machine.set_item_request("productivity-module-3", 2)
 
-        machine.items = None # TODO: should be able to remove this
-        machine.set_item_request("wood", 20) # because this ideally shouldn't raise a warning
-        assert machine.items == {"wood": 20} # {"productivity-module-3": 2, "wood": 20}
+        machine.items = None  # TODO: should be able to remove this
+        machine.set_item_request(
+            "wood", 20
+        )  # because this ideally shouldn't raise a warning
+        assert machine.items == {"wood": 20}  # {"productivity-module-3": 2, "wood": 20}
+
+        # No warning when we omit recipe
+        machine.recipe = None
+        assert machine.recipe == None
+        machine.items = {"productivity-module-3": 2, "productivity-module-2": 2}
+        assert machine.items == {"productivity-module-3": 2, "productivity-module-2": 2}
 
         machine.recipe = None
         machine.items = None
@@ -115,17 +143,22 @@ class TestAssemblingMachine:
         with pytest.warns(ItemLimitationWarning):
             machine.set_item_request("copper-cable", 100)
 
+        # Switching to the correct recipe raises no warnings as it fixes the issue
         machine.recipe = "electronic-circuit"
 
         # Errors
-        with pytest.raises(TypeError):
+        machine.items = None
+        with pytest.raises(DataFormatError):
             machine.set_item_request(None, "nonsense")
-        # with pytest.raises(InvalidItemError): # TODO
-        #     machine.set_item_request("incorrect", 100)
-        with pytest.raises(TypeError):
+        with pytest.warns(UnknownItemWarning):
+            machine.set_item_request("unknown", 100)
+        with pytest.raises(DataFormatError):
             machine.set_item_request("speed-module-2", "nonsense")
-        # with pytest.raises(ValueError): # TODO
-        #     machine.set_item_request("speed-module-2", -1)
+        with pytest.raises(DataFormatError):
+            machine.set_item_request("speed-module-2", -1)
+
+        assert machine.items == {"unknown": 100}
+        assert machine.module_slots_occupied == 0
 
     def test_mergable_with(self):
         machine1 = AssemblingMachine("assembling-machine-1")

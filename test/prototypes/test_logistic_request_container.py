@@ -1,13 +1,18 @@
 # test_logistic_request_container.py
 
+from draftsman.constants import LogisticModeOfOperation, ValidationMode
 from draftsman.entity import (
     LogisticRequestContainer,
     logistic_request_containers,
     Container,
 )
 from draftsman.error import DataFormatError
-from draftsman.signatures import RequestFilters
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.signatures import RequestFilter
+from draftsman.warning import (
+    UnknownEntityWarning,
+    UnknownItemWarning,
+    UnknownKeywordWarning,
+)
 
 from collections.abc import Hashable
 import pytest
@@ -115,6 +120,193 @@ class TestLogisticRequestContainer:
             assert container.circuit_connectable == True
             assert container.dual_circuit_connectable == False
 
+    def test_logistics_mode(self):
+        container = LogisticRequestContainer("logistic-chest-requester")
+        assert container.mode_of_operation == None
+        assert container.to_dict() == {
+            "name": "logistic-chest-requester",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        # Set int
+        container.mode_of_operation = 0
+        assert container.mode_of_operation == LogisticModeOfOperation.SEND_CONTENTS
+        assert container.to_dict() == {
+            "name": "logistic-chest-requester",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_mode_of_operation": 0},
+        }
+
+        # Set Enum
+        container.mode_of_operation = LogisticModeOfOperation.SET_REQUESTS
+        assert container.mode_of_operation == LogisticModeOfOperation.SET_REQUESTS
+        assert container.to_dict() == {
+            "name": "logistic-chest-requester",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_mode_of_operation": 1},
+        }
+
+        # Set int outside range of enum
+        with pytest.raises(DataFormatError):
+            container.mode_of_operation = -1
+
+        # Turn of validation
+        container.validate_assignment = "none"
+        assert container.validate_assignment == ValidationMode.NONE
+        container.mode_of_operation = -1
+        assert container.mode_of_operation == -1
+        assert container.to_dict() == {
+            "name": "logistic-chest-requester",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_mode_of_operation": -1},
+        }
+
+    def test_set_requests(self):
+        container = LogisticRequestContainer("logistic-chest-requester")
+
+        # Shorthand
+        container.request_filters = [
+            ("iron-ore", 100),
+            ("copper-ore", 200),
+            ("coal", 300),
+        ]
+        assert container.request_filters == [
+            RequestFilter(index=1, name="iron-ore", count=100),
+            RequestFilter(index=2, name="copper-ore", count=200),
+            RequestFilter(index=3, name="coal", count=300),
+        ]
+
+        # Longhand
+        container.request_filters = [
+            {"index": 1, "name": "iron-ore", "count": 100},
+            {"index": 2, "name": "copper-ore", "count": 200},
+            {"index": 3, "name": "coal", "count": 300},
+        ]
+        assert container.request_filters == [
+            RequestFilter(index=1, name="iron-ore", count=100),
+            RequestFilter(index=2, name="copper-ore", count=200),
+            RequestFilter(index=3, name="coal", count=300),
+        ]
+
+    def test_set_request_filter(self):
+        container = LogisticRequestContainer("logistic-chest-requester")
+
+        container.set_request_filter(0, "iron-ore", 100)
+        container.set_request_filter(1, "copper-ore", 200)
+        assert container.request_filters == [
+            RequestFilter(index=1, name="iron-ore", count=100),
+            RequestFilter(index=2, name="copper-ore", count=200),
+        ]
+
+        # Replace existing
+        container.set_request_filter(1, "wooden-chest", 123)
+        assert container.request_filters == [
+            RequestFilter(index=1, name="iron-ore", count=100),
+            RequestFilter(index=2, name="wooden-chest", count=123),
+        ]
+
+        # Omitted count
+        container.set_request_filter(0, "steel-chest")
+        assert container.request_filters == [
+            RequestFilter(index=1, name="steel-chest", count=None),
+            RequestFilter(index=2, name="wooden-chest", count=123),
+        ]
+
+        # Delete existing
+        container.set_request_filter(1, None)
+        assert container.request_filters == [
+            RequestFilter(index=1, name="steel-chest", count=None),
+        ]
+
+        # None case
+        container.request_filters = None
+        assert container.request_filters == None
+
+        # Create from None
+        container.set_request_filter(0, "copper-ore", 200)
+        assert container.request_filters == [
+            RequestFilter(index=1, name="copper-ore", count=200),
+        ]
+
+        with pytest.raises(DataFormatError):
+            container.set_request_filter("incorrect", "incorrect")
+
+        # Unknown item
+        # No warning with minimum
+        container.validate_assignment = "minimum"
+        assert container.validate_assignment == ValidationMode.MINIMUM
+        container.set_request_filter(0, "who-knows?", 100)
+        assert container.request_filters == [
+            RequestFilter(index=1, name="who-knows?", count=100),
+        ]
+
+        container.validate_assignment = ValidationMode.STRICT
+        with pytest.warns(UnknownItemWarning):
+            container.set_request_filter(0, "who-knows?", 100)
+
+    def test_set_request_filters(self):
+        container = LogisticRequestContainer("logistic-chest-requester")
+
+        # Shorthand
+        container.set_request_filters(
+            [("iron-ore", 100), ("copper-ore", 200), ("coal", 300)]
+        )
+        assert container.request_filters == [
+            RequestFilter(index=1, name="iron-ore", count=100),
+            RequestFilter(index=2, name="copper-ore", count=200),
+            RequestFilter(index=3, name="coal", count=300),
+        ]
+
+        # Longhand
+        container.set_request_filters(
+            [
+                {"index": 1, "name": "iron-ore", "count": 100},
+                {"index": 2, "name": "copper-ore", "count": 200},
+                {"index": 3, "name": "coal", "count": 300},
+            ]
+        )
+        assert container.request_filters == [
+            RequestFilter(index=1, name="iron-ore", count=100),
+            RequestFilter(index=2, name="copper-ore", count=200),
+            RequestFilter(index=3, name="coal", count=300),
+        ]
+
+        # Ensure error in all circumstances
+        container.validate_assignment = "none"
+        assert container.validate_assignment == ValidationMode.NONE
+        with pytest.raises(DataFormatError):
+            container.set_request_filters("incorrect")
+
+    def test_request_from_buffers(self):
+        container = LogisticRequestContainer("logistic-chest-requester")
+        assert container.request_from_buffers == False
+        assert container.to_dict() == {
+            "name": "logistic-chest-requester",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        container.request_from_buffers = True
+        assert container.request_from_buffers == True
+        assert container.to_dict() == {
+            "name": "logistic-chest-requester",
+            "position": {"x": 0.5, "y": 0.5},
+            "request_from_buffers": True,
+        }
+
+        with pytest.raises(DataFormatError):
+            container.request_from_buffers = "incorrect"
+
+        container.validate_assignment = "none"
+        assert container.validate_assignment == ValidationMode.NONE
+
+        container.request_from_buffers = "incorrect"
+        assert container.request_from_buffers == "incorrect"
+        assert container.to_dict() == {
+            "name": "logistic-chest-requester",
+            "position": {"x": 0.5, "y": 0.5},
+            "request_from_buffers": "incorrect",
+        }
+
     def test_mergable_with(self):
         container1 = LogisticRequestContainer("logistic-chest-requester")
         container2 = LogisticRequestContainer(
@@ -145,9 +337,9 @@ class TestLogisticRequestContainer:
         del container2
 
         assert container1.bar == 10
-        assert container1.request_filters == RequestFilters(root=[
-            {"name": "utility-science-pack", "index": 1, "count": 10}
-        ])
+        assert container1.request_filters == [
+            RequestFilter(**{"name": "utility-science-pack", "index": 1, "count": 10})
+        ]
         assert container1.tags == {"some": "stuff"}
 
     def test_eq(self):

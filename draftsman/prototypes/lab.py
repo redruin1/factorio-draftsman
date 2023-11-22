@@ -6,7 +6,7 @@ from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.signatures import uint32
 from draftsman.utils import reissue_warnings
-from draftsman.warning import DraftsmanWarning, ItemLimitationWarning
+from draftsman.warning import ItemLimitationWarning
 
 from draftsman.data.entities import labs
 from draftsman.data import entities, modules
@@ -59,8 +59,7 @@ class Lab(ModulesMixin, RequestItemsMixin, Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

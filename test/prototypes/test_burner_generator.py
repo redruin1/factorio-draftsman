@@ -1,8 +1,14 @@
 # test_burner_generator.py
 
+from draftsman.constants import ValidationMode
 from draftsman.entity import BurnerGenerator, burner_generators, Container
 from draftsman.error import InvalidEntityError
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import (
+    FuelCapacityWarning,
+    ItemLimitationWarning,
+    UnknownEntityWarning,
+    UnknownKeywordWarning,
+)
 
 from collections.abc import Hashable
 import pytest
@@ -17,6 +23,36 @@ class TestBurnerGenerator:
 
         with pytest.warns(UnknownEntityWarning):
             BurnerGenerator("this is not a burner generator")
+
+    def test_set_items(self):
+        generator = BurnerGenerator("burner-generator")
+        assert generator.allowed_fuel_items == {
+            "coal",
+            "solid-fuel",
+            "wood",
+            "nuclear-fuel",
+            "rocket-fuel",
+        }
+
+        generator.set_item_request("coal", 50)
+        assert generator.items == {"coal": 50}
+
+        with pytest.warns(ItemLimitationWarning):
+            generator.items = {"iron-plate": 1000}
+        assert generator.items == {"iron-plate": 1000}
+
+        with pytest.warns(FuelCapacityWarning):
+            generator.set_item_request("coal", 200)
+        assert generator.items == {"coal": 200, "iron-plate": 1000}
+
+        generator.validate_assignment = "minimum"
+        assert generator.validate_assignment == ValidationMode.MINIMUM
+
+        generator.items = {"coal": 200, "iron-plate": 1000}
+        assert generator.items == {"coal": 200, "iron-plate": 1000}
+
+        # Ensure that validating without a custom context doesn't break it
+        BurnerGenerator.Format.model_validate(generator._root)
 
     def test_mergable_with(self):
         generator1 = BurnerGenerator("burner-generator")

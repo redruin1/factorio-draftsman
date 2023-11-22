@@ -27,19 +27,19 @@ def main():
     font_height = 6
 
     # TODO: ensure we're in a vanilla configuration
-    
+
     # First, we need to create an indexing list so we know which numeric values
-    # correspond to 
+    # correspond to
     lcd_index = []
     # We want to exclude color signals as they'll pollute the LCD's encoding
     color_signals = {
-        "signal-red", 
-        "signal-green", 
-        "signal-blue", 
-        "signal-yellow", 
-        "signal-pink", 
-        "signal-cyan", 
-        "signal-white"
+        "signal-red",
+        "signal-green",
+        "signal-blue",
+        "signal-yellow",
+        "signal-pink",
+        "signal-cyan",
+        "signal-white",
     }
     lcd_index += [signal for signal in signals.virtual if signal not in color_signals]
     lcd_index += signals.item
@@ -63,7 +63,7 @@ def main():
     pix = font_image.load()
     for y in range(0, im_height, 7):
         for x in range(0, im_width, 6):
-            print(pix[x,y])
+            print(pix[x, y])
 
     encoded_font = []
     for ascii_index in range(128):
@@ -74,8 +74,8 @@ def main():
         ascii_char = 0
         for sx in range(font_width):
             for sy in range(font_height):
-                bit_set = pix[x+sx,y+sy] == (255, 255, 255, 255)
-                ascii_char |= (bit_set << i)
+                bit_set = pix[x + sx, y + sy] == (255, 255, 255, 255)
+                ascii_char |= bit_set << i
                 i += 1
 
         print(ascii_char)
@@ -84,7 +84,7 @@ def main():
     print(encoded_font[64])
 
     print(blueprint.to_string())
-    
+
     pass
 
 

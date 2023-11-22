@@ -7,13 +7,24 @@ from draftsman.error import (
     InvalidItemError,
     DataFormatError,
 )
-from draftsman.signatures import InventoryFilters, Filters, uint16
-from draftsman.warning import IndexWarning
+from draftsman.signatures import (
+    DraftsmanBaseModel,
+    FilterEntry,
+    ItemName,
+    int64,
+    uint16,
+    ensure_bar_less_than_inventory_size,
+)
 
-from pydantic import BaseModel, Field, ValidationError, validate_call
-import six
-import warnings
-from typing import Optional
+from pydantic import (
+    BaseModel,
+    Field,
+    ValidationError,
+    ValidationInfo,
+    validate_call,
+    field_validator,
+)
+from typing import Any, Optional
 
 from typing import TYPE_CHECKING
 
@@ -27,6 +38,41 @@ class InventoryFilterMixin:
     """
 
     class Format(BaseModel):
+        class InventoryFilters(DraftsmanBaseModel):
+            filters: Optional[list[FilterEntry]] = Field(
+                None,
+                description="""
+                Any reserved item filter slots in the container's inventory.
+                """,
+            )
+            bar: Optional[uint16] = Field(
+                None,
+                description="""
+                Limiting bar on this container's inventory.
+                """,
+            )
+
+            @field_validator("filters", mode="before")
+            @classmethod
+            def normalize_validate(cls, value: Any):
+                if isinstance(value, (list, tuple)):
+                    result = []
+                    for i, entry in enumerate(value):
+                        if isinstance(entry, str):
+                            result.append({"index": i + 1, "name": entry})
+                        else:
+                            result.append(entry)
+                    return result
+                else:
+                    return value
+
+            @field_validator("bar")
+            @classmethod
+            def ensure_less_than_inventory_size(
+                cls, bar: Optional[uint16], info: ValidationInfo
+            ):
+                return ensure_bar_less_than_inventory_size(cls, bar, info)
+
         inventory: Optional[InventoryFilters] = Field(
             InventoryFilters(),
             description="""
@@ -41,13 +87,12 @@ class InventoryFilterMixin:
 
         super().__init__(name, similar_entities, **kwargs)
 
-        self.inventory = kwargs.get("inventory", InventoryFilters())
+        self.inventory = kwargs.get("inventory", self.Format.InventoryFilters())
 
     # =========================================================================
 
     @property
-    def inventory_size(self):
-        # type: () -> int
+    def inventory_size(self) -> Optional[uint16]:
         """
         The number of inventory slots that this Entity has. Equivalent to the
         ``"inventory_size"`` key in Factorio's ``data.raw``. Returns ``None`` if
@@ -61,7 +106,7 @@ class InventoryFilterMixin:
     # =========================================================================
 
     @property
-    def inventory(self) -> InventoryFilters:
+    def inventory(self) -> Format.InventoryFilters:
         """
         Inventory filter object. Contains the filter information under the
         ``"filters"`` key and the inventory limiting bar under the ``"bar"`` key.
@@ -87,21 +132,21 @@ class InventoryFilterMixin:
         return self._root.inventory
 
     @inventory.setter
-    def inventory(self, value: InventoryFilters):
+    def inventory(self, value: Format.InventoryFilters):
         if self.validate_assignment:
             value = attempt_and_reissue(
                 self, type(self).Format, self._root, "inventory", value
             )
 
         if value is None:
-            self._root.inventory = InventoryFilters()
+            self._root.inventory = __class__.Format.InventoryFilters()
         else:
             self._root.inventory = value
 
     # =========================================================================
 
     @property
-    def filter_count(self) -> int:
+    def filter_count(self) -> Optional[uint16]:
         """
         The number of filter slots that this entity has. In this case, is
         equivalent to the number of inventory slots of the CargoWagon. Returns
@@ -113,18 +158,25 @@ class InventoryFilterMixin:
     # =========================================================================
 
     @property
-    def filters(self) -> Filters:
+    def filters(self) -> Optional[list[FilterEntry]]:
         """
         TODO
         """
         return self.inventory.filters
 
     @filters.setter
-    def filters(self, value: Filters):
+    def filters(self, value: Optional[list[FilterEntry]]):
         if self.validate_assignment:
-            attempt_and_reissue(self, "filters", value)
-
-        self.inventory.filters = value
+            result = attempt_and_reissue(
+                self,
+                __class__.Format.InventoryFilters,
+                self.inventory,
+                "filters",
+                value,
+            )
+            self.inventory.filters = result
+        else:
+            self.inventory.filters = value
 
     # =========================================================================
 
@@ -152,14 +204,16 @@ class InventoryFilterMixin:
     @bar.setter
     def bar(self, value: uint16):
         if self.validate_assignment:
-            attempt_and_reissue(self, "filters", value)
-
-        self.inventory.filters = value
+            result = attempt_and_reissue(
+                self, __class__.Format.InventoryFilters, self.inventory, "bar", value
+            )
+            self.inventory.bar = result
+        else:
+            self.inventory.bar = value
 
     # =========================================================================
 
-    @validate_call
-    def set_inventory_filter(self, index: int, item: str):
+    def set_inventory_filter(self, index: int64, item: Optional[ItemName]):
         """
         Sets the item filter at a particular index. If ``item`` is set to
         ``None``, the item filter at that location is removed.
@@ -173,39 +227,43 @@ class InventoryFilterMixin:
         :exception IndexError: If ``index`` lies outside the range
             ``[0, inventory_size)``.
         """
-
-        if self.inventory.filters is None:
-            self.inventory.filters = Filters()
-
-        # TODO: maybe make an 'ItemID' item with a custom validator?
         if item is not None:
-            if item not in items.raw:
-                # TODO: this should be a warning, in case its just that the item
-                # is unknown by Draftsman
-                raise InvalidItemError(item)
+            try:
+                new_entry = FilterEntry(index=index, name=item)
+                new_entry.index += 1
+            except ValidationError as e:
+                raise DataFormatError(e) from None
 
-        if not 0 <= index < self.inventory_size:
-            raise IndexError(
-                "Filter index ({}) not in range [0, {})".format(
-                    index, self.inventory_size
-                )
-            )
+        new_filters = (
+            self.inventory.filters if self.inventory.filters is not None else []
+        )
 
         # Check to see if filters already contains an entry with the same index
-        for i, filter in enumerate(self.inventory.filters.root): # TODO: change this
+        found_index = None
+        for i, filter in enumerate(new_filters):
             if filter["index"] == index + 1:  # Index already exists in the list
                 if item is None:  # Delete the entry
-                    del self.inventory.filters.root[i]
+                    del new_filters[i]
                 else:  # Set the new value
                     # self.inventory["filters"][i] = {"index": index+1,"name": item}
-                    self.inventory.filters.root[i].name = item
-                return
+                    new_filters[i]["name"] = item
+                found_index = i
+                break
 
-        # If no entry with the same index was found
-        self.inventory.filters.root.append({"index": index + 1, "name": item})
+        if found_index is None:
+            # If no entry with the same index was found
+            new_filters.append(new_entry)
 
-    def set_inventory_filters(self, filters):
-        # type: (list) -> None
+        result = attempt_and_reissue(
+            self,
+            __class__.Format.InventoryFilters,
+            self.inventory,
+            "filters",
+            new_filters,
+        )
+        self.inventory.filters = result
+
+    def set_inventory_filters(self, filters: list):
         """
         Sets all the inventory filters of the Entity.
 
@@ -230,31 +288,14 @@ class InventoryFilterMixin:
         :exception IndexError: If the index of one of the entries lies outside
             the range ``[0, inventory_size)``.
         """
-        if filters is None:
-            self.inventory.pop("filters", None)
-            return
-
-        try:
-            filters = Filters(root=filters).model_dump(
-                by_alias=True,
-                exclude_none=True,
-                exclude_defaults=True,
-            )
-        except ValidationError as e:
-            six.raise_from(DataFormatError(e), None)
-
-        # Make sure the items are item signals
-        for item in filters:
-            if item["name"] not in items.raw:
-                raise InvalidItemError(item)
-
-        for i in range(len(filters)):
-            self.set_inventory_filter(filters[i]["index"] - 1, filters[i]["name"])
+        result = attempt_and_reissue(
+            self, __class__.Format.InventoryFilters, self.inventory, "filters", filters
+        )
+        self.inventory.filters = result
 
     # =========================================================================
 
-    def merge(self, other):
-        # type: (Entity) -> None
+    def merge(self, other: "InventoryFilterMixin"):
         super().merge(other)
 
         # self.inventory = {}

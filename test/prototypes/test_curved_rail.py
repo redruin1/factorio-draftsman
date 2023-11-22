@@ -3,7 +3,11 @@
 from draftsman.constants import Direction
 from draftsman.entity import CurvedRail, curved_rails, Container
 from draftsman.error import InvalidEntityError
-from draftsman.warning import GridAlignmentWarning, UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import (
+    GridAlignmentWarning,
+    UnknownEntityWarning,
+    UnknownKeywordWarning,
+)
 
 from collections.abc import Hashable
 import pytest
@@ -31,6 +35,12 @@ class TestCurvedRail:
             CurvedRail("curved-rail", tile_position=[1, 1])
         with pytest.warns(UnknownEntityWarning):
             CurvedRail("this is not a curved rail")
+
+    def test_flags(self):
+        rail = CurvedRail("curved-rail")
+        assert rail.rotatable == True
+        assert rail.square == False
+        assert rail.double_grid_aligned == True
 
     def test_mergable_with(self):
         rail1 = CurvedRail("curved-rail")

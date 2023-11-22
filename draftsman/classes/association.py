@@ -1,8 +1,10 @@
 # association.py
 
-import weakref
+from pydantic import Field, WrapValidator
+from pydantic_core import core_schema
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Annotated, Any
+import weakref
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
@@ -15,6 +17,16 @@ class Association(weakref.ref):
     specific schedules. Leads to better memory management, more flexibilty when
     creating blueprints, and better visual representation.
     """
+
+    Format = Annotated[
+        int,
+        Field(ge=0, lt=2**64),
+        WrapValidator(
+            lambda value, handler: value
+            if isinstance(value, Association)
+            else handler(value)
+        ),
+    ]
 
     def __init__(self, entity: "Entity"):
         super(Association, self).__init__(entity)
@@ -63,3 +75,7 @@ class Association(weakref.ref):
             " '{}'".format(self().id) if self().id is not None else "",
             id(self()),
         )
+
+    # @classmethod
+    # def __get_pydantic_core_schema__(cls, _):
+    #     return core_schema.int_schema()

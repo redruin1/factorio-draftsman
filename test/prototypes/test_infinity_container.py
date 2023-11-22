@@ -1,10 +1,8 @@
 # test_infinity_container.py
 
+from draftsman.constants import ValidationMode
 from draftsman.entity import InfinityContainer, infinity_containers, Container
 from draftsman.error import (
-    InvalidEntityError,
-    InvalidItemError,
-    InvalidModeError,
     DataFormatError,
 )
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
@@ -55,19 +53,21 @@ class TestInfinityContainer:
                 {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
             ],
         }
-        assert container.infinity_settings == InfinityContainer.Format.InfinitySettings(**{
-            "remove_unfiltered_items": True,
-            "filters": [
-                {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
-            ],
-        })
+        assert container.infinity_settings == InfinityContainer.Format.InfinitySettings(
+            **{
+                "remove_unfiltered_items": True,
+                "filters": [
+                    {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
+                ],
+            }
+        )
 
         container.infinity_settings = None
         assert container.infinity_settings == None
 
         with pytest.warns(UnknownKeywordWarning):
             container.infinity_settings = {"this is": ["incorrect", "for", "sure"]}
-        
+
         # Errors
         with pytest.raises(DataFormatError):
             container.infinity_settings = "incorrect"
@@ -77,63 +77,78 @@ class TestInfinityContainer:
         container.remove_unfiltered_items = True
         assert container.remove_unfiltered_items == True
 
-        
         container.remove_unfiltered_items = None
         assert container.remove_unfiltered_items == None
 
         with pytest.raises(DataFormatError):
             container.remove_unfiltered_items = "incorrect"
 
+        container.validate_assignment = "none"
+        assert container.validate_assignment == ValidationMode.NONE
+
+        container.remove_unfiltered_items = "incorrect"
+        assert container.remove_unfiltered_items == "incorrect"
+
     def test_set_infinity_filter(self):
         container = InfinityContainer()
 
         settings = InfinityContainer.Format.InfinitySettings
-        
+
         container.set_infinity_filter(0, "iron-ore", "at-least", 100)
-        assert container.infinity_settings == settings(**{
-            "filters": [
-                {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
-            ]
-        })
+        assert container.infinity_settings == settings(
+            **{
+                "filters": [
+                    {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
+                ]
+            }
+        )
 
         container.set_infinity_filter(1, "copper-ore", "exactly", 200)
-        assert container.infinity_settings == settings(**{
-            "filters": [
-                {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"},
-                {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"},
-            ]
-        })
+        assert container.infinity_settings == settings(
+            **{
+                "filters": [
+                    {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"},
+                    {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"},
+                ]
+            }
+        )
 
         container.set_infinity_filter(0, "uranium-ore", "at-least", 1000)
-        assert container.infinity_settings == settings(**{
-            "filters": [
-                {
-                    "index": 1,
-                    "name": "uranium-ore",
-                    "count": 1000,
-                    "mode": "at-least",
-                },
-                {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"},
-            ]
-        })
+        assert container.infinity_settings == settings(
+            **{
+                "filters": [
+                    {
+                        "index": 1,
+                        "name": "uranium-ore",
+                        "count": 1000,
+                        "mode": "at-least",
+                    },
+                    {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"},
+                ]
+            }
+        )
 
         container.set_infinity_filter(0, None)
-        assert container.infinity_settings == settings(**{
-            "filters": [
-                {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}
-            ]
-        })
+        assert container.infinity_settings == settings(
+            **{
+                "filters": [
+                    {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}
+                ]
+            }
+        )
 
         # Default count
         container.set_infinity_filter(0, "iron-ore", "at-least")
-        assert container.infinity_settings == settings(**{
-            "filters": [
-                {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"},
-                {"index": 1, "name": "iron-ore", "count": 50, "mode": "at-least"},
-            ]
-        })
+        assert container.infinity_settings == settings(
+            **{
+                "filters": [
+                    {"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"},
+                    {"index": 1, "name": "iron-ore", "count": 50, "mode": "at-least"},
+                ]
+            }
+        )
 
-        with pytest.raises(ValueError): # TODO fix
+        with pytest.raises(ValueError):  # TODO fix
             container.set_infinity_filter("incorrect", "iron-ore")
         with pytest.raises(DataFormatError):
             container.set_infinity_filter(0, TypeError)
@@ -190,12 +205,22 @@ class TestInfinityContainer:
         del container2
 
         assert container1.items == {"copper-plate": 100}
-        assert container1.infinity_settings == InfinityContainer.Format.InfinitySettings(**{
-            "remove_unfiltered_items": True,
-            "filters": [
-                {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
-            ],
-        })
+        assert (
+            container1.infinity_settings
+            == InfinityContainer.Format.InfinitySettings(
+                **{
+                    "remove_unfiltered_items": True,
+                    "filters": [
+                        {
+                            "index": 1,
+                            "name": "iron-ore",
+                            "count": 100,
+                            "mode": "at-least",
+                        }
+                    ],
+                }
+            )
+        )
 
     def test_eq(self):
         container1 = InfinityContainer("infinity-chest")

@@ -28,7 +28,7 @@ class EnableDisableMixin:  # (ControlBehaviorMixin)
         pass
 
     @property
-    def enable_disable(self) -> bool:
+    def enable_disable(self) -> Optional[bool]:
         """
         Whether or not the machine enables its operation based on a circuit
         condition. Only used on entities that have multiple operation states,
@@ -46,8 +46,15 @@ class EnableDisableMixin:  # (ControlBehaviorMixin)
         return self.control_behavior.circuit_enable_disable
 
     @enable_disable.setter
-    def enable_disable(self, value: bool):
+    def enable_disable(self, value: Optional[bool]):
         if self.validate_assignment:
-            attempt_and_reissue(self, "circuit_enable_disable", value)
-
-        self.control_behavior.circuit_enable_disable = value
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "circuit_enable_disable",
+                value,
+            )
+            self.control_behavior.circuit_enable_disable = result
+        else:
+            self.control_behavior.circuit_enable_disable = value

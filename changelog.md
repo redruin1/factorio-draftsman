@@ -39,6 +39,7 @@
 * Added `unknown` keyword to all entity/tile creation constructs which allows the user to specify what should happen when draftsman encounters an entity it doesn't recognize
 * Changed `InvalidEntityError` and `InvalidTileErrors` so that they now try to detect a similar tile/entity name and display that information to the user in the error message
     * For example, if you accidentally type `Container("wodenchest")`, it will realize you probably meant to type `Container("wooden-chest")` and suggest that to you instead
+* Renamed `instruments.index` to `instruments.index_of` and `instruments.names` to `instruments.name_of` to reduce confusion with local names
 * Added a bunch of new documentation to document the above
 * Added a bunch of new examples to test out the above new features
 * Added a fixture that ensures that Draftsman is running a vanilla configuration before running tests, and exits if it detects that it is not the case.

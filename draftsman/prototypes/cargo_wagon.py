@@ -8,14 +8,12 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Orientation, ValidationMode
-from draftsman.signatures import InventoryFilters, uint32
-from draftsman.warning import DraftsmanWarning
+from draftsman.signatures import uint32
 
 from draftsman.data.entities import cargo_wagons
-from draftsman.data import entities
 
 from pydantic import ConfigDict
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Union
 
 
 class CargoWagon(RequestItemsMixin, InventoryFilterMixin, OrientationMixin, Entity):
@@ -38,7 +36,7 @@ class CargoWagon(RequestItemsMixin, InventoryFilterMixin, OrientationMixin, Enti
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         orientation: Orientation = Orientation.NORTH,
         items: dict[str, uint32] = {},  # TODO: ItemID
-        inventory: InventoryFilters = InventoryFilters(),
+        inventory: Format.InventoryFilters = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -62,8 +60,7 @@ class CargoWagon(RequestItemsMixin, InventoryFilterMixin, OrientationMixin, Enti
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # TODO: check for item requests exceeding cargo capacity
 

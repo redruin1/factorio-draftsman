@@ -21,6 +21,14 @@ class TestTurret:
         with pytest.warns(UnknownEntityWarning):
             Turret("this is not a turret")
 
+    def test_flags(self):
+        turret = Turret("gun-turret")
+        assert turret.rotatable == True
+        assert turret.square == True
+        turret = Turret("flamethrower-turret")
+        assert turret.rotatable == True
+        assert turret.square == False
+
     def test_mergable_with(self):
         turret1 = Turret("gun-turret")
         turret2 = Turret("gun-turret", tags={"some": "stuff"})

@@ -10,7 +10,7 @@ except ImportError:  # pragma: no coverage
 from copy import deepcopy
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
-from typing import Any, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 import six
 
 if TYPE_CHECKING:  # pragma: no coverage
@@ -21,45 +21,47 @@ class TileList(MutableSequence):
     """
     TODO
     """
-    
-    def __init__(self, parent, initlist=None, unknown="error"):
-        # type: (TileCollection, list[Tile], str) -> None
+
+    def __init__(self, parent: "TileCollection", initlist: Optional[list[Tile]]=None, unknown: str="error") -> None:
         """
         TODO
         """
-
         self.data = []
         self._parent = parent
         if initlist is not None:
             for elem in initlist:
                 print(elem)
                 if isinstance(elem, Tile):
-                    self.append(elem, unknown=unknown)
+                    self.append(elem)
                 elif isinstance(elem, dict):
                     name = elem.pop("name")
-                    self.append(name, **elem, unknown=unknown)
+                    self.append(name, **elem)
                 else:
-                    raise DataFormatError("TileList only takes either Tile or dict entries")
+                    raise DataFormatError(
+                        "TileList only takes either Tile or dict entries"
+                    )
 
-    def append(self, tile, copy=True, merge=False, unknown="error", **kwargs):
-        # type: (Tile, bool, bool, str, **dict) -> None
+    def append(self, tile, copy=True, merge=False, **kwargs):
+        # type: (Tile, bool, bool, **dict) -> None
         """
         Appends the Tile to the end of the sequence.
         """
-        self.insert(len(self.data), tile, copy, merge, unknown=unknown, **kwargs)
+        self.insert(len(self.data), tile, copy, merge, **kwargs)
 
-    def insert(self, idx, tile, copy=True, merge=False, unknown="error", **kwargs):
+    def insert(self, idx, tile, copy=True, merge=False, **kwargs):
         # type: (int, Tile, bool, bool, str, **dict) -> None
         """
         Inserts an element into the TileList.
         """
-        if isinstance(tile, six.string_types):
-            tile = Tile(six.text_type(tile), **kwargs)
+        if isinstance(tile, str):
+            tile = Tile(tile, **kwargs)
         elif copy:
             tile = deepcopy(tile)
 
         # Check tile
         self.check_tile(tile)
+
+        print(tile)
 
         if self._parent:
             tile = self._parent.on_tile_insert(tile, merge)
@@ -212,10 +214,14 @@ class TileList(MutableSequence):
             if self.data[i] != other.data[i]:
                 return False
         return True
-    
-    def __repr__(self) -> str:
+
+    def __repr__(self) -> str:  # pragma: no coverage
         return "<TileList>{}".format(self.data)
 
-    @classmethod
-    def __get_pydantic_core_schema__(cls, _source_type: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(cls, handler(list[Tile])) # TODO: correct annotation
+    # @classmethod
+    # def __get_pydantic_core_schema__(
+    #     cls, _source_type: Any, handler: GetCoreSchemaHandler
+    # ) -> CoreSchema:
+    #     return core_schema.no_info_after_validator_function(
+    #         cls, handler(list[Tile])
+    #     )  # TODO: correct annotation

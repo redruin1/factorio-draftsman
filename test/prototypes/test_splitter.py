@@ -3,7 +3,11 @@
 from draftsman.constants import Direction
 from draftsman.entity import Splitter, splitters, Container
 from draftsman.error import DataFormatError, InvalidItemError
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning, UnknownItemWarning
+from draftsman.warning import (
+    UnknownEntityWarning,
+    UnknownKeywordWarning,
+    UnknownItemWarning,
+)
 
 from collections.abc import Hashable
 import pytest
@@ -32,7 +36,7 @@ class TestSplitter:
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
             Splitter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5)
-        
+
         with pytest.warns(UnknownEntityWarning):
             Splitter("this is not a splitter")
 

@@ -4,7 +4,7 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import FiltersMixin, IOTypeMixin, DirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import Filters
+from draftsman.signatures import FilterEntry
 
 from draftsman.data.entities import loaders
 
@@ -33,7 +33,7 @@ class Loader(FiltersMixin, IOTypeMixin, DirectionalMixin, Entity):
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
         io_type: Literal["input", "output"] = "input",
-        filters: Filters = Filters([]),
+        filters: list[FilterEntry] = [],
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -57,8 +57,7 @@ class Loader(FiltersMixin, IOTypeMixin, DirectionalMixin, Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

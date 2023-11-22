@@ -64,7 +64,7 @@ class ValidationResult:
         for warning in self.warning_list:
             warnings.warn(warning, stacklevel=stacklevel)
 
-    def __eq__(self, other):
+    def __eq__(self, other):  # pragma: no coverage
         # Primarily for test suite.
         if not isinstance(other, ValidationResult):
             return False
@@ -118,6 +118,8 @@ class Exportable(metaclass=ABCMeta):
         # of construction in the child-most class, if desired
         self._validate_assignment = ValidationMode.NONE
 
+        self._unknown_format = False
+
     # =========================================================================
 
     @property
@@ -167,7 +169,7 @@ class Exportable(metaclass=ABCMeta):
             regardless of this parameter. This is mostly a side effect of how
             things work behind the scenes, but it can be used to explicitly
             indicate a "raw" modification that is guaranteed to be cheap and
-            will never error or issue warnings.
+            will never trigger validation by itself.
 
         :getter:
         :setter: Sets the assignment mode. Raises a :py:class:`.DataFormatError`
@@ -179,6 +181,21 @@ class Exportable(metaclass=ABCMeta):
     @validate_assignment.setter
     def validate_assignment(self, value):
         self._validate_assignment = ValidationMode(value)
+
+    # =========================================================================
+
+    @property
+    def unknown_format(self) -> bool:
+        """
+        A read-only flag which indicates whether or not Draftsman has a full
+        understanding of the underlying format of the exportable. If this flag
+        is ``False``, then most validation for this instance is disabled, only
+        issuing errors/warnings for issues that Draftsman has sufficient
+        information to diagnose.
+
+        TODO
+        """
+        return self._unknown_format
 
     # =========================================================================
 
@@ -206,17 +223,8 @@ class Exportable(metaclass=ABCMeta):
         """
         # NOTE: Subsequent objects must implement this method and then call this
         # parent method to cache successful validity
-        super().__setattr__("_is_valid", True)
-
-    # @abstractmethod
-    # def inspect(self):
-    #     """
-    #     Inspects
-
-    #     :returns: A :py:class:`.ValidationResult` object, containing any found
-    #         errors or warnings pertaining to this object.
-    #     """
-    #     return ValidationResult([], [])
+        # super().__setattr__("_is_valid", True)
+        pass  # pragma: no coverage
 
     def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
         return self._root.model_dump(
@@ -236,7 +244,7 @@ class Exportable(metaclass=ABCMeta):
         )
 
     @classmethod
-    def json_schema(cls) -> dict:  # pragma: no coverage
+    def json_schema(cls) -> dict:
         """
         Returns a JSON schema object that correctly validates this object. This
         schema can be used with any compliant JSON schema validation library to
@@ -250,10 +258,7 @@ class Exportable(metaclass=ABCMeta):
             types, ranges, allowed/excluded values, as well as titles and
             descriptions.
         """
-        # TODO: is this testable?
-        # TODO: implement a custom schema_generator subclass that strips
-        # whitespace from description keys, so that they can be formatted more
-        # properly later
+        # TODO: should this be tested?
         return cls.Format.model_json_schema(by_alias=True)
 
     # TODO
@@ -266,7 +271,7 @@ class Exportable(metaclass=ABCMeta):
 
     #     :returns: A formatted string that can be output to stdout or file.
     #     """
-    #     return json.dumps(cls.dump_format(), indent=indent)  # pragma: no coverage
+    #     return json.dumps(cls.dump_format(), indent=indent)
 
     # =========================================================================
 

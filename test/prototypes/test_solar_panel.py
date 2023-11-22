@@ -12,7 +12,7 @@ class TestSolarPanel:
         solar_panel = SolarPanel("solar-panel")
         assert solar_panel.to_dict() == {
             "name": "solar-panel",
-            "position": {"x": 1.5, "y": 1.5}
+            "position": {"x": 1.5, "y": 1.5},
         }
 
         # Warnings

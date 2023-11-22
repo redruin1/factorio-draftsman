@@ -5,7 +5,7 @@
 from draftsman.classes.exportable import attempt_and_reissue
 
 from pydantic import BaseModel, Field
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from typing import TYPE_CHECKING
 
@@ -31,14 +31,14 @@ class IOTypeMixin(object):
     def __init__(self, name: str, similar_entities: list[str], **kwargs):
         self._root: __class__.Format
 
-        super(IOTypeMixin, self).__init__(name, similar_entities, **kwargs)
+        super().__init__(name, similar_entities, **kwargs)
 
         self.io_type = "input"  # Default
         # Import dict (internal) format
         if "type" in kwargs:
             self.io_type = kwargs["type"]
         # More user-friendly format in line with attribute name
-        elif "io_type" in kwargs:
+        else:  # "io_type" in kwargs:
             self.io_type = kwargs["io_type"]
 
     # =========================================================================
@@ -73,7 +73,7 @@ class IOTypeMixin(object):
 
     # =========================================================================
 
-    def merge(self, other: "Entity"):
+    def merge(self, other: "IOTypeMixin"):
         super().merge(other)
 
         self.io_type = other.io_type

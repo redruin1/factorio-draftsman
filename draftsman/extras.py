@@ -1,18 +1,19 @@
 # extras.py
 
-from draftsman.classes.blueprint import Blueprint
+from draftsman.classes.collection import EntityCollection
+from draftsman.entity import TransportBelt, UndergroundBelt, Splitter
 from draftsman.constants import Direction
 
+from typing import Union
+from typing import cast as typing_cast
 
-def reverse_belts(blueprint):
-    # type: (Blueprint) -> None
-    """
-    Modifies the passed in blueprintable in place to swap the direction of all
-    belts.
-    """
-    if blueprint.item not in {"blueprint"}:
-        return
 
+def reverse_belts(blueprint: EntityCollection) -> None:
+    """
+    Modifies the passed in blueprint or group in place to swap the direction of 
+    all belts. Does more than simply flipping each belt direction by properly
+    handling curves.
+    """
     # If a transport belt is pointed to by one other belt going in a different
     # direction, then that's a curved belt that has special behavior
     # Otherwise, the simple case is to just make the direction the opposite
@@ -24,7 +25,13 @@ def reverse_belts(blueprint):
     # another
     belt_types = {"transport-belt", "underground-belt", "splitter"}
     for i, entity in enumerate(blueprint.entities):
-        # If it's a belt and not in the direction map, add it
+        # If not a belt, ignore it
+        if entity.type not in belt_types:
+            continue
+        
+        entity = typing_cast(Union[TransportBelt, UndergroundBelt, Splitter], entity)
+
+        # If it's not in the direction map, add it
         if entity.type in belt_types and i not in direction_map:
             direction_map[i] = {"direction": entity.direction, "pointed_by": []}
 

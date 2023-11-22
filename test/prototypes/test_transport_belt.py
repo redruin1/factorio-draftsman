@@ -1,6 +1,6 @@
 # test_transport_belt.py
 
-from draftsman.constants import Direction, ReadMode
+from draftsman.constants import Direction, ReadMode, ValidationMode
 from draftsman.entity import TransportBelt, transport_belts, Container
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
@@ -89,6 +89,112 @@ class TestTransportBelt:
                 "transport-belt",
                 control_behavior=["also", "very", "wrong"],
             )
+
+    def test_set_enable_disable(self):
+        belt = TransportBelt("transport-belt")
+        assert belt.enable_disable == None
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        belt.enable_disable = True
+        assert belt.enable_disable == True
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_enable_disable": True},
+        }
+
+        belt.enable_disable = False
+        assert belt.enable_disable == False
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_enable_disable": False},
+        }
+
+        with pytest.raises(DataFormatError):
+            belt.enable_disable = "incorrect"
+
+        belt.validate_assignment = "none"
+        assert belt.validate_assignment == ValidationMode.NONE
+        belt.enable_disable = "incorrect"
+        assert belt.enable_disable == "incorrect"
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_enable_disable": "incorrect"},
+        }
+
+    def test_set_read_contents(self):
+        belt = TransportBelt("transport-belt")
+        assert belt.read_contents == None
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        belt.read_contents = True
+        assert belt.read_contents == True
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_read_hand_contents": True},
+        }
+
+        with pytest.raises(DataFormatError):
+            belt.read_contents = "incorrect"
+        assert belt.read_contents == True
+
+        belt.validate_assignment = "none"
+        assert belt.validate_assignment == ValidationMode.NONE
+
+        belt.read_contents = "incorrect"
+        assert belt.read_contents == "incorrect"
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_read_hand_contents": "incorrect"},
+        }
+
+    def test_set_read_mode(self):
+        belt = TransportBelt("transport-belt")
+        assert belt.read_mode == None
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        belt.read_mode = ReadMode.HOLD
+        assert belt.read_mode == ReadMode.HOLD
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_contents_read_mode": ReadMode.HOLD},
+        }
+
+        belt.read_mode = None
+        assert belt.read_mode == None
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        with pytest.raises(DataFormatError):
+            belt.read_mode = "incorrect"
+        assert belt.read_mode == None
+
+        belt.validate_assignment = "none"
+        assert belt.validate_assignment == ValidationMode.NONE
+
+        belt.read_mode = "incorrect"
+        assert belt.read_mode == "incorrect"
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_contents_read_mode": "incorrect"},
+        }
 
     def test_power_and_circuit_flags(self):
         for transport_belt in transport_belts:

@@ -5,8 +5,13 @@ from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.data import entities
 from draftsman.signatures import DraftsmanBaseModel, Connections
 
-from pydantic import Field
-from typing import Optional
+from pydantic import (
+    Field,
+    ValidationInfo,
+    ValidatorFunctionWrapHandler,
+    field_validator,
+)
+from typing import Any, Optional
 
 
 class CircuitConnectableMixin:
@@ -145,8 +150,8 @@ class CircuitConnectableMixin:
                 continue
             # if other.connections[side] is not None:
             if side in {"1", "2"}:
-                if self.connections[side] is None:
-                    self.connections[side] = Connections.CircuitConnections()
+                # if self.connections[side] is None:
+                #     self.connections[side] = Connections.CircuitConnections()
                 for color, _ in other.connections[side]:
                     print(color)
                     if other.connections[side][color] is None:
@@ -165,6 +170,12 @@ class CircuitConnectableMixin:
                 raise ValueError(
                     "Cannot merge power switches (yet); see function for details"
                 )
+
+    def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
+        result = super().to_dict(exclude_none, exclude_defaults)
+        if "connections" in result and result["connections"] == {}:
+            del result["connections"]
+        return result
 
     # =========================================================================
 

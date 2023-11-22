@@ -40,7 +40,7 @@ class LogisticPassiveContainer(
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         bar: uint16 = None,
         items: dict[str, uint32] = {},  # TODO: ItemID
-        connections: Connections = Connections(),
+        connections: Connections = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -64,8 +64,7 @@ class LogisticPassiveContainer(
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

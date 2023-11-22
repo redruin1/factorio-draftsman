@@ -25,6 +25,13 @@ class TestElectricPole:
         with pytest.raises(DataFormatError):
             ElectricPole(neighbours="incorrect")
 
+    def test_neighbours(self):
+        electric_pole = ElectricPole("small-electric-pole")
+        assert electric_pole.neighbours == []
+
+        electric_pole.neighbours = None
+        assert electric_pole.neighbours == []
+
     def test_mergable_with(self):
         group = Group()
         group.entities.append("small-electric-pole")

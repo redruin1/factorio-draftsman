@@ -31,13 +31,16 @@ class TestPowerSwitch:
         with pytest.raises(DataFormatError):
             PowerSwitch(control_behavior="incorrect")
 
-    def test_flags(self):
+    def test_power_and_circuit_flags(self):
         for name in power_switches:
             power_switch = PowerSwitch(name)
             assert power_switch.power_connectable == True
             assert power_switch.dual_power_connectable == True
             assert power_switch.circuit_connectable == True
             assert power_switch.dual_circuit_connectable == False
+
+    def test_circuit_wire_max_distance(self):
+        assert PowerSwitch("power-switch").circuit_wire_max_distance == 10.0
 
     def test_switch_state(self):
         power_switch = PowerSwitch()

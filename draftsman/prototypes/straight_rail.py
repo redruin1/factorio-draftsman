@@ -84,21 +84,20 @@ class StraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
     @property
     def double_grid_aligned(self) -> bool:
         return True
-    
+
     # =========================================================================
 
     @property
     def collision_set(self) -> Optional[CollisionSet]:
         return _collision_set_rotation.get(self.direction, None)
-    
+
     # =========================================================================
 
     __hash__ = Entity.__hash__

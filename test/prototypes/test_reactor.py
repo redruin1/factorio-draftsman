@@ -2,7 +2,13 @@
 
 from draftsman.entity import Reactor, reactors, Container
 from draftsman.error import DataFormatError
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import (
+    FuelLimitationWarning,
+    FuelCapacityWarning,
+    ItemLimitationWarning,
+    UnknownEntityWarning,
+    UnknownKeywordWarning,
+)
 
 from collections.abc import Hashable
 import pytest
@@ -17,6 +23,26 @@ class TestReactor:
             Reactor("nuclear-reactor", unused_keyword="whatever")
         with pytest.warns(UnknownEntityWarning):
             Reactor("not a reactor")
+
+    def test_set_fuel_request(self):
+        reactor = Reactor("nuclear-reactor")
+        assert reactor.allowed_fuel_items == {"uranium-fuel-cell"}
+        assert reactor.total_fuel_slots == 1
+
+        reactor.set_item_request("uranium-fuel-cell", 50)
+        assert reactor.items == {"uranium-fuel-cell": 50}
+
+        with pytest.warns(FuelCapacityWarning):
+            reactor.set_item_request("uranium-fuel-cell", 100)
+        assert reactor.items == {"uranium-fuel-cell": 100}
+
+        with pytest.warns(FuelLimitationWarning):
+            reactor.items = {"coal": 50}
+        assert reactor.items == {"coal": 50}
+
+        with pytest.warns(ItemLimitationWarning):
+            reactor.items = {"iron-plate": 100}
+        assert reactor.items == {"iron-plate": 100}
 
     def test_mergable_with(self):
         reactor1 = Reactor("nuclear-reactor")

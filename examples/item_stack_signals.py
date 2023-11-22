@@ -52,10 +52,9 @@ def main():
             combinator.tile_position = (x, y)
             signal_index = 0
 
-    # Add the last combinator if partially full
-    if len(combinator.signals) > 0:
-        combinator.id = "{}_{}".format(x, y)
-        blueprint.entities.append(combinator)
+    # Add the last combinator
+    combinator.id = "{}_{}".format(x, y)
+    blueprint.entities.append(combinator)
 
     # Add connections to each neighbour
     for cx in range(x):
@@ -77,5 +76,5 @@ def main():
     print(blueprint.to_string())
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no coverage
     main()

@@ -20,8 +20,14 @@ from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.data import entities
 from draftsman.error import InvalidEntityError, DraftsmanError, DataFormatError
-from draftsman.signatures import uint64, IntPosition, FloatPosition
-from draftsman.signatures import DraftsmanBaseModel, get_suggestion
+from draftsman.signatures import (
+    DraftsmanBaseModel,
+    FloatPosition,
+    IntPosition,
+    get_suggestion,
+    uint64,
+    EntityName,
+)
 from draftsman.warning import UnknownEntityWarning
 from draftsman import utils
 
@@ -32,6 +38,7 @@ from pydantic import (
     GetCoreSchemaHandler,
     ValidationError,
     ValidationInfo,
+    ValidatorFunctionWrapHandler,
     model_validator,
     field_validator,
     field_serializer,
@@ -61,9 +68,13 @@ class _PosVector(Vector):
             value - self.entity().tile_height / 2
         )
 
-    @classmethod
-    def __get_pydantic_core_schema__(cls, _source_type: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(cls, handler(FloatPosition)) # TODO: correct annotation
+    # @classmethod
+    # def __get_pydantic_core_schema__(
+    #     cls, _source_type: Any, handler: GetCoreSchemaHandler
+    # ) -> CoreSchema:
+    #     return core_schema.no_info_after_validator_function(
+    #         cls, handler(FloatPosition)
+    #     )  # TODO: correct annotation
 
 
 class _TileVector(Vector):
@@ -141,30 +152,32 @@ class Entity(Exportable, EntityLike):
 
         @field_validator("name")
         @classmethod
-        def check_recognized(cls, name: str, info: ValidationInfo):
+        def check_recognized(cls, value: str, info: ValidationInfo):
             if not info.context:
-                return name
-            if info.context["mode"] is ValidationMode.MINIMUM:
-                return name
+                return value
+            if info.context["mode"] <= ValidationMode.MINIMUM:
+                return value
 
             warning_list: list = info.context["warning_list"]
             entity: Entity = info.context["object"]
 
-            if name not in entity.similar_entities:
-                issue = UnknownEntityWarning(
-                    "'{}' is not a known name for this {}{}".format(
-                        name,
-                        type(entity).__name__,
-                        get_suggestion(name, entity.similar_entities, n=1),
+            # Similar entities exists on all entities EXCEPT generic `Entity`
+            # instances, for which we're trying to ignore validation on
+            if entity.similar_entities is None:
+                return value
+
+            if value not in entity.similar_entities:
+                warning_list.append(
+                    UnknownEntityWarning(
+                        "'{}' is not a known name for this {}{}".format(
+                            value,
+                            type(entity).__name__,
+                            get_suggestion(value, entity.similar_entities, n=1),
+                        )
                     )
                 )
 
-                if info.context["mode"] is ValidationMode.PEDANTIC:
-                    raise ValueError(issue) from None
-                else:
-                    warning_list.append(issue)
-
-            return name
+            return value
 
         @field_serializer("position")
         def serialize_position(self, _):
@@ -178,7 +191,7 @@ class Entity(Exportable, EntityLike):
         self,
         name: str,
         similar_entities: list[str],
-        tile_position: IntPosition = [0, 0],
+        tile_position: IntPosition = (0, 0),
         id: str = None,
         **kwargs
     ):
@@ -215,15 +228,20 @@ class Entity(Exportable, EntityLike):
         if "position" in kwargs and kwargs["position"] is None:
             kwargs.pop("position")
 
-        self._root = self.Format.model_construct(
-            # If these two are omitted, included dummy values so that validation
-            # doesn't complain (since they're required fields)
-            # position={"x": 0, "y": 0},
-            # entity_number=0,
-            # Add all remaining extra keywords; all recognized keywords will be
-            # accessed individually, but this allows us to catch the extra ones
-            # and issue warnings for them
-            **{"position": {"x": 0, "y": 0}, "entity_number": 0, **kwargs}
+        # self._root = self.Format.model_construct(
+        #     # If these two are omitted, included dummy values so that validation
+        #     # doesn't complain (since they're required fields)
+        #     # position={"x": 0, "y": 0},
+        #     # entity_number=0,
+        #     # Add all remaining extra keywords; all recognized keywords will be
+        #     # accessed individually, but this allows us to catch the extra ones
+        #     # and issue warnings for them
+        #     **{"position": {"x": 0, "y": 0}, "entity_number": 0, **kwargs}
+        # )
+        self._root = type(self).Format.model_validate(
+            {"name": name, "position": {"x": 0, "y": 0}, "entity_number": 0, **kwargs},
+            strict=False,
+            context={"construction": True, "mode": ValidationMode.NONE},
         )
 
         # Private attributes
@@ -247,7 +265,9 @@ class Entity(Exportable, EntityLike):
         # Tile Width and Height (Internal)
         # Usually tile dimensions are implicitly based on the collision box
         self._tile_width, self._tile_height = utils.aabb_to_dimensions(
-            self.static_collision_set.get_bounding_box() if self.static_collision_set else None
+            self.static_collision_set.get_bounding_box()
+            if self.static_collision_set
+            else None
         )
         # But sometimes it can be overrided in special cases (rails)
         if "tile_width" in entities.raw.get(self.name, {}):
@@ -362,11 +382,11 @@ class Entity(Exportable, EntityLike):
             self._id = value
         elif isinstance(value, str):
             if self.parent:
-                try:
-                    old_id = self._id
-                    self.parent.entities._remove_key(old_id)
-                except AttributeError:
-                    pass
+                # try:
+                old_id = self._id
+                self.parent.entities._remove_key(old_id)
+                # except AttributeError:
+                #     pass
                 self._id = value
                 self.parent.entities._set_key(self._id, self)
             else:
@@ -664,9 +684,9 @@ class Entity(Exportable, EntityLike):
 
         try:
             result = self.Format.model_validate(
-                self._root, 
-                strict=False, # TODO: ideally this should be strict
-                context=context
+                self._root,
+                strict=False,  # TODO: ideally this should be strict
+                context=context,
             )
             # Reassign private attributes
             result._entity = weakref.ref(self)
@@ -683,39 +703,9 @@ class Entity(Exportable, EntityLike):
         except ValidationError as e:
             output.error_list.append(DataFormatError(e))
 
-        if mode is ValidationMode.MINIMUM:
-            return output
-
-        if mode is ValidationMode.PEDANTIC:
-            warning_list = output.error_list
-        else:
-            warning_list = output.warning_list
-
-        warning_list += context["warning_list"]
-
-        if len(output.error_list) == 0:
-            # Set the `is_valid` attribute
-            # This means that if mode="pedantic", an entity that issues only
-            # warnings will still not be considered valid
-            super().validate()
+        output.warning_list += context["warning_list"]
 
         return output
-
-    # def inspect(self):
-    #     # type: () -> ValidationResult
-    #     result = super().inspect()
-
-    #     try:
-    #         self.validate()
-    #     except DraftsmanError as e:
-    #         result.error_list.append(e)
-    #         return
-
-    #     # Warn if entity is unrecognized
-    #     if self.name not in self.similar_entities:
-    #         result.warning_list.append(DraftsmanWarning("Unrecognized entity {}".format(self.name)))
-
-    #     return result
 
     def mergable_with(self, other: "Entity") -> bool:
         return (
@@ -755,7 +745,7 @@ class Entity(Exportable, EntityLike):
             id(self),
             str(self.to_dict()),
         )
-    
+
     def __deepcopy__(self, memo) -> "Entity":
         # Perform the normal deepcopy
         result = super().__deepcopy__(memo=memo)
@@ -764,11 +754,10 @@ class Entity(Exportable, EntityLike):
         # We need a reference to the parent entity stored in `_root` so that we
         # can properly serialize it's position
         # If we use a regular reference, it copies properly, but then it creates
-        # a circular reference which makes garbage collection worse 
-        # We use a weakref to mitigate this memory issue (and ensure that 
+        # a circular reference which makes garbage collection worse
+        # We use a weakref to mitigate this memory issue (and ensure that
         # deleting an entity immediately destroys it), but means that we have to
         # manually update it's reference here
         result._root._entity = weakref.ref(result)
         # Get me out of here
         return result
-

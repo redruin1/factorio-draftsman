@@ -83,13 +83,12 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
     @property
-    def link_id(self) -> uint32:
+    def link_id(self) -> Optional[uint32]:
         """
         The linking ID that this ``LinkedContainer`` currently has. Encoded as
         a 32 bit unsigned integer, where a container only links to another with
@@ -105,8 +104,7 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
         return self._root.link_id
 
     @link_id.setter
-    def link_id(self, value):
-        # type: (int) -> None
+    def link_id(self, value: Optional[uint32]):
         if self.validate_assignment:
             value = attempt_and_reissue(
                 self, type(self).Format, self._root, "link_id", value
@@ -119,8 +117,7 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
 
     # =========================================================================
 
-    def set_link(self, number, enabled):
-        # type: (int, bool) -> None
+    def set_link(self, number: int, enabled: bool):
         """
         Set a single "link point". Corresponds to flipping a single bit in
         ``link_id``.
@@ -141,8 +138,7 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
         else:
             self.link_id &= ~(1 << number)
 
-    def merge(self, other):
-        # type: (LinkedContainer) -> None
+    def merge(self, other: "LinkedContainer"):
         super(LinkedContainer, self).merge(other)
 
         self.link_id = other.link_id
@@ -151,5 +147,5 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: "LinkedContainer") -> bool:
         return super().__eq__(other) and self.link_id == other.link_id

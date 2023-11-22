@@ -1,8 +1,8 @@
 # burner_energy_source.py
 
 from draftsman.constants import ValidationMode
-from draftsman.signatures import uint16, uint32
-from draftsman.warning import ItemCapacityWarning, ItemLimitationWarning
+from draftsman.signatures import ItemName, uint16, uint32
+from draftsman.warning import FuelCapacityWarning, FuelLimitationWarning
 
 from draftsman.data import entities, items
 
@@ -32,7 +32,7 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
             """
             if not info.context or value is None:
                 return value
-            if info.context["mode"] is ValidationMode.MINIMUM:
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return value
 
             entity: "BurnerEnergySourceMixin" = info.context["object"]
@@ -52,13 +52,13 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
                             )
                         )
 
-                    issue = ItemLimitationWarning(
-                        "Cannot add fuel item '{}' to '{}';{}".format(
-                            item, entity.name, context_string
+                    warning_list.append(
+                        FuelLimitationWarning(
+                            "Cannot add fuel item '{}' to '{}';{}".format(
+                                item, entity.name, context_string
+                            )
                         )
                     )
-
-                    warning_list.append(issue)
 
             return value
 
@@ -74,7 +74,7 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
             """
             if not info.context or value is None:
                 return value
-            if info.context["mode"] is ValidationMode.MINIMUM:
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return value
 
             entity: "BurnerEnergySourceMixin" = info.context["object"]
@@ -83,10 +83,10 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
             if entity.total_fuel_slots is None:  # entity not recognized
                 return value
 
-            if entity.occupied_fuel_slots > entity.total_fuel_slots:
-                issue = ItemCapacityWarning(
+            if entity.fuel_slots_occupied > entity.total_fuel_slots:
+                issue = FuelCapacityWarning(
                     "Amount of slots occupied by fuel items ({}) exceeds available fuel slots ({}) for entity '{}'".format(
-                        entity.occupied_fuel_slots, entity.total_fuel_slots, entity.name
+                        entity.fuel_slots_occupied, entity.total_fuel_slots, entity.name
                     )
                 )
 
@@ -105,10 +105,11 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
         if name not in _valid_fuel_items:
             if name in entities.raw:
                 energy_source = self.input_energy_source
-                print("energy_source:", energy_source)
                 if energy_source is not None:
                     if "fuel_categories" in energy_source:
-                        fuel_categories = energy_source["fuel_categories"]
+                        fuel_categories = energy_source[
+                            "fuel_categories"
+                        ]  # pragma: no coverage
                     else:
                         fuel_categories = [
                             energy_source.get("fuel_category", "chemical")
@@ -125,7 +126,7 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
     # =========================================================================
 
     @property
-    def input_energy_source(self) -> dict:
+    def input_energy_source(self) -> Optional[dict]:
         """
         TODO
         """
@@ -140,15 +141,12 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
     # =========================================================================
 
     @property
-    def total_fuel_slots(self) -> uint16:
+    def total_fuel_slots(self) -> Optional[uint16]:
         """
         Gets the total number of fuel input slots that this entity can hold.
         Returns ``None`` if the name of this entity is not recognized by
         Draftsman. Not exported; read only.
         """
-        # return entities.raw.get(self.name, {
-        #         "energy_source": {"fuel_inventory_size": None}
-        #     })["energy_source"]["fuel_inventory_size"]
         energy_source = self.input_energy_source
         if energy_source is not None:
             return energy_source.get("fuel_inventory_size", None)
@@ -158,7 +156,7 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
     # =========================================================================
 
     @property
-    def occupied_fuel_slots(self) -> int:
+    def fuel_slots_occupied(self) -> int:
         """
         Gets the total number of fuel slots currently occupied by fuel item
         requests. Items not recognized by Draftsman are ignored from the
@@ -173,7 +171,7 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
     # =========================================================================
 
     @property
-    def allowed_fuel_items(self) -> set[str]:
+    def allowed_fuel_items(self) -> Optional[set[str]]:
         """
         A set of strings, each one a valid item that can be used as a fuel
         source to power this furnace. If this furnace does not burn items to
@@ -186,11 +184,11 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
     # =========================================================================
 
     @property
-    def fuel_items(self) -> dict[str, uint32]:  # TODO: ItemID
+    def fuel_items(self) -> dict[ItemName, uint32]:
         """
         The subset of :py:attr:`.items` where each key is a valid item fuel
         source that can be consumed by this entity. Returns an empty dict if
         none of the keys of ``items`` are known as valid module names. Not
         exported; read only.
         """
-        return {k: v for k, v in self.items.items() if k in self.allowed_fuel_items}
+        return {k: v for k, v in self.items.items() if k in items.all_fuel_items}

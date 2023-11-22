@@ -9,7 +9,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
-from draftsman.signatures import Connections, RequestFilters, uint16, uint32
+from draftsman.signatures import Connections, RequestFilter, uint16, uint32
 
 from draftsman.data.entities import logistic_storage_containers
 
@@ -44,9 +44,9 @@ class LogisticStorageContainer(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         bar: uint16 = None,
-        request_filters: RequestFilters = RequestFilters([]),
+        request_filters: list[RequestFilter] = [],
         items: dict[str, uint32] = {},  # TODO: ItemID
-        connections: Connections = Connections(),
+        connections: Connections = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -75,8 +75,7 @@ class LogisticStorageContainer(
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

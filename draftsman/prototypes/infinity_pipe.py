@@ -4,10 +4,10 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
-from draftsman.signatures import DraftsmanBaseModel, int64
+from draftsman.signatures import DraftsmanBaseModel, int64, FluidName
 
 from draftsman.data.entities import infinity_pipes
-from draftsman.data import signals, fluids
+from draftsman.data import fluids
 
 import copy
 from pydantic import ConfigDict, Field, model_validator
@@ -21,7 +21,7 @@ class InfinityPipe(Entity):
 
     class Format(Entity.Format):
         class InfinitySettings(DraftsmanBaseModel):
-            name: Optional[str] = Field(  # TODO: FluidID
+            name: Optional[FluidName] = Field(
                 None,
                 description="""
                 The fluid to infinitely generate or consume.
@@ -44,7 +44,7 @@ class InfinityPipe(Entity):
                 What action to perform when connected to a fluid network.
                 """,
             )
-            temperature: Optional[int64] = Field(  # TODO dimension
+            temperature: Optional[int64] = Field(
                 None,
                 description="""
                 The temperature with which to keep the fluid at, in degrees 
@@ -71,9 +71,7 @@ class InfinityPipe(Entity):
                         raise ValueError(
                             "Infinite fluid temperature cannot be set without infinite fluid name"
                         )
-                    elif (
-                        self.name is not None and self.name in fluids.raw
-                    ):  # TODO: fluids.raw?
+                    elif self.name is not None and self.name in fluids.raw:
                         min_temp, max_temp = fluids.get_temperature_range(self.name)
                         if not min_temp <= self.temperature <= max_temp:
                             raise ValueError(
@@ -93,7 +91,7 @@ class InfinityPipe(Entity):
         name: str = infinity_pipes[0],
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        infinity_settings: Format.InfinitySettings = Format.InfinitySettings(),
+        infinity_settings: Format.InfinitySettings = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -122,8 +120,7 @@ class InfinityPipe(Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
@@ -156,7 +153,7 @@ class InfinityPipe(Entity):
     # =========================================================================
 
     @property
-    def infinite_fluid_name(self) -> str:  # TODO: FluidID
+    def infinite_fluid_name(self) -> Optional[str]:
         """
         Sets the name of the infinite fluid.
 
@@ -170,7 +167,7 @@ class InfinityPipe(Entity):
         return self.infinity_settings.get("name", None)
 
     @infinite_fluid_name.setter
-    def infinite_fluid_name(self, value):
+    def infinite_fluid_name(self, value: Optional[str]):
         print("name")
         if self.validate_assignment:
             result = attempt_and_reissue(
@@ -187,7 +184,7 @@ class InfinityPipe(Entity):
     # =========================================================================
 
     @property
-    def infinite_fluid_percentage(self) -> float:
+    def infinite_fluid_percentage(self) -> Optional[float]:
         """
         The percentage of the infinite fluid in the pipe, where ``1.0`` is 100%.
 
@@ -201,7 +198,7 @@ class InfinityPipe(Entity):
         return self.infinity_settings.get("percentage", None)
 
     @infinite_fluid_percentage.setter
-    def infinite_fluid_percentage(self, value):
+    def infinite_fluid_percentage(self, value: Optional[float]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -260,7 +257,7 @@ class InfinityPipe(Entity):
     # =========================================================================
 
     @property
-    def infinite_fluid_temperature(self) -> int64:
+    def infinite_fluid_temperature(self) -> Optional[int64]:
         """
         The temperature of the infinite fluid, in degrees.
 
@@ -276,7 +273,7 @@ class InfinityPipe(Entity):
         return self.infinity_settings.get("temperature", None)
 
     @infinite_fluid_temperature.setter
-    def infinite_fluid_temperature(self, value: int64):
+    def infinite_fluid_temperature(self, value: Optional[int64]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -293,7 +290,7 @@ class InfinityPipe(Entity):
 
     def set_infinite_fluid(
         self,
-        name: str = None,  # TODO: FluidID
+        name: str = None,
         percentage: float = 0.0,
         mode: Literal[
             "at-least", "at-most", "exactly", "add", "remove", None

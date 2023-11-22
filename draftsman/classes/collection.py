@@ -20,6 +20,7 @@ from draftsman.error import (
     EntityNotCircuitConnectableError,
 )
 from draftsman.signatures import Connections
+from draftsman.types import RollingStock
 from draftsman.warning import (
     ConnectionSideWarning,
     ConnectionDistanceWarning,
@@ -28,20 +29,12 @@ from draftsman.warning import (
 from draftsman.utils import AABB, PrimitiveAABB, flatten_entities, distance
 
 import abc
-import itertools
 import math
-import six
-from typing import Union, Sequence
+from typing import Optional, Sequence, Union
 import warnings
 
-# TODO: move this
-from draftsman.entity import Locomotive, CargoWagon, FluidWagon, ArtilleryWagon
 
-RollingStock = Union[Locomotive, CargoWagon, FluidWagon, ArtilleryWagon]
-
-
-@six.add_metaclass(abc.ABCMeta)
-class EntityCollection(object):
+class EntityCollection(metaclass=abc.ABCMeta):
     """
     Abstract class used to describe an object that can contain a list of
     :py:class:`~draftsman.classes.entitylike.EntityLike` instances.
@@ -52,16 +45,14 @@ class EntityCollection(object):
     # =========================================================================
 
     @abc.abstractproperty
-    def entities(self):  # pragma: no coverage
-        # type: () -> EntityList
+    def entities(self) -> EntityList:  # pragma: no coverage
         """
         Object that holds the ``EntityLikes``, usually a :py:class:`.EntityList`.
         """
         pass
 
     @abc.abstractproperty
-    def entity_map(self):  # pragma: no coverage
-        # type: () -> SpatialDataStructure
+    def entity_map(self) -> SpatialDataStructure:  # pragma: no coverage
         """
         Object that holds references to the entities organized by their spatial
         position. An implementation of :py:class:`.SpatialDataStructure`.
@@ -69,8 +60,7 @@ class EntityCollection(object):
         pass
 
     @abc.abstractproperty
-    def schedules(self):  # pragma: no coverage
-        # type: () -> ScheduleList
+    def schedules(self) -> ScheduleList:  # pragma: no coverage
         """
         Object that holds any :py:class:`Schedule` objects within the collection,
         usually a :py:class:`ScheduleList`.
@@ -78,8 +68,7 @@ class EntityCollection(object):
         pass
 
     @property
-    def rotatable(self):
-        # type: () -> bool
+    def rotatable(self) -> bool:
         """
         Whether or not this collection can be rotated or not. Included for
         posterity; always returns True, even when containing entities that have
@@ -90,8 +79,7 @@ class EntityCollection(object):
         return True
 
     @property
-    def flippable(self):
-        # type: () -> bool
+    def flippable(self) -> bool:
         """
         Whether or not this collection can be flipped or not. This is determined
         by whether or not any of the entities contained can be flipped or not.
@@ -109,8 +97,7 @@ class EntityCollection(object):
     # Custom edge functions for EntityList interaction
     # =========================================================================
 
-    def on_entity_insert(self, entitylike, merge):  # pragma: no coverage
-        # type: (EntityLike, bool) -> EntityLike
+    def on_entity_insert(self, entitylike: EntityLike, merge: bool) -> Optional[EntityLike]:  # pragma: no coverage
         """
         Function called when an :py:class:`.EntityLike` is inserted into this
         object's :py:attr:`entities` list (assuming that the ``entities`` list
@@ -119,8 +106,7 @@ class EntityCollection(object):
         """
         pass
 
-    def on_entity_set(self, old_entitylike, new_entitylike):  # pragma: no coverage
-        # type: (EntityLike, EntityLike) -> None
+    def on_entity_set(self, old_entitylike: EntityLike, new_entitylike: EntityLike) -> None:  # pragma: no coverage
         """
         Function called when an :py:class:`.EntityLike` is replaced with another
         in this object's :py:attr:`entities` list (assuming that the ``entities``
@@ -130,8 +116,7 @@ class EntityCollection(object):
         """
         pass
 
-    def on_entity_remove(self, entitylike):  # pragma: no coverage
-        # type: (EntityLike) -> None
+    def on_entity_remove(self, entitylike: EntityLike) -> None:  # pragma: no coverage
         """
         Function called when an :py:class:`.EntityLike` is removed from this
         object's :py:attr:`entities` list (assuming that the ``entities`` list
@@ -774,8 +759,8 @@ class EntityCollection(object):
 
         # Add entity_2 to entity_1.connections
 
-        if entity_1.connections[str(side1)] is None:
-            entity_1.connections[str(side1)] = Connections.CircuitConnections()
+        # if entity_1.connections[str(side1)] is None:
+        #     entity_1.connections[str(side1)] = Connections.CircuitConnections()
         current_side = entity_1.connections[str(side1)]
 
         # if color not in current_side:
@@ -795,8 +780,8 @@ class EntityCollection(object):
 
         # Add entity_1 to entity_2.connections
 
-        if entity_2.connections[str(side2)] is None:
-            entity_2.connections[str(side2)] = Connections.CircuitConnections()
+        # if entity_2.connections[str(side2)] is None:
+        #     entity_2.connections[str(side2)] = Connections.CircuitConnections()
         current_side = entity_2.connections[str(side2)]
 
         # if color not in current_side:
@@ -882,7 +867,7 @@ class EntityCollection(object):
                 entity_1.connections[str(side1)][color] = None
             # if len(current_side) == 0:
             #     del entity_1.connections[str(side1)]
-        except (TypeError, KeyError, ValueError, AttributeError): # TODO: fix
+        except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
             pass
 
         # Remove from target
@@ -901,7 +886,7 @@ class EntityCollection(object):
                 entity_2.connections[str(side2)][color] = None
             # if len(current_side) == 0:
             #     del entity_2.connections[str(side2)]
-        except (TypeError, KeyError, ValueError, AttributeError): # TODO: fix
+        except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
             pass
 
     def remove_circuit_connections(self):
@@ -1061,8 +1046,8 @@ class EntityCollection(object):
 
     def set_train_schedule(
         self,
-        train_cars: Locomotive | list[RollingStock],
-        schedule: Schedule | None,
+        train_cars: Union[RollingStock, list[RollingStock]],
+        schedule: Optional[Schedule],
     ):
         """
         Sets the schedule of any entity.
@@ -1202,8 +1187,6 @@ class EntityCollection(object):
                 # train
                 if neighbour in used_wagons:
                     continue
-
-                print(neighbour)
 
                 # If the orientation is +- 45 degrees in either direction from
                 # the current wagon's orientation, it may be connected
@@ -1480,16 +1463,14 @@ class EntityCollection(object):
 # =============================================================================
 
 
-@six.add_metaclass(abc.ABCMeta)
-class TileCollection(object):
+class TileCollection(metaclass=abc.ABCMeta):
     """
     Abstract class used to describe an object that can contain a list of
     :py:class:`.Tile` instances.
     """
 
     @abc.abstractproperty
-    def tiles(self):  # pragma: no coverage
-        # type: () -> TileList
+    def tiles(self) -> TileList:  # pragma: no coverage
         """
         Object that holds the ``Tiles``, usually a
         :py:class:`~draftsman.classes.tilelist.TileList`.
@@ -1497,8 +1478,7 @@ class TileCollection(object):
         pass
 
     @abc.abstractproperty
-    def tile_map(self):  # pragma: no coverage
-        # type: () -> SpatialDataStructure
+    def tile_map(self) -> SpatialDataStructure:  # pragma: no coverage
         """
         Object that holds the spatial information for the Tiles of this object,
         usually a :py:class:`~draftsman.classes.spatialhashmap.SpatialHashMap`.
@@ -1509,8 +1489,7 @@ class TileCollection(object):
     # Custom edge functions for TileList interaction
     # =========================================================================
 
-    def on_tile_insert(self, tile, merge):  # pragma: no coverage
-        # type: (Tile, bool) -> Tile
+    def on_tile_insert(self, tile: Tile, merge: bool) -> Optional[Tile]:  # pragma: no coverage
         """
         Function called when an :py:class:`.Tile` is inserted into this object's
         :py:attr:`tiles` list (assuming that the ``tiles`` list is a
@@ -1519,8 +1498,7 @@ class TileCollection(object):
         """
         pass
 
-    def on_tile_set(self, old_tile, new_tile):  # pragma: no coverage
-        # type: (Tile, bool) -> None
+    def on_tile_set(self, old_tile: Tile, new_tile: Tile) -> None:  # pragma: no coverage
         """
         Function called when an :py:class:`.Tile` is replaced with another in
         this object's :py:attr:`tiles` list (assuming that the ``tiles`` list is
@@ -1529,8 +1507,7 @@ class TileCollection(object):
         """
         pass
 
-    def on_tile_remove(self, tile):  # pragma: no coverage
-        # type: (Tile) -> None
+    def on_tile_remove(self, tile: Tile) -> None:  # pragma: no coverage
         """
         Function called when an :py:class:`.Tile` is removed from this object's
         :py:attr:`tiles` list (assuming that the ``entities`` list is a
@@ -1543,8 +1520,7 @@ class TileCollection(object):
     # Queries
     # =========================================================================
 
-    def find_tile(self, position):
-        # type: (Union[Vector, PrimitiveVector]) -> Tile
+    def find_tile(self, position: Union[Vector, PrimitiveVector]) -> Tile:
         """
         Returns the tile at the tile coordinate ``position``. If there are
         multiple tiles at that location, the entity that was inserted first is
@@ -1561,8 +1537,8 @@ class TileCollection(object):
         except IndexError:
             return None
 
-    def find_tiles_filtered(self, **kwargs):
-        # type: (**dict) -> list[Tile]
+    def find_tiles_filtered(self, **kwargs) -> list[Tile]:
+        # TODO: keyword arguments
         """
         Returns a filtered list of tiles within the blueprint. Works
         similarly to

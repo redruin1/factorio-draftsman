@@ -8,8 +8,8 @@ from draftsman.signatures import uint32
 
 from draftsman.data.entities import reactors
 
-from pydantic import ConfigDict
-from typing import Any, Literal, Union
+from pydantic import ConfigDict, ValidationInfo, field_validator
+from typing import Any, Literal, Optional, Union
 
 
 class Reactor(BurnerEnergySourceMixin, RequestItemsMixin, Entity):
@@ -27,7 +27,7 @@ class Reactor(BurnerEnergySourceMixin, RequestItemsMixin, Entity):
         name: str = reactors[0],
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        items: dict[str, uint32] = {},  # TODO: ItemID
+        items: dict[str, uint32] = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -53,13 +53,18 @@ class Reactor(BurnerEnergySourceMixin, RequestItemsMixin, Entity):
 
         # TODO: technically, a reactor can have more than just a burnable energy
         # source; it could have any type of energy source other than heat as
-        # input. Thus, we would only want to inhert the attributes of
-        # `BurnerEnergySourceMixin` if that is the case, which is tricky
+        # input. Thus, we need to make sure that the attributes from
+        # BurnerEnergySourceMixin are only used in the correct configuration
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
+
+    # =========================================================================
+
+    @property
+    def allowed_items(self) -> Optional[set[str]]:
+        return self.allowed_fuel_items
 
     # =========================================================================
 

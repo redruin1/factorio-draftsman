@@ -1,7 +1,6 @@
 # test_simple_entity_with_force.py
 
-from __future__ import unicode_literals
-
+from draftsman.constants import Direction
 from draftsman.entity import SimpleEntityWithForce, simple_entities_with_force
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
@@ -26,8 +25,9 @@ class TestSimpleEntityWithForce:
         assert entity.to_dict(exclude_defaults=False) == {
             "name": "simple-entity-with-force",
             "position": {"x": 0.5, "y": 0.5},
-            "variation": 1, # Default
-            "tags": {}  # Default
+            "direction": Direction.NORTH,  # Default
+            "variation": 1,  # Default
+            "tags": {},  # Default
         }
 
         entity.variation = None
@@ -35,7 +35,8 @@ class TestSimpleEntityWithForce:
         assert entity.to_dict(exclude_defaults=False) == {
             "name": "simple-entity-with-force",
             "position": {"x": 0.5, "y": 0.5},
-            "tags": {} # Default
+            "direction": Direction.NORTH,  # Default
+            "tags": {},  # Default
         }
 
     def test_power_and_circuit_flags(self):

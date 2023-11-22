@@ -1,7 +1,7 @@
 # test_loader.py
 
 from draftsman.entity import Loader, loaders, Container
-from draftsman.signatures import Filters
+from draftsman.signatures import FilterEntry
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -47,7 +47,7 @@ class TestLoader:
         loader1.merge(loader2)
         del loader2
 
-        assert loader1.filters == Filters([{"name": "coal", "index": 1}])
+        assert loader1.filters == [FilterEntry(**{"name": "coal", "index": 1})]
         assert loader1.io_type == "input"
         assert loader1.tags == {"some": "stuff"}
 

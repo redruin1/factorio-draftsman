@@ -1,6 +1,7 @@
 # double_grid_aligned.py
 
 from draftsman.classes.vector import Vector
+from draftsman.constants import ValidationMode
 from draftsman.signatures import FloatPosition
 from draftsman.warning import GridAlignmentWarning
 
@@ -22,7 +23,7 @@ class DoubleGridAlignedMixin:
         def ensure_double_grid_aligned(cls, input: FloatPosition, info: ValidationInfo):
             if not info.context:
                 return input
-            if info.context["mode"] == "minimum":
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return input
 
             warning_list: list = info.context["warning_list"]
@@ -32,16 +33,13 @@ class DoubleGridAlignedMixin:
                     math.floor(entity.tile_position.x / 2) * 2,
                     math.floor(entity.tile_position.y / 2) * 2,
                 )
-                issue = GridAlignmentWarning(
-                    "Double-grid aligned entity is not placed along chunk grid; "
-                    "entity's tile position will be cast from {} to {} when "
-                    "imported".format(entity.tile_position, cast_position)
+                warning_list.append(
+                    GridAlignmentWarning(
+                        "Double-grid aligned entity is not placed along chunk grid; "
+                        "entity's tile position will be cast from {} to {} when "
+                        "imported".format(entity.tile_position, cast_position)
+                    )
                 )
-
-                if info.context["mode"] == "pedantic":
-                    raise ValueError(issue) from None
-                else:
-                    warning_list.append(issue)
 
             return input
 

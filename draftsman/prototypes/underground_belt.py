@@ -17,6 +17,7 @@ class UndergroundBelt(IOTypeMixin, DirectionalMixin, Entity):
     """
 
     class Format(IOTypeMixin.Format, DirectionalMixin.Format, Entity.Format):
+
         model_config = ConfigDict(title="UndergroundBelt")
 
     def __init__(
@@ -57,8 +58,7 @@ class UndergroundBelt(IOTypeMixin, DirectionalMixin, Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

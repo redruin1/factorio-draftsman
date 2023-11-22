@@ -6,6 +6,7 @@ all the prototypes in :py:mod:`draftsman.prototypes`.
 """
 
 from draftsman.classes.entity import Entity
+from draftsman.constants import ValidationMode
 from draftsman.error import InvalidEntityError
 
 # fmt: off
@@ -72,13 +73,12 @@ from draftsman.prototypes.burner_generator import BurnerGenerator, burner_genera
 from draftsman.prototypes.player_port import PlayerPort, player_ports
 # fmt: on
 
-from draftsman.data import entities
-
-import difflib
+from typing import Literal
 
 
-def new_entity(name, unknown="error", **kwargs):
-    # type: (str, str, **dict) -> Entity
+def new_entity(
+    name: str, if_unknown: Literal["error", "ignore", "accept"] = "error", **kwargs
+):
     """
     Factory function for creating a new :py:cls:`Entity`. The class used will be
     based on the entity's name, so ``new_entity("wooden-chest")`` will return a
@@ -114,7 +114,7 @@ def new_entity(name, unknown="error", **kwargs):
     if name in underground_belts:
         return UndergroundBelt(name, **kwargs)
     if name in splitters:
-        return Splitter(name, **kwargs)
+        return Splitter(name, **kwargs)  # etc.
     if name in inserters:
         return Inserter(name, **kwargs)
     if name in filter_inserters:
@@ -228,23 +228,38 @@ def new_entity(name, unknown="error", **kwargs):
     if name in player_ports:
         return PlayerPort(name, **kwargs)
 
-    if unknown == "ignore":
+    # At this point, the name is unrecognized by the current environment:
+    if if_unknown == "error":
+        # Raise an issue where this entity is not known; useful in cases where
+        # the user wants to make sure that Draftsman knows about every entity in
+        # a modded blueprint, for example.
+        raise InvalidEntityError("Unknown entity '{}'".format(name))
+    elif if_unknown == "ignore":
+        # Simply return nothing; if importing from a blueprint string, any
+        # unrecognized entity will simply be omitted from the Draftsman
+        # blueprint; matches the game's behavior.
         return None
-    elif unknown == "error":
-        # TODO: this is pretty slow all things considered. It might make more
-        # sense to try: ... constructing a entity of each type with a name, and
-        # throw a InvalidEntityError if it has no suggestions, and a different
-        # error (PossibleInvalidEntityError) if it does; then catch the Invalid
-        # EntityError and let the PossibleInvalidEntityError raise
-        suggestions = difflib.get_close_matches(name, entities.all, n=1)
-        if len(suggestions) > 0:
-            suggestion_string = "; did you mean '{}'".format(suggestions[0])
-        else:
-            suggestion_string = ""
-        raise InvalidEntityError(
-            "'{}' is not a recognized entity{}".format(name, suggestion_string)
-        )
-    elif unknown == "pass":
-        pass  # TODO
+    elif if_unknown == "accept":
+        # Otherwise, we want Draftsman to at least try to parse it and serialize
+        # it, if not entirely validate it. Thus, we construct a generic instance
+        # of `Entity`and return that.
+        result = Entity(name, similar_entities=None, **kwargs)
+
+        # Mark this class as unknown format, so some validation checks are
+        # omitted
+        result._unknown_format = True
+
+        # Of course, since entity is normally a base class, we have to do a
+        # little magic to make it behave similar to all other classes
+        validate_assignment = kwargs.get("validate_assignment", ValidationMode.STRICT)
+        result.validate_assignment = validate_assignment
+
+        validate = kwargs.get("validate", ValidationMode.STRICT)
+        result.validate(mode=validate).reissue_all(stacklevel=3)
+
+        return result
     else:
-        raise ValueError("Invalid value for keyword 'unknown' ({})".format(unknown))
+        raise ValueError(
+            "Unknown parameter value '{}' for `unknown`; must be one of 'error', 'ignore', or 'accept'",
+            if_unknown,
+        )

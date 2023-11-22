@@ -52,7 +52,7 @@ class Furnace(
             """
             if not info.context or value is None:
                 return value
-            if info.context["mode"] is ValidationMode.MINIMUM:
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return value
 
             entity: "Furnace" = info.context["object"]
@@ -63,13 +63,13 @@ class Furnace(
                     item not in modules.raw
                     and item not in entity.allowed_input_ingredients
                 ):
-                    issue = ItemLimitationWarning(
-                        "Requested item '{}' cannot be smelted by furnace '{}'".format(
-                            item, entity.name
-                        ),
+                    warning_list.append(
+                        ItemLimitationWarning(
+                            "Requested item '{}' cannot be smelted by furnace '{}'".format(
+                                item, entity.name
+                            ),
+                        )
                     )
-
-                    warning_list.append(issue)
 
             return value
 
@@ -85,7 +85,7 @@ class Furnace(
             """
             if not info.context or value is None:
                 return value
-            if info.context["mode"] is ValidationMode.MINIMUM:
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return value
 
             entity: "Furnace" = info.context["object"]
@@ -95,13 +95,13 @@ class Furnace(
                 print(item, count)
                 stack_size = items.raw[item]["stack_size"]
                 if count > stack_size:
-                    issue = ItemCapacityWarning(
-                        "Cannot request more than {} of '{}' to a '{}'; will not fit in ingredient inputs".format(
-                            stack_size, item, entity.name
+                    warning_list.append(
+                        ItemCapacityWarning(
+                            "Cannot request more than {} of '{}' to a '{}'; will not fit in ingredient inputs".format(
+                                stack_size, item, entity.name
+                            )
                         )
                     )
-
-                    warning_list.append(issue)
 
             return value
 
@@ -156,8 +156,7 @@ class Furnace(
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

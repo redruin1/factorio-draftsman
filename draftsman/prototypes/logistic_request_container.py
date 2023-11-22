@@ -18,7 +18,7 @@ from draftsman.constants import ValidationMode
 from draftsman.signatures import (
     Connections,
     DraftsmanBaseModel,
-    RequestFilters,
+    RequestFilter,
     uint16,
     uint32,
 )
@@ -51,7 +51,9 @@ class LogisticRequestContainer(
         RequestFiltersMixin.Format,
         Entity.Format,
     ):
-        class ControlBehavior(LogisticModeOfOperationMixin.Format, DraftsmanBaseModel):
+        class ControlBehavior(
+            LogisticModeOfOperationMixin.ControlFormat, DraftsmanBaseModel
+        ):
             pass
 
         control_behavior: Optional[ControlBehavior] = ControlBehavior()
@@ -71,10 +73,10 @@ class LogisticRequestContainer(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         bar: uint16 = None,
-        request_filters: RequestFilters = RequestFilters([]),
+        request_filters: list[RequestFilter] = [],
         items: dict[str, uint32] = {},  # TODO: ItemID
-        connections: Connections = Connections(),
-        control_behavior: Format.ControlBehavior = Format.ControlBehavior(),
+        connections: Connections = {},
+        control_behavior: Format.ControlBehavior = {},
         request_from_buffers: bool = False,
         tags: dict[str, Any] = {},
         validate: Union[
@@ -105,8 +107,7 @@ class LogisticRequestContainer(
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

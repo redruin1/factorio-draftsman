@@ -4,7 +4,8 @@ from draftsman import signatures
 from draftsman.data import items
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import ValidationMode
-from draftsman.signatures import DraftsmanBaseModel, SignalID, uint32, get_suggestion
+from draftsman.error import DataFormatError
+from draftsman.signatures import DraftsmanBaseModel, SignalID, uint32, ItemName
 from draftsman.utils import reissue_warnings
 from draftsman.warning import ItemLimitationWarning, UnknownItemWarning
 
@@ -25,7 +26,7 @@ class RequestItemsMixin:
     """
 
     class Format(DraftsmanBaseModel):
-        items: Optional[dict[str, uint32]] = Field(
+        items: Optional[dict[ItemName, uint32]] = Field(
             {},
             description="""
             List of construction item requests (such as delivering modules for 
@@ -33,34 +34,6 @@ class RequestItemsMixin:
             system.
             """,
         )
-
-        @field_validator("items")
-        @classmethod
-        def validate_items_exist(
-            cls, value: Optional[dict[str, int]], info: ValidationInfo
-        ):
-            """
-            Issue warnings if Draftsman cannot recognize the set item.
-            """
-            if not info.context or value is None:
-                return value
-            if info.context["mode"] is ValidationMode.MINIMUM:
-                return value
-
-            warning_list: list = info.context["warning_list"]
-            for k, _ in value.items():
-                if k not in items.raw:
-                    issue = UnknownItemWarning(
-                        "Unknown item '{}'{}".format(
-                            k, get_suggestion(k, items.raw.keys())
-                        )
-                    )
-                    if info.context["mode"] == "pedantic":
-                        raise issue
-                    else:
-                        warning_list.append(issue)
-
-            return value
 
         @field_validator("items")
         @classmethod
@@ -73,26 +46,24 @@ class RequestItemsMixin:
             """
             if not info.context or value is None:
                 return value
-            if info.context["mode"] is ValidationMode.MINIMUM:
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return value
 
             entity: "RequestItemsMixin" = info.context["object"]
             warning_list: list = info.context["warning_list"]
-
-            print(entity.allowed_items)
 
             if entity.allowed_items is None:  # entity not recognized
                 return value
 
             for item in entity.items:
                 if item not in entity.allowed_items:
-                    issue = ItemLimitationWarning(
-                        "Cannot request item '{}' to '{}'; this entity cannot recieve it".format(
-                            item, entity.name
+                    warning_list.append(
+                        ItemLimitationWarning(
+                            "Cannot request item '{}' to '{}'; this entity cannot recieve it".format(
+                                item, entity.name
+                            )
                         )
                     )
-
-                    warning_list.append(issue)
 
             return value
 
@@ -121,12 +92,21 @@ class RequestItemsMixin:
     @items.setter
     def items(self, value: dict[str, uint32]):
         if self.validate_assignment:
-            # Set the value beforehand, so the new value is available to the
-            # validation step
-            self._root.items = value  # TODO: FIXME, this is bad
-            value = attempt_and_reissue(
-                self, type(self).Format, self._root, "items", value
-            )
+            # In the validator functions for `items`, we use a lot of internal
+            # properties that operate on the current items value instead of the
+            # items value that we're setting
+            # Thus, in order for those to work, we set the items to the new
+            # value first, check for errors, and revert it back to the original
+            # value if it fails for whatever reason
+            try:
+                original_items = self._root.items
+                self._root.items = value
+                value = attempt_and_reissue(
+                    self, type(self).Format, self._root, "items", value
+                )
+            except DataFormatError as e:
+                self._root.items = original_items
+                raise e
 
         if value is None:
             self._root.items = {}
@@ -136,7 +116,7 @@ class RequestItemsMixin:
     # =========================================================================
 
     @reissue_warnings
-    def set_item_request(self, item: str, count: Optional[uint32]):  # TODO: ItemID
+    def set_item_request(self, item: str, count: Optional[uint32]):
         """
         Requests an amount of an item. Removes the item request if ``count`` is
         set to ``0`` or ``None``. Manages ``module_slots_occupied``.
@@ -157,19 +137,25 @@ class RequestItemsMixin:
         if count is None:
             count = 0
 
-        if not isinstance(item, str):  # TODO: better
-            raise TypeError("Expected 'item' to be a str, found '{}'".format(item))
-        if not isinstance(count, int):  # TODO: better
-            raise TypeError("Expected 'count' to be an int, found '{}'".format(count))
+        # TODO: inefficient
+        new_items = deepcopy(self.items)
 
         if count == 0:
-            self.items.pop(item, None)
+            new_items.pop(item, None)
         else:
-            self.items[item] = count
+            new_items[item] = count
 
-        self._root.items = attempt_and_reissue(
-            self, type(self).Format, self._root, "items", self.items
-        )
+        try:
+            original_items = self._root.items
+            self._root.items = new_items
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "items", new_items
+            )
+        except DataFormatError as e:
+            self._root.items = original_items
+            raise e
+        else:
+            self._root.items = result
 
     # =========================================================================
 

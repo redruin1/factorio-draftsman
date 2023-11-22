@@ -93,7 +93,7 @@ class ArithmeticCombinator(
                 def ensure_no_forbidden_signals(self, info: ValidationInfo):
                     if not info.context:
                         return self
-                    if info.context["mode"] is ValidationMode.MINIMUM:
+                    if info.context["mode"] <= ValidationMode.MINIMUM:
                         return self
 
                     warning_list: list = info.context["warning_list"]
@@ -122,7 +122,7 @@ class ArithmeticCombinator(
                 def ensure_proper_each_configuration(self, info: ValidationInfo):
                     if not info.context:
                         return self
-                    if info.context["mode"] is ValidationMode.MINIMUM:
+                    if info.context["mode"] <= ValidationMode.MINIMUM:
                         return self
 
                     warning_list: list = info.context["warning_list"]
@@ -185,8 +185,8 @@ class ArithmeticCombinator(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
-        connections: Connections = Connections(),
-        control_behavior: Format.ControlBehavior = Format.ControlBehavior(),
+        connections: Connections = {},
+        control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -216,8 +216,7 @@ class ArithmeticCombinator(
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
@@ -264,6 +263,11 @@ class ArithmeticCombinator(
 
     @first_operand.setter
     def first_operand(self, value: Union[str, SignalID, int32, None]):
+        if self.control_behavior.arithmetic_conditions is None:
+            self.control_behavior.arithmetic_conditions = (
+                self.Format.ControlBehavior.ArithmeticConditions()
+            )
+
         if value is None:  # Default
             self.control_behavior.arithmetic_conditions.first_signal = None
             self.control_behavior.arithmetic_conditions.first_constant = None
@@ -296,7 +300,6 @@ class ArithmeticCombinator(
     def operation(
         self,
     ) -> Literal["*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR", None]:
-        # type: () -> str
         """
         The operation of the ``ArithmeticCombinator`` Can be one of:
 
@@ -314,9 +317,9 @@ class ArithmeticCombinator(
         :exception TypeError: If set to anything other than one of the values
             specified above.
         """
-        # arithmetic_conditions = self.control_behavior.get("arithmetic_conditions", None)
-        # if not arithmetic_conditions:
-        #     return None
+        arithmetic_conditions = self.control_behavior.get("arithmetic_conditions", None)
+        if not arithmetic_conditions:
+            return None
 
         return self.control_behavior.arithmetic_conditions.operation
 
@@ -327,6 +330,11 @@ class ArithmeticCombinator(
             "*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR", None
         ],
     ):
+        if self.control_behavior.arithmetic_conditions is None:
+            self.control_behavior.arithmetic_conditions = (
+                self.Format.ControlBehavior.ArithmeticConditions()
+            )
+
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -379,6 +387,11 @@ class ArithmeticCombinator(
 
     @second_operand.setter
     def second_operand(self, value: Union[str, SignalID, int32, None]):
+        if self.control_behavior.arithmetic_conditions is None:
+            self.control_behavior.arithmetic_conditions = (
+                self.Format.ControlBehavior.ArithmeticConditions()
+            )
+
         if value is None:  # Default
             self.control_behavior.arithmetic_conditions.second_signal = None
             self.control_behavior.arithmetic_conditions.second_constant = None
@@ -428,14 +441,19 @@ class ArithmeticCombinator(
             :py:attr:`.first_operand` nor :py:attr:`.second_operand` is set to
             ``"signal-each"``.
         """
-        # arithmetic_conditions = self.control_behavior.arithmetic_conditions
-        # if not arithmetic_conditions:
-        #     return None
+        arithmetic_conditions = self.control_behavior.arithmetic_conditions
+        if not arithmetic_conditions:
+            return None
 
         return self.control_behavior.arithmetic_conditions.output_signal
 
     @output_signal.setter
     def output_signal(self, value: Union[str, SignalID, None]):
+        if self.control_behavior.arithmetic_conditions is None:
+            self.control_behavior.arithmetic_conditions = (
+                self.Format.ControlBehavior.ArithmeticConditions()
+            )
+
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -460,7 +478,6 @@ class ArithmeticCombinator(
         second_operand: Union[str, SignalID, int32, None] = 0,
         output_signal: Union[str, SignalID, None] = None,
     ):
-        # type: (Union[str, int], str, Union[str, int], str) -> None
         """
         Sets the entire arithmetic condition of the ``ArithmeticCombinator`` all
         at once. All of the restrictions for each individual attribute apply.

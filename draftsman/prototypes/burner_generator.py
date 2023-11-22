@@ -42,7 +42,7 @@ class BurnerGenerator(
             """
             if not info.context or value is None:
                 return value
-            if info.context["mode"] is ValidationMode.MINIMUM:
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return value
 
             entity: "BurnerGenerator" = info.context["object"]
@@ -53,12 +53,13 @@ class BurnerGenerator(
 
             for item in entity.items:
                 if item in items.raw and item not in items.all_fuel_items:
-                    issue = ItemLimitationWarning(
-                        "Cannot add item '{}' to '{}'; this entity only can only recieve fuel items".format(
-                            item, entity.name
+                    warning_list.append(
+                        ItemLimitationWarning(
+                            "Cannot add item '{}' to '{}'; this entity only can only recieve fuel items".format(
+                                item, entity.name
+                            )
                         )
                     )
-                    warning_list.append(issue)
 
             return value
 
@@ -97,8 +98,7 @@ class BurnerGenerator(
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

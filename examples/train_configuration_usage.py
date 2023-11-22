@@ -7,7 +7,6 @@ from draftsman.data import mods, entities
 
 
 def main():
-    # Import a rail oval with a train stop with name "A" and name "B"
     blueprint = Blueprint()
 
     # fmt: off

@@ -18,14 +18,22 @@ class TestElectricEnergyInterface:
             "electric-energy-interface",
             buffer_size=10000,
             power_production=10000,
-            power_usage=0,
+            power_usage=100,
         )
         assert interface.to_dict() == {
             "name": "electric-energy-interface",
             "position": {"x": 1.0, "y": 1.0},
             "buffer_size": 10000,
             "power_production": 10000,
-            # "power_usage": 0, # Default
+            "power_usage": 100,
+        }
+        assert interface.to_dict(exclude_defaults=False) == {
+            "name": "electric-energy-interface",
+            "position": {"x": 1.0, "y": 1.0},
+            "buffer_size": 10000,
+            "power_production": 10000,
+            "power_usage": 100,
+            "tags": {},
         }
 
         with pytest.warns(UnknownKeywordWarning):

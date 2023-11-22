@@ -15,11 +15,11 @@ import json
 import math
 from functools import wraps
 import six
-from typing import TYPE_CHECKING, Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 import warnings
 import zlib
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity_like import EntityLike
     from draftsman.entity import Entity
 
@@ -35,13 +35,11 @@ class Shape:
     single attribute, a PrimitiveVector :py:attr:`position`.
     """
 
-    def __init__(self, position):
-        # type: (Vector) -> None
+    def __init__(self, position: Vector):
         self.position = Vector.from_other(position)
 
     @abstractmethod
-    def overlaps(self, other):  # pragma: no coverage
-        # type: (Shape) -> bool
+    def overlaps(self, other: "Shape") -> bool:  # pragma: no coverage
         """
         Determines if this :py:class:`.Shape` overlaps with another
         :py:class:`.Shape`.
@@ -62,8 +60,14 @@ class AABB(Shape):
     convenience functions.
     """
 
-    def __init__(self, x1, y1, x2, y2, position=[0, 0]):
-        # type: (float, float, float, float, Vector) -> None
+    def __init__(
+        self,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        position: Union[Vector, PrimitiveVector] = (0, 0),
+    ):
         """
         TODO
 
@@ -100,8 +104,7 @@ class AABB(Shape):
         self.normals = [[0, -1], [1, 0], [0, 1], [-1, 0]]
 
     @staticmethod
-    def from_other(aabb):
-        # type: (Union[list[float], tuple[float]]) -> AABB
+    def from_other(aabb: Union[list[float], tuple[float]]) -> "AABB":
         """
         Converts a ``PrimitiveAABB`` to an :py:class:`.AABB`.
 
@@ -117,8 +120,7 @@ class AABB(Shape):
             raise TypeError("Could not resolve '{}' to an AABB".format(aabb))
 
     @property
-    def world_top_left(self):
-        # type: () -> PrimitiveVector
+    def world_top_left(self) -> PrimitiveVector:
         """
         Gets the top left of the :py:class:`.AABB`, as offset by it's ``position``.
         As the attribute suggests, this is typically the top-left of the box in
@@ -132,8 +134,7 @@ class AABB(Shape):
         ]
 
     @property
-    def world_bot_right(self):
-        # type: () -> PrimitiveVector
+    def world_bot_right(self) -> PrimitiveVector:
         """
         Gets the bottom right of the :py:class:`.AABB`, as offset by it's
         ``position``. As the attribute suggests, this is typically the top-left
@@ -146,8 +147,7 @@ class AABB(Shape):
             self.bot_right[1] + self.position[1],
         ]
 
-    def overlaps(self, other):
-        # type: (Shape) -> bool
+    def overlaps(self, other: "Shape") -> bool:
         if isinstance(other, AABB):
             return aabb_overlaps_aabb(self, other)
         elif isinstance(other, Rectangle):
@@ -155,8 +155,7 @@ class AABB(Shape):
         else:
             raise TypeError("Could not resolve '{}' to a Shape".format(other))
 
-    def get_points(self):
-        # type: () -> list[Vector]
+    def get_points(self) -> list[PrimitiveVector]:
         """
         Returns all 4 points associated with the corners of the AABB, used for
         determining collision.
@@ -169,8 +168,7 @@ class AABB(Shape):
             for point in self.points
         ]
 
-    def get_bounding_box(self):
-        # type: () -> AABB
+    def get_bounding_box(self) -> "AABB":
         """
         Returns the minimum-encompassing bounding box around this AABB, which
         happens to be an new AABB offset by this AABB's position. Used for
@@ -189,8 +187,7 @@ class AABB(Shape):
         bounding_box.bot_right[1] += self.position[1]
         return bounding_box
 
-    def rotate(self, amt):
-        # type: (int) -> AABB
+    def rotate(self, amt: int) -> "AABB":
         """
         Rotates the :py:class:`.AABB` by increments of 90 degrees and returns a
         new transformed instance.
@@ -231,8 +228,7 @@ class AABB(Shape):
 
         return AABB(top_left[0], top_left[1], bot_right[0], bot_right[1], self.position)
 
-    def __eq__(self, other):
-        # type: (AABB) -> bool
+    def __eq__(self, other: "AABB") -> bool:
         return (
             isinstance(other, AABB)
             and self.position == other.position
@@ -240,12 +236,11 @@ class AABB(Shape):
             and self.bot_right == other.bot_right
         )
 
-    def __add__(self, other):
-        # type: (Union[PrimitiveVector, Vector]) -> AABB
+    def __add__(self, other: Union[PrimitiveVector, Vector]) -> "AABB":
         other = Vector.from_other(other)
         return AABB(*self.top_left, *self.bot_right, self.position + other)
 
-    def __repr__(self):  # pragma: no coverage
+    def __repr__(self) -> str:  # pragma: no coverage
         return "<AABB>({}, {}, {}, {}) at {}".format(
             self.top_left[0],
             self.top_left[1],
@@ -255,7 +250,8 @@ class AABB(Shape):
         )
 
 
-PrimitiveAABB = "list[list[float, float], list[float, float]]"
+# TODO: move this
+PrimitiveAABB = tuple[PrimitiveVector, PrimitiveVector]
 
 
 class Rectangle(Shape):
@@ -265,8 +261,13 @@ class Rectangle(Shape):
     ``position`` (it's center).
     """
 
-    def __init__(self, position, width, height, angle):
-        # type: (Vector, float, float, float) -> None
+    def __init__(
+        self,
+        position: Union[Vector, PrimitiveVector],
+        width: float,
+        height: float,
+        angle: float,
+    ):
         """
         Creates a :py:class:`.Rectangle`. Initializes it's :py:attr:`.points`
         attribute to specify
@@ -294,12 +295,10 @@ class Rectangle(Shape):
             edge = [p2[0] - p1[0], p2[1] - p1[1]]
             self.normals[i] = normalize(perpendicular(edge))
 
-    def overlaps(self, other):
-        # type: (Shape) -> bool
+    def overlaps(self, other: "Shape") -> bool:
         return rect_overlaps_rect(self, other)
 
-    def get_points(self):
-        # type: () -> list[PrimitiveVector]
+    def get_points(self) -> list[PrimitiveVector]:
         """
         Returns all 4 points associated with the corners of the Rectangle, used
         for determining collision.
@@ -315,8 +314,7 @@ class Rectangle(Shape):
             for point in rot_points
         ]
 
-    def get_bounding_box(self):
-        # type: () -> AABB
+    def get_bounding_box(self) -> AABB:
         """
         Returns the minimum-encompassing bounding box around this Rectangle.
         Used for broadphase collision-checking in :py:class:`.SpatialDataStructure`.
@@ -342,8 +340,7 @@ class Rectangle(Shape):
 
         return AABB(x_min, y_min, x_max, y_max)
 
-    def rotate(self, amt):
-        # type: (int) -> Rectangle
+    def rotate(self, amt: int) -> "Rectangle":
         """
         Rotates the :py:class:`.Rectangle` by increments of 45 degrees and
         returns a new transformed instance.
@@ -362,8 +359,7 @@ class Rectangle(Shape):
             self.angle + amt * 45,
         )
 
-    def __eq__(self, other):
-        # type: (Rectangle) -> bool
+    def __eq__(self, other: "Rectangle") -> bool:
         return (
             isinstance(other, Rectangle)
             and self.position == other.position
@@ -372,7 +368,7 @@ class Rectangle(Shape):
             and self.angle == other.angle
         )
 
-    def __repr__(self):  # pragma: no coverage
+    def __repr__(self) -> str:  # pragma: no coverage
         return "<Rectangle>({}, {}, {}, {})".format(
             self.position, self.width, self.height, self.angle
         )
@@ -383,8 +379,7 @@ class Rectangle(Shape):
 # =============================================================================
 
 
-def string_to_JSON(string):
-    # type: (str) -> dict
+def string_to_JSON(string: str) -> dict:
     """
     Decodes a Factorio Blueprint string to a readable JSON Dict. Follows the
     data format specification `here <https://wiki.factorio.com/Blueprint_string_format>`_.
@@ -404,8 +399,7 @@ def string_to_JSON(string):
         raise MalformedBlueprintStringError(e)
 
 
-def JSON_to_string(JSON):
-    # type: (dict) -> str
+def JSON_to_string(JSON: dict) -> str:
     """
     Encodes a JSON dict to a Factorio-readable blueprint string.
 
@@ -429,8 +423,7 @@ def JSON_to_string(JSON):
     ).decode("utf-8")
 
 
-def encode_version(major, minor, patch=0, dev_ver=0):
-    # type: (int, int, int, int) -> int
+def encode_version(major: int, minor: int, patch: int = 0, dev_ver: int = 0) -> int:
     """
     Converts version components to version number.
 
@@ -449,8 +442,7 @@ def encode_version(major, minor, patch=0, dev_ver=0):
     return (major << 48) | (minor << 32) | (patch << 16) | (dev_ver)
 
 
-def decode_version(version_number):
-    # type: (int) -> tuple[int, int, int, int]
+def decode_version(version_number: int) -> tuple[int, int, int, int]:
     """
     Converts version number to version components.
     Decodes a 64 bit unsigned integer into 4 unsigned shorts and returns them
@@ -469,8 +461,7 @@ def decode_version(version_number):
     return major, minor, patch, dev_ver
 
 
-def version_string_to_tuple(version_string):
-    # type: (str) -> tuple
+def version_string_to_tuple(version_string: str) -> tuple[int, ...]:
     """
     Converts a version string to a tuple.
 
@@ -487,8 +478,7 @@ def version_string_to_tuple(version_string):
     return tuple([int(elem) for elem in version_string.split(".")])
 
 
-def version_tuple_to_string(version_tuple):
-    # type: (tuple) -> str
+def version_tuple_to_string(version_tuple: tuple[int, ...]) -> str:
     """
     Converts a version tuple to a string.
 
@@ -509,8 +499,7 @@ def version_tuple_to_string(version_tuple):
 # =============================================================================
 
 
-def distance(point1, point2):
-    # type: (PrimitiveVector, PrimitiveVector) -> float
+def distance(point1: PrimitiveVector, point2: PrimitiveVector) -> float:
     """
     Gets the Euclidean distance between two points. This is mostly just for
     Python 2 compatability.
@@ -523,8 +512,9 @@ def distance(point1, point2):
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
 
 
-def rotate_vector(a, angle):  # TODO: change to rotate_point to be consistent
-    # type: (PrimitiveVector, float) -> PrimitiveVector
+def rotate_vector(
+    a: PrimitiveVector, angle: float
+) -> PrimitiveVector:  # TODO: change to rotate_point to be consistent
     """
     Rotate a given vector by ``angle`` radians around the origin.
 
@@ -539,8 +529,7 @@ def rotate_vector(a, angle):  # TODO: change to rotate_point to be consistent
     ]
 
 
-def dot_product(a, b):
-    # type: (PrimitiveVector, PrimitiveVector) -> float
+def dot_product(a: PrimitiveVector, b: PrimitiveVector) -> float:
     """
     Gets the dot product between two 2D vectors.
 
@@ -552,8 +541,7 @@ def dot_product(a, b):
     return a[0] * b[0] + a[1] * b[1]
 
 
-def magnitude(a):
-    # type: (PrimitiveVector) -> float
+def magnitude(a: PrimitiveVector) -> float:
     """
     Gets the magnitude of a point.
 
@@ -564,8 +552,7 @@ def magnitude(a):
     return math.sqrt(dot_product(a, a))
 
 
-def normalize(a):
-    # type: (PrimitiveVector) -> PrimitiveVector
+def normalize(a: PrimitiveVector) -> PrimitiveVector:
     """
     Normalizes a vector such that it's magnitude is equal to 1.
 
@@ -577,8 +564,7 @@ def normalize(a):
     return [a[0] / mag, a[1] / mag]
 
 
-def perpendicular(a):
-    # type: (PrimitiveVector) -> PrimitiveVector
+def perpendicular(a: PrimitiveVector) -> PrimitiveVector:
     """
     Returns a perpendicular 2D vector from another vector. Used to generate
     normal vectors for the Separating Axis Theorem.
@@ -595,8 +581,7 @@ def perpendicular(a):
 # =============================================================================
 
 
-def point_in_aabb(p, a):
-    # type: (PrimitiveVector, AABB) -> bool
+def point_in_aabb(p: PrimitiveVector, a: AABB) -> bool:
     """
     Checks to see if a PrimitiveVector ``p`` is located inside AABB ``a``.
 
@@ -610,8 +595,7 @@ def point_in_aabb(p, a):
     )
 
 
-def aabb_overlaps_aabb(a, b):
-    # type: (AABB, AABB) -> bool
+def aabb_overlaps_aabb(a: AABB, b: AABB) -> bool:
     """
     Checks to see if AABB ``a`` overlaps AABB ``b``.
 
@@ -630,8 +614,7 @@ def aabb_overlaps_aabb(a, b):
     )
 
 
-def point_in_circle(p, r, c=(0, 0)):
-    # type: (PrimitiveVector, float, PrimitiveVector) -> bool
+def point_in_circle(p: PrimitiveVector, r: float, c: PrimitiveVector = (0, 0)) -> bool:
     """
     Checks to see if a point ``p`` lies within radius ``r`` centered around
     point ``c``. If ``c`` is not provided, the origin is assumed.
@@ -647,8 +630,7 @@ def point_in_circle(p, r, c=(0, 0)):
     return dx * dx + dy * dy <= r * r
 
 
-def aabb_overlaps_circle(a, r, c):
-    # type: (AABB, float, PrimitiveVector) -> bool
+def aabb_overlaps_circle(a: AABB, r: float, c: PrimitiveVector) -> bool:
     """
     Checks to see if an AABB ``a`` overlaps a circle with radius ``r`` at point
     ``c``. Algorithm pulled from `<https://stackoverflow.com/a/402010/8167625>`_
@@ -685,7 +667,9 @@ def aabb_overlaps_circle(a, r, c):
     return corner_distance_sq <= r**2
 
 
-def flatten_points_on(points, axis, result):
+def flatten_points_on(
+    points: list[PrimitiveVector], axis: PrimitiveVector, result: PrimitiveVector
+):
     """
     Maps points along a particular axis, and returns the smallest and largest
     extent along said axis.
@@ -705,7 +689,11 @@ def flatten_points_on(points, axis, result):
     result[1] = maxpoint
 
 
-def is_separating_axis(a_points, b_points, axis):
+def is_separating_axis(
+    a_points: list[PrimitiveVector],
+    b_points: list[PrimitiveVector],
+    axis: PrimitiveVector,
+):
     """
     Checks to see if the points of two quads (when projected onto a face normal)
     have a space in between their encompassed ranges, returning True if there
@@ -725,8 +713,7 @@ def is_separating_axis(a_points, b_points, axis):
     return False
 
 
-def rect_overlaps_rect(a, b):
-    # type: (Rectangle, Rectangle) -> bool
+def rect_overlaps_rect(a: Rectangle, b: Rectangle) -> bool:
     """
     Checks to see whether or not two (rotatable) :py:class:`.Rectangles`
     intersect with each other. Sourced from:
@@ -753,8 +740,7 @@ def rect_overlaps_rect(a, b):
     return True
 
 
-def extend_aabb(a, b):
-    # type: (Union[AABB, None], Union[AABB, None]) -> Union[AABB, None]
+def extend_aabb(a: Optional[AABB], b: Optional[AABB]) -> Optional[AABB]:
     """
     Gets the minimum AABB that encompasses two other bounding boxes. Used to
     'grow' the size of a bounding box to encompass both inputs.
@@ -779,8 +765,7 @@ def extend_aabb(a, b):
         )
 
 
-def aabb_to_dimensions(aabb):
-    # type: (AABB) -> tuple[int, int]
+def aabb_to_dimensions(aabb: AABB) -> tuple[int, int]:
     """
     Gets the tile-dimensions of an AABB, or the minimum number of tiles across
     each axis that the box would have to take up. If the input `aabb` is None,
@@ -794,8 +779,8 @@ def aabb_to_dimensions(aabb):
     if aabb is None:
         return (0, 0)
 
-    if not isinstance(aabb, AABB):
-        aabb = AABB(aabb[0][0], aabb[0][1], aabb[1][0], aabb[1][1])
+    # if not isinstance(aabb, AABB):
+    #     aabb = AABB(aabb[0][0], aabb[0][1], aabb[1][0], aabb[1][1])
 
     x = int(math.ceil(aabb.bot_right[0] - aabb.top_left[0]))
     y = int(math.ceil(aabb.bot_right[1] - aabb.top_left[1]))
@@ -877,7 +862,7 @@ def parse_energy(energy_string: str) -> int:
     else:
         digits_string = energy_string[:-1]
 
-    return int(digits_string) * multiplier
+    return round(int(digits_string) * multiplier)
 
 
 # def ignore_traceback(func):

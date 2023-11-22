@@ -151,5 +151,5 @@ def main():
     print(blueprint.to_string())
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no coverage
     main()

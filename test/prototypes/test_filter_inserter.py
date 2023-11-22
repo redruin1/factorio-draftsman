@@ -3,8 +3,12 @@
 from draftsman.constants import Direction, ReadMode
 from draftsman.entity import FilterInserter, filter_inserters, Container
 from draftsman.error import DataFormatError, InvalidItemError
-from draftsman.signatures import Filters
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.signatures import FilterEntry
+from draftsman.warning import (
+    UnknownEntityWarning,
+    UnknownItemWarning,
+    UnknownKeywordWarning,
+)
 
 from collections.abc import Hashable
 import pytest
@@ -101,9 +105,7 @@ class TestFilterInserter:
         with pytest.raises(DataFormatError):
             FilterInserter("filter-inserter", override_stack_size="incorrect")
         with pytest.raises(DataFormatError):
-            FilterInserter(
-                "filter-inserter", connections="incorrect"
-            )
+            FilterInserter("filter-inserter", connections="incorrect")
         with pytest.raises(DataFormatError):
             FilterInserter(
                 "filter-inserter",
@@ -136,30 +138,63 @@ class TestFilterInserter:
     def test_set_item_filter(self):
         inserter = FilterInserter("filter-inserter")
         inserter.set_item_filter(0, "wooden-chest")
-        assert inserter.filters == Filters(root=[{"index": 1, "name": "wooden-chest"}])
+        assert inserter.filters == [FilterEntry(**{"index": 1, "name": "wooden-chest"})]
 
         # Modify in place
         inserter.set_item_filter(0, "iron-chest")
-        assert inserter.filters == Filters(root=[{"index": 1, "name": "iron-chest"}])
+        assert inserter.filters == [FilterEntry(**{"index": 1, "name": "iron-chest"})]
 
         inserter.filters = None
         assert inserter.filters == None
-        with pytest.raises(IndexError):
+        with pytest.raises(DataFormatError):
             inserter.set_item_filter(100, "wooden-chest")
-        
-        with pytest.raises(InvalidItemError):
-            inserter.set_item_filter(0, "unknown-item")
 
-        assert inserter.filters == None
+        with pytest.warns(UnknownItemWarning):
+            inserter.set_item_filter(0, "unknown-item")
+        assert inserter.filters == [FilterEntry(**{"index": 1, "name": "unknown-item"})]
 
         # Init if None
         inserter.set_item_filter(0, "wooden-chest")
         inserter.set_item_filter(1, "iron-chest")
-        assert inserter.filters == Filters(root=[{"index": 1, "name": "wooden-chest"}, {"index": 2, "name": "iron-chest"}])
+        assert inserter.filters == [
+            FilterEntry(**{"index": 1, "name": "wooden-chest"}),
+            FilterEntry(**{"index": 2, "name": "iron-chest"}),
+        ]
 
         # Delete if set to None
         inserter.set_item_filter(1, None)
-        assert inserter.filters == Filters(root=[{"index": 1, "name": "wooden-chest"}])
+        assert inserter.filters == [FilterEntry(**{"index": 1, "name": "wooden-chest"})]
+
+        with pytest.raises(DataFormatError):
+            inserter.set_item_filter("incorrect", "incorrect")
+
+    def test_set_item_filters(self):
+        inserter = FilterInserter("filter-inserter")
+
+        # Shorthand
+        inserter.set_item_filters("iron-plate", "copper-plate", "steel-plate")
+        assert inserter.filters == [
+            FilterEntry(index=1, name="iron-plate"),
+            FilterEntry(index=2, name="copper-plate"),
+            FilterEntry(index=3, name="steel-plate"),
+        ]
+
+        # Longhand
+        longhand = [
+            {"index": 1, "name": "iron-plate"},
+            {"index": 2, "name": "copper-plate"},
+            {"index": 3, "name": "steel-plate"},
+        ]
+        inserter.set_item_filters(*longhand)
+        assert inserter.filters == [
+            FilterEntry(index=1, name="iron-plate"),
+            FilterEntry(index=2, name="copper-plate"),
+            FilterEntry(index=3, name="steel-plate"),
+        ]
+
+        # None case
+        inserter.set_item_filters(None)
+        assert inserter.filters == None
 
     def test_mergable_with(self):
         inserter1 = FilterInserter("filter-inserter")
@@ -199,7 +234,7 @@ class TestFilterInserter:
 
         assert inserter1.filter_mode == "whitelist"
         assert inserter1.override_stack_size == 1
-        assert inserter1.filters == Filters(root=[{"name": "coal", "index": 1}])
+        assert inserter1.filters == [FilterEntry(**{"name": "coal", "index": 1})]
         assert inserter1.tags == {"some": "stuff"}
 
     def test_eq(self):

@@ -70,10 +70,14 @@ class TestRailChainSignal:
     def test_set_blue_output_signal(self):
         rail_signal = RailChainSignal()
         rail_signal.blue_output_signal = "signal-A"
-        assert rail_signal.blue_output_signal == SignalID(name="signal-A", type="virtual")
-        
+        assert rail_signal.blue_output_signal == SignalID(
+            name="signal-A", type="virtual"
+        )
+
         rail_signal.blue_output_signal = {"name": "signal-A", "type": "virtual"}
-        assert rail_signal.blue_output_signal == SignalID(name="signal-A", type="virtual")
+        assert rail_signal.blue_output_signal == SignalID(
+            name="signal-A", type="virtual"
+        )
 
         rail_signal.blue_output_signal = None
         assert rail_signal.blue_output_signal == None
@@ -82,6 +86,16 @@ class TestRailChainSignal:
             rail_signal.blue_output_signal = TypeError
         with pytest.raises(DataFormatError):
             rail_signal.blue_output_signal = "incorrect"
+
+        rail_signal.validate_assignment = "none"
+
+        rail_signal.blue_output_signal = "incorrect"
+        assert rail_signal.blue_output_signal == "incorrect"
+        assert rail_signal.to_dict() == {
+            "name": "rail-chain-signal",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"blue_output_signal": "incorrect"},
+        }
 
     def test_mergable_with(self):
         signal1 = RailChainSignal("rail-chain-signal")
@@ -120,12 +134,14 @@ class TestRailChainSignal:
         signal1.merge(signal2)
         del signal2
 
-        assert signal1.control_behavior == RailChainSignal.Format.ControlBehavior(**{
-            "red_output_signal": "signal-A",
-            "orange_output_signal": "signal-B",
-            "green_output_signal": "signal-C",
-            "blue_output_signal": "signal-D",
-        })
+        assert signal1.control_behavior == RailChainSignal.Format.ControlBehavior(
+            **{
+                "red_output_signal": "signal-A",
+                "orange_output_signal": "signal-B",
+                "green_output_signal": "signal-C",
+                "blue_output_signal": "signal-D",
+            }
+        )
         assert signal1.tags == {"some": "stuff"}
 
         assert signal1.to_dict()["control_behavior"] == {

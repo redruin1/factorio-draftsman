@@ -25,7 +25,7 @@ class ModulesMixin:  # (RequestItemsMixin)
         ):
             if not info.context or value is None:
                 return value
-            if info.context["mode"] is ValidationMode.MINIMUM:
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return value
 
             entity: "ModulesMixin" = info.context["object"]
@@ -37,15 +37,15 @@ class ModulesMixin:  # (RequestItemsMixin)
                 return value
 
             if entity.module_slots_occupied > entity.total_module_slots:
-                issue = ModuleCapacityWarning(
-                    "Current number of module slots used ({}) greater than max module capacity ({}) for entity '{}'".format(
-                        entity.module_slots_occupied,
-                        entity.total_module_slots,
-                        entity.name,
+                warning_list.append(
+                    ModuleCapacityWarning(
+                        "Current number of module slots used ({}) greater than max module capacity ({}) for entity '{}'".format(
+                            entity.module_slots_occupied,
+                            entity.total_module_slots,
+                            entity.name,
+                        )
                     )
                 )
-
-                warning_list.append(issue)
 
             return value
 
@@ -56,7 +56,7 @@ class ModulesMixin:  # (RequestItemsMixin)
         ):
             if not info.context or value is None:
                 return value
-            if info.context["mode"] is ValidationMode.MINIMUM:
+            if info.context["mode"] <= ValidationMode.MINIMUM:
                 return value
 
             entity: "ModulesMixin" = info.context["object"]
@@ -77,13 +77,13 @@ class ModulesMixin:  # (RequestItemsMixin)
                     else:
                         reason_string = "this machine does not accept modules"
 
-                    issue = ModuleNotAllowedWarning(
-                        "Cannot add module '{}' to '{}'; {}".format(
-                            item, entity.name, reason_string
+                    warning_list.append(
+                        ModuleNotAllowedWarning(
+                            "Cannot add module '{}' to '{}'; {}".format(
+                                item, entity.name, reason_string
+                            )
                         )
                     )
-
-                    warning_list.append(issue)
 
             return value
 

@@ -79,6 +79,8 @@ class DeciderCombinator(
                     """
                     if not info.context or self.output_signal is None:
                         return self
+                    if info.context["mode"] <= ValidationMode.MINIMUM:
+                        return self
 
                     warning_list: list = info.context["warning_list"]
 
@@ -91,12 +93,13 @@ class DeciderCombinator(
                         first_signal_name, {"signal-anything", "signal-each"}
                     )
                     if self.output_signal.name in current_blacklist:
-                        issue = PureVirtualDisallowedWarning(
-                            "'{}' cannot be an output_signal when '{}' is the first operand; 'output_signal' will be removed when imported".format(
-                                self.output_signal.name, first_signal_name
-                            ),
+                        warning_list.append(
+                            PureVirtualDisallowedWarning(
+                                "'{}' cannot be an output_signal when '{}' is the first operand; 'output_signal' will be removed when imported".format(
+                                    self.output_signal.name, first_signal_name
+                                ),
+                            )
                         )
-                        warning_list.append(issue)
 
                     return self
 
@@ -106,16 +109,19 @@ class DeciderCombinator(
                 ):
                     if not info.context or self.second_signal is None:
                         return self
+                    if info.context["mode"] <= ValidationMode.MINIMUM:
+                        return self
 
                     warning_list: list = info.context["warning_list"]
 
                     if self.second_signal.name in signals.pure_virtual:
-                        issue = PureVirtualDisallowedWarning(
-                            "'second_signal' cannot be set to pure virtual signal '{}'; will be removed when imported".format(
-                                self.second_signal.name
+                        warning_list.append(
+                            PureVirtualDisallowedWarning(
+                                "'second_signal' cannot be set to pure virtual signal '{}'; will be removed when imported".format(
+                                    self.second_signal.name
+                                )
                             )
                         )
-                        warning_list.append(issue)
 
                     return self
 
@@ -131,8 +137,8 @@ class DeciderCombinator(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
-        connections: Connections = Connections(),
-        control_behavior: Format.ControlBehavior = Format.ControlBehavior(),
+        connections: Connections = {},
+        control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -162,8 +168,7 @@ class DeciderCombinator(
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
@@ -320,7 +325,7 @@ class DeciderCombinator(
         if value is None:  # Default
             self.control_behavior.decider_conditions.second_signal = None
             self.control_behavior.decider_conditions.constant = None
-        elif isinstance(value, int):  # Constant
+        elif isinstance(value, (int, float)):  # Constant
             if self.validate_assignment:
                 value = attempt_and_reissue(
                     self,
@@ -347,7 +352,6 @@ class DeciderCombinator(
 
     @property
     def output_signal(self) -> Optional[SignalID]:
-        # type: () -> dict
         """
         The output signal of the ``ArithmeticCombinator``.
 
@@ -445,7 +449,7 @@ class DeciderCombinator(
             }
         }
 
-        if isinstance(second_operand, int):
+        if isinstance(second_operand, (int, float)):
             new_control_behavior["decider_conditions"]["constant"] = second_operand
         else:
             new_control_behavior["decider_conditions"]["second_signal"] = second_operand

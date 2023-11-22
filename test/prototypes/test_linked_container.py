@@ -47,7 +47,7 @@ class TestLinkedContainer:
 
         container.link_id = None
         assert container.link_id == 0
-        
+
         with pytest.raises(DataFormatError):
             container.link_id = "incorrect"
 

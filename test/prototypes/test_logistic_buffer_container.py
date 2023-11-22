@@ -6,7 +6,7 @@ from draftsman.entity import (
     Container,
 )
 from draftsman.error import DataFormatError
-from draftsman.signatures import RequestFilters
+from draftsman.signatures import RequestFilter
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -89,9 +89,7 @@ class TestLogisticBufferContainer:
         with pytest.raises(DataFormatError):
             LogisticBufferContainer("logistic-chest-buffer", bar="not even trying")
         with pytest.raises(DataFormatError):
-            LogisticBufferContainer(
-                "logistic-chest-buffer", connections="incorrect"
-            )
+            LogisticBufferContainer("logistic-chest-buffer", connections="incorrect")
         with pytest.raises(DataFormatError):
             LogisticBufferContainer(
                 "logistic-chest-buffer", request_filters={"this is": ["very", "wrong"]}
@@ -137,9 +135,9 @@ class TestLogisticBufferContainer:
         del container2
 
         assert container1.bar == 10
-        assert container1.request_filters == RequestFilters(root=[
-            {"name": "utility-science-pack", "index": 1, "count": 10}
-        ])
+        assert container1.request_filters == [
+            RequestFilter(**{"name": "utility-science-pack", "index": 1, "count": 10})
+        ]
         assert container1.tags == {"some": "stuff"}
 
     def test_eq(self):

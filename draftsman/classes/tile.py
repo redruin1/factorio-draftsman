@@ -10,38 +10,74 @@
 """
 
 from draftsman.classes.collision_set import CollisionSet
+from draftsman.classes.exportable import (
+    Exportable,
+    ValidationResult,
+    attempt_and_reissue,
+)
 from draftsman.classes.spatial_like import SpatialLike
-from draftsman.classes.vector import Vector
-from draftsman.error import InvalidTileError, DraftsmanError
-from draftsman.signatures import DraftsmanBaseModel, IntPosition
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.error import DataFormatError, DraftsmanError
+from draftsman.signatures import DraftsmanBaseModel, IntPosition, TileName
 from draftsman.utils import AABB
 
 import draftsman.data.tiles as tiles
 
-import difflib
-from pydantic import ConfigDict, GetCoreSchemaHandler
+from pydantic import (
+    ConfigDict,
+    GetCoreSchemaHandler,
+    Field,
+    PrivateAttr,
+    ValidationError,
+    field_serializer,
+)
 from pydantic_core import CoreSchema, core_schema
-from typing import Any, TYPE_CHECKING, Union, Tuple
+from typing import Any, Literal, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.blueprint import Blueprint
+    from draftsman.classes.collection import TileCollection
 
 _TILE_COLLISION_SET = CollisionSet([AABB(0, 0, 1, 1)])
 
 
-class Tile(SpatialLike):
+class Tile(SpatialLike, Exportable):
     """
     Tile class. Used for keeping track of tiles in Blueprints.
     """
 
     class Format(DraftsmanBaseModel):
-        name: str
-        position: IntPosition
+        _position: Vector = PrivateAttr()
 
-        model_config = ConfigDict(title="Tile", )
+        name: TileName = Field(..., description="""The Factorio ID of the tile.""")
+        position: IntPosition = Field(
+            IntPosition(x=0, y=0),
+            description="""
+            The position of the tile in the blueprint. Specified in integer, 
+            tile coordinates.
+            """,
+        )
 
-    def __init__(self, name, position=(0, 0)):
-        # type: (str, Tuple[int, int]) -> None
+        @field_serializer("position")
+        def serialize_position(self, _):
+            # TODO: make this use global position for when we add this to groups
+            return self._position.to_dict()
+
+        model_config = ConfigDict(
+            title="Tile",
+        )
+
+    def __init__(
+        self,
+        name: str,
+        position=(0, 0),
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+    ):
         """
         Create a new Tile with ``name`` at ``position``. ``position`` defaults
         to ``(0, 0)``.
@@ -53,6 +89,15 @@ class Tile(SpatialLike):
         :exception IndexError: If the position does not match the correct
             specification.
         """
+        self._root: __class__.Format
+
+        super().__init__()
+
+        self._root = __class__.Format.model_construct()
+
+        # Setup private attributes
+        self._root._position = Vector(0, 0)
+
         # Reference to parent blueprint
         self._parent = None
 
@@ -62,18 +107,20 @@ class Tile(SpatialLike):
         # Tile positions are in integer grid coordinates
         self.position = position
 
+        self.validate_assignment = validate_assignment
+
+        self.validate(mode=validate).reissue_all(stacklevel=3)
+
     # =========================================================================
 
     @property
-    def parent(self):
-        # type: () -> Blueprint
+    def parent(self) -> Optional["TileCollection"]:
         return self._parent
 
     # =========================================================================
 
     @property
-    def name(self):
-        # type: () -> str
+    def name(self) -> str:
         """
         The name of the Tile.
 
@@ -88,18 +135,22 @@ class Tile(SpatialLike):
         :exception InvalidTileError: If the set name is not a valid Factorio
             tile id.
         """
-        return self._name
+        return self._root.name
 
     @name.setter
-    def name(self, value):
-        # type: (str) -> None
-        self._name = value
+    def name(self, value: str):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "name", value
+            )
+            self._root.name = result
+        else:
+            self._root.name = value
 
     # =========================================================================
 
     @property
-    def position(self):
-        # type: () -> dict
+    def position(self) -> Vector:
         """
         The position of the tile, in tile-grid coordinates.
 
@@ -117,21 +168,19 @@ class Tile(SpatialLike):
         :exception IndexError: If the set value does not match the above
             specification.
         """
-        return self._position
+        return self._root._position
 
     @position.setter
-    def position(self, value):
-        # type: (Union[dict, list, tuple]) -> None
-
+    def position(self, value: Union[PrimitiveVector, Vector]):
         if self.parent:
             raise DraftsmanError("Cannot move tile while it's inside a TileCollection")
 
-        self._position = Vector.from_other(value, int)
+        self._root._position.update_from_other(value, int)
 
     # =========================================================================
 
     @property
-    def global_position(self):
+    def global_position(self) -> Vector:
         # This is redundant in this case because tiles cannot be placed inside
         # of Groups (yet)
         # However, it's still necessary.
@@ -140,64 +189,18 @@ class Tile(SpatialLike):
     # =========================================================================
 
     @property
-    def collision_set(self):
-        # type: () -> CollisionSet
+    def collision_set(self) -> CollisionSet:
         return _TILE_COLLISION_SET
 
     # =========================================================================
 
     @property
-    def collision_mask(self):
-        # type: () -> set
-        try:
-            return tiles.raw[self.name]["collision_mask"]
-        except KeyError:
-            return set()
+    def collision_mask(self) -> Optional[set]:
+        return tiles.raw.get(self.name, {"collision_mask": None})["collision_mask"]
 
     # =========================================================================
 
-    def inspect(self):
-        # type: () -> list[Exception]
-        """
-        Checks the tile to see if Draftsman thinks that it can be loaded in game,
-        and returns a list of all potential issues that Draftsman cannot fix on
-        it's own. Also performs any data normalization steps, if needed.
-        Returns an empty list if there are no issues.
-
-        :raises InvalidTileError: If :py:attr:`name` is not recognized by
-            Draftsman to be a valid tile name.
-
-        :example:
-
-        .. code-block:: python
-
-            tile = Tile("unknown-name")
-            for issue in tile.valdiate():
-                if type(issue) is InvalidTileError:
-                    tile = Tile("concrete")  # swap the tile to a known one
-                else:  # some other error
-                    raise issue
-        """
-        issues = []
-
-        if self.name not in tiles.raw:
-            suggestions = difflib.get_close_matches(self.name, tiles.raw, n=1)
-            if len(suggestions) > 0:
-                suggestion_string = "; did you mean '{}'?".format(suggestions[0])
-            else:
-                suggestion_string = ""
-            issues.append(
-                InvalidTileError(
-                    "'{}' is not a valid name for this {}{}".format(
-                        self.name, type(self).__name__, suggestion_string
-                    )
-                )
-            )
-
-        return issues
-
-    def mergable_with(self, other):
-        # type: (Tile) -> bool
+    def mergable_with(self, other: "Tile") -> bool:
         """
         Determines if two entities are mergeable, or that they can be combined
         into a single tile. Two tiles are considered mergable if they have the
@@ -213,8 +216,7 @@ class Tile(SpatialLike):
             and self.position == other.position
         )
 
-    def merge(self, other):
-        # type: (Tile) -> None
+    def merge(self, other: "Tile"):
         """
         Merges this tile with another one. Due to the simplicity of tiles, this
         does nothing as long as the merged tiles are of the same name. Allows
@@ -225,14 +227,45 @@ class Tile(SpatialLike):
         """
         pass
 
-    def to_dict(self):
-        # type: () -> dict
-        """
-        Converts the Tile to its JSON-dict representation.
+    # def to_dict(self) -> dict:
+    #     """
+    #     Converts the Tile to its JSON-dict representation.
 
-        :returns: The exported JSON-dict representation of the Tile.
-        """
-        return {"name": self.name, "position": self.position.to_dict()}
+    #     :returns: The exported JSON-dict representation of the Tile.
+    #     """
+    #     return {"name": self.name, "position": self.position.to_dict()}
+
+    def validate(
+        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    ) -> ValidationResult:  # TODO: defer to parent
+        mode = ValidationMode(mode)
+
+        output = ValidationResult([], [])
+
+        if mode is ValidationMode.NONE or (self.is_valid and not force):
+            return output
+
+        context = {
+            "mode": mode,
+            "object": self,
+            "warning_list": [],
+            "assignment": False,
+        }
+
+        try:
+            result = self.Format.model_validate(
+                self._root, strict=False, context=context
+            )
+            # Reassign private attributes
+            result._position = self._root._position
+            # Acquire the newly converted data
+            self._root = result
+        except ValidationError as e:
+            output.error_list.append(DataFormatError(e))
+
+        output.warning_list += context["warning_list"]
+
+        return output
 
     # =========================================================================
 
@@ -243,10 +276,11 @@ class Tile(SpatialLike):
             and self.position == other.position
         )
 
-    def __repr__(self):  # pragma: no coverage
-        # type: () -> str
+    def __repr__(self) -> str:  # pragma: no coverage
         return "<Tile>{}".format(self.to_dict())
-    
+
     @classmethod
-    def __get_pydantic_core_schema__(cls, _source_type: Any, handler: GetCoreSchemaHandler) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(cls, handler(Tile.Format)) # TODO: correct annotation
+    def __get_pydantic_core_schema__(
+        cls, _, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:  # pragma: no coverage
+        return core_schema.no_info_after_validator_function(cls, handler(Tile.Format))

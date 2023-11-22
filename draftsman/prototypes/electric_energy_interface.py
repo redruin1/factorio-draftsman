@@ -99,8 +99,7 @@ class ElectricEnergyInterface(Entity):
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
@@ -163,7 +162,6 @@ class ElectricEnergyInterface(Entity):
 
     @buffer_size.setter
     def buffer_size(self, value: Optional[float]):
-        # type: (int) -> None
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self, type(self).Format, self._root, "buffer_size", value

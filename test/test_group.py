@@ -118,16 +118,20 @@ class TestGroup:
         assert len(group.schedules) == 1
         assert group.schedules[0].locomotives[0]() is group.entities[0]
         assert group.schedules[0].stops == [
-            {
-                "station": "AEnterprise",
-                "wait_conditions": WaitConditions(
-                    [
-                        WaitCondition(type="time", compare_type="or", ticks=1800),
-                        WaitCondition(type="inactivity", compare_type="and"),
-                        WaitCondition(type="full", compare_type="and"),
-                    ]
-                ),
-            }
+            Schedule.Format.Stop(
+                **{
+                    "station": "AEnterprise",
+                    "wait_conditions": WaitConditions(
+                        [
+                            WaitCondition(type="time", compare_type="or", ticks=1800),
+                            WaitCondition(
+                                type="inactivity", compare_type="and", ticks=300
+                            ),
+                            WaitCondition(type="full", compare_type="and"),
+                        ]
+                    ),
+                }
+            )
         ]
 
         # Initialize from blueprint string with no entities
@@ -376,19 +380,19 @@ class TestGroup:
         # ScheduleList
         schedule = Schedule()
         schedule.add_locomotive(group.entities["test_train"])
-        schedule.append_stop(
-            "station_name", WaitCondition("inactivity", ticks=600)
-        )
+        schedule.append_stop("station_name", WaitCondition("inactivity", ticks=600))
         group.schedules = ScheduleList([schedule])
         assert isinstance(group.schedules, ScheduleList)
         assert group.schedules[0].locomotives[0]() is group.entities[0]
         assert group.schedules[0].stops == [
-            {
-                "station": "station_name",
-                "wait_conditions": WaitConditions(
-                    [WaitCondition("inactivity", ticks=600)]
-                ),
-            }
+            Schedule.Format.Stop(
+                **{
+                    "station": "station_name",
+                    "wait_conditions": WaitConditions(
+                        [WaitCondition("inactivity", ticks=600)]
+                    ),
+                }
+            )
         ]
 
         # None

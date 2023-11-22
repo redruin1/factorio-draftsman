@@ -16,7 +16,7 @@ from draftsman.constants import (
     Direction,
     Orientation,
     WaitConditionType,
-    WaitConditionCompareType,
+    ValidationMode,
 )
 from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.tile import Tile
@@ -34,7 +34,7 @@ from draftsman.error import (
     InvalidAssociationError,
     InvalidSignalError,
 )
-from draftsman.signatures import Color, Icons
+from draftsman.signatures import Color, Icon
 from draftsman.utils import encode_version, AABB
 from draftsman.warning import (
     DraftsmanWarning,
@@ -86,6 +86,17 @@ class TestBlueprint:
         }
         blueprint = Blueprint(example)
         assert blueprint.to_dict() == example
+
+        blueprint = Blueprint(example, validate="none")
+        assert blueprint.to_dict() == example
+
+        broken_example = {"blueprint": {"item": "blueprint", "version": "incorrect"}}
+
+        with pytest.raises(DataFormatError):
+            Blueprint(broken_example)
+
+        blueprint = Blueprint(broken_example, validate="none")
+        assert blueprint.to_dict() == broken_example
 
         # # TypeError
         # with self.assertRaises(TypeError):
@@ -237,19 +248,19 @@ class TestBlueprint:
         blueprint = Blueprint()
         # Single Icon
         blueprint.set_icons("signal-A")
-        assert blueprint.icons == Icons(root=[
-            {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
-        ])
-        assert blueprint["blueprint"]["icons"] == Icons(root=[
-            {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
-        ])
+        assert blueprint.icons == [
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
+        ]
+        assert blueprint["blueprint"]["icons"] == [
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
+        ]
         # Multiple Icon
         blueprint.set_icons("signal-A", "signal-B", "signal-C")
-        assert blueprint["blueprint"]["icons"] == Icons(root=[
-            {"signal": {"name": "signal-A", "type": "virtual"}, "index": 1},
-            {"signal": {"name": "signal-B", "type": "virtual"}, "index": 2},
-            {"signal": {"name": "signal-C", "type": "virtual"}, "index": 3},
-        ])
+        assert blueprint["blueprint"]["icons"] == [
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}),
+            Icon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}),
+            Icon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}),
+        ]
 
         # Raw signal dicts:
         # TODO: reimplement
@@ -277,6 +288,22 @@ class TestBlueprint:
         # Incorrect Signal dict format
         # with pytest.raises(TypeError):
         #     blueprint.set_icons({"incorrectly": "formatted"})
+
+        with pytest.raises(DataFormatError):
+            blueprint.icons = "incorrect"
+
+        blueprint.validate_assignment = "none"
+        assert blueprint.validate_assignment == ValidationMode.NONE
+
+        blueprint.icons = "incorrect"
+        assert blueprint.icons == "incorrect"
+        assert blueprint.to_dict() == {
+            "blueprint": {
+                "item": "blueprint",
+                "version": encode_version(*__factorio_version_info__),
+                "icons": "incorrect",
+            }
+        }
 
     # =========================================================================
 
@@ -2600,6 +2627,7 @@ class TestBlueprint:
         schedule.append_stop("Station A", WaitCondition(WaitConditionType.FULL_CARGO))
         schedule.append_stop("Station B", WaitCondition(WaitConditionType.EMPTY_CARGO))
         trains = bp.find_trains_filtered(schedule=schedule)
+        assert schedule.stops == bp.schedules[0].stops
         assert len(trains) == 1
 
         # Trains that follow a different schedule
@@ -2735,7 +2763,7 @@ class TestBlueprint:
 
     # =========================================================================
 
-    def test_equals(self):
+    def test_eq(self):
         blueprint1 = Blueprint()
 
         # Trivial case
@@ -2753,3 +2781,6 @@ class TestBlueprint:
         entity = Container("wooden-chest")
 
         assert blueprint1 != entity
+
+    def test_json_schema(self):
+        Blueprint.json_schema()

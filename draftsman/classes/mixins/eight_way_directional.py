@@ -4,8 +4,16 @@ from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import Direction
 from draftsman.signatures import IntPosition, uint8
 
-from pydantic import BaseModel, Field, PrivateAttr, field_serializer
-from typing import Optional
+from pydantic import (
+    BaseModel,
+    Field,
+    PrivateAttr,
+    ValidationInfo,
+    ValidatorFunctionWrapHandler,
+    field_serializer,
+    field_validator,
+)
+from typing import Any, Optional
 
 from typing import TYPE_CHECKING
 
@@ -42,7 +50,7 @@ class EightWayDirectionalMixin:
         self,
         name: str,
         similar_entities: list[str],
-        tile_position: IntPosition = [0, 0],
+        tile_position: IntPosition = (0, 0),
         **kwargs
     ):
         self._root: __class__.Format
@@ -112,7 +120,7 @@ class EightWayDirectionalMixin:
     # =========================================================================
 
     @property
-    def direction(self) -> Optional[Direction]:
+    def direction(self) -> Direction:
         """
         The direction that the Entity is facing. An Entity's "front" is usually
         the direction of it's outputs, if it has any.
@@ -135,7 +143,7 @@ class EightWayDirectionalMixin:
         return self._root.direction
 
     @direction.setter
-    def direction(self, value: Optional[Direction]):
+    def direction(self, value: Direction):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self, type(self).Format, self._root, "direction", value
@@ -157,25 +165,24 @@ class EightWayDirectionalMixin:
         # if self._root.direction in {2, 3, 6, 7}:
         #     self._tile_width = self._static_tile_height
         #     self._tile_height = self._static_tile_width
-            # self._collision_box[0] = [
-            #     self.static_collision_box[0][1],
-            #     self.static_collision_box[0][0],
-            # ]
-            # self._collision_box[1] = [
-            #     self.static_collision_box[1][1],
-            #     self.static_collision_box[1][0],
-            # ]
+        # self._collision_box[0] = [
+        #     self.static_collision_box[0][1],
+        #     self.static_collision_box[0][0],
+        # ]
+        # self._collision_box[1] = [
+        #     self.static_collision_box[1][1],
+        #     self.static_collision_box[1][0],
+        # ]
         # else:
         #     self._tile_width = self._static_tile_width
         #     self._tile_height = self._static_tile_height
-            # self._collision_box = self.static_collision_box
+        # self._collision_box = self.static_collision_box
 
         # self._collision_set = self._collision_set_rotation.get(
         #     self._root.direction, None
         # )
 
         # TODO: overwrite tile_width/height properties instead
-        print(self._root.direction)
         if self._root.direction in {2, 3, 6, 7}:
             print(self._static_tile_width, self._static_tile_height)
             self._tile_width = self._static_tile_height
@@ -190,8 +197,7 @@ class EightWayDirectionalMixin:
 
     # =========================================================================
 
-    def mergable_with(self, other):
-        # type: (Entity) -> bool
+    def mergable_with(self, other: "EightWayDirectionalMixin") -> bool:
         base_mergable = super().mergable_with(other)
         return base_mergable and self.direction == other.direction
 

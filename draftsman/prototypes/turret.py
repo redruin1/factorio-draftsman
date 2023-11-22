@@ -49,14 +49,14 @@ class Turret(RequestItemsMixin, DirectionalMixin, Entity):
             position=position,
             tile_position=tile_position,
             direction=direction,
+            items=items,
             tags=tags,
             **kwargs
         )
 
         self.validate_assignment = validate_assignment
 
-        if validate:
-            self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

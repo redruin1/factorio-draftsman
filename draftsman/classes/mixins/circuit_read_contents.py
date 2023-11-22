@@ -38,7 +38,7 @@ class CircuitReadContentsMixin:  # (ControlBehaviorMixin)
         pass
 
     @property
-    def read_contents(self) -> bool:
+    def read_contents(self) -> Optional[bool]:
         """
         Whether or not this Entity is set to read it's contents to a circuit
         network.
@@ -53,24 +53,23 @@ class CircuitReadContentsMixin:  # (ControlBehaviorMixin)
         return self.control_behavior.circuit_read_hand_contents
 
     @read_contents.setter
-    def read_contents(self, value: bool):
-        # type: (bool) -> None
+    def read_contents(self, value: Optional[bool]):
         if self.validate_assignment:
-            attempt_and_reissue(self, "circuit_read_hand_contents", value)
-
-        self.control_behavior.circuit_read_hand_contents = value
-
-        # if value is None:
-        #     self.control_behavior.pop("circuit_read_hand_contents", None)
-        # elif isinstance(value, bool):
-        #     self.control_behavior["circuit_read_hand_contents"] = value
-        # else:
-        #     raise TypeError("'read_contents' must be a bool or None")
+            result = attempt_and_reissue(
+                self,
+                self.Format.ControlBehavior,
+                self.control_behavior,
+                "circuit_read_hand_contents",
+                value,
+            )
+            self.control_behavior.circuit_read_hand_contents = result
+        else:
+            self.control_behavior.circuit_read_hand_contents = value
 
     # =========================================================================
 
     @property
-    def read_mode(self) -> ReadMode:
+    def read_mode(self) -> Optional[ReadMode]:
         """
         The mode in which the contents of the Entity should be read. Either
         ``ReadMode.PULSE`` or ``ReadMode.HOLD``.
@@ -85,13 +84,15 @@ class CircuitReadContentsMixin:  # (ControlBehaviorMixin)
         return self.control_behavior.circuit_contents_read_mode
 
     @read_mode.setter
-    def read_mode(self, value: ReadMode):
+    def read_mode(self, value: Optional[ReadMode]):
         if self.validate_assignment:
-            attempt_and_reissue(self, "circuit_contents_read_mode", value)
-
-        self.control_behavior.circuit_contents_read_mode = value
-
-        # if value is None:
-        #     self.control_behavior.pop("circuit_contents_read_mode", None)
-        # else:
-        #     self.control_behavior["circuit_contents_read_mode"] = ReadMode(value)
+            result = attempt_and_reissue(
+                self,
+                self.Format.ControlBehavior,
+                self.control_behavior,
+                "circuit_contents_read_mode",
+                value,
+            )
+            self.control_behavior.circuit_contents_read_mode = result
+        else:
+            self.control_behavior.circuit_contents_read_mode = value

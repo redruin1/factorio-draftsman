@@ -27,7 +27,7 @@ class InserterModeOfOperationMixin:  # (ControlBehaviorMixin)
         pass
 
     @property
-    def mode_of_operation(self) -> InserterModeOfOperation:
+    def mode_of_operation(self) -> Optional[InserterModeOfOperation]:
         """
         The behavior that the inserter should follow when connected to a circuit
         network.
@@ -42,11 +42,18 @@ class InserterModeOfOperationMixin:  # (ControlBehaviorMixin)
         return self.control_behavior.circuit_mode_of_operation
 
     @mode_of_operation.setter
-    def mode_of_operation(self, value: InserterModeOfOperation):
+    def mode_of_operation(self, value: Optional[InserterModeOfOperation]):
         if self.validate_assignment:
-            attempt_and_reissue(self, "circuit_mode_of_operation", value)
-
-        self.control_behavior.circuit_mode_of_operation = value
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "circuit_mode_of_operation",
+                value,
+            )
+            self.control_behavior.circuit_mode_of_operation = result
+        else:
+            self.control_behavior.circuit_mode_of_operation = value
 
 
 class LogisticModeOfOperationMixin:  # (ControlBehaviorMixin)
@@ -69,7 +76,7 @@ class LogisticModeOfOperationMixin:  # (ControlBehaviorMixin)
         pass
 
     @property
-    def mode_of_operation(self) -> LogisticModeOfOperation:
+    def mode_of_operation(self) -> Optional[LogisticModeOfOperation]:
         """
         The behavior that the logistic container should follow when connected to
         a circuit network.
@@ -84,8 +91,15 @@ class LogisticModeOfOperationMixin:  # (ControlBehaviorMixin)
         return self.control_behavior.circuit_mode_of_operation
 
     @mode_of_operation.setter
-    def mode_of_operation(self, value: LogisticModeOfOperation):
+    def mode_of_operation(self, value: Optional[LogisticModeOfOperation]):
         if self.validate_assignment:
-            attempt_and_reissue(self, "circuit_mode_of_operation", value)
-
-        self.control_behavior.circuit_mode_of_operation = value
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "circuit_mode_of_operation",
+                value,
+            )
+            self.control_behavior.circuit_mode_of_operation = result
+        else:
+            self.control_behavior.circuit_mode_of_operation = value
