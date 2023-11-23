@@ -69,12 +69,6 @@ class Wall(
                 """,
             )
 
-            model_config = ConfigDict(title="WallControlBehavior")
-
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
-
-        model_config = ConfigDict(title="Wall")
-
     # =========================================================================
 
     def __init__(

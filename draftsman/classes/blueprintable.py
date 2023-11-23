@@ -35,17 +35,9 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     are) overwritten in select circumstances.
     """
 
-    @reissue_warnings
-    def __init__(
-        self,
-        root_item: str,
-        root_format: DraftsmanBaseModel,
-        item: str,
-        init_data: Union[str, dict],
-        index: uint16 = None,
-        unknown: str = "error",
-        **kwargs
-    ):
+    @utils.reissue_warnings
+    def __init__(self, root_format, root_item, init_data, unknown):
+        # type: (str, BaseModel, str, Union[str, dict], str) -> None
         """
         Initializes the private ``_root`` data dictionary, as well as setting
         the ``item`` name.
@@ -88,8 +80,9 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
                 )
             )
 
-    @reissue_warnings
-    def load_from_string(self, string: str, if_unknown: str = "error"):
+    @utils.reissue_warnings
+    def load_from_string(self, string, unknown="error"):
+        # type: (str, str) -> None
         """
         Load the :py:class:`.Blueprintable` with the contents of ``string``.
 
@@ -121,7 +114,8 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         self.setup(**root[self._root_item], if_unknown=if_unknown)
 
     @abstractmethod
-    def setup(self, if_unknown: str = "error", **kwargs):  # pragma: no coverage
+    def setup(self, unknown="error", **kwargs):  # pragma: no coverage
+        # type: (str, **dict) -> None
         """
         Setup the Blueprintable's parameters with the input keywords as values.
         Primarily used by the constructor, but can be used at any time to set
