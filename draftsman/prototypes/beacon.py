@@ -1,74 +1,77 @@
 # beacon.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import ModulesMixin, RequestItemsMixin
-from draftsman.error import InvalidItemError
-from draftsman import utils
-from draftsman.warning import (
-    DraftsmanWarning,
-    ModuleLimitationWarning,
-    ItemLimitationWarning,
+from draftsman.classes.mixins import (
+    InputIngredientsMixin,
+    ModulesMixin,
+    RequestItemsMixin,
 )
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.signatures import uint32
 
 from draftsman.data.entities import beacons
-from draftsman.data import modules
-from draftsman.data import items
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Union
 
 
-class Beacon(ModulesMixin, RequestItemsMixin, Entity):
+class Beacon(InputIngredientsMixin, ModulesMixin, RequestItemsMixin, Entity):
     """
     An entity designed to apply module effects to other machine's in it's radius.
     """
 
-    # fmt: off
-    _exports = {
-        **Entity._exports,
-        **RequestItemsMixin._exports,
-        **ModulesMixin._exports,
-    }
-    # fmt: on
+    class Format(
+        InputIngredientsMixin.Format,
+        ModulesMixin.Format,
+        RequestItemsMixin.Format,
+        Entity.Format,
+    ):
+        model_config = ConfigDict(title="Beacon")
 
-    def __init__(self, name=beacons[0], **kwargs):
-        # type: (str, **dict) -> None
+    def __init__(
+        self,
+        name: str = beacons[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        items: dict[str, uint32] = {},  # TODO: ItemID
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
         """
         TODO
         """
 
-        super(Beacon, self).__init__(name, beacons, **kwargs)
+        super().__init__(
+            name,
+            beacons,
+            position=position,
+            tile_position=tile_position,
+            items=items,
+            tags=tags,
+            **kwargs
+        )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self.validate_assignment = validate_assignment
 
-        del self.unused_args
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
-    @utils.reissue_warnings
-    def set_item_request(self, item, count):
-        # type: (str, int) -> None
+    # =========================================================================
 
-        if item in items.raw and item not in modules.raw:
-            warnings.warn(
-                "Item '{}' cannot be placed in Beacon".format(item),
-                ItemLimitationWarning,
-                stacklevel=2,
-            )
-
-        if item in modules.categories["productivity"]:
-            warnings.warn(
-                "Cannot use '{}' in Beacon".format(item),
-                ModuleLimitationWarning,
-                stacklevel=2,
-            )
-
-        super(Beacon, self).set_item_request(item, count)
+    @property
+    def allowed_input_ingredients(self) -> set[str]:
+        """
+        Gets the list of items that are valid inputs ingredients for crafting
+        machines of all types. Returns ``None`` if this entity's name is not
+        recognized by Draftsman. Not exported; read only.
+        """
+        return set()
 
     # =========================================================================
 

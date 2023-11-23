@@ -1,14 +1,12 @@
 # request_filters.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-from draftsman import signatures
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.data import items
-from draftsman.error import InvalidItemError, DataFormatError
+from draftsman.error import DataFormatError
+from draftsman.signatures import RequestFilter
 
-from schema import SchemaError
-import six
+from pydantic import BaseModel, Field, ValidationError, field_validator
+from typing import Any, Optional, Sequence
 
 from typing import TYPE_CHECKING
 
@@ -16,35 +14,66 @@ if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
-class RequestFiltersMixin(object):
+class RequestFiltersMixin:
     """
     Used to allow Logistics Containers to request items from the Logistic
     network.
     """
 
-    _exports = {
-        "request_filters": {
-            "format": "TODO",
-            "description": "A list of all items requested by this entity",
-            "required": lambda x: x is not None,
-        }
-    }
+    class Format(BaseModel):
+        request_filters: Optional[list[RequestFilter]] = Field(
+            [],
+            description="""
+            Key which holds all of the logistics requests that this entity
+            has.
+            """,
+        )
 
-    def __init__(self, name, similar_entities, **kwargs):
-        # type: (str, list[str], **dict) -> None
-        super(RequestFiltersMixin, self).__init__(name, similar_entities, **kwargs)
+        @field_validator("request_filters", mode="before")
+        @classmethod
+        def normalize_validate(cls, value: Any):
+            if isinstance(value, Sequence):
+                result = []
+                for i, entry in enumerate(value):
+                    if isinstance(entry, (list, tuple)):
+                        result.append(
+                            {"index": i + 1, "name": entry[0], "count": entry[1]}
+                        )
+                    else:
+                        result.append(entry)
+                return result
+            else:
+                return value
 
-        self.request_filters = None
+    def __init__(self, name: str, similar_entities: list[str], **kwargs):
+        self._root: __class__.Format
 
-        if "request_filters" in kwargs:
-            self.set_request_filters(kwargs["request_filters"])
-            self.unused_args.pop("request_filters")
-        # self._add_export("request_filters", lambda x: x is not None)
+        super().__init__(name, similar_entities, **kwargs)
+
+        self.request_filters = kwargs.get("request_filters", None)
 
     # =========================================================================
 
-    def set_request_filter(self, index, item, count=None):
-        # type: (int, str, int) -> None
+    @property
+    def request_filters(self) -> Optional[list[RequestFilter]]:
+        """
+        TODO
+        """
+        return self._root.request_filters
+
+    @request_filters.setter
+    def request_filters(self, value: Optional[list[RequestFilter]]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "request_filters", value
+            )
+            self._root.request_filters = result
+        else:
+            self._root.request_filters = value
+
+    # =========================================================================
+
+    def set_request_filter(self, index: int, item: str, count: Optional[int] = None):
         """
         Sets the request filter at a particular index to request an amount of a
         certain item. Factorio imposes that an Entity can only have 1000 active
@@ -53,50 +82,47 @@ class RequestFiltersMixin(object):
         :param index: The index of the item request.
         :param item: The item name to request, or ``None``.
         :param count: The amount to request. If set to ``None``, it defaults to
-            the stack size of ``item``.
+            ``1``.
 
         :exception TypeError: If ``index`` is not an ``int``, ``item`` is not a
             ``str`` or ``None``, or ``count`` is not an ``int``.
         :exception InvalidItemError: If ``item`` is not a valid item name.
         :exception IndexError: If ``index`` is not in the range ``[0, 1000)``.
         """
-        try:
-            index = signatures.INTEGER.validate(index)
-            item = signatures.STRING_OR_NONE.validate(item)
-            count = signatures.INTEGER_OR_NONE.validate(count)
-        except SchemaError as e:
-            six.raise_from(TypeError(e), None)
+        if item is not None:
+            try:
+                new_entry = RequestFilter(index=index, name=item, count=count)
+                new_entry.index += 1
+            except ValidationError as e:
+                raise DataFormatError(e) from None
 
-        # if item is not None and item not in items.raw:
-        #     raise InvalidItemError("'{}'".format(item))
-        if not 0 <= index < 1000:
-            raise IndexError("Filter index ({}) not in range [0, 1000)".format(index))
-        if count is None:  # default count to the item's stack size
-            count = 0 if item is None else items.raw[item]["stack_size"]
-        if count < 0:
-            raise ValueError("Filter count ({}) must be positive".format(count))
-
-        if self.request_filters is None:
-            self.request_filters = []
+        new_filters = self.request_filters if self.request_filters is not None else []
 
         # Check to see if filters already contains an entry with the same index
-        for i, filter in enumerate(self.request_filters):
+        found_index = None
+        for i, filter in enumerate(new_filters):
             if filter["index"] == index + 1:  # Index already exists in the list
                 if item is None:  # Delete the entry
-                    del self.request_filters[i]
+                    del new_filters[i]
                 else:  # Set the new name + value
-                    self.request_filters[i]["name"] = item
-                    self.request_filters[i]["count"] = count
-                return
+                    new_filters[i]["name"] = item
+                    new_filters[i]["count"] = count
+                found_index = i
+                break
 
         # If no entry with the same index was found
-        self.request_filters.append({"index": index + 1, "name": item, "count": count})
+        if found_index is None:
+            new_filters.append(new_entry)
 
-    def set_request_filters(self, filters):
-        # type: (list) -> None
+        result = attempt_and_reissue(
+            self, type(self).Format, self._root, "request_filters", new_filters
+        )
+        self.request_filters = result
+
+    def set_request_filters(self, filters: list[tuple[str, int]]):
         """
-        Sets all the request filters of the Entity, where filters is of the
-        format::
+        Sets all the request filters of the Entity in a shorthand format, where
+        filters is of the format::
 
             [(item_1, count_1), (item_2, count_2), ...]
 
@@ -108,24 +134,13 @@ class RequestFiltersMixin(object):
             specified above.
         :exception InvalidItemError: If ``item_x`` is not a valid item name.
         """
-        # Validate filters
-        try:
-            filters = signatures.REQUEST_FILTERS.validate(filters)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        result = attempt_and_reissue(
+            self, type(self).Format, self._root, "request_filters", filters
+        )
+        self._root.request_filters = result
 
-        # Make sure the items are items
-        # for item in filters:
-        #     if item["name"] not in items.raw:
-        #         raise InvalidItemError(item["name"])
-
-        self.request_filters = []
-        for i in range(len(filters)):
-            self.set_request_filter(i, filters[i]["name"], filters[i]["count"])
-
-    def merge(self, other):
-        # type: (Entity) -> None
-        super(RequestFiltersMixin, self).merge(other)
+    def merge(self, other: "Entity"):
+        super().merge(other)
 
         self.request_filters = other.request_filters
 

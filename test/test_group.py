@@ -1,7 +1,4 @@
 # test_group.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman import __factorio_version_info__
 from draftsman.classes.association import Association
@@ -16,6 +13,7 @@ from draftsman.constants import Direction, WaitConditionType
 from draftsman.entity import *
 from draftsman.error import (
     DraftsmanError,
+    DataFormatError,
     InvalidWireTypeError,
     InvalidConnectionSideError,
     EntityNotPowerConnectableError,
@@ -25,24 +23,19 @@ from draftsman.error import (
     MalformedBlueprintStringError,
     IncorrectBlueprintTypeError,
 )
+from draftsman.signatures import Connections
 from draftsman.utils import encode_version, AABB
 from draftsman.warning import (
     ConnectionSideWarning,
     ConnectionDistanceWarning,
-    RailAlignmentWarning,
+    GridAlignmentWarning,
     OverlappingObjectsWarning,
 )
 
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class GroupTesting(unittest.TestCase):
+class TestGroup:
     def test_default_constructor(self):
         group = Group("default")
         assert group.id == "default"
@@ -125,16 +118,20 @@ class GroupTesting(unittest.TestCase):
         assert len(group.schedules) == 1
         assert group.schedules[0].locomotives[0]() is group.entities[0]
         assert group.schedules[0].stops == [
-            {
-                "station": "AEnterprise",
-                "wait_conditions": WaitConditions(
-                    [
-                        WaitCondition(type="time", compare_type="or", ticks=1800),
-                        WaitCondition(type="inactivity", compare_type="and"),
-                        WaitCondition(type="full", compare_type="and"),
-                    ]
-                ),
-            }
+            Schedule.Format.Stop(
+                **{
+                    "station": "AEnterprise",
+                    "wait_conditions": WaitConditions(
+                        [
+                            WaitCondition(type="time", compare_type="or", ticks=1800),
+                            WaitCondition(
+                                type="inactivity", compare_type="and", ticks=300
+                            ),
+                            WaitCondition(type="full", compare_type="and"),
+                        ]
+                    ),
+                }
+            )
         ]
 
         # Initialize from blueprint string with no entities
@@ -383,19 +380,19 @@ class GroupTesting(unittest.TestCase):
         # ScheduleList
         schedule = Schedule()
         schedule.add_locomotive(group.entities["test_train"])
-        schedule.append_stop(
-            "station_name", WaitCondition(WaitConditionType.INACTIVITY, ticks=600)
-        )
+        schedule.append_stop("station_name", WaitCondition("inactivity", ticks=600))
         group.schedules = ScheduleList([schedule])
         assert isinstance(group.schedules, ScheduleList)
         assert group.schedules[0].locomotives[0]() is group.entities[0]
         assert group.schedules[0].stops == [
-            {
-                "station": "station_name",
-                "wait_conditions": WaitConditions(
-                    [WaitCondition(WaitConditionType.INACTIVITY, ticks=600)]
-                ),
-            }
+            Schedule.Format.Stop(
+                **{
+                    "station": "station_name",
+                    "wait_conditions": WaitConditions(
+                        [WaitCondition("inactivity", ticks=600)]
+                    ),
+                }
+            )
         ]
 
         # None
@@ -407,7 +404,7 @@ class GroupTesting(unittest.TestCase):
         with pytest.raises(TypeError):
             group.schedules = dict()
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             group.schedules = ["incorrect", "format"]
 
     def test_power_connections(self):
@@ -429,27 +426,27 @@ class GroupTesting(unittest.TestCase):
         # Dual power connectable case
         group.add_power_connection("1", "p")
         assert group.entities["1"].neighbours == [Association(group.entities["2"])]
-        assert group.entities["p"].connections == {
+        assert group.entities["p"].to_dict()["connections"] == {
             "Cu0": [{"entity_id": Association(group.entities["1"]), "wire_id": 0}]
         }
         # Inverse, but redundant case
         group.add_power_connection("p", "1")
         assert group.entities["1"].neighbours == [Association(group.entities["2"])]
-        assert group.entities["p"].connections == {
+        assert group.entities["p"].to_dict()["connections"] == {
             "Cu0": [{"entity_id": Association(group.entities["1"]), "wire_id": 0}]
         }
         # Redundant case
         group.add_power_connection("2", "p")
         group.add_power_connection("2", "p")
         assert group.entities["2"].neighbours == [Association(group.entities["1"])]
-        assert group.entities["p"].connections == {
+        assert group.entities["p"].to_dict()["connections"] == {
             "Cu0": [
                 {"entity_id": Association(group.entities["1"]), "wire_id": 0},
                 {"entity_id": Association(group.entities["2"]), "wire_id": 0},
             ]
         }
         group.add_power_connection("p", "2", side=2)
-        assert group.entities["p"].connections == {
+        assert group.entities["p"].to_dict()["connections"] == {
             "Cu0": [
                 {"entity_id": Association(group.entities["1"]), "wire_id": 0},
                 {"entity_id": Association(group.entities["2"]), "wire_id": 0},
@@ -479,7 +476,7 @@ class GroupTesting(unittest.TestCase):
             Association(group.entities["2"]),
             Association(group.entities["other"]),
         ]
-        assert group.entities["p"].connections == {
+        assert group.entities["p"].to_dict()["connections"] == {
             "Cu0": [
                 {"entity_id": Association(group.entities["1"]), "wire_id": 0},
                 {"entity_id": Association(group.entities["2"]), "wire_id": 0},
@@ -498,7 +495,7 @@ class GroupTesting(unittest.TestCase):
         group.remove_power_connection("1", "p")
         group.remove_power_connection("1", "p")
         assert group.entities["1"].neighbours == [Association(group.entities["other"])]
-        assert group.entities["p"].connections == {
+        assert group.entities["p"].to_dict()["connections"] == {
             "Cu0": [{"entity_id": Association(group.entities["2"]), "wire_id": 0}],
             "Cu1": [{"entity_id": Association(group.entities["2"]), "wire_id": 0}],
         }
@@ -508,12 +505,12 @@ class GroupTesting(unittest.TestCase):
         group.remove_power_connection("p", "2", side=1)
         group.remove_power_connection("p", "1")
         group.remove_power_connection("p", "1")
-        assert group.entities["p"].connections == {
+        assert group.entities["p"].to_dict()["connections"] == {
             "Cu1": [{"entity_id": Association(group.entities["2"]), "wire_id": 0}]
         }
         group.remove_power_connection("2", "p", 2)
         group.remove_power_connection("2", "p", 2)
-        assert power_switch.connections == {}
+        assert power_switch.connections == Connections()
 
         # TODO: test setting connection by reference
 
@@ -558,12 +555,13 @@ class GroupTesting(unittest.TestCase):
 
         # set_connections to None
         group.entities["c1"].connections = {}
-        assert group.entities["c1"].connections == {}
+        assert group.entities["c1"].connections == Connections()
 
         # Test when the same side and color dict already exists
         container3 = Container("wooden-chest", id="test")
         group.entities.append(container3)
         group.add_circuit_connection("red", "c2", "test")
+        print(group.entities["c2"])
         assert group.entities["c2"].to_dict() == {
             "name": "steel-chest",
             "position": {"x": 1.5, "y": 0.5},
@@ -586,7 +584,7 @@ class GroupTesting(unittest.TestCase):
 
         group2.add_circuit_connection("green", "a", "a", 1, 2)
         group2.add_circuit_connection("red", "d", "a", 1, 2)
-        assert group2.entities["a"].connections == {
+        assert group2.entities["a"].to_dict()["connections"] == {
             "1": {
                 "green": [
                     {
@@ -610,7 +608,7 @@ class GroupTesting(unittest.TestCase):
                 ],
             },
         }
-        assert group2.entities["d"].connections == {
+        assert group2.entities["d"].to_dict()["connections"] == {
             "1": {
                 "red": [
                     {
@@ -729,11 +727,11 @@ class GroupTesting(unittest.TestCase):
         group2.remove_circuit_connection("red", "a", "d", 2, 1)
         group2.remove_circuit_connection("red", "a", "d", 2, 2)
 
-        assert group2.entities["a"].connections == {}
-        assert group2.entities["d"].connections == {
+        assert "connections" not in group2.entities["a"].to_dict()
+        assert group2.entities["d"].to_dict()["connections"] == {
             "2": {"red": [{"entity_id": Association(group2.entities["c"])}]}
         }
-        assert group2.entities["c"].connections == {
+        assert group2.entities["c"].to_dict()["connections"] == {
             "1": {
                 "red": [
                     {
@@ -1044,7 +1042,7 @@ class GroupTesting(unittest.TestCase):
         group.entities.append("straight-rail")
         assert group.double_grid_aligned == True
 
-        with pytest.warns(RailAlignmentWarning):
+        with pytest.warns(GridAlignmentWarning):
             group.translate(1, 1)
 
     def test_rotate(self):

@@ -1,41 +1,70 @@
 # reactor.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import RequestItemsMixin
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.mixins import BurnerEnergySourceMixin, RequestItemsMixin
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.signatures import uint32
 
 from draftsman.data.entities import reactors
 
-import warnings
+from pydantic import ConfigDict, ValidationInfo, field_validator
+from typing import Any, Literal, Optional, Union
 
 
-class Reactor(RequestItemsMixin, Entity):
+class Reactor(BurnerEnergySourceMixin, RequestItemsMixin, Entity):
     """
     An entity that converts a fuel into thermal energy.
     """
 
-    # fmt: off
-    _exports = {
-        **Entity._exports,
-        **RequestItemsMixin._exports
-    }
-    # fmt: on
+    class Format(
+        BurnerEnergySourceMixin.Format, RequestItemsMixin.Format, Entity.Format
+    ):
+        model_config = ConfigDict(title="Reactor")
 
-    def __init__(self, name=reactors[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(Reactor, self).__init__(name, reactors, **kwargs)
+    def __init__(
+        self,
+        name: str = reactors[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        items: dict[str, uint32] = {},
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        super().__init__(
+            name,
+            reactors,
+            position=position,
+            tile_position=tile_position,
+            items=items,
+            tags=tags,
+            **kwargs
+        )
 
-        del self.unused_args
+        # TODO: technically, a reactor can have more than just a burnable energy
+        # source; it could have any type of energy source other than heat as
+        # input. Thus, we need to make sure that the attributes from
+        # BurnerEnergySourceMixin are only used in the correct configuration
+
+        self.validate_assignment = validate_assignment
+
+        self.validate(mode=validate).reissue_all(stacklevel=3)
+
+    # =========================================================================
+
+    @property
+    def allowed_items(self) -> Optional[set[str]]:
+        return self.allowed_fuel_items
 
     # =========================================================================
 

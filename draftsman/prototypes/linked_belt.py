@@ -1,17 +1,15 @@
 # linked_belt.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
 from draftsman.error import DraftsmanError
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
 
 from draftsman.data.entities import linked_belts
-from draftsman.data import entities
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Union
 
 try:  # pragma: no coverage
     default_linked_belt = linked_belts[0]
@@ -30,30 +28,47 @@ class LinkedBelt(DirectionalMixin, Entity):
         entity, as I can't seem to figure out the example one in the game.
     """
 
-    # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports
-    }
-    # fmt: on
+    class Format(DirectionalMixin.Format, Entity.Format):
+        model_config = ConfigDict(title="LinkedBelt")
 
-    def __init__(self, name=default_linked_belt, **kwargs):
-        # type: (str, **dict) -> None
+    def __init__(
+        self,
+        name: str = linked_belts[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
+
+        # TODO: this should be better
         if len(linked_belts) == 0:  # pragma: no coverage
             raise DraftsmanError(
                 "There is no LinkedBelt to create; check your Factorio version"
             )
 
-        super(LinkedBelt, self).__init__(name, linked_belts, **kwargs)
+        super().__init__(
+            name,
+            linked_belts,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            tags=tags,
+            **kwargs
+        )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self.validate_assignment = validate_assignment
 
-        del self.unused_args
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

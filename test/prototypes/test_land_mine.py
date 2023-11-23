@@ -1,30 +1,19 @@
 # test_land_mine.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import LandMine, land_mines, Container
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class LandMineTesting(unittest.TestCase):
+class TestLandMine:
     def test_contstructor_init(self):
         land_mine = LandMine()
 
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             LandMine(unused_keyword="whatever")
-
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             LandMine("this is not a rocket silo")
 
     def test_mergable_with(self):

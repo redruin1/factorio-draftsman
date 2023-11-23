@@ -1,17 +1,9 @@
 # test_vector.py
-# -*- encoding: utf-8 -*-
 
 from draftsman.classes.vector import Vector
 
-import sys
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
-
-
-class VectorTesting(unittest.TestCase):
+class TestVector:
     def test_constructor(self):
         point = Vector(10, 2.3)
         assert point.x == 10

@@ -1,23 +1,15 @@
 # test_locomotive.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import Locomotive, locomotives, Container
-from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.signatures import Color
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class LocomotiveTesting(unittest.TestCase):
+class TestLocomotive:
     def test_constructor_init(self):
         locomotive = Locomotive(
             "locomotive",
@@ -33,15 +25,15 @@ class LocomotiveTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Locomotive("locomotive", unused_keyword="whatever")
+        with pytest.warns(UnknownEntityWarning):
+            Locomotive("this is not a locomotive")
         # Warn if the locomotive is not on a rail (close enough to one?)
         # TODO (Complex)
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            Locomotive("this is not a locomotive")
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             Locomotive("locomotive", orientation="wrong")
         with pytest.raises(DataFormatError):
             Locomotive("locomotive", color="also wrong")
@@ -65,8 +57,15 @@ class LocomotiveTesting(unittest.TestCase):
         train1.merge(train2)
         del train2
 
-        assert train1.color == {"r": 100, "g": 100, "b": 100}
+        assert train1.color == Color(r=100, g=100, b=100)
         assert train1.tags == {"some": "stuff"}
+
+        assert train1.to_dict() == {
+            "name": "locomotive",
+            "position": {"x": 1.0, "y": 3.0},
+            "color": {"r": 100, "g": 100, "b": 100},
+            "tags": {"some": "stuff"},
+        }
 
     def test_eq(self):
         train1 = Locomotive("locomotive")

@@ -10,20 +10,19 @@ from draftsman.classes.mixins import (
     InserterModeOfOperationMixin,
     CircuitConditionMixin,
     LogisticConditionMixin,
+    EnableDisableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
 )
-from draftsman.constants import InserterModeOfOperation
-from draftsman.error import DataFormatError
-from draftsman import signatures
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
+from draftsman.signatures import Connections, DraftsmanBaseModel, uint8
 
 from draftsman.data.entities import inserters
 
-from schema import SchemaError
-import six
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Optional, Union
 
 
 class Inserter(
@@ -32,6 +31,7 @@ class Inserter(
     InserterModeOfOperationMixin,
     CircuitConditionMixin,
     LogisticConditionMixin,
+    EnableDisableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
@@ -47,44 +47,69 @@ class Inserter(
         :py:class:`~.Inserter` and :py:class:`~.FilterInserter`
     """
 
-    # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **LogisticConditionMixin._exports,
-        **CircuitConditionMixin._exports,
-        **InserterModeOfOperationMixin._exports,
-        **CircuitReadHandMixin._exports,
-        **StackSizeMixin._exports,
-    }
-    # fmt: on
+    class Format(
+        StackSizeMixin.Format,
+        CircuitReadHandMixin.Format,
+        InserterModeOfOperationMixin.Format,
+        CircuitConditionMixin.Format,
+        LogisticConditionMixin.Format,
+        EnableDisableMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(
+            StackSizeMixin.ControlFormat,
+            CircuitReadHandMixin.ControlFormat,
+            InserterModeOfOperationMixin.ControlFormat,
+            CircuitConditionMixin.ControlFormat,
+            LogisticConditionMixin.ControlFormat,
+            EnableDisableMixin.ControlFormat,
+            DraftsmanBaseModel,
+        ):
+            pass
 
-    def __init__(self, name=inserters[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(Inserter, self).__init__(name, inserters, **kwargs)
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        model_config = ConfigDict(title="Inserter")
+
+    def __init__(
+        self,
+        name: str = inserters[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        override_stack_size: uint8 = None,
+        connections: Connections = {},
+        control_behavior: Format.ControlBehavior = {},
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        super().__init__(
+            name,
+            inserters,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            override_stack_size=override_stack_size,
+            connections=connections,
+            control_behavior=control_behavior,
+            tags=tags,
+            **kwargs
+        )
+
+        self.validate_assignment = validate_assignment
+
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
         del self.unused_args
-
-    # =========================================================================
-
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = signatures.INSERTER_CONTROL_BEHAVIOR.validate(
-                value
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
 
     # =========================================================================
 

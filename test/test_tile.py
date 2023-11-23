@@ -1,19 +1,13 @@
 # tile.py
-# -*- encoding: utf-8 -*-
 
 from draftsman.tile import Tile
-from draftsman.error import InvalidTileError
+from draftsman.error import DataFormatError
+from draftsman.warning import UnknownTileWarning
 
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class TileTesting(unittest.TestCase):
+class TestTile:
     def test_constructor(self):
         # Specific position
         tile = Tile("hazard-concrete-right", (100, -100))
@@ -27,9 +21,7 @@ class TileTesting(unittest.TestCase):
         assert tile.position.y == 0
 
         # Invalid name
-        with pytest.raises(
-            InvalidTileError, match="'weeeeee' is not a valid name for this Tile"
-        ):
+        with pytest.warns(UnknownTileWarning, match="Unknown tile 'weeeeee'"):
             tile = Tile("weeeeee")
             issues = tile.inspect()
             for error in issues:
@@ -52,6 +44,27 @@ class TileTesting(unittest.TestCase):
         #         for error in issues:
         #             raise error
 
+        # Invalid name with suggestion
+        with pytest.warns(
+            UnknownTileWarning,
+            match="Unknown tile 'stonepath'; did you mean 'stone-path'?",
+        ):
+            tile = Tile("stonepath")
+
+        with pytest.raises(DataFormatError):
+            tile = Tile(name=100)
+
+        # validation off
+        tile = Tile(name=100, validate="none")
+        assert tile.name == 100
+
+        # TODO: test closure
+        # with self.assertRaises(InvalidTileError):
+        #     tile = Tile("incorrect")
+        #     with tile.validate() as issues:
+        #         for error in issues:
+        #             raise error
+
     def test_set_name(self):
         tile = Tile("hazard-concrete-left")
         assert tile.name == "hazard-concrete-left"
@@ -63,11 +76,18 @@ class TileTesting(unittest.TestCase):
         assert tile.position.y == 0
 
         # Invalid name
-        with pytest.raises(InvalidTileError):
+        with pytest.warns(UnknownTileWarning):
             tile.name = "weeeeee"
             issues = tile.inspect()
             for error in issues:
                 raise error
+
+        # TODO: test closure
+        # with self.assertRaises(InvalidTileError):
+        #     tile.name = "incorrect"
+        #     with tile.validate() as issues:
+        #         for error in issues:
+        #             raise error
 
         # TODO: test closure
         # with self.assertRaises(InvalidTileError):
@@ -81,6 +101,10 @@ class TileTesting(unittest.TestCase):
         tile.position = (-123, 123)
         assert tile.position.x == -123
         assert tile.position.y == 123
+
+        with pytest.raises(DataFormatError):
+            tile._root.position = "incorrect"
+            tile.validate().reissue_all()
 
     def test_to_dict(self):
         tile = Tile("landfill", position=(123, 123))

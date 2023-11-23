@@ -1,24 +1,20 @@
 # test_filter_inserter.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.constants import Direction, ReadMode
 from draftsman.entity import FilterInserter, filter_inserters, Container
-from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError, InvalidItemError
+from draftsman.signatures import FilterEntry
+from draftsman.warning import (
+    UnknownEntityWarning,
+    UnknownItemWarning,
+    UnknownKeywordWarning,
+)
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class FilterInserterTesting(unittest.TestCase):
+class TestFilterInserter:
     def test_constructor_init(self):
         # Valid
         inserter = FilterInserter(
@@ -43,7 +39,7 @@ class FilterInserterTesting(unittest.TestCase):
         assert inserter.to_dict() == {
             "name": "filter-inserter",
             "position": {"x": 1.5, "y": 1.5},
-            "direction": 2,
+            "direction": Direction.EAST,
             "override_stack_size": 1,
             "filter_mode": "blacklist",
             "control_behavior": {
@@ -53,11 +49,11 @@ class FilterInserterTesting(unittest.TestCase):
                     "type": "virtual",
                 },
                 "circuit_enable_disable": True,
-                "circuit_condition": {},
+                # "circuit_condition": {}, # Default
                 "connect_to_logistic_network": True,
-                "logistic_condition": {},
+                # "logistic_condition": {}, # Default
                 "circuit_read_hand_contents": True,
-                "circuit_hand_read_mode": 0,
+                "circuit_hand_read_mode": ReadMode.PULSE,
             },
             "connections": {"1": {"green": [{"entity_id": 2, "circuit_id": 1}]}},
             "filters": [
@@ -85,14 +81,18 @@ class FilterInserterTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             FilterInserter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5)
-
-        # Errors
-        # Raises InvalidEntityID when not in containers
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownKeywordWarning):
+            FilterInserter(control_behavior={"unused": "keyword"})
+        with pytest.warns(UnknownKeywordWarning):
+            FilterInserter(
+                "filter-inserter", connections={"this is": ["very", "wrong"]}
+            )
+        with pytest.warns(UnknownEntityWarning):
             FilterInserter("this is not a filter inserter")
 
+        # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             FilterInserter("filter-inserter", id=25)
@@ -100,26 +100,20 @@ class FilterInserterTesting(unittest.TestCase):
         with pytest.raises(TypeError):
             FilterInserter("filter-inserter", position=TypeError)
 
-        with pytest.raises(ValueError):
-            FilterInserter("filter-inserter", direction="incorrect")
-
-        with pytest.raises(TypeError):
-            FilterInserter("filter-inserter", override_stack_size="incorrect")
-
         with pytest.raises(DataFormatError):
-            FilterInserter(
-                "filter-inserter", connections={"this is": ["very", "wrong"]}
-            )
-
+            FilterInserter("filter-inserter", direction="incorrect")
+        with pytest.raises(DataFormatError):
+            FilterInserter("filter-inserter", override_stack_size="incorrect")
+        with pytest.raises(DataFormatError):
+            FilterInserter("filter-inserter", connections="incorrect")
         with pytest.raises(DataFormatError):
             FilterInserter(
                 "filter-inserter",
-                control_behavior={"this is": ["also", "very", "wrong"]},
+                control_behavior="incorrect",
             )
-
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             FilterInserter(filter_mode=TypeError)
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             FilterInserter("filter-inserter", filter_mode="wrong")
 
     def test_power_and_circuit_flags(self):
@@ -134,10 +128,73 @@ class FilterInserterTesting(unittest.TestCase):
         inserter = FilterInserter()
         inserter.filter_mode = "blacklist"
         assert inserter.filter_mode == "blacklist"
+
         inserter.filter_mode = None
         assert inserter.filter_mode == None
-        with pytest.raises(ValueError):
+
+        with pytest.raises(DataFormatError):
             inserter.filter_mode = "incorrect"
+
+    def test_set_item_filter(self):
+        inserter = FilterInserter("filter-inserter")
+        inserter.set_item_filter(0, "wooden-chest")
+        assert inserter.filters == [FilterEntry(**{"index": 1, "name": "wooden-chest"})]
+
+        # Modify in place
+        inserter.set_item_filter(0, "iron-chest")
+        assert inserter.filters == [FilterEntry(**{"index": 1, "name": "iron-chest"})]
+
+        inserter.filters = None
+        assert inserter.filters == None
+        with pytest.raises(DataFormatError):
+            inserter.set_item_filter(100, "wooden-chest")
+
+        with pytest.warns(UnknownItemWarning):
+            inserter.set_item_filter(0, "unknown-item")
+        assert inserter.filters == [FilterEntry(**{"index": 1, "name": "unknown-item"})]
+
+        # Init if None
+        inserter.set_item_filter(0, "wooden-chest")
+        inserter.set_item_filter(1, "iron-chest")
+        assert inserter.filters == [
+            FilterEntry(**{"index": 1, "name": "wooden-chest"}),
+            FilterEntry(**{"index": 2, "name": "iron-chest"}),
+        ]
+
+        # Delete if set to None
+        inserter.set_item_filter(1, None)
+        assert inserter.filters == [FilterEntry(**{"index": 1, "name": "wooden-chest"})]
+
+        with pytest.raises(DataFormatError):
+            inserter.set_item_filter("incorrect", "incorrect")
+
+    def test_set_item_filters(self):
+        inserter = FilterInserter("filter-inserter")
+
+        # Shorthand
+        inserter.set_item_filters("iron-plate", "copper-plate", "steel-plate")
+        assert inserter.filters == [
+            FilterEntry(index=1, name="iron-plate"),
+            FilterEntry(index=2, name="copper-plate"),
+            FilterEntry(index=3, name="steel-plate"),
+        ]
+
+        # Longhand
+        longhand = [
+            {"index": 1, "name": "iron-plate"},
+            {"index": 2, "name": "copper-plate"},
+            {"index": 3, "name": "steel-plate"},
+        ]
+        inserter.set_item_filters(*longhand)
+        assert inserter.filters == [
+            FilterEntry(index=1, name="iron-plate"),
+            FilterEntry(index=2, name="copper-plate"),
+            FilterEntry(index=3, name="steel-plate"),
+        ]
+
+        # None case
+        inserter.set_item_filters(None)
+        assert inserter.filters == None
 
     def test_mergable_with(self):
         inserter1 = FilterInserter("filter-inserter")
@@ -177,7 +234,7 @@ class FilterInserterTesting(unittest.TestCase):
 
         assert inserter1.filter_mode == "whitelist"
         assert inserter1.override_stack_size == 1
-        assert inserter1.filters == [{"name": "coal", "index": 1}]
+        assert inserter1.filters == [FilterEntry(**{"name": "coal", "index": 1})]
         assert inserter1.tags == {"some": "stuff"}
 
     def test_eq(self):

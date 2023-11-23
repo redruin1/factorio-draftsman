@@ -294,6 +294,8 @@ class TestRailPlanner:
             ),
         ]
 
+        print(type(rail_planner.entities[0].direction))
+
         # Test left side
         rail_planner.add_station("train-stop", "station 2", right=False)
         assert len(rail_planner.entities) == 3

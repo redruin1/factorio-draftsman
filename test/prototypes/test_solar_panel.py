@@ -1,33 +1,35 @@
 # test_solar_panel.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import SolarPanel, solar_panels, Container
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class SolarPanelTesting(unittest.TestCase):
+class TestSolarPanel:
     def test_constructor_init(self):
-        solar_panel = SolarPanel()
+        solar_panel = SolarPanel("solar-panel")
+        assert solar_panel.to_dict() == {
+            "name": "solar-panel",
+            "position": {"x": 1.5, "y": 1.5},
+        }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             SolarPanel(unused_keyword="whatever")
 
         # Errors
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             SolarPanel("not a solar_panel")
+
+    def test_power_and_circuit_flags(self):
+        for name in solar_panels:
+            panel = SolarPanel(name)
+            assert panel.power_connectable == False
+            assert panel.dual_power_connectable == False
+            assert panel.circuit_connectable == False
+            assert panel.dual_circuit_connectable == False
 
     def test_mergable_with(self):
         panel1 = SolarPanel("solar-panel")

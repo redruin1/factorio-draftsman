@@ -1,26 +1,28 @@
 # blueprintable.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-import re
-
-from draftsman.classes.exportable import Exportable, ValidationResult
-from draftsman.data.signals import signal_dict
-from draftsman.error import (
-    IncorrectBlueprintTypeError,
-    DataFormatError,
+from draftsman.classes.exportable import (
+    Exportable,
+    ValidationResult,
+    attempt_and_reissue,
 )
-from draftsman import signatures
-from draftsman import utils
+from draftsman.constants import ValidationMode
+from draftsman.data.signals import signal_dict
+from draftsman.error import DataFormatError, IncorrectBlueprintTypeError
+from draftsman.signatures import DraftsmanBaseModel, Icon, uint16, uint64
+from draftsman.utils import (
+    encode_version,
+    decode_version,
+    JSON_to_string,
+    string_to_JSON,
+    reissue_warnings,
+    version_tuple_to_string,
+)
 
 from abc import ABCMeta, abstractmethod
 
-from functools import cache
 import json
-from schema import SchemaError
-import six
-from typing import Any, Sequence, Union
-from pydantic import BaseModel
+from pydantic import ValidationError
+from typing import Any, Literal, Optional, Sequence, Union
 
 
 class Blueprintable(Exportable, metaclass=ABCMeta):
@@ -33,40 +35,60 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     are) overwritten in select circumstances.
     """
 
-    @utils.reissue_warnings
-    def __init__(self, root_item, item, init_data, unknown):
-        # type: (str, BaseModel, str, Union[str, dict], str) -> None
+    @reissue_warnings
+    def __init__(
+        self,
+        root_item: str,
+        root_format: DraftsmanBaseModel,
+        item: str,
+        init_data: Union[str, dict],
+        index: uint16 = None,
+        **kwargs
+    ):
         """
         Initializes the private ``_root`` data dictionary, as well as setting
         the ``item`` name.
         """
+        self._root: self.Format
+
         # Init exportable
         super().__init__()
 
-        # The "root" dict, contains everything inside of this blueprintable
-        # Output format is equivalent to:
-        # { self._root_item: self._root }
+        # We don't this to be active when constructing, so we it to NONE now and
+        # to whatever it should be later in the child-most subclass
+        self.validate_assignment = ValidationMode.NONE
 
-        self._root_item = six.text_type(root_item)
-        self._root = {}
-        self._root["item"] = six.text_type(item)
+        self._root_item = root_item
+        # self._root_format = (root_format,)
+        self._root_format = root_format
+        # self._root = self.Format.model_construct(**{self._root_item: {"item": item, **kwargs}})
+        # self._root[self._root_item] = root_format.model_construct(self._root[self._root_item])
+        self._root = self.Format.model_validate(
+            {self._root_item: {"item": item, **kwargs}},
+            context={"construction": True, "mode": ValidationMode.MINIMUM},
+        )
+        # print("blueprintable")
+        # print(self._root)
+
+        # self._root = {}
+        # self._root[self._root_item] = {}
+        # self._root[self._root_item]["item"] = six.text_type(item)
 
         if init_data is None:
             self.setup()
-        elif isinstance(init_data, six.string_types):
-            self.load_from_string(init_data, unknown=unknown)
+        elif isinstance(init_data, str):
+            self.load_from_string(init_data)
         elif isinstance(init_data, dict):
             self.setup(**init_data[self._root_item], unknown=unknown)
         else:
-            raise TypeError(
+            raise DataFormatError(
                 "'{}' must be a factorio blueprint string, a dictionary, or None".format(
                     self._root_item
                 )
             )
 
-    @utils.reissue_warnings
-    def load_from_string(self, string, unknown="error"):
-        # type: (str, str) -> None
+    @reissue_warnings
+    def load_from_string(self, string: str):
         """
         Load the :py:class:`.Blueprintable` with the contents of ``string``.
 
@@ -81,8 +103,9 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :exception IncorrectBlueprintTypeError: If the input string is of a
             different type than the base class.
         """
-        root = utils.string_to_JSON(string)
-        # Ensure that the blueprint string actually points to a blueprint
+        root = string_to_JSON(string)
+        # Ensure that the blueprint string actually matches the type of the
+        # selected class
         if self._root_item not in root:
             raise IncorrectBlueprintTypeError(
                 "Expected root keyword '{}', found '{}'; input strings must "
@@ -97,8 +120,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         self.setup(**root[self._root_item], unknown=unknown)
 
     @abstractmethod
-    def setup(self, unknown="error", **kwargs):  # pragma: no coverage
-        # type: (str, **dict) -> None
+    def setup(self, **kwargs):  # pragma: no coverage
         """
         Setup the Blueprintable's parameters with the input keywords as values.
         Primarily used by the constructor, but can be used at any time to set
@@ -137,8 +159,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     # =========================================================================
 
     @property
-    def item(self):
-        # type: () -> str
+    def item(self) -> str:
         """
         Always the name of the corresponding Factorio item to this blueprintable
         instance. Read only.
@@ -161,13 +182,12 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> BlueprintBook().item
             'blueprint-book'
         """
-        return self._root["item"]
+        return self._root[self._root_item]["item"]
 
     # =========================================================================
 
     @property
-    def label(self):
-        # type: () -> str
+    def label(self) -> Optional[str]:
         """
         The user given name (title) of the blueprintable.
 
@@ -178,21 +198,22 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :exception TypeError: When setting ``label`` to something other than
             ``str`` or ``None``.
         """
-        return self._root.get("label", None)
+        return self._root[self._root_item]["label"]
 
     @label.setter
-    def label(self, value):
-        # type: (str) -> None
-        if value is None:
-            self._root.pop("label", None)
+    def label(self, value: Optional[str]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, self._root_format, self._root[self._root_item], "label", value
+            )
+            self._root[self._root_item]["label"] = result
         else:
-            self._root["label"] = value
+            self._root[self._root_item]["label"] = value
 
     # =========================================================================
 
     @property
-    def description(self):
-        # type: () -> str
+    def description(self) -> Optional[str]:
         """
         The description of the blueprintable. Visible when hovering over it when
         inside someone's inventory.
@@ -205,21 +226,26 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :exception TypeError: If setting to anything other than a ``str`` or
             ``None``.
         """
-        return self._root.get("description", None)
+        return self._root[self._root_item].get("description", None)
 
     @description.setter
-    def description(self, value):
-        # type: (str) -> None
-        if value is None:
-            self._root.pop("description", None)
+    def description(self, value: Optional[str]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                self._root_format,
+                self._root[self._root_item],
+                "description",
+                value,
+            )
+            self._root[self._root_item]["description"] = result
         else:
-            self._root["description"] = value
+            self._root[self._root_item]["description"] = value
 
     # =========================================================================
 
     @property
-    def icons(self):
-        # type: () -> list
+    def icons(self) -> Optional[list[Icon]]:
         """
         The visible icons of the blueprintable, shown in as the objects icon.
 
@@ -250,29 +276,31 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> blueprint.icons
             [{'index': 1, 'signal': {'name': 'transport-belt', 'type': 'item'}}]
         """
-        return self._root.get("icons", None)
+        return self._root[self._root_item]["icons"]
 
     @icons.setter
-    def icons(self, value):
-        # type: (list[Union[dict, str]]) -> None
-        if value is None:
-            self._root.pop("icons", None)
+    def icons(self, value: Union[list[str], list[Icon], None]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, self._root_format, self._root[self._root_item], "icons", value
+            )
+            self._root[self._root_item]["icons"] = result
         else:
-            self._root["icons"] = value
+            self._root[self._root_item]["icons"] = value
 
     def set_icons(self, *icon_names):
         """
         TODO
         """
-        self.icons = [None] * len(icon_names)
+        new_icons = [None] * len(icon_names)
         for i, icon in enumerate(icon_names):
-            self.icons[i] = {"index": i + 1, "signal": signal_dict(icon)}
+            new_icons[i] = {"index": i + 1, "signal": signal_dict(icon)}
+        self.icons = new_icons
 
     # =========================================================================
 
     @property
-    def version(self):
-        # type: () -> int
+    def version(self) -> Optional[uint64]:
         """
         The version of Factorio the Blueprint was created in/intended for.
 
@@ -312,15 +340,17 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> assert blueprint.version_tuple() == (1, 0, 0, 0)
             >>> assert blueprint.version_string() == "1.0.0.0"
         """
-        return self._root.get("version", None)
+        return self._root[self._root_item].get("version", None)
 
     @version.setter
-    def version(self, value):
-        # type: (Union[int, Sequence[int]]) -> None
-        if value is None:
-            self._root.pop("version", None)
+    def version(self, value: Union[uint64, Sequence[uint16]]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, self._root_format, self._root[self._root_item], "version", value
+            )
+            self._root[self._root_item]["version"] = result
         else:
-            self._root["version"] = value
+            self._root[self._root_item]["version"] = value
 
     def set_version(self, major, minor, patch=0, dev_ver=0):
         """
@@ -334,7 +364,35 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :param dev_ver: The (internal) development version.
         """
         # TODO: use this method in constructor
-        self._root["version"] = utils.encode_version(major, minor, patch, dev_ver)
+        self.version = encode_version(major, minor, patch, dev_ver)
+
+    # =========================================================================
+
+    @property
+    def index(self) -> Optional[uint16]:
+        """
+        The 0-indexed location of the blueprintable in a parent
+        :py:class:`BlueprintBook`. This member is automatically generated if
+        omitted, but can be manually set with this attribute. ``index`` has no
+        meaning when the blueprintable is not located inside another BlueprintBook.
+
+        :getter: Gets the index of this blueprintable, or ``None`` if not set.
+            A blueprintable's index is only generated when exporting with
+            :py:meth:`.to_dict`, so ``index`` will still be ``None`` even if
+            this blueprintable does exist within a BlueprintBook.
+        :setter: Sets the index of the upgrade planner, or removes it if set to
+            ``None``.
+        :type: ``uint16``
+        """
+        return self._root.get("index", None)
+
+    @index.setter
+    def index(self, value: Optional[uint16]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(self, self.Format, self._root, "index", value)
+            self._root["index"] = result
+        else:
+            self._root["index"] = value
 
     # =========================================================================
     # Utility functions
@@ -380,7 +438,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> blueprint.version_tuple()
             (1, 0, 0, 0)
         """
-        return utils.decode_version(self._root["version"])
+        return decode_version(self._root[self._root_item]["version"])
 
     def version_string(self):
         # type: () -> str
@@ -399,28 +457,79 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> blueprint.version_string()
             '1.2.3.0'
         """
-        version_tuple = utils.decode_version(self._root["version"])
-        return utils.version_tuple_to_string(version_tuple)
+        version_tuple = decode_version(self._root[self._root_item]["version"])
+        return version_tuple_to_string(version_tuple)
 
     # =========================================================================
 
-    def to_dict(self):
-        # type: () -> dict
-        out_dict = self.__class__.Format.model_construct(  # Performs no validation(!)
-            **{self._root_item: self._root}
-        ).model_dump(
-            by_alias=True,  # Some attributes are reserved words (type, from,
-            # etc.); this resolves that issue
-            exclude_none=True,  # Trim if values are None
-            exclude_defaults=True,  # Trim if values are defaults
-            warnings=False  # Ignore warnings because `model_construct` cannot
-            # be made recursive for some asinine reason
-        )
+    def validate(
+        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    ) -> ValidationResult:
+        """
+        TODO
+        If ``mode`` is NONE, then this function will return an empty validation
+        Result.
 
-        return out_dict
+        :param mode: The validation mode to evaluate the object against.
+            Determines the contents of the returned ValidationResult.
+        :param force: Whether or not to force revalidation, even if ``is_valid``
+            on this entity is ``True``. Useful if you know that an object is
+            dirty when Draftsman doesn't, which can happen in [select
+            circumstances.](TODO)
+        """
+        mode = ValidationMode(mode)
 
-    def to_string(self):  # pragma: no coverage
-        # type: () -> str
+        output = ValidationResult([], [])
+
+        if mode is ValidationMode.NONE or (self.is_valid and not force):
+            return output
+
+        context = {
+            "mode": mode,
+            "object": self,
+            "warning_list": [],
+            "assignment": False,
+        }
+
+        try:
+            # self.Format(**self._root, position=self.global_position, entity_number=0)
+            # self._root.position = self.global_position
+            result = self.Format.model_validate(
+                self._root, strict=True, context=context
+            )
+            # Reassign private attributes
+            # TODO
+            # Acquire the newly converted data
+            self._root = result
+        except ValidationError as e:
+            output.error_list.append(DataFormatError(e))
+
+        output.warning_list += context["warning_list"]
+
+        # if len(output.error_list) == 0:
+        #     # Set the `is_valid` attribute
+        #     # This means that if mode="pedantic", an entity that issues only
+        #     # warnings will still not be considered valid
+        #     super().validate()
+
+        return output
+
+    # def to_dict(self):
+    #     # type: () -> dict
+    #     out_dict = self.__class__.Format.model_construct(  # Performs no validation(!)
+    #         **{self._root_item: self._root}
+    #     ).model_dump(
+    #         by_alias=True,  # Some attributes are reserved words (type, from,
+    #         # etc.); this resolves that issue
+    #         exclude_none=True,  # Trim if values are None
+    #         exclude_defaults=True,  # Trim if values are defaults
+    #         warnings=False  # Ignore warnings because `model_construct` cannot
+    #         # be made recursive for some asinine reason
+    #     )
+
+    #     return out_dict
+
+    def to_string(self) -> str:  # pragma: no coverage
         """
         Returns this object as an encoded Factorio blueprint string.
 
@@ -444,11 +553,15 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         """
         # TODO: add options to compress/canonicalize blueprints before export
         # (though should that happen on a per-blueprintable basis? And what about non-Blueprint strings, like upgrade planners?)
-        return utils.JSON_to_string(self.to_dict())
+        return JSON_to_string(self.to_dict())
 
-    def __str__(self):  # pragma: no coverage
-        # type: () -> str
+    def __str__(self) -> str:  # pragma: no coverage
         return "<{}>{}".format(
-            self.__class__.__name__,
+            type(self).__name__,
             json.dumps(self.to_dict()[self._root_item], indent=2),
+        )
+
+    def __repr__(self) -> str:  # pragma: no coverage
+        return "<{}>{}".format(
+            type(self).__name__, repr(self.to_dict()[self._root_item])
         )

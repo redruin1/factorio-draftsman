@@ -1,24 +1,25 @@
 # test_inserter.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-from draftsman.constants import Direction, ReadMode
+from draftsman.constants import (
+    Direction,
+    ReadMode,
+    ValidationMode,
+    InserterModeOfOperation,
+)
 from draftsman.entity import Inserter, inserters, Container
-from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.signatures import SignalID
+from draftsman.warning import (
+    UnknownEntityWarning,
+    UnknownKeywordWarning,
+    UnknownSignalWarning,
+)
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class InserterTesting(unittest.TestCase):
+class TestInserter:
     def test_constructor_init(self):
         # Valid
         inserter = Inserter(
@@ -41,7 +42,7 @@ class InserterTesting(unittest.TestCase):
         assert inserter.to_dict() == {
             "name": "inserter",
             "position": {"x": 1.5, "y": 1.5},
-            "direction": 2,
+            "direction": Direction.EAST,
             "override_stack_size": 1,
             "control_behavior": {
                 "circuit_set_stack_size": True,
@@ -50,11 +51,11 @@ class InserterTesting(unittest.TestCase):
                     "type": "virtual",
                 },
                 "circuit_enable_disable": True,
-                "circuit_condition": {},
+                # "circuit_condition": {}, # Default
                 "connect_to_logistic_network": True,
-                "logistic_condition": {},
+                # "logistic_condition": {}, # Default
                 "circuit_read_hand_contents": True,
-                "circuit_hand_read_mode": 0,
+                "circuit_hand_read_mode": ReadMode.PULSE,
             },
             "connections": {"1": {"green": [{"entity_id": 2, "circuit_id": 1}]}},
         }
@@ -77,14 +78,16 @@ class InserterTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Inserter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5)
-
-        # Errors
-        # Raises InvalidEntityID when not in containers
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownKeywordWarning):
+            Inserter(
+                "inserter", control_behavior={"this is": ["also", "very", "wrong"]}
+            )
+        with pytest.warns(UnknownEntityWarning):
             Inserter("this is not an inserter")
 
+        # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             Inserter("inserter", id=25)
@@ -92,19 +95,232 @@ class InserterTesting(unittest.TestCase):
         with pytest.raises(TypeError):
             Inserter("inserter", position=TypeError)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             Inserter("inserter", direction="incorrect")
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             Inserter("inserter", override_stack_size="incorrect")
 
         with pytest.raises(DataFormatError):
-            Inserter("inserter", connections={"this is": ["very", "wrong"]})
+            Inserter("inserter", connections="incorrect")
 
         with pytest.raises(DataFormatError):
-            Inserter(
-                "inserter", control_behavior={"this is": ["also", "very", "wrong"]}
-            )
+            Inserter("inserter", control_behavior="incorrect")
+
+    def test_set_read_contents(self):
+        inserter = Inserter("inserter")
+        assert inserter.read_hand_contents == None
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        inserter.read_hand_contents = True
+        assert inserter.read_hand_contents == True
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_read_hand_contents": True},
+        }
+
+        inserter.read_hand_contents = None
+        assert inserter.read_hand_contents == None
+        assert inserter.control_behavior == Inserter.Format.ControlBehavior()
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        with pytest.raises(DataFormatError):
+            inserter.read_hand_contents = "incorrect"
+        assert inserter.read_hand_contents == None
+
+        inserter.validate_assignment = "none"
+        assert inserter.validate_assignment == ValidationMode.NONE
+
+        inserter.read_hand_contents = "incorrect"
+        assert inserter.read_hand_contents == "incorrect"
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_read_hand_contents": "incorrect"},
+        }
+
+    def test_set_read_mode(self):
+        inserter = Inserter("inserter")
+        assert inserter.read_mode == None
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        inserter.read_mode = ReadMode.HOLD
+        assert inserter.read_mode == ReadMode.HOLD
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_hand_read_mode": ReadMode.HOLD},
+        }
+
+        inserter.read_mode = None
+        assert inserter.read_mode == None
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        with pytest.raises(DataFormatError):
+            inserter.read_mode = "incorrect"
+        assert inserter.read_mode == None
+
+        inserter.validate_assignment = "none"
+        assert inserter.validate_assignment == ValidationMode.NONE
+
+        inserter.read_mode = "incorrect"
+        assert inserter.read_mode == "incorrect"
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_hand_read_mode": "incorrect"},
+        }
+
+    def test_mode_of_operation(self):
+        inserter = Inserter("inserter")
+        assert inserter.mode_of_operation == None
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        # Set int
+        inserter.mode_of_operation = 0
+        assert inserter.mode_of_operation == InserterModeOfOperation.ENABLE_DISABLE
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_mode_of_operation": 0},
+        }
+
+        # Set enum
+        inserter.mode_of_operation = InserterModeOfOperation.READ_HAND_CONTENTS
+        assert inserter.mode_of_operation == InserterModeOfOperation.READ_HAND_CONTENTS
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_mode_of_operation": 2},
+        }
+
+        # Set int out of enum range
+        with pytest.raises(DataFormatError):
+            inserter.mode_of_operation = 5
+
+        # Turn off validation
+        inserter.validate_assignment = "none"
+        assert inserter.validate_assignment == ValidationMode.NONE
+        inserter.mode_of_operation = 5
+        assert inserter.mode_of_operation == 5
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_mode_of_operation": 5},
+        }
+
+    def test_set_circuit_stack_size_enabled(self):
+        inserter = Inserter("stack-inserter")
+        assert inserter.circuit_stack_size_enabled == None
+
+        inserter.circuit_stack_size_enabled = True
+        assert inserter.circuit_stack_size_enabled == True
+        assert inserter.to_dict() == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_set_stack_size": True},
+        }
+
+        inserter.circuit_stack_size_enabled = False
+        assert inserter.circuit_stack_size_enabled == False
+        assert inserter.to_dict() == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_set_stack_size": False},
+        }
+
+        with pytest.raises(DataFormatError):
+            inserter.circuit_stack_size_enabled = "incorrect"
+
+        inserter.validate_assignment = "none"
+        assert inserter.validate_assignment == ValidationMode.NONE
+        inserter.circuit_stack_size_enabled = "incorrect"
+        assert inserter.circuit_stack_size_enabled == "incorrect"
+        assert inserter.to_dict() == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_set_stack_size": "incorrect"},
+        }
+
+    def test_set_stack_size_control_signal(self):
+        inserter = Inserter("stack-inserter")
+        assert inserter.stack_size_control_signal == None
+
+        # Shorthand
+        inserter.stack_size_control_signal = "signal-S"
+        assert inserter.stack_size_control_signal == SignalID(
+            name="signal-S", type="virtual"
+        )
+        assert inserter.to_dict() == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {
+                "stack_control_input_signal": {"name": "signal-S", "type": "virtual"}
+            },
+        }
+
+        # Longhand
+        inserter.stack_size_control_signal = {"name": "signal-S", "type": "virtual"}
+        assert inserter.stack_size_control_signal == SignalID(
+            name="signal-S", type="virtual"
+        )
+        assert inserter.to_dict() == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {
+                "stack_control_input_signal": {"name": "signal-S", "type": "virtual"}
+            },
+        }
+
+        # Unrecognized shorthand
+        with pytest.raises(DataFormatError):
+            inserter.stack_size_control_signal = "unknown"
+        assert inserter.stack_size_control_signal == SignalID(
+            name="signal-S", type="virtual"
+        )
+
+        # Unrecognized longhand
+        with pytest.warns(UnknownSignalWarning):
+            inserter.stack_size_control_signal = {"name": "unknown", "type": "item"}
+        assert inserter.stack_size_control_signal == SignalID(
+            name="unknown", type="item"
+        )
+        assert inserter.to_dict() == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {
+                "stack_control_input_signal": {"name": "unknown", "type": "item"}
+            },
+        }
+
+        with pytest.raises(DataFormatError):
+            inserter.stack_size_control_signal = ["very", "wrong"]
+
+        inserter.validate_assignment = "none"
+        assert inserter.validate_assignment == ValidationMode.NONE
+        inserter.stack_size_control_signal = ["very", "wrong"]
+        assert inserter.stack_size_control_signal == ["very", "wrong"]
+        assert inserter.to_dict() == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"stack_control_input_signal": ["very", "wrong"]},
+        }
 
     def test_power_and_circuit_flags(self):
         for name in inserters:

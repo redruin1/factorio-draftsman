@@ -1,28 +1,23 @@
 # test_container.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
+from draftsman.constants import ValidationMode
 from draftsman.entity import Container, containers, Accumulator
 from draftsman.error import (
-    DraftsmanError,
-    InvalidEntityError,
     DataFormatError,
-    InvalidItemError,
 )
-from draftsman.warning import DraftsmanWarning, ItemCapacityWarning
+from draftsman.warning import (
+    BarWarning,
+    ItemCapacityWarning,
+    UnknownEntityWarning,
+    UnknownItemWarning,
+    UnknownKeywordWarning,
+)
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class ContainerTesting(unittest.TestCase):
+class TestContainer:
     def test_constructor_init(self):
         wooden_chest = Container(
             "wooden-chest",
@@ -59,26 +54,25 @@ class ContainerTesting(unittest.TestCase):
             "bar": 5,
             "tags": {"A": "B"},
         }
+
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Container("wooden-chest", position=[0, 0], invalid_keyword="100")
-        # Errors
-        # Raises InvalidEntityID when not in containers
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownKeywordWarning):
+            Container("wooden-chest", connections={"this is": ["very", "wrong"]})
+        with pytest.warns(UnknownEntityWarning):
             Container("this is not a container")
 
+        # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             Container("wooden-chest", id=25)
-
         with pytest.raises(TypeError):
             Container("wooden-chest", position=TypeError)
-
-        with pytest.raises(TypeError):
-            Container("wooden-chest", bar="not even trying")
-
         with pytest.raises(DataFormatError):
-            Container("wooden-chest", connections={"this is": ["very", "wrong"]})
+            Container("wooden-chest", bar="not even trying")
+        with pytest.raises(DataFormatError):
+            Container("wooden-chest", connections="incorrect")
 
     def test_power_and_circuit_flags(self):
         for container_name in containers:
@@ -88,10 +82,33 @@ class ContainerTesting(unittest.TestCase):
             assert container.circuit_connectable == True
             assert container.dual_circuit_connectable == False
 
-    def test_bar_with_disabled_containers(self):
+    def test_bar(self):
+        container = Container("wooden-chest")
+
+        # No warning, because it's pedantic level
+        container.bar = 100
+        assert container.bar == 100
+
+        container.validate_assignment = "pedantic"
+        assert container.validate_assignment == ValidationMode.PEDANTIC
+
+        container.bar = 10
+        assert container.bar == 10
+
+        with pytest.warns(BarWarning):
+            container.bar = 100
+        assert container.bar == 100
+
+        # Disabled bar
         container = Container("big-ship-wreck-1")
-        with pytest.raises(DraftsmanError):
+        with pytest.warns(BarWarning):
             container.bar = 2
+
+        container.validate_assignment = "none"
+        assert container.validate_assignment == ValidationMode.NONE
+
+        container.bar = 2
+        assert container.bar == 2
 
     def test_set_item_request(self):
         container = Container("wooden-chest")
@@ -110,21 +127,26 @@ class ContainerTesting(unittest.TestCase):
         assert container.items == {"iron-plate": 100, "copper-plate": 10000}
         assert container.inventory_slots_occupied == 101
 
-        container.set_item_requests(None)
+        # container.set_item_requests(None)
+        container.items = {}
         assert container.items == {}
         assert container.inventory_slots_occupied == 0
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             container.set_item_request(TypeError, 100)
-        with pytest.raises(InvalidItemError):
-            container.set_item_request("incorrect", 100)
-        with pytest.raises(TypeError):
+        with pytest.warns(UnknownItemWarning):
+            container.set_item_request("unknown", 100)
+        with pytest.raises(DataFormatError):
             container.set_item_request("iron-plate", TypeError)
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             container.set_item_request("iron-plate", -1)
 
-        assert container.items == {}
+        assert container.items == {"unknown": 100}
         assert container.inventory_slots_occupied == 0
+
+        with pytest.raises(DataFormatError):
+            container.items = {"incorrect", "format"}
+        assert container.items == {"unknown": 100}
 
     def test_mergable_with(self):
         container1 = Container("wooden-chest")

@@ -3,6 +3,7 @@
 
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.vector import Vector
+from draftsman.utils import AABB
 
 import abc
 import copy
@@ -10,15 +11,14 @@ import six
 
 
 @six.add_metaclass(abc.ABCMeta)
-class SpatialLike(object):
+class SpatialLike:
     """
     Abstract class that provides the necessary methods so that an object that
     can be added to a :py:class:`~draftsman.classes.spatialhashmap.SpatialHashMap`.
     """
 
     @abc.abstractproperty
-    def position(self):  # pragma: no coverage
-        # type: () -> Vector
+    def position(self) -> Vector:  # pragma: no coverage
         """
         Position of the object, expressed in local space. Local space can be
         either global space (if the EntityLike exists in a Blueprint at a root
@@ -27,16 +27,14 @@ class SpatialLike(object):
         pass
 
     @abc.abstractproperty
-    def global_position(self):  # pragma: no coverage
-        # type: () -> Vector
+    def global_position(self) -> Vector:  # pragma: no coverage
         """
         Position of the object, expressed in global space (world space).
         """
         pass
 
     @abc.abstractproperty
-    def collision_set(self):  # pragma: no coverage
-        # type: () -> CollisionSet
+    def collision_set(self) -> CollisionSet:  # pragma: no coverage
         """
         Set of :py:class:`.CollisionShape` where the Entity's position acts as
         their origin.
@@ -44,16 +42,14 @@ class SpatialLike(object):
         pass
 
     @abc.abstractproperty
-    def collision_mask(self):  # pragma: no coverage
-        # type: () -> set
+    def collision_mask(self) -> set[str]:  # pragma: no coverage
         """
         A set of strings representing the collision layers that this object
         collides with.
         """
         pass
 
-    def get_world_bounding_box(self):
-        # type () -> AABB
+    def get_world_bounding_box(self) -> AABB:
         """
         Gets the world-space coordinates AABB that completely encompasses the
         ``collision_set`` of this SpatialLike. Behaves similarly to the old
@@ -73,8 +69,7 @@ class SpatialLike(object):
 
         return bounding_box
 
-    def get_world_collision_set(self):
-        # type: () -> CollisionSet
+    def get_world_collision_set(self) -> CollisionSet:
         """
         Get's the world-space coordinate CollisionSet of the object, or the
         collection of all shapes that this EntityLike interacts with.

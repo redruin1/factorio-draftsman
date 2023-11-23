@@ -1,23 +1,19 @@
 # test_heat_interface.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
+from draftsman.constants import ValidationMode
 from draftsman.entity import HeatInterface, heat_interfaces, Container
-from draftsman.error import InvalidEntityError, InvalidModeError
-from draftsman.warning import DraftsmanWarning, TemperatureRangeWarning
+from draftsman.error import DataFormatError
+from draftsman.warning import (
+    UnknownEntityWarning,
+    UnknownKeywordWarning,
+    TemperatureRangeWarning,
+)
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class HeatInterfaceTesting(unittest.TestCase):
+class TestHeatInterface:
     def test_contstructor_init(self):
         interface = HeatInterface(temperature=10, mode="at-most")
         assert interface.to_dict() == {
@@ -28,37 +24,52 @@ class HeatInterfaceTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             HeatInterface(unused_keyword="whatever")
+        with pytest.warns(UnknownEntityWarning):
+            HeatInterface("this is not a heat interface")
+
         with pytest.warns(TemperatureRangeWarning):
-            HeatInterface(temperature=100000)  # 100,000
+            HeatInterface(temperature=100_000, validate="pedantic")
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            HeatInterface("this is not a heat interface")
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             HeatInterface(temperature="incorrect")
 
     def test_set_temperature(self):
         interface = HeatInterface()
         interface.temperature = 100
         assert interface.temperature == 100
+
         interface.temperature = None
         assert interface.temperature == None
-        # Warnings
+
+        # No warnings on strict
+        interface.temperature = -1000
+        assert interface.temperature == -1000
+
+        # Single warning on pedantic
+        interface.validate_assignment = "pedantic"
+        assert interface.validate_assignment == ValidationMode.PEDANTIC
+        interface.temperature = 100
+        assert interface.temperature == 100
         with pytest.warns(TemperatureRangeWarning):
             interface.temperature = -1000
+        assert interface.temperature == -1000
+
         # Errors
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             interface.temperature = "incorrect"
 
     def test_set_mode(self):
         interface = HeatInterface()
         interface.mode = "exactly"
         assert interface.mode == "exactly"
+
         interface.mode = None
         assert interface.mode == None
-        with pytest.raises(InvalidModeError):
+
+        with pytest.raises(DataFormatError):
             interface.mode = "incorrect"
 
     def test_mergable_with(self):

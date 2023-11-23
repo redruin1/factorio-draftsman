@@ -1,7 +1,4 @@
 # cargo_wagon.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
@@ -9,12 +6,14 @@ from draftsman.classes.mixins import (
     InventoryFilterMixin,
     OrientationMixin,
 )
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Orientation, ValidationMode
+from draftsman.signatures import uint32
 
 from draftsman.data.entities import cargo_wagons
-from draftsman.data import entities
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Union
 
 
 class CargoWagon(RequestItemsMixin, InventoryFilterMixin, OrientationMixin, Entity):
@@ -22,27 +21,46 @@ class CargoWagon(RequestItemsMixin, InventoryFilterMixin, OrientationMixin, Enti
     A train wagon that holds items as cargo.
     """
 
-    # fmt: off
-    _exports = {
-        **Entity._exports,
-        **OrientationMixin._exports,
-        **InventoryFilterMixin._exports,
-        **RequestItemsMixin._exports,
-    }
-    # fmt: on
+    class Format(
+        RequestItemsMixin.Format,
+        InventoryFilterMixin.Format,
+        OrientationMixin.Format,
+        Entity.Format,
+    ):
+        model_config = ConfigDict(title="CargoWagon")
 
-    def __init__(self, name=cargo_wagons[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(CargoWagon, self).__init__(name, cargo_wagons, **kwargs)
+    def __init__(
+        self,
+        name: str = cargo_wagons[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        orientation: Orientation = Orientation.NORTH,
+        items: dict[str, uint32] = {},  # TODO: ItemID
+        inventory: Format.InventoryFilters = {},
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        super().__init__(
+            name,
+            cargo_wagons,
+            position=position,
+            tile_position=tile_position,
+            orientation=orientation,
+            items=items,
+            inventory=inventory,
+            tags=tags,
+            **kwargs
+        )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self.validate_assignment = validate_assignment
 
-        del self.unused_args
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # TODO: check for item requests exceeding cargo capacity
 

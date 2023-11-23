@@ -5,11 +5,14 @@ from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import generators
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Union
 
 
 class Generator(DirectionalMixin, Entity):
@@ -17,25 +20,37 @@ class Generator(DirectionalMixin, Entity):
     An entity that converts a fluid (usually steam) to electricity.
     """
 
-    # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports
-    }
-    # fmt: on
+    class Format(DirectionalMixin.Format, Entity.Format):
+        model_config = ConfigDict(title="Generator")
 
-    def __init__(self, name=generators[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(Generator, self).__init__(name, generators, **kwargs)
+    def __init__(
+        self,
+        name: str = generators[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        super().__init__(
+            name,
+            generators,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            tags=tags,
+            **kwargs
+        )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self.validate_assignment = validate_assignment
 
-        del self.unused_args
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

@@ -1,27 +1,18 @@
 # test_logistic_passive_container.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import (
     LogisticPassiveContainer,
     logistic_passive_containers,
     Container,
 )
-from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class LogisticPassiveContainerTesting(unittest.TestCase):
+class TestLogisticPassiveContainer:
     def test_constructor_init(self):
         passive_chest = LogisticPassiveContainer(
             "logistic-chest-passive-provider",
@@ -63,36 +54,31 @@ class LogisticPassiveContainerTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider",
                 position=[0, 0],
                 invalid_keyword="100",
             )
-
-        # Errors
-        # Raises InvalidEntityID when not in containers
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             LogisticPassiveContainer("this is not a logistics passive chest")
 
+        # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             LogisticPassiveContainer("logistic-chest-passive-provider", id=25)
-
         with pytest.raises(TypeError):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider", position=TypeError
             )
-
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider", bar="not even trying"
             )
-
         with pytest.raises(DataFormatError):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider",
-                connections={"this is": ["very", "wrong"]},
+                connections="incorrect",
             )
 
     def test_power_and_circuit_flags(self):

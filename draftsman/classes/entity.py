@@ -11,19 +11,41 @@ from __future__ import unicode_literals
 from draftsman.classes.association import Association
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
+from draftsman.classes.exportable import (
+    Exportable,
+    ValidationResult,
+    attempt_and_reissue,
+)
 from draftsman.classes.vector import Vector
+from draftsman.constants import ValidationMode
 from draftsman.data import entities
-from draftsman.error import InvalidEntityError, DraftsmanError
-from draftsman import signatures
+from draftsman.error import InvalidEntityError, DraftsmanError, DataFormatError
+from draftsman.signatures import (
+    DraftsmanBaseModel,
+    FloatPosition,
+    IntPosition,
+    get_suggestion,
+    uint64,
+    EntityName,
+)
+from draftsman.warning import UnknownEntityWarning
 from draftsman import utils
 
 import copy
-import difflib
-import json
-from pydantic import BaseModel
-from typing import Union, Any
-from schema import Schema
-import six
+from pydantic import (
+    ConfigDict,
+    Field,
+    GetCoreSchemaHandler,
+    ValidationError,
+    ValidationInfo,
+    ValidatorFunctionWrapHandler,
+    model_validator,
+    field_validator,
+    field_serializer,
+    PrivateAttr,
+)
+from pydantic_core import CoreSchema, core_schema
+from typing import Any, Optional
 import weakref
 
 
@@ -35,16 +57,24 @@ class _PosVector(Vector):
     @Vector.x.setter
     def x(self, value):
         self._data[0] = float(value)
-        self.entity()._tile_position._data[0] = round(
+        self.entity()._root._tile_position._data[0] = round(
             value - self.entity().tile_width / 2
         )
 
     @Vector.y.setter
     def y(self, value):
         self._data[1] = float(value)
-        self.entity()._tile_position._data[1] = round(
+        self.entity()._root._tile_position._data[1] = round(
             value - self.entity().tile_height / 2
         )
+
+    # @classmethod
+    # def __get_pydantic_core_schema__(
+    #     cls, _source_type: Any, handler: GetCoreSchemaHandler
+    # ) -> CoreSchema:
+    #     return core_schema.no_info_after_validator_function(
+    #         cls, handler(FloatPosition)
+    #     )  # TODO: correct annotation
 
 
 class _TileVector(Vector):
@@ -55,89 +85,116 @@ class _TileVector(Vector):
     @Vector.x.setter
     def x(self, value):
         self._data[0] = int(value)
-        self.entity()._position._data[0] = value + self.entity().tile_width / 2
+        self.entity()._root._position._data[0] = value + self.entity().tile_width / 2
 
     @Vector.y.setter
     def y(self, value):
         self._data[1] = int(value)
-        self.entity()._position._data[1] = value + self.entity().tile_height / 2
+        self.entity()._root._position._data[1] = value + self.entity().tile_height / 2
 
 
-class Entity(EntityLike):
+class Entity(Exportable, EntityLike):
     """
     Entity base-class. Used for all entity types that are specified in Factorio.
     Categorizes entities into "types" based on their class, each of which is
     implemented in :py:mod:`draftsman.prototypes`.
     """
 
-    class Model(BaseModel):
-        name: str
-        position: signatures.Position
-        tags: dict[str, Any] | None = None
-
-    # A dictionary containing all of the valid keys used in exported blueprint
-    # strings.
-    # Updated on a per Entity and Mixin basis; so ``Entity._exports`` will
-    # differ from ``ConstantCombinator._exports``.
-    # TODO: this needs to be some kind of recursive structure so that the data
-    # for things like "control_behavior" aren't displayed flat
-    _exports = {
-        "name": {
-            "format": "str",
-            "description": "Name of the entity",
-            "required": True,
-        },
-        "position": {
-            "format": "{'x': float, 'y': float}",
-            "description": "Position of the entity in the blueprint/world",
-            "required": True,
-            "transform": (lambda self, _: getattr(self, "global_position").to_dict()),
-        },
-        "tags": {
-            "format": "{...}",
-            "description": (
-                "Any custom data associated with the entity; used for modded data "
-                "primarily"
-            ),
-            "required": lambda x: x,  # Only optional if empty
-        },
-    }
-
-    @classmethod
-    def dump_format(cls):
-        # type: () -> dict
+    class Format(DraftsmanBaseModel):
         """
-        Dumps a JSON-serializable representation of the Entity's ``exports``
-        dictionary, primarily for user interpretation.
+        The overarching format of this Entity. TODO more
 
-        :returns: A JSON dictionary containing the names of each valid key, a
-            short description of their purpose, and whether or not they're
-            considered optional.
+        .. NOTE::
+            This is the schema for the Factorio format of the data, not the
+            internal format of each entity, which varies in a number of ways.
         """
-        return {
-            name: {
-                "format": export["format"],
-                "description": export["description"],
-                "optional": False if export["required"] is True else True,
-            }
-            for name, export in cls._exports.items()
-        }  # pragma: no coverage
 
-    @classmethod
-    def get_format(cls):
-        # type: () -> str
-        """
-        Produces a pretty string representation of ``meth:dump_format``. Work in
-        progress.
+        # Private attributes, managed internally by Draftsman
+        _entity: weakref.ReferenceType["Entity"] = PrivateAttr()
+        _position: Vector = PrivateAttr()
+        _tile_position: Vector = PrivateAttr()
 
-        :returns: A formatted string that can be output to stdout or file.
-        """
-        return json.dumps(cls.dump_format(), indent=4)  # pragma: no coverage
+        # Exported fields
+        name: str = Field(
+            ...,
+            description="""
+            The internal ID of the entity.
+            """,
+        )
+        position: FloatPosition = Field(
+            ...,
+            description="""
+            The position of the entity, almost always measured from it's center. 
+            Measured in Factorio tiles.
+            """,
+        )
+        entity_number: uint64 = Field(
+            ...,
+            exclude=True,
+            description="""
+            The number of the entity in it's parent blueprint, 1-based. In
+            practice this is the index of the dictionary in the blueprint's 
+            'entities' list, but this is not enforced.
+
+            NOTE: The range of this number is described as a 64-bit unsigned int,
+            but due to limitations with Factorio's PropertyTree implementation,
+            values above 2^53 will suffer from floating-point precision error.
+            See here: https://forums.factorio.com/viewtopic.php?p=592165#p592165
+            """,
+        )
+        tags: Optional[dict[str, Any]] = Field(
+            {},
+            description="""
+            Any other additional metadata associated with this blueprint entity. 
+            Frequently used by mods.
+            """,
+        )
+
+        @field_validator("name")
+        @classmethod
+        def check_recognized(cls, value: str, info: ValidationInfo):
+            if not info.context:
+                return value
+            if info.context["mode"] <= ValidationMode.MINIMUM:
+                return value
+
+            warning_list: list = info.context["warning_list"]
+            entity: Entity = info.context["object"]
+
+            # Similar entities exists on all entities EXCEPT generic `Entity`
+            # instances, for which we're trying to ignore validation on
+            if entity.similar_entities is None:
+                return value
+
+            if value not in entity.similar_entities:
+                warning_list.append(
+                    UnknownEntityWarning(
+                        "'{}' is not a known name for this {}{}".format(
+                            value,
+                            type(entity).__name__,
+                            get_suggestion(value, entity.similar_entities, n=1),
+                        )
+                    )
+                )
+
+            return value
+
+        @field_serializer("position")
+        def serialize_position(self, _):
+            return self._entity().global_position.to_dict()
+
+        model_config = ConfigDict(title="Entity", revalidate_instances="always")
 
     # =========================================================================
 
-    def __init__(self, name, similar_entities, tile_position=[0, 0], **kwargs):
-        # type: (str, list[str], Union[list, dict], **dict) -> None
+    def __init__(
+        self,
+        name: str,
+        similar_entities: list[str],
+        tile_position: IntPosition = (0, 0),
+        id: str = None,
+        **kwargs
+    ):
         """
         Constructs a new Entity. All prototypes have this entity as their most
         Parent class.
@@ -156,108 +213,88 @@ class Entity(EntityLike):
         :exception InvalidEntityError: If ``name`` is set to anything other than
             an entry in ``similar_entities``.
         """
+        # Init Exportable
+        Exportable.__init__(self)
         # Init EntityLike
-        super(Entity, self).__init__()
+        EntityLike.__init__(self)
 
-        # For user convinience, keep track of all the unused arguments, and
-        # issue a warning if the user provided one that was not used.
-        self.unused_args = kwargs
+        # We don't this to be active when constructing, so we it to NONE now and
+        # to whatever it should be later in the child-most subclass
+        self.validate_assignment = ValidationMode.NONE
+
+        # If 'None' was passed to position, treat that as the same as omission
+        # We do this because we want to be able to annotate `position` in each
+        # entity's __init__ signature and indicate that it's optional
+        if "position" in kwargs and kwargs["position"] is None:
+            kwargs.pop("position")
+
+        # self._root = self.Format.model_construct(
+        #     # If these two are omitted, included dummy values so that validation
+        #     # doesn't complain (since they're required fields)
+        #     # position={"x": 0, "y": 0},
+        #     # entity_number=0,
+        #     # Add all remaining extra keywords; all recognized keywords will be
+        #     # accessed individually, but this allows us to catch the extra ones
+        #     # and issue warnings for them
+        #     **{"position": {"x": 0, "y": 0}, "entity_number": 0, **kwargs}
+        # )
+        self._root = type(self).Format.model_validate(
+            {"name": name, "position": {"x": 0, "y": 0}, "entity_number": 0, **kwargs},
+            strict=False,
+            context={"construction": True, "mode": ValidationMode.NONE},
+        )
+
+        # Private attributes
+        self._root._entity = weakref.ref(self)
+        self._root._position = _PosVector(0, 0, self)
+        self._root._tile_position = _TileVector(0, 0, self)
+
+        # TODO: make `parent` private property to discourage manual modification
+        # TODO: `similar_entities` property(?) to reduce memory
+        # TODO: `tile_width/height` calculated to reduce memory?
 
         # Entities of the same type
         self.similar_entities = similar_entities
 
         # Name
-        if name not in self.similar_entities:
-            # Check to see if there's a a similar
-            suggestions = difflib.get_close_matches(name, similar_entities, n=1)
-            if len(suggestions) > 0:
-                suggestion_string = "; did you mean '{}'?".format(suggestions[0])
-            else:
-                suggestion_string = ""
-            raise InvalidEntityError(
-                "'{}' is not a valid name for this {}{}".format(
-                    name, type(self).__name__, suggestion_string
-                )
-            )
-        self._name = six.text_type(name)
-
-        # Entity type
-        self._type = entities.raw[self.name]["type"]
+        self.name = name
 
         # ID (used in Blueprints and Groups)
-        self.id = None
-        if "id" in kwargs:
-            self.id = kwargs["id"]
-            self.unused_args.pop("id")
-
-        # TODO: technically there's no reason each individual entity needs it's
-        # own copy of it's collision set, (aside from rotation)
-        # Therefore it would be more efficient to create a lookup table where
-        # each Entity type would get the root copy of the data and then
-        # transform it when needed (less performant maybe?)
-
-        # Collision set (Internal)
-        # Check to see if we have overwritten this value with the better ones
-        if not hasattr(self, "_overwritten_collision_set"):
-            # collision_box = entities.raw[self.name]["collision_box"]
-            # self._collision_set = CollisionSet(
-            #     [
-            #         utils.AABB(
-            #             collision_box[0][0],
-            #             collision_box[0][1],
-            #             collision_box[1][0],
-            #             collision_box[1][1],
-            #         )
-            #     ]
-            # )
-            self._collision_set = entities.collision_sets[self.name]
-
-        # Collision mask (Internal)
-        # We guarantee that the "collision_mask" key will exist during
-        # `draftsman-update`, and that it will have it's proper default based
-        # on it's type
-        # self._collision_mask = entities.raw[self.name]["collision_mask"]
+        self.id = id
 
         # Tile Width and Height (Internal)
         # Usually tile dimensions are implicitly based on the collision box
         # When not, they're overwritten later on in a particular subclass
         self._tile_width, self._tile_height = utils.aabb_to_dimensions(
-            self.collision_set.get_bounding_box()
+            self.static_collision_set.get_bounding_box()
+            if self.static_collision_set
+            else None
         )
         # But sometimes it can be overrided in special cases (rails)
-        if "tile_width" in entities.raw[self.name]:
+        if "tile_width" in entities.raw.get(self.name, {}):
             self._tile_width = entities.raw[self.name]["tile_width"]
-        if "tile_height" in entities.raw[self.name]:
+        if "tile_height" in entities.raw.get(self.name, {}):
             self._tile_height = entities.raw[self.name]["tile_height"]
+        # And in some other cases are manually overriden later in subclasses
 
         # Hidden? (Internal)
-        self._hidden = "hidden" in entities.raw[self.name]["flags"]
+        self._hidden = "hidden" in entities.raw.get(self.name, {}).get("flags", set())
 
         # Position and Tile position
-        self._position = _PosVector(0, 0, self)
-        self._tile_position = _TileVector(0, 0, self)
-
-        # Set both depending on passed in args
+        # If "position" was set, use that over "tile_position"
+        # If not, use the default "tile_position" if necessary
         if "position" in kwargs:
             self.position = kwargs["position"]
-            self.unused_args.pop("position")
         else:
             self.tile_position = tile_position
 
         # Entity tags
-        self.tags = {}
-        if "tags" in kwargs:
-            self.tags = kwargs["tags"]
-            self.unused_args.pop("tags")
-
-        # Remove entity_number if we're importing from a dict
-        self.unused_args.pop("entity_number", None)
+        self.tags = kwargs.get("tags", {})
 
     # =========================================================================
 
     @property
-    def name(self):
-        # type: () -> str
+    def name(self) -> str:
         """
         The name of the entity. Must be a valid Factorio ID string. Read only.
 
@@ -265,46 +302,61 @@ class Entity(EntityLike):
 
         :type: ``str``
         """
-        return self._name
+        return self._root.name
 
     @name.setter
-    def name(self, value):
-        # type: (str) -> None
+    def name(self, value: str):
         if self.parent:
+            # TODO: eventually remove
             raise DraftsmanError(
                 "Cannot change name of entity while in another collection"
             )
 
-        if value in self.similar_entities:
-            self._name = value
-        else:
-            raise InvalidEntityError(
-                "'{}' is not a valid name for this type".format(value)
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "name", value
             )
+            self._root.name = result
+        else:
+            self._root.name = value
+
+        # Unfortunately, we need to recalculate a bunch of stuff when we do this
+        # More scarily, the amount we have to do might be dynamic
+        # TODO: clean this up
+        self._tile_width, self._tile_height = utils.aabb_to_dimensions(
+            self.collision_set.get_bounding_box() if self.collision_set else None
+        )
+        # But sometimes it can be overrided in special cases (rails)
+        if "tile_width" in entities.raw.get(self.name, {}):
+            self._tile_width = entities.raw[self.name]["tile_width"]
+        if "tile_height" in entities.raw.get(self.name, {}):
+            self._tile_height = entities.raw[self.name]["tile_height"]
+
+        # Update position
+        self.tile_position = self.tile_position
 
     # =========================================================================
 
     @property
-    def type(self):
-        # type: () -> str
+    def type(self) -> Optional[str]:
         """
         The type of the Entity. Equivalent to the key found in Factorio's
         ``data.raw``. Mostly equivalent to the type of the entity instance,
         though there are some differences,
         :ref:`as noted here <handbook.entities.differences>`.
         Can be used as a criteria to search with in
-        :py:meth:`.EntityCollection.find_entities_filtered`.
+        :py:meth:`.EntityCollection.find_entities_filtered`. Returns ``None`` if
+        this entity's name is not recognized when created without validation.
         Not exported; read only.
 
         :type: ``str``
         """
-        return self._type
+        return entities.raw.get(self.name, {"type": None})["type"]
 
     # =========================================================================
 
     @property
-    def id(self):
-        # type: () -> str
+    def id(self) -> Optional[str]:
         """
         A unique string ID associated with this entity. ID's can be anything,
         though there can only be one entity with a particular ID in an
@@ -323,26 +375,30 @@ class Entity(EntityLike):
         return self._id
 
     @id.setter
-    def id(self, value):
-        # type: (str) -> None
+    def id(self, value: str):
+        # TODO: I think we can use pydantic to validate this...
         if value is None:
             if self.parent:
                 self.parent.entities._remove_key(self._id)
             self._id = value
-        elif isinstance(value, six.string_types):
-            old_id = self._id
-            self._id = six.text_type(value)
+        elif isinstance(value, str):
             if self.parent:
+                # try:
+                old_id = self._id
                 self.parent.entities._remove_key(old_id)
+                # except AttributeError:
+                #     pass
+                self._id = value
                 self.parent.entities._set_key(self._id, self)
+            else:
+                self._id = value
         else:
             raise TypeError("'id' must be a str or None")
 
     # =========================================================================
 
     @property
-    def position(self):
-        # type: () -> Vector
+    def position(self) -> Vector:
         """
         The "canonical" position of the Entity, or the one that Factorio uses.
         Positions of most entities are located at their center, which can either
@@ -367,28 +423,27 @@ class Entity(EntityLike):
             inside a EntityCollection, :ref:`which is forbidden.
             <handbook.blueprints.forbidden_entity_attributes>`
         """
-        return self._position
+        return self._root._position
 
     @position.setter
-    def position(self, value):
-        # type: (Union[dict, list, tuple, Vector]) -> None
+    def position(self, value: Vector):
+        # TODO: relax
         if self.parent:
             raise DraftsmanError(
                 "Cannot change position of entity while it's inside another object"
             )
 
         # self._position = Vector.from_other(value, float)
-        self._position.update_from_other(value, float)
-        self._tile_position.update(
-            round(self._position.x - self.tile_width / 2),
-            round(self._position.y - self.tile_height / 2),
+        self._root._position.update_from_other(value, float)
+        self._root._tile_position.update(
+            round(self._root._position.x - self.tile_width / 2),
+            round(self._root._position.y - self.tile_height / 2),
         )
 
     # =========================================================================
 
     @property
-    def tile_position(self):
-        # type: () -> Vector
+    def tile_position(self) -> Vector:
         """
         The tile-position of the Entity. The tile position is the position
         according the the LuaSurface tile grid, and is the top left corner of
@@ -411,11 +466,10 @@ class Entity(EntityLike):
             inside a EntityCollection, :ref:`which is forbidden.
             <handbook.blueprints.forbidden_entity_attributes>`
         """
-        return self._tile_position
+        return self._root._tile_position
 
     @tile_position.setter
-    def tile_position(self, value):
-        # type: (Union[dict, list, tuple]) -> None
+    def tile_position(self, value: Vector):
         # TODO: re-evaluate
         # if self.parent:
         #     raise DraftsmanError(
@@ -423,17 +477,16 @@ class Entity(EntityLike):
         #     )
 
         # self._tile_position.update_from_other(value, int)
-        self._tile_position.update_from_other(value, int)
-        self._position.update(
-            self._tile_position.x + self.tile_width / 2,
-            self._tile_position.y + self.tile_height / 2,
+        self._root._tile_position.update_from_other(value, int)
+        self._root._position.update(
+            self._root._tile_position.x + self.tile_width / 2,
+            self._root._tile_position.y + self.tile_height / 2,
         )
 
     # =========================================================================
 
     @property
-    def global_position(self):
-        # type: () -> dict
+    def global_position(self) -> Vector:
         """
         The "global", or root-most position of the Entity. This value is always
         equivalent to :py:meth:`~.Entity.position`, unless the entity exists
@@ -458,21 +511,25 @@ class Entity(EntityLike):
     # =========================================================================
 
     @property
-    def collision_set(self):
-        # type: () -> CollisionSet
+    def static_collision_set(self) -> Optional[CollisionSet]:
         """
         TODO
         """
-        # We use a proxy variable instead of pointing directly to `entities.
-        # collision_sets` in case entities actually require per-instance values
-        # (Locomotive, for example)
-        return self._collision_set
+        return entities.collision_sets.get(self.name, None)
 
     # =========================================================================
 
     @property
-    def collision_mask(self):
-        # type: () -> set
+    def collision_set(self) -> Optional[CollisionSet]:
+        """
+        TODO
+        """
+        return entities.collision_sets.get(self.name, None)
+
+    # =========================================================================
+
+    @property
+    def collision_mask(self) -> set:
         """
         The set of all collision layers that this Entity collides with,
         specified as strings. Equivalent to Factorio's ``data.raw`` equivalent.
@@ -483,13 +540,12 @@ class Entity(EntityLike):
         # We guarantee that the "collision_mask" key will exist during
         # `draftsman-update`, and that it will have it's proper default based
         # on it's type
-        return entities.raw[self.name]["collision_mask"]
+        return entities.raw.get(self.name, {"collision_mask": None})["collision_mask"]
 
     # =========================================================================
 
     @property
-    def tile_width(self):
-        # type: () -> int
+    def tile_width(self) -> Optional[int]:
         """
         The width of the entity in tiles, rounded up to the nearest integer.
         Not exported; read only.
@@ -501,8 +557,7 @@ class Entity(EntityLike):
     # =========================================================================
 
     @property
-    def tile_height(self):
-        # type: () -> int
+    def tile_height(self) -> Optional[int]:
         """
         The height of the entity in tiles, rounded up to the nearest integer.
         Not exported; read only.
@@ -514,8 +569,7 @@ class Entity(EntityLike):
     # =========================================================================
 
     @property
-    def hidden(self):
-        # type: () -> bool
+    def hidden(self) -> bool:
         """
         Whether or not this Entity is considered "hidden", as specified in it's
         flags in Factorio's ``data.raw``. Not exported; read only.
@@ -540,8 +594,7 @@ class Entity(EntityLike):
     # =========================================================================
 
     @property
-    def flippable(self):
-        # type: () -> bool
+    def flippable(self) -> bool:
         """
         Whether or not this entity can be mirrored in game using 'F' or 'G'.
         Not exported; read only.
@@ -555,8 +608,7 @@ class Entity(EntityLike):
     # =========================================================================
 
     @property
-    def tags(self):
-        # type: () -> dict
+    def tags(self) -> dict:
         """
         Tags associated with this Entity. Commonly used by mods to add custom
         data to a particular Entity when exporting and importing Blueprint
@@ -569,77 +621,94 @@ class Entity(EntityLike):
         :exception TypeError: If tags is set to anything other than a ``dict``
             or ``None``.
         """
-        return self._tags
+        return self._root.tags
 
     @tags.setter
-    def tags(self, tags):
-        # type: (dict) -> None
-        if tags is None or isinstance(tags, dict):
-            self._tags = tags
+    def tags(self, value: dict):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "tags", value
+            )
+            self._root.tags = result
         else:
-            raise TypeError("'tags' must be a dict or None")
+            self._root.tags = value
 
     # =========================================================================
 
-    def to_dict(self):
-        # type: () -> dict
+    # def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
+    #     out_dict = self._root.model_dump(
+    #         # Some attributes are reserved words ('type', 'from', etc.); this
+    #         # resolves that issue
+    #         by_alias=True,
+    #         # Trim if values are None
+    #         exclude_none=exclude_none,
+    #         # Trim if values are defaults
+    #         exclude_defaults=exclude_defaults,
+    #         # Ignore warnings because we might export a model where the keys are
+    #         # intentionally incorrect
+    #         # Plus there are things like Associations with which we want to
+    #         # preserve when returning this object so that a parent object can
+    #         # handle them
+    #         warnings=False,
+    #     )
+
+    #     return out_dict
+
+    def validate(
+        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    ) -> ValidationResult:
         """
-        Converts the Entity to its JSON dict representation. The keys returned
-        are determined by the contents of the `exports` dictionary and their
-        criteria functions.
+        TODO
+        If ``mode`` is NONE, then this function will return an empty validation
+        Result.
 
-        A attribute from the Entity will be included as a key in the output dict
-        if both of the following conditions are met:
-
-        1. The attribute is in the ``exports`` dictionary
-        2. The associated criteria function is either not present or returns
-           ``True``. This is used to avoid including excess keys, keeping
-           Blueprint string size down.
-
-        In addition, a second function may be provided to have a formatting step
-        to alter either the key and/or its value, which gets inserted into the
-        output ``dict``.
-
-        :returns: The exported JSON-dict representation of the Entity.
+        :param mode: The validation mode to evaluate the object against.
+            Determines the contents of the returned ValidationResult.
+        :param force: Whether or not to force revalidation, even if ``is_valid``
+            on this entity is ``True``. Useful if you know that an object is
+            dirty when Draftsman doesn't, which can happen in [select
+            circumstances.](TODO)
         """
-        # out = {}
-        # for name, funcs in self.exports.items():
-        #     value = getattr(self, name)
-        #     criterion = funcs[0]
-        #     formatter = funcs[1]
-        #     # Does the value match the criteria to be included?
-        #     if criterion is None or criterion(value):
-        #         if formatter is not None:
-        #             # Normalize key/value pair
-        #             k, v = formatter(name, value)
-        #         else:
-        #             k, v = name, value
-        #         out[k] = v
+        mode = ValidationMode(mode)
 
-        # return out
+        output = ValidationResult([], [])
 
-        out = {}
-        for name, export in self.__class__._exports.items():
-            transform = export.get("transform", None)
-            if transform is not None:
-                value = transform(self, name)
-            else:
-                value = getattr(self, name)
+        if mode is ValidationMode.NONE or (self.is_valid and not force):
+            return output
 
-            required = export.get("required", None)
-            # print(required)
-            if required is True or required and required(value):
-                out[name] = value
+        context = {
+            "mode": mode,
+            "object": self,
+            "warning_list": [],
+            "assignment": False,
+        }
 
-        return out
+        try:
+            result = self.Format.model_validate(
+                self._root,
+                strict=False,  # TODO: ideally this should be strict
+                context=context,
+            )
+            # Reassign private attributes
+            result._entity = weakref.ref(self)
+            result._position = self._root._position
+            result._tile_position = self._root._tile_position
+            # Scuffed AF
+            if hasattr(self._root, "direction"):
+                result.direction = self._root.direction
+            if hasattr(self._root, "orientation"):
+                print(self._root.orientation)
+                result.orientation = self._root.orientation
+            # Acquire the newly converted data
+            self._root = result
+        except ValidationError as e:
+            output.error_list.append(DataFormatError(e))
 
-    def inspect(self):
-        # type: () -> list[Exception]
+        output.warning_list += context["warning_list"]
 
-        pass  # TODO
+        return output
 
-    def mergable_with(self, other):
-        # type: (Entity) -> bool
+    def mergable_with(self, other: "Entity") -> bool:
         return (
             type(self) == type(other)
             and self.name == other.name
@@ -647,162 +716,12 @@ class Entity(EntityLike):
             and self.id == other.id
         )
 
-    def merge(self, other):
-        # type: (Entity) -> None
-        # TODO: It might be smarter to just move all these into thier own mixins;
-        # that way we wouldn't have to call hasattr() for all of them
-
-        # Control Behavior (overwrite self with other)
-        if hasattr(self, "control_behavior") and hasattr(other, "control_behavior"):
-            # TODO: set on per entity basis
-            self.control_behavior = copy.deepcopy(other.control_behavior)
-
-        # Power Neighbours (union of the two sets, not exceeding 5 connections)
-        if hasattr(self, "neighbours") and hasattr(other, "neighbours"):
-            # Iterate over every association in other (the to-be deleted entity)
-            for association in other.neighbours:
-                # Keep track of whether or not this association was added to self
-                association_added = False
-
-                # Make sure we don't add the same association multiple times
-                if association not in self.neighbours:
-                    # Also make sure we don't exceed 5 connections
-                    if len(self.neighbours) < 5:
-                        self.neighbours.append(association)
-                        association_added = True
-
-                # However, entities that used to point to `other` still do,
-                # which causes problems since `other` is usually to be deleted
-                # after merging
-                # So we now we find the entity that other used to point to and
-                # iterate over it's neighbours:
-                associated_entity = association()
-                for i, old_association in enumerate(associated_entity.neighbours):
-                    # If the association used to point to `other`, make it point
-                    # to `self`
-                    if old_association == Association(other):
-                        # Only do so, however, if this association is not
-                        # already in the set of neighbours and we added the
-                        # connection before, and if we actually even merged the
-                        # connection in the first place
-                        if (
-                            Association(self) not in associated_entity.neighbours
-                            and association_added
-                        ):
-                            associated_entity.neighbours[i] = Association(self)
-                        else:
-                            # Otherwise, the association points to an entity
-                            # that will likely become invalid, so we remove it
-                            associated_entity.neighbours.remove(old_association)
-
-        def merge_circuit_connection(self, side, color, point, other):
-            # Keep track of whether or not this association was added to self
-            association_added = False
-
-            # Make sure we don't add the same association multiple times
-            if point not in self.connections[side][color]:
-                self.connections[side][color].append(point)
-                association_added = True
-
-            # Determine the location where `point` points to
-            association = point["entity_id"]
-            associated_entity = association()
-            target_side = point.get("circuit_id", 1)  # default to `1` if not there
-            if associated_entity.dual_circuit_connectable:
-                target = {"entity_id": Association(self), "circuit_id": target_side}
-            else:
-                target = {"entity_id": Association(self)}
-
-            target_location = associated_entity.connections[str(target_side)][color]
-            for point in target_location:
-                if point["entity_id"] == Association(other):
-                    if target not in target_location and association_added:
-                        point["entity_id"] = Association(self)
-                    else:
-                        target_location.remove(point)
-
-        # Okay, so merging power connections is not guaranteed to even have a
-        # consistent result, due to the fact that they're one-directional by
-        # nature
-        # Thus, for now at least, I'm going to just flat out prevent users from
-        # merging power-switches until I figure out some way to manage this
-        # issue
-
-        # def merge_power_connection(self, side, point, other):
-        #     # Make sure we don't add the same association multiple times
-        #     # point["entity_id"] = Association(self)
-        #     # target = {"entity_id": Association(self), "wire_id": 0}
-
-        #     # if point["entity_id"] == Association(other):
-        #     #     if target not in self.connections[side]:
-        #     #         self.connections[side].append(point)
-        #     #     else:
-        #     #         point["entity_id"] = Association(self)
-
-        #     association = point["entity_id"]
-        #     associated_entity = association()
-        #     if associated_entity:
-        #         print("bruh")
-
-        # Connections (union of the two sets)
-        if hasattr(self, "connections") and hasattr(other, "connections"):
-            for side in other.connections:
-                if side in {"1", "2"}:
-                    if side not in self.connections:
-                        self.connections[side] = {}
-                    for color in other.connections[side]:
-                        if color not in self.connections[side]:
-                            self.connections[side][color] = []
-                        for point in other.connections[side][color]:
-                            merge_circuit_connection(self, side, color, point, other)
-                else:  # side in {"Cu0", "Cu1"}:
-                    # if side not in self.connections:
-                    #     self.connections[side] = []
-                    # for point in other.connections[side]:
-                    #     if point not in self.connections[side]:
-                    #         self.connections[side].append(point)
-                    #     merge_power_connection(self, side, point, other)
-                    raise ValueError(
-                        "Cannot merge power switches (yet); see <TODO> for details"
-                    )
-
+    def merge(self, other: "Entity"):
         # Tags (overwrite self with other)
         # (Make sure to make a copy in case the original data gets deleted)
         self.tags = copy.deepcopy(other.tags)
 
-    # def _add_export(self, name, criterion=None, formatter=None):
-    #     # type: (str, Callable, Callable) -> None
-    #     """
-    #     Adds a key to ``exports`` with an optional criteria and formatting
-    #     function.
-
-    #     We can't just convert the entire entity to a dict, because there are a
-    #     number of keys (for technical or space reasons) that we dont want to
-    #     add to the dictionary. Instead, we keep track of the keys we do want
-    #     (``exports``) and add those if they're present in the Entity object.
-
-    #     However, some items that are present in Entity might be initialized to
-    #     ``None`` or otherwise redundant values, which would just take up space
-    #     in the output dict. Hence, we can also provide a criteria function that
-    #     takes a single argument, the value of the element in the `Entity`. If
-    #     the function returns ``True``, the key is added to the output dictionary.
-    #     If the function is ``None``, the key is always added.
-
-    #     This function also supports an optional ``formatter`` function that
-    #     takes two arguments, the ``key`` and ``value`` pair and returns a tuple
-    #     of the two in the same order. This allows to perform any modification to
-    #     the key or value before being added to the output dict.
-
-    #     :param name: The name of the attribute that you would like to keep.
-    #     :param criterion: Function that determines whether or not the attribute
-    #         should be added.
-    #     :param formatter: Function that determines the output format of the
-    #         key-value pair in the output dictionary.
-    #     """
-    #     self.exports[name] = [criterion, formatter]
-
-    def __eq__(self, other):
-        # type: (Entity) -> bool
+    def __eq__(self, other: "Entity") -> bool:
         return (
             type(self) == type(other)
             and self.name == other.name
@@ -811,12 +730,10 @@ class Entity(EntityLike):
             and self.tags == other.tags
         )
 
-    def __hash__(self):
-        # type: () -> int
+    def __hash__(self) -> int:
         return id(self) >> 4  # Apparently this is the default?
 
-    def __repr__(self):  # pragma: no coverage
-        # type: () -> str
+    def __repr__(self) -> str:  # pragma: no coverage
         # return "<{0}{1}>{2}".format(
         #     type(self).__name__,
         #     " '{}'".format(self.id) if self.id is not None else "",
@@ -829,3 +746,19 @@ class Entity(EntityLike):
             id(self),
             str(self.to_dict()),
         )
+
+    def __deepcopy__(self, memo) -> "Entity":
+        # Perform the normal deepcopy
+        result = super().__deepcopy__(memo=memo)
+        print(type(result))
+        # This is very cursed
+        # We need a reference to the parent entity stored in `_root` so that we
+        # can properly serialize it's position
+        # If we use a regular reference, it copies properly, but then it creates
+        # a circular reference which makes garbage collection worse
+        # We use a weakref to mitigate this memory issue (and ensure that
+        # deleting an entity immediately destroys it), but means that we have to
+        # manually update it's reference here
+        result._root._entity = weakref.ref(result)
+        # Get me out of here
+        return result

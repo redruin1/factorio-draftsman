@@ -52,7 +52,7 @@ with pkg_resources.open_binary(data, "entities.pkl") as inp:
     locomotives: list[str] = _data["locomotives"]
     cargo_wagons: list[str] = _data["cargo_wagons"]
     fluid_wagons: list[str] = _data["fluid_wagons"]
-    artillery_wagons = _data["artillery_wagons"]
+    artillery_wagons: list[str] = _data["artillery_wagons"]
     logistic_passive_containers: list[str] = _data["logistic_passive_containers"]
     logistic_active_containers: list[str] = _data["logistic_active_containers"]
     logistic_storage_containers: list[str] = _data["logistic_storage_containers"]
@@ -83,6 +83,8 @@ with pkg_resources.open_binary(data, "entities.pkl") as inp:
     gates: list[str] = _data["gates"]
     turrets: list[str] = _data["turrets"]
     radars: list[str] = _data["radars"]
+    simple_entities_with_owner: list[str] = _data["simple_entities_with_owner"]
+    simple_entities_with_force: list[str] = _data["simple_entities_with_force"]
     electric_energy_interfaces: list[str] = _data["electric_energy_interfaces"]
     linked_containers: list[str] = _data["linked_containers"]
     heat_interfaces: list[str] = _data["heat_interfaces"]
@@ -90,6 +92,7 @@ with pkg_resources.open_binary(data, "entities.pkl") as inp:
     infinity_containers: list[str] = _data["infinity_containers"]
     infinity_pipes: list[str] = _data["infinity_pipes"]
     burner_generators: list[str] = _data["burner_generators"]
+    player_ports: list[str] = _data["player_ports"]
 
     all: list[str] = _data["all"]
 

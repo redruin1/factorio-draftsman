@@ -92,6 +92,8 @@ def signal_dict(signal: str) -> dict:
     :param signal_name: The name of the signal.
 
     :returns: A dict with the ``"name"`` and ``"type"`` keys set.
+    :exception InvalidSignalError: If the signal name is not contained within
+        :py:mod:`draftsman.data.signals`, and thus it's type cannot be deduced.
     """
     if signal is None or isinstance(signal, dict):
         return signal

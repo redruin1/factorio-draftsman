@@ -1,23 +1,15 @@
 # test_rail_chain_signal.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import RailChainSignal, rail_chain_signals, Container
-from draftsman.error import InvalidEntityError, InvalidSignalError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.signatures import SignalID
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class RailChainSignalTesting(unittest.TestCase):
+class TestRailChainSignal:
     def test_constructor_init(self):
         rail_signal = RailChainSignal("rail-chain-signal", control_behavior={})
         assert rail_signal.to_dict() == {
@@ -66,35 +58,44 @@ class RailChainSignalTesting(unittest.TestCase):
         }
 
         # Warnings:
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             RailChainSignal("rail-chain-signal", invalid_keyword="whatever")
-
-        # Warn if the rail signal is not placed next to rail
-        # TODO (Complex)
+        with pytest.warns(UnknownEntityWarning):
+            RailChainSignal("this is not a rail chain signal")
 
         # Errors:
-        with pytest.raises(InvalidEntityError):
-            RailChainSignal("this is not a rail chain signal")
         with pytest.raises(DataFormatError):
-            RailChainSignal(control_behavior={"unused_key": "something"})
+            RailChainSignal(control_behavior="incorrect")
 
     def test_set_blue_output_signal(self):
         rail_signal = RailChainSignal()
         rail_signal.blue_output_signal = "signal-A"
-        assert rail_signal.blue_output_signal == {"name": "signal-A", "type": "virtual"}
-        assert rail_signal.control_behavior == {
-            "blue_output_signal": {"name": "signal-A", "type": "virtual"}
-        }
+        assert rail_signal.blue_output_signal == SignalID(
+            name="signal-A", type="virtual"
+        )
+
         rail_signal.blue_output_signal = {"name": "signal-A", "type": "virtual"}
-        assert rail_signal.control_behavior == {
-            "blue_output_signal": {"name": "signal-A", "type": "virtual"}
-        }
+        assert rail_signal.blue_output_signal == SignalID(
+            name="signal-A", type="virtual"
+        )
+
         rail_signal.blue_output_signal = None
-        assert rail_signal.control_behavior == {}
-        with pytest.raises(TypeError):
+        assert rail_signal.blue_output_signal == None
+
+        with pytest.raises(DataFormatError):
             rail_signal.blue_output_signal = TypeError
-        with pytest.raises(InvalidSignalError):
+        with pytest.raises(DataFormatError):
             rail_signal.blue_output_signal = "incorrect"
+
+        rail_signal.validate_assignment = "none"
+
+        rail_signal.blue_output_signal = "incorrect"
+        assert rail_signal.blue_output_signal == "incorrect"
+        assert rail_signal.to_dict() == {
+            "name": "rail-chain-signal",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"blue_output_signal": "incorrect"},
+        }
 
     def test_mergable_with(self):
         signal1 = RailChainSignal("rail-chain-signal")
@@ -133,13 +134,22 @@ class RailChainSignalTesting(unittest.TestCase):
         signal1.merge(signal2)
         del signal2
 
-        assert signal1.control_behavior == {
+        assert signal1.control_behavior == RailChainSignal.Format.ControlBehavior(
+            **{
+                "red_output_signal": "signal-A",
+                "orange_output_signal": "signal-B",
+                "green_output_signal": "signal-C",
+                "blue_output_signal": "signal-D",
+            }
+        )
+        assert signal1.tags == {"some": "stuff"}
+
+        assert signal1.to_dict()["control_behavior"] == {
             "red_output_signal": {"name": "signal-A", "type": "virtual"},
             "orange_output_signal": {"name": "signal-B", "type": "virtual"},
             "green_output_signal": {"name": "signal-C", "type": "virtual"},
             "blue_output_signal": {"name": "signal-D", "type": "virtual"},
         }
-        assert signal1.tags == {"some": "stuff"}
 
     def test_eq(self):
         signal1 = RailChainSignal("rail-chain-signal")

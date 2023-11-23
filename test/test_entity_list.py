@@ -1,7 +1,4 @@
 # test_entity_list.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import absolute_import, unicode_literals
 
 from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.blueprint import Blueprint
@@ -12,16 +9,10 @@ from draftsman.error import DuplicateIDError
 from draftsman.utils import encode_version
 from draftsman.warning import OverlappingObjectsWarning, HiddenEntityWarning
 
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class EntityListTesting(unittest.TestCase):
+class TestEntityList:
     def test_constructor(self):
         blueprint = Blueprint()
         test = EntityList(blueprint)
@@ -140,6 +131,34 @@ class EntityListTesting(unittest.TestCase):
         # Test ValueError
         with pytest.raises(ValueError):
             blueprint.entities.recursive_remove(entity_to_remove)
+
+    def test_union(self):
+        blueprint1 = Blueprint()
+
+        blueprint1.entities.append("wooden-chest")
+
+        blueprint2 = Blueprint()
+
+        blueprint2.entities.append("inserter", direction=2, tile_position=(1, 0))
+
+        blueprint3 = Blueprint()
+
+        blueprint3.entities = blueprint1.entities | blueprint2.entities
+
+        assert len(blueprint3.entities) == 2
+        assert blueprint3.to_dict()["blueprint"]["entities"] == [
+            {
+                "name": "wooden-chest",
+                "position": {"x": 0.5, "y": 0.5},
+                "entity_number": 1,
+            },
+            {
+                "name": "inserter",
+                "position": {"x": 1.5, "y": 0.5},
+                "direction": 2,
+                "entity_number": 2,
+            },
+        ]
 
     def test_getitem(self):
         blueprint = Blueprint()
@@ -260,3 +279,22 @@ class EntityListTesting(unittest.TestCase):
         assert entityB in blueprint.entities
         assert entityC not in group.entities
         assert entityC in blueprint.entities
+
+    def test_eq(self):
+        blueprint1 = Blueprint()
+        blueprint1.entities.append("wooden-chest")
+
+        assert blueprint1.entities != 10
+
+        blueprint2 = Blueprint()
+
+        assert blueprint1.entities != blueprint2.entities
+
+        blueprint2.entities.append("inserter")
+
+        assert blueprint1.entities != blueprint2.entities
+
+        blueprint2.entities.pop(0)
+        blueprint2.entities.append("wooden-chest")
+
+        assert blueprint1.entities == blueprint2.entities

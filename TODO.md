@@ -1,5 +1,43 @@
 # TODO
 
+### Redo validation (again)
+Swapping to Pydantic was very illuminating in the benefits that it can provide:
+
+* Ergonomic class definitions to define schemas (very nice)
+* Being able to inject custom functions at any point of the validation process to massage inputs, discredit validation, and add new criteria (possibly on the fly!) This is probably going to be required by any further implementation going forward
+* All of these validation functions are localized to the classes that use them, and everything is in one place; only a single method has to be called for any member modification.
+* Validation backend is written in Rust for speed (tempting)
+
+However, it is still not quite entirely perfect:
+
+* RootModel syntax cannot be serialized if not in the correct model format (unacceptable, currently this is sidestepped but suboptimal)
+* RootModel syntax is unwieldly; everything is accessed via it's `root` attribute and any methods that you would want to use on `root` have to be reimplemented in the parent class
+* I HAVE to use RootModels if I want to be able to reliably validate these members (and ideally propagate their `is_valid` flags)
+* Per instance validate assignment is not permitted (even though totally functional), meaning I have to use the model's backend which might be subject to change
+* No in-built handling for warnings, which ideally would behave very similarly to errors as Pydantic currently implements them
+
+Based on my search, I can't think of a validation library that has all of these features at once, implying that I would have to roll my own. I'm not really looking forward to this, and especially not to *testing* it, so if there is one out there please message me.
+
+---
+
+### Validation caching
+Ideally, whether or not a entity or blueprint is considered valid can be retained as long as the entity does not change after validation. For example, if you validate a single entity, and then add that entity to a blueprint 1000 times, you only have to validate the attributes of the blueprint itself, since the entities are guaranteed to already be in a valid state. Ideally, each exportable object would have a `is_valid` attribute which would be set to false when an attribute is set, which can then be quickly checked in any parent
+`validate()` function.
+
+### Integrate with `mypy`
+
+### Revamp the `add_x` data functions so that they support more features
+* Inline sorting
+* Support additional keyword arguments in line with the prototype documentation
+* Perhaps there might be a way to redesign `env.py` such that it can use the data functions, encouraging code reuse
+
+### More elegantly handle when a prototype has no valid members (like `LinkedBelt`)
+
+### Change all internal attribute accesses to use `["element"]` and `.get("element", None)` instead so that functionality should remain constant when importing dicts when `validate="none"`
+
+### Add keyword arguments to all draftsman entities and blueprintables
+So the user can quickly determine what keys are allowed without having to consult the docs firsthand, or create an instance of it and check it's members
+
 ### Add as many of the example programs to the test suite as possible
 To help ensure that they're behaving correctly over any API changes, so they stay up-to-date
 
@@ -18,10 +56,6 @@ General constraints on parameters and inputs; what you can deconstruct, what you
 ---
 ### Write `__repr__` function for everything
 For most of the commonly-used things this is already the case, but would be nice if every Draftsman object had a nice, user-readable formatted output.
-
----
-### Unify entity validation into one monolithic thing
-Currently `Entity` and `Blueprintable` have two slightly different methods of converting their Python object representation to their output JSON dict/string format. Ideally this would be one single method (and thus one single point of failure to maintain).
 
 ---
 ### Write `dump_format` (and test_cases)
@@ -83,11 +117,7 @@ Documentation is currently written in [reStructuredText](https://docutils.source
 Currently all the data being extracted from the Factorio load process is all "hard-coded"; you have to manually edit `env.py` in order to change what it extracts. This is alright for the maintainers of Draftsman as we can simply edit it if we need more/less information from `data.raw`, but what if the user wants some data from Factorio that Draftsman doesn't bother extracting? In this case Draftsman would benefit from a generic editable interface where people can configure and modify exactly the information they want from the game for whatever their purposes are.
 
 ---
-### Maybe integrate defaults for more succinct blueprint strings?
-A bootleg version of this currently exists already, where null entries are removed, but there should also be some kind of control for the "verbosity" of the output blueprint dict/string
-
----
-### In the same vein as above, also perhaps an option for blueprint canonicalization
+### Perhaps add an option for blueprint canonicalization
 Ordering objects inside blueprints in regular ways for best compression, minimal git diff, etc.
 
 ---
@@ -102,5 +132,5 @@ Should also probably subdivide the examples folder into subfolders like `rail`, 
 And give each folder their own README.md that describes what each one does
 
 ---
-### Investigate a Cython rewrite in efforts to make the library as performant as possible
+### Investigate a Cython/Rust rewrite in efforts to make the library as performant as possible
 Likely the last-most step, once all other feature requests and optimization passes are complete, to help squeeze as much out of the code-base as possible
