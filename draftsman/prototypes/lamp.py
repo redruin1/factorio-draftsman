@@ -1,23 +1,20 @@
 # lamp.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
 )
-from draftsman.error import DataFormatError
-import draftsman.signatures as signatures
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.signatures import Connections, DraftsmanBaseModel
 
 from draftsman.data.entities import lamps
 
-from schema import SchemaError
-import six
-import warnings
+from pydantic import ConfigDict, Field
+from typing import Any, Literal, Optional, Union
 
 
 class Lamp(
@@ -27,43 +24,69 @@ class Lamp(
     An entity that illuminates an area.
     """
 
-    # fmt: off
-    _exports = {
-        **Entity._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **CircuitConditionMixin._exports,
-    }
-    # fmt: on
-
-    def __init__(self, name=lamps[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(Lamp, self).__init__(name, lamps, **kwargs)
-
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
+    class Format(
+        CircuitConditionMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(CircuitConditionMixin.ControlFormat, DraftsmanBaseModel):
+            use_colors: Optional[bool] = Field(
+                False,
+                description="""
+                Whether or not the presence of a color signal will affect the
+                light that this lamp emits, if it's circuit condition is met.
+                If multiple colors are passed to the lamp, the color with the
+                first lexographical order is emitted.
+                """,
             )
 
-        del self.unused_args
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-    # =========================================================================
+        model_config = ConfigDict(title="Lamp")
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = signatures.LAMP_CONTROL_BEHAVIOR.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    def __init__(
+        self,
+        name: str = lamps[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        connections: Connections = {},
+        control_behavior: Format.ControlBehavior = {},
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
+
+        self._root: __class__.Format
+        self.control_behavior: __class__.Format.ControlBehavior
+
+        super().__init__(
+            name,
+            lamps,
+            position=position,
+            tile_position=tile_position,
+            connections=connections,
+            control_behavior=control_behavior,
+            tags=tags,
+            **kwargs
+        )
+
+        self.validate_assignment = validate_assignment
+
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
     @property
-    def use_colors(self):
-        # type: () -> bool
+    def use_colors(self) -> Optional[bool]:
         """
         Whether or not this entity should use color signals to determine it's
         color.
@@ -75,17 +98,21 @@ class Lamp(
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
-        return self.control_behavior.get("use_colors", None)
+        return self.control_behavior.use_colors
 
     @use_colors.setter
-    def use_colors(self, value):
-        # type: (bool) -> None
-        if value is None:
-            self.control_behavior.pop("use_colors", None)
-        elif isinstance(value, bool):
-            self.control_behavior["use_colors"] = value
+    def use_colors(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "use_colors",
+                value,
+            )
+            self.control_behavior.use_colors = result
         else:
-            raise TypeError("'use_colors' must be a bool or None")
+            self.control_behavior.use_colors = value
 
     # =========================================================================
 

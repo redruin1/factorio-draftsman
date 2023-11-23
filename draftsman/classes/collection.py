@@ -19,6 +19,8 @@ from draftsman.error import (
     InvalidAssociationError,
     EntityNotCircuitConnectableError,
 )
+from draftsman.signatures import Connections
+from draftsman.types import RollingStock
 from draftsman.warning import (
     ConnectionSideWarning,
     ConnectionDistanceWarning,
@@ -27,10 +29,8 @@ from draftsman.warning import (
 from draftsman.utils import AABB, PrimitiveAABB, flatten_entities, distance
 
 import abc
-import itertools
 import math
-import six
-from typing import Union, Sequence
+from typing import Optional, Sequence, Union
 import warnings
 
 # TODO: move this
@@ -39,8 +39,7 @@ from draftsman.entity import Locomotive, CargoWagon, FluidWagon, ArtilleryWagon
 RollingStock = Union[Locomotive, CargoWagon, FluidWagon, ArtilleryWagon]
 
 
-@six.add_metaclass(abc.ABCMeta)
-class EntityCollection(object):
+class EntityCollection(metaclass=abc.ABCMeta):
     """
     Abstract class used to describe an object that can contain a list of
     :py:class:`~draftsman.classes.entitylike.EntityLike` instances.
@@ -51,16 +50,14 @@ class EntityCollection(object):
     # =========================================================================
 
     @abc.abstractproperty
-    def entities(self):  # pragma: no coverage
-        # type: () -> EntityList
+    def entities(self) -> EntityList:  # pragma: no coverage
         """
         Object that holds the ``EntityLikes``, usually a :py:class:`.EntityList`.
         """
         pass
 
     @abc.abstractproperty
-    def entity_map(self):  # pragma: no coverage
-        # type: () -> SpatialDataStructure
+    def entity_map(self) -> SpatialDataStructure:  # pragma: no coverage
         """
         Object that holds references to the entities organized by their spatial
         position. An implementation of :py:class:`.SpatialDataStructure`.
@@ -68,8 +65,7 @@ class EntityCollection(object):
         pass
 
     @abc.abstractproperty
-    def schedules(self):  # pragma: no coverage
-        # type: () -> ScheduleList
+    def schedules(self) -> ScheduleList:  # pragma: no coverage
         """
         Object that holds any :py:class:`Schedule` objects within the collection,
         usually a :py:class:`ScheduleList`.
@@ -77,8 +73,7 @@ class EntityCollection(object):
         pass
 
     @property
-    def rotatable(self):
-        # type: () -> bool
+    def rotatable(self) -> bool:
         """
         Whether or not this collection can be rotated or not. Included for
         posterity; always returns True, even when containing entities that have
@@ -89,8 +84,7 @@ class EntityCollection(object):
         return True
 
     @property
-    def flippable(self):
-        # type: () -> bool
+    def flippable(self) -> bool:
         """
         Whether or not this collection can be flipped or not. This is determined
         by whether or not any of the entities contained can be flipped or not.
@@ -108,8 +102,7 @@ class EntityCollection(object):
     # Custom edge functions for EntityList interaction
     # =========================================================================
 
-    def on_entity_insert(self, entitylike, merge):  # pragma: no coverage
-        # type: (EntityLike, bool) -> EntityLike
+    def on_entity_insert(self, entitylike: EntityLike, merge: bool) -> Optional[EntityLike]:  # pragma: no coverage
         """
         Function called when an :py:class:`.EntityLike` is inserted into this
         object's :py:attr:`entities` list (assuming that the ``entities`` list
@@ -118,8 +111,7 @@ class EntityCollection(object):
         """
         pass
 
-    def on_entity_set(self, old_entitylike, new_entitylike):  # pragma: no coverage
-        # type: (EntityLike, EntityLike) -> None
+    def on_entity_set(self, old_entitylike: EntityLike, new_entitylike: EntityLike) -> None:  # pragma: no coverage
         """
         Function called when an :py:class:`.EntityLike` is replaced with another
         in this object's :py:attr:`entities` list (assuming that the ``entities``
@@ -129,8 +121,7 @@ class EntityCollection(object):
         """
         pass
 
-    def on_entity_remove(self, entitylike):  # pragma: no coverage
-        # type: (EntityLike) -> None
+    def on_entity_remove(self, entitylike: EntityLike) -> None:  # pragma: no coverage
         """
         Function called when an :py:class:`.EntityLike` is removed from this
         object's :py:attr:`entities` list (assuming that the ``entities`` list
@@ -470,7 +461,7 @@ class EntityCollection(object):
         if entity_1.dual_power_connectable:  # power switch
             # Add copper circuit connection
             str_side = "Cu" + str(side - 1)
-            if str_side not in entity_1.connections:
+            if entity_1.connections[str_side] is None:
                 entity_1.connections[str_side] = []
 
             entry = {"entity_id": Association(entity_2), "wire_id": 0}
@@ -485,7 +476,7 @@ class EntityCollection(object):
         if entity_2.dual_power_connectable:  # power switch
             # Add copper circuit connection
             str_side = "Cu" + str(side - 1)
-            if str_side not in entity_2.connections:
+            if entity_2.connections[str_side] is None:
                 entity_2.connections[str_side] = []
 
             entry = {"entity_id": Association(entity_1), "wire_id": 0}
@@ -537,12 +528,13 @@ class EntityCollection(object):
         # Only worried about self
         if entity_1.dual_power_connectable:  # power switch
             str_side = "Cu" + str(side - 1)
-            entry = {"entity_id": Association(entity_2), "wire_id": 0}
-            if str_side in entity_1.connections:
+            if entity_1.connections[str_side] is not None:
+                entry = {"entity_id": Association(entity_2), "wire_id": 0}
                 if entry in entity_1.connections[str_side]:
                     entity_1.connections[str_side].remove(entry)
                 if len(entity_1.connections[str_side]) == 0:
-                    del entity_1.connections[str_side]
+                    # del entity_1.connections[str_side]
+                    entity_1.connections[str_side] = None
         else:  # electric pole
             if not entity_2.dual_power_connectable:
                 try:
@@ -553,12 +545,13 @@ class EntityCollection(object):
         # Only worried about target
         if entity_2.dual_power_connectable:  # power switch
             str_side = "Cu" + str(side - 1)
-            entry = {"entity_id": Association(entity_1), "wire_id": 0}
-            if str_side in entity_2.connections:
+            if entity_2.connections[str_side] is not None:
+                entry = {"entity_id": Association(entity_1), "wire_id": 0}
                 if entry in entity_2.connections[str_side]:
                     entity_2.connections[str_side].remove(entry)
                 if len(entity_2.connections[str_side]) == 0:
-                    del entity_2.connections[str_side]
+                    # del entity_2.connections[str_side]
+                    entity_2.connections[str_side] = None
         else:  # electric pole
             if not entity_1.dual_power_connectable:
                 try:
@@ -581,12 +574,14 @@ class EntityCollection(object):
             else:
                 # Remove the connections for this particular entity
                 if hasattr(entity, "neighbours"):
-                    entity.neighbours = None
+                    entity.neighbours = []
                 if hasattr(entity, "connections"):
-                    if "Cu0" in entity.connections:
-                        del entity.connections["Cu0"]
-                    if "Cu1" in entity.connections:
-                        del entity.connections["Cu1"]
+                    # if "Cu0" in entity.connections:
+                    #     del entity.connections["Cu0"]
+                    # if "Cu1" in entity.connections:
+                    #     del entity.connections["Cu1"]
+                    entity.connections["Cu0"] = None
+                    entity.connections["Cu1"] = None
 
     def generate_power_connections(self, prefer_axis=True, only_axis=False):
         # type: (bool, bool) -> None
@@ -707,6 +702,8 @@ class EntityCollection(object):
         :exception EntityNotCircuitConnectableError: If either `entity_1` or
             `entity_2` do not have the capability to be circuit wire connected.
         """
+        # TODO: swap these all with pydantic models
+
         if not isinstance(entity_1, EntityLike):
             entity_1 = self.entities[entity_1]
         if not isinstance(entity_2, EntityLike):
@@ -767,12 +764,13 @@ class EntityCollection(object):
 
         # Add entity_2 to entity_1.connections
 
-        if six.text_type(side1) not in entity_1.connections:
-            entity_1.connections[six.text_type(side1)] = dict()
-        current_side = entity_1.connections[six.text_type(side1)]
+        # if entity_1.connections[str(side1)] is None:
+        #     entity_1.connections[str(side1)] = Connections.CircuitConnections()
+        current_side = entity_1.connections[str(side1)]
 
-        if color not in current_side:
-            current_side[color] = list()
+        # if color not in current_side:
+        if current_side[color] is None:
+            current_side[color] = []
         current_color = current_side[color]
 
         # If dual circuit connectable specify the target side
@@ -787,12 +785,13 @@ class EntityCollection(object):
 
         # Add entity_1 to entity_2.connections
 
-        if six.text_type(side2) not in entity_2.connections:
-            entity_2.connections[six.text_type(side2)] = dict()
-        current_side = entity_2.connections[six.text_type(side2)]
+        # if entity_2.connections[str(side2)] is None:
+        #     entity_2.connections[str(side2)] = Connections.CircuitConnections()
+        current_side = entity_2.connections[str(side2)]
 
-        if color not in current_side:
-            current_side[color] = list()
+        # if color not in current_side:
+        if current_side[color] is None:
+            current_side[color] = []
         current_color = current_side[color]
 
         # If dual circuit connectable specify the target side
@@ -865,15 +864,15 @@ class EntityCollection(object):
             entry = {"entity_id": Association(entity_2)}
 
         try:
-            current_side = entity_1.connections[six.text_type(side1)]
+            current_side = entity_1.connections[str(side1)]
             current_color = current_side[color]
             current_color.remove(entry)
             # Remove redundant structures from source if applicable
             if len(current_color) == 0:
-                del entity_1.connections[six.text_type(side1)][color]
-            if len(current_side) == 0:
-                del entity_1.connections[six.text_type(side1)]
-        except (KeyError, ValueError):
+                entity_1.connections[str(side1)][color] = None
+            # if len(current_side) == 0:
+            #     del entity_1.connections[str(side1)]
+        except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
             pass
 
         # Remove from target
@@ -884,15 +883,15 @@ class EntityCollection(object):
             entry = {"entity_id": Association(entity_1)}
 
         try:
-            current_side = entity_2.connections[six.text_type(side2)]
+            current_side = entity_2.connections[str(side2)]
             current_color = current_side[color]
             current_color.remove(entry)
             # Remove redundant structures from target if applicable
             if len(current_color) == 0:
-                del entity_2.connections[six.text_type(side2)][color]
-            if len(current_side) == 0:
-                del entity_2.connections[six.text_type(side2)]
-        except (KeyError, ValueError):
+                entity_2.connections[str(side2)][color] = None
+            # if len(current_side) == 0:
+            #     del entity_2.connections[str(side2)]
+        except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
             pass
 
     def remove_circuit_connections(self):
@@ -909,10 +908,561 @@ class EntityCollection(object):
             else:
                 # Remove the connections from this particular entity
                 if hasattr(entity, "connections"):
-                    if "1" in entity.connections:
-                        del entity.connections["1"]
-                    if "2" in entity.connections:
-                        del entity.connections["2"]
+                    # if entity.connections["1"] is not None:
+                    #     entity.connections["1"] = None
+                    # if entity.connections["2"] is not None:
+                    #     entity.connections["2"] = None
+                    entity.connections["1"] = Connections.CircuitConnections()
+                    entity.connections["2"] = Connections.CircuitConnections()
+
+    # =========================================================================
+    # Trains
+    # =========================================================================
+
+    def add_train_at_position(self, config, position, direction, schedule=None):
+        # type: (TrainConfiguration, Vector, Direction, Schedule) -> None
+        """
+        Adds a train with a specified configuration and schedule at a position
+        facing a particular direction. Allows you to place a fully configured
+        train in a single function call.
+
+        If schedule is ``specified``, then it's checked if that schedule already
+        exists within the collection's :py:attr:`schedules`. If found, all the
+        locomotives in the added train are added to that schedule's locomotives;
+        if not, a new schedule is appended to the list and the locomotives are
+        added to that entry instead.
+
+        .. NOTE:
+
+            Currently can only place trains in a straight line; horizontally,
+            vertically, or diagonally. Does not obey curved rails.
+
+        .. see-also:
+
+            :py:meth:`add_train_at_station`
+
+        :param config: The :py:class:`TrainConfiguration` to use as a template
+            for the created train, or a `str` that will be converted into one.
+        :param position: A :py:class:`Vector` specifying the center of the
+            starting wagon.
+        :param direction: A :py:class:`Direction` enum or ``int`` specifying
+            which direction the train is "facing".
+        :param schedule: A :py:class:`Schedule` object specifying the schedule
+            that the newly created train should inherit.
+        """
+        if isinstance(config, str):
+            config = TrainConfiguration(config)
+
+        # If we need to add the train to a schedule
+        if schedule is not None:
+            # Check to see if an equivalent train schedule already exists
+            current_schedule = None
+            for existing_schedule in self.schedules:
+                if schedule.stops == existing_schedule.stops:
+                    # If so, use that
+                    current_schedule = existing_schedule
+                    break
+            # Otherwise, add a new schedule and set that as working
+            if current_schedule is None:
+                self.schedules.append(schedule)
+                current_schedule = self.schedules[-1]
+
+        current_pos = Vector.from_other(position)
+        for entity in config.cars:
+            # Add wagon
+            orientation = (direction.to_orientation() + entity.orientation) % 1.0
+            self.entities.append(
+                entity, copy=True, position=current_pos, orientation=orientation
+            )
+            # If it's a locomotive, make sure it has the correct schedule
+            if schedule is not None and entity.type == "locomotive":
+                current_schedule.add_locomotive(self.entities[-1])
+
+            current_pos += direction.to_vector(-7)  # 7 = distance between wagons
+
+    def add_train_at_station(self, config, station, schedule=None):
+        # type: (TrainConfiguration, Union[EntityLike, str, int], Schedule | None) -> None
+        """
+        Adds a train with a specified configuration and schedule behind a
+        specified train stop.
+
+        If schedule is ``specified``, then it's checked if that schedule already
+        exists within the collection's :py:attr:`schedules`. If found, all the
+        locomotives in the added train are added to that schedule's locomotives;
+        if not, a new schedule is appended to the list and the locomotives are
+        added to that entry instead.
+
+        .. NOTE:
+
+            Currently can only place trains in a straight line; horizontally or
+            vertically. Does not obey curved rails if placed over them.
+
+        .. see-also:
+
+            :py:meth:`add_train_at_position`
+
+        :param config: The :py:class:`TrainConfiguration` to use as a template
+            for the created train, or a `str` that will be converted into one.
+        :param station: The ID or index of the train entity stop to spawn behind.
+            Note that station names cannot be used; if you want to place a train
+            behind a stop with a specific station name use
+            :py:meth:`find_entities_filtered` to find candidates and then pick
+            ones from there.
+        :param schedule: A :py:class:`Schedule` object specifying the schedule
+            that the newly created train should inherit.
+        """
+        if isinstance(config, str):
+            config = TrainConfiguration(config)
+
+        if not isinstance(station, EntityLike):
+            station = self.entities[station]
+
+        if station.type != "train-stop":
+            raise ValueError("'station' must be a TrainStop")
+
+        # If we need to add the train to a schedule
+        if schedule is not None:
+            # Check to see if an equivalent train schedule already exists
+            current_schedule = None
+            for existing_schedule in self.schedules:
+                if schedule == existing_schedule:
+                    # If so, use that
+                    current_schedule = existing_schedule
+                    break
+            # Otherwise, add a new schedule and set that as working
+            if current_schedule is None:
+                self.schedules.append(schedule)
+                current_schedule = self.schedules[-1]
+
+        shift_over = station.direction.previous().to_vector(2)
+        shift_back = station.direction.to_vector(4)
+        current_pos = station.position - shift_back + shift_over
+        for entity in config.cars:
+            orientation = station.direction.to_orientation() + entity.orientation
+            self.entities.append(
+                entity, copy=True, position=current_pos, orientation=orientation
+            )
+            # If it's a locomotive, make to add it to the correct schedule
+            if schedule is not None and entity.type == "locomotive":
+                current_schedule.add_locomotive(self.entities[-1])
+
+            # 7 = distance between wagons
+            current_pos += station.direction.to_vector(-7)
+
+    def set_train_schedule(
+        self,
+        train_cars: Union[RollingStock, list[RollingStock]],
+        schedule: Optional[Schedule],
+    ):
+        """
+        Sets the schedule of any entity.
+        """
+        # Normalize train cars to a list
+        if not isinstance(train_cars, Sequence):
+            train_cars = [train_cars]
+
+        # We may be given a list of RollingStock that spans multiple trains; so
+        # we iterate over each given car and grab the entire train associated
+        all_cars: set[RollingStock] = set()
+        for train_car in train_cars:
+            if train_car in all_cars:
+                continue
+            connected_stock = self.find_train_from_wagon(train_car)
+            all_cars.update(set(connected_stock))
+
+        # Ignore any non-locomotive entities
+        locomotives = list(filter(lambda x: x.type == "locomotive", all_cars))
+
+        # Wipe any schedule that the train(s) might already have
+        for existing_schedule in self.schedules:
+            for locomotive in locomotives:
+                locomotive_association = Association(locomotive)
+                if locomotive_association in existing_schedule.locomotives:
+                    existing_schedule.locomotives.remove(locomotive_association)
+
+        # Add the new schedule, if available
+        if schedule is not None:
+            # Determine if there already exists an equivalent schedule
+            target_schedule = None
+            for existing_schedule in self.schedules:
+                if schedule.stops == existing_schedule.stops:
+                    target_schedule = existing_schedule
+
+            # If not, we append a new one
+            if target_schedule is None:
+                self.schedules.append(schedule)
+                target_schedule = self.schedules[-1]
+
+            # Now iterate over the target_schedule and add all the locomotives
+            # to it
+            for locomotive in locomotives:
+                target_schedule.add_locomotive(locomotive)
+
+    def remove_train(self, cars):
+        # type: (list[EntityLike]) -> None
+        """
+        Removes all of the rolling stock specified as the list ``cars``. Very
+        easy to perform this task yourself, but this function also takes care of
+        removing any locomotive associations in any corresponding
+        :py:class:`Schedule` object(s). Does nothing if ``cars`` is empty.
+
+        :raises KeyError: If the specified entities within the list do not exist
+            within the collection being accessed.
+
+        :param cars: A ``list`` of references to :py:class:`EntityLike`s within
+            the collection.
+        """
+        associations_to_remove = set()
+        for car in cars:
+            if car.type == "locomotive":
+                associations_to_remove.add(car)
+            self.entities.remove(car)
+
+        for schedule in self.schedules:
+            for target in associations_to_remove:
+                try:
+                    schedule.remove_locomotive(target)
+                except ValueError:
+                    pass
+
+        # Don't do this; the user can do this later if they want to on their own
+        # discretion
+        # self.schedules[:] = [
+        #     schedule for schedule in self.schedules if len(schedule.locomotives) > 0
+        # ]
+
+    # =========================================================================
+    # Train Queries
+    # =========================================================================
+
+    def find_train_from_wagon(self, wagon: RollingStock) -> list[RollingStock]:
+        """
+        Returns a list of rolling stock connected together. Allows you to grab
+        all connected cars to a particular wagon if you know where one
+        is, such as when iterating through the locomotives in a particular
+        :py:class:`Schedule` object, cargo wagons with a particular item filter
+        returned from :py:meth:`find_entities_filtered`, etc.
+
+        Note that this function may return a working train (rolling stock with
+        at least one connected locomotive), but it also may not, since it's
+        only criteria is connection.
+
+        .. WARNING::
+
+            This function might also return false positives if rolling stock is
+            located right next to each other in a fully-compresssed rail setups.
+            PR's to mitigate this are welcome.
+
+        :param wagon: The ID of the wagon or the wagon itself to search for
+            neighbours.
+
+        :returns: A ``list`` of references to all connected wagons in the
+            :py:class:`Collection`, including ``wagon`` itself. The order of
+            wagons is listed from end to end, where the first entry in the list
+            is the outermost car in the direction that ``wagon`` points.
+        """
+        train = []
+        all_locos_backwards = True  # Flag in case we need to reverse entire train
+        used_wagons = set()  # Set of wagons we've already added to the current train
+
+        def traverse_neighbours(
+            wagon: RollingStock,
+            current_train: list[RollingStock],
+            backwards: bool = False,
+        ) -> list[RollingStock]:
+            """
+            Check areas near a specified wagon to see if there are other wagons
+            connected to it.
+            """
+            nonlocal all_locos_backwards
+
+            # print(wagon.type)
+            # print(backwards)
+            if wagon.type == "locomotive" and not backwards:
+                all_locos_backwards = False
+
+            neighbours: list[RollingStock] = self.find_entities_filtered(
+                position=wagon.position,
+                radius=7.5,  # Average distance is less than 7 tiles
+                type={"locomotive", "cargo-wagon", "fluid-wagon", "artillery-wagon"},
+            )
+            # print(len(neighbours))
+            for neighbour in neighbours:
+                # Check to make sure we haven't already added this wagon to a
+                # train
+                if neighbour in used_wagons:
+                    continue
+
+                # If the orientation is +- 45 degrees in either direction from
+                # the current wagon's orientation, it may be connected
+                wagon_dir = float(wagon.orientation)
+                inv_wagon_dir = float(wagon.orientation.opposite())
+                if (wagon_dir - 0.125 < neighbour.orientation < wagon_dir + 0.125) or (
+                    inv_wagon_dir - 0.125
+                    < neighbour.orientation
+                    < inv_wagon_dir + 0.125
+                ):
+                    # Determine the neighbour's closest truck point
+                    a = neighbour.position + neighbour.orientation.to_vector(2)
+                    b = neighbour.position + neighbour.orientation.to_vector(-2)
+                    if distance(wagon.position, a) < distance(wagon.position, b):
+                        neighbour_truck = a
+                    else:
+                        neighbour_truck = b
+
+                    if backwards:
+                        forward_orientation = wagon.orientation.opposite()
+                    else:
+                        forward_orientation = wagon.orientation
+
+                    # Determine the front from `forward_orientation`
+                    neighbour_vec = neighbour.orientation.to_vector()
+                    forward_vec = forward_orientation.to_vector()
+                    dot_prod = sum(
+                        [i * j for (i, j) in zip(neighbour_vec, forward_vec)]
+                    )
+                    if dot_prod < 0:
+                        neighbour_is_backwards = True
+                    else:
+                        neighbour_is_backwards = False
+
+                    # Check "front"
+                    wagon_truck = wagon.position + forward_orientation.to_vector(2)
+                    if 2.9 < distance(wagon_truck, neighbour_truck) <= 3.1:
+                        # Add to beginning of train list
+                        used_wagons.add(neighbour)
+                        current_train.insert(0, neighbour)
+                        traverse_neighbours(
+                            neighbour, current_train, neighbour_is_backwards
+                        )
+
+                    # Check "back"
+                    wagon_truck = wagon.position + forward_orientation.to_vector(-2)
+                    if 2.9 < distance(wagon_truck, neighbour_truck) <= 3.1:
+                        # Add to end of train list
+                        used_wagons.add(neighbour)
+                        current_train.append(neighbour)
+                        traverse_neighbours(
+                            neighbour, current_train, neighbour_is_backwards
+                        )
+
+            return current_train
+
+        used_wagons.add(wagon)
+        train = traverse_neighbours(wagon, [wagon])
+
+        # Sometimes the starting wagon can be pointing the opposite way, so all
+        # locomotives end up pointing back to front
+        # If that's the case, we reverse the list so that left is front and
+        # right is back
+        if all_locos_backwards:
+            train.reverse()
+
+        return train
+
+    def find_trains_filtered(
+        self,
+        train_length: int | tuple = None,
+        orientation: Orientation = None,
+        at_station: bool | set = False,
+        num_type: dict | None = None,
+        num_name: dict | None = None,
+        config: TrainConfiguration = None,
+        schedule: Schedule = None,
+        invert: bool = False,
+        limit: int = None,
+    ) -> list[list[EntityLike]]:
+        """
+        Finds a set of trains that match the passed in parameters. Formally, a
+        "train" in this context is a connected set of wagons which may or may
+        not contain a locomotive. This is done so that the user can search a
+        blueprint for unconnected rolling stock if any exists, and can filter
+        for regular trains more broadly.
+
+        .. NOTE::
+
+            When using the ``config`` parameter, equality is strictly checked;
+            which means that if a returned train doesn't _exactly_ match the
+            specified argument, the train is filtered from the result. This
+            includes things like fuel requests and cargo wagon item filters, so
+            check these values in the blueprints you're searching and adjust
+            ``config`` accordingly.
+
+        :param train_length: Can either be specified as an ``int`` representing
+            the exact length of trains to return, or as a ``Sequence`` of 2
+            ``int``s representing the minimum and maximum length of trains to
+            return (inclusive). Either the min or the max can also be set to
+            ``None`` which indicates no minimum length and no maxiumum length
+            respectively.
+        :param orientation: A :py:class:`Orientation` (or equivalent ``float``)
+            that describes the orientation that every car in the returned train
+            list should have. Note that trains placed on curved rails will not
+            be returned by this parameter, as _all_ train cars must equal
+            ``orientation``.
+        :param at_station: Can be specified as a ``bool`` value which will
+            return all trains at any station, a ``str`` value where it will
+            return all trains at any station with that name, or as a ``set[str]``
+            where all of the trains behind any station with one of those names
+            is returned.
+        :param num_type: A ``dict`` of wagon types where each key is the ``str``
+            type of the wagon and the value is an ``int`` representing the
+            desired number of those wagons in the returned train. Allows to
+            search for trains of a particular composition without regards to
+            contents, order, or orientation. Also supports swapping the ``int``
+            with a ``Sequence`` of 2 ``int``s representing the minimum and
+            maximum tolerable value of a wagon of that type, along with ``None``
+            for no particular min or max.
+        :param num_name: Identical to ``num_type``, except that instead of
+            wagon type it's wagon name, in case there happen to be more than
+            one type of Locomotive, CargoWagon, FluidWagon, or ArtilleryWagon.
+            Useful for blueprints with modded trains, where you might want to
+            distinguish between them.
+        :param config: A :py:class:`TrainConfiguration` object to filter against.
+            Performs a equality check between each of the train configuration's
+            cars and the cars in the returned trains.
+        :param invert: Whether or not to return the inversion of the search
+            criteria.
+        :param limit: A maximum number of unique trains to return.
+
+        :returns: A ``list`` of ``list``s, where each sub-list represents a
+            contiguous train. Trains are ordered such that the first index is
+            the "front" of the train as chosen by the orientation of the first
+            found wagon in that group.
+        """
+        wagons = self.find_entities_filtered(
+            type={"locomotive", "cargo-wagon", "fluid-wagon", "artillery-wagon"}
+        )
+        stops = self.find_entities_filtered(type="train-stop")
+        trains = []
+        used_wagons = set()  # Create a set of wagons already traversed
+
+        # Get all contiguous trains
+        # TODO: this could probably be more performant if we check train
+        # validity as we iterate, meaning we could simply early exit if we
+        # exceed `limit` for example
+        for wagon in wagons:
+            if wagon in used_wagons:
+                continue
+
+            train = self.find_train_from_wagon(wagon)
+
+            # Record each found wagon as used
+            for train_car in train:
+                used_wagons.add(train_car)
+
+            trains.append(train)
+
+        def normalize_range(value: int | Sequence) -> tuple[int, int]:
+            """
+            Converts integers to inclusive ranges like:
+                1 -> (1, 1)
+            And converts ranges with values of None to no range:
+                (None, None) -> (0, math.inf)
+            """
+            if isinstance(value, int):
+                return (value, value)  # min -> max inclusive
+            else:  # tuple/list
+                min_value = value[0] if value[0] is not None else 0
+                max_value = value[1] if value[1] is not None else math.inf
+                return (min_value, max_value)
+
+        # Normalize inputs
+        if train_length is not None:
+            train_length = normalize_range(train_length)
+        if isinstance(at_station, str):
+            at_station = {at_station}
+        if num_type is not None:
+            for car_type in num_type:
+                num_type[car_type] = normalize_range(num_type[car_type])
+        if num_name is not None:
+            for car_name in num_name:
+                num_name[car_name] = normalize_range(num_name[car_name])
+        if limit is None:
+            limit = len(trains)
+
+        def equivalent_cars(car1, car2):
+            """
+            Need this function because checking for equiality between cars also
+            includes things like orientation and position, which we don't want
+            to consider in this case since a train configuration's position and
+            orientation are dummy values until they're actually added to a BP.
+            """
+            # TODO: ensure it includes everything else, like fuel requests, item
+            # filters, etc.
+            return car1.name == car2.name
+
+        def train_at_station(train):
+            """
+            Determine whether a train's head is adjacent to a train stop. Returns
+            the name of the station the train is (likely) stopped at.
+            """
+            # Get the position and orientation of where the stop should be if it
+            # exists:
+            forward = train[0].orientation.to_direction()
+            right = forward.next(eight_way=False)
+            pos = train[0].position + forward.to_vector(3) + right.to_vector(2)
+            for stop in stops:
+                if stop.position == pos and stop.direction == forward:
+                    return stop.station  # station name
+            # TODO: check both ends if the we determine that the train is dual
+            # headed
+            # TODO: check to ensure that this train has a schedule that includes
+            # the name of the stop before assuming that this train is at that
+            # stop
+
+        # Filter based on parameters
+        def test(train):
+            if train_length is not None:
+                if not (train_length[0] <= len(train) <= train_length[1]):
+                    return False
+            if at_station:
+                if isinstance(at_station, set):
+                    station_name = train_at_station(train)
+                    if station_name not in at_station:
+                        return False
+                else:  # bool
+                    if not train_at_station(train):
+                        return False
+            if num_type is not None:
+                for desired_type, desired_range in num_type.items():
+                    num_found = sum(x.type == desired_type for x in train)
+                    if not (desired_range[0] <= num_found <= desired_range[1]):
+                        return False
+            if num_name is not None:
+                for desired_name, desired_range in num_name.items():
+                    num_found = sum(x.name == desired_name for x in train)
+                    if not (desired_range[0] <= num_found <= desired_range[1]):
+                        return False
+            if orientation is not None:
+                for train_car in train:
+                    if train_car.orientation != orientation:
+                        return False
+            if config is not None:
+                if len(train) != len(config.cars):
+                    return False
+                for i, config_car in enumerate(config.cars):
+                    if not equivalent_cars(train[i], config_car):
+                        return False
+            if schedule is not None:
+                # Get the first locomotive in the train, since all locomotives
+                # on the train should share the same schedule
+                for car in train:
+                    if car.type == "locomotive":
+                        locomotive = car
+                # Search for the schedule that that locomotive uses
+                for found_schedule in self.schedules:
+                    if (
+                        Association(locomotive) in found_schedule.locomotives
+                        and found_schedule.stops == schedule.stops
+                    ):
+                        return True  # FIXME: cursed returns
+                return False
+            return True
+
+        if invert:
+            return list(filter(lambda train: not test(train), trains))[:limit]
+        else:
+            return list(filter(lambda train: test(train), trains))[:limit]
 
     # =========================================================================
     # Trains
@@ -1472,16 +2022,14 @@ class EntityCollection(object):
 # =============================================================================
 
 
-@six.add_metaclass(abc.ABCMeta)
-class TileCollection(object):
+class TileCollection(metaclass=abc.ABCMeta):
     """
     Abstract class used to describe an object that can contain a list of
     :py:class:`.Tile` instances.
     """
 
     @abc.abstractproperty
-    def tiles(self):  # pragma: no coverage
-        # type: () -> TileList
+    def tiles(self) -> TileList:  # pragma: no coverage
         """
         Object that holds the ``Tiles``, usually a
         :py:class:`~draftsman.classes.tilelist.TileList`.
@@ -1489,8 +2037,7 @@ class TileCollection(object):
         pass
 
     @abc.abstractproperty
-    def tile_map(self):  # pragma: no coverage
-        # type: () -> SpatialDataStructure
+    def tile_map(self) -> SpatialDataStructure:  # pragma: no coverage
         """
         Object that holds the spatial information for the Tiles of this object,
         usually a :py:class:`~draftsman.classes.spatialhashmap.SpatialHashMap`.
@@ -1501,8 +2048,7 @@ class TileCollection(object):
     # Custom edge functions for TileList interaction
     # =========================================================================
 
-    def on_tile_insert(self, tile, merge):  # pragma: no coverage
-        # type: (Tile, bool) -> Tile
+    def on_tile_insert(self, tile: Tile, merge: bool) -> Optional[Tile]:  # pragma: no coverage
         """
         Function called when an :py:class:`.Tile` is inserted into this object's
         :py:attr:`tiles` list (assuming that the ``tiles`` list is a
@@ -1511,8 +2057,7 @@ class TileCollection(object):
         """
         pass
 
-    def on_tile_set(self, old_tile, new_tile):  # pragma: no coverage
-        # type: (Tile, bool) -> None
+    def on_tile_set(self, old_tile: Tile, new_tile: Tile) -> None:  # pragma: no coverage
         """
         Function called when an :py:class:`.Tile` is replaced with another in
         this object's :py:attr:`tiles` list (assuming that the ``tiles`` list is
@@ -1521,8 +2066,7 @@ class TileCollection(object):
         """
         pass
 
-    def on_tile_remove(self, tile):  # pragma: no coverage
-        # type: (Tile) -> None
+    def on_tile_remove(self, tile: Tile) -> None:  # pragma: no coverage
         """
         Function called when an :py:class:`.Tile` is removed from this object's
         :py:attr:`tiles` list (assuming that the ``entities`` list is a
@@ -1535,8 +2079,7 @@ class TileCollection(object):
     # Queries
     # =========================================================================
 
-    def find_tile(self, position):
-        # type: (Union[Vector, PrimitiveVector]) -> Tile
+    def find_tile(self, position: Union[Vector, PrimitiveVector]) -> Tile:
         """
         Returns the tile at the tile coordinate ``position``. If there are
         multiple tiles at that location, the entity that was inserted first is
@@ -1553,8 +2096,8 @@ class TileCollection(object):
         except IndexError:
             return None
 
-    def find_tiles_filtered(self, **kwargs):
-        # type: (**dict) -> list[Tile]
+    def find_tiles_filtered(self, **kwargs) -> list[Tile]:
+        # TODO: keyword arguments
         """
         Returns a filtered list of tiles within the blueprint. Works
         similarly to

@@ -1,30 +1,20 @@
 # test_radar.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import Radar, radars, Container
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class RadarTesting(unittest.TestCase):
+class TestRadar:
     def test_contstructor_init(self):
         radar = Radar()
 
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Radar(unused_keyword="whatever")
 
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             Radar("this is not a radar")
 
     def test_mergable_with(self):

@@ -42,21 +42,20 @@ class EntityLike(SpatialLike):
         self._parent = None
 
         # Default attributes (Overwritten on a per-Entity basis)
-        self._power_connectable = False
-        self._dual_power_connectable = False
-        self._circuit_connectable = False
-        self._dual_circuit_connectable = False
-        self._double_grid_aligned = False
-        self._rotatable = False
-        self._flippable = True
+        # self._power_connectable = False
+        # self._dual_power_connectable = False
+        # self._circuit_connectable = False
+        # self._dual_circuit_connectable = False
+        # self._double_grid_aligned = False
+        # self._rotatable = False
+        # self._flippable = True
 
     # =========================================================================
     # Properties
     # =========================================================================
 
     @property
-    def parent(self):
-        # type: () -> EntityCollection
+    def parent(self) -> "EntityCollection":
         """
         The parent :py:class:`.EntityCollection` object that contains the entity,
         or ``None`` if the entity does not currently exist within an
@@ -69,73 +68,67 @@ class EntityLike(SpatialLike):
     # =========================================================================
 
     @property
-    def power_connectable(self):
-        # type: () -> bool
+    def power_connectable(self) -> bool:
         """
         Whether or not this EntityLike can be connected using power wires. Not
         exported; read only.
 
         :type: ``bool``
         """
-        return self._power_connectable
+        return False
 
     # =========================================================================
 
     @property
-    def dual_power_connectable(self):
-        # type: () -> bool
+    def dual_power_connectable(self) -> bool:
         """
         Whether or not this EntityLike has two power connection points. Not
         exported; read only.
 
         :type: ``bool``
         """
-        return self._dual_power_connectable
+        return False
 
     # =========================================================================
 
     @property
-    def circuit_connectable(self):
-        # type: () -> bool
+    def circuit_connectable(self) -> bool:
         """
         Whether or not this EntityLike can be connected using circuit wires. Not
         exported; read only.
 
         :type: ``bool``
         """
-        return self._circuit_connectable
+        return False
 
     # =========================================================================
 
     @property
-    def dual_circuit_connectable(self):
-        # type: () -> bool
+    def dual_circuit_connectable(self) -> bool:
         """
         Whether or not this EntityLike has two circuit connection points. Not
         exported; read only.
 
         :type: ``bool``
         """
-        return self._dual_circuit_connectable
+        return False
 
     # =========================================================================
 
     @property
-    def double_grid_aligned(self):
-        # type: () -> bool
+    def double_grid_aligned(self) -> bool:
         """
         Whether or not this EntityLike is "double-grid-aligned", which applies
         to a number of rail entities. Not exported; read only.
 
         :type: ``bool``
         """
-        return self._double_grid_aligned
+        return False
 
     # =========================================================================
 
     @property
-    def rotatable(self):
-        # type: () -> bool
+    def rotatable(self) -> bool:
         """
         Whether or not this EntityLike can be rotated. Note that this does not
         mean that the entity will prevent a blueprint from rotating; more, that
@@ -145,7 +138,7 @@ class EntityLike(SpatialLike):
 
         :type: ``bool``
         """
-        return self._rotatable
+        return False
 
     # =========================================================================
     # Abstract Properties
@@ -191,18 +184,18 @@ class EntityLike(SpatialLike):
         """
         pass
 
-    @abc.abstractmethod
-    def inspect(self):  # pragma: no coverage
-        # type: () -> list[Exception]
-        """
-        Checks the :py:class:`.EntityLike` and returns any errors that Draftsman
-        thinks will cause errors if imported into Factorio. Can be used to query
-        if a entity is completely in order, such as when importing data from an
-        external source.
+    # @abc.abstractmethod
+    # def inspect(self):  # pragma: no coverage
+    #     # type: () -> list[Exception]
+    #     """
+    #     Checks the :py:class:`.EntityLike` and returns any errors that Draftsman
+    #     thinks will cause errors if imported into Factorio. Can be used to query
+    #     if a entity is completely in order, such as when importing data from an
+    #     external source.
 
-        :returns: A list of Python ``Exception``s.
-        """
-        pass
+    #     :returns: A list of Python ``Exception``s.
+    #     """
+    #     pass
 
     @abc.abstractmethod
     def mergable_with(self, other):  # pragma: no coverage

@@ -3,6 +3,7 @@
 from collections import OrderedDict
 from draftsman import utils
 from draftsman.classes.vector import Vector
+from draftsman.constants import Direction, Orientation, Ticks, ValidationMode
 from draftsman.error import InvalidSignalError
 from draftsman.data import recipes, signals
 
@@ -98,6 +99,17 @@ class TestAABB:
         with pytest.raises(ValueError):
             aabb.rotate(1)
 
+    def test_add(self):
+        aabb = utils.AABB(0, 0, 1, 1)
+        new_aabb = aabb + (10, 10)
+        assert new_aabb.position == Vector(10, 10)
+        assert new_aabb.get_bounding_box() == utils.AABB(
+            10,
+            10,
+            11,
+            11,
+        )
+
     def test_eq(self):
         assert utils.AABB(0, 0, 1, 1) == utils.AABB(0, 0, 1, 1)
         assert utils.AABB(0, 0, 1, 1) != utils.AABB(1, 1, 2, 2)
@@ -126,6 +138,52 @@ class TestRectangle:
 
     def test_eq(self):
         pass
+
+
+class TestConstants:
+    def test_orientation_to_direction(self):
+        assert Orientation.NORTH.to_direction() == Direction.NORTH
+        assert Orientation.NORTHEAST.to_direction() == Direction.NORTH
+        assert Orientation.NORTHEAST.to_direction(eight_way=True) == Direction.NORTHEAST
+
+    def test_orientation_add(self):
+        assert Orientation(0.75) + Orientation(0.5) == Orientation(0.25)
+        assert Orientation(0.75) + 0.5 == Orientation(0.25)
+        assert 0.75 + Orientation(0.5) == Orientation(0.25)
+        with pytest.raises(TypeError):
+            Orientation.NORTH + "string"
+        with pytest.raises(TypeError):
+            "string" + Orientation.NORTH
+
+    def test_orientation_sub(self):
+        assert Orientation(0.25) - Orientation(0.5) == Orientation(0.75)
+        assert Orientation(0.25) - 0.5 == Orientation(0.75)
+        assert 0.25 - Orientation(0.5) == Orientation(0.75)
+        with pytest.raises(TypeError):
+            Orientation.NORTH - "string"
+        with pytest.raises(TypeError):
+            "string" - Orientation.NORTH
+
+    def test_eq(self):
+        assert not Orientation.NORTH == "wrong"
+
+    def test_lt(self):
+        assert Orientation.NORTH < Orientation.SOUTH
+        with pytest.raises(TypeError):
+            Orientation.NORTH < "wrong"
+
+    def test_ticks_from_timedelta(self):
+        from datetime import timedelta
+
+        td = timedelta(1, 123, 2 * 8)
+        assert Ticks.from_timedelta(td) == 5191380
+
+    def test_validation_mode_eq(self):
+        assert ValidationMode.MINIMUM != TypeError
+
+    def test_validation_mode_gt(self):
+        with pytest.raises(TypeError):
+            ValidationMode.NONE > TypeError
 
 
 class TestUtils:
@@ -307,21 +365,19 @@ class TestUtils:
     def test_aabb_to_dimensions(self):
         assert utils.aabb_to_dimensions(utils.AABB(-5, -5, 10, 0)) == (15, 5)
 
-    def test_get_recipe_ingredients(self):
-        # Normal, list-type
-        assert recipes.get_recipe_ingredients("wooden-chest") == {"wood"}
-        # Normal, dict-type
-        assert recipes.get_recipe_ingredients("plastic-bar") == {
-            "petroleum-gas",
-            "coal",
-        }
-        # Expensive, list-type
-        assert recipes.get_recipe_ingredients("iron-gear-wheel") == {"iron-plate"}
-        # Custom examples
-        recipes.raw["test-1"] = {"ingredients": [["iron-plate", 2]]}
-        assert recipes.get_recipe_ingredients("test-1") == {"iron-plate"}
-        recipes.raw["test-2"] = {"normal": {"ingredients": [{"name": "iron-plate"}]}}
-        assert recipes.get_recipe_ingredients("test-2") == {"iron-plate"}
+    def test_parse_energy(self):
+        # Normal
+        assert utils.parse_energy("100J") == 100
+        assert utils.parse_energy("1000KJ") == 1_000_000
+        assert utils.parse_energy("60MW") == 1_000_000
+
+        # Unknown unit type specifier
+        with pytest.raises(ValueError):
+            utils.parse_energy("100MY")
+
+        # Unknown unit scale specifier
+        with pytest.raises(ValueError):
+            utils.parse_energy("100QW")
 
     def test_reissue_warnings(self):
         @utils.reissue_warnings

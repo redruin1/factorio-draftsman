@@ -1,12 +1,15 @@
 # modules.py
 
+from draftsman.constants import ValidationMode
 from draftsman.data import entities, modules
-from draftsman.warning import ModuleCapacityWarning
+from draftsman.signatures import uint32
+from draftsman.warning import ModuleCapacityWarning, ModuleNotAllowedWarning
 
-import warnings
+from pydantic import BaseModel, ValidationInfo, field_validator
+from typing import Optional
 
 
-class ModulesMixin(object):  # (RequestItemsMixin)
+class ModulesMixin:  # (RequestItemsMixin)
     """
     (Implicitly inherits :py:class:`~.RequestItemsMixin`)
 
@@ -14,68 +17,152 @@ class ModulesMixin(object):  # (RequestItemsMixin)
     currently inside the entity.
     """
 
-    _exports = {}
+    class Format(BaseModel):
+        @field_validator("items", check_fields=False)
+        @classmethod
+        def ensure_not_too_many_modules(
+            cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+        ):
+            if not info.context or value is None:
+                return value
+            if info.context["mode"] <= ValidationMode.MINIMUM:
+                return value
 
-    def __init__(self, name, similar_entities, **kwargs):
-        # type: (str, list[str], **dict) -> None
+            entity: "ModulesMixin" = info.context["object"]
+            warning_list: list = info.context["warning_list"]
 
-        # Get the total number of module slots
-        try:
-            self._total_module_slots = entities.raw[name]["module_specification"][
-                "module_slots"
-            ]
-        except KeyError:
-            self._total_module_slots = 0
+            if entity.total_module_slots is None:  # entity not recognized
+                return value
+            if entity.total_module_slots == 0:  # Better warning issued elsewhere
+                return value
+
+            if entity.module_slots_occupied > entity.total_module_slots:
+                warning_list.append(
+                    ModuleCapacityWarning(
+                        "Current number of module slots used ({}) greater than max module capacity ({}) for entity '{}'".format(
+                            entity.module_slots_occupied,
+                            entity.total_module_slots,
+                            entity.name,
+                        )
+                    )
+                )
+
+            return value
+
+        @field_validator("items", check_fields=False)
+        @classmethod
+        def ensure_module_type_matches_entity(
+            cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+        ):
+            if not info.context or value is None:
+                return value
+            if info.context["mode"] <= ValidationMode.MINIMUM:
+                return value
+
+            entity: "ModulesMixin" = info.context["object"]
+            warning_list: list = info.context["warning_list"]
+
+            if entity.allowed_modules is None:  # entity not recognized
+                return value
+
+            for item in entity.module_items:
+                if item not in entity.allowed_modules:
+                    if (
+                        entity.allowed_modules is not None
+                        and len(entity.allowed_modules) > 0
+                    ):
+                        reason_string = "allowed modules are {}".format(
+                            entity.allowed_modules
+                        )
+                    else:
+                        reason_string = "this machine does not accept modules"
+
+                    warning_list.append(
+                        ModuleNotAllowedWarning(
+                            "Cannot add module '{}' to '{}'; {}".format(
+                                item, entity.name, reason_string
+                            )
+                        )
+                    )
+
+            return value
+
+    def __init__(self, name: str, similar_entities: list[str], **kwargs):
 
         # Keep track of the current module slots currently used
-        self._module_slots_occupied = 0
+        # self._module_slots_occupied = 0
+        # self.module_items = {}
 
         super(ModulesMixin, self).__init__(name, similar_entities, **kwargs)
 
     # =========================================================================
 
     @property
-    def total_module_slots(self):
-        # type: () -> int
+    def total_module_slots(self) -> int:
         """
-        The total number of module slots in the Entity. Not exported; read only.
+        The total number of module slots in the Entity. Returns ``None`` if this
+        entity's name is not recognized by Draftsman. Not exported; read only.
 
         :type: ``int``
         """
-        return self._total_module_slots
+        # If not recognized, return None
+        # If recognized, but no module specification, then return 0
+        return entities.raw.get(
+            self.name, {"module_specification": {"module_slots": None}}
+        ).get("module_specification", {"module_slots": 0})["module_slots"]
 
     # =========================================================================
 
     @property
-    def module_slots_occupied(self):
-        # type: () -> int
+    def module_slots_occupied(self) -> int:
         """
         The total number of module slots that are currently taken by inserted
         modules. Not exported; read only.
 
         :type: ``int``
         """
-        return self._module_slots_occupied
+        return sum([v for k, v in self.items.items() if k in modules.raw])
 
     # =========================================================================
 
-    def set_item_request(self, item, count):
-        # type: (str, int) -> None
-        new_count = count if count is not None else 0
+    @property
+    def allowed_effects(self) -> Optional[set[str]]:
+        """
+        A list of all effect modifiers that this entity supports via modules.
+        Returns ``None`` if this entity's name is not recognized by Draftsman.
+        Not exported; read only.
+        """
+        # If name not known, return None
+        entity = entities.raw.get(self.name, None)
+        if entity is None:
+            return None
+        # If name known, but no key, then return default list
+        result = entity.get(
+            "allowed_effects", ["speed", "productivity", "consumption", "pollution"]
+        )
+        # Normalize single string effect to a 1-length list
+        return {result} if isinstance(result, str) else set(result)
 
-        if item in modules.raw and new_count >= 0:
-            self._module_slots_occupied -= self.items.get(item, 0)
-            self._module_slots_occupied += new_count
+    # =========================================================================
 
-        # Make sure we dont have too many modules in the Entity
-        if self.module_slots_occupied > self.total_module_slots:
-            warnings.warn(
-                "Current number of module slots used ({}) greater than max "
-                "module capacity ({})".format(
-                    self.module_slots_occupied, self.total_module_slots
-                ),
-                ModuleCapacityWarning,
-                stacklevel=2,
-            )
+    @property
+    def allowed_modules(self) -> Optional[set[str]]:
+        """
+        A list of all valid modules that can be inserted into this entity.
+        Determined by the 'allowed_effects' key in the data.raw entry for this
+        entity. Returns ``None`` if this entity's name is not recognized by
+        Draftsman. Not exported; read only.
+        """
+        return modules.get_modules_from_effects(self.allowed_effects, None)
 
-        super(ModulesMixin, self).set_item_request(item, count)
+    # =========================================================================
+
+    @property
+    def module_items(self) -> dict[str, uint32]:  # TODO: ItemID
+        """
+        The subset of :py:attr:`.items` where each key is a known module
+        currently requested to this entity. Returns an empty dict if none of
+        the keys of ``items`` are known as valid module names. Not exported;
+        read only.
+        """
+        return {k: v for k, v in self.items.items() if k in modules.raw}

@@ -9,11 +9,15 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     InventoryMixin,
 )
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.signatures import Connections, uint16, uint32
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import logistic_active_containers
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Union
 
 
 class LogisticActiveContainer(
@@ -24,29 +28,46 @@ class LogisticActiveContainer(
     logistic network.
     """
 
-    # fmt: off
-    _exports = {
-        **Entity._exports,
-        **CircuitConnectableMixin._exports,
-        **RequestItemsMixin._exports,
-        **InventoryMixin._exports,
-    }
-    # fmt: on
+    class Format(
+        InventoryMixin.Format,
+        RequestItemsMixin.Format,
+        CircuitConnectableMixin.Format,
+        Entity.Format,
+    ):
+        model_config = ConfigDict(title="LogisticActiveContainer")
 
-    def __init__(self, name=logistic_active_containers[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(LogisticActiveContainer, self).__init__(
-            name, logistic_active_containers, **kwargs
+    def __init__(
+        self,
+        name: str = logistic_active_containers[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        bar: uint16 = None,
+        items: dict[str, uint32] = {},  # TODO: ItemID
+        connections: Connections = {},
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        super().__init__(
+            name,
+            logistic_active_containers,
+            position=position,
+            tile_position=tile_position,
+            bar=bar,
+            items=items,
+            connections=connections,
+            tags=tags,
+            **kwargs
         )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self.validate_assignment = validate_assignment
 
-        del self.unused_args
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

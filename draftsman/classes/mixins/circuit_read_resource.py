@@ -1,13 +1,13 @@
 # circuit_read_resource.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-from draftsman import signatures
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import MiningDrillReadMode
 
+from pydantic import BaseModel, Field
+from typing import Optional
 
-class CircuitReadResourceMixin(object):  # (ControlBehaviorMixin)
+
+class CircuitReadResourceMixin:  # (ControlBehaviorMixin)
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
 
@@ -19,11 +19,27 @@ class CircuitReadResourceMixin(object):  # (ControlBehaviorMixin)
         | :py:class:`~draftsman.classes.mixins.circuit_read_hand.CircuitReadHandMixin`
     """
 
-    _exports = {}
+    class ControlFormat(BaseModel):
+        circuit_read_resources: Optional[bool] = Field(
+            None,
+            description="""
+            Whether or not this mining drill should read the amount of resources
+            below it.
+            """,
+        )
+        circuit_resource_read_mode: Optional[MiningDrillReadMode] = Field(
+            None,
+            description="""
+            How resources under this mining drill should be broadcast to any 
+            connected circuit network, if 'circuit_read_resources' is true.
+            """,
+        )
+
+    class Format(BaseModel):
+        pass
 
     @property
-    def read_resources(self):
-        # type: () -> bool
+    def read_resources(self) -> Optional[bool]:
         """
         Whether or not this Entity is set to read the resources underneath to a
         circuit network.
@@ -35,23 +51,26 @@ class CircuitReadResourceMixin(object):  # (ControlBehaviorMixin)
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.
         """
-        return self.control_behavior.get("circuit_read_resources", None)
+        return self.control_behavior.circuit_read_resources
 
     @read_resources.setter
-    def read_resources(self, value):
-        # type: (bool) -> None
-        if value is None:
-            self.control_behavior.pop("circuit_read_resources", None)
-        elif isinstance(value, bool):
-            self.control_behavior["circuit_read_resources"] = value
+    def read_resources(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "circuit_read_resources",
+                value,
+            )
+            self.control_behavior.circuit_read_resources = result
         else:
-            raise TypeError("'read_resources' must be a bool or None")
+            self.control_behavior.circuit_read_resources = value
 
     # =========================================================================
 
     @property
-    def read_mode(self):
-        # type: () -> MiningDrillReadMode
+    def read_mode(self) -> MiningDrillReadMode:
         """
         The mode in which the resources underneath the Entity should be read.
         Either ``MiningDrillReadMode.UNDER_DRILL`` or
@@ -64,13 +83,18 @@ class CircuitReadResourceMixin(object):  # (ControlBehaviorMixin)
         :exception ValueError: If set to anything other than a
             ``MiningDrillReadMode`` value or their ``int`` equivalent.
         """
-        return self.control_behavior.get("circuit_resource_read_mode", None)
+        return self.control_behavior.circuit_resource_read_mode
 
     @read_mode.setter
-    def read_mode(self, value):
-        # type: (MiningDrillReadMode) -> None
-        if value is None:
-            self.control_behavior.pop("circuit_resource_read_mode", None)
+    def read_mode(self, value: MiningDrillReadMode):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "circuit_resource_read_mode",
+                value,
+            )
+            self.control_behavior.circuit_resource_read_mode = result
         else:
-            value = MiningDrillReadMode(value)
-            self.control_behavior["circuit_resource_read_mode"] = value
+            self.control_behavior.circuit_resource_read_mode = value

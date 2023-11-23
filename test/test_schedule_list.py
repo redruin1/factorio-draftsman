@@ -32,6 +32,9 @@ class TestScheduleList:
         ):
             sl[0] = TypeError
 
+        with pytest.raises(TypeError):
+            sl[0:1] = [TypeError, TypeError]
+
     def test_delitem(self):
         sl = ScheduleList()
         sl.append(Schedule())

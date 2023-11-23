@@ -1,24 +1,15 @@
 # test_transport_belt.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-from draftsman.constants import Direction, ReadMode
+from draftsman.constants import Direction, ReadMode, ValidationMode
 from draftsman.entity import TransportBelt, transport_belts, Container
 from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class TransportBeltTesting(unittest.TestCase):
+class TestTransportBelt:
     def test_constructor_init(self):
         # Valid
         fast_belt = TransportBelt(
@@ -29,13 +20,16 @@ class TransportBeltTesting(unittest.TestCase):
             control_behavior={
                 "circuit_enable_disable": True,
                 "circuit_condition": {
-                    "first_signal": "signal-blue",
+                    "first_signal": {"name": "signal-blue", "type": "virtual"},
                     "comparator": "=",
-                    "second_signal": "signal-blue",
+                    "second_signal": {"name": "signal-blue", "type": "virtual"},
                 },
                 "connect_to_logistic_network": True,
                 "logistic_condition": {
-                    "first_signal": "fast-underground-belt",
+                    "first_signal": {
+                        "name": "fast-underground-belt",
+                        "type": "item",
+                    },
                     "comparator": ">=",
                     "constant": 0,
                 },
@@ -43,10 +37,10 @@ class TransportBeltTesting(unittest.TestCase):
                 "circuit_contents_read_mode": ReadMode.HOLD,
             },
         )
-        self.maxDiff = None
+
         assert fast_belt.to_dict() == {
             "name": "fast-transport-belt",
-            "direction": 2,
+            "direction": Direction.EAST,
             "position": {"x": 0.5, "y": 0.5},
             "connections": {"1": {"green": [{"entity_id": 1}]}},
             "control_behavior": {
@@ -63,7 +57,7 @@ class TransportBeltTesting(unittest.TestCase):
                         "type": "item",
                     },
                     "comparator": "≥",
-                    "constant": 0,
+                    # "constant": 0, # Default
                 },
                 "circuit_read_hand_contents": False,
                 "circuit_contents_read_mode": ReadMode.HOLD,
@@ -71,32 +65,136 @@ class TransportBeltTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             temp = TransportBelt("fast-transport-belt", invalid_param=100)
 
-        # Errors
-        # Raises InvalidEntityID when not in transport_belts
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             TransportBelt("this is not a storage tank")
 
-        # Raises schema errors when any of the associated data is incorrect
+        # Errors
         with pytest.raises(TypeError):
             TransportBelt("transport-belt", id=25)
 
         with pytest.raises(TypeError):
             TransportBelt("transport-belt", position=TypeError)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             TransportBelt("transport-belt", direction="incorrect")
 
         with pytest.raises(DataFormatError):
-            TransportBelt("transport-belt", connections={"this is": ["very", "wrong"]})
+            TransportBelt("transport-belt", connections=["very", "wrong"])
 
         with pytest.raises(DataFormatError):
             TransportBelt(
                 "transport-belt",
-                control_behavior={"this is": ["also", "very", "wrong"]},
+                control_behavior=["also", "very", "wrong"],
             )
+
+    def test_set_enable_disable(self):
+        belt = TransportBelt("transport-belt")
+        assert belt.enable_disable == None
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        belt.enable_disable = True
+        assert belt.enable_disable == True
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_enable_disable": True},
+        }
+
+        belt.enable_disable = False
+        assert belt.enable_disable == False
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_enable_disable": False},
+        }
+
+        with pytest.raises(DataFormatError):
+            belt.enable_disable = "incorrect"
+
+        belt.validate_assignment = "none"
+        assert belt.validate_assignment == ValidationMode.NONE
+        belt.enable_disable = "incorrect"
+        assert belt.enable_disable == "incorrect"
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_enable_disable": "incorrect"},
+        }
+
+    def test_set_read_contents(self):
+        belt = TransportBelt("transport-belt")
+        assert belt.read_contents == None
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        belt.read_contents = True
+        assert belt.read_contents == True
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_read_hand_contents": True},
+        }
+
+        with pytest.raises(DataFormatError):
+            belt.read_contents = "incorrect"
+        assert belt.read_contents == True
+
+        belt.validate_assignment = "none"
+        assert belt.validate_assignment == ValidationMode.NONE
+
+        belt.read_contents = "incorrect"
+        assert belt.read_contents == "incorrect"
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_read_hand_contents": "incorrect"},
+        }
+
+    def test_set_read_mode(self):
+        belt = TransportBelt("transport-belt")
+        assert belt.read_mode == None
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        belt.read_mode = ReadMode.HOLD
+        assert belt.read_mode == ReadMode.HOLD
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_contents_read_mode": ReadMode.HOLD},
+        }
+
+        belt.read_mode = None
+        assert belt.read_mode == None
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        with pytest.raises(DataFormatError):
+            belt.read_mode = "incorrect"
+        assert belt.read_mode == None
+
+        belt.validate_assignment = "none"
+        assert belt.validate_assignment == ValidationMode.NONE
+
+        belt.read_mode = "incorrect"
+        assert belt.read_mode == "incorrect"
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_contents_read_mode": "incorrect"},
+        }
 
     def test_power_and_circuit_flags(self):
         for transport_belt in transport_belts:
@@ -144,13 +242,16 @@ class TransportBeltTesting(unittest.TestCase):
             control_behavior={
                 "circuit_enable_disable": True,
                 "circuit_condition": {
-                    "first_signal": "signal-blue",
+                    "first_signal": {"name": "signal-blue", "type": "virtual"},
                     "comparator": "=",
-                    "second_signal": "signal-blue",
+                    "second_signal": {"name": "signal-blue", "type": "virtual"},
                 },
                 "connect_to_logistic_network": True,
                 "logistic_condition": {
-                    "first_signal": "fast-underground-belt",
+                    "first_signal": {
+                        "name": "fast-underground-belt",
+                        "type": "item",
+                    },
                     "comparator": ">=",
                     "constant": 0,
                 },
@@ -163,7 +264,7 @@ class TransportBeltTesting(unittest.TestCase):
         belt1.merge(belt2)
         del belt2
 
-        assert belt1.control_behavior == {
+        assert belt1.to_dict()["control_behavior"] == {
             "circuit_enable_disable": True,
             "circuit_condition": {
                 "first_signal": {"name": "signal-blue", "type": "virtual"},
@@ -177,7 +278,7 @@ class TransportBeltTesting(unittest.TestCase):
                     "type": "item",
                 },
                 "comparator": "≥",
-                "constant": 0,
+                # "constant": 0, # Default
             },
             "circuit_read_hand_contents": False,
             "circuit_contents_read_mode": ReadMode.HOLD,

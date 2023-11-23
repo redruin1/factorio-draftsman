@@ -1,54 +1,68 @@
 # test_beacon.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import Beacon, beacons, Container
-from draftsman.error import InvalidEntityError, InvalidItemError
+from draftsman.error import DataFormatError
 from draftsman.warning import (
-    DraftsmanWarning,
-    ModuleLimitationWarning,
+    ModuleCapacityWarning,
+    ModuleNotAllowedWarning,
     ItemLimitationWarning,
+    UnknownEntityWarning,
+    UnknownItemWarning,
+    UnknownKeywordWarning,
 )
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class BeaconTesting(unittest.TestCase):
+class TestBeacon:
     def test_contstructor_init(self):
         beacon = Beacon()
 
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Beacon(unused_keyword="whatever")
 
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             Beacon("this is not a beacon")
 
     def test_set_item_request(self):
         beacon = Beacon()
         beacon.set_item_request("speed-module-3", 1)
         assert beacon.items == {"speed-module-3": 1}
-        with pytest.warns(ModuleLimitationWarning):
+
+        assert beacon.total_module_slots == 2
+        with pytest.warns(ModuleCapacityWarning):
+            beacon.set_item_request("effectivity-module-3", 3)
+
+        beacon.items = None
+        assert beacon.allowed_modules == {
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "effectivity-module",
+            "effectivity-module-2",
+            "effectivity-module-3",
+        }
+        with pytest.warns(ModuleNotAllowedWarning):
             beacon.set_item_request("productivity-module-3", 1)
 
-        beacon.set_item_requests(None)
+        beacon.items = None
         with pytest.warns(ItemLimitationWarning):
             beacon.set_item_request("steel-plate", 2)
 
         # Errors
-        with pytest.raises(TypeError):
+        beacon.items = None
+        with pytest.raises(DataFormatError):
             beacon.set_item_request("incorrect", "nonsense")
-        with pytest.raises(InvalidItemError):
-            beacon.set_item_request("incorrect", 100)
-        with pytest.raises(TypeError):
+        with pytest.warns(UnknownItemWarning):
+            beacon.set_item_request("unknown", 100)
+        with pytest.raises(DataFormatError):
             beacon.set_item_request("speed-module-2", "nonsense")
+        with pytest.raises(DataFormatError):
+            beacon.set_item_request("speed-module-2", -1)
+
+        assert beacon.items == {"unknown": 100}
+        assert beacon.module_slots_occupied == 0
 
     def test_mergable_with(self):
         beacon1 = Beacon("beacon")

@@ -1,24 +1,19 @@
 # test_blueprintable.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.blueprintable import *
-from draftsman.error import MalformedBlueprintStringError, IncorrectBlueprintTypeError
+from draftsman.error import (
+    DataFormatError,
+    MalformedBlueprintStringError,
+    IncorrectBlueprintTypeError,
+)
 from draftsman.utils import JSON_to_string
 
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class BlueprintableTesting(unittest.TestCase):
+class TestBlueprintable:
     def test_init(self):
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             blueprint = Blueprint(["incorrect", "data"])
 
     def test_load_from_string(self):
@@ -50,7 +45,7 @@ class BlueprintableTesting(unittest.TestCase):
     #     pass
 
 
-class BlueprintUtilsTesting(unittest.TestCase):
+class TestBlueprintUtils:
     def test_get_blueprintable_from_string(self):
         # Valid Format (Blueprint)
         blueprintable = get_blueprintable_from_string(
@@ -91,7 +86,7 @@ class BlueprintUtilsTesting(unittest.TestCase):
                         "entity_number": 1,
                         "name": "electric-energy-interface",
                         "position": {"x": -669.0, "y": -884.0},
-                        "buffer_size": 10000000000,
+                        # "buffer_size": 10000000000, # Default
                     },
                     {
                         "entity_number": 2,
@@ -148,6 +143,7 @@ class BlueprintUtilsTesting(unittest.TestCase):
                 "version": 281479275675648,
             }
         }
+
         # Invalid format
         with pytest.raises(MalformedBlueprintStringError):
             get_blueprintable_from_string("0lmaothisiswrong")
@@ -160,23 +156,23 @@ class BlueprintUtilsTesting(unittest.TestCase):
         # Valid Format (Blueprint)
         json_dict = {"blueprint": {"item": "blueprint"}}
         blueprintable = get_blueprintable_from_JSON(json_dict)
-        self.assertIsInstance(blueprintable, Blueprint)
+        assert isinstance(blueprintable, Blueprint)
 
         # Valid Format (DeconstructionPlanner)
         json_dict = {"deconstruction_planner": {"item": "deconstruction-planner"}}
         blueprintable = get_blueprintable_from_JSON(json_dict)
-        self.assertIsInstance(blueprintable, DeconstructionPlanner)
+        assert isinstance(blueprintable, DeconstructionPlanner)
 
         # Valid Format (UpgradePlanner)
         json_dict = {"upgrade_planner": {"item": "upgrade-planner"}}
         blueprintable = get_blueprintable_from_JSON(json_dict)
-        self.assertIsInstance(blueprintable, UpgradePlanner)
+        assert isinstance(blueprintable, UpgradePlanner)
 
         # Valid format (BlueprintBook)
         json_dict = {"blueprint_book": {"item": "blueprint-book"}}
         blueprintable = get_blueprintable_from_JSON(json_dict)
-        self.assertIsInstance(blueprintable, BlueprintBook)
+        assert isinstance(blueprintable, BlueprintBook)
 
         example = {"incorrect": {}}
-        with self.assertRaises(IncorrectBlueprintTypeError):
+        with pytest.raises(IncorrectBlueprintTypeError):
             get_blueprintable_from_JSON(example)

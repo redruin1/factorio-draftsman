@@ -1,24 +1,68 @@
 # exportable.py
+from draftsman.constants import ValidationMode
 
-from draftsman import utils
+from draftsman.error import DataFormatError
 
 from abc import ABCMeta, abstractmethod
-from pydantic import BaseModel
-from typing import List, Any
+from pydantic import BaseModel, ValidationError
+from typing import Any, List, Literal, Union
 import warnings
 import pprint  # TODO: think about
 
 
+def attempt_and_reissue(
+    object: Any, format_model: BaseModel, target: Any, name: str, value: Any, **kwargs
+):
+    """
+    Helper function that normalizes assignment validation
+    """
+    context = {
+        "mode": object.validate_assignment,
+        "object": object,
+        "warning_list": [],
+        "assignment": True,
+        **kwargs,
+    }
+    try:
+        result = format_model.__pydantic_validator__.validate_assignment(
+            target,
+            name,
+            value,
+            strict=False,  # TODO: disallow any weird string -> int / string -> bool conversions
+            context=context,
+        )
+    except ValidationError as e:
+        raise DataFormatError(e) from None
+    for warning in context["warning_list"]:
+        warnings.warn(warning, stacklevel=4)
+    return getattr(result, name)
+
+
+# def normalize_validation_mode(value):
+#     allowed_values = {None, "minimum", "strict", "pedantic"}
+#     if value in allowed_values:
+#         return value
+#     else:
+#         raise ValueError(
+#             "'validate_assignment' should be a bool or one of {}".format(allowed_values)
+#         )
+
+
 class ValidationResult:
+    """
+    Helper object used to contain errors and warnings issued from
+    :py:meth:`.Exportable.validate`.
+    """
+
     def __init__(self, error_list: List[Exception], warning_list: List[Warning]):
         self.error_list: List[Exception] = error_list
         self.warning_list: List[Warning] = warning_list
 
-    def reissue_all(self):
+    def reissue_all(self, stacklevel=2):
         for error in self.error_list:
             raise error
         for warning in self.warning_list:
-            warnings.warn(warning, stacklevel=2)
+            warnings.warn(warning, stacklevel=stacklevel)
 
     def __eq__(self, other):  # pragma: no coverage
         # Primarily for test suite.
@@ -43,14 +87,14 @@ class ValidationResult:
         return True
 
     def __str__(self):  # pragma: no coverage
-        return "ValidationResult{{\n    errors={}, \n    warnings={}\n}}".format(
+        return "ValidationResult{{\n    errors={},\n    warnings={}\n}}".format(
             pprint.pformat(self.error_list, indent=4),
             pprint.pformat(self.warning_list, indent=4),
         )
 
     def __repr__(self):  # pragma: no coverage
         return "ValidationResult{{errors={}, warnings={}}}".format(
-            self.error_list, self.warning_list
+            repr(self.error_list), repr(self.warning_list)
         )
 
 
@@ -66,72 +110,168 @@ class Exportable(metaclass=ABCMeta):
         pass
 
     def __init__(self):
-        self._root = {}
+        self._root: __class__.Format
+        # TODO: hopefully put _root initialization here
         self._is_valid = False
+        # Validation assignment is set to "none" on construction since we might
+        # not want to validate at this point; validation is performed at the end
+        # of construction in the child-most class, if desired
+        self._validate_assignment = ValidationMode.NONE
+
+        self._unknown_format = False
 
     # =========================================================================
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         """
-        TODO
+        Read-only attribute that indicates whether or not this object is
+        validated. If this attribute is true, you can assume that all component
+        attributes of this object are formatted correctly and value tolerant.
+        Validity is lost anytime any attribute of a valid object is altered, and
+        gained when :py:meth:`.validate` is called:
+
+        .. example::
+
+            >>> from draftsman.entity import Container
+            >>> c = Container("wooden-chest")
+            >>> c.is_valid
+            False
+            >>> c.validate()
+            >>> c.is_valid
+            True
+            >>> c.bar = 10  # Even though 10 is a valid value, validate() must
+            >>> c.is_valid  # be called again for draftsman to know this
+            False
+
+        Read only.
         """
         return self._is_valid
+
+    # =========================================================================
+
+    @property
+    def validate_assignment(
+        self,
+    ) -> Union[ValidationMode, Literal["none", "minimum", "strict", "pedantic"]]:
+        """
+        Toggleable flag that indicates whether assignments to this object should
+        be validated, and how. Can be set in the constructor of the entity or
+        changed at any point during runtime. Note that this is on a per-entity
+        basis, so multiple instances of otherwise identical entities can have
+        different validation configurations.
+
+        TODO: table of all the different values
+
+        .. NOTE ::
+
+            Item-assignment (``entity["field"] = obj``) is *never* validated,
+            regardless of this parameter. This is mostly a side effect of how
+            things work behind the scenes, but it can be used to explicitly
+            indicate a "raw" modification that is guaranteed to be cheap and
+            will never trigger validation by itself.
+
+        :getter:
+        :setter: Sets the assignment mode. Raises a :py:class:`.DataFormatError`
+            if set to an invalid value.
+        :type: ``str``
+        """
+        return self._validate_assignment
+
+    @validate_assignment.setter
+    def validate_assignment(self, value):
+        self._validate_assignment = ValidationMode(value)
+
+    # =========================================================================
+
+    @property
+    def unknown_format(self) -> bool:
+        """
+        A read-only flag which indicates whether or not Draftsman has a full
+        understanding of the underlying format of the exportable. If this flag
+        is ``False``, then most validation for this instance is disabled, only
+        issuing errors/warnings for issues that Draftsman has sufficient
+        information to diagnose.
+
+        TODO
+        """
+        return self._unknown_format
 
     # =========================================================================
 
     @abstractmethod
     def validate(self):
         """
-        TODO
+        Method that attempts to first coerce the object into a known form, and
+        then checks the values of its attributes for correctness. If unable to
+        do so, this function raises :py:error:`.DataFormatError`. Otherwise,
+        no errors are raised and :py:attr:`.is_valid` is set to ``True``.
+
+        .. example::
+
+            >>> from draftsman.entity import Container
+            >>> from draftsman.error import DataFormatError
+            >>> c = Container("wooden-chest")
+            >>> c.bar = "incorrect"
+            >>> try:
+            ...     c.validate()
+            ... except DataFormatError as e:
+            ...     print("wrong! {}", e)
+            wrong!
+
+        :raises:
         """
-        # Subsequent objects must implement this method and then call this
+        # NOTE: Subsequent objects must implement this method and then call this
         # parent method to cache successful validity
-        super().__setattr__("_is_valid", True)
+        # super().__setattr__("_is_valid", True)
+        pass  # pragma: no coverage
 
-    def inspect(self):
-        """
-        TODO
-        """
-        return ValidationResult([], [])
-
-    def to_dict(self) -> dict:
-        """
-        Returns this object as a dictionary. Intended for getting the precursor
-        to a Factorio blueprint string before compression and encoding takes
-        place.
-
-        :returns: The ``dict`` representation of this object.
-        """
-        out_dict = self.__class__.Format.model_construct(  # Performs no validation(!)
-            **self._root
-        ).model_dump(
-            by_alias=True,  # Some attributes are reserved words (type, from,
-            # etc.); this resolves that issue
-            exclude_none=True,  # Trim if values are None
-            exclude_defaults=True,  # Trim if values are defaults
-            warnings=False  # Ignore warnings because `model_construct` cannot
-            # be made recursive for some asinine reason
+    def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
+        return self._root.model_dump(
+            # Some attributes are reserved words ('type', 'from', etc.); this
+            # resolves that issue
+            by_alias=True,
+            # Trim if values are None
+            exclude_none=exclude_none,
+            # Trim if values are defaults
+            exclude_defaults=exclude_defaults,
+            # Ignore warnings because we might export a model where the keys are
+            # intentionally incorrect
+            # Plus there are things like Associations with which we want to
+            # preserve when returning this object so that a parent object can
+            # handle them
+            warnings=False,
         )
 
-        return out_dict
-
     @classmethod
-    def dump_format(cls) -> dict:  # pragma: no coverage
+    def json_schema(cls) -> dict:
         """
-        Returns a JSON schema object that correctly validates this object. Can
-        be exported to a JSON string that can be shared and used generically by
-        any application that supports JSON schema validation.
+        Returns a JSON schema object that correctly validates this object. This
+        schema can be used with any compliant JSON schema validation library to
+        check if a given blueprint string will import into Factorio.
 
         .. see-also::
 
             https://json-schema.org/
 
-        :returns: A python dictionary containing all the relevant key-value
-            pairs, which can be dumped to a string with ``json.dumps``
+        :returns: A modern, JSON-schema compliant dictionary with appropriate
+            types, ranges, allowed/excluded values, as well as titles and
+            descriptions.
         """
-        # TODO: is this testable?
+        # TODO: should this be tested?
         return cls.Format.model_json_schema(by_alias=True)
+
+    # TODO
+    # @classmethod
+    # def get_format(cls, indent=2):
+    #     # type: (int) -> str
+    #     """
+    #     Produces a pretty string representation of ``meth:dump_format``. Work in
+    #     progress.
+
+    #     :returns: A formatted string that can be output to stdout or file.
+    #     """
+    #     return json.dumps(cls.dump_format(), indent=indent)
 
     # =========================================================================
 
@@ -139,14 +279,11 @@ class Exportable(metaclass=ABCMeta):
         super().__setattr__("_is_valid", False)
         super().__setattr__(name, value)
 
-    def __setitem__(self, key, value):
-        # type: (str, Any) -> None
+    def __setitem__(self, key: str, value: Any):
         self._root[key] = value
 
-    def __getitem__(self, key):
-        # type: (str) -> Any
+    def __getitem__(self, key: str) -> Any:
         return self._root[key]
 
-    def __contains__(self, item):
-        # type: (str) -> bool
+    def __contains__(self, item: str) -> bool:
         return item in self._root

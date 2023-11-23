@@ -1,16 +1,15 @@
 # loader.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import FiltersMixin, IOTypeMixin, DirectionalMixin
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
+from draftsman.signatures import FilterEntry
 
 from draftsman.data.entities import loaders
-from draftsman.data import entities
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Union
 
 
 class Loader(FiltersMixin, IOTypeMixin, DirectionalMixin, Entity):
@@ -19,27 +18,46 @@ class Loader(FiltersMixin, IOTypeMixin, DirectionalMixin, Entity):
     vise-versa.
     """
 
-    # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **IOTypeMixin._exports,
-        **FiltersMixin._exports,
-    }
-    # fmt: on
+    class Format(
+        FiltersMixin.Format,
+        IOTypeMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format,
+    ):
+        model_config = ConfigDict(title="Loader")
 
-    def __init__(self, name=loaders[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(Loader, self).__init__(name, loaders, **kwargs)
+    def __init__(
+        self,
+        name: str = loaders[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        io_type: Literal["input", "output"] = "input",
+        filters: list[FilterEntry] = [],
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        super().__init__(
+            name,
+            loaders,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            io_type=io_type,
+            filters=filters,
+            tags=tags,
+            **kwargs
+        )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self.validate_assignment = validate_assignment
 
-        del self.unused_args
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

@@ -1,27 +1,19 @@
 # test_logistic_buffer_container.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import (
     LogisticBufferContainer,
     logistic_buffer_containers,
     Container,
 )
-from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.signatures import RequestFilter
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class LogisticBufferContainerTesting(unittest.TestCase):
+class TestLogisticBufferContainer:
     def test_constructor_init(self):
         buffer_chest = LogisticBufferContainer(
             "logistic-chest-buffer",
@@ -79,38 +71,31 @@ class LogisticBufferContainerTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             LogisticBufferContainer(
                 "logistic-chest-buffer", position=[0, 0], invalid_keyword="100"
             )
-
-        # Errors
-        # Raises InvalidEntityID when not in containers
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownKeywordWarning):
+            LogisticBufferContainer(control_behavior={"unused_key": "something"})
+        with pytest.warns(UnknownEntityWarning):
             LogisticBufferContainer("this is not a logistics storage chest")
 
+        # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             LogisticBufferContainer("logistic-chest-buffer", id=25)
-
         with pytest.raises(TypeError):
             LogisticBufferContainer("logistic-chest-buffer", position=TypeError)
-
-        with pytest.raises(TypeError):
-            LogisticBufferContainer("logistic-chest-buffer", bar="not even trying")
-
         with pytest.raises(DataFormatError):
-            LogisticBufferContainer(
-                "logistic-chest-buffer", connections={"this is": ["very", "wrong"]}
-            )
-
+            LogisticBufferContainer("logistic-chest-buffer", bar="not even trying")
+        with pytest.raises(DataFormatError):
+            LogisticBufferContainer("logistic-chest-buffer", connections="incorrect")
         with pytest.raises(DataFormatError):
             LogisticBufferContainer(
                 "logistic-chest-buffer", request_filters={"this is": ["very", "wrong"]}
             )
-
         with pytest.raises(DataFormatError):
-            LogisticBufferContainer(control_behavior={"unused_key": "something"})
+            LogisticBufferContainer(control_behavior="incorrect")
 
     def test_power_and_circuit_flags(self):
         for name in logistic_buffer_containers:
@@ -151,7 +136,7 @@ class LogisticBufferContainerTesting(unittest.TestCase):
 
         assert container1.bar == 10
         assert container1.request_filters == [
-            {"name": "utility-science-pack", "index": 1, "count": 10}
+            RequestFilter(**{"name": "utility-science-pack", "index": 1, "count": 10})
         ]
         assert container1.tags == {"some": "stuff"}
 

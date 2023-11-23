@@ -1,33 +1,24 @@
 # test_heat_pipe.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import HeatPipe, heat_pipes, Container
 from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class HeatPipeTesting(unittest.TestCase):
+class TestHeatPipe:
     def test_constructor_init(self):
         heat_pipe = HeatPipe()
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             HeatPipe(unused_keyword="whatever")
+        with pytest.warns(UnknownEntityWarning):
+            HeatPipe("not a heat pipe")
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            HeatPipe("not a heat pipe")
 
     def test_mergable_with(self):
         pipe1 = HeatPipe("heat-pipe")

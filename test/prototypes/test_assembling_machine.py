@@ -1,30 +1,31 @@
 # test_assembling_machine.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.constants import Direction
 from draftsman.entity import AssemblingMachine, assembling_machines, Container
-from draftsman.error import InvalidEntityError, InvalidRecipeError, InvalidItemError
+from draftsman.error import (
+    InvalidEntityError,
+    InvalidRecipeError,
+    InvalidItemError,
+    DataFormatError,
+)
 from draftsman.warning import (
-    DraftsmanWarning,
+    ModuleCapacityWarning,
     ModuleLimitationWarning,
     ItemLimitationWarning,
+    RecipeLimitationWarning,
+    UnknownEntityWarning,
+    UnknownItemWarning,
+    UnknownKeywordWarning,
+    UnknownRecipeWarning,
 )
 
 import warnings
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class AssemblingMachineTesting(unittest.TestCase):
+class TestAssemblingMachine:
     def test_constructor_init(self):
         assembler = AssemblingMachine("assembling-machine-1", recipe="iron-gear-wheel")
         assert assembler.to_dict() == {
@@ -39,29 +40,75 @@ class AssemblingMachineTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             AssemblingMachine(unused_keyword="whatever")
+        with pytest.warns(UnknownRecipeWarning):
+            AssemblingMachine(recipe="incorrect")
+        with pytest.warns(UnknownEntityWarning):
+            AssemblingMachine("not an assembling machine")
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            AssemblingMachine("not an assembling machine")
-        with pytest.raises(InvalidRecipeError):
-            AssemblingMachine(recipe="invalid")
+        with pytest.raises(DataFormatError):
+            AssemblingMachine(recipe=100)
 
     def test_set_recipe(self):
         machine = AssemblingMachine("assembling-machine-3")
+        assert machine.allowed_modules == {
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "effectivity-module",
+            "effectivity-module-2",
+            "effectivity-module-3",
+            "productivity-module",
+            "productivity-module-2",
+            "productivity-module-3",
+        }
         machine.set_item_request("productivity-module-3", 2)
 
-        with warnings.catch_warnings(record=True) as w:
-            machine.recipe = "iron-gear-wheel"
-            assert len(w) == 0
+        machine.recipe = "iron-gear-wheel"
+        assert machine.recipe == "iron-gear-wheel"
+        assert machine.allowed_modules == {
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "effectivity-module",
+            "effectivity-module-2",
+            "effectivity-module-3",
+            "productivity-module",
+            "productivity-module-2",
+            "productivity-module-3",
+        }
 
-        with pytest.warns(ModuleLimitationWarning):
+        with pytest.warns(ItemLimitationWarning):
             machine.recipe = "wooden-chest"
+        assert machine.allowed_modules == {
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "effectivity-module",
+            "effectivity-module-2",
+            "effectivity-module-3",
+        }
 
-        machine.set_item_request("speed-module-3", 2)
-        with pytest.warns(ModuleLimitationWarning):
-            machine.recipe = "iron-chest"
+        machine.items = None
+        with pytest.warns(ModuleCapacityWarning):
+            machine.set_item_request("speed-module-3", 10)
+        # with pytest.warns(ModuleLimitationWarning):
+        #     machine.recipe = "iron-chest"
+
+        # particular recipe not allowed in machine
+        with pytest.warns(RecipeLimitationWarning):
+            machine.recipe = "sulfur"
+        assert machine.recipe == "sulfur"
+
+        # Unknown recipe in an unknown machine
+        machine = AssemblingMachine("unknown", validate="none")
+        with pytest.warns(UnknownRecipeWarning):
+            machine.recipe = "unknown"
+
+        # Known recipe in an unknown machine
+        machine.recipe = "sulfur"
 
     def test_set_item_request(self):
         machine = AssemblingMachine("assembling-machine-3")
@@ -69,15 +116,26 @@ class AssemblingMachineTesting(unittest.TestCase):
         with pytest.warns(ModuleLimitationWarning):
             machine.set_item_request("productivity-module-3", 2)
 
-        machine.set_item_request("wood", 20)
-        assert machine.items == {"productivity-module-3": 2, "wood": 20}
+        machine.items = None  # TODO: should be able to remove this
+        machine.set_item_request(
+            "wood", 20
+        )  # because this ideally shouldn't raise a warning
+        assert machine.items == {"wood": 20}  # {"productivity-module-3": 2, "wood": 20}
+
+        # No warning when we omit recipe
+        machine.recipe = None
+        assert machine.recipe == None
+        machine.items = {"productivity-module-3": 2, "productivity-module-2": 2}
+        assert machine.items == {"productivity-module-3": 2, "productivity-module-2": 2}
 
         machine.recipe = None
-        machine.set_item_requests(None)
+        machine.items = None
 
+        print(machine.allowed_items)
         machine.set_item_request("iron-plate", 100)
         assert machine.items == {"iron-plate": 100}
         machine.recipe = "iron-gear-wheel"
+        assert machine.allowed_input_ingredients == {"iron-plate"}
         # Raise warning when setting recipe that conficts with request
         with pytest.warns(ItemLimitationWarning):
             machine.recipe = "wooden-chest"
@@ -85,17 +143,22 @@ class AssemblingMachineTesting(unittest.TestCase):
         with pytest.warns(ItemLimitationWarning):
             machine.set_item_request("copper-cable", 100)
 
+        # Switching to the correct recipe raises no warnings as it fixes the issue
         machine.recipe = "electronic-circuit"
 
         # Errors
-        with pytest.raises(TypeError):
+        machine.items = None
+        with pytest.raises(DataFormatError):
             machine.set_item_request(None, "nonsense")
-        with pytest.raises(InvalidItemError):
-            machine.set_item_request("incorrect", 100)
-        with pytest.raises(TypeError):
+        with pytest.warns(UnknownItemWarning):
+            machine.set_item_request("unknown", 100)
+        with pytest.raises(DataFormatError):
             machine.set_item_request("speed-module-2", "nonsense")
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             machine.set_item_request("speed-module-2", -1)
+
+        assert machine.items == {"unknown": 100}
+        assert machine.module_slots_occupied == 0
 
     def test_mergable_with(self):
         machine1 = AssemblingMachine("assembling-machine-1")

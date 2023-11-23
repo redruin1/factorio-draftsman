@@ -1,25 +1,21 @@
 # request_items.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman import signatures
-from draftsman.data import entities, modules, items
-from draftsman.error import InvalidItemError
+from draftsman.data import items
+from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.constants import ValidationMode
+from draftsman.error import DataFormatError
+from draftsman.signatures import DraftsmanBaseModel, SignalID, uint32, ItemName
 from draftsman.utils import reissue_warnings
-from draftsman.warning import ModuleCapacityWarning
+from draftsman.warning import ItemLimitationWarning, UnknownItemWarning
 
-from schema import SchemaError
-import six
-import warnings
+from pydantic import Field, ValidationInfo, field_validator
+from copy import deepcopy
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.entity import Entity
+from typing import Optional, Union
 
 
-class RequestItemsMixin(object):
+class RequestItemsMixin:
     """
     Enables an entity to request items during its construction. Note that this
     is *not* for Logistics requests such as requester and buffer chests (that's
@@ -29,29 +25,98 @@ class RequestItemsMixin(object):
     machines.
     """
 
-    _exports = {
-        "items": {
-            "format": "{'item_name': count, ...}",
-            "description": "List of construction item requests (such as modules for beacons)",
-            "required": lambda x: len(x) != 0,
-        }
-    }
+    class Format(DraftsmanBaseModel):
+        items: Optional[dict[ItemName, uint32]] = Field(
+            {},
+            description="""
+            List of construction item requests (such as delivering modules for 
+            beacons). Distinct from logistics requests, which are a separate 
+            system.
+            """,
+        )
 
-    def __init__(self, name, similar_entities, **kwargs):
-        # type: (str, list[str], **dict) -> None
-        super(RequestItemsMixin, self).__init__(name, similar_entities, **kwargs)
+        @field_validator("items")
+        @classmethod
+        def ensure_in_allowed_items(
+            cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+        ):
+            """
+            Warn the user if they set a fuel item that is disallowed for this
+            particular entity.
+            """
+            if not info.context or value is None:
+                return value
+            if info.context["mode"] <= ValidationMode.MINIMUM:
+                return value
 
-        self.items = {}
-        if "items" in kwargs:
-            self.set_item_requests(kwargs["items"])
-            self.unused_args.pop("items")
-        # self._add_export("items", lambda x: len(x) != 0)
+            entity: "RequestItemsMixin" = info.context["object"]
+            warning_list: list = info.context["warning_list"]
+
+            if entity.allowed_items is None:  # entity not recognized
+                return value
+
+            for item in entity.items:
+                if item not in entity.allowed_items:
+                    warning_list.append(
+                        ItemLimitationWarning(
+                            "Cannot request item '{}' to '{}'; this entity cannot recieve it".format(
+                                item, entity.name
+                            )
+                        )
+                    )
+
+            return value
+
+    def __init__(self, name: str, similar_entities: list[str], **kwargs):
+        self._root: __class__.Format
+
+        super().__init__(name, similar_entities, **kwargs)
+
+        self.items = kwargs.get("items", {})
+
+    # =========================================================================
+
+    @property  # TODO abstractproperty
+    def allowed_items(self) -> Optional[set[str]]:
+        pass  # return set()
+
+    # =========================================================================
+
+    @property
+    def items(self) -> Optional[dict[str, uint32]]:
+        """
+        TODO
+        """
+        return self._root.items
+
+    @items.setter
+    def items(self, value: dict[str, uint32]):
+        if self.validate_assignment:
+            # In the validator functions for `items`, we use a lot of internal
+            # properties that operate on the current items value instead of the
+            # items value that we're setting
+            # Thus, in order for those to work, we set the items to the new
+            # value first, check for errors, and revert it back to the original
+            # value if it fails for whatever reason
+            try:
+                original_items = self._root.items
+                self._root.items = value
+                value = attempt_and_reissue(
+                    self, type(self).Format, self._root, "items", value
+                )
+            except DataFormatError as e:
+                self._root.items = original_items
+                raise e
+
+        if value is None:
+            self._root.items = {}
+        else:
+            self._root.items = value
 
     # =========================================================================
 
     @reissue_warnings
-    def set_item_request(self, item, count):
-        # type: (str, int) -> None
+    def set_item_request(self, item: str, count: Optional[uint32]):
         """
         Requests an amount of an item. Removes the item request if ``count`` is
         set to ``0`` or ``None``. Manages ``module_slots_occupied``.
@@ -69,59 +134,35 @@ class RequestItemsMixin(object):
         :exception InvalidItemError: If ``item`` is not a valid item name.
         :exception ValueError: If ``count`` is less than zero.
         """
+        if count is None:
+            count = 0
+
+        # TODO: inefficient
+        new_items = deepcopy(self.items)
+
+        if count == 0:
+            new_items.pop(item, None)
+        else:
+            new_items[item] = count
+
         try:
-            item = signatures.STRING.validate(item)
-            count = signatures.INTEGER_OR_NONE.validate(count)
-        except SchemaError as e:
-            six.raise_from(TypeError(e), None)
-
-        if item not in items.raw:
-            raise InvalidItemError("'{}'".format(item))
-        if count is not None and count < 0:
-            raise ValueError("'count' must be a positive number")
-
-        if count is None or count == 0:
-            self.items.pop(item, None)
+            original_items = self._root.items
+            self._root.items = new_items
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "items", new_items
+            )
+        except DataFormatError as e:
+            self._root.items = original_items
+            raise e
         else:
-            self.items[item] = count
+            self._root.items = result
 
-    @reissue_warnings
-    def set_item_requests(self, items):
-        # type: (dict) -> None
-        """
-        Sets all of the item requests for the Entity. Takes ``items`` as a
-        ``dict`` in the format::
+    # =========================================================================
 
-            {item_1: count_1, item_2: count_2, ...}
+    def merge(self, other: "RequestItemsMixin"):
+        super().merge(other)
 
-        where ``item_x`` is a ``str`` and ``count_x`` is a positive integer.
-
-        :param items: A dictionary of the desired items in the format specified
-            above.
-
-        :exception TypeError: If ``item_x`` is anything other than a ``str``, or
-            if ``count_x`` is anything other than an ``int`` or ``None``.
-        :exception InvalidItemError: If ``item_x`` is not a valid item name.
-        :exception ValueError: If ``count_x`` is less than zero.
-        """
-        if items is None:
-            self.items = {}
-            # TODO: fix this as well, this sucks
-            if hasattr(self, "module_slots_occupied"):
-                self._module_slots_occupied = 0
-            if hasattr(self, "inventory_slots_occupied"):
-                self._inventory_slots_occupied = 0
-        else:
-            self.items = {}
-            for name, count in items.items():
-                self.set_item_request(name, count)
-
-    def merge(self, other):
-        # type: (Entity) -> None
-        super(RequestItemsMixin, self).merge(other)
-
-        # self.items = other.items
-        self.set_item_requests(other.items)
+        self.items = deepcopy(other.items)
 
     # =========================================================================
 

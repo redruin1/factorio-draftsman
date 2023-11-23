@@ -1,14 +1,12 @@
 # radar.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.warning import DraftsmanWarning
-
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
 from draftsman.data.entities import radars
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Union
 
 
 class Radar(Entity):
@@ -16,24 +14,35 @@ class Radar(Entity):
     An entity that scans neighbouring chunks periodically.
     """
 
-    # fmt: off
-    _exports = {
-        **Entity._exports
-    }
-    # fmt: on
+    class Format(Entity.Format):
+        model_config = ConfigDict(title="Radar")
 
-    def __init__(self, name=radars[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(Radar, self).__init__(name, radars, **kwargs)
+    def __init__(
+        self,
+        name: str = radars[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        super().__init__(
+            name,
+            radars,
+            position=position,
+            tile_position=tile_position,
+            tags=tags,
+            **kwargs
+        )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self.validate_assignment = validate_assignment
 
-        del self.unused_args
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

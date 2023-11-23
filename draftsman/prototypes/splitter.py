@@ -1,20 +1,15 @@
 # splitter.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import DirectionalMixin
-from draftsman.error import InvalidItemError, InvalidSideError
-from draftsman.warning import DraftsmanWarning
-
-from draftsman.data import items
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
 
 from draftsman.data.entities import splitters
-from draftsman.data import entities
 
-import six
-import warnings
+from pydantic import ConfigDict, Field
+from typing import Any, Literal, Optional, Union
 
 try:
     from typing import Literal
@@ -28,64 +23,82 @@ class Splitter(DirectionalMixin, Entity):
     belts.
     """
 
-    # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        "input_priority": {
-            "format": "'left' or 'right'",
-            "description": "Which side takes input priority",
-            "required": lambda x: x is not None,
-        },
-        "output_priority": {
-            "format": "'left' or 'right'",
-            "description": "Which side takes output priority",
-            "required": lambda x: x is not None,
-        },
-        "filter": {
-            "format": "str",
-            "description": "Name of the item being filtered",
-            "required": lambda x: x is not None,
-        },
-    }
-    # fmt: off
+    class Format(DirectionalMixin.Format, Entity.Format):
+        input_priority: Optional[
+            Literal["left", "none", "right"]
+        ] = Field(  # TODO: make this priority side or similar
+            "none",
+            description="""
+            The side to prioritize pulling items into the splitter. 'none' means 
+            no preference.
+            """,
+        )
+        output_priority: Optional[Literal["left", "none", "right"]] = Field(
+            "none",
+            description="""
+            The side to prioritize pushing items out of the splitter. Obeys
+            'filter', if set. 'none' means no preference and no filtering.
+            """,
+        )
+        filter: Optional[str] = Field(  # TODO: ItemID
+            None,
+            description="""
+            The item that this splitter will filter, output on the 
+            'output_priority' side. Any item that does not exactly match this
+            filter (when it is set) will get loaded on the opposite belt output.
+            """,
+        )
 
-    def __init__(self, name=splitters[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(Splitter, self).__init__(name, splitters, **kwargs)
+        model_config = ConfigDict(title="Splitter")
 
-        self.input_priority = None
-        if "input_priority" in kwargs:
-            self.input_priority = kwargs["input_priority"]
-            self.unused_args.pop("input_priority")
-        # self._add_export("input_priority", lambda x: x is not None)
+    def __init__(
+        self,
+        name: str = splitters[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        input_priority: Literal["left", "none", "right"] = "none",
+        output_priority: Literal["left", "none", "right"] = "none",
+        filter: str = None,  # TODO: ItemID
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
 
-        self.output_priority = None
-        if "output_priority" in kwargs:
-            self.output_priority = kwargs["output_priority"]
-            self.unused_args.pop("output_priority")
-        # self._add_export("output_priority", lambda x: x is not None)
+        self._root: __class__.Format
 
-        self.filter = None
-        if "filter" in kwargs:
-            self.filter = kwargs["filter"]
-            self.unused_args.pop("filter")
-        # self._add_export("filter", lambda x: x is not None)
+        super().__init__(
+            name,
+            splitters,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            tags=tags,
+            **kwargs
+        )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self.input_priority = input_priority
+        self.output_priority = output_priority
+        self.filter = filter
+
+        self.validate_assignment = validate_assignment
+
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
         del self.unused_args
 
     # =========================================================================
 
     @property
-    def input_priority(self):
-        # type: () -> Literal["left", "right", None]
+    def input_priority(self) -> Literal["left", "none", "right", None]:
         """
         The input priority of the ``Splitter``. Can be one of ``"left"`` or
         ``"right"``.
@@ -98,27 +111,22 @@ class Splitter(DirectionalMixin, Entity):
         :exception InvalidSideError: If set to an invalid side as specified
             above.
         """
-        return self._input_priority
+        return self._root.input_priority
 
     @input_priority.setter
-    def input_priority(self, value):
-        # type: (Literal["left", "right", None]) -> None
-        if value is None:
-            self._input_priority = value
-        elif isinstance(value, six.string_types):
-            value = six.text_type(value)
-            valid_sides = {"left", "right"}
-            if value not in valid_sides:
-                raise InvalidSideError("'{}'".format(value))
-            self._input_priority = value
+    def input_priority(self, value: Literal["left", "none", "right", None]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "input_priority", value
+            )
+            self._root.input_priority = result
         else:
-            raise TypeError("'input_priority' must be a str or None")
+            self._root.input_priority = value
 
     # =========================================================================
 
     @property
-    def output_priority(self):
-        # type: () -> Literal["left", "right", None]
+    def output_priority(self) -> Literal["left", "none", "right", None]:
         """
         The outpu priority of the ``Splitter``. Can be one of ``"left"`` or
         ``"right"``.
@@ -131,26 +139,22 @@ class Splitter(DirectionalMixin, Entity):
         :exception InvalidSideError: If set to an invalid side as specified
             above.
         """
-        return self._output_priority
+        return self._root.output_priority
 
     @output_priority.setter
-    def output_priority(self, value):
-        # type: (Literal["left", "right", None]) -> None
-        if value is None:
-            self._output_priority = value
-        elif isinstance(value, six.string_types):
-            value = six.text_type(value)
-            valid_sides = {"left", "right"}
-            if value not in valid_sides:
-                raise InvalidSideError("'{}'".format(value))
-            self._output_priority = value
+    def output_priority(self, value: Literal["left", "none", "right", None]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "output_priority", value
+            )
+            self._root.output_priority = result
         else:
-            raise TypeError("'output_priority' must be a str or None")
+            self._root.output_priority = value
 
     # =========================================================================
 
     @property
-    def filter(self):
+    def filter(self) -> str:  # TODO: ItemID
         """
         Sets the Splitter's filter. If ``filter`` is set but ``output_priority``
         is not, then the output side defaults to ``"left"``.
@@ -162,26 +166,22 @@ class Splitter(DirectionalMixin, Entity):
         :exception TypeError: If set to anything other than a ``str`` or ``None``.
         :exception InvalidItemError: If set to an invalid item name.
         """
-        return self._filter
+        return self._root.filter
 
     @filter.setter
-    def filter(self, value):
-        # type: (str) -> None
-        if value is None:
-            self._filter = value
-        elif isinstance(value, six.string_types):
-            value = six.text_type(value)
-            if value not in items.raw:
-                raise InvalidItemError("'{}'".format(value))
-            self._filter = value
+    def filter(self, value: str):  # TODO: ItemID
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "filter", value
+            )
+            self._root.filter = result
         else:
-            raise TypeError("'filter' must be a str or None")
+            self._root.filter = value
 
     # =========================================================================
 
-    def merge(self, other):
-        # type: (Splitter) -> None
-        super(Splitter, self).merge(other)
+    def merge(self, other: "Splitter"):
+        super().merge(other)
 
         self.input_priority = other.input_priority
         self.output_priority = other.output_priority
@@ -193,8 +193,8 @@ class Splitter(DirectionalMixin, Entity):
 
     def __eq__(self, other) -> bool:
         return (
-            super().__eq__(other) and 
-            self.input_priority == other.input_priority and
-            self.output_priority == other.output_priority and
-            self.filter == other.filter
+            super().__eq__(other)
+            and self.input_priority == other.input_priority
+            and self.output_priority == other.output_priority
+            and self.filter == other.filter
         )

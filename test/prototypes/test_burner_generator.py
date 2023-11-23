@@ -1,31 +1,58 @@
 # test_burner_generator.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
+from draftsman.constants import ValidationMode
 from draftsman.entity import BurnerGenerator, burner_generators, Container
 from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import (
+    FuelCapacityWarning,
+    ItemLimitationWarning,
+    UnknownEntityWarning,
+    UnknownKeywordWarning,
+)
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class BurnerGeneratorTesting(unittest.TestCase):
+class TestBurnerGenerator:
     def test_contstructor_init(self):
         generator = BurnerGenerator("burner-generator")
 
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             BurnerGenerator(unused_keyword="whatever")
 
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             BurnerGenerator("this is not a burner generator")
+
+    def test_set_items(self):
+        generator = BurnerGenerator("burner-generator")
+        assert generator.allowed_fuel_items == {
+            "coal",
+            "solid-fuel",
+            "wood",
+            "nuclear-fuel",
+            "rocket-fuel",
+        }
+
+        generator.set_item_request("coal", 50)
+        assert generator.items == {"coal": 50}
+
+        with pytest.warns(ItemLimitationWarning):
+            generator.items = {"iron-plate": 1000}
+        assert generator.items == {"iron-plate": 1000}
+
+        with pytest.warns(FuelCapacityWarning):
+            generator.set_item_request("coal", 200)
+        assert generator.items == {"coal": 200, "iron-plate": 1000}
+
+        generator.validate_assignment = "minimum"
+        assert generator.validate_assignment == ValidationMode.MINIMUM
+
+        generator.items = {"coal": 200, "iron-plate": 1000}
+        assert generator.items == {"coal": 200, "iron-plate": 1000}
+
+        # Ensure that validating without a custom context doesn't break it
+        BurnerGenerator.Format.model_validate(generator._root)
 
     def test_mergable_with(self):
         generator1 = BurnerGenerator("burner-generator")

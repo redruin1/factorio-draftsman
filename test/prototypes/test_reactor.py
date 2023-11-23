@@ -1,33 +1,48 @@
 # test_reactor.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import Reactor, reactors, Container
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.warning import (
+    FuelLimitationWarning,
+    FuelCapacityWarning,
+    ItemLimitationWarning,
+    UnknownEntityWarning,
+    UnknownKeywordWarning,
+)
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class ReactorTesting(unittest.TestCase):
+class TestReactor:
     def test_constructor_init(self):
         reactor = Reactor("nuclear-reactor")
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Reactor("nuclear-reactor", unused_keyword="whatever")
-
-        # Errors
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             Reactor("not a reactor")
+
+    def test_set_fuel_request(self):
+        reactor = Reactor("nuclear-reactor")
+        assert reactor.allowed_fuel_items == {"uranium-fuel-cell"}
+        assert reactor.total_fuel_slots == 1
+
+        reactor.set_item_request("uranium-fuel-cell", 50)
+        assert reactor.items == {"uranium-fuel-cell": 50}
+
+        with pytest.warns(FuelCapacityWarning):
+            reactor.set_item_request("uranium-fuel-cell", 100)
+        assert reactor.items == {"uranium-fuel-cell": 100}
+
+        with pytest.warns(FuelLimitationWarning):
+            reactor.items = {"coal": 50}
+        assert reactor.items == {"coal": 50}
+
+        with pytest.warns(ItemLimitationWarning):
+            reactor.items = {"iron-plate": 100}
+        assert reactor.items == {"iron-plate": 100}
 
     def test_mergable_with(self):
         reactor1 = Reactor("nuclear-reactor")

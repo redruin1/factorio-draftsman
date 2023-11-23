@@ -1,35 +1,138 @@
 # test_offshore_pump.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
+from draftsman.constants import ValidationMode
 from draftsman.entity import OffshorePump, offshore_pumps, Container
-from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError
+from draftsman.signatures import Condition
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class OffshorePumpTesting(unittest.TestCase):
+class TestOffshorePump:
     def test_constructor_init(self):
         pump = OffshorePump()
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             OffshorePump(unused_keyword="whatever")
+        with pytest.warns(UnknownKeywordWarning):
+            OffshorePump(control_behavior={"unused_key": "something"})
+        with pytest.warns(UnknownEntityWarning):
+            OffshorePump("not a heat pipe")
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            OffshorePump("not a heat pipe")
         with pytest.raises(DataFormatError):
-            OffshorePump(control_behavior={"unused_key": "something"})
+            OffshorePump(control_behavior="incorrect")
+
+    def test_control_behavior(self):
+        pump = OffshorePump("offshore-pump")
+
+        with pytest.raises(DataFormatError):
+            pump.control_behavior = "incorrect"
+
+        pump.validate_assignment = "none"
+        assert pump.validate_assignment == ValidationMode.NONE
+
+        pump.control_behavior = "incorrect"
+        assert pump.control_behavior == "incorrect"
+        assert pump.to_dict() == {
+            "name": "offshore-pump",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": "incorrect",
+        }
+
+    def test_set_circuit_condition(self):
+        pump = OffshorePump("offshore-pump")
+
+        pump.set_circuit_condition("iron-ore", ">", 1000)
+        assert pump.control_behavior.circuit_condition == Condition(
+            **{"first_signal": "iron-ore", "comparator": ">", "constant": 1000}
+        )
+        assert pump.to_dict() == {
+            "name": "offshore-pump",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {
+                "circuit_condition": {
+                    "first_signal": {"name": "iron-ore", "type": "item"},
+                    "comparator": ">",
+                    "constant": 1000,
+                }
+            },
+        }
+
+        pump.set_circuit_condition("iron-ore", ">=", "copper-ore")
+        assert pump.control_behavior.circuit_condition == Condition(
+            **{
+                "first_signal": "iron-ore",
+                "comparator": ">=",
+                "second_signal": "copper-ore",
+            }
+        )
+        assert pump.to_dict() == {
+            "name": "offshore-pump",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {
+                "circuit_condition": {
+                    "first_signal": {"name": "iron-ore", "type": "item"},
+                    "comparator": "≥",
+                    "second_signal": {"name": "copper-ore", "type": "item"},
+                }
+            },
+        }
+
+        pump.remove_circuit_condition()
+        assert pump.control_behavior.circuit_condition == None
+
+    def test_connect_to_logistic_network(self):
+        pump = OffshorePump("offshore-pump")
+        assert pump.connect_to_logistic_network == False
+        assert pump.to_dict() == {
+            "name": "offshore-pump",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        pump.connect_to_logistic_network = True
+        assert pump.connect_to_logistic_network == True
+        assert pump.to_dict() == {
+            "name": "offshore-pump",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"connect_to_logistic_network": True},
+        }
+
+        pump.connect_to_logistic_network = None
+        assert pump.connect_to_logistic_network == None
+        assert pump.to_dict() == {
+            "name": "offshore-pump",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        with pytest.raises(DataFormatError):
+            pump.connect_to_logistic_network = "incorrect"
+        assert pump.connect_to_logistic_network == None
+
+        pump.validate_assignment = "none"
+        assert pump.validate_assignment == ValidationMode.NONE
+
+        pump.connect_to_logistic_network = "incorrect"
+        assert pump.connect_to_logistic_network == "incorrect"
+        assert pump.to_dict() == {
+            "name": "offshore-pump",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"connect_to_logistic_network": "incorrect"},
+        }
+
+    def test_set_logistics_condition(self):
+        pump = OffshorePump("offshore-pump")
+
+        pump.set_logistic_condition("iron-ore", ">", 1000)
+        assert pump.control_behavior.logistic_condition == Condition(
+            **{"first_signal": "iron-ore", "comparator": ">", "constant": 1000}
+        )
+
+        pump.remove_logistic_condition()
+        assert pump.control_behavior.logistic_condition == None
 
     def test_mergable_with(self):
         pump1 = OffshorePump("offshore-pump")

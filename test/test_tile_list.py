@@ -1,23 +1,15 @@
 # test_tilelist.py
 
-from __future__ import absolute_import, unicode_literals
-
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.tile import Tile
 from draftsman.classes.tile_list import TileList
-from draftsman.error import UnreasonablySizedBlueprintError
+from draftsman.error import DataFormatError, UnreasonablySizedBlueprintError
 from draftsman.warning import OverlappingObjectsWarning
 
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class TileListTesting(unittest.TestCase):
+class TestTileList:
     def test_constructor(self):
         # test load from blueprint string
         bp_string = "0eNp9j8EOgjAQRP9lzuUAVoH+ivEAuNGNsG1oNRLSf7fFizHGZC67k3m7s6If7+RmlgCzggcrHua4wvNFujHvwuIIBhxogoJ0U558sEJFP/NwQ1RgOdMTpownhcAjvRnOeg5sJVOSW7U7hQWm0GX8ArkuXBPnR0T/j6R722Pmo4fCg2a/Qaqm1HVb1ftDkm5ifAFGbk0H"
@@ -27,7 +19,7 @@ class TileListTesting(unittest.TestCase):
             {"name": "stone-path", "position": {"x": 294, "y": -41}},
         ]
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             blueprint.setup(tiles=["not", "a", "tile"])
 
     def test_insert(self):

@@ -1,60 +1,84 @@
 # filters.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.data import items, entities
 from draftsman.error import InvalidItemError, DataFormatError
-from draftsman import signatures
+from draftsman.signatures import DraftsmanBaseModel, FilterEntry, ItemName, int64
 
-from schema import SchemaError
-import six
+from pydantic import Field, ValidationError, ValidationInfo, field_validator
+from typing import Any, Optional
 
 
-class FiltersMixin(object):
+class FiltersMixin:
     """
     Allows the entity to specify item filters.
     """
 
-    _exports = {
-        "filters": {
-            "format": "[{'index': int, 'name': item_name_1}, ...]",
-            "description": "Any item filters that this entity has",
-            "required": lambda x: x is not None and len(x) != 0,
-        }
-    }
+    class Format(DraftsmanBaseModel):
+        filters: Optional[list[FilterEntry]] = Field(
+            [],
+            description="""
+            Any item filters that this inserter or loader has.
+            """,
+        )
 
-    def __init__(self, name, similar_entities, **kwargs):
-        # type: (str, list[str], **dict) -> None
-        super(FiltersMixin, self).__init__(name, similar_entities, **kwargs)
+        @field_validator("filters", mode="before")
+        @classmethod
+        def normalize_validate(cls, value: Any):
+            if isinstance(value, (list, tuple)):
+                result = []
+                for i, entry in enumerate(value):
+                    if isinstance(entry, str):
+                        result.append({"index": i + 1, "name": entry})
+                    else:
+                        result.append(entry)
+                return result
+            else:
+                return value
 
-        self._filter_count = entities.raw[self.name].get("filter_count", 0)
+    def __init__(self, name: str, similar_entities: list[str], **kwargs):
+        self._root: __class__.Format
 
-        self.filters = None
+        super().__init__(name, similar_entities, **kwargs)
 
-        if "filters" in kwargs:
-            self.set_item_filters(kwargs["filters"])
-            self.unused_args.pop("filters")
-        # self._add_export("filters", lambda x: x is not None and len(x) != 0)
+        self.filters = kwargs.get("filters", None)
 
     # =========================================================================
 
     @property
-    def filter_count(self):
-        # type: () -> int
+    def filter_count(self) -> Optional[int]:
         """
         The number of filter slots that this Entity has in total. Equivalent to
-        the ``"filter_count"`` key in Factorio's ``data.raw``. Not exported;
-        read only.
+        the ``"filter_count"`` key in Factorio's ``data.raw``. Returns ``None``
+        if this entity's name is not recognized by Draftsman. Not exported; read
+        only.
 
         :type: ``int``
         """
-        return self._filter_count
+        return entities.raw.get(self.name, {"filter_count": None}).get(
+            "filter_count", 0
+        )
+
+    @property
+    def filters(self) -> Optional[list[FilterEntry]]:
+        """
+        TODO
+        """
+        return self._root.filters
+
+    @filters.setter
+    def filters(self, value: Optional[list[FilterEntry]]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "filters", value
+            )
+            self._root.filters = result
+        else:
+            self._root.filters = value
 
     # =========================================================================
 
-    def set_item_filter(self, index, item):
-        # type: (int, str) -> None
+    def set_item_filter(self, index: int64, item: ItemName):
         """
         Sets one of the item filters of the Entity. `index` in this function is
         in 0-based notation.
@@ -66,36 +90,35 @@ class FiltersMixin(object):
             to ``filter_count``.
         :exception InvalidItemError: If ``item`` is not a valid item name.
         """
-        if self.filters is None:
-            self.filters = []
-
-        # Check if index is ouside the range of the max filter slots
-        if index >= self.filter_count:
-            raise IndexError(
-                "Index {} exceeds the maximum number of filter slots for this "
-                "entity ({})".format(index, self.filter_count)
-            )
-
         if item is not None:
-            # Make sure item string is unicode
-            item = six.text_type(item)
-            if item not in items.raw:
-                raise InvalidItemError("'{}'".format(item))
+            try:
+                new_entry = FilterEntry(index=index, name=item)
+                new_entry.index += 1
+            except ValidationError as e:
+                raise DataFormatError(e) from None
 
-        for i in range(len(self.filters)):
-            filter = self.filters[i]
+        new_filters = self.filters if self.filters is not None else []
+
+        found_index = None
+        for i in range(len(new_filters)):
+            filter = new_filters[i]
             if filter["index"] == index + 1:
                 if item is None:
-                    del self.filters[i]
+                    del new_filters[i]
                 else:
                     filter["name"] = item
-                return
+                found_index = i
+                break
 
-        # Otherwise its unique; add to list
-        self.filters.append({"index": index + 1, "name": item})
+        if found_index is None:
+            new_filters.append(new_entry)
 
-    def set_item_filters(self, filters):
-        # type: (list) -> None
+        result = attempt_and_reissue(
+            self, __class__.Format, self._root, "filters", new_filters
+        )
+        self.filters = result
+
+    def set_item_filters(self, *filters: Optional[list[FilterEntry]]):
         """
         Sets all of the item filters of the Entity.
 
@@ -119,37 +142,23 @@ class FiltersMixin(object):
         :exception InvalidItemError: If the item name of one of the entries is
             not valid.
         """
-        if filters is None:
-            self.filters = None
-            return
+        # Passing None into the function wraps it in a tuple, which we undo here
+        if len(filters) == 1 and filters[0] is None:
+            filters = None
 
-        # Normalize to standard internal format
-        try:
-            filters = signatures.FILTERS.validate(filters)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
-
-        # Make sure the items are items and indices are within standards
-        for item in filters:
-            if item["index"] > self.filter_count:
-                raise IndexError(
-                    "Index {} exceeds the maximum number of filter slots for this "
-                    "entity ({})".format(item["index"], self.filter_count)
-                )
-            if item["name"] not in items.raw:
-                raise InvalidItemError("'{}'".format(item))
-
-        for item in filters:
-            self.set_item_filter(item["index"] - 1, item["name"])
-
-    def merge(self, other):
-        super(FiltersMixin, self).merge(other)
-
-        self.filters = []
-        for item in other.filters:
-            self.set_item_filter(item["index"] - 1, item["name"])
+        result = attempt_and_reissue(
+            self, type(self).Format, self._root, "filters", filters
+        )
+        self._root.filters = result
 
     # =========================================================================
 
-    def __eq__(self, other) -> bool:
+    def merge(self, other: "FiltersMixin"):
+        super().merge(other)
+
+        self.filters = other.filters
+
+    # =========================================================================
+
+    def __eq__(self, other: "FiltersMixin") -> bool:
         return super().__eq__(other) and self.filters == other.filters

@@ -1,5 +1,4 @@
 # test_association.py
-# -*- encoding: utf-8 -*-
 
 from draftsman.classes.association import Association
 from draftsman.classes.blueprint import Blueprint
@@ -10,13 +9,8 @@ import sys
 import pytest
 import weakref
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class AssociationTesting(unittest.TestCase):
+class TestAssociation:
     def test_constructor(self):
         test = Container("wooden-chest")
         Association(test)  # No fail
@@ -56,8 +50,14 @@ class AssociationTesting(unittest.TestCase):
         assert weakref.getweakrefcount(blueprint.entities[0]) == 2
         assert weakref.getweakrefcount(blueprint.entities[1]) == 2
 
+        print(blueprint.entities[0])
+        print(weakref.getweakrefs(blueprint.entities[0]))
+        print(blueprint.entities[1])
+        print(weakref.getweakrefs(blueprint.entities[1]))
+
         del blueprint.entities[1]
 
+        print(weakref.getweakrefs(blueprint.entities[0]))
         assert weakref.getweakrefcount(blueprint.entities[0]) == 1
 
         with pytest.raises(InvalidAssociationError):

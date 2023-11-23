@@ -1,33 +1,24 @@
 # test_loader.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import Loader, loaders, Container
-from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.signatures import FilterEntry
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class LoaderTesting(unittest.TestCase):
+class TestLoader:
     def test_constructor_init(self):
         # loader = Loader()
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Loader("loader", unused_keyword=10)
+        with pytest.warns(UnknownEntityWarning):
+            Loader("this is not a loader")
 
         # Errors
-        with pytest.raises(InvalidEntityError):
-            Loader("this is not a loader")
 
     def test_mergable_with(self):
         loader1 = Loader()
@@ -56,7 +47,7 @@ class LoaderTesting(unittest.TestCase):
         loader1.merge(loader2)
         del loader2
 
-        assert loader1.filters == [{"name": "coal", "index": 1}]
+        assert loader1.filters == [FilterEntry(**{"name": "coal", "index": 1})]
         assert loader1.io_type == "input"
         assert loader1.tags == {"some": "stuff"}
 

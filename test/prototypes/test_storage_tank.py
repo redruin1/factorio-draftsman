@@ -1,24 +1,15 @@
 # test_storagetank.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.constants import Direction
 from draftsman.entity import StorageTank, storage_tanks, Container
 from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import DraftsmanWarning, UnknownEntityWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class StorageTankTesting(unittest.TestCase):
+class TestStorageTank:
     def test_constructor_init(self):
         storage_tank = StorageTank(
             "storage-tank",
@@ -62,11 +53,10 @@ class StorageTankTesting(unittest.TestCase):
         with pytest.warns(DraftsmanWarning):
             StorageTank(position=[0, 0], direction=Direction.WEST, invalid_keyword=5)
 
-        # Errors
-        # Raises InvalidEntityID when not in containers
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             StorageTank("this is not a storage tank")
 
+        # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             StorageTank("storage-tank", id=25)
@@ -74,11 +64,10 @@ class StorageTankTesting(unittest.TestCase):
         with pytest.raises(TypeError):
             StorageTank("storage-tank", position=TypeError)
 
-        with pytest.raises(ValueError):
-            StorageTank("storage-tank", direction="incorrect")
-
         with pytest.raises(DataFormatError):
-            StorageTank("storage-tank", connections={"this is": ["very", "wrong"]})
+            StorageTank("storage-tank", direction="incorrect")
+        with pytest.raises(DataFormatError):
+            StorageTank("storage-tank", connections=["very", "wrong"])
 
     def test_power_and_circuit_flags(self):
         for storage_tank_name in storage_tanks:

@@ -3,6 +3,8 @@
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.schedule import Schedule, WaitCondition, WaitConditions
 from draftsman.constants import WaitConditionType, WaitConditionCompareType
+from draftsman.error import DataFormatError
+from draftsman.signatures import Condition
 
 import pytest
 import re
@@ -11,29 +13,43 @@ import re
 class TestWaitCondition:
     def test_constructor(self):
         # Time passed
-        w = WaitCondition(WaitConditionType.TIME_PASSED)
+        w = WaitCondition("time")
         assert w.type == "time"
         assert w.compare_type == "or"
         assert w.ticks == 1800
         assert w.condition == None
 
         # Inactivity
-        w = WaitCondition(
-            WaitConditionType.INACTIVITY, compare_type=WaitConditionCompareType.AND
-        )
+        w = WaitCondition("inactivity", compare_type="and")
         assert w.type == "inactivity"
         assert w.compare_type == "and"
         assert w.ticks == 300
         assert w.condition == None
 
+        w = WaitCondition("circuit")
+        assert w.type == "circuit"
+        assert w.compare_type == "or"
+        assert w.ticks == None
+        assert w.condition == Condition()
+
+        w = WaitCondition("incorrect", compare_type="incorrect", validate="none")
+        assert w.type == "incorrect"
+        assert w.compare_type == "incorrect"
+        assert w.ticks == None
+        assert w.condition == None
+        assert w.to_dict() == {"type": "incorrect", "compare_type": "incorrect"}
+
+        with pytest.raises(DataFormatError):
+            w.validate().reissue_all()
+
     def test_to_dict(self):
         w = WaitCondition(
-            WaitConditionType.CIRCUIT_CONDITION,
+            "circuit",
             condition=("signal-A", "!=", "signal-B"),
         )
         assert w.to_dict() == {
             "type": "circuit",
-            "compare_type": "or",
+            # "compare_type": "or", # Default
             "condition": {
                 "first_signal": {"name": "signal-A", "type": "virtual"},
                 "comparator": "≠",
@@ -41,56 +57,109 @@ class TestWaitCondition:
             },
         }
 
-        w = WaitCondition(
-            WaitConditionType.CIRCUIT_CONDITION, condition=("signal-A", "<", 100)
-        )
+        w = WaitCondition("circuit", condition=("signal-A", "<", 100))
         assert w.to_dict() == {
             "type": "circuit",
-            "compare_type": "or",
+            # "compare_type": "or", # Default
             "condition": {
                 "first_signal": {"name": "signal-A", "type": "virtual"},
-                "comparator": "<",
+                # "comparator": "<", # Default
                 "constant": 100,
             },
         }
 
+    def test_set_type(self):
+        full_cargo = WaitCondition("full")
+
+        full_cargo.type = WaitConditionType.EMPTY_CARGO
+        assert full_cargo.type == WaitConditionType.EMPTY_CARGO
+
+        assert full_cargo == WaitCondition("empty")
+
+        with pytest.raises(DataFormatError):
+            full_cargo.type = "string, but not one of valid literals"
+
+    def test_set_ticks(self):
+        time_passed = WaitCondition("time")
+        time_passed.ticks = 1000
+        assert time_passed.ticks == 1000
+
+        # You can set ticks on any WaitCondition object
+        # TODO: maybe issue a warning if this is done?
+        full_cargo = WaitCondition("full")
+        full_cargo.ticks = 100
+        assert full_cargo.ticks == 100
+
+        with pytest.raises(DataFormatError):
+            full_cargo.ticks = "incorrect"
+
+    def test_set_condition(self):
+        circuit_condition = WaitCondition("circuit")
+        circuit_condition.condition = {
+            "first_signal": "signal-A",
+            "comparator": ">",
+            "constant": 1000,
+        }
+        assert circuit_condition.condition == Condition(
+            **{"first_signal": "signal-A", "comparator": ">", "constant": 1000}
+        )
+
+        # You can set condition on any WaitCondition object
+        # TODO: maybe issue a warning if this is done?
+        full_cargo = WaitCondition("full")
+        full_cargo.condition = {
+            "first_signal": "signal-A",
+            "comparator": "==",
+            "second_signal": "signal-B",
+        }
+        assert full_cargo.condition == Condition(
+            **{
+                "first_signal": "signal-A",
+                "comparator": "==",
+                "second_signal": "signal-B",
+            }
+        )
+
+        with pytest.raises(DataFormatError):
+            full_cargo.condition = "incorrect"
+
     def test_bitwise_and(self):
         # WaitCondition and WaitCondition
-        full_cargo = WaitCondition(WaitConditionType.FULL_CARGO)
-        inactivity = WaitCondition(WaitConditionType.INACTIVITY)
+        full_cargo = WaitCondition("full")
+        inactivity = WaitCondition("inactivity")
 
         conditions = full_cargo & inactivity
         assert isinstance(conditions, WaitConditions)
         assert len(conditions) == 2
         assert conditions == WaitConditions(
             [
-                WaitCondition(WaitConditionType.FULL_CARGO),
-                WaitCondition(WaitConditionType.INACTIVITY, compare_type="and"),
+                WaitCondition("full"),
+                WaitCondition("inactivity", compare_type="and"),
             ]
         )
 
         # WaitCondition and WaitConditions
-        signal_sent = WaitCondition(
-            WaitConditionType.CIRCUIT_CONDITION, condition=("signal-A", "==", 100)
-        )
+        signal_sent = WaitCondition("circuit", condition=("signal-A", "==", 100))
         sum1 = signal_sent & conditions
         assert isinstance(sum1, WaitConditions)
         assert len(sum1) == 3
         assert sum1 == WaitConditions(
             [
                 WaitCondition(
-                    WaitConditionType.CIRCUIT_CONDITION,
+                    "circuit",
                     condition=("signal-A", "==", 100),
                 ),
-                WaitCondition(WaitConditionType.FULL_CARGO, compare_type="and"),
-                WaitCondition(WaitConditionType.INACTIVITY, compare_type="and"),
+                WaitCondition("full", compare_type="and"),
+                WaitCondition("inactivity", compare_type="and"),
             ]
         )
 
         # WaitCondition and error type
         with pytest.raises(
-            ValueError,
-            match="Can only perform this operation on <WaitCondition> or <WaitConditions> objects",
+            TypeError,
+            match=re.escape(
+                "unsupported operand type(s) for &: 'WaitCondition' and 'Schedule'"
+            ),
         ):
             signal_sent & Schedule()
 
@@ -100,10 +169,10 @@ class TestWaitCondition:
         assert len(sum2) == 3
         assert sum2 == WaitConditions(
             [
-                WaitCondition(WaitConditionType.FULL_CARGO),
-                WaitCondition(WaitConditionType.INACTIVITY, compare_type="and"),
+                WaitCondition("full"),
+                WaitCondition("inactivity", compare_type="and"),
                 WaitCondition(
-                    WaitConditionType.CIRCUIT_CONDITION,
+                    "circuit",
                     compare_type="and",
                     condition=("signal-A", "==", 100),
                 ),
@@ -112,48 +181,48 @@ class TestWaitCondition:
 
         # Error type and WaitCondition
         with pytest.raises(
-            ValueError,
-            match="Can only perform this operation on <WaitCondition> or <WaitConditions> objects",
+            TypeError,
+            match=re.escape(
+                "unsupported operand type(s) for &: 'Schedule' and 'WaitCondition'"
+            ),
         ):
             Schedule() & signal_sent
 
     def test_bitwise_or(self):
         # WaitCondition and WaitCondition
-        full_cargo = WaitCondition(WaitConditionType.FULL_CARGO)
-        inactivity = WaitCondition(WaitConditionType.INACTIVITY)
+        full_cargo = WaitCondition("full")
+        inactivity = WaitCondition("inactivity")
 
         conditions = full_cargo | inactivity
         assert isinstance(conditions, WaitConditions)
         assert len(conditions) == 2
         assert conditions == WaitConditions(
             [
-                WaitCondition(WaitConditionType.FULL_CARGO),
-                WaitCondition(WaitConditionType.INACTIVITY),
+                WaitCondition("full"),
+                WaitCondition("inactivity"),
             ]
         )
 
         # WaitCondition and WaitConditions
-        signal_sent = WaitCondition(
-            WaitConditionType.CIRCUIT_CONDITION, condition=("signal-A", "==", 100)
-        )
+        signal_sent = WaitCondition("circuit", condition=("signal-A", "==", 100))
         sum1 = signal_sent | conditions
         assert isinstance(sum1, WaitConditions)
         assert len(sum1) == 3
         assert sum1 == WaitConditions(
             [
                 WaitCondition(
-                    WaitConditionType.CIRCUIT_CONDITION,
+                    "circuit",
                     condition=("signal-A", "==", 100),
                 ),
-                WaitCondition(WaitConditionType.FULL_CARGO),
-                WaitCondition(WaitConditionType.INACTIVITY),
+                WaitCondition("full"),
+                WaitCondition("inactivity"),
             ]
         )
 
-        # WaitCondition and error type
+        # Unsupported operation
         with pytest.raises(
-            ValueError,
-            match="Can only perform this operation on <WaitCondition> or <WaitConditions> objects",
+            TypeError,
+            match="unsupported operand type(s) for |: 'WaitCondition' and 'Schedule'",
         ):
             signal_sent | Schedule()
 
@@ -163,10 +232,10 @@ class TestWaitCondition:
         assert len(sum2) == 3
         assert sum2 == WaitConditions(
             [
-                WaitCondition(WaitConditionType.FULL_CARGO),
-                WaitCondition(WaitConditionType.INACTIVITY),
+                WaitCondition("full"),
+                WaitCondition("inactivity"),
                 WaitCondition(
-                    WaitConditionType.CIRCUIT_CONDITION,
+                    "circuit",
                     condition=("signal-A", "==", 100),
                 ),
             ]
@@ -174,25 +243,26 @@ class TestWaitCondition:
 
         # Error type and WaitCondition
         with pytest.raises(
-            ValueError,
-            match="Can only perform this operation on <WaitCondition> or <WaitConditions> objects",
+            TypeError,
+            match="unsupported operand type(s) for |: 'Schedule' and 'WaitCondition'",
         ):
             Schedule() | signal_sent
 
     def test_repr(self):
-        w = WaitCondition(WaitConditionType.PASSENGER_PRESENT)
-        assert repr(w) == "<WaitCondition>{type='passenger_present', compare_type='or'}"
-        w = WaitCondition(WaitConditionType.INACTIVITY)
+        w = WaitCondition("passenger_present")
         assert (
             repr(w)
-            == "<WaitCondition>{type='inactivity', compare_type='or', ticks=300}"
+            == "<WaitCondition>{type=<WaitConditionType.PASSENGER_PRESENT: 'passenger_present'> compare_type=<WaitConditionCompareType.OR: 'or'> ticks=None condition=None}"
         )
-        w = WaitCondition(
-            WaitConditionType.ITEM_COUNT, condition=("signal-A", "=", "signal-B")
-        )
+        w = WaitCondition("inactivity")
         assert (
             repr(w)
-            == "<WaitCondition>{type='item_count', compare_type='or', condition=('signal-A', '=', 'signal-B')}"
+            == "<WaitCondition>{type=<WaitConditionType.INACTIVITY: 'inactivity'> compare_type=<WaitConditionCompareType.OR: 'or'> ticks=300 condition=None}"
+        )
+        w = WaitCondition("item_count", condition=("signal-A", "=", "signal-B"))
+        assert (
+            repr(w)
+            == "<WaitCondition>{type=<WaitConditionType.ITEM_COUNT: 'item_count'> compare_type=<WaitConditionCompareType.OR: 'or'> ticks=None condition=Condition(first_signal=SignalID(name='signal-A', type='virtual'), comparator='=', constant=0, second_signal=SignalID(name='signal-B', type='virtual'))}"
         )
 
 
@@ -206,21 +276,30 @@ class TestWaitConditions:
     def test_len(self):
         pass
 
+    def test_getitem(self):
+        a = WaitConditions(
+            [WaitCondition("full"), WaitCondition("inactivity", "and", ticks=1000)]
+        )
+
+        assert a[0].type == "full"
+        assert a[1].type == "inactivity"
+        assert a[1].ticks == 1000
+
     def test_equals(self):
         # Not equivalent types
         a = WaitConditions()
         assert a != Schedule()
 
         # Mismatched length
-        b = WaitConditions([WaitCondition(WaitConditionType.INACTIVITY)])
+        b = WaitConditions([WaitCondition("inactivity")])
         assert a != b
 
         # Component mismatch
-        a = WaitConditions([WaitCondition(WaitConditionType.TIME_PASSED)])
+        a = WaitConditions([WaitCondition("time")])
         assert a != b
 
         # True equality
-        a = WaitConditions([WaitCondition(WaitConditionType.INACTIVITY)])
+        a = WaitConditions([WaitCondition("inactivity")])
         assert a == b
 
     def test_repr(self):
@@ -241,8 +320,18 @@ class TestSchedule:
         )
         assert s.locomotives == []
         assert s.stops == [
-            {"station": "some name", "wait_conditions": WaitConditions([])}
+            Schedule.Format.Stop(
+                **{"station": "some name", "wait_conditions": WaitConditions([])}
+            )
         ]
+
+        with pytest.raises(DataFormatError):
+            s = Schedule(locomotives="incorrect")
+
+        s = Schedule(locomotives="incorrect", validate="none")
+        assert s.to_dict() == {
+            "locomotives": "incorrect",
+        }
 
     def test_locomotives(self):
         pass  # TODO
@@ -295,45 +384,53 @@ class TestSchedule:
         s.insert_stop(0, "Station A")
         assert len(s.stops) == 1
         assert s.stops == [
-            {"station": "Station A", "wait_conditions": WaitConditions()}
+            Schedule.Format.Stop(
+                **{"station": "Station A", "wait_conditions": WaitConditions()}
+            )
         ]
 
-        full_cargo = WaitCondition(WaitConditionType.FULL_CARGO)
-        inactivity = WaitCondition(WaitConditionType.INACTIVITY)
+        full_cargo = WaitCondition("full")
+        inactivity = WaitCondition("inactivity")
 
         # WaitCondition object
         s.insert_stop(1, "Station B", full_cargo)
         assert len(s.stops) == 2
         assert s.stops == [
-            {"station": "Station A", "wait_conditions": WaitConditions()},
-            {
-                "station": "Station B",
-                "wait_conditions": WaitConditions(
-                    [WaitCondition(WaitConditionType.FULL_CARGO)]
-                ),
-            },
+            Schedule.Format.Stop(
+                **{"station": "Station A", "wait_conditions": WaitConditions()}
+            ),
+            Schedule.Format.Stop(
+                **{
+                    "station": "Station B",
+                    "wait_conditions": WaitConditions([WaitCondition("full")]),
+                }
+            ),
         ]
 
         # WaitConditions object
         s.insert_stop(2, "Station C", full_cargo & inactivity)
         assert len(s.stops) == 3
         assert s.stops == [
-            {"station": "Station A", "wait_conditions": WaitConditions()},
-            {
-                "station": "Station B",
-                "wait_conditions": WaitConditions(
-                    [WaitCondition(WaitConditionType.FULL_CARGO)]
-                ),
-            },
-            {
-                "station": "Station C",
-                "wait_conditions": WaitConditions(
-                    [
-                        WaitCondition(WaitConditionType.FULL_CARGO),
-                        WaitCondition(WaitConditionType.INACTIVITY, compare_type="and"),
-                    ]
-                ),
-            },
+            Schedule.Format.Stop(
+                **{"station": "Station A", "wait_conditions": WaitConditions()}
+            ),
+            Schedule.Format.Stop(
+                **{
+                    "station": "Station B",
+                    "wait_conditions": WaitConditions([WaitCondition("full")]),
+                }
+            ),
+            Schedule.Format.Stop(
+                **{
+                    "station": "Station C",
+                    "wait_conditions": WaitConditions(
+                        [
+                            WaitCondition("full"),
+                            WaitCondition("inactivity", compare_type="and"),
+                        ]
+                    ),
+                }
+            ),
         ]
 
     def test_remove_stop(self):
@@ -347,30 +444,52 @@ class TestSchedule:
         s.append_stop("Station A", wait_conditions=inactivity)
         assert len(s.stops) == 3
         assert s.stops == [
-            {"station": "Station A", "wait_conditions": WaitConditions()},
-            {"station": "Station A", "wait_conditions": WaitConditions([full_cargo])},
-            {"station": "Station A", "wait_conditions": WaitConditions([inactivity])},
+            Schedule.Format.Stop(
+                **{"station": "Station A", "wait_conditions": WaitConditions()}
+            ),
+            Schedule.Format.Stop(
+                **{
+                    "station": "Station A",
+                    "wait_conditions": WaitConditions([full_cargo]),
+                }
+            ),
+            Schedule.Format.Stop(
+                **{
+                    "station": "Station A",
+                    "wait_conditions": WaitConditions([inactivity]),
+                }
+            ),
         ]
 
         # Remove with no wait_conditions
         s.remove_stop("Station A")
         assert len(s.stops) == 2
         assert s.stops == [
-            {"station": "Station A", "wait_conditions": WaitConditions([full_cargo])},
-            {"station": "Station A", "wait_conditions": WaitConditions([inactivity])},
+            Schedule.Format.Stop(
+                **{
+                    "station": "Station A",
+                    "wait_conditions": WaitConditions([full_cargo]),
+                }
+            ),
+            Schedule.Format.Stop(
+                **{
+                    "station": "Station A",
+                    "wait_conditions": WaitConditions([inactivity]),
+                }
+            ),
         ]
         s.remove_stop("Station A")
         assert s.stops == [
-            {"station": "Station A", "wait_conditions": WaitConditions([inactivity])}
+            Schedule.Format.Stop(
+                **{
+                    "station": "Station A",
+                    "wait_conditions": WaitConditions([inactivity]),
+                }
+            )
         ]
 
         # Remove stop with wait_conditions that doesn't exist
-        with pytest.raises(
-            ValueError,
-            match=re.escape(
-                "No station with name 'Station A' and conditions '<WaitConditions>[<WaitCondition>{type='full', compare_type='or'}]' found in schedule"
-            ),
-        ):
+        with pytest.raises(ValueError):
             s.remove_stop("Station A", wait_conditions=full_cargo)
 
         # Remove stop that doesn't exist
@@ -380,6 +499,7 @@ class TestSchedule:
             s.remove_stop("Station B")
 
         # Remove with wait conditions
+        print(s.stops)
         s.remove_stop("Station A", wait_conditions=inactivity)
         assert len(s.stops) == 0
         assert s.stops == []
@@ -390,9 +510,6 @@ class TestSchedule:
         ):
             s.remove_stop("Station A")
 
-    def test_to_dict(self):
-        pass  # TODO
-
     def test_repr(self):
         s = Schedule()
-        assert repr(s) == "<Schedule>{'locomotives': [], 'schedule': []}"
+        assert repr(s) == "<Schedule>{}"

@@ -1,16 +1,14 @@
 # underground_belt.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import IOTypeMixin, DirectionalMixin
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
 
 from draftsman.data.entities import underground_belts
-from draftsman.data import entities
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Union
 
 
 class UndergroundBelt(IOTypeMixin, DirectionalMixin, Entity):
@@ -18,26 +16,49 @@ class UndergroundBelt(IOTypeMixin, DirectionalMixin, Entity):
     A transport belt that transfers items underneath other entities.
     """
 
-    # fmt: off
-    _exports = {
-        **Entity._exports,
-        **DirectionalMixin._exports,
-        **IOTypeMixin._exports
-    }
-    # fmt: on
+    class Format(IOTypeMixin.Format, DirectionalMixin.Format, Entity.Format):
 
-    def __init__(self, name=underground_belts[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(UndergroundBelt, self).__init__(name, underground_belts, **kwargs)
+        model_config = ConfigDict(title="UndergroundBelt")
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+    def __init__(
+        self,
+        name: str = underground_belts[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        io_type: Literal["input", "output"] = "input",
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        Construct a new underground belt.
 
-        del self.unused_args
+        TODO
+        """
+        # Convert "type" (used by Factorio) into "io_type" (used by Draftsman)
+        if "type" in kwargs and io_type == "input":
+            io_type = kwargs["type"]
+
+        super().__init__(
+            name,
+            underground_belts,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            io_type=io_type,
+            tags=tags,
+            **kwargs
+        )
+
+        self.validate_assignment = validate_assignment
+
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

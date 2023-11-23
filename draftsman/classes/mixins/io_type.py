@@ -1,23 +1,16 @@
 # io_type.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
+# TODO: make this an enum?
 
-from draftsman.error import DataFormatError
-from draftsman import signatures
+from draftsman.classes.exportable import attempt_and_reissue
 
-from schema import SchemaError
-import six
+from pydantic import BaseModel, Field
+from typing import Any, Literal, Optional
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
-
-try:
-    from typing import Literal
-except ImportError:  # pragma: no coverage
-    from typing_extensions import Literal
 
 
 class IOTypeMixin(object):
@@ -25,40 +18,33 @@ class IOTypeMixin(object):
     Gives an entity a Input/Output type.
     """
 
-    _exports = {
-        "type": {
-            "format": "'input' or 'output'",
-            "description": "The IO type of the entity",
-            "required": lambda x: x is not None and x != "input",
-            "transform": lambda self, _: getattr(self, "io_type"),
-        }
-    }
+    class Format(BaseModel):
+        io_type: Optional[Literal["input", "output"]] = Field(
+            "input",
+            alias="type",
+            description="""
+            The input/output type of the entity. Used on Loaders and Underground
+            Belts to indicate what direction this entity is working.
+            """,
+        )
 
-    def __init__(self, name, similar_entities, **kwargs):
-        # type: (str, list[str], **dict) -> None
-        super(IOTypeMixin, self).__init__(name, similar_entities, **kwargs)
+    def __init__(self, name: str, similar_entities: list[str], **kwargs):
+        self._root: __class__.Format
+
+        super().__init__(name, similar_entities, **kwargs)
 
         self.io_type = "input"  # Default
         # Import dict (internal) format
         if "type" in kwargs:
             self.io_type = kwargs["type"]
-            self.unused_args.pop("type")
         # More user-friendly format in line with attribute name
-        elif "io_type" in kwargs:
+        else:  # "io_type" in kwargs:
             self.io_type = kwargs["io_type"]
-            self.unused_args.pop("io_type")
-
-        # self._add_export(
-        #     "io_type",
-        #     lambda x: x is not None and x != "input",
-        #     lambda k, v: ("type", v),
-        # )
 
     # =========================================================================
 
     @property
-    def io_type(self):
-        # type: () -> Literal["input", "output", None]
+    def io_type(self) -> Literal["input", "output", None]:
         """
         Whether this entity is set to recieve or send items. Used to
         differentiate between input and output underground belts, as well as
@@ -73,26 +59,22 @@ class IOTypeMixin(object):
         :exception ValueError: If set to anything other than ``"input"`` or
             ``"output"``.
         """
-        return self._io_type
+        return self._root.io_type
 
     @io_type.setter
-    def io_type(self, value):
-        # type: (Literal["input", "output", None]) -> None
-        try:
-            value = signatures.STRING_OR_NONE.validate(value)
-        except SchemaError as e:
-            six.raise_from(TypeError(e), None)
-
-        if value in {"input", "output", None}:
-            self._io_type = value
+    def io_type(self, value: Literal["input", "output", None]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "io_type", value
+            )
+            self._root.io_type = result
         else:
-            raise ValueError("'io_type' must be 'input', 'output' or None")
+            self._root.io_type = value
 
     # =========================================================================
 
-    def merge(self, other):
-        # type: (Entity) -> None
-        super(IOTypeMixin, self).merge(other)
+    def merge(self, other: "IOTypeMixin"):
+        super().merge(other)
 
         self.io_type = other.io_type
 

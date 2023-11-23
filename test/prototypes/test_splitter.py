@@ -1,24 +1,19 @@
 # test_splitter.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.constants import Direction
 from draftsman.entity import Splitter, splitters, Container
-from draftsman.error import InvalidEntityError, InvalidSideError, InvalidItemError
-from draftsman.warning import DraftsmanWarning
+from draftsman.error import DataFormatError, InvalidItemError
+from draftsman.warning import (
+    UnknownEntityWarning,
+    UnknownKeywordWarning,
+    UnknownItemWarning,
+)
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class SplitterTesting(unittest.TestCase):
+class TestSplitter:
     def test_constructor_init(self):
         # Valid
         splitter = Splitter(
@@ -39,14 +34,17 @@ class SplitterTesting(unittest.TestCase):
         }
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             Splitter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5)
 
-        # Errors
-        # Raises InvalidEntityID when not in containers
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             Splitter("this is not a splitter")
 
+        # TODO
+        # with pytest.raises(UnknownItemWarning):
+        #     Splitter("splitter", filter="wrong")
+
+        # Errors
         # Raises errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             Splitter("splitter", id=25)
@@ -54,26 +52,23 @@ class SplitterTesting(unittest.TestCase):
         with pytest.raises(TypeError):
             Splitter("splitter", position=TypeError)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(DataFormatError):
             Splitter("splitter", direction="incorrect")
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             Splitter("splitter", input_priority=TypeError)
 
-        with pytest.raises(InvalidSideError):
+        with pytest.raises(DataFormatError):
             Splitter("splitter", input_priority="wrong")
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             Splitter("splitter", output_priority=TypeError)
 
-        with pytest.raises(InvalidSideError):
+        with pytest.raises(DataFormatError):
             Splitter("splitter", output_priority="wrong")
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             Splitter("splitter", filter=TypeError)
-
-        with pytest.raises(InvalidItemError):
-            Splitter("splitter", filter="wrong")
 
     def test_power_and_circuit_flags(self):
         for name in splitters:

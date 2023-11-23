@@ -1,33 +1,32 @@
 # test_underground_pipe.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-from draftsman.entity import UndergroundPipe, underground_pipes, Container
+from draftsman.entity import UndergroundPipe, Container, underground_pipes
 from draftsman.error import InvalidEntityError
-from draftsman.warning import DraftsmanWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class UndergroundPipeTesting(unittest.TestCase):
+class TestUndergroundPipe:
     def test_constructor_init(self):
-        # loader = Loader()
+        # pipe = UndergroundPipe("pipe-to-ground")
 
         # Warnings
-        with pytest.warns(DraftsmanWarning):
+        with pytest.warns(UnknownKeywordWarning):
             UndergroundPipe("pipe-to-ground", unused_keyword=10)
 
         # Errors
-        with pytest.raises(InvalidEntityError):
+        with pytest.warns(UnknownEntityWarning):
             UndergroundPipe("this is not an underground pipe")
+
+    def test_power_and_circuit_flags(self):
+        for name in underground_pipes:
+            underground_belt = UndergroundPipe(name)
+            assert underground_belt.power_connectable == False
+            assert underground_belt.dual_power_connectable == False
+            assert underground_belt.circuit_connectable == False
+            assert underground_belt.dual_circuit_connectable == False
 
     def test_mergable_with(self):
         pipe1 = UndergroundPipe("pipe-to-ground")

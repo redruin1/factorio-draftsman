@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     RequestItemsMixin,
     LogisticModeOfOperationMixin,
@@ -12,15 +13,20 @@ from draftsman.classes.mixins import (
     RequestFiltersMixin,
     InventoryMixin,
 )
-from draftsman.error import DataFormatError
-from draftsman import signatures
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.signatures import (
+    Connections,
+    DraftsmanBaseModel,
+    RequestFilter,
+    uint16,
+    uint32,
+)
 
 from draftsman.data.entities import logistic_request_containers
 
-from schema import SchemaError
-import six
-import warnings
+from pydantic import ConfigDict, Field
+from typing import Any, Literal, Optional, Union
 
 
 class LogisticRequestContainer(
@@ -36,61 +42,77 @@ class LogisticRequestContainer(
     A logistics container that requests items with a primary priority.
     """
 
-    # fmt: off
-    _exports = {
-        **Entity._exports,
-        **RequestFiltersMixin._exports,
-        **CircuitConnectableMixin._exports,
-        **ControlBehaviorMixin._exports,
-        **LogisticModeOfOperationMixin._exports,
-        **RequestItemsMixin._exports,
-        **InventoryMixin._exports,
-        "request_from_buffers": {
-            "format": "bool",
-            "description": "Whether or not to request from buffer chests",
-            "required": lambda x: x is not None,
-        },
-    }
-    # fmt: on
+    class Format(
+        InventoryMixin.Format,
+        RequestItemsMixin.Format,
+        LogisticModeOfOperationMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        RequestFiltersMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(
+            LogisticModeOfOperationMixin.ControlFormat, DraftsmanBaseModel
+        ):
+            pass
 
-    def __init__(self, name=logistic_request_containers[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(LogisticRequestContainer, self).__init__(
-            name, logistic_request_containers, **kwargs
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+
+        request_from_buffers: Optional[bool] = Field(
+            False,
+            description="""
+            Whether or not this requester chest will pull from buffer chests.
+            """,
         )
 
-        self.request_from_buffers = None
-        if "request_from_buffers" in kwargs:
-            self.request_from_buffers = kwargs["request_from_buffers"]
-            self.unused_args.pop("request_from_buffers")
-        # self._add_export("request_from_buffers", lambda x: x is not None)
+        model_config = ConfigDict(title="LogisticRequestContainer")
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+    def __init__(
+        self,
+        name: str = logistic_request_containers[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        bar: uint16 = None,
+        request_filters: list[RequestFilter] = [],
+        items: dict[str, uint32] = {},  # TODO: ItemID
+        connections: Connections = {},
+        control_behavior: Format.ControlBehavior = {},
+        request_from_buffers: bool = False,
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        self._root: __class__.Format
 
-        del self.unused_args
+        super().__init__(
+            name,
+            logistic_request_containers,
+            position=position,
+            tile_position=tile_position,
+            bar=bar,
+            request_filters=request_filters,
+            items=items,
+            connections=connections,
+            control_behavior=control_behavior,
+            tags=tags,
+            **kwargs
+        )
 
-    # =========================================================================
+        self.request_from_buffers = request_from_buffers
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = (
-                signatures.LOGISTIC_REQUESTER_CONTROL_BEHAVIOR.validate(value)
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        self.validate_assignment = validate_assignment
+
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
     @property
-    def request_from_buffers(self):
-        # type: () -> bool
+    def request_from_buffers(self) -> Optional[bool]:
         """
         Whether or not this requester can request from buffer chests.
 
@@ -100,15 +122,17 @@ class LogisticRequestContainer(
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
-        return self._request_from_buffers
+        return self._root.request_from_buffers
 
     @request_from_buffers.setter
-    def request_from_buffers(self, value):
-        # type: (bool) -> None
-        if value is None or isinstance(value, bool):
-            self._request_from_buffers = value
+    def request_from_buffers(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "request_from_buffers", value
+            )
+            self._root.request_from_buffers = result
         else:
-            raise TypeError("'request_from_buffers' must be a bool or None")
+            self._root.request_from_buffers = value
 
     # =========================================================================
 

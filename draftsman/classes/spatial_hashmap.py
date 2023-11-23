@@ -1,19 +1,19 @@
 # spatial_hashmap.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.collection import EntityCollection
 from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
+from draftsman.classes.vector import PrimitiveVector, PrimitiveIntVector
 from draftsman.prototypes.straight_rail import StraightRail
 from draftsman.prototypes.curved_rail import CurvedRail
 from draftsman.prototypes.gate import Gate
-from draftsman import utils
+from draftsman.utils import (
+    AABB, aabb_overlaps_aabb, aabb_overlaps_circle, point_in_aabb, point_in_circle
+)
 from draftsman.warning import OverlappingObjectsWarning
 
 import math
-from typing import Sequence
+from typing import Optional
 import warnings
 
 
@@ -23,8 +23,7 @@ class SpatialHashMap(SpatialDataStructure):
     Accellerates spatial queries of :py:class:`~.EntityCollection`.
     """
 
-    def __init__(self, cell_size=8):
-        # type: (int) -> None
+    def __init__(self, cell_size: int=8) -> None:
         """
         Create a new :py:class:`.SpatialHashMap`.
 
@@ -33,8 +32,7 @@ class SpatialHashMap(SpatialDataStructure):
         self.cell_size = cell_size
         self.map = {}
 
-    def add(self, item):
-        # type: (SpatialLike, bool) -> None
+    def add(self, item: SpatialLike, merge: bool=False) -> None:
         item_region = item.get_world_bounding_box()
 
         # Get cells based off of collision_box
@@ -45,16 +43,14 @@ class SpatialHashMap(SpatialDataStructure):
             except KeyError:
                 self.map[cell_coord] = [item]
 
-    def recursive_add(self, item):
-        # type: (SpatialLike, bool) -> None
+    def recursive_add(self, item: SpatialLike, merge: bool=False) -> None:
         if hasattr(item, "entities"):
             for sub_item in item.entities:
                 self.recursive_add(sub_item)
         else:
             self.add(item)
 
-    def remove(self, item):
-        # type: (SpatialLike) -> None
+    def remove(self, item: SpatialLike) -> None:
         cell_coords = self._cell_coords_from_aabb(item.get_world_bounding_box())
         for cell_coord in cell_coords:
             try:
@@ -77,17 +73,7 @@ class SpatialHashMap(SpatialDataStructure):
         # type: () -> None
         self.map.clear()
 
-    def handle_overlapping(self, item, merge):
-        # type: (SpatialLike, bool) -> None
-        """
-        Handles overlapping items if ``item`` were to be added to this hashmap.
-        Issues overlapping objects warnings and merges entities if desired.
-
-        .. Warning::
-
-            This function may not be permanent, or it may move somewhere else in
-            future versions.
-        """
+    def handle_overlapping(self, item: SpatialLike, merge: bool) -> None:
         if isinstance(item, EntityCollection):
             # Recurse through all subentities
             merged_entities = []  # keep track of merged entities, if any
@@ -169,8 +155,7 @@ class SpatialHashMap(SpatialDataStructure):
 
             return item
 
-    def get_all_entities(self):
-        # type: () -> list[SpatialLike]
+    def get_all_entities(self) -> list[SpatialLike]:
         items = []
         for cell_coord in self.map:
             for item in self.map[cell_coord]:
@@ -178,15 +163,14 @@ class SpatialHashMap(SpatialDataStructure):
 
         return items
 
-    def get_in_radius(self, radius, point, limit=None):
-        # type: (float, Sequence[float], int) -> list[SpatialLike]
+    def get_in_radius(self, radius: float, point: PrimitiveVector, limit: Optional[int]=None) -> list[SpatialLike]:
         cell_coords = self._cell_coords_from_radius(radius, point)
         items = []
         for cell_coord in cell_coords:
             if cell_coord in self.map:
                 for item in self.map[cell_coord]:
                     item_pos = (item.global_position.x, item.global_position.y)
-                    if utils.point_in_circle(item_pos, radius, point):
+                    if point_in_circle(item_pos, radius, point):
                         if limit is not None and len(items) >= limit:
                             break
                         # Make sure we dont add the same item multiple times if
@@ -198,27 +182,25 @@ class SpatialHashMap(SpatialDataStructure):
 
         return items
 
-    def get_on_point(self, point, limit=None):
-        # type: (utils.Point, int) -> list[SpatialLike]
+    def get_on_point(self, point: PrimitiveVector, limit: Optional[int]=None) -> list[SpatialLike]:
         cell_coord = self._map_coords(point)
         items = []
         if cell_coord in self.map:
             for item in self.map[cell_coord]:
-                if utils.point_in_aabb(point, item.get_world_bounding_box()):
+                if point_in_aabb(point, item.get_world_bounding_box()):
                     if limit is not None and len(items) >= limit:
                         break
                     items.append(item)
 
         return items
 
-    def get_in_area(self, area, limit=None):
-        # type: (utils.AABB, int) -> list[SpatialLike]
+    def get_in_area(self, area: AABB, limit: Optional[int]=None) -> list[SpatialLike]:
         cell_coords = self._cell_coords_from_aabb(area)
         items = []
         for cell_coord in cell_coords:
             if cell_coord in self.map:
                 for item in self.map[cell_coord]:
-                    if utils.aabb_overlaps_aabb(item.get_world_bounding_box(), area):
+                    if aabb_overlaps_aabb(item.get_world_bounding_box(), area):
                         if limit is not None and len(items) >= limit:
                             break
                         # Make sure we dont add the same item multiple times if
@@ -230,8 +212,7 @@ class SpatialHashMap(SpatialDataStructure):
 
         return items
 
-    def _map_coords(self, point):
-        # type: (list[float]) -> tuple[int, int]
+    def _map_coords(self, point: PrimitiveVector) -> PrimitiveIntVector:
         """
         Get the internal map-coordinates from the world-space coordinates.
 
@@ -242,10 +223,9 @@ class SpatialHashMap(SpatialDataStructure):
             int(math.floor(point[1] / self.cell_size)),
         )
 
-    def _cell_coords_from_aabb(self, aabb):
-        # type: (utils.AABB) -> list[tuple[int, int]]
+    def _cell_coords_from_aabb(self, aabb: AABB) -> list[PrimitiveIntVector]:
         """
-        Get a list of map-coordinates that correspond to a world-space AABB.
+        Get a list of map cell coordinates that correspond to a world-space AABB.
 
         :param aabb: AABB to search, or ``None``.
 
@@ -270,8 +250,7 @@ class SpatialHashMap(SpatialDataStructure):
 
         return cells
 
-    def _cell_coords_from_radius(self, radius, point):
-        # type: (float, utils.Point) -> list[tuple[int, int]]
+    def _cell_coords_from_radius(self, radius: float, point: PrimitiveVector) -> list[PrimitiveIntVector]:
         """
         Get a list of map-coordinates that correspond to a world-space circle.
 
@@ -290,13 +269,13 @@ class SpatialHashMap(SpatialDataStructure):
         cells = []
         for j in range(grid_min[1], grid_min[1] + grid_height):
             for i in range(grid_min[0], grid_min[0] + grid_width):
-                cell_aabb = utils.AABB(
+                cell_aabb = AABB(
                     i * self.cell_size,
                     j * self.cell_size,
                     (i + 1) * self.cell_size,
                     (j + 1) * self.cell_size,
                 )
-                if utils.aabb_overlaps_circle(cell_aabb, radius, point):
+                if aabb_overlaps_circle(cell_aabb, radius, point):
                     cells.append((i, j))
 
         return cells

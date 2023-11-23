@@ -1,19 +1,32 @@
 # straight_rail.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-from draftsman.constants import Direction
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DoubleGridAlignedMixin, EightWayDirectionalMixin
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
 from draftsman.utils import AABB, Rectangle
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import straight_rails
-from draftsman.data import entities
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Optional, Union
+
+# TODO: currently hardcoded just for straight rail
+eps = 0.001
+_vertical_collision = CollisionSet([AABB(-0.75, -1.0 + eps, 0.75, 1.0 - eps)])
+_horizontal_collision = _vertical_collision.rotate(2)
+_diagonal_collision = CollisionSet([Rectangle((-0.5, -0.5), 1.25, 1.40, 45)])
+_collision_set_rotation = {}
+_collision_set_rotation[Direction.NORTH] = _vertical_collision
+_collision_set_rotation[Direction.NORTHEAST] = _diagonal_collision.rotate(2)
+_collision_set_rotation[Direction.EAST] = _horizontal_collision
+_collision_set_rotation[Direction.SOUTHEAST] = _diagonal_collision.rotate(4)
+_collision_set_rotation[Direction.SOUTH] = _vertical_collision
+_collision_set_rotation[Direction.SOUTHWEST] = _diagonal_collision.rotate(-2)
+_collision_set_rotation[Direction.WEST] = _horizontal_collision
+_collision_set_rotation[Direction.NORTHWEST] = _diagonal_collision
 
 eps = 0.001
 _vertical_collision = CollisionSet([AABB(-0.75, -1.0 + eps, 0.75, 1.0 - eps)])
@@ -35,16 +48,26 @@ class StraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     A straight rail entity.
     """
 
-    # fmt: off
-    _exports = {
-        **Entity._exports,
-        **EightWayDirectionalMixin._exports,
-        **DoubleGridAlignedMixin._exports,
-    }
-    # fmt: on
+    class Format(
+        DoubleGridAlignedMixin.Format, EightWayDirectionalMixin.Format, Entity.Format
+    ):
+        model_config = ConfigDict(title="StraightRail")
 
-    def __init__(self, name=straight_rails[0], **kwargs):
-        # type: (str, **dict) -> None
+    def __init__(
+        self,
+        name: str = straight_rails[0],
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        tags: dict[str, Any] = {},
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
         """
         TODO
         """
@@ -63,16 +86,31 @@ class StraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
         self._collision_set = _vertical_collision
         self._collision_set_rotation = _collision_set_rotation
 
-        super(StraightRail, self).__init__(name, straight_rails, **kwargs)
+        super().__init__(
+            name,
+            straight_rails,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            tags=tags,
+            **kwargs
+        )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self.validate_assignment = validate_assignment
 
-        del self.unused_args
+        self.validate(mode=validate).reissue_all(stacklevel=3)
+
+    # =========================================================================
+
+    @property
+    def double_grid_aligned(self) -> bool:
+        return True
+
+    # =========================================================================
+
+    @property
+    def collision_set(self) -> Optional[CollisionSet]:
+        return _collision_set_rotation.get(self.direction, None)
 
     # =========================================================================
 
