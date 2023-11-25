@@ -15,17 +15,13 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.error import InvalidItemError
 from draftsman.signatures import Connections, DraftsmanBaseModel, uint32
-from draftsman.utils import reissue_warnings
-from draftsman.warning import ItemLimitationWarning
 
 from draftsman.data.entities import mining_drills
 from draftsman.data import entities
 
 from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
-import warnings
 
 
 class MiningDrill(
@@ -109,8 +105,6 @@ class MiningDrill(
         self.validate_assignment = validate_assignment
 
         self.validate(mode=validate).reissue_all(stacklevel=3)
-
-        del self.unused_args
 
     # =========================================================================
 

@@ -121,22 +121,17 @@ from draftsman.utils import (
     flatten_entities,
     reissue_warnings,
 )
-from draftsman.warning import DraftsmanWarning
 
 from builtins import int
 import copy
-from typing import Any, Literal, Optional, Sequence, TypedDict, Union
-import warnings
+from typing import Any, Literal, Optional, Sequence, Union
 from pydantic import (
     ConfigDict,
     Field,
     PrivateAttr,
     ValidationError,
     field_validator,
-    model_validator,
     field_serializer,
-    model_serializer,
-    FieldValidationInfo,
 )
 
 
@@ -451,20 +446,21 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     @reissue_warnings
     def setup(
         self,
-        label: str = None,
-        label_color: Color = None,
-        description: str = None,
-        icons: list[Icon] = None,
-        version: uint64 = __factorio_version_info__,
+        label: Optional[str] = None,
+        label_color: Optional[Color] = None,
+        description: Optional[str] = None,
+        icons: Optional[list[Icon]] = None,
+        version: Optional[uint64] = __factorio_version_info__,
         snapping_grid_size: Union[Vector, PrimitiveVector, None] = None,
         snapping_grid_position: Union[Vector, PrimitiveVector, None] = None,
-        absolute_snapping: bool = True,
+        absolute_snapping: Optional[bool] = True,
         position_relative_to_grid: Union[Vector, PrimitiveVector, None] = None,
         entities: Union[EntityList, list[EntityLike]] = [],
         tiles: Union[TileList, list[Tile]] = [],
         schedules: Union[ScheduleList, list[Schedule]] = [],
-        index: uint16 = None,
-        **kwargs
+        index: Optional[uint16] = None,
+        if_unknown: str = "error",
+        **kwargs,
     ):  # TODO: keyword arguments
 
         self._root.blueprint = Blueprint.Format.BlueprintObject(item="blueprint")

@@ -411,8 +411,8 @@ class UpgradePlanner(Blueprintable):
     @reissue_warnings
     def __init__(
         self,
-        upgrade_planner: Union[str, dict] = None,
-        index: uint16 = None,
+        upgrade_planner: Union[str, dict, None] = None,
+        index: Optional[uint16] = None,
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -455,7 +455,8 @@ class UpgradePlanner(Blueprintable):
         label: str = None,
         version: uint64 = __factorio_version_info__,
         settings: Format.UpgradePlannerObject.Settings = Format.UpgradePlannerObject.Settings(),
-        index: uint16 = None,
+        index: Optional[uint16] = None,
+        if_unknown: str = "error",  # TODO: enum
         **kwargs
     ):
         kwargs.pop("item", None)
@@ -476,14 +477,6 @@ class UpgradePlanner(Blueprintable):
         # A bit scuffed, but
         for kwarg, value in kwargs.items():
             self._root[kwarg] = value
-
-        # Issue warnings for any keyword not recognized by UpgradePlanner
-        # for unused_arg in kwargs:
-        #     warnings.warn(
-        #         "{} has no attribute '{}'".format(type(self), unused_arg),
-        #         DraftsmanWarning,
-        #         stacklevel=2,
-        #     )
 
     # =========================================================================
     # Properties

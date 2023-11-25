@@ -118,7 +118,9 @@ class Exportable(metaclass=ABCMeta):
         # of construction in the child-most class, if desired
         self._validate_assignment = ValidationMode.NONE
 
-        self._unknown_format = False
+         # TODO: make this a static class property instead of an instance variable
+         # (more writing but less memory)
+        self._unknown = False
 
     # =========================================================================
 
@@ -185,23 +187,25 @@ class Exportable(metaclass=ABCMeta):
     # =========================================================================
 
     @property
-    def unknown_format(self) -> bool:
+    def unknown(self) -> bool:
         """
-        A read-only flag which indicates whether or not Draftsman has a full
-        understanding of the underlying format of the exportable. If this flag
-        is ``False``, then most validation for this instance is disabled, only
-        issuing errors/warnings for issues that Draftsman has sufficient
-        information to diagnose.
+        A read-only flag which indicates whether or not Draftsman recognizes
+        this object and thus has a full understanding of it's underlying format.
+        If this flag is ``True``, then most validation for this instance is 
+        disabled, only issuing errors/warnings for issues that Draftsman has 
+        sufficient information to diagnose.
 
-        TODO
+        :type: bool
         """
-        return self._unknown_format
+        return self._unknown
 
     # =========================================================================
 
     @abstractmethod
-    def validate(self):
+    def validate(self, mode: ValidationMode, force: bool):
         """
+        Validates the called object against it's known format. Attempts to 
+        coerce data into correct forms from shorthands, and raises exceptions
         Method that attempts to first coerce the object into a known form, and
         then checks the values of its attributes for correctness. If unable to
         do so, this function raises :py:error:`.DataFormatError`. Otherwise,
@@ -219,7 +223,15 @@ class Exportable(metaclass=ABCMeta):
             ...     print("wrong! {}", e)
             wrong!
 
-        :raises:
+        :param mode: How strict to be when valiating the object, corresponding
+            to the number and type of errors and warnings returned.
+        :param force: Whether or not to ignore this entity's `is_valid` flag and
+            attempt to revalidate anyway.
+
+        :returns: A :py:class:`ValidationResult` object containing the 
+            corresponding errors and warnings.
+            
+        :raises DataFormatError: If the type inputs 
         """
         # NOTE: Subsequent objects must implement this method and then call this
         # parent method to cache successful validity

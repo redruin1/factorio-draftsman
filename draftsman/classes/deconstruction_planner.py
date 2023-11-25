@@ -75,12 +75,6 @@ from pydantic import (
 from typing import Any, Literal, Optional, Sequence, Union
 
 
-class DeconstructionPlannerModel(BaseModel):
-    item: Literal["deconstruction-planner"] = "deconstruction-planner"
-    label: str | None = None
-    version: int | None = Field(None, ge=0, lt=2**64)
-
-
 class DeconstructionPlanner(Blueprintable):
     """
     Handles the deconstruction of entities. Has functionality to only select
@@ -262,8 +256,9 @@ class DeconstructionPlanner(Blueprintable):
 
     def __init__(
         self,
-        deconstruction_planner: Union[str, dict] = None,
-        index: uint16 = None,
+        deconstruction_planner: Union[str, dict, None] = None,
+        index: Optional[uint16] = None,
+        if_unknown: str = "error", # TODO: enum
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -282,6 +277,7 @@ class DeconstructionPlanner(Blueprintable):
             item="deconstruction-planner",
             init_data=deconstruction_planner,
             index=index,
+            if_unknown=if_unknown,
         )
 
         self.validate_assignment = validate_assignment
@@ -294,7 +290,8 @@ class DeconstructionPlanner(Blueprintable):
         label: str = None,
         version: uint64 = __factorio_version_info__,
         settings: Format.DeconstructionPlannerObject.Settings = {},
-        index: uint16 = None,
+        index: Optional[uint16] = None,
+        if_unknown: str = "error",  # TODO: enum
         **kwargs
     ):
         # Item (type identifier)

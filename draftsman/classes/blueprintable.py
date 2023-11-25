@@ -35,12 +35,21 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     are) overwritten in select circumstances.
     """
 
-    @utils.reissue_warnings
-    def __init__(self, root_format, root_item, init_data, unknown):
-        # type: (str, BaseModel, str, Union[str, dict], str) -> None
+    @reissue_warnings
+    def __init__(
+        self, 
+        root_format: DraftsmanBaseModel, 
+        root_item: str, 
+        init_data: Union[str, dict], 
+        index: Optional[int],
+        if_unknown="error", # TODO: enum
+        **kwargs
+    ):
         """
         Initializes the private ``_root`` data dictionary, as well as setting
         the ``item`` name.
+
+        TODO
         """
         self._root: self.Format
 
@@ -57,7 +66,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         # self._root = self.Format.model_construct(**{self._root_item: {"item": item, **kwargs}})
         # self._root[self._root_item] = root_format.model_construct(self._root[self._root_item])
         self._root = self.Format.model_validate(
-            {self._root_item: {"item": item, **kwargs}},
+            {self._root_item: {"item": root_item, **kwargs}, "index": index},
             context={"construction": True, "mode": ValidationMode.MINIMUM},
         )
         # print("blueprintable")
@@ -68,11 +77,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         # self._root[self._root_item]["item"] = six.text_type(item)
 
         if init_data is None:
-            self.setup()
+            self.setup(if_unknown=if_unknown)
         elif isinstance(init_data, str):
-            self.load_from_string(init_data)
+            self.load_from_string(init_data, if_unknown=if_unknown)
         elif isinstance(init_data, dict):
-            self.setup(**init_data[self._root_item], unknown=unknown)
+            self.setup(**init_data[self._root_item], if_unknown=if_unknown)
         else:
             raise DataFormatError(
                 "'{}' must be a factorio blueprint string, a dictionary, or None".format(
@@ -80,22 +89,24 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
                 )
             )
 
-    @utils.reissue_warnings
-    def load_from_string(self, string, unknown="error"):
-        # type: (str, str) -> None
+    @reissue_warnings
+    def load_from_string(self, string: str, if_unknown: str="error"):
+        # TODO: if_unknown enum
         """
         Load the :py:class:`.Blueprintable` with the contents of ``string``.
 
-        Raises :py:class:`.DraftsmanWarning` if there are any unrecognized
+        Raises :py:class:`.UnknownKeywordWarning` if there are any unrecognized
         keywords in the blueprint string for this particular blueprintable.
 
         :param string: Factorio-encoded blueprint string.
-        :param unknown: TODO
+        :param if_unknown: How Draftsman should behave if it encounters a tile
+            or entity that it doesn't recognize with it's current configuration.
 
         :exception MalformedBlueprintStringError: If the input string is not
             decodable to a JSON object.
         :exception IncorrectBlueprintTypeError: If the input string is of a
-            different type than the base class.
+            different type than the base class, such as trying to load the 
+            string of an upgrade planner into a ``Blueprint`` object.
         """
         root = string_to_JSON(string)
         # Ensure that the blueprint string actually matches the type of the
@@ -114,8 +125,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         self.setup(**root[self._root_item], if_unknown=if_unknown)
 
     @abstractmethod
-    def setup(self, unknown="error", **kwargs):  # pragma: no coverage
-        # type: (str, **dict) -> None
+    def setup(self, if_unknown: str="error", **kwargs):  # pragma: no coverage
         """
         Setup the Blueprintable's parameters with the input keywords as values.
         Primarily used by the constructor, but can be used at any time to set
@@ -124,7 +134,8 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         Raises :py:class:`.DraftsmanWarning` if any of the input keywords are
         unrecognized.
 
-        :param unknown: TODO
+        :param if_unknown: How Draftsman should behave if it encounters a tile
+            or entity that it doesn't recognize with it's current configuration.
         :param kwargs: The dict of all keywords to set in the blueprint.
 
         .. NOTE::

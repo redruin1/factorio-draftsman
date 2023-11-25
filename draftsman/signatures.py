@@ -309,7 +309,7 @@ class DraftsmanBaseModel(BaseModel):
         # cannot really know what entity is being imported) then we don't want
         # to issue the following warnings, since we don't want to make
         # assertions where we don't have enough information
-        if obj.unknown_format:
+        if obj.unknown:
             return self
 
         # We also only want to issue this particular warning if we're setting an
@@ -326,7 +326,7 @@ class DraftsmanBaseModel(BaseModel):
                     "'{}' object has no attribute(s) {}; allowed fields are {}".format(
                         self.model_config.get("title", type(self).__name__),
                         list(self.model_extra.keys()),
-                        self.true_model_fields().keys(),
+                        list(self.true_model_fields().keys()),
                     )
                 )
             )

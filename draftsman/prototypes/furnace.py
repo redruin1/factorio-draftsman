@@ -158,8 +158,6 @@ class Furnace(
 
         self.validate(mode=validate).reissue_all(stacklevel=3)
 
-        del self.unused_args
-
     # =========================================================================
 
     @property

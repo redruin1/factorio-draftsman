@@ -17,7 +17,6 @@ from draftsman.warning import (
 )
 
 from collections.abc import Hashable
-import sys
 import pytest
 
 
@@ -829,10 +828,10 @@ class TestArithmeticCombinator:
                     "title": "WireConnectionPoint",
                     "type": "object",
                 },
-                "draftsman__constants__Direction__1": {
-                    "$ref": "#/$defs/draftsman__constants__Direction__2"
-                },
                 "draftsman__constants__Direction__2": {
+                    "$ref": "#/$defs/draftsman__constants__Direction__1"
+                },
+                "draftsman__constants__Direction__1": {
                     "description": "Factorio direction enum. Encompasses all 8 cardinal directions and diagonals\nin the range [0, 7] where north is 0 and increments clockwise. Provides a\nnumber of convenience constants and functions over working with a raw int\nvalue.\n\n* ``NORTH`` (0) (Default)\n* ``NORTHEAST`` (1)\n* ``EAST`` (2)\n* ``SOUTHEAST`` (3)\n* ``SOUTH`` (4)\n* ``SOUTHWEST`` (5)\n* ``WEST`` (6)\n* ``NORTHWEST`` (7)",
                     "enum": [0, 1, 2, 3, 4, 5, 6, 7],
                     "title": "Direction",
@@ -865,7 +864,7 @@ class TestArithmeticCombinator:
                 },
                 "direction": {
                     "anyOf": [
-                        {"$ref": "#/$defs/draftsman__constants__Direction__1"},
+                        {"$ref": "#/$defs/draftsman__constants__Direction__2"},
                         {"type": "null"},
                     ],
                     "default": 0,

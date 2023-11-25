@@ -247,7 +247,7 @@ def new_entity(
 
         # Mark this class as unknown format, so some validation checks are
         # omitted
-        result._unknown_format = True
+        result._unknown = True
 
         # Of course, since entity is normally a base class, we have to do a
         # little magic to make it behave similar to all other classes

@@ -42,7 +42,9 @@ class EntityList(MutableSequence):
 
     @utils.reissue_warnings
     def __init__(
-        self, parent: "EntityCollection" = None, initlist: list[EntityLike] = None
+        self, parent: "EntityCollection" = None, 
+        initlist: list[EntityLike] = [],
+        if_unknown: str = "error" # TODO: enum
     ):
         """
         Instantiates a new ``EntityList``.
@@ -61,17 +63,16 @@ class EntityList(MutableSequence):
 
         self._parent = parent
 
-        if initlist is not None:
-            for elem in initlist:
-                if isinstance(elem, EntityLike):
-                    self.append(elem, unknown=unknown)
-                elif isinstance(elem, dict):
-                    name = elem.pop("name")
-                    self.append(name, **elem, unknown=unknown)
-                else:
-                    raise TypeError(
-                        "Constructor either takes EntityLike or dict entries"
-                    )
+        for elem in initlist:
+            if isinstance(elem, EntityLike):
+                self.append(elem, if_unknown=if_unknown)
+            elif isinstance(elem, dict):
+                name = elem.pop("name")
+                self.append(name, **elem, if_unknown=if_unknown)
+            else:
+                raise TypeError(
+                    "Constructor either takes EntityLike or dict entries"
+                )
 
     @utils.reissue_warnings
     def append(
@@ -79,6 +80,7 @@ class EntityList(MutableSequence):
         name: Union[str, "EntityLike"],
         copy: bool = True,
         merge: bool = False,
+        if_unknown: str = "error",  # TODO: enum
         **kwargs
     ):
         """
@@ -101,6 +103,7 @@ class EntityList(MutableSequence):
             same position. Merged entities share non-overlapping attributes and
             prefer the attributes of the last entity added. Useful for merging
             things like rails or power-poles on the edges of tiled blueprints.
+        :param if_unknown: TODO
         :param kwargs: Any other keyword arguments to pass to the constructor
             in string shorthand.
 
@@ -144,8 +147,14 @@ class EntityList(MutableSequence):
             assert inserter is blueprint.entities[-1]
             assert blueprint.entities[-1].stack_size_override == 1
         """
-        # TODO: validate
-        self.insert(len(self.data), name, copy=copy, merge=merge, **kwargs)
+        self.insert(
+            len(self.data), 
+            name=name, 
+            copy=copy, 
+            merge=merge,
+            if_unknown=if_unknown, 
+            **kwargs
+        )
 
     @utils.reissue_warnings
     def insert(
@@ -154,6 +163,7 @@ class EntityList(MutableSequence):
         name: Union[str, "EntityLike"],
         copy: bool = True,
         merge: bool = False,
+        if_unknown: str = "error",
         **kwargs
     ):
         """
@@ -177,6 +187,7 @@ class EntityList(MutableSequence):
             same position. Merged entities share non-overlapping attributes and
             prefer the attributes of the last entity added. Useful for merging
             things like rails or power-poles on the edges of tiled blueprints.
+        :param if_unknown: TODO
         :param kwargs: Any other keyword arguments to pass to overwrite the
             values in the newly-added entity. Only works when using string
             shorthand or when ``copy=True``.
@@ -215,7 +226,7 @@ class EntityList(MutableSequence):
         # Convert to new Entity if constructed via string keyword
         new = False
         if isinstance(name, six.string_types):
-            entitylike = new_entity(name, unknown=unknown, **kwargs)
+            entitylike = new_entity(name, **kwargs, if_unknown=if_unknown)
             if entitylike is None:
                 return
             new = True

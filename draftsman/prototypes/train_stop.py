@@ -15,7 +15,6 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID, uint32
-from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import train_stops
 from draftsman.data.signals import signal_dict
@@ -180,8 +179,6 @@ class TrainStop(
         self.validate_assignment = validate_assignment
 
         self.validate(mode=validate).reissue_all(stacklevel=3)
-
-        del self.unused_args
 
     # =========================================================================
 

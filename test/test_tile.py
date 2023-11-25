@@ -23,19 +23,13 @@ class TestTile:
         # Invalid name
         with pytest.warns(UnknownTileWarning, match="Unknown tile 'weeeeee'"):
             tile = Tile("weeeeee")
-            issues = tile.inspect()
-            for error in issues:
-                raise error
 
         # Invalid name with suggestion
-        with pytest.raises(
-            InvalidTileError,
-            match="'stonepath' is not a valid name for this Tile; did you mean 'stone-path'?",
+        with pytest.warns(
+            UnknownTileWarning,
+            match="Unknown tile 'stonepath'; did you mean 'stone-path'?",
         ):
             tile = Tile("stonepath")
-            issues = tile.inspect()
-            for error in issues:
-                raise error
 
         # TODO: test closure
         # with self.assertRaises(InvalidTileError):
@@ -78,9 +72,6 @@ class TestTile:
         # Invalid name
         with pytest.warns(UnknownTileWarning):
             tile.name = "weeeeee"
-            issues = tile.inspect()
-            for error in issues:
-                raise error
 
         # TODO: test closure
         # with self.assertRaises(InvalidTileError):

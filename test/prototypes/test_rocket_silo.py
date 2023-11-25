@@ -1,23 +1,14 @@
 # test_rocket_silo.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import RocketSilo, rocket_silos, Container
 from draftsman.error import DataFormatError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
 
-
-class RocketSiloTesting(unittest.TestCase):
+class TestRocketSilo:
     def test_constructor_init(self):
         silo = RocketSilo(auto_launch=True)
         assert silo.to_dict() == {
