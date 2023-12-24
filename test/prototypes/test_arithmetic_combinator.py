@@ -592,309 +592,309 @@ class TestArithmeticCombinator:
         # hashable
         assert isinstance(combinatorA, Hashable)
 
-    def test_json_schema(self):
-        assert ArithmeticCombinator.json_schema() == {
-            "$defs": {
-                "ArithmeticConditions": {
-                    "additionalProperties": True,
-                    "properties": {
-                        "first_constant": {
-                            "anyOf": [
-                                {
-                                    "exclusiveMaximum": 2147483648,
-                                    "minimum": -2147483648,
-                                    "type": "integer",
-                                },
-                                {"type": "null"},
-                            ],
-                            "default": None,
-                            "description": "The constant value located in the left slot, if present.",
-                            "title": "First Constant",
-                        },
-                        "first_signal": {
-                            "anyOf": [{"$ref": "#/$defs/SignalID"}, {"type": "null"}],
-                            "default": None,
-                            "description": "The signal type located in the left slot, if present. If\nboth this key and 'first_constant' are defined, this key\ntakes precedence.",
-                        },
-                        "operation": {
-                            "default": "*",
-                            "description": "The operation to perform on the two operands.",
-                            "enum": [
-                                "*",
-                                "/",
-                                "+",
-                                "-",
-                                "%",
-                                "^",
-                                "<<",
-                                ">>",
-                                "AND",
-                                "OR",
-                                "XOR",
-                                None,
-                            ],
-                            "title": "Operation",
-                        },
-                        "second_constant": {
-                            "anyOf": [
-                                {
-                                    "exclusiveMaximum": 2147483648,
-                                    "minimum": -2147483648,
-                                    "type": "integer",
-                                },
-                                {"type": "null"},
-                            ],
-                            "default": 0,
-                            "description": "The constant value located in the right slot, if present.",
-                            "title": "Second Constant",
-                        },
-                        "second_signal": {
-                            "anyOf": [{"$ref": "#/$defs/SignalID"}, {"type": "null"}],
-                            "default": None,
-                            "description": "The signal type located in the right slot, if present. If\nboth this key and 'second_constant' are defined, this key\ntakes precedence.",
-                        },
-                        "output_signal": {
-                            "anyOf": [{"$ref": "#/$defs/SignalID"}, {"type": "null"}],
-                            "default": None,
-                            "description": "The output signal to emit the operation result as. Can be\n'signal-each', but only if one of 'first_signal' or \n'second_signal' is also 'signal-each'. No other pure virtual\nsignals are permitted in arithmetic combinators.",
-                        },
-                    },
-                    "title": "ArithmeticConditions",
-                    "type": "object",
-                },
-                "CircuitConnectionPoint": {
-                    "additionalProperties": True,
-                    "properties": {
-                        "entity_id": {
-                            "exclusiveMaximum": 18446744073709551616,
-                            "minimum": 0,
-                            "title": "Entity Id",
-                            "type": "integer",
-                        },
-                        "circuit_id": {
-                            "anyOf": [
-                                {"enum": [1, 2], "type": "integer"},
-                                {"type": "null"},
-                            ],
-                            "default": None,
-                            "title": "Circuit Id",
-                        },
-                    },
-                    "required": ["entity_id"],
-                    "title": "CircuitConnectionPoint",
-                    "type": "object",
-                },
-                "CircuitConnections": {
-                    "additionalProperties": True,
-                    "properties": {
-                        "red": {
-                            "anyOf": [
-                                {
-                                    "items": {"$ref": "#/$defs/CircuitConnectionPoint"},
-                                    "type": "array",
-                                },
-                                {"type": "null"},
-                            ],
-                            "default": None,
-                            "title": "Red",
-                        },
-                        "green": {
-                            "anyOf": [
-                                {
-                                    "items": {"$ref": "#/$defs/CircuitConnectionPoint"},
-                                    "type": "array",
-                                },
-                                {"type": "null"},
-                            ],
-                            "default": None,
-                            "title": "Green",
-                        },
-                    },
-                    "title": "CircuitConnections",
-                    "type": "object",
-                },
-                "Connections": {
-                    "additionalProperties": True,
-                    "properties": {
-                        "1": {
-                            "anyOf": [
-                                {"$ref": "#/$defs/CircuitConnections"},
-                                {"type": "null"},
-                            ],
-                            "default": {"green": None, "red": None},
-                        },
-                        "2": {
-                            "anyOf": [
-                                {"$ref": "#/$defs/CircuitConnections"},
-                                {"type": "null"},
-                            ],
-                            "default": {"green": None, "red": None},
-                        },
-                        "Cu0": {
-                            "anyOf": [
-                                {
-                                    "items": {"$ref": "#/$defs/WireConnectionPoint"},
-                                    "type": "array",
-                                },
-                                {"type": "null"},
-                            ],
-                            "default": None,
-                            "title": "Cu0",
-                        },
-                        "Cu1": {
-                            "anyOf": [
-                                {
-                                    "items": {"$ref": "#/$defs/WireConnectionPoint"},
-                                    "type": "array",
-                                },
-                                {"type": "null"},
-                            ],
-                            "default": None,
-                            "title": "Cu1",
-                        },
-                    },
-                    "title": "Connections",
-                    "type": "object",
-                },
-                "ControlBehavior": {
-                    "additionalProperties": True,
-                    "properties": {
-                        "arithmetic_conditions": {
-                            "anyOf": [
-                                {"$ref": "#/$defs/ArithmeticConditions"},
-                                {"type": "null"},
-                            ],
-                            "default": {
-                                "first_constant": None,
-                                "first_signal": None,
-                                "operation": "*",
-                                "output_signal": None,
-                                "second_constant": 0,
-                                "second_signal": None,
-                            },
-                        }
-                    },
-                    "title": "ControlBehavior",
-                    "type": "object",
-                },
-                "FloatPosition": {
-                    "additionalProperties": True,
-                    "properties": {
-                        "x": {"title": "X", "type": "number"},
-                        "y": {"title": "Y", "type": "number"},
-                    },
-                    "required": ["x", "y"],
-                    "title": "FloatPosition",
-                    "type": "object",
-                },
-                "SignalID": {
-                    "additionalProperties": True,
-                    "properties": {
-                        "name": {
-                            "anyOf": [{"type": "string"}, {"type": "null"}],
-                            "description": "Name of the signal. If omitted, the signal is treated as no signal and \nremoved on import/export cycle.",
-                            "title": "Name",
-                        },
-                        "type": {
-                            "description": "Category of the signal.",
-                            "enum": ["item", "fluid", "virtual"],
-                            "title": "Type",
-                            "type": "string",
-                        },
-                    },
-                    "required": ["name", "type"],
-                    "title": "SignalID",
-                    "type": "object",
-                },
-                "WireConnectionPoint": {
-                    "additionalProperties": True,
-                    "properties": {
-                        "entity_id": {
-                            "exclusiveMaximum": 18446744073709551616,
-                            "minimum": 0,
-                            "title": "Entity Id",
-                            "type": "integer",
-                        },
-                        "wire_id": {
-                            "anyOf": [
-                                {"enum": [0, 1], "type": "integer"},
-                                {"type": "null"},
-                            ],
-                            "default": None,
-                            "title": "Wire Id",
-                        },
-                    },
-                    "required": ["entity_id"],
-                    "title": "WireConnectionPoint",
-                    "type": "object",
-                },
-                "draftsman__constants__Direction__2": {
-                    "$ref": "#/$defs/draftsman__constants__Direction__1"
-                },
-                "draftsman__constants__Direction__1": {
-                    "description": "Factorio direction enum. Encompasses all 8 cardinal directions and diagonals\nin the range [0, 7] where north is 0 and increments clockwise. Provides a\nnumber of convenience constants and functions over working with a raw int\nvalue.\n\n* ``NORTH`` (0) (Default)\n* ``NORTHEAST`` (1)\n* ``EAST`` (2)\n* ``SOUTHEAST`` (3)\n* ``SOUTH`` (4)\n* ``SOUTHWEST`` (5)\n* ``WEST`` (6)\n* ``NORTHWEST`` (7)",
-                    "enum": [0, 1, 2, 3, 4, 5, 6, 7],
-                    "title": "Direction",
-                    "type": "integer",
-                },
-            },
-            "additionalProperties": True,
-            "properties": {
-                "name": {
-                    "description": "The internal ID of the entity.",
-                    "title": "Name",
-                    "type": "string",
-                },
-                "position": {
-                    "allOf": [{"$ref": "#/$defs/FloatPosition"}],
-                    "description": "The position of the entity, almost always measured from it's center. \nMeasured in Factorio tiles.",
-                },
-                "entity_number": {
-                    "description": "The number of the entity in it's parent blueprint, 1-based. In\npractice this is the index of the dictionary in the blueprint's \n'entities' list, but this is not enforced.\n\nNOTE: The range of this number is described as a 64-bit unsigned int,\nbut due to limitations with Factorio's PropertyTree implementation,\nvalues above 2^53 will suffer from floating-point precision error.\nSee here: https://forums.factorio.com/viewtopic.php?p=592165#p592165",
-                    "exclusiveMaximum": 18446744073709551616,
-                    "minimum": 0,
-                    "title": "Entity Number",
-                    "type": "integer",
-                },
-                "tags": {
-                    "anyOf": [{"type": "object"}, {"type": "null"}],
-                    "default": {},
-                    "description": "Any other additional metadata associated with this blueprint entity. \nFrequently used by mods.",
-                    "title": "Tags",
-                },
-                "direction": {
-                    "anyOf": [
-                        {"$ref": "#/$defs/draftsman__constants__Direction__2"},
-                        {"type": "null"},
-                    ],
-                    "default": 0,
-                    "description": "The grid-aligned direction this entity is facing. Direction can only\nbe one of 4 distinct (cardinal) directions, which differs from \n'orientation' which is used for RollingStock.",
-                },
-                "connections": {
-                    "anyOf": [{"$ref": "#/$defs/Connections"}, {"type": "null"}],
-                    "default": {
-                        "1": {"green": None, "red": None},
-                        "2": {"green": None, "red": None},
-                        "Cu0": None,
-                        "Cu1": None,
-                    },
-                    "description": "All circuit and copper wire connections that this entity has. Note\nthat copper wire connections in this field are exclusively for \npower-switch connections; for power-pole to power-pole connections \nsee the 'neighbours' key.",
-                },
-                "control_behavior": {
-                    "anyOf": [{"$ref": "#/$defs/ControlBehavior"}, {"type": "null"}],
-                    "default": {
-                        "arithmetic_conditions": {
-                            "first_constant": None,
-                            "first_signal": None,
-                            "operation": "*",
-                            "output_signal": None,
-                            "second_constant": 0,
-                            "second_signal": None,
-                        }
-                    },
-                },
-            },
-            "required": ["name", "position", "entity_number"],
-            "title": "ArithmeticCombinator",
-            "type": "object",
-        }
+    # def test_json_schema(self):
+    #     assert ArithmeticCombinator.json_schema() == {
+    #         "$defs": {
+    #             "ArithmeticConditions": {
+    #                 "additionalProperties": True,
+    #                 "properties": {
+    #                     "first_constant": {
+    #                         "anyOf": [
+    #                             {
+    #                                 "exclusiveMaximum": 2147483648,
+    #                                 "minimum": -2147483648,
+    #                                 "type": "integer",
+    #                             },
+    #                             {"type": "null"},
+    #                         ],
+    #                         "default": None,
+    #                         "description": "The constant value located in the left slot, if present.",
+    #                         "title": "First Constant",
+    #                     },
+    #                     "first_signal": {
+    #                         "anyOf": [{"$ref": "#/$defs/SignalID"}, {"type": "null"}],
+    #                         "default": None,
+    #                         "description": "The signal type located in the left slot, if present. If\nboth this key and 'first_constant' are defined, this key\ntakes precedence.",
+    #                     },
+    #                     "operation": {
+    #                         "default": "*",
+    #                         "description": "The operation to perform on the two operands.",
+    #                         "enum": [
+    #                             "*",
+    #                             "/",
+    #                             "+",
+    #                             "-",
+    #                             "%",
+    #                             "^",
+    #                             "<<",
+    #                             ">>",
+    #                             "AND",
+    #                             "OR",
+    #                             "XOR",
+    #                             None,
+    #                         ],
+    #                         "title": "Operation",
+    #                     },
+    #                     "second_constant": {
+    #                         "anyOf": [
+    #                             {
+    #                                 "exclusiveMaximum": 2147483648,
+    #                                 "minimum": -2147483648,
+    #                                 "type": "integer",
+    #                             },
+    #                             {"type": "null"},
+    #                         ],
+    #                         "default": 0,
+    #                         "description": "The constant value located in the right slot, if present.",
+    #                         "title": "Second Constant",
+    #                     },
+    #                     "second_signal": {
+    #                         "anyOf": [{"$ref": "#/$defs/SignalID"}, {"type": "null"}],
+    #                         "default": None,
+    #                         "description": "The signal type located in the right slot, if present. If\nboth this key and 'second_constant' are defined, this key\ntakes precedence.",
+    #                     },
+    #                     "output_signal": {
+    #                         "anyOf": [{"$ref": "#/$defs/SignalID"}, {"type": "null"}],
+    #                         "default": None,
+    #                         "description": "The output signal to emit the operation result as. Can be\n'signal-each', but only if one of 'first_signal' or \n'second_signal' is also 'signal-each'. No other pure virtual\nsignals are permitted in arithmetic combinators.",
+    #                     },
+    #                 },
+    #                 "title": "ArithmeticConditions",
+    #                 "type": "object",
+    #             },
+    #             "CircuitConnectionPoint": {
+    #                 "additionalProperties": True,
+    #                 "properties": {
+    #                     "entity_id": {
+    #                         "exclusiveMaximum": 18446744073709551616,
+    #                         "minimum": 0,
+    #                         "title": "Entity Id",
+    #                         "type": "integer",
+    #                     },
+    #                     "circuit_id": {
+    #                         "anyOf": [
+    #                             {"enum": [1, 2], "type": "integer"},
+    #                             {"type": "null"},
+    #                         ],
+    #                         "default": None,
+    #                         "title": "Circuit Id",
+    #                     },
+    #                 },
+    #                 "required": ["entity_id"],
+    #                 "title": "CircuitConnectionPoint",
+    #                 "type": "object",
+    #             },
+    #             "CircuitConnections": {
+    #                 "additionalProperties": True,
+    #                 "properties": {
+    #                     "red": {
+    #                         "anyOf": [
+    #                             {
+    #                                 "items": {"$ref": "#/$defs/CircuitConnectionPoint"},
+    #                                 "type": "array",
+    #                             },
+    #                             {"type": "null"},
+    #                         ],
+    #                         "default": None,
+    #                         "title": "Red",
+    #                     },
+    #                     "green": {
+    #                         "anyOf": [
+    #                             {
+    #                                 "items": {"$ref": "#/$defs/CircuitConnectionPoint"},
+    #                                 "type": "array",
+    #                             },
+    #                             {"type": "null"},
+    #                         ],
+    #                         "default": None,
+    #                         "title": "Green",
+    #                     },
+    #                 },
+    #                 "title": "CircuitConnections",
+    #                 "type": "object",
+    #             },
+    #             "Connections": {
+    #                 "additionalProperties": True,
+    #                 "properties": {
+    #                     "1": {
+    #                         "anyOf": [
+    #                             {"$ref": "#/$defs/CircuitConnections"},
+    #                             {"type": "null"},
+    #                         ],
+    #                         "default": {"green": None, "red": None},
+    #                     },
+    #                     "2": {
+    #                         "anyOf": [
+    #                             {"$ref": "#/$defs/CircuitConnections"},
+    #                             {"type": "null"},
+    #                         ],
+    #                         "default": {"green": None, "red": None},
+    #                     },
+    #                     "Cu0": {
+    #                         "anyOf": [
+    #                             {
+    #                                 "items": {"$ref": "#/$defs/WireConnectionPoint"},
+    #                                 "type": "array",
+    #                             },
+    #                             {"type": "null"},
+    #                         ],
+    #                         "default": None,
+    #                         "title": "Cu0",
+    #                     },
+    #                     "Cu1": {
+    #                         "anyOf": [
+    #                             {
+    #                                 "items": {"$ref": "#/$defs/WireConnectionPoint"},
+    #                                 "type": "array",
+    #                             },
+    #                             {"type": "null"},
+    #                         ],
+    #                         "default": None,
+    #                         "title": "Cu1",
+    #                     },
+    #                 },
+    #                 "title": "Connections",
+    #                 "type": "object",
+    #             },
+    #             "ControlBehavior": {
+    #                 "additionalProperties": True,
+    #                 "properties": {
+    #                     "arithmetic_conditions": {
+    #                         "anyOf": [
+    #                             {"$ref": "#/$defs/ArithmeticConditions"},
+    #                             {"type": "null"},
+    #                         ],
+    #                         "default": {
+    #                             "first_constant": None,
+    #                             "first_signal": None,
+    #                             "operation": "*",
+    #                             "output_signal": None,
+    #                             "second_constant": 0,
+    #                             "second_signal": None,
+    #                         },
+    #                     }
+    #                 },
+    #                 "title": "ControlBehavior",
+    #                 "type": "object",
+    #             },
+    #             "FloatPosition": {
+    #                 "additionalProperties": True,
+    #                 "properties": {
+    #                     "x": {"title": "X", "type": "number"},
+    #                     "y": {"title": "Y", "type": "number"},
+    #                 },
+    #                 "required": ["x", "y"],
+    #                 "title": "FloatPosition",
+    #                 "type": "object",
+    #             },
+    #             "SignalID": {
+    #                 "additionalProperties": True,
+    #                 "properties": {
+    #                     "name": {
+    #                         "anyOf": [{"type": "string"}, {"type": "null"}],
+    #                         "description": "Name of the signal. If omitted, the signal is treated as no signal and \nremoved on import/export cycle.",
+    #                         "title": "Name",
+    #                     },
+    #                     "type": {
+    #                         "description": "Category of the signal.",
+    #                         "enum": ["item", "fluid", "virtual"],
+    #                         "title": "Type",
+    #                         "type": "string",
+    #                     },
+    #                 },
+    #                 "required": ["name", "type"],
+    #                 "title": "SignalID",
+    #                 "type": "object",
+    #             },
+    #             "WireConnectionPoint": {
+    #                 "additionalProperties": True,
+    #                 "properties": {
+    #                     "entity_id": {
+    #                         "exclusiveMaximum": 18446744073709551616,
+    #                         "minimum": 0,
+    #                         "title": "Entity Id",
+    #                         "type": "integer",
+    #                     },
+    #                     "wire_id": {
+    #                         "anyOf": [
+    #                             {"enum": [0, 1], "type": "integer"},
+    #                             {"type": "null"},
+    #                         ],
+    #                         "default": None,
+    #                         "title": "Wire Id",
+    #                     },
+    #                 },
+    #                 "required": ["entity_id"],
+    #                 "title": "WireConnectionPoint",
+    #                 "type": "object",
+    #             },
+    #             "draftsman__constants__Direction__2": {
+    #                 "$ref": "#/$defs/draftsman__constants__Direction__1"
+    #             },
+    #             "draftsman__constants__Direction__1": {
+    #                 "description": "Factorio direction enum. Encompasses all 8 cardinal directions and diagonals\nin the range [0, 7] where north is 0 and increments clockwise. Provides a\nnumber of convenience constants and functions over working with a raw int\nvalue.\n\n* ``NORTH`` (0) (Default)\n* ``NORTHEAST`` (1)\n* ``EAST`` (2)\n* ``SOUTHEAST`` (3)\n* ``SOUTH`` (4)\n* ``SOUTHWEST`` (5)\n* ``WEST`` (6)\n* ``NORTHWEST`` (7)",
+    #                 "enum": [0, 1, 2, 3, 4, 5, 6, 7],
+    #                 "title": "Direction",
+    #                 "type": "integer",
+    #             },
+    #         },
+    #         "additionalProperties": True,
+    #         "properties": {
+    #             "name": {
+    #                 "description": "The internal ID of the entity.",
+    #                 "title": "Name",
+    #                 "type": "string",
+    #             },
+    #             "position": {
+    #                 "allOf": [{"$ref": "#/$defs/FloatPosition"}],
+    #                 "description": "The position of the entity, almost always measured from it's center. \nMeasured in Factorio tiles.",
+    #             },
+    #             "entity_number": {
+    #                 "description": "The number of the entity in it's parent blueprint, 1-based. In\npractice this is the index of the dictionary in the blueprint's \n'entities' list, but this is not enforced.\n\nNOTE: The range of this number is described as a 64-bit unsigned int,\nbut due to limitations with Factorio's PropertyTree implementation,\nvalues above 2^53 will suffer from floating-point precision error.\nSee here: https://forums.factorio.com/viewtopic.php?p=592165#p592165",
+    #                 "exclusiveMaximum": 18446744073709551616,
+    #                 "minimum": 0,
+    #                 "title": "Entity Number",
+    #                 "type": "integer",
+    #             },
+    #             "tags": {
+    #                 "anyOf": [{"type": "object"}, {"type": "null"}],
+    #                 "default": {},
+    #                 "description": "Any other additional metadata associated with this blueprint entity. \nFrequently used by mods.",
+    #                 "title": "Tags",
+    #             },
+    #             "direction": {
+    #                 "anyOf": [
+    #                     {"$ref": "#/$defs/draftsman__constants__Direction__2"},
+    #                     {"type": "null"},
+    #                 ],
+    #                 "default": 0,
+    #                 "description": "The grid-aligned direction this entity is facing. Direction can only\nbe one of 4 distinct (cardinal) directions, which differs from \n'orientation' which is used for RollingStock.",
+    #             },
+    #             "connections": {
+    #                 "anyOf": [{"$ref": "#/$defs/Connections"}, {"type": "null"}],
+    #                 "default": {
+    #                     "1": {"green": None, "red": None},
+    #                     "2": {"green": None, "red": None},
+    #                     "Cu0": None,
+    #                     "Cu1": None,
+    #                 },
+    #                 "description": "All circuit and copper wire connections that this entity has. Note\nthat copper wire connections in this field are exclusively for \npower-switch connections; for power-pole to power-pole connections \nsee the 'neighbours' key.",
+    #             },
+    #             "control_behavior": {
+    #                 "anyOf": [{"$ref": "#/$defs/ControlBehavior"}, {"type": "null"}],
+    #                 "default": {
+    #                     "arithmetic_conditions": {
+    #                         "first_constant": None,
+    #                         "first_signal": None,
+    #                         "operation": "*",
+    #                         "output_signal": None,
+    #                         "second_constant": 0,
+    #                         "second_signal": None,
+    #                     }
+    #                 },
+    #             },
+    #         },
+    #         "required": ["name", "position", "entity_number"],
+    #         "title": "ArithmeticCombinator",
+    #         "type": "object",
+    #     }

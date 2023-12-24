@@ -70,7 +70,7 @@ from draftsman.signatures import Color, DraftsmanBaseModel, Icon, uint16, uint64
 from draftsman.utils import encode_version, reissue_warnings
 from draftsman.warning import DraftsmanWarning, IndexWarning
 
-from builtins import int
+from collections.abc import MutableSequence
 from pydantic import (
     ConfigDict,
     Field,
@@ -81,9 +81,6 @@ from pydantic import (
     ValidationError,
 )
 from typing import Any, Literal, Optional, Sequence, Union
-import warnings
-
-from collections.abc import MutableSequence
 
 
 class BlueprintableList(MutableSequence):
@@ -93,38 +90,34 @@ class BlueprintableList(MutableSequence):
     can exist inside other BlueprintBook instances.
     """
 
-    def __init__(self, initlist: list[Union[dict, Blueprintable]]=[]):
+    def __init__(
+        self,
+        initlist: list[Union[dict, Blueprintable]] = [],
+        if_unknown: str = "error",  # TODO: enum
+    ):
         self.data: list[Blueprintable] = []
         for elem in initlist:
             if isinstance(elem, dict):
                 # fmt: off
                 if "blueprint" in elem:
                     self.append(
-                        Blueprint(
-                            elem, 
-                        )
+                        Blueprint(elem, if_unknown=if_unknown)
                     )
                 elif "deconstruction_planner" in elem:
                     self.append(
-                        DeconstructionPlanner(
-                            elem, 
-                        )
+                        DeconstructionPlanner(elem, if_unknown=if_unknown)
                     )
                 elif "upgrade_planner" in elem:
                     self.append(
-                        UpgradePlanner(
-                            elem, 
-                        )
+                        UpgradePlanner(elem, if_unknown=if_unknown)
                     )
                 elif "blueprint_book" in elem:
                     self.append(
-                        BlueprintBook(
-                            elem, 
-                        )
+                        BlueprintBook(elem, if_unknown=if_unknown)
                     )
                 else:
                     raise DataFormatError(
-                        "Dictionary input cannot be resolve to a blueprintable"
+                        "Dictionary input cannot be resolved to a blueprintable"
                     )
                 # fmt: on
             else:
@@ -231,8 +224,6 @@ class BlueprintBook(Blueprintable):
 
             blueprints: list[
                 Union[
-                    # TODO: implement __get_pydantic_core_schema__ for all of these
-                    # so we can just write "Union[Blueprint, DeconstructionPlanner, ...]",
                     Blueprint.Format,
                     DeconstructionPlanner.Format,
                     UpgradePlanner.Format,
@@ -241,11 +232,11 @@ class BlueprintBook(Blueprintable):
             ] = Field(
                 [],
                 description="""
-                The list of blueprintable objects enclosed within this blueprint
-                book. Can be blueprints, deconstruction planners, upgrade 
-                planners or even other blueprint books. If multiple blueprintable
-                objects share the same 'index', the last one which was added at
-                that index is imported into the book.
+                The list of blueprint-like objects enclosed within this 
+                blueprint book. Can contain blueprints, deconstruction planners, 
+                upgrade planners, or even other blueprint books. If multiple 
+                blueprint-like objects share the same 'index', the last one 
+                which was added at that index is imported into the book.
                 """,
             )
 
@@ -311,7 +302,7 @@ class BlueprintBook(Blueprintable):
 
     @reissue_warnings
     def setup(
-        self, 
+        self,
         label: Optional[str] = None,
         label_color: Optional[Color] = None,
         description: Optional[str] = None,
@@ -320,7 +311,7 @@ class BlueprintBook(Blueprintable):
         active_index: Optional[uint16] = 0,
         blueprints: Union[BlueprintableList, list[Blueprintable]] = [],
         index: Optional[uint16] = None,
-        if_unknown: str = "error",  # TODO: enum 
+        if_unknown: str = "error",  # TODO: enum
         **kwargs
     ):
         # self._root = {}
@@ -341,7 +332,7 @@ class BlueprintBook(Blueprintable):
         # else:
         #     self.version = encode_version(*__factorio_version_info__)
 
-        self.blueprints = blueprints
+        # self.blueprints = blueprints
         # if "blueprints" in kwargs:
         #     # self._root[self._root_item]["blueprints"] = BlueprintableList(
         #     #     kwargs.pop("blueprints"), unknown=unknown
@@ -350,6 +341,8 @@ class BlueprintBook(Blueprintable):
         # else:
         #     # self._root[self._root_item]["blueprints"] = BlueprintableList()
         #     self._root._blueprints = BlueprintableList()
+
+        self._root._blueprints = BlueprintableList(blueprints, if_unknown=if_unknown)
 
         # A bit scuffed, but
         for kwarg, value in kwargs.items():
@@ -487,11 +480,11 @@ class BlueprintBook(Blueprintable):
     # =========================================================================
 
     def validate(
-        self, 
+        self,
         mode: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT, 
-        force: bool = False
+        ] = ValidationMode.STRICT,
+        force: bool = False,
     ) -> ValidationResult:
         mode = ValidationMode(mode)
 

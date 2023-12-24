@@ -443,15 +443,12 @@ class TestUpgradePlanner:
             upgrade_planner.mappers = [
                 {"from": "incorrect", "to": "incorrect", "index": 1}
             ]
-            upgrade_planner.validate()
 
         with pytest.raises(DataFormatError):
             upgrade_planner.mappers = ("incorrect", "incorrect")
-            upgrade_planner.validate()
 
         with pytest.raises(DataFormatError):
             upgrade_planner.mappers = [TypeError, TypeError]
-            upgrade_planner.validate()
 
         upgrade_planner.mappers = [
             ("assembling-machine-3", None),

@@ -90,15 +90,10 @@ class CircuitConnectableMixin:
             # Keep track of whether or not this association was added to self
             association_added = False
 
-            print(point)
-
             # Make sure we don't add the same association multiple times
             if point not in self.connections[side][color]:
-                print("point not in self")
                 self.connections[side][color].append(point)
                 association_added = True
-
-            print(self.connections)
 
             # Determine the location where `point` points to
             association = point["entity_id"]
@@ -153,7 +148,6 @@ class CircuitConnectableMixin:
                 # if self.connections[side] is None:
                 #     self.connections[side] = Connections.CircuitConnections()
                 for color, _ in other.connections[side]:
-                    print(color)
                     if other.connections[side][color] is None:
                         continue
                     if self.connections[side][color] is None:

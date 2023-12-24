@@ -31,6 +31,11 @@
 * Added a new command line option for `draftsman-update` `--lua-version`, which prints the version of Lua currently being used for debugging compat issues
 * Added a README.md to the `examples` folder which provides short descriptions for all of the examples
 * Integrated aforementioned examples into the test suite
+* Removed the `area`, `tile_width`, and `tile_height` properties from `Blueprint`, which have been replaced with `get_world_bounding_box()` and `get_dimensions()`
+    * These attributes are no longer cached in the blueprint and have to be recalculated each time such information is desired
+    * However, this means that it only has to be calculated when the user actually wants it, instead of every time a user adds a new entity/tile to a blueprint
+    * The user has a better idea of when they can cache the blueprint's dimension to reduce calculation, so it's deferred to the user
+    * By making them functions it also makes it abundantly clear that calling them is not likely `O(1)`
 * Normalized all import filenames to use underscores consistently (potentially breaking change!)
 * Changed the code to be primarily Python3 compatible
 * Switched from `unittest` to `pytest` (more features with similar syntax; `coverage run` still works the same)

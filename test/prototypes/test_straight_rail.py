@@ -61,8 +61,10 @@ class TestStraightRail:
 
         blueprint = Blueprint()
         blueprint.entities.append("straight-rail", direction=Direction.NORTH)
+        assert len(blueprint.entities) == 1
         # This shouldn't raise a warning
         blueprint.entities.append("gate", direction=Direction.EAST)
+        assert len(blueprint.entities) == 2
         blueprint.entities.pop()
 
         # But this should

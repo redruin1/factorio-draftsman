@@ -16,6 +16,10 @@ class TestEntity:
         container = Container("wooden-chest")
         assert container.type == "container"
 
+    def test_flags(self):
+        container = Container("wooden-chest")
+        assert container.flags == ['placeable-neutral', 'player-creation']
+
     def test_set_tags(self):
         container = Container("wooden-chest")
         container.tags = {"wee": 500, "hello": "world"}
@@ -54,7 +58,10 @@ class TestEntity:
         iron_chest.name = "steel-chest"
         assert iron_chest.name == "steel-chest"
 
-        with pytest.warns(UnknownEntityWarning):
+        with pytest.warns(UnknownEntityWarning, match="'electric-furnace' is not a known name for a Container"):
+            iron_chest.name = "electric-furnace"
+
+        with pytest.warns(UnknownEntityWarning, match="'unknown' is not a known name for a Container"):
             iron_chest.name = "unknown"
 
         assert iron_chest.collision_set == None
@@ -69,7 +76,7 @@ class TestEntity:
     def test_suggest_similar_name(self):
         with pytest.warns(
             UnknownEntityWarning,
-            match="'wodenchest' is not a known name for this Container; did you mean 'wooden-chest'?",
+            match="'wodenchest' is not a known name for a Container; did you mean 'wooden-chest'?",
         ):
             Container("wodenchest")
 
@@ -387,7 +394,7 @@ class TestEntityFactory:
         assert new_entity("unknown", if_unknown="ignore") == None
 
         # Try and treat as a generic entity
-        result = new_entity("unknown", position=(0.5, 0.5), if_unknown="accept")
+        result = new_entity("unknown", position=(0.5, 0.5), validate="minimum", if_unknown="accept")
         assert isinstance(result, Entity)
         
         # Generic entities should be able to handle attribute access and serialization
@@ -400,7 +407,7 @@ class TestEntityFactory:
         
         # You should also be able to set new attributes to them without Draftsman
         # complaining
-        result = new_entity("unknown", position=(0.5, 0.5), direction=4, if_unknown="accept")
+        result = new_entity("unknown", position=(0.5, 0.5), direction=4, validate="minimum", if_unknown="accept")
         assert result.to_dict() == {
             "name": "unknown",
             "position": {"x": 0.5, "y": 0.5},
@@ -415,7 +422,11 @@ class TestEntityFactory:
             "direction": 4,
             "new_thing": "extra!"
         }
-        result.validate(mode=ValidationMode.PEDANTIC).reissue_all()
+
+        # Draftsman will still complain about the unknown entity, but it doesn't 
+        # panic unless you want it to
+        with pytest.warns(UnknownEntityWarning):
+            result.validate(mode=ValidationMode.PEDANTIC).reissue_all()
 
         # However, setting known attributes incorrectly should still create
         # issues

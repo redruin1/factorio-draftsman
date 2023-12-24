@@ -47,11 +47,10 @@ class TrainConfiguration:
     # =========================================================================
 
     @property
-    def rail_length(self):
-        # type: () -> int
+    def rail_length(self) -> int:
         """
-        TODO
-        Read only.
+        Returns the minimum amount of straight rail pieces needed to fully place
+        this configuration in a straight line. Read only.
         """
         return ceil((len(self.cars) * 7) / 2)
 

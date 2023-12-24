@@ -37,12 +37,12 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     @reissue_warnings
     def __init__(
-        self, 
-        root_format: DraftsmanBaseModel, 
-        root_item: str, 
-        init_data: Union[str, dict], 
+        self,
+        root_format: DraftsmanBaseModel,
+        root_item: str,
+        init_data: Union[str, dict],
         index: Optional[int],
-        if_unknown="error", # TODO: enum
+        if_unknown="error",  # TODO: enum
         **kwargs
     ):
         """
@@ -90,7 +90,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             )
 
     @reissue_warnings
-    def load_from_string(self, string: str, if_unknown: str="error"):
+    def load_from_string(self, string: str, if_unknown: str = "error"):
         # TODO: if_unknown enum
         """
         Load the :py:class:`.Blueprintable` with the contents of ``string``.
@@ -105,7 +105,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :exception MalformedBlueprintStringError: If the input string is not
             decodable to a JSON object.
         :exception IncorrectBlueprintTypeError: If the input string is of a
-            different type than the base class, such as trying to load the 
+            different type than the base class, such as trying to load the
             string of an upgrade planner into a ``Blueprint`` object.
         """
         root = string_to_JSON(string)
@@ -125,7 +125,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         self.setup(**root[self._root_item], if_unknown=if_unknown)
 
     @abstractmethod
-    def setup(self, if_unknown: str="error", **kwargs):  # pragma: no coverage
+    def setup(self, if_unknown: str = "error", **kwargs):  # pragma: no coverage
         """
         Setup the Blueprintable's parameters with the input keywords as values.
         Primarily used by the constructor, but can be used at any time to set

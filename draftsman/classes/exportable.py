@@ -118,8 +118,8 @@ class Exportable(metaclass=ABCMeta):
         # of construction in the child-most class, if desired
         self._validate_assignment = ValidationMode.NONE
 
-         # TODO: make this a static class property instead of an instance variable
-         # (more writing but less memory)
+        # TODO: make this a static class property instead of an instance variable
+        # (more writing but less memory)
         self._unknown = False
 
     # =========================================================================
@@ -191,8 +191,8 @@ class Exportable(metaclass=ABCMeta):
         """
         A read-only flag which indicates whether or not Draftsman recognizes
         this object and thus has a full understanding of it's underlying format.
-        If this flag is ``True``, then most validation for this instance is 
-        disabled, only issuing errors/warnings for issues that Draftsman has 
+        If this flag is ``True``, then most validation for this instance is
+        disabled, only issuing errors/warnings for issues that Draftsman has
         sufficient information to diagnose.
 
         :type: bool
@@ -204,7 +204,7 @@ class Exportable(metaclass=ABCMeta):
     @abstractmethod
     def validate(self, mode: ValidationMode, force: bool):
         """
-        Validates the called object against it's known format. Attempts to 
+        Validates the called object against it's known format. Attempts to
         coerce data into correct forms from shorthands, and raises exceptions
         Method that attempts to first coerce the object into a known form, and
         then checks the values of its attributes for correctness. If unable to
@@ -228,10 +228,10 @@ class Exportable(metaclass=ABCMeta):
         :param force: Whether or not to ignore this entity's `is_valid` flag and
             attempt to revalidate anyway.
 
-        :returns: A :py:class:`ValidationResult` object containing the 
+        :returns: A :py:class:`ValidationResult` object containing the
             corresponding errors and warnings.
-            
-        :raises DataFormatError: If the type inputs 
+
+        :raises DataFormatError: If the type inputs
         """
         # NOTE: Subsequent objects must implement this method and then call this
         # parent method to cache successful validity

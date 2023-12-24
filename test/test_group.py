@@ -41,8 +41,6 @@ class TestGroup:
         assert group.id == "default"
         assert group.name == "group"
         assert group.type == "group"
-        assert group.tile_width == 0
-        assert group.tile_height == 0
         assert group.get() == []
 
     def test_constructor_init(self):
@@ -235,22 +233,6 @@ class TestGroup:
 
         with pytest.raises(TypeError):
             group.collision_mask = TypeError
-
-    def test_set_tile_width(self):
-        group = Group("test")
-        group.tile_width = 10
-        assert group.tile_width == 10
-
-        with pytest.raises(TypeError):
-            group.tile_width = TypeError
-
-    def test_set_tile_height(self):
-        group = Group("test")
-        group.tile_height = 10
-        assert group.tile_height == 10
-
-        with pytest.raises(TypeError):
-            group.tile_height = TypeError
 
     def test_set_entities(self):
         group = Group("test")
@@ -793,6 +775,17 @@ class TestGroup:
         assert group.collision_set == CollisionSet([])
         assert bounding_box == None
 
+    def test_get_dimensions(self):
+        group = Group("test")
+        assert group.get_dimensions() == (0, 0)
+
+        group.entities.append("transport-belt")
+        group.entities.append("transport-belt", tile_position=(5, 5))
+        assert group.get_dimensions() == (6, 6)
+        
+        group.entities.append("transport-belt", tile_position=(3, 3))
+        assert group.get_dimensions() == (6, 6)
+
     def test_entity_overlapping(self):
         group = Group("test")
         group.entities.append("transport-belt")
@@ -885,7 +878,7 @@ class TestGroup:
 
         blueprint.entities.append(group, merge=True)
         assert len(blueprint.entities) == 2
-        assert blueprint.area == AABB(
+        assert blueprint.get_world_bounding_box() == AABB(
             0.09999999999999998, 0.09999999999999998, 1.9, 1.9
         )
         assert isinstance(blueprint.entities[0], Group)

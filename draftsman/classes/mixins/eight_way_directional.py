@@ -64,8 +64,6 @@ class EightWayDirectionalMixin:
             del kwargs["position"]
 
         # Keep track of the entities width and height regardless of rotation
-        print(self.direction)
-        print(self._tile_width, self._tile_height)
         self._static_tile_width = self._tile_width
         self._static_tile_height = self._tile_height
         # self._static_collision_set = self.collision_set
@@ -184,7 +182,6 @@ class EightWayDirectionalMixin:
 
         # TODO: overwrite tile_width/height properties instead
         if self._root.direction in {2, 3, 6, 7}:
-            print(self._static_tile_width, self._static_tile_height)
             self._tile_width = self._static_tile_height
             self._tile_height = self._static_tile_width
         else:

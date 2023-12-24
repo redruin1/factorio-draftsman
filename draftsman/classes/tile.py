@@ -18,7 +18,7 @@ from draftsman.classes.exportable import (
 from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
-from draftsman.error import DataFormatError, DraftsmanError
+from draftsman.error import DataFormatError, DraftsmanError, InvalidTileError
 from draftsman.signatures import DraftsmanBaseModel, IntPosition, TileName
 from draftsman.utils import AABB
 
@@ -79,6 +79,8 @@ class Tile(SpatialLike, Exportable):
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
+        if_unknown: str = "error",
+        **kwargs,
     ):
         """
         Create a new Tile with ``name`` at ``position``. ``position`` defaults
@@ -95,7 +97,12 @@ class Tile(SpatialLike, Exportable):
 
         super().__init__()
 
-        self._root = __class__.Format.model_construct()
+        # self._root = __class__.Format.model_construct({**kwargs})
+        self._root = type(self).Format.model_validate(
+            {"name": name, "position": {"x": 0, "y": 0}, **kwargs},
+            strict=False,
+            context={"construction": True, "mode": ValidationMode.NONE},
+        )
 
         # Setup private attributes
         self._root._position = Vector(0, 0)

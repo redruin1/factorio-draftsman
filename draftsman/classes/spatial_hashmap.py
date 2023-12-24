@@ -8,7 +8,11 @@ from draftsman.prototypes.straight_rail import StraightRail
 from draftsman.prototypes.curved_rail import CurvedRail
 from draftsman.prototypes.gate import Gate
 from draftsman.utils import (
-    AABB, aabb_overlaps_aabb, aabb_overlaps_circle, point_in_aabb, point_in_circle
+    AABB,
+    aabb_overlaps_aabb,
+    aabb_overlaps_circle,
+    point_in_aabb,
+    point_in_circle,
 )
 from draftsman.warning import OverlappingObjectsWarning
 
@@ -23,7 +27,7 @@ class SpatialHashMap(SpatialDataStructure):
     Accellerates spatial queries of :py:class:`~.EntityCollection`.
     """
 
-    def __init__(self, cell_size: int=8) -> None:
+    def __init__(self, cell_size: int = 8) -> None:
         """
         Create a new :py:class:`.SpatialHashMap`.
 
@@ -32,8 +36,17 @@ class SpatialHashMap(SpatialDataStructure):
         self.cell_size = cell_size
         self.map = {}
 
-    def add(self, item: SpatialLike, merge: bool=False) -> None:
+    def add(self, item: SpatialLike, merge: bool = False) -> Optional[SpatialLike]:
         item_region = item.get_world_bounding_box()
+
+        # If we want to merge
+        if merge:
+            overlapping_items = self.get_in_aabb(item_region)
+            for overlapping_item in overlapping_items:
+                # If we can merge the two items and this is desired, do so first
+                if overlapping_item.mergable_with(item):
+                    overlapping_item.merge(item)
+                    return None
 
         # Get cells based off of collision_box
         cell_coords = self._cell_coords_from_aabb(item_region)
@@ -43,12 +56,28 @@ class SpatialHashMap(SpatialDataStructure):
             except KeyError:
                 self.map[cell_coord] = [item]
 
-    def recursive_add(self, item: SpatialLike, merge: bool=False) -> None:
-        if hasattr(item, "entities"):
-            for sub_item in item.entities:
-                self.recursive_add(sub_item)
+        return item
+
+    def recursive_add(
+        self, item: SpatialLike, merge: bool = False
+    ) -> Optional[SpatialLike]:
+        if isinstance(item, EntityCollection):
+            # Recurse through all subentities
+            merged_entities = []  # keep track of merged entities, if any
+            for sub_entity in item.entities:
+                result = self.recursive_add(sub_entity, merge)
+                if result is None:
+                    merged_entities.append(sub_entity)
+
+            # Remove all merged entities from the group
+            for entity in merged_entities:
+                item.entities.remove(entity)
+
+            # Note: `item` here might be a Group with NO entities in it; this is
+            # deliberate
+            return item
         else:
-            self.add(item)
+            return self.add(item, merge)
 
     def remove(self, item: SpatialLike) -> None:
         cell_coords = self._cell_coords_from_aabb(item.get_world_bounding_box())
@@ -61,9 +90,8 @@ class SpatialHashMap(SpatialDataStructure):
             except:
                 pass
 
-    def recursive_remove(self, item):
-        # type: (SpatialLike) -> None
-        if hasattr(item, "entities"):
+    def recursive_remove(self, item: SpatialLike) -> None:
+        if isinstance(item, EntityCollection):
             for sub_item in item.entities:
                 self.recursive_remove(sub_item)
         else:
@@ -73,44 +101,32 @@ class SpatialHashMap(SpatialDataStructure):
         # type: () -> None
         self.map.clear()
 
-    def handle_overlapping(self, item: SpatialLike, merge: bool) -> None:
+    def validate_insert(self, item: SpatialLike, merge: bool) -> None:
+        """
+        Issues OverlappingObjectWarnings if adding this particular ``item``
+        would be unplacable in the current blueprint/group configuration.
+        """
         if isinstance(item, EntityCollection):
             # Recurse through all subentities
-            merged_entities = []  # keep track of merged entities, if any
-            for i, sub_entity in enumerate(item.entities):
-                result = self.handle_overlapping(sub_entity, merge)
-                if result is None:
-                    merged_entities.append(sub_entity)
-
-            # Remove all merged entities from the list
-            for entity in merged_entities:
-                item.entities.remove(entity)
-
-            # Note: `item` here might be a Group with NO entities in it; this is
-            # deliberate
-            return item
+            for sub_entity in item.entities:
+                self.validate_insert(sub_entity, merge)
         else:
             item_region = item.get_world_bounding_box()
-            overlapping_items = self.get_in_area(item_region)
+            overlapping_items = self.get_in_aabb(item_region)
             for overlapping_item in overlapping_items:
-                # If we can merge the two items and this is desired, do so first
+                # If we can merge the two items and this is desired later on,
+                # don't issue any overlapping warnings for this entity
+                # (Note that the actual merge is performed later on in
+                # `recursive_add()`)
                 if merge and overlapping_item.mergable_with(item):
-                    overlapping_item.merge(item)
-                    return None
+                    return
 
-                # Otherwise, we now check to issue and OverlappingObjectsWarning
-                # Only the broadphase has taken place up until this point, so we
-                # now do the proper collision check
-                item_collision_set = item.get_world_collision_set()
-                overlapping_collision_set = overlapping_item.get_world_collision_set()
-                if not item_collision_set.overlaps(overlapping_collision_set):
-                    continue
-
-                # If we get here, we know that geometrically at least they are
-                # overlapping, but we also need to check to see if they have the
-                # same collision layers
+                # If the two objects have no shared collision layers they can
+                # never intersect
                 item_layers = item.collision_mask
                 other_layers = overlapping_item.collision_mask
+                if len(other_layers.intersection(item_layers)) == 0:
+                    continue
 
                 # StraightRails and CurvedRails cannot collide with each other
                 # UNLESS they are the same type, face the same direction, and
@@ -139,7 +155,10 @@ class SpatialHashMap(SpatialDataStructure):
                     if not parallel:
                         continue
 
-                if len(other_layers.intersection(item_layers)) > 0:
+                # Finally, the actual geometric collision check:
+                item_collision_set = item.get_world_collision_set()
+                overlapping_collision_set = overlapping_item.get_world_collision_set()
+                if item_collision_set.overlaps(overlapping_collision_set):
                     warnings.warn(
                         "Added object '{}' ({}) at {} intersects '{}' ({}) at {}".format(
                             item.name,
@@ -153,8 +172,6 @@ class SpatialHashMap(SpatialDataStructure):
                         stacklevel=2,
                     )
 
-            return item
-
     def get_all_entities(self) -> list[SpatialLike]:
         items = []
         for cell_coord in self.map:
@@ -163,7 +180,9 @@ class SpatialHashMap(SpatialDataStructure):
 
         return items
 
-    def get_in_radius(self, radius: float, point: PrimitiveVector, limit: Optional[int]=None) -> list[SpatialLike]:
+    def get_in_radius(
+        self, radius: float, point: PrimitiveVector, limit: Optional[int] = None
+    ) -> list[SpatialLike]:
         cell_coords = self._cell_coords_from_radius(radius, point)
         items = []
         for cell_coord in cell_coords:
@@ -182,7 +201,9 @@ class SpatialHashMap(SpatialDataStructure):
 
         return items
 
-    def get_on_point(self, point: PrimitiveVector, limit: Optional[int]=None) -> list[SpatialLike]:
+    def get_on_point(
+        self, point: PrimitiveVector, limit: Optional[int] = None
+    ) -> list[SpatialLike]:
         cell_coord = self._map_coords(point)
         items = []
         if cell_coord in self.map:
@@ -194,13 +215,13 @@ class SpatialHashMap(SpatialDataStructure):
 
         return items
 
-    def get_in_area(self, area: AABB, limit: Optional[int]=None) -> list[SpatialLike]:
-        cell_coords = self._cell_coords_from_aabb(area)
+    def get_in_aabb(self, aabb: AABB, limit: Optional[int] = None) -> list[SpatialLike]:
+        cell_coords = self._cell_coords_from_aabb(aabb)
         items = []
         for cell_coord in cell_coords:
             if cell_coord in self.map:
                 for item in self.map[cell_coord]:
-                    if aabb_overlaps_aabb(item.get_world_bounding_box(), area):
+                    if aabb_overlaps_aabb(item.get_world_bounding_box(), aabb):
                         if limit is not None and len(items) >= limit:
                             break
                         # Make sure we dont add the same item multiple times if
@@ -250,7 +271,9 @@ class SpatialHashMap(SpatialDataStructure):
 
         return cells
 
-    def _cell_coords_from_radius(self, radius: float, point: PrimitiveVector) -> list[PrimitiveIntVector]:
+    def _cell_coords_from_radius(
+        self, radius: float, point: PrimitiveVector
+    ) -> list[PrimitiveIntVector]:
         """
         Get a list of map-coordinates that correspond to a world-space circle.
 

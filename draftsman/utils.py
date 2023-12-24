@@ -11,7 +11,6 @@ from draftsman.error import MalformedBlueprintStringError
 
 from abc import ABCMeta, abstractmethod
 import base64
-from collections.abc import Callable
 import json
 import math
 from functools import wraps
@@ -766,7 +765,7 @@ def extend_aabb(a: Optional[AABB], b: Optional[AABB]) -> Optional[AABB]:
         )
 
 
-def aabb_to_dimensions(aabb: AABB) -> tuple[int, int]:
+def aabb_to_dimensions(aabb: Optional[AABB]) -> tuple[int, int]:
     """
     Gets the tile-dimensions of an AABB, or the minimum number of tiles across
     each axis that the box would have to take up. If the input `aabb` is None,

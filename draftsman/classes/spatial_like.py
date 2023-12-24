@@ -1,23 +1,22 @@
 # spatiallike.py
-# -*- encoding: utf-8 -*-
 
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.vector import Vector
 from draftsman.utils import AABB
 
-import abc
+from abc import ABCMeta, abstractmethod
 import copy
-import six
+from typing import Optional
 
 
-@six.add_metaclass(abc.ABCMeta)
-class SpatialLike:
+class SpatialLike(metaclass=ABCMeta):
     """
     Abstract class that provides the necessary methods so that an object that
     can be added to a :py:class:`~draftsman.classes.spatialhashmap.SpatialHashMap`.
     """
 
-    @abc.abstractproperty
+    @property
+    @abstractmethod
     def position(self) -> Vector:  # pragma: no coverage
         """
         Position of the object, expressed in local space. Local space can be
@@ -26,22 +25,25 @@ class SpatialLike:
         """
         pass
 
-    @abc.abstractproperty
+    @property
+    @abstractmethod
     def global_position(self) -> Vector:  # pragma: no coverage
         """
         Position of the object, expressed in global space (world space).
         """
         pass
 
-    @abc.abstractproperty
-    def collision_set(self) -> CollisionSet:  # pragma: no coverage
+    @property
+    @abstractmethod
+    def collision_set(self) -> Optional[CollisionSet]:  # pragma: no coverage
         """
         Set of :py:class:`.CollisionShape` where the Entity's position acts as
         their origin.
         """
         pass
 
-    @abc.abstractproperty
+    @property
+    @abstractmethod
     def collision_mask(self) -> set[str]:  # pragma: no coverage
         """
         A set of strings representing the collision layers that this object
@@ -49,13 +51,19 @@ class SpatialLike:
         """
         pass
 
-    def get_world_bounding_box(self) -> AABB:
+    def get_world_bounding_box(self) -> Optional[AABB]:
         """
         Gets the world-space coordinates AABB that completely encompasses the
         ``collision_set`` of this SpatialLike. Behaves similarly to the old
         function `get_area()`, except now it correctly handles non-AABB
-        collision shapes.
+        collision shapes. Returns ``None`` if the collision set of the target
+        object is unknown.
         """
+        # `collision_set` may be None in the case where we're working with an
+        # unknown entity
+        if self.collision_set is None:
+            return None
+
         # Get the (local) Axis-aligned bounding box
         bounding_box = self.collision_set.get_bounding_box()
 

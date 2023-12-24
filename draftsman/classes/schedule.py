@@ -437,7 +437,6 @@ class Schedule(Exportable):
 
             @field_serializer("wait_conditions")
             def serialize_wait_conditions(self, value: WaitConditions, _):
-                print("serialize!")
                 return value.to_dict()
 
         # _locomotives: list[Association.Format] = PrivateAttr()

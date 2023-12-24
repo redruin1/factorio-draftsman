@@ -1,12 +1,4 @@
 # entity.py
-# -*- encoding: utf-8 -*-
-
-# Long term:
-# TODO: defaults!
-# TODO: "succinct" mode for to_dict(), integrate with better default management
-# TODO: flipping and rotation of entities
-
-from __future__ import unicode_literals
 
 from draftsman.classes.association import Association
 from draftsman.classes.collision_set import CollisionSet
@@ -19,14 +11,13 @@ from draftsman.classes.exportable import (
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.data import entities
-from draftsman.error import InvalidEntityError, DraftsmanError, DataFormatError
+from draftsman.error import DraftsmanError, DataFormatError
 from draftsman.signatures import (
     DraftsmanBaseModel,
     FloatPosition,
     IntPosition,
     get_suggestion,
     uint64,
-    EntityName,
 )
 from draftsman.warning import UnknownEntityWarning
 from draftsman import utils
@@ -35,17 +26,13 @@ import copy
 from pydantic import (
     ConfigDict,
     Field,
-    GetCoreSchemaHandler,
     ValidationError,
     ValidationInfo,
-    ValidatorFunctionWrapHandler,
-    model_validator,
     field_validator,
     field_serializer,
     PrivateAttr,
 )
-from pydantic_core import CoreSchema, core_schema
-from typing import Any, Optional
+from typing import Any, Literal, Optional, Union
 import weakref
 
 
@@ -152,7 +139,11 @@ class Entity(Exportable, EntityLike):
 
         @field_validator("name")
         @classmethod
-        def check_recognized(cls, value: str, info: ValidationInfo):
+        def check_unknown_name(cls, value: str, info: ValidationInfo):
+            """
+            Warn if the name is not any known Draftsman entity name. Only called
+            when the entity is an instance of the base class :py:cls:`Entity`.
+            """
             if not info.context:
                 return value
             if info.context["mode"] <= ValidationMode.MINIMUM:
@@ -163,16 +154,24 @@ class Entity(Exportable, EntityLike):
 
             # Similar entities exists on all entities EXCEPT generic `Entity`
             # instances, for which we're trying to ignore validation on
-            if entity.similar_entities is None:
-                return value
+            # if entity.similar_entities is None:
+            #     return value
 
-            if value not in entity.similar_entities:
+            if entity.similar_entities is not None and value not in entity.similar_entities:
                 warning_list.append(
                     UnknownEntityWarning(
-                        "'{}' is not a known name for this {}{}".format(
+                        "'{}' is not a known name for a {}{}".format(
                             value,
                             type(entity).__name__,
                             get_suggestion(value, entity.similar_entities, n=1),
+                        )
+                    )
+                )
+            elif value not in entities.raw:
+                warning_list.append(
+                    UnknownEntityWarning(
+                        "Unknown entity '{}'{}".format(
+                            value, get_suggestion(value, entities.raw.keys(), n=1)
                         )
                     )
                 )
@@ -193,6 +192,12 @@ class Entity(Exportable, EntityLike):
         similar_entities: list[str],
         tile_position: IntPosition = (0, 0),
         id: str = None,
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
         **kwargs
     ):
         """
@@ -276,9 +281,6 @@ class Entity(Exportable, EntityLike):
         if "tile_height" in entities.raw.get(self.name, {}):
             self._tile_height = entities.raw[self.name]["tile_height"]
         # And in some other cases are manually overriden later in subclasses
-
-        # Hidden? (Internal)
-        self._hidden = "hidden" in entities.raw.get(self.name, {}).get("flags", set())
 
         # Position and Tile position
         # If "position" was set, use that over "tile_position"
@@ -569,27 +571,16 @@ class Entity(Exportable, EntityLike):
     # =========================================================================
 
     @property
-    def hidden(self) -> bool:
+    def flags(self) -> Optional[list[str]]:
         """
-        Whether or not this Entity is considered "hidden", as specified in it's
-        flags in Factorio's ``data.raw``. Not exported; read only.
-
-        .. NOTE::
-
-            "Hidden" in this context is somewhat unintuitive, as items you might
-            think would be considered hidden may not be. Ship wreckage entities,
-            for example, are not considered "hidden", even though the only way
-            to access them is with the editor. Keep this in mind when querying
-            this attribute, especially since this discrepancy might be
-            considered a bug later on.
+        A set of string flags which indicate a number of behaviors of this
+        prototype. Not exported; read only.
 
         .. seealso::
 
             `<https://wiki.factorio.com/Types/EntityPrototypeFlags>`_
-
-        :type: ``bool``
         """
-        return self._hidden
+        return entities.raw.get(self.name, {"flags": None}).get("flags", [])
 
     # =========================================================================
 
@@ -608,7 +599,7 @@ class Entity(Exportable, EntityLike):
     # =========================================================================
 
     @property
-    def tags(self) -> dict:
+    def tags(self) -> Optional[dict[str, Any]]:
         """
         Tags associated with this Entity. Commonly used by mods to add custom
         data to a particular Entity when exporting and importing Blueprint
@@ -624,7 +615,7 @@ class Entity(Exportable, EntityLike):
         return self._root.tags
 
     @tags.setter
-    def tags(self, value: dict):
+    def tags(self, value: Optional[dict[str, Any]]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self, type(self).Format, self._root, "tags", value
@@ -634,25 +625,6 @@ class Entity(Exportable, EntityLike):
             self._root.tags = value
 
     # =========================================================================
-
-    # def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
-    #     out_dict = self._root.model_dump(
-    #         # Some attributes are reserved words ('type', 'from', etc.); this
-    #         # resolves that issue
-    #         by_alias=True,
-    #         # Trim if values are None
-    #         exclude_none=exclude_none,
-    #         # Trim if values are defaults
-    #         exclude_defaults=exclude_defaults,
-    #         # Ignore warnings because we might export a model where the keys are
-    #         # intentionally incorrect
-    #         # Plus there are things like Associations with which we want to
-    #         # preserve when returning this object so that a parent object can
-    #         # handle them
-    #         warnings=False,
-    #     )
-
-    #     return out_dict
 
     def validate(
         self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
@@ -697,7 +669,6 @@ class Entity(Exportable, EntityLike):
             if hasattr(self._root, "direction"):
                 result.direction = self._root.direction
             if hasattr(self._root, "orientation"):
-                print(self._root.orientation)
                 result.orientation = self._root.orientation
             # Acquire the newly converted data
             self._root = result
@@ -750,7 +721,6 @@ class Entity(Exportable, EntityLike):
     def __deepcopy__(self, memo) -> "Entity":
         # Perform the normal deepcopy
         result = super().__deepcopy__(memo=memo)
-        print(type(result))
         # This is very cursed
         # We need a reference to the parent entity stored in `_root` so that we
         # can properly serialize it's position

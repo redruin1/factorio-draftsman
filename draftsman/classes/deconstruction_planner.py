@@ -258,7 +258,7 @@ class DeconstructionPlanner(Blueprintable):
         self,
         deconstruction_planner: Union[str, dict, None] = None,
         index: Optional[uint16] = None,
-        if_unknown: str = "error", # TODO: enum
+        if_unknown: str = "error",  # TODO: enum
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,

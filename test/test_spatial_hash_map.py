@@ -1,19 +1,13 @@
 # test_spatial_hash_map.py
-# -*- encoding: utf-8 -*-
 
 from draftsman.classes.blueprint import SpatialHashMap
 from draftsman.tile import Tile
 from draftsman import utils
 
-import sys
-
-if sys.version_info >= (3, 3):  # pragma: no coverage
-    import unittest
-else:  # pragma: no coverage
-    import unittest2 as unittest
+import pytest
 
 
-class SpatialHashMapTesting(unittest.TestCase):
+class TestSpatialHashMap:
     def test_init(self):
         map = SpatialHashMap()
         assert map.map == {}
@@ -84,7 +78,7 @@ class SpatialHashMapTesting(unittest.TestCase):
         results = map.get_on_point((100, 100))
         assert results == []
 
-    def test_get_in_area(self):
+    def test_get_in_aabb(self):
         map = SpatialHashMap()
         tile_to_add = Tile("refined-concrete", (0, 0))
         map.add(tile_to_add)
@@ -92,14 +86,11 @@ class SpatialHashMapTesting(unittest.TestCase):
         map.add(other_tile_to_add)
         another_tile_to_add = Tile("refined-hazard-concrete-left", (7, 7))
         map.add(another_tile_to_add)
-        results = map.get_in_area(utils.AABB(0, 0, 4, 4))
+        results = map.get_in_aabb(utils.AABB(0, 0, 4, 4))
         assert results == [tile_to_add]
-        results = map.get_in_area(utils.AABB(0, 0, 8, 8))
+        results = map.get_in_aabb(utils.AABB(0, 0, 8, 8))
         assert results == [tile_to_add, another_tile_to_add]
-        results = map.get_in_area(utils.AABB(-100, -100, 100, 100))
+        results = map.get_in_aabb(utils.AABB(-100, -100, 100, 100))
         assert results == [tile_to_add, another_tile_to_add, other_tile_to_add]
-        results = map.get_in_area(utils.AABB(-100, -100, 100, 100), limit=1)
+        results = map.get_in_aabb(utils.AABB(-100, -100, 100, 100), limit=1)
         assert results == [tile_to_add]
-
-    def test_handle_overlapping(self):
-        pass  # TODO

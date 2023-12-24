@@ -92,7 +92,6 @@ class Furnace(
             warning_list: list = info.context["warning_list"]
 
             for item, count in entity.ingredient_items.items():
-                print(item, count)
                 stack_size = items.raw[item]["stack_size"]
                 if count > stack_size:
                     warning_list.append(

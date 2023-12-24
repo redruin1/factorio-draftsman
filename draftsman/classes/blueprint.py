@@ -1,5 +1,4 @@
 # blueprint.py
-# -*- encoding: utf-8 -*-
 
 """
 .. code-block:: python
@@ -98,8 +97,6 @@ from draftsman.error import (
     UnreasonablySizedBlueprintError,
     DataFormatError,
     InvalidAssociationError,
-    IncorrectBlueprintTypeError,
-    MalformedBlueprintStringError,
 )
 from draftsman.signatures import (
     Color,
@@ -130,6 +127,7 @@ from pydantic import (
     Field,
     PrivateAttr,
     ValidationError,
+    ValidationInfo,
     field_validator,
     field_serializer,
 )
@@ -364,32 +362,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             def serialize_position_relative(self, _):
                 return self._position_relative_to_grid.to_dict()
 
-            # @model_validator(mode="before")
-            # @classmethod
-            # def normalize_internal_lists(cls, data):
-            #     _normalize_internal_structure(data)
-            #     return data
-
-            # @model_validator(mode="after")
-            # def adjust_grid_positions(self) -> "Blueprint.Format.BlueprintObject":
-            #     if self.snapping_grid_position is not None:
-            #         # Offset Entities
-            #         for entity in self.entities:
-            #             entity["position"]["x"] -= self.snapping_grid_position.x
-            #             entity["position"]["y"] -= self.snapping_grid_position.y
-
-            #         # Offset Tiles
-            #         for tile in self.tiles:
-            #             tile["position"]["x"] -= self.snapping_grid_position.x
-            #             tile["position"]["y"] -= self.snapping_grid_position.y
-
-            #     return self
-
-            # TODO: maybe model serializer would work now?
-            # @model_serializer
-            # def serialize_blueprint(self, value):
-            #     pass
-
         blueprint: BlueprintObject
         index: Optional[uint16] = Field(
             None,
@@ -398,6 +370,29 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             list. Only meaningful when this object is inside a BlueprintBook.
             """,
         )
+
+        @field_validator("blueprint")
+        @classmethod
+        def check_if_unreasonable_size(
+            cls, value: BlueprintObject, info: ValidationInfo
+        ):
+            if not info.context:
+                return value
+            if info.context["mode"] <= ValidationMode.MINIMUM:
+                return value
+
+            blueprint: Blueprint = info.context["object"]
+
+            # Check the blueprint for unreasonable size
+            tile_width, tile_height = blueprint.get_dimensions()
+            if tile_width > 10000 or tile_height > 10000:
+                raise AssertionError(
+                    "Current blueprint dimensions ({}, {}) exceeds the maximum size permitted by Factorio (10000, 10000)".format(
+                        tile_width, tile_height
+                    )
+                )
+
+            return value
 
         model_config = ConfigDict(title="Blueprint")
 
@@ -416,6 +411,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
+        if_unknown: str = "error",  # TODO: enum
     ):
         """
         Creates a ``Blueprint`` class. Will load the data from ``blueprint`` if
@@ -459,7 +455,13 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         tiles: Union[TileList, list[Tile]] = [],
         schedules: Union[ScheduleList, list[Schedule]] = [],
         index: Optional[uint16] = None,
-        if_unknown: str = "error",
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        if_unknown: str = "error",  # TODO: enum
         **kwargs,
     ):  # TODO: keyword arguments
 
@@ -495,11 +497,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         else:
             self.position_relative_to_grid = position_relative_to_grid
 
-        ### INTERNAL ###
-        self._area = None
-        self._tile_width = 0
-        self._tile_height = 0
-
         ### DATA ###
         # Create spatial hashing objects to make spatial queries much quicker
         self._tile_map = SpatialHashMap()
@@ -509,13 +506,13 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         # self._root[self._root_item]["entities"] = EntityList(
         #     self, kwargs.pop("entities", None)
         # )
-        self._root._entities = EntityList(self, entities)
+        self._root._entities = EntityList(self, entities, if_unknown=if_unknown)
 
         # if "tiles" in kwargs:
         # self._root[self._root_item]["tiles"] = TileList(
         #     self, kwargs.pop("tiles", None)
         # )
-        self._root._tiles = TileList(self, tiles)
+        self._root._tiles = TileList(self, tiles, if_unknown=if_unknown)
 
         # self._root[self._root_item]["schedules"] = ScheduleList(
         #     kwargs.pop("schedules", None)
@@ -806,8 +803,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         else:
             raise TypeError("'entities' must be an EntityList, list, or None")
 
-        self.recalculate_area()
-
     def on_entity_insert(
         self, entitylike: EntityLike, merge: bool
     ) -> Optional[EntityLike]:
@@ -815,36 +810,18 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         Callback function for when an :py:class:`.EntityLike` is added to this
         Blueprint's :py:attr:`entities` list. Handles the addition of the entity
         into :py:attr:`entity_map`, and recalculates it's dimensions.
-
-        :raises UnreasonablySizedBlueprintError: If inserting the new entity
-            causes the blueprint to exceed 10,000 x 10,000 tiles in dimension.
         """
         # Here we issue warnings for overlapping entities, modify existing
         # entities if merging is enabled and delete excess entities in entitylike
-        entitylike = self.entity_map.handle_overlapping(entitylike, merge)
-
-        if entitylike is None:  # the entity has been entirely merged
-            return entitylike  # early exit
+        if self.validate_assignment:
+            self.entity_map.validate_insert(entitylike, merge)
 
         # Issue entity-specific warnings/errors if any exist for this entitylike
         entitylike.on_insert(self)
 
-        # If no errors, add this to hashmap (as well as any of it's children)
-        self.entity_map.recursive_add(entitylike)
-
-        # Update dimensions of Blueprint
-        self._area = extend_aabb(self._area, entitylike.get_world_bounding_box())
-        (
-            self._tile_width,
-            self._tile_height,
-        ) = aabb_to_dimensions(self._area)
-        # Check the blueprint for unreasonable size
-        # TODO: change this for warning
-        if self._tile_width > 10000 or self._tile_height > 10000:
-            raise UnreasonablySizedBlueprintError(
-                "Current blueprint dimensions ({}, {}) exceeds the maximum size"
-                " (10,000 x 10,000)".format(self._tile_width, self._tile_height)
-            )
+        # If no errors, add this to hashmap (as well as any of it's children),
+        # merging as necessary
+        entitylike = self.entity_map.recursive_add(entitylike, merge)
 
         return entitylike
 
@@ -862,16 +839,14 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         old_entitylike.on_remove(self)
 
         # Check for overlapping entities
-        self.entity_map.handle_overlapping(new_entitylike, False)
+        if self.validate_assignment:
+            self.entity_map.validate_insert(new_entitylike, False)
 
         # Issue entity-specific warnings/errors if any exist for this entitylike
         new_entitylike.on_insert(self)
 
         # Add the new entity and its children
-        self.entity_map.recursive_add(new_entitylike)
-
-        # Disdain
-        # self.recalculate_area()
+        self.entity_map.recursive_add(new_entitylike, False)
 
     def on_entity_remove(self, entitylike: EntityLike):
         """
@@ -879,17 +854,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         Blueprint's :py:attr:`entities` list. Handles the removal of the
         ``EntityLike`` from :py:attr:`entity_map`.
         """
-        # Handle entity specific
+        # Handle entity specific warnings/errors
         entitylike.on_remove(self)
 
         # Remove the entity and its children
         self.entity_map.recursive_remove(entitylike)
-
-        # Perform any remove checks on per entity basis
-        entitylike.on_remove(self)
-
-        # This sucks lmao
-        # self.recalculate_area()
 
     # =========================================================================
 
@@ -940,8 +909,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         else:
             raise TypeError("'tiles' must be a TileList, list, or None")
 
-        self.recalculate_area()
-
     def on_tile_insert(self, tile: Tile, merge: bool) -> Optional[Tile]:
         """
         Callback function for when a :py:class:`.Tile` is added to this
@@ -952,28 +919,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             causes the blueprint to exceed 10,000 x 10,000 tiles in dimension.
         """
         # Handle overlapping and merging
-        tile = self.tile_map.handle_overlapping(tile, merge)
-
-        if tile is None:  # Tile was merged
-            return tile  # early exit
+        if self.validate_assignment:
+            self.tile_map.validate_insert(tile, merge=merge)
 
         # Add to tile map
-        self.tile_map.add(tile)
-
-        # Update dimensions
-        self._area = extend_aabb(self._area, tile.get_world_bounding_box())
-        (
-            self._tile_width,
-            self._tile_height,
-        ) = aabb_to_dimensions(self.area)
-
-        # Check the blueprint for unreasonable size
-        # TODO: remove and move elsewhere
-        if self._tile_width > 10000 or self._tile_height > 10000:
-            raise UnreasonablySizedBlueprintError(
-                "Current blueprint dimensions ({}, {}) exceeds the maximum size"
-                " (10,000 x 10,000)".format(self._tile_width, self._tile_height)
-            )
+        tile = self.tile_map.add(tile, merge=merge)
 
         return tile
 
@@ -984,12 +934,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         from :py:attr:`tile_map` and adds the new one in it's stead.
         """
         self.tile_map.remove(old_tile)
-        self.tile_map.handle_overlapping(new_tile, False)
-        self.tile_map.add(new_tile)
 
-        # Unfortunately, this can't be here because we need to recalculate after
-        # modifying the base list, which happens *after* this function finishes
-        # self.recalculate_area() # TODO
+        if self.validate_assignment:
+            self.tile_map.validate_insert(new_tile, merge=False)
+
+        self.tile_map.add(new_tile, merge=False)
 
     def on_tile_remove(self, tile: Tile):
         """
@@ -998,9 +947,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         from the :py:attr:`tile_map`.
         """
         self.tile_map.remove(tile)
-
-        # Disdain...
-        # self.recalculate_area() # TODO
 
     # =========================================================================
 
@@ -1052,47 +998,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     # =========================================================================
 
     @property
-    def area(self) -> Optional[AABB]:
-        """
-        The Axis-aligned Bounding Box of the Blueprint's dimensions. Not
-        exported; for user aid. Read only.
-
-        Stored internally as a list of two lists, where the first one represents
-        the top-left corner (minimum) and the second the bottom-right corner
-        (maximum). This attribute is updated every time an Entity or Tile is
-        changed inside the Blueprint.
-
-        :type: ``list[list[float, float], list[float, float]]``
-        """
-        return self._area
-
-    # =========================================================================
-
-    @property
-    def tile_width(self) -> int:
-        """
-        The width of the Blueprint's ``area``, rounded up to the nearest tile.
-        Read only.
-
-        :type: ``int``
-        """
-        return self._tile_width
-
-    # =========================================================================
-
-    @property
-    def tile_height(self) -> int:
-        """
-        The width of the Blueprint's ``area``, rounded up to the nearest tile.
-        Read only.
-
-        :type: ``int``
-        """
-        return self._tile_height
-
-    # =========================================================================
-
-    @property
     def double_grid_aligned(self) -> bool:
         """
         Whether or not the blueprint is aligned with the double grid, which is
@@ -1136,27 +1041,29 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     # Utility functions
     # =========================================================================
 
-    def recalculate_area(self):
+    def get_world_bounding_box(self) -> Optional[AABB]:
         """
-        Recalculates the ``area``, ``tile_width``, and ``tile_height``. Called
-        automatically when an EntityLike or Tile object is altered or removed.
-        Can be called by the end user, though it shouldn't be neccessary.
+        Calculates the minimum AABB which encompasses all entities and tiles
+        within this blueprint. If the blueprint is empty of entities or tiles,
+        or if all of the entities contained within it have no known dimension,
+        then this function returns ``None``.
         """
-        self._area = None
+        area = None
         for entity in self.entities:
-            self._area = extend_aabb(self._area, entity.get_world_bounding_box())
+            area = extend_aabb(area, entity.get_world_bounding_box())
 
         for tile in self.tiles:
-            self._area = extend_aabb(self._area, tile.get_world_bounding_box())
+            area = extend_aabb(area, tile.get_world_bounding_box())
 
-        self._tile_width, self._tile_height = aabb_to_dimensions(self._area)
+        return area
 
-        # Check the blueprint for unreasonable size
-        if self.tile_width > 10000 or self.tile_height > 10000:
-            raise UnreasonablySizedBlueprintError(
-                "Current blueprint dimensions ({}, {}) exceeds the maximum size"
-                " (10,000 x 10,000)".format(self.tile_width, self.tile_height)
-            )
+    def get_dimensions(self) -> tuple[int, int]:
+        """
+        Calculates the maximum extents of the blueprint along the x and y axis
+        in tiles. Returns ``(0, 0)`` if the blueprint's world bounding box is
+        ``None``.
+        """
+        return aabb_to_dimensions(self.get_world_bounding_box())
 
     def validate(
         self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False

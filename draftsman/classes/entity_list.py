@@ -2,27 +2,32 @@
 
 from draftsman.classes.association import Association
 from draftsman.classes.entity_like import EntityLike
+from draftsman.classes.exportable import Exportable, ValidationResult
+from draftsman.constants import ValidationMode
 from draftsman.entity import new_entity
 from draftsman.error import (
+    DataFormatError,
     DuplicateIDError,
     InvalidAssociationError,
     InvalidEntityError,
 )
-from draftsman import utils
-from draftsman.signatures import Connections
+from draftsman.utils import reissue_warnings
+from draftsman.signatures import Connections, DraftsmanBaseModel
 from draftsman.warning import HiddenEntityWarning
 
-try:  # pragma: no coverage
-    from collections.abc import MutableSequence
-except ImportError:  # pragma: no coverage
-    from collections import MutableSequence
+from collections.abc import MutableSequence
 from copy import deepcopy
-from pydantic import BaseModel, GetCoreSchemaHandler, GetJsonSchemaHandler
+from pydantic import (
+    GetCoreSchemaHandler,
+    GetJsonSchemaHandler,
+    ValidationError,
+    model_validator,
+)
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
-import six
-from typing import Union, Any, TYPE_CHECKING
-import warnings
+from typing import Any, Literal, Union
+
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.collection import EntityCollection
@@ -37,14 +42,34 @@ class EntityList(MutableSequence):
     :py:class:`.EntityCollection` classes.
     """
 
-    class Format(BaseModel):
+    class Format(DraftsmanBaseModel):
         data: list[dict]  # TODO: fix
 
-    @utils.reissue_warnings
+        @model_validator(mode="after")
+        def ensure_no_duplicate_ids(self, info):
+            known_ids = set()
+            for entitylike in self.data:
+                if entitylike.id in known_ids:
+                    raise AssertionError(
+                        "Cannot have two entities with the same id"
+                    )  # TODO better
+                known_ids.add(entitylike.id)
+
+        # TODO: determine a way to check if entities can be placed in a blueprint
+        # ("hidden" flag, "not-blueprintable" flag, etc.)
+
+    @reissue_warnings
     def __init__(
-        self, parent: "EntityCollection" = None, 
+        self,
+        parent: "EntityCollection" = None,
         initlist: list[EntityLike] = [],
-        if_unknown: str = "error" # TODO: enum
+        # validate: Union[
+        #     ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        # ] = ValidationMode.STRICT,
+        # validate_assignment: Union[
+        #     ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        # ] = ValidationMode.STRICT,
+        if_unknown: str = "error",  # TODO: enum
     ):
         """
         Instantiates a new ``EntityList``.
@@ -70,11 +95,13 @@ class EntityList(MutableSequence):
                 name = elem.pop("name")
                 self.append(name, **elem, if_unknown=if_unknown)
             else:
-                raise TypeError(
-                    "Constructor either takes EntityLike or dict entries"
-                )
+                raise TypeError("Constructor either takes EntityLike or dict entries")
 
-    @utils.reissue_warnings
+        # self.validate_assignment = validate_assignment
+
+        # self.validate(mode=validate).reissue_all(stacklevel=3)
+
+    @reissue_warnings
     def append(
         self,
         name: Union[str, "EntityLike"],
@@ -97,26 +124,19 @@ class EntityList(MutableSequence):
         :param name: Either a string reprenting the name of an ``Entity``, or an
             :py:class:`.EntityLike` instance.
         :param copy: Whether or not to create a copy of the passed in
-            ``EntityLike``. If ``entitylike`` is in string shorthand, this
-            option is ignored and a new instance is always created.
+            ``EntityLike``. If ``name`` is in string shorthand, this option is
+            ignored and a new instance is always created.
         :param merge: Whether or not to merge entities of the same type at the
             same position. Merged entities share non-overlapping attributes and
             prefer the attributes of the last entity added. Useful for merging
             things like rails or power-poles on the edges of tiled blueprints.
-        :param if_unknown: TODO
-        :param kwargs: Any other keyword arguments to pass to the constructor
-            in string shorthand.
-
-        .. NOTE::
-
-            Keyword arguments are only considered if ``entity`` is a string:
-
-            .. code-block:: python
-
-                test_inserter = Inserter("fast-inserter")
-                blueprint.entities.append(test_inserter, id="test")
-                # Prints "None" because id was never set in test_inserter
-                print(blueprint.entities[-1].id)
+        :param if_unknown: The behavior this method should perform if ``name``
+            is not recognized as any known valid entity. See TODO for a more
+            complete explanation.
+        :param kwargs: Any other keyword arguments to pass to the entity
+            instance. This is used primarily when constructing a new entity from
+            a string name, but can also be used to overwrite certain attributes
+            of a passed in ``EntityLike`` before adding it to the ``EntityList``.
 
         :example:
 
@@ -148,15 +168,15 @@ class EntityList(MutableSequence):
             assert blueprint.entities[-1].stack_size_override == 1
         """
         self.insert(
-            len(self.data), 
-            name=name, 
-            copy=copy, 
+            idx=len(self),
+            name=name,
+            copy=copy,
             merge=merge,
-            if_unknown=if_unknown, 
+            if_unknown=if_unknown,
             **kwargs
         )
 
-    @utils.reissue_warnings
+    @reissue_warnings
     def insert(
         self,
         idx: int,
@@ -181,16 +201,19 @@ class EntityList(MutableSequence):
         :param name: Either a string reprenting the name of an ``Entity``, or an
             :py:class:`.EntityLike` instance.
         :param copy: Whether or not to create a copy of the passed in
-            ``EntityLike``. If ``entitylike`` is in string shorthand, this
+            ``EntityLike``. If ``name`` is a string name of an entity, this
             option is ignored and a new instance is always created.
         :param merge: Whether or not to merge entities of the same type at the
             same position. Merged entities share non-overlapping attributes and
             prefer the attributes of the last entity added. Useful for merging
             things like rails or power-poles on the edges of tiled blueprints.
-        :param if_unknown: TODO
-        :param kwargs: Any other keyword arguments to pass to overwrite the
-            values in the newly-added entity. Only works when using string
-            shorthand or when ``copy=True``.
+        :param if_unknown: The behavior this method should perform if ``name``
+            is not recognized as any known valid entity. See TODO for a more
+            complete explanation.
+        :param kwargs: Any other keyword arguments to pass to the entity
+            instance. This is used primarily when constructing a new entity from
+            a string name, but can also be used to overwrite certain attributes
+            of a passed in ``EntityLike`` before adding it to the ``EntityList``.
 
         :example:
 
@@ -221,11 +244,9 @@ class EntityList(MutableSequence):
             assert inserter is blueprint.entities[0]
             assert blueprint.entities[0].stack_size_override == 1
         """
-        # TODO: validate
-
         # Convert to new Entity if constructed via string keyword
         new = False
-        if isinstance(name, six.string_types):
+        if isinstance(name, str):
             entitylike = new_entity(name, **kwargs, if_unknown=if_unknown)
             if entitylike is None:
                 return
@@ -262,7 +283,7 @@ class EntityList(MutableSequence):
         if self._parent:
             entitylike = self._parent.on_entity_insert(entitylike, merge)
 
-        if entitylike is None:  # input entity was entirely merged
+        if entitylike is None:  # input entitylike was entirely merged
             return  # exit without adding to list
 
         # Once the parent has itself in order, we can update our data
@@ -275,11 +296,14 @@ class EntityList(MutableSequence):
         # that it's inserted
         entitylike._parent = self._parent
 
-    def recursive_remove(self, item: "EntityLike"):
+    def recursive_remove(self, item: "EntityLike") -> None:
         """
         Removes an EntityLike from the EntityList. Recurses through any
         subgroups to see if ``item`` is there, removing the root-most entity
         first.
+
+        :raises ValueError: If unable to locate the passed in entity anywhere
+            in the ``EntityList``.
         """
         # First, try to delete the item from this list
         try:
@@ -327,12 +351,12 @@ class EntityList(MutableSequence):
         # accidentally creates an instance of a hidden entity
         # If not in the entity itself it would likely live in the `Format` of
         # this class
-        if getattr(entitylike, "hidden", False):
-            warnings.warn(
-                "Attempting to add hidden entity '{}'".format(entitylike.name),
-                HiddenEntityWarning,
-                stacklevel=2,
-            )
+        # if getattr(entitylike, "hidden", False):
+        #     warnings.warn(
+        #         "Attempting to add hidden entity '{}'".format(entitylike.name),
+        #         HiddenEntityWarning,
+        #         stacklevel=2,
+        #     )
 
     def get_pair(self, item: Union[int, str]) -> tuple[int, str]:
         """
@@ -346,8 +370,8 @@ class EntityList(MutableSequence):
         :exception KeyError: If key ``item`` is not found in the key mapping
             dictionaries in the ``EntityList``.
         """
-        if isinstance(item, six.string_types):
-            return (self.key_to_idx[six.text_type(item)], item)
+        if isinstance(item, str):
+            return (self.key_to_idx[item], item)
         else:
             return (item, self.idx_to_key.get(item, None))
 
@@ -412,12 +436,45 @@ class EntityList(MutableSequence):
         self.key_to_idx.clear()
         self.idx_to_key.clear()
 
+    def validate(
+        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    ) -> ValidationResult:
+        mode = ValidationMode(mode)
+
+        output = ValidationResult([], [])
+
+        if mode is ValidationMode.NONE or (self.is_valid and not force):
+            return output
+
+        context: dict[str, Any] = {
+            "mode": mode,
+            "object": self,
+            "warning_list": [],
+            "assignment": False,
+        }
+
+        try:
+            result = self.Format.model_validate(
+                self._root,
+                strict=False,  # TODO: ideally this should be strict
+                context=context,
+            )
+            # Reassign private attributes
+            # Acquire the newly converted data
+            self._root = result
+        except ValidationError as e:
+            output.error_list.append(DataFormatError(e))
+
+        output.warning_list += context["warning_list"]
+
+        return output
+
     # =========================================================================
     # Metamethods
     # =========================================================================
 
     def __getitem__(
-        self, item: Union[int, str, slice]
+        self, item: Union[int, str, slice, tuple]
     ) -> Union[EntityLike, list[EntityLike]]:
         if isinstance(item, (list, tuple)):
             new_base = self[item[0]]
@@ -430,7 +487,7 @@ class EntityList(MutableSequence):
         else:
             return self.key_map[item]  # Raises KeyError
 
-    @utils.reissue_warnings
+    @reissue_warnings
     def __setitem__(self, item: Union[int, str], value: "EntityLike"):
         # TODO: handle slices
 
@@ -456,9 +513,6 @@ class EntityList(MutableSequence):
         # Add a reference to the parent in the object
         value._parent = self._parent
 
-        # TODO: this sucks man
-        self._parent.recalculate_area()
-
     def __delitem__(self, item: Union[int, str]):
         if isinstance(item, slice):
             # Get slice parameters
@@ -479,9 +533,6 @@ class EntityList(MutableSequence):
 
             # Delete all entries in the main list
             del self.data[item]
-
-            # TODO: this sucks man
-            self._parent.recalculate_area()
         else:
             # Get pair
             if isinstance(item, int):
@@ -499,9 +550,6 @@ class EntityList(MutableSequence):
 
             # Shift all entries above down by one
             self._shift_key_indices(idx, -1)
-
-            # TODO: this sucks man
-            self._parent.recalculate_area()
 
     def __len__(self) -> int:
         return len(self.data)

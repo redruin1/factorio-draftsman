@@ -10,7 +10,7 @@ from typing import cast as typing_cast
 
 def reverse_belts(blueprint: EntityCollection) -> None:
     """
-    Modifies the passed in blueprint or group in place to swap the direction of 
+    Modifies the passed in blueprint or group in place to swap the direction of
     all belts. Does more than simply flipping each belt direction by properly
     handling curves.
     """
@@ -28,7 +28,7 @@ def reverse_belts(blueprint: EntityCollection) -> None:
         # If not a belt, ignore it
         if entity.type not in belt_types:
             continue
-        
+
         entity = typing_cast(Union[TransportBelt, UndergroundBelt, Splitter], entity)
 
         # If it's not in the direction map, add it

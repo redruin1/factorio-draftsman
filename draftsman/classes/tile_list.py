@@ -1,17 +1,12 @@
 # tilelist.py
 
-from draftsman.classes.tile import Tile
-from draftsman.error import DataFormatError
+from draftsman.tile import Tile, new_tile
+from draftsman.data import tiles
+from draftsman.error import DataFormatError, InvalidTileError
 
-try:  # pragma: no coverage
-    from collections.abc import MutableSequence
-except ImportError:  # pragma: no coverage
-    from collections import MutableSequence
+from collections.abc import MutableSequence
 from copy import deepcopy
-from pydantic import GetCoreSchemaHandler
-from pydantic_core import CoreSchema, core_schema
-from typing import Any, Optional, TYPE_CHECKING
-import six
+from typing import Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.collection import TileCollection
@@ -22,7 +17,12 @@ class TileList(MutableSequence):
     TODO
     """
 
-    def __init__(self, parent: "TileCollection", initlist: Optional[list[Tile]]=None, unknown: str="error") -> None:
+    def __init__(
+        self,
+        parent: "TileCollection",
+        initlist: Optional[list[Tile]] = None,
+        if_unknown: str = "error",  # TODO: enum
+    ) -> None:
         """
         TODO
         """
@@ -30,38 +30,81 @@ class TileList(MutableSequence):
         self._parent = parent
         if initlist is not None:
             for elem in initlist:
-                print(elem)
                 if isinstance(elem, Tile):
-                    self.append(elem)
+                    self.append(elem, if_unknown=if_unknown)
                 elif isinstance(elem, dict):
                     name = elem.pop("name")
-                    self.append(name, **elem)
+                    self.append(name, **elem, if_unknown=if_unknown)
                 else:
                     raise DataFormatError(
                         "TileList only takes either Tile or dict entries"
                     )
 
-    def append(self, tile, copy=True, merge=False, **kwargs):
-        # type: (Tile, bool, bool, **dict) -> None
+    def append(
+        self,
+        name: Union[str, Tile],
+        copy: bool = True,
+        merge: bool = False,
+        if_unknown: str = "error",  # TODO: enum
+        **kwargs
+    ) -> None:
         """
         Appends the Tile to the end of the sequence.
-        """
-        self.insert(len(self.data), tile, copy, merge, **kwargs)
 
-    def insert(self, idx, tile, copy=True, merge=False, **kwargs):
-        # type: (int, Tile, bool, bool, str, **dict) -> None
+        TODO
+        """
+        self.insert(
+            idx=len(self),
+            name=name,
+            copy=copy,
+            merge=merge,
+            if_unknown=if_unknown,
+            **kwargs
+        )
+
+    def insert(
+        self,
+        idx: int,
+        name: Union[str, Tile],
+        copy: bool = True,
+        merge: bool = False,
+        if_unknown: str = "error",  # TODO: enum
+        **kwargs
+    ) -> None:
         """
         Inserts an element into the TileList.
+
+        TODO
         """
-        if isinstance(tile, str):
-            tile = Tile(tile, **kwargs)
-        elif copy:
+        # Convert to new Entity if constructed via string keyword
+        new = False
+        if isinstance(name, str):
+            tile = new_tile(name, **kwargs, if_unknown=if_unknown)
+            if tile is None:
+                return
+            new = True
+        else:
+            tile = name
+
+        if copy and not new:
+            # Create a DEEPcopy of the entity if desired
             tile = deepcopy(tile)
+            # Overwrite any user keywords if specified in the function signature
+            for k, v in kwargs.items():
+                setattr(tile, k, v)
+
+        # If we attempt to merge an tile that isn't a copy, bad things will
+        # probably happen
+        # Not really sure what *should* happen in that case, so lets just nip
+        # that in the bud for now
+        if not copy and merge:
+            raise ValueError(
+                "Attempting to merge a non-copy, which is disallowed (for now at least)"
+            )
 
         # Check tile
-        self.check_tile(tile)
-
-        print(tile)
+        if not isinstance(tile, Tile):
+            raise TypeError("Entry in TileList must be a Tile")
 
         if self._parent:
             tile = self._parent.on_tile_insert(tile, merge)
@@ -75,13 +118,7 @@ class TileList(MutableSequence):
         # Keep a reference of the parent blueprint in the tile
         tile._parent = self._parent
 
-    def check_tile(self, tile):
-        # type: (Tile) -> None
-        if not isinstance(tile, Tile):
-            raise TypeError("Entry in TileList must be a Tile")
-
-    def union(self, other):
-        # type: (TileList) -> TileList
+    def union(self, other: "TileList") -> "TileList":
         """
         TODO
         """
@@ -102,8 +139,7 @@ class TileList(MutableSequence):
 
         return new_tile_list
 
-    def intersection(self, other):
-        # type: (TileList) -> TileList
+    def intersection(self, other: "TileList") -> "TileList":
         """
         TODO
         """
@@ -120,7 +156,7 @@ class TileList(MutableSequence):
 
         return new_tile_list
 
-    def difference(self, other):
+    def difference(self, other: "TileList") -> "TileList":
         # type: (TileList) -> TileList
         """
         TODO
@@ -138,14 +174,14 @@ class TileList(MutableSequence):
 
         return new_tile_list
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: Union[int, slice]) -> Union[Tile, list[Tile]]:
         return self.data[idx]
 
-    def __setitem__(self, idx, value):
-        # type: (int, Tile) -> None
-
+    def __setitem__(self, idx: int, value: Tile) -> None:
+        # TODO: handle slices
         # Check tile
-        self.check_tile(value)
+        if not isinstance(value, Tile):
+            raise TypeError("Entry in TileList must be a Tile")
 
         # Handle parent
         self._parent.on_tile_set(self.data[idx], value)
@@ -156,11 +192,7 @@ class TileList(MutableSequence):
         # Add a reference to the container in the object
         value._parent = self._parent
 
-        # TODO: this sucks, but it has to be like this
-        self._parent.recalculate_area()
-
-    def __delitem__(self, idx):
-        # type: (int) -> None
+    def __delitem__(self, idx: Union[int, slice]) -> None:
         if isinstance(idx, slice):
             # Get slice parameters
             start, stop, step = idx.indices(len(self))
@@ -173,47 +205,41 @@ class TileList(MutableSequence):
         # Remove from self
         del self.data[idx]
 
-        # TODO: this sucks, but it has to be like this
-        self._parent.recalculate_area()
-
-    def __len__(self):
-        # type: () -> int
+    def __len__(self) -> int:
         return len(self.data)
 
-    def __or__(self, other):
-        # type: (TileList) -> TileList
+    def __or__(self, other: "TileList") -> "TileList":
+        # TODO: NotImplemented
         return self.union(other)
 
-    # def __ior__(self, other):
-    #     # type: (TileList) -> None
+    # def __ior__(self, other: "TileList") -> None:
     #     self.union(other)
 
-    def __and__(self, other):
-        # type: (TileList) -> TileList
+    def __and__(self, other: "TileList") -> "TileList":
+        # TODO: NotImplemented
         return self.intersection(other)
 
-    # def __iand__(self, other):
-    #     # type: (TileList) -> None
+    # def __iand__(self, other: "TileList") -> None:
     #     self.intersection(other)
 
-    def __sub__(self, other):
-        # type: (TileList) -> TileList
+    def __sub__(self, other: "TileList") -> "TileList":
+        # TODO: NotImplemented
         return self.difference(other)
 
-    # def __isub__(self, other):
-    #     # type: (TileList) -> None
+    # def __isub__(self, other: "TileList") -> None:
     #     self.difference(other)
 
-    def __eq__(self, other):
-        # type: (TileList) -> bool
+    def __eq__(self, other: "TileList") -> bool:
+        # TODO: not implmented
         if not isinstance(other, TileList):
             return False
-        if len(self.data) != len(other.data):
-            return False
-        for i in range(len(self.data)):
-            if self.data[i] != other.data[i]:
-                return False
-        return True
+        # if len(self.data) != len(other.data):
+        #     return False
+        # for i in range(len(self.data)):
+        #     if self.data[i] != other.data[i]:
+        #         return False
+        # return True
+        return self.data == other.data
 
     def __repr__(self) -> str:  # pragma: no coverage
         return "<TileList>{}".format(self.data)

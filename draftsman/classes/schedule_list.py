@@ -22,7 +22,6 @@ class ScheduleList(MutableSequence):
             if not isinstance(initlist, list):
                 raise TypeError("'initlist' must be either a list or None")
             for elem in initlist:
-                print(elem)
                 if isinstance(elem, Schedule):
                     self.append(elem)
                 elif isinstance(elem, dict):

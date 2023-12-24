@@ -1,5 +1,11 @@
 # TODO
 
+### Calling validate on a blueprint should validate all of it's child entitylikes and tiles (or should it?)
+
+### `OverlappingElementWarning` should only be issued when desired
+
+### If `validate_assignment` on a blueprint is `True`, does that mean that an appended entity or tile should be validated? Should overlapping object warnings be issued?
+
 ### Redo validation (again)
 Swapping to Pydantic was very illuminating in the benefits that it can provide:
 
@@ -80,6 +86,9 @@ Files done:
     - [ ] `prototypes`
     - [ ] `tools`
     - [ ] `*`
+
+---
+### Reinvestigate making an entity's `tile_position` based off of it's `position`
 
 ---
 ### Make draftsman's prototypes match Factorio's prototypes exactly (for consistency's sake)

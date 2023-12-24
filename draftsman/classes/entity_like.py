@@ -1,23 +1,20 @@
 # entitylike.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-import abc
+from abc import ABCMeta, abstractmethod
 import copy
-import six
 
-from typing import TYPE_CHECKING, Union
+from typing import Optional, Union
 
 from draftsman.classes.spatial_like import SpatialLike
+
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.collection import EntityCollection
     from draftsman.classes.entity import Entity
 
 
-@six.add_metaclass(abc.ABCMeta)
-class EntityLike(SpatialLike):
+class EntityLike(SpatialLike, metaclass=ABCMeta):
     """
     Abstract base class for a blueprintable entity. Allows the user to specify
     custom entity analogues that can be passed into Blueprint instances. `Group`
@@ -35,20 +32,10 @@ class EntityLike(SpatialLike):
     * `collision_mask`
     """
 
-    def __init__(self):
-        # type: () -> None
+    def __init__(self) -> None:
         # Parent reference (Internal)
         # Overwritten if the EntityLike is placed inside a Blueprint or Group
         self._parent = None
-
-        # Default attributes (Overwritten on a per-Entity basis)
-        # self._power_connectable = False
-        # self._dual_power_connectable = False
-        # self._circuit_connectable = False
-        # self._dual_circuit_connectable = False
-        # self._double_grid_aligned = False
-        # self._rotatable = False
-        # self._flippable = True
 
     # =========================================================================
     # Properties
@@ -141,28 +128,33 @@ class EntityLike(SpatialLike):
         return False
 
     # =========================================================================
+
+    @property
+    def flags(self) -> set[str]:
+        """
+        The set of flags associated with this EntityLike. Returns ``None`` if
+        the entitylike is not recognized by Draftsman. Not exported; read only.
+        """
+        return set()
+
+    # =========================================================================
     # Abstract Properties
     # =========================================================================
 
-    @abc.abstractproperty
-    def name(self):  # pragma: no coverage
+    @property
+    @abstractmethod
+    def name(self) -> str:  # pragma: no coverage
         pass
 
-    @abc.abstractproperty
-    def type(self):  # pragma: no coverage
+    @property
+    @abstractmethod
+    def type(self) -> str:  # pragma: no coverage
         pass
 
-    @abc.abstractproperty
-    def id(self):  # pragma: no coverage
+    @property
+    @abstractmethod
+    def id(self) -> Optional[str]:  # pragma: no coverage
         pass
-
-    @abc.abstractproperty
-    def tile_width(self):  # pragma: no coverage
-        pass  # TODO: do we need this?
-
-    @abc.abstractproperty
-    def tile_height(self):  # pragma: no coverage
-        pass  # TODO: do we need this?
 
     # =========================================================================
     # Abstract Methods
@@ -184,22 +176,8 @@ class EntityLike(SpatialLike):
         """
         pass
 
-    # @abc.abstractmethod
-    # def inspect(self):  # pragma: no coverage
-    #     # type: () -> list[Exception]
-    #     """
-    #     Checks the :py:class:`.EntityLike` and returns any errors that Draftsman
-    #     thinks will cause errors if imported into Factorio. Can be used to query
-    #     if a entity is completely in order, such as when importing data from an
-    #     external source.
-
-    #     :returns: A list of Python ``Exception``s.
-    #     """
-    #     pass
-
-    @abc.abstractmethod
-    def mergable_with(self, other):  # pragma: no coverage
-        # type: (EntityLike) -> bool
+    @abstractmethod
+    def mergable_with(self, other: "EntityLike") -> bool:  # pragma: no coverage
         """
         Checks to see if an entity is "mergable" with another entity. This means
         that if a certain set of criteria is met, the attributes of ``other``
@@ -221,9 +199,8 @@ class EntityLike(SpatialLike):
         """
         pass
 
-    @abc.abstractmethod
-    def merge(self, other):  # pragma: no coverage
-        # type: (EntityLike) -> None
+    @abstractmethod
+    def merge(self, other: "EntityLike") -> None:  # pragma: no coverage
         """
         Changes the attributes of the calling entity with the attributes of the
         passed in entity. The attributes of ``other`` take precedence over the
@@ -236,8 +213,7 @@ class EntityLike(SpatialLike):
         """
         pass
 
-    def get(self):
-        # type: () -> Union[Entity, list[Entity]]
+    def get(self) -> Union["Entity", list["Entity"]]:
         """
         Gets this :py:class:`.Entity`. Redundant for regular
         :py:class:`.Entity`s, but is needed for :py:class:`.EntityCollections`
@@ -248,8 +224,7 @@ class EntityLike(SpatialLike):
         """
         return self
 
-    def __deepcopy__(self, memo):
-        # type: (dict) -> EntityLike
+    def __deepcopy__(self, memo: dict) -> "EntityLike":
         """
         We override the default deepcopy method so that we don't get infinite
         recursion when attempting to copy it's 'parent' attribute. We instead

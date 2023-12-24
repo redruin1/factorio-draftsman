@@ -15,16 +15,25 @@ class SpatialDataStructure(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def add(self, item: SpatialLike, merge: bool=False) -> None:  # pragma: no coverage
+    def add(
+        self, item: SpatialLike, merge: bool = False
+    ) -> Optional[SpatialLike]:  # pragma: no coverage
         """
-        Add a :py:class:`.SpatialLike` instance to the :py:class:`.SpatialHashMap`.
+        Add a :py:class:`.SpatialLike` instance to the :py:class:`.SpatialDataStructure`.
 
-        :param: The object to add.
+        :param item: The object to add.
+        :param merge: Whether or not to attempt to merge the added item with any
+            existing item, if possible.
+
+        :returns: The input SpatialLike if properly added, or ``None`` if the
+            input object was merged.
         """
         pass
 
     @abc.abstractmethod
-    def recursive_add(self, item: SpatialLike, merge: bool=False) -> None:  # pragma: no coverage
+    def recursive_add(
+        self, item: SpatialLike, merge: bool = False
+    ) -> Optional[SpatialLike]:  # pragma: no coverage
         """
         Add the leaf-most entities to the hashmap.
 
@@ -33,6 +42,11 @@ class SpatialDataStructure(metaclass=abc.ABCMeta):
         Works with as many nested Groups as desired.
 
         :param item: The object to add, or its children (if it has any).
+        :param merge: Whether or not to attempt to merge the added item(s) with
+            any existing item(s), if possible.
+
+        :returns: The input SpatialLike if properly added, or ``None`` if the
+            input object was merged.
         """
         pass
 
@@ -62,12 +76,12 @@ class SpatialDataStructure(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def handle_overlapping(self, item: SpatialLike, merge: bool) -> None:  # pragma: no coverage
+    def validate_insert(
+        self, item: SpatialLike, merge: bool
+    ) -> None:  # pragma: no coverage
         """
         Checks to see if the added object overlaps any other objects currently
         contained within the map, and issues errors or warnings correspondingly.
-
-        TODO: see if we can omit this somehow
         """
         pass
 
@@ -83,7 +97,9 @@ class SpatialDataStructure(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_in_radius(self, radius: float, point: PrimitiveVector, limit: Optional[int]=None) -> list[SpatialLike]:  # pragma: no coverage
+    def get_in_radius(
+        self, radius: float, point: PrimitiveVector, limit: Optional[int] = None
+    ) -> list[SpatialLike]:  # pragma: no coverage
         """
         Get all the entities whose ``collision_set`` overlaps a circle.
 
@@ -98,7 +114,9 @@ class SpatialDataStructure(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_on_point(self, point: PrimitiveVector, limit: Optional[int]=None) -> list[SpatialLike]:  # pragma: no coverage
+    def get_on_point(
+        self, point: PrimitiveVector, limit: Optional[int] = None
+    ) -> list[SpatialLike]:  # pragma: no coverage
         """
         Get all the entities whose ``collision_set`` overlaps a point.
 
@@ -112,12 +130,13 @@ class SpatialDataStructure(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_in_area(self, area: AABB, limit: Optional[int]=None) -> list[SpatialLike]:  # pragma: no coverage
+    def get_in_aabb(
+        self, aabb: AABB, limit: Optional[int] = None
+    ) -> list[SpatialLike]:  # pragma: no coverage
         """
-        Get all the entities whose ``collision_box`` overlaps an area.
+        Get all the entities whose ``collision_set`` overlaps an AABB.
 
-        :param area: The area to examine; specified in the format
-            ``[[float, float], [float, float]]``.
+        :param aabb: The AABB to examine.
         :param limit: A maximum amount of entities to return.
 
         :returns: A ``list`` of all entities that intersect the area. Can be

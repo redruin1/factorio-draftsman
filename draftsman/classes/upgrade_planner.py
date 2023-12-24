@@ -295,7 +295,6 @@ class UpgradePlanner(Blueprintable):
                     if isinstance(value, Sequence):
                         result = []
                         for i, mapper in enumerate(value):
-                            print(i, mapper)
                             if isinstance(mapper, Sequence):
                                 result.append({"index": i})
                                 if mapper[0]:
@@ -304,7 +303,6 @@ class UpgradePlanner(Blueprintable):
                                     result[i]["to"] = mapper[1]
                             else:
                                 result.append(mapper)
-                        print("result:", result)
                         return result
                     else:
                         return value

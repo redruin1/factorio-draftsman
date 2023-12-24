@@ -1,14 +1,14 @@
 # transformable.py
-# -*- encoding: utf-8 -*-
 
 from draftsman.error import RotationError, FlippingError
 from draftsman.classes.vector import Vector
 from draftsman.warning import GridAlignmentWarning, FlippingWarning
 
+from typing import Literal
 import warnings
 
 
-class Transformable(object):
+class Transformable:
     """
     Implements a number of functions that allow the parent class to spatially
     transform its ``entities`` and ``tiles`` lists. All of the following methods
@@ -16,8 +16,7 @@ class Transformable(object):
     every entity and tile are modified each time they are called.
     """
 
-    def translate(self, x, y):
-        # type: (int, int) -> None
+    def translate(self, x: int, y: int) -> None:
         """
         Translates all entities and tiles in the blueprint by ``x`` and ``y``.
         Raises :py:class:`~draftsman.warning.RailAlignmentWarning` if the
@@ -29,6 +28,7 @@ class Transformable(object):
         """
         # Warn if attempting to translate by an odd amount when containing
         # double-grid-aligned entities
+        # TODO: should this be here?
         if self.double_grid_aligned and (x % 2 == 1 or y % 2 == 1):
             warnings.warn(
                 "Attempting to translate an odd number of tiles when this "
@@ -63,8 +63,6 @@ class Transformable(object):
                 tile._parent = None
 
                 # Change entity position
-                # tile.position["x"] += x
-                # tile.position["y"] += y
                 tile.position += Vector(x, y)
 
                 tile._parent = self
@@ -72,10 +70,7 @@ class Transformable(object):
                 # Re-add to map
                 self.tile_map.add(tile)
 
-        self.recalculate_area()
-
-    def rotate(self, angle):
-        # type: (int) -> None
+    def rotate(self, angle: int):
         """
         Rotate the blueprint by ``angle``, if possible. Operates the same as
         pressing 'r' with a blueprint selected.
@@ -87,10 +82,6 @@ class Transformable(object):
         function behaves like the feature in-game and only rotates on 90 degree
         intervals. Attempting to rotate the blueprint an odd amount raises
         an :py:class:`~draftsman.error.RotationError`.
-
-        .. WARNING::
-
-            **This function is currently under active development.**
 
         :param angle: The angle to rotate the blueprint by.
 
@@ -159,17 +150,10 @@ class Transformable(object):
                 # Re-add to map
                 self.tile_map.add(tile)
 
-        self.recalculate_area()
-
-    def flip(self, direction="horizontal"):
-        # type: (str) -> None
+    def flip(self, direction: Literal["horizontal", "vertical"] = "horizontal") -> None:
         """
         Flip the blueprint across an axis, if possible. Flipping is done over
         the x or y axis, depeding on the input ``direction``.
-
-        .. WARNING::
-
-            **This function is currently under active development.**
 
         :param direction: The direction to flip by; either ``"horizontal"`` or
             ``"vertical"``
@@ -238,5 +222,3 @@ class Transformable(object):
 
                 # Re-add to map
                 self.tile_map.add(tile)
-
-        self.recalculate_area()

@@ -23,9 +23,9 @@ class RailPlanner(Group):
 
     def __init__(
         self,
-        name: str="rail",
-        head_position: Union[Vector, PrimitiveVector]=(0, 0),
-        head_direction: Direction=Direction.NORTH,
+        name: str = "rail",
+        head_position: Union[Vector, PrimitiveVector] = (0, 0),
+        head_direction: Direction = Direction.NORTH,
         **kwargs
     ):
         """
@@ -111,7 +111,7 @@ class RailPlanner(Group):
 
     # =========================================================================
 
-    def move_forward(self, amount: int=1) -> None:
+    def move_forward(self, amount: int = 1) -> None:
         """
         Moves the :py:class:`.RailPlanner`'s head ``amount`` rail-tiles in the
         direction :py:attr:`.head_direction`.
@@ -154,7 +154,9 @@ class RailPlanner(Group):
                 self.head_position.x += cardinal_offset[0]
                 self.head_position.y += cardinal_offset[1]
         else:  # Diagonal rails, hard
-            diagonal_matrix: dict[Direction, dict[Direction, tuple[int, int, Direction]]] = {
+            diagonal_matrix: dict[
+                Direction, dict[Direction, tuple[int, int, Direction]]
+            ] = {
                 Direction.NORTHEAST: {
                     Direction.NORTHWEST: (0, -2, Direction.SOUTHEAST),
                     Direction.SOUTHEAST: (2, 0, Direction.NORTHWEST),
@@ -190,7 +192,7 @@ class RailPlanner(Group):
                 real_direction = diagonal_offset[2]
                 self.diagonal_side = int(not self.diagonal_side)
 
-    def turn_left(self, amount: int=1) -> None:
+    def turn_left(self, amount: int = 1) -> None:
         """
         Places ``amount`` curved rails turning left from :py:attr:`head_position`,
         and places the head at the point just after the rails. Each increment of
@@ -204,9 +206,9 @@ class RailPlanner(Group):
         """
         matrix: dict[Direction, tuple[Vector, Vector, Direction]] = {
             Direction.NORTH: (
-                Vector(0, -2), # "offset"
-                Vector(-4, -6), # "head_offset"
-                Direction.NORTH, # "direction"
+                Vector(0, -2),  # "offset"
+                Vector(-4, -6),  # "head_offset"
+                Direction.NORTH,  # "direction"
             ),
             Direction.NORTHEAST: (
                 Vector(2, -2),
@@ -270,15 +272,15 @@ class RailPlanner(Group):
             if self.head_direction in diagonals:
                 self.diagonal_side = 1  # right
 
-    def turn_right(self, amount: int=1) -> None:
+    def turn_right(self, amount: int = 1) -> None:
         """
         TODO
         """
         matrix: dict[Direction, tuple[Vector, Vector, Direction]] = {
             Direction.NORTH: (
-                Vector(2, -2), # "offset"
-                Vector(4, -6), # "head_offset"
-                Direction.NORTHEAST, # "direction"
+                Vector(2, -2),  # "offset"
+                Vector(4, -6),  # "head_offset"
+                Direction.NORTHEAST,  # "direction"
             ),
             Direction.NORTHEAST: (
                 Vector(4, 0),
@@ -342,7 +344,9 @@ class RailPlanner(Group):
             if self.head_direction in diagonals:
                 self.diagonal_side = 0  # left
 
-    def add_signal(self, entity: Union[str, EntityLike], right: bool=True, front: bool=True) -> None:
+    def add_signal(
+        self, entity: Union[str, EntityLike], right: bool = True, front: bool = True
+    ) -> None:
         """
         Adds a rail signal to the last placed rail. Defaults to the front right
         side of the last placed rail entity, determined by the current
@@ -375,8 +379,10 @@ class RailPlanner(Group):
         # before placing any rail
         if self.last_rail_added is None:
             return
-        
-        last_rail_added = typing_cast(Union[CurvedRail, StraightRail], self.last_rail_added)
+
+        last_rail_added = typing_cast(
+            Union[CurvedRail, StraightRail], self.last_rail_added
+        )
 
         diagonals = {
             Direction.NORTHEAST,
@@ -411,7 +417,9 @@ class RailPlanner(Group):
                 }
 
                 diagonal_index = int(right)
-                diagonal_offset = diagonal_matrix[self.head_direction][rail_dir][diagonal_index]
+                diagonal_offset = diagonal_matrix[self.head_direction][rail_dir][
+                    diagonal_index
+                ]
 
                 if right:
                     diagonal_signal_dir = self.head_direction.opposite()
@@ -419,9 +427,9 @@ class RailPlanner(Group):
                     diagonal_signal_dir = self.head_direction
 
                 self.entities.append(
-                    entity, 
-                    tile_position=rail_pos + diagonal_offset, 
-                    direction=diagonal_signal_dir
+                    entity,
+                    tile_position=rail_pos + diagonal_offset,
+                    direction=diagonal_signal_dir,
                 )
             else:
                 # Horizontal/Vertical straight rail
@@ -461,9 +469,9 @@ class RailPlanner(Group):
                     straight_signal_dir = rail_dir
 
                 self.entities.append(
-                    entity, 
-                    tile_position=rail_pos + straight_offset, 
-                    direction=straight_signal_dir
+                    entity,
+                    tile_position=rail_pos + straight_offset,
+                    direction=straight_signal_dir,
                 )
         else:
             # Curved rail
@@ -574,12 +582,17 @@ class RailPlanner(Group):
             curved_offset = curved_matrix[permutation][curved_index]["offset"]
             curved_signal_dir = curved_matrix[permutation][curved_index]["direction"]
             self.entities.append(
-                entity, 
-                tile_position=rail_pos + curved_offset, 
-                direction=curved_signal_dir
+                entity,
+                tile_position=rail_pos + curved_offset,
+                direction=curved_signal_dir,
             )
 
-    def add_station(self, entity: Union[str, EntityLike], station: Optional[str]=None, right: bool=True) -> None:
+    def add_station(
+        self,
+        entity: Union[str, EntityLike],
+        station: Optional[str] = None,
+        right: bool = True,
+    ) -> None:
         """
         Adds a train station at the :py:attr:`head_position` on the specified
         side.
@@ -600,8 +613,10 @@ class RailPlanner(Group):
         # before placing any rail
         if self.last_rail_added is None:
             return
-    
-        last_rail_added = typing_cast(Union[CurvedRail, StraightRail], self.last_rail_added)
+
+        last_rail_added = typing_cast(
+            Union[CurvedRail, StraightRail], self.last_rail_added
+        )
 
         if last_rail_added.name == self.curved_rail:
             raise DraftsmanError(  # TODO: more descriptive error

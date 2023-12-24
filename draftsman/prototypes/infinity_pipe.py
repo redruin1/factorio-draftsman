@@ -168,7 +168,6 @@ class InfinityPipe(Entity):
 
     @infinite_fluid_name.setter
     def infinite_fluid_name(self, value: Optional[str]):
-        print("name")
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,

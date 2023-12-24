@@ -190,26 +190,27 @@ class TestBlueprintBook:
     def test_setup(self):
         blueprint_book = BlueprintBook()
         example = {
+            "item": "blueprint-book",
             "label": "a label",
             "label_color": {"r": 50, "g": 50, "b": 50},
-            "active_index": 0,
-            "item": "blueprint-book",
+            "active_index": 1,
             "blueprints": [],
             "version": encode_version(*__factorio_version_info__),
         }
         blueprint_book.setup(**example)
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
+                "item": "blueprint-book",
                 "label": "a label",
                 "label_color": {"r": 50, "g": 50, "b": 50},
-                # "active_index": 0,
-                "item": "blueprint-book",
+                "active_index": 1,
                 "version": encode_version(*__factorio_version_info__),
             }
         }
 
         with pytest.warns(DraftsmanWarning):
-            blueprint_book.setup(unused_keyword="whatever")
+            blueprint_book.setup(unused_keyword="whatever") # No warning!
+            blueprint_book.validate().reissue_all() # Warning
 
     def test_set_label(self):
         blueprint_book = BlueprintBook()
