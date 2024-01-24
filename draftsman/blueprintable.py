@@ -1,5 +1,4 @@
 # blueprintable.py
-# -*- encoding: utf-8 -*-
 
 """
 Alias module. Imports :py:class:`.Blueprint` and :py:class:`.BlueprintBook` 
@@ -59,8 +58,7 @@ def get_blueprintable_from_string(blueprintable_string: str) -> Blueprintable:
 
 
 @utils.reissue_warnings
-def get_blueprintable_from_JSON(blueprintable_JSON):
-    # type: (dict) -> Blueprintable
+def get_blueprintable_from_JSON(blueprintable_JSON: dict) -> Blueprintable:
     """
     Returns a :py:class:`.Blueprint` or a :py:class:`.BlueprintBook` depending
     on the JSON dictionary passed in.

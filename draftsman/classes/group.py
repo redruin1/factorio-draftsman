@@ -208,9 +208,9 @@ class Group(Transformable, EntityCollection, EntityLike):
         if "schedules" in kwargs:
             self._schedules = ScheduleList(
                 kwargs.pop("schedules")
-            )  # type: ScheduleList
+            )
         else:
-            self._schedules = ScheduleList()  # type: ScheduleList
+            self._schedules = ScheduleList()
 
     # =========================================================================
 
@@ -378,8 +378,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         return CollisionSet([])
 
     # @collision_set.setter
-    # def collision_set(self, value):
-    #     # type: (CollisionSet) -> None
+    # def collision_set(self, value: CollisionSet) -> None:
     #     # TODO: error checking
     #     if value is None:
     #         self._collision_set = CollisionSet([])

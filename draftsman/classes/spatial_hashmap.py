@@ -97,8 +97,7 @@ class SpatialHashMap(SpatialDataStructure):
         else:
             self.remove(item)
 
-    def clear(self):
-        # type: () -> None
+    def clear(self) -> None:
         self.map.clear()
 
     def validate_insert(self, item: SpatialLike, merge: bool) -> None:

@@ -149,8 +149,7 @@ class PowerSwitch(
 
     # =========================================================================
 
-    def merge(self, other):
-        # type: (PowerSwitch) -> None
+    def merge(self, other: "PowerSwitch") -> None:
         super().merge(other)
 
         self.switch_state = other.switch_state

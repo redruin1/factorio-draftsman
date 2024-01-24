@@ -1,18 +1,12 @@
 # signals.py
 
-from __future__ import unicode_literals
-
 from draftsman import data
 from draftsman.data import entities, modules
 from draftsman.error import InvalidSignalError, InvalidMapperError
 
 import pickle
 
-try:  # pragma: no coverage
-    import importlib.resources as pkg_resources  # type: ignore
-except ImportError:  # pragma: no coverage
-    # Try backported to PY<37 `importlib_resources`.
-    import importlib_resources as pkg_resources  # type: ignore
+import importlib.resources as pkg_resources
 
 
 with pkg_resources.open_binary(data, "signals.pkl") as inp:

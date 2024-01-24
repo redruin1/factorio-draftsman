@@ -275,15 +275,14 @@ class Exportable(metaclass=ABCMeta):
 
     # TODO
     # @classmethod
-    # def get_format(cls, indent=2):
-    #     # type: (int) -> str
+    # def get_format(cls, indent: int=2) -> str:
     #     """
-    #     Produces a pretty string representation of ``meth:dump_format``. Work in
+    #     Produces a pretty string representation of ``meth:json_schema``. Work in
     #     progress.
 
     #     :returns: A formatted string that can be output to stdout or file.
     #     """
-    #     return json.dumps(cls.dump_format(), indent=indent)
+    #     return json.dumps(cls.json_schema(), indent=indent)
 
     # =========================================================================
 

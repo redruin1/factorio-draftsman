@@ -7,7 +7,7 @@ from draftsman.prototypes.fluid_wagon import FluidWagon
 from draftsman.prototypes.artillery_wagon import ArtilleryWagon
 
 from math import ceil
-from typing import Union
+from typing import Literal, Union
 import re
 
 
@@ -29,19 +29,22 @@ class TrainConfiguration:
     }
 
     def __init__(
-        self, config=None, direction="dual", wagons="cargo", mapping=default_mapping
-    ):
-        # type: (str, str, str, dict) -> None
+        self, 
+        format_string: str=None, 
+        direction: Literal["dual", "forward"]="dual", 
+        wagons: Literal["cargo", "fluid", "artillery"]="cargo", 
+        mapping: dict[str, dict]=default_mapping
+    ) -> None:
         """
         TODO
         """
-        if config is None:
+        if format_string is None:
             self.cars = (
                 []
             )  # type: list[Union[Locomotive, CargoWagon, FluidWagon, ArtilleryWagon]]
         else:
             self.from_string(
-                config, direction=direction, wagons=wagons, mapping=mapping
+                format_string, direction=direction, wagons=wagons, mapping=mapping
             )
 
     # =========================================================================
@@ -57,9 +60,12 @@ class TrainConfiguration:
     # =========================================================================
 
     def from_string(
-        self, format_string, direction="dual", wagons="cargo", mapping=default_mapping
-    ):
-        # type: (str, str, str, dict) -> None
+        self,
+        format_string: str=None, 
+        direction: Literal["dual", "forward"]="dual", 
+        wagons: Literal["cargo", "fluid", "artillery"]="cargo", 
+        mapping: dict[str, dict]=default_mapping
+    ) -> None:
         """
         TODO
         """
@@ -87,12 +93,16 @@ class TrainConfiguration:
 
         # Check to see if we have a special dual-headed train
         if (
-            len(hyphen_blocks) == 3 and direction != "forward"
+            len(hyphen_blocks) == 3 and direction == "dual"
         ):  # Special x-y-x dual-headed format
             dual_headed = True
         else:
+            # Otherwise all locomotive blocks point forward
             dual_headed = False
 
+        # Converts the string into the explicit format where each character 
+        # corresponds to one car
+        # e.g. "2-2C2F4A-2" into "<<CCFFAAAA>>"
         result_string = ""
         for i, hyphen_block in enumerate(hyphen_blocks):
             if dual_headed and i == 2:
@@ -125,9 +135,7 @@ class TrainConfiguration:
 
                 result_string += replacement
 
-        # The above converts the string into the explicit format
-        # e.g. "<<CCFFAAAA>>"
-
+        # Iterate over the explicit string and add a wagon of each type per char
         self.cars = []
         for i, char in enumerate(result_string):
             self.cars.append(new_entity(**mapping[char]))

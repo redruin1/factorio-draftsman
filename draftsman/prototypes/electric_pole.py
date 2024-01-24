@@ -1,7 +1,4 @@
 # electric_pole.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import CircuitConnectableMixin, PowerConnectableMixin

@@ -21,18 +21,8 @@ from draftsman.classes.collision_set import CollisionSet
 from draftsman.utils import decode_version, version_string_to_tuple, AABB
 from draftsman._factorio_version import __factorio_version_info__
 
-try:
-    # Lupa 2.0 allows us to specify exact version!
-    import lupa.lua52 as lupa
-except ImportError:
-    import warnings
-
-    warnings.warn(
-        "Could not import Lua version 5.2; 'draftsman-update' may or may not work depending on mod configuration",
-        ImportWarning,
-    )
-    del warnings
-    import lupa
+# Lupa 2.0 is now required (for simplicities sake)
+import lupa.lua52 as lupa
 
 import argparse
 from collections import OrderedDict
@@ -42,6 +32,7 @@ import os
 import pickle
 import re
 import struct
+from typing import Optional, Union
 import zipfile
 
 
@@ -107,7 +98,7 @@ class Mod(object):
 # =============================================================================
 
 
-def file_to_string(filepath):
+def file_to_string(filepath: str) -> str:
     """
     Simply grabs a file's contents and returns it as a string. Ensures that the
     returned string is stripped of special unicode characters that Lupa dislikes.
@@ -117,8 +108,7 @@ def file_to_string(filepath):
         return file.read()
 
 
-def archive_to_string(archive, filepath):
-    # type: (zipfile.ZipFile, str) -> None
+def archive_to_string(archive: zipfile.ZipFile, filepath: str) -> str:
     """
     Simply grabs a file with the specified name from an archive and returns it
     as a string. Ensures that the returned string is stripped of special
@@ -130,7 +120,7 @@ def archive_to_string(archive, filepath):
         return formatted_file.read()
 
 
-def get_mod_settings(location):
+def get_mod_settings(location: str) -> dict: # TODO: maybe more descriptive type/struct?
     """
     Reads `mod_settings.dat` and stores it as an easy-to-read dict. Would be
     trivial to implement an editor with this function. (Well, assuming you write
@@ -203,8 +193,7 @@ def get_mod_settings(location):
     return mod_settings
 
 
-def python_require(mod, mod_folder, module_name, package_path):
-    # type: (Mod, str, str, str) -> str
+def python_require(mod: Mod, mod_folder: str, module_name: str, package_path: str) -> tuple[Optional[str], str]:
     """
     Function called from Lua that checks for a file in a ``zipfile`` archive,
     and returns the contents of the file if found.
@@ -246,8 +235,7 @@ def python_require(mod, mod_folder, module_name, package_path):
     return None, "no file '{}' found in '{}' archive".format(module_name, mod.name)
 
 
-def load_stage(lua, mod_list, mod, stage):
-    # type: (lupa.LuaRuntime, list[Mod], Mod, str) -> None
+def load_stage(lua: lupa.LuaRuntime, mod_list: list[Mod], mod: Mod, stage: str) -> None:
     """
     Load a stage of the Factorio data lifecycle. Sets meta information and loads
     and executes the file string in the ``lua`` context.
@@ -265,7 +253,7 @@ def load_stage(lua, mod_list, mod, stage):
     lua.execute(mod.data[stage])
 
 
-def convert_table_to_dict(table):
+def convert_table_to_dict(table) -> Union[dict, list]:
     """
     Converts a Lua table to a Python dict. Correctly handles nesting, and
     interprets Lua arrays as lists.

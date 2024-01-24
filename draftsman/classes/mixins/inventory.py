@@ -1,7 +1,4 @@
 # inventory.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.data import entities, items
 from draftsman.classes.exportable import attempt_and_reissue

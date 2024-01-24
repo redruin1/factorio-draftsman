@@ -39,8 +39,7 @@ class Direction(IntEnum):
     WEST = 6
     NORTHWEST = 7
 
-    def opposite(self):
-        # type: () -> Direction
+    def opposite(self) -> "Direction":
         """
         Returns the direction opposite this one.
 
@@ -48,8 +47,7 @@ class Direction(IntEnum):
         """
         return Direction((self.value + 4) % 8)
 
-    def next(self, eight_way=False):
-        # type: (bool) -> Direction
+    def next(self, eight_way: bool=False) -> "Direction":
         """
         Returns the direction one unit clockwise from the current direction.
         ``eight_way`` determines whether or not to treat the next-most direction
@@ -69,8 +67,7 @@ class Direction(IntEnum):
         """
         return Direction((self.value + 1 + (not eight_way)) % 8)
 
-    def previous(self, eight_way=False):
-        # type: (bool) -> Direction
+    def previous(self, eight_way: bool=False) -> "Direction":
         """
         Returns the direction one unit counter-clockwise from the current
         direction. ``eight_way`` determines whether or not to treat the
@@ -91,8 +88,7 @@ class Direction(IntEnum):
         """
         return Direction((self.value - 1 - (not eight_way)) % 8)
 
-    def to_orientation(self):
-        # type: () -> Orientation
+    def to_orientation(self) -> "Orientation":
         """
         Converts this direction to an :py:class:`Orientation` of corresponding
         value.
@@ -118,8 +114,7 @@ class Direction(IntEnum):
         }
         return mapping[self]
 
-    def to_vector(self, magnitude=1):
-        # type: (float) -> Vector
+    def to_vector(self, magnitude: float=1.0) -> Vector:
         """
         Converts a :py:class:`Direction` into an equivalent 2-dimensional vector,
         for various linear operations. Works with both four-way and eight-way

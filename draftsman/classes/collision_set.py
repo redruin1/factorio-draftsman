@@ -2,7 +2,9 @@
 
 from draftsman.classes.vector import Vector
 
-from draftsman.utils import AABB, Shape, extend_aabb
+from draftsman.utils import AABB, PrimitiveVector, Shape, extend_aabb
+
+from typing import Union
 
 
 class CollisionSet:
@@ -15,8 +17,7 @@ class CollisionSet:
     others.
     """
 
-    def __init__(self, shapes, position=(0, 0)):
-        # type: (list[Shape], Vector) -> None
+    def __init__(self, shapes: list[Shape], position: Union[Vector, PrimitiveVector]=(0, 0)) -> None:
         """
         Create a new collision shape object with the collision shapes ``shapes``.
 
@@ -28,8 +29,7 @@ class CollisionSet:
             shape.position[0] += position[0]
             shape.position[1] += position[1]
 
-    def get_bounding_box(self):
-        # type: () -> AABB
+    def get_bounding_box(self) -> AABB:
         """
         Gets the minimum-bounding AABB for this :py:class:`CollisionSet`.
 
@@ -45,8 +45,7 @@ class CollisionSet:
 
         return bounding_box
 
-    def overlaps(self, other):
-        # type: (CollisionSet) -> bool
+    def overlaps(self, other: "CollisionSet") -> bool:
         """
         Checks to see if any of this :py:class:`CollisionSet` ``shapes``
         intersect any part of ``other``'s ``shapes``.
@@ -66,8 +65,7 @@ class CollisionSet:
 
         return False
 
-    def rotate(self, amt):
-        # type: (int) -> CollisionSet
+    def rotate(self, amt: int) -> "CollisionSet":
         """
         Rotates all ``shapes`` within this :py:class:`CollisionSet` by ``amt``,
         where ``amt`` is in increments of 45 degrees. Contsructs a new collision
@@ -84,10 +82,8 @@ class CollisionSet:
 
         return CollisionSet(rotated_shapes)
 
-    def __eq__(self, other):
-        # type: (CollisionSet) -> bool
+    def __eq__(self, other: "CollisionSet") -> bool:
         return isinstance(other, CollisionSet) and self.shapes == other.shapes
 
-    def __repr__(self):  # pragma: no coverage
-        # type: () -> str
-        return "<CollisionSet>{}".format(self.shapes)
+    def __repr__(self) -> str:  # pragma: no coverage
+        return "<CollisionSet>{}".format(self.shapes) # TODO: better

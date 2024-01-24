@@ -69,25 +69,6 @@ Do this not only for all the blueprintable types, but also each entity. In addit
 - Once that's done, maybe we can finally update the Factorio wiki to be up-to-date
 
 ---
-### Python3-ify everything
-Primarily this means changing all the type-comments to proper type-hints, as well as removing any 2.x compatibility code
-
-Files done:
-- [ ] `draftsman`
-    - [ ] `classes`
-        - [ ] `mixins`
-        - [ ] `*`
-    - [ ] `data`
-    - [ ] `prototypes`
-    - [ ] `*`
-- [ ] `examples`
-- [ ] `test`
-    - [ ] `performance`
-    - [ ] `prototypes`
-    - [ ] `tools`
-    - [ ] `*`
-
----
 ### Reinvestigate making an entity's `tile_position` based off of it's `position`
 
 ---

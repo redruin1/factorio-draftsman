@@ -800,8 +800,7 @@ class ProgrammableSpeaker(
     # =========================================================================
 
     @property
-    def note_name(self):
-        # type: () -> str
+    def note_name(self) -> str:
         """
         Name of the note. Updated in tandem with ``note_id``. Not exported.
 

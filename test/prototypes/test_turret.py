@@ -1,7 +1,4 @@
 # test_turret.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.entity import Turret, turrets, Container
 from draftsman.error import InvalidEntityError

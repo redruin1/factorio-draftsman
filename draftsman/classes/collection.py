@@ -30,7 +30,7 @@ from draftsman.utils import AABB, PrimitiveAABB, flatten_entities, distance
 
 from abc import ABCMeta, abstractmethod
 import math
-from typing import Optional, Sequence, Union
+from typing import Literal, Optional, Sequence, Union
 import warnings
 
 # TODO: move this
@@ -141,8 +141,7 @@ class EntityCollection(metaclass=ABCMeta):
     # Entity Queries
     # =========================================================================
 
-    def find_entity(self, name, position):
-        # type: (str, Union[Vector, PrimitiveVector]) -> EntityLike
+    def find_entity(self, name: str, position: Union[Vector, PrimitiveVector]) -> EntityLike:
         """
         Finds an entity with ``name`` at a position ``position``. If multiple
         entities exist at the queried position, the one that was first placed is
@@ -161,8 +160,7 @@ class EntityCollection(metaclass=ABCMeta):
         except IndexError:
             return None
 
-    def find_entity_at_position(self, position):
-        # type: (Union[Vector, PrimitiveVector]) -> EntityLike
+    def find_entity_at_position(self, position: Union[Vector, PrimitiveVector]) -> EntityLike:
         """
         Finds any entity at the position ``position``. If multiple entities
         exist at the queried position, the one that was first placed is returned.
@@ -178,8 +176,7 @@ class EntityCollection(metaclass=ABCMeta):
         except IndexError:
             return None
 
-    def find_entities(self, aabb=None):
-        # type: (Union[AABB, PrimitiveAABB]) -> list[EntityLike]
+    def find_entities(self, aabb: Union[AABB, PrimitiveAABB, None]=None) -> list[EntityLike]:
         """
         Returns a ``list`` of all entities within the area ``aabb``. Works
         similiarly to
@@ -203,16 +200,15 @@ class EntityCollection(metaclass=ABCMeta):
 
     def find_entities_filtered(
         self,
-        position=None,
-        radius=None,
-        area=None,
-        name=None,
-        type=None,
-        direction=None,
-        invert=False,
-        limit=None,
-    ):
-        # type: (Vector, float, AABB, Union[str, set[str]], Union[str, set[str]], Union[Direction, set[Direction]], bool, int) -> list[EntityLike]
+        position: Optional[Vector]=None,
+        radius: Optional[float]=None,
+        area: Union[AABB, PrimitiveAABB, None]=None,
+        name: Union[str, set[str], None]=None,
+        type: Union[str, set[str], None]=None,
+        direction: Optional[Direction]=None,
+        invert: bool=False,
+        limit: Optional[int]=None,
+    ) -> list[EntityLike]:
         """
         Returns a filtered list of entities within the ``Collection``. Works
         similarly to `LuaSurface.find_entities_filtered
@@ -344,8 +340,12 @@ class EntityCollection(metaclass=ABCMeta):
     # Connections
     # =========================================================================
 
-    def add_power_connection(self, entity_1, entity_2, side=1):
-        # type: (Union[EntityLike, int, str], Union[EntityLike, int, str], int) -> None
+    def add_power_connection(
+        self, 
+        entity_1: Union[EntityLike, int, str], 
+        entity_2: Union[EntityLike, int, str], 
+        side: Literal[1, 2]=1
+    ) -> None:
         """
         Adds a copper wire power connection between two entities. Each entity
         can be either a reference to the original entity to connect, the index
@@ -494,8 +494,12 @@ class EntityCollection(metaclass=ABCMeta):
                 if Association(entity_1) not in entity_2.neighbours:
                     entity_2.neighbours.append(Association(entity_1))
 
-    def remove_power_connection(self, entity_1, entity_2, side=1):
-        # type: (Union[EntityLike, int, str], Union[EntityLike, int, str], int) -> None
+    def remove_power_connection(
+        self, 
+        entity_1: Union[EntityLike, int, str], 
+        entity_2: Union[EntityLike, int, str], 
+        side: Literal[1, 2]=1
+    ) -> None:
         """
         Removes a copper wire power connection between two entities. Each entity
         can be either a reference to the original entity to connect, the index
@@ -566,8 +570,7 @@ class EntityCollection(metaclass=ABCMeta):
                 except ValueError:
                     pass
 
-    def remove_power_connections(self):
-        # type: () -> None
+    def remove_power_connections(self) -> None:
         """
         Remove all power connections in the Collection, including any power
         connections between power switches. Recurses through any subgroups, and
@@ -590,8 +593,7 @@ class EntityCollection(metaclass=ABCMeta):
                     entity.connections["Cu0"] = None
                     entity.connections["Cu1"] = None
 
-    def generate_power_connections(self, prefer_axis=True, only_axis=False):
-        # type: (bool, bool) -> None
+    def generate_power_connections(self, prefer_axis: bool=True, only_axis: bool=False) -> None:
         """
         Automatically create power connections between all electric poles.
 
@@ -617,8 +619,7 @@ class EntityCollection(metaclass=ABCMeta):
         electric_poles = self.find_entities_filtered(type="electric-pole")
         for cur_pole in electric_poles:
             # Get all the power poles candidates
-            def power_connectable(other):
-                # type: (EntityLike) -> bool
+            def power_connectable(other: EntityLike) -> bool:
                 # Don't include ourself in the entities we're connecting to
                 if other is cur_pole:
                     return False
@@ -667,8 +668,14 @@ class EntityCollection(metaclass=ABCMeta):
 
     # =========================================================================
 
-    def add_circuit_connection(self, color, entity_1, entity_2, side1=1, side2=1):
-        # type: (str, Union[EntityLike, int, str], Union[EntityLike, int, str], int, int) -> None
+    def add_circuit_connection(
+        self, 
+        color: Literal["red", "green"], 
+        entity_1: Union[EntityLike, int, str], 
+        entity_2: Union[EntityLike, int, str], 
+        side1: Literal[1, 2]=1, 
+        side2: Literal[1, 2]=1
+    ) -> None:
         """
         Adds a circuit wire connection between two entities. Each entity
         can be either a reference to the original entity to connect, the index
@@ -811,8 +818,14 @@ class EntityCollection(metaclass=ABCMeta):
         if entry not in current_color:
             current_color.append(entry)
 
-    def remove_circuit_connection(self, color, entity_1, entity_2, side1=1, side2=1):
-        # type: (str, Union[EntityLike, int, str], Union[EntityLike, int, str], int, int) -> None
+    def remove_circuit_connection(
+        self, 
+        color: Literal["red", "green"], 
+        entity_1: Union[EntityLike, int, str], 
+        entity_2: Union[EntityLike, int, str], 
+        side1: Literal[1, 2]=1, 
+        side2: Literal[1, 2]=1
+    ) -> None:
         """
         Removes a circuit wire connection between two entities. Each entity
         can be either a reference to the original entity to connect, the index
@@ -901,8 +914,7 @@ class EntityCollection(metaclass=ABCMeta):
         except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
             pass
 
-    def remove_circuit_connections(self):
-        # type: () -> None
+    def remove_circuit_connections(self) -> None:
         """
         Remove all circuit connections in the Collection. Recurses through all
         subgroups and removes circuit connections from them as well. Does

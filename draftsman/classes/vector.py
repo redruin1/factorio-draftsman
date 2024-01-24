@@ -4,8 +4,6 @@
 TODO
 """
 
-from __future__ import unicode_literals, division
-
 from pydantic import BaseModel, ConfigDict
 from typing import Union, Callable
 
@@ -64,8 +62,7 @@ class Vector(object):
     # =========================================================================
 
     @staticmethod
-    def from_other(other, type_cast=float):
-        # type: (Union[Vector, PrimitiveVector], Callable) -> Vector
+    def from_other(other: Union["Vector", PrimitiveVector], type_cast: Callable=float) -> "Vector":
         """
         Converts a PrimitiveVector into a :py:class:`.Vector`. Also handles the
         case where a :py:class:`.Vector` is already passed in, in which case that
@@ -86,8 +83,7 @@ class Vector(object):
         else:
             raise TypeError("Could not resolve '{}' to a Vector object".format(other))
 
-    def update(self, x, y):
-        # type: (Union[float, int], Union[float, int], object) -> None
+    def update(self, x: Union[float, int], y: Union[float, int]) -> None:
         """
         Updates the data of the existing vector in-place. Useful for preserving
         linked vectors.
@@ -95,12 +91,7 @@ class Vector(object):
         self._data[0] = x
         self._data[1] = y
 
-        # if self.linked:
-        #     self.linked._data[0] = self.linked.transform_x(self._entity, x)
-        #     self.linked._data[1] = self.linked.transform_y(self._entity, y)
-
-    def update_from_other(self, other, type_cast=float):
-        # type: (Union[Vector, PrimitiveVector], Callable) -> None
+    def update_from_other(self, other: Union["Vector", PrimitiveVector], type_cast: Callable=float) -> None:
         """
         Updates the data of the existing vector in-place from a variable input
         format.

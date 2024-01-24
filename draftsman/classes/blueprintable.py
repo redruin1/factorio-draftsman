@@ -405,8 +405,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     # =========================================================================
 
     # TODO
-    # def formatted_label(self):
-    #     # type: () -> str
+    # def formatted_label(self) -> str:
     #     """
     #     Returns a formatted string for the console that can be displayed with
     #     the python module ``rich``.
@@ -427,8 +426,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     #     return formatted_result
 
-    def version_tuple(self):
-        # type: () -> tuple(int, int, int, int)
+    def version_tuple(self) -> tuple[uint16, uint16, uint16, uint16]:
         """
         Returns the version of the :py:class:`.Blueprintable` as a 4-length
         tuple.
@@ -446,8 +444,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         """
         return decode_version(self._root[self._root_item]["version"])
 
-    def version_string(self):
-        # type: () -> str
+    def version_string(self) -> str:
         """
         Returns the version of the :py:class:`.Blueprintable` in human-readable
         string.
@@ -520,8 +517,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
         return output
 
-    # def to_dict(self):
-    #     # type: () -> dict
+    # def to_dict(self) -> dict:
     #     out_dict = self.__class__.Format.model_construct(  # Performs no validation(!)
     #         **{self._root_item: self._root}
     #     ).model_dump(

@@ -160,16 +160,14 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     # Abstract Methods
     # =========================================================================
 
-    def on_insert(self, parent):  # pragma: no coverage
-        # type: (EntityCollection) -> None
+    def on_insert(self, parent: "EntityCollection") -> None:  # pragma: no coverage
         """
         A callback function called when this entity is inserted into an
         EntityCollection.
         """
         pass
 
-    def on_remove(self, parent):  # pragma: no coverage
-        # type: (EntityCollection) -> None
+    def on_remove(self, parent: "EntityCollection") -> None:  # pragma: no coverage
         """
         A callback function called when this entity is removed from an
         EntityCollection.

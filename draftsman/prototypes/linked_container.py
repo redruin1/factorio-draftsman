@@ -1,7 +1,4 @@
 # linked_container.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue

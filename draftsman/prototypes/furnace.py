@@ -204,8 +204,7 @@ class Furnace(
     # =========================================================================
 
     # @reissue_warnings
-    # def set_item_request(self, item, count):
-    #     # type: (str, int) -> None
+    # def set_item_request(self, item: str, count: int) -> None:
 
     #     # TODO: handle fuel input items
     #     # TODO: limit item fuel requests to obey "fuel_inventory_size"

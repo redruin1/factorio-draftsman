@@ -568,22 +568,19 @@ class EntityList(MutableSequence):
     def __or__(self, other: "EntityList") -> "EntityList":
         return self.union(other)
 
-    # def __ior__(self, other):
-    #     # type: (EntityList) -> None
+    # def __ior__(self, other: "EntityList") -> None:
     #     self.union(other)
 
     def __and__(self, other: "EntityList") -> "EntityList":
         return self.intersection(other)
 
-    # def __iand__(self, other):
-    #     # type: (EntityList) -> None
+    # def __iand__(self, other: "EntityList") -> None:
     #     self.intersection(other)
 
     def __sub__(self, other: "EntityList") -> "EntityList":
         return self.difference(other)
 
-    # def __isub__(self, other):
-    #     # type: (EntityList) -> None
+    # def __isub__(self, other: "EntityList") -> None:
     #     self.difference(other)
 
     def __eq__(self, other: "EntityList") -> bool:

@@ -1,7 +1,4 @@
 # test_underground_belt.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.constants import Direction
 from draftsman.entity import UndergroundBelt, underground_belts, Container

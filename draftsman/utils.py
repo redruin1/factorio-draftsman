@@ -866,7 +866,6 @@ def parse_energy(energy_string: str) -> int:
 
 
 # def ignore_traceback(func):
-#     # type: (Any) -> Any
 #     """
 #     Decorator that removes other decorators from traceback.
 #     Pulled from https://stackoverflow.com/questions/22825165/can-decorators-be-removed-from-python-exception-tracebacks

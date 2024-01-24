@@ -157,7 +157,6 @@ class TileList(MutableSequence):
         return new_tile_list
 
     def difference(self, other: "TileList") -> "TileList":
-        # type: (TileList) -> TileList
         """
         TODO
         """

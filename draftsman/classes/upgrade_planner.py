@@ -686,8 +686,7 @@ class UpgradePlanner(Blueprintable):
 
         raise ValueError("Unable to find mapper with index '{}'".format(index))
 
-    # def validate(self):
-    #     # type: () -> None
+    # def validate(self) -> None:
     #     if self.is_valid:
     #         return
 
@@ -696,8 +695,7 @@ class UpgradePlanner(Blueprintable):
 
     #     super().validate()
 
-    # def inspect(self):
-    #     # type: () -> ValidationResult
+    # def inspect(self) -> ValidationResult:
     #     result = super().inspect()
 
     #     # By nature of necessity, we must ensure that all members of upgrade
