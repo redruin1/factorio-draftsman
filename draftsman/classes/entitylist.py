@@ -14,7 +14,7 @@ except ImportError:  # pragma: no coverage
     from collections import MutableSequence
 from copy import deepcopy
 import six
-from typing import Union, Any, TYPE_CHECKING
+from typing import Union, Any, List, TYPE_CHECKING
 import warnings
 
 if TYPE_CHECKING:  # pragma: no coverage
@@ -125,6 +125,33 @@ class EntityList(MutableSequence):
             assert blueprint.entities[-1].stack_size_override == 1
         """
         self.insert(len(self.data), name, copy=copy, merge=merge, **kwargs)
+
+    @utils.reissue_warnings
+    def extend(self, entities, copy=True, merge=False):
+        # type: (List[Union[str, EntityLike]], bool, bool, **dict) -> None
+        """
+        Extends the entity list with the list provided.
+        Functionally the same as appending one element at a time
+
+        :param copy: Passed through to append for each element
+        :param merge: Passed through to append for each element
+
+        :example:
+
+        .. code-block :: python
+
+            blueprint = Blueprint()
+            assert isinstance(blueprint.entities, EntityList)
+
+            # Append Entity instance
+            blueprint.entities.extend([Container("steel-chest"), Container("wooden-chest", tile_position=(1, 1)])
+            assert blueprint.entities[-2].name == "steel-chest"
+            assert blueprint.entities[-1].name == "wooden-chest"
+            assert blueprint.entities[-1].tile_position == {"x": 1, "y": 1}
+        """
+        for entity in entities:
+            self.append(entity, copy=copy, merge=merge)
+
 
     @utils.reissue_warnings
     def insert(self, idx, name, copy=True, merge=False, **kwargs):

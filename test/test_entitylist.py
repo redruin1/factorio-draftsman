@@ -69,6 +69,18 @@ class EntityListTesting(unittest.TestCase):
         with self.assertRaises(ValueError):
             blueprint.entities.append(Container(), copy=False, merge=True)
 
+    def test_extend(self):
+        # Test appending a list vs individually
+        blueprint1 = Blueprint()
+        blueprint2 = Blueprint()
+        entity_list = [new_entity("transport-belt", tile_position=(0, 0)),
+                       new_entity("wooden-chest", tile_position=(1, 1))]
+        blueprint1.entities.extend(entity_list)
+        for e in entity_list:
+            blueprint2.entities.append(e)
+
+        self.assertEqual(blueprint1.to_dict(), blueprint2.to_dict())
+
     def test_remove(self):
         pass  # TODO
 

@@ -447,6 +447,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         of a regular list, as well as some extra features. For more information
         on ``EntityList``, check out this writeup
         :ref:`here <handbook.blueprints.blueprint_differences>`.
+        Note - assigning to this triggers a deep copy, so use .append()
+        or .extend() if you're building incrementally.
         """
         return self._root["entities"]
 
