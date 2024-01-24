@@ -1,6 +1,7 @@
 # simple_entity_with_owner.py
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.mixins import DirectionalMixin
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data import entities
@@ -9,7 +10,7 @@ from draftsman.data.entities import simple_entities_with_owner
 import warnings
 
 
-class SimpleEntityWithOwner(Entity):
+class SimpleEntityWithOwner(DirectionalMixin, Entity):
     """
     A generic entity owned by some other entity.
     """
