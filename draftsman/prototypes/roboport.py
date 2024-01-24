@@ -8,6 +8,7 @@ from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMix
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID
+from draftsman.utils import get_first
 
 from draftsman.data.entities import roboports
 
@@ -72,7 +73,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
 
     def __init__(
         self,
-        name: str = roboports[0],
+        name: Optional[str] = get_first(roboports),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         connections: Connections = {},

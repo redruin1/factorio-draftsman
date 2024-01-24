@@ -10,6 +10,7 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.signatures import Connections, DraftsmanBaseModel
+from draftsman.utils import get_first
 
 from draftsman.data.entities import lamps
 
@@ -47,7 +48,7 @@ class Lamp(
 
     def __init__(
         self,
-        name: str = lamps[0],
+        name: Optional[str] = get_first(lamps),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         connections: Connections = {},

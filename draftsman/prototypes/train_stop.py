@@ -15,6 +15,7 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID, uint32
+from draftsman.utils import get_first
 
 from draftsman.data.entities import train_stops
 from draftsman.data.signals import signal_dict
@@ -139,7 +140,7 @@ class TrainStop(
 
     def __init__(
         self,
-        name: str = train_stops[0],
+        name: Optional[str] = get_first(train_stops),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,

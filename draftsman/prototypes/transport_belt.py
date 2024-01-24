@@ -13,6 +13,7 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.signatures import Connections
+from draftsman.utils import get_first
 
 from draftsman.data.entities import transport_belts
 
@@ -58,7 +59,7 @@ class TransportBelt(
 
     def __init__(
         self,
-        name: str = transport_belts[0],
+        name: Optional[str] = get_first(transport_belts),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,

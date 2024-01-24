@@ -206,9 +206,7 @@ class Group(Transformable, EntityCollection, EntityLike):
             self._entities = EntityList(self)
 
         if "schedules" in kwargs:
-            self._schedules = ScheduleList(
-                kwargs.pop("schedules")
-            )
+            self._schedules = ScheduleList(kwargs.pop("schedules"))
         else:
             self._schedules = ScheduleList()
 

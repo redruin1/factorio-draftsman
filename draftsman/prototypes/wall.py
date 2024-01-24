@@ -11,16 +11,11 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import PrimitiveVector, Vector
 from draftsman.constants import ValidationMode
 from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID
+from draftsman.utils import get_first
 
 from draftsman.data.entities import walls
 
-from pydantic import (
-    ConfigDict,
-    Field,
-    field_validator,
-    ValidatorFunctionWrapHandler,
-    ValidationInfo,
-)
+from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
@@ -77,7 +72,7 @@ class Wall(
 
     def __init__(
         self,
-        name: str = walls[0],
+        name: Optional[str] = get_first(walls),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         connections: Connections = {},

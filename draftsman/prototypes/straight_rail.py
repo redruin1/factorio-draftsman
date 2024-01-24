@@ -5,8 +5,7 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DoubleGridAlignedMixin, EightWayDirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.utils import AABB, Rectangle
-from draftsman.warning import DraftsmanWarning
+from draftsman.utils import AABB, Rectangle, get_first
 
 from draftsman.data.entities import straight_rails
 
@@ -55,7 +54,7 @@ class StraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
 
     def __init__(
         self,
-        name: str = straight_rails[0],
+        name: Optional[str] = get_first(straight_rails),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,

@@ -16,9 +16,9 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.signatures import Connections, DraftsmanBaseModel, uint32
+from draftsman.utils import get_first
 
 from draftsman.data.entities import mining_drills
-from draftsman.data import entities
 
 from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
@@ -69,7 +69,7 @@ class MiningDrill(
 
     def __init__(
         self,
-        name: str = mining_drills[0],
+        name: Optional[str] = get_first(mining_drills),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,

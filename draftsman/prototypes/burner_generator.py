@@ -9,6 +9,7 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.signatures import uint32
+from draftsman.utils import get_first
 from draftsman.warning import ItemLimitationWarning
 
 from draftsman.data.entities import burner_generators
@@ -67,7 +68,7 @@ class BurnerGenerator(
 
     def __init__(
         self,
-        name: str = burner_generators[0],
+        name: Optional[str] = get_first(burner_generators),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,

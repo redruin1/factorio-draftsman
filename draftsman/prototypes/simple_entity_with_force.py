@@ -6,6 +6,7 @@ from draftsman.classes.mixins import DirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.signatures import uint16
+from draftsman.utils import get_first
 
 from draftsman.data.entities import simple_entities_with_force
 
@@ -32,7 +33,7 @@ class SimpleEntityWithForce(DirectionalMixin, Entity):
 
     def __init__(
         self,
-        name: str = simple_entities_with_force[0],
+        name: Optional[str] = get_first(simple_entities_with_force),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,

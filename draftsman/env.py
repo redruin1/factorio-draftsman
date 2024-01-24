@@ -120,7 +120,9 @@ def archive_to_string(archive: zipfile.ZipFile, filepath: str) -> str:
         return formatted_file.read()
 
 
-def get_mod_settings(location: str) -> dict: # TODO: maybe more descriptive type/struct?
+def get_mod_settings(
+    location: str,
+) -> dict:  # TODO: maybe more descriptive type/struct?
     """
     Reads `mod_settings.dat` and stores it as an easy-to-read dict. Would be
     trivial to implement an editor with this function. (Well, assuming you write
@@ -193,7 +195,9 @@ def get_mod_settings(location: str) -> dict: # TODO: maybe more descriptive type
     return mod_settings
 
 
-def python_require(mod: Mod, mod_folder: str, module_name: str, package_path: str) -> tuple[Optional[str], str]:
+def python_require(
+    mod: Mod, mod_folder: str, module_name: str, package_path: str
+) -> tuple[Optional[str], str]:
     """
     Function called from Lua that checks for a file in a ``zipfile`` archive,
     and returns the contents of the file if found.

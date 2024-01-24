@@ -3,11 +3,12 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
+from draftsman.utils import get_first
 
 from draftsman.data.entities import heat_pipes
 
 from pydantic import ConfigDict
-from typing import Any, Literal, Union
+from typing import Any, Literal, Optional, Union
 
 
 class HeatPipe(Entity):
@@ -20,7 +21,7 @@ class HeatPipe(Entity):
 
     def __init__(
         self,
-        name: str = heat_pipes[0],
+        name: Optional[str] = get_first(heat_pipes),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         tags: dict[str, Any] = {},

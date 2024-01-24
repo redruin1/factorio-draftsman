@@ -8,7 +8,7 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DoubleGridAlignedMixin, EightWayDirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.utils import AABB, Rectangle
+from draftsman.utils import AABB, Rectangle, get_first
 
 from draftsman.data.entities import curved_rails
 
@@ -60,7 +60,7 @@ class CurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
 
     def __init__(
         self,
-        name: str = curved_rails[0],
+        name: Optional[str] = get_first(curved_rails),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,

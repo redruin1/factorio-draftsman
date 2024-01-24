@@ -788,7 +788,24 @@ def aabb_to_dimensions(aabb: Optional[AABB]) -> tuple[int, int]:
     return (x, y)
 
 
-# TODO: move this
+# =============================================================================
+# Miscellaneous
+# =============================================================================
+
+
+def get_first(entity_names: list[str]):
+    """
+    Because python has no convenient `get` equivalent for lists, we use this
+    method to return the first element of the list and ``None`` otherwise. Used
+    to grab the default entity name if one is not supplied to the constructor
+    of an Entity.
+    """
+    try:
+        return entity_names[0]
+    except IndexError:
+        return None
+
+
 def flatten_entities(entities: "list[EntityLike | list[EntityLike]]") -> "list[Entity]":
     """
     Iterates over a list of entities with nested structures and returns a 1D,
@@ -806,11 +823,6 @@ def flatten_entities(entities: "list[EntityLike | list[EntityLike]]") -> "list[E
         else:
             out.append(result)
     return out
-
-
-# =============================================================================
-# Miscellaneous
-# =============================================================================
 
 
 def parse_energy(energy_string: str) -> int:

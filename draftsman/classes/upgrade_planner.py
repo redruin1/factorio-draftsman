@@ -417,6 +417,7 @@ class UpgradePlanner(Blueprintable):
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
+        if_unknown: str = "error",  # TODO: enum
     ):
         """
         Constructs a new :py:class:`.UpgradePlanner`.
@@ -430,7 +431,7 @@ class UpgradePlanner(Blueprintable):
             parent BlueprintBook's :py:attr:`.blueprints` list.
         :param validate: Whether or not to validate this object after
             construction, and how strict to be when doing so.
-        :param validate_assignmene: Whether or not to validate setting the
+        :param validate_assignment: Whether or not to validate setting the
             attributes of this object, and how strict to be when doing so.
         """
         self._root: __class__.Format

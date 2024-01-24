@@ -5,6 +5,7 @@ from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.signatures import DraftsmanBaseModel, int64, FluidName
+from draftsman.utils import get_first
 
 from draftsman.data.entities import infinity_pipes
 from draftsman.data import fluids
@@ -88,7 +89,7 @@ class InfinityPipe(Entity):
 
     def __init__(
         self,
-        name: str = infinity_pipes[0],
+        name: Optional[str] = get_first(infinity_pipes),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         infinity_settings: Format.InfinitySettings = {},

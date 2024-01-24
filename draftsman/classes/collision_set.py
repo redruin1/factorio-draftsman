@@ -17,7 +17,9 @@ class CollisionSet:
     others.
     """
 
-    def __init__(self, shapes: list[Shape], position: Union[Vector, PrimitiveVector]=(0, 0)) -> None:
+    def __init__(
+        self, shapes: list[Shape], position: Union[Vector, PrimitiveVector] = (0, 0)
+    ) -> None:
         """
         Create a new collision shape object with the collision shapes ``shapes``.
 
@@ -86,4 +88,4 @@ class CollisionSet:
         return isinstance(other, CollisionSet) and self.shapes == other.shapes
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<CollisionSet>{}".format(self.shapes) # TODO: better
+        return "<CollisionSet>{}".format(self.shapes)  # TODO: better

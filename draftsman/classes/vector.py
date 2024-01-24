@@ -62,7 +62,9 @@ class Vector(object):
     # =========================================================================
 
     @staticmethod
-    def from_other(other: Union["Vector", PrimitiveVector], type_cast: Callable=float) -> "Vector":
+    def from_other(
+        other: Union["Vector", PrimitiveVector], type_cast: Callable = float
+    ) -> "Vector":
         """
         Converts a PrimitiveVector into a :py:class:`.Vector`. Also handles the
         case where a :py:class:`.Vector` is already passed in, in which case that
@@ -91,7 +93,9 @@ class Vector(object):
         self._data[0] = x
         self._data[1] = y
 
-    def update_from_other(self, other: Union["Vector", PrimitiveVector], type_cast: Callable=float) -> None:
+    def update_from_other(
+        self, other: Union["Vector", PrimitiveVector], type_cast: Callable = float
+    ) -> None:
         """
         Updates the data of the existing vector in-place from a variable input
         format.

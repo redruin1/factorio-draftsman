@@ -2,19 +2,15 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
-from draftsman.error import DraftsmanError
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
+from draftsman.error import DraftsmanError
+from draftsman.utils import get_first
 
 from draftsman.data.entities import linked_belts
 
 from pydantic import ConfigDict
 from typing import Any, Literal, Union
-
-try:  # pragma: no coverage
-    default_linked_belt = linked_belts[0]
-except IndexError:  # pragma: no coverage
-    default_linked_belt = None
 
 
 class LinkedBelt(DirectionalMixin, Entity):
@@ -33,7 +29,7 @@ class LinkedBelt(DirectionalMixin, Entity):
 
     def __init__(
         self,
-        name: str = linked_belts[0],
+        name: str = get_first(linked_belts),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,

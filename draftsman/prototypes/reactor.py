@@ -5,10 +5,11 @@ from draftsman.classes.mixins import BurnerEnergySourceMixin, RequestItemsMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.signatures import uint32
+from draftsman.utils import get_first
 
 from draftsman.data.entities import reactors
 
-from pydantic import ConfigDict, ValidationInfo, field_validator
+from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
 
@@ -24,7 +25,7 @@ class Reactor(BurnerEnergySourceMixin, RequestItemsMixin, Entity):
 
     def __init__(
         self,
-        name: str = reactors[0],
+        name: Optional[str] = get_first(reactors),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         items: dict[str, uint32] = {},

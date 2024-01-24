@@ -14,6 +14,7 @@ from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.data import entities
 from draftsman.signatures import Connections, DraftsmanBaseModel
+from draftsman.utils import get_first
 
 from draftsman.data.entities import power_switches
 
@@ -41,7 +42,6 @@ class PowerSwitch(
         ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
         PowerConnectableMixin.Format,
-        # DirectionalMixin.Format,
         Entity.Format,
     ):
         class ControlBehavior(
@@ -65,7 +65,7 @@ class PowerSwitch(
 
     def __init__(
         self,
-        name=power_switches[0],
+        name: Optional[str] = get_first(power_switches),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         connections: Connections = {},

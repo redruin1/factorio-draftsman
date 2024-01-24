@@ -5,7 +5,7 @@ from draftsman.classes.mixins import ModulesMixin, RequestItemsMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.signatures import uint32
-from draftsman.utils import reissue_warnings
+from draftsman.utils import get_first, reissue_warnings
 from draftsman.warning import ItemLimitationWarning
 
 from draftsman.data.entities import labs
@@ -30,7 +30,7 @@ class Lab(ModulesMixin, RequestItemsMixin, Entity):
 
     def __init__(
         self,
-        name: str = labs[0],
+        name: Optional[str] = get_first(labs),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         items: dict[str, uint32] = {},  # TODO: ItemID

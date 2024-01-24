@@ -10,7 +10,7 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.signatures import uint32
-from draftsman.utils import reissue_warnings
+from draftsman.utils import get_first
 from draftsman.warning import ItemCapacityWarning, ItemLimitationWarning
 
 from draftsman.data.entities import furnaces
@@ -108,7 +108,7 @@ class Furnace(
 
     def __init__(
         self,
-        name: str = furnaces[0],
+        name: Optional[str] = get_first(furnaces),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         items: dict[str, uint32] = {},  # TODO: ItemID

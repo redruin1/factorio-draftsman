@@ -13,6 +13,7 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.signatures import Connections, DraftsmanBaseModel
+from draftsman.utils import get_first
 
 from draftsman.data.entities import rail_signals
 
@@ -70,7 +71,7 @@ class RailSignal(
 
     def __init__(
         self,
-        name: str = rail_signals[0],
+        name: Optional[str] = get_first(rail_signals),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,

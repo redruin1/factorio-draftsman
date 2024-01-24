@@ -6,6 +6,7 @@ from draftsman.classes.mixins import RequestItemsMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.signatures import uint32
+from draftsman.utils import get_first
 
 from draftsman.data.entities import rocket_silos
 
@@ -31,7 +32,7 @@ class RocketSilo(RequestItemsMixin, Entity):
 
     def __init__(
         self,
-        name: str = rocket_silos[0],
+        name: Optional[str] = get_first(rocket_silos),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         items: dict[str, uint32] = {},

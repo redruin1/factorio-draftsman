@@ -6,11 +6,12 @@ from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.data import entities
 from draftsman.signatures import Connections, uint64
+from draftsman.utils import get_first
 
 from draftsman.data.entities import electric_poles
 
 from pydantic import ConfigDict
-from typing import Any, Literal, Union
+from typing import Any, Literal, Optional, Union
 
 
 class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
@@ -25,7 +26,7 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
 
     def __init__(
         self,
-        name=electric_poles[0],
+        name: Optional[str] = get_first(electric_poles),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         neighbours: list[uint64] = [],

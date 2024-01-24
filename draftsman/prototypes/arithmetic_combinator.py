@@ -11,10 +11,11 @@ from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.error import DataFormatError, InvalidSignalError, DraftsmanError
 from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID, int32
+from draftsman.utils import get_first, reissue_warnings
 from draftsman.warning import PureVirtualDisallowedWarning, SignalConfigurationWarning
 
 from draftsman.data.entities import arithmetic_combinators
-from draftsman.utils import reissue_warnings
+
 
 from pydantic import ConfigDict, Field, ValidationInfo, field_validator, model_validator
 from typing import Any, Literal, Optional, Union
@@ -181,7 +182,7 @@ class ArithmeticCombinator(
 
     def __init__(
         self,
-        name: str = arithmetic_combinators[0],
+        name: Optional[str] = get_first(arithmetic_combinators),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,

@@ -4,13 +4,14 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import OrientationMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Orientation, ValidationMode
+from draftsman.utils import get_first
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import fluid_wagons
 from draftsman.data import entities
 
 from pydantic import ConfigDict
-from typing import Any, Literal, Union
+from typing import Any, Literal, Optional, Union
 
 
 class FluidWagon(OrientationMixin, Entity):
@@ -23,7 +24,7 @@ class FluidWagon(OrientationMixin, Entity):
 
     def __init__(
         self,
-        name: str = fluid_wagons[0],
+        name: Optional[str] = get_first(fluid_wagons),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         orientation: Orientation = Orientation.NORTH,

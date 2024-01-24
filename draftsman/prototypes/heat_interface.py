@@ -4,6 +4,7 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
+from draftsman.utils import get_first
 from draftsman.warning import TemperatureRangeWarning
 
 from draftsman.data.entities import heat_interfaces
@@ -59,7 +60,7 @@ class HeatInterface(Entity):
 
     def __init__(
         self,
-        name: str = heat_interfaces[0],
+        name: Optional[str] = get_first(heat_interfaces),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         temperature: float = 0.0,

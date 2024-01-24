@@ -9,7 +9,7 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
-from draftsman.utils import parse_energy
+from draftsman.utils import get_first, parse_energy
 
 from draftsman.data.entities import electric_energy_interfaces
 from draftsman.data import entities
@@ -52,7 +52,7 @@ class ElectricEnergyInterface(Entity):
 
     def __init__(
         self,
-        name=electric_energy_interfaces[0],
+        name: Optional[str] = get_first(electric_energy_interfaces),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         buffer_size: float = None,

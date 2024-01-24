@@ -157,7 +157,10 @@ class Entity(Exportable, EntityLike):
             # if entity.similar_entities is None:
             #     return value
 
-            if entity.similar_entities is not None and value not in entity.similar_entities:
+            if (
+                entity.similar_entities is not None
+                and value not in entity.similar_entities
+            ):
                 warning_list.append(
                     UnknownEntityWarning(
                         "'{}' is not a known name for a {}{}".format(
@@ -188,7 +191,7 @@ class Entity(Exportable, EntityLike):
 
     def __init__(
         self,
-        name: str,
+        name: Optional[str],
         similar_entities: list[str],
         tile_position: IntPosition = (0, 0),
         id: str = None,
@@ -208,6 +211,9 @@ class Entity(Exportable, EntityLike):
         keyword passed into the constructor.
 
         :param name: The name of the entity. Must be one of ``similar_entities``.
+            Can be ``None`` if and only if the parent entity type has no valid
+            entities under a particular configuration, in which case the entity
+            is unable to be created.
         :param similar_entities: A list of valid names associated with this
             Entity class. Can be though of as a list of all the entities of this
             type.
@@ -218,6 +224,13 @@ class Entity(Exportable, EntityLike):
         :exception InvalidEntityError: If ``name`` is set to anything other than
             an entry in ``similar_entities``.
         """
+        # If name is None, then the user didn't provide a name and a default was
+        # unobtainable; error
+        if name is None:
+            raise DataFormatError(
+                "Unable to create a default entity; 'similar_entities' is an empty list"
+            )
+
         # Init Exportable
         Exportable.__init__(self)
         # Init EntityLike

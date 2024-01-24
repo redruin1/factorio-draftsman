@@ -11,6 +11,7 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID, uint32
+from draftsman.utils import get_first
 from draftsman.warning import (
     UnknownInstrumentWarning,
     UnknownNoteWarning,
@@ -19,18 +20,14 @@ from draftsman.warning import (
 
 from draftsman.data.entities import programmable_speakers
 import draftsman.data.instruments as instruments_data
-from draftsman.data.signals import signal_dict
 
 from pydantic import (
     ConfigDict,
     Field,
-    ValidatorFunctionWrapHandler,
     ValidationInfo,
     field_validator,
 )
-import six
 from typing import Any, Literal, Optional, Union
-import warnings
 
 
 class ProgrammableSpeaker(
@@ -335,7 +332,7 @@ class ProgrammableSpeaker(
 
     def __init__(
         self,
-        name=programmable_speakers[0],
+        name: Optional[str] = get_first(programmable_speakers),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         connections: Connections = {},

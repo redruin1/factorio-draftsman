@@ -5,11 +5,12 @@ from draftsman.classes.mixins import RequestItemsMixin, OrientationMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Orientation, ValidationMode
 from draftsman.signatures import uint32
+from draftsman.utils import get_first
 
 from draftsman.data.entities import artillery_wagons
 
 from pydantic import ConfigDict
-from typing import Any, Literal, Union
+from typing import Any, Literal, Optional, Union
 
 
 class ArtilleryWagon(RequestItemsMixin, OrientationMixin, Entity):
@@ -22,7 +23,7 @@ class ArtilleryWagon(RequestItemsMixin, OrientationMixin, Entity):
 
     def __init__(
         self,
-        name: str = artillery_wagons[0],
+        name: Optional[str] = get_first(artillery_wagons),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         orientation: Orientation = Orientation.NORTH,

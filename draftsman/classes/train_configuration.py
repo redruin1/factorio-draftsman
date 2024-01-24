@@ -29,11 +29,11 @@ class TrainConfiguration:
     }
 
     def __init__(
-        self, 
-        format_string: str=None, 
-        direction: Literal["dual", "forward"]="dual", 
-        wagons: Literal["cargo", "fluid", "artillery"]="cargo", 
-        mapping: dict[str, dict]=default_mapping
+        self,
+        format_string: str = None,
+        direction: Literal["dual", "forward"] = "dual",
+        wagons: Literal["cargo", "fluid", "artillery"] = "cargo",
+        mapping: dict[str, dict] = default_mapping,
     ) -> None:
         """
         TODO
@@ -61,10 +61,10 @@ class TrainConfiguration:
 
     def from_string(
         self,
-        format_string: str=None, 
-        direction: Literal["dual", "forward"]="dual", 
-        wagons: Literal["cargo", "fluid", "artillery"]="cargo", 
-        mapping: dict[str, dict]=default_mapping
+        format_string: str = None,
+        direction: Literal["dual", "forward"] = "dual",
+        wagons: Literal["cargo", "fluid", "artillery"] = "cargo",
+        mapping: dict[str, dict] = default_mapping,
     ) -> None:
         """
         TODO
@@ -100,7 +100,7 @@ class TrainConfiguration:
             # Otherwise all locomotive blocks point forward
             dual_headed = False
 
-        # Converts the string into the explicit format where each character 
+        # Converts the string into the explicit format where each character
         # corresponds to one car
         # e.g. "2-2C2F4A-2" into "<<CCFFAAAA>>"
         result_string = ""

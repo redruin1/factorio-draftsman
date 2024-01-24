@@ -19,6 +19,7 @@ from draftsman.signatures import (
     uint16,
     uint32,
 )
+from draftsman.utils import get_first
 
 from draftsman.data.entities import logistic_buffer_containers
 
@@ -57,7 +58,7 @@ class LogisticBufferContainer(
 
     def __init__(
         self,
-        name: str = logistic_buffer_containers[0],
+        name: Optional[str] = get_first(logistic_buffer_containers),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         bar: uint16 = None,

@@ -19,6 +19,7 @@ from draftsman.signatures import (
     int64,
     uint32,
 )
+from draftsman.utils import get_first
 from draftsman.warning import PureVirtualDisallowedWarning
 
 from draftsman.data.entities import constant_combinators
@@ -77,7 +78,7 @@ class ConstantCombinator(
 
     def __init__(
         self,
-        name: str = constant_combinators[0],
+        name: Optional[str] = get_first(constant_combinators),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,

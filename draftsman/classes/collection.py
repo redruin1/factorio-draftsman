@@ -141,7 +141,9 @@ class EntityCollection(metaclass=ABCMeta):
     # Entity Queries
     # =========================================================================
 
-    def find_entity(self, name: str, position: Union[Vector, PrimitiveVector]) -> EntityLike:
+    def find_entity(
+        self, name: str, position: Union[Vector, PrimitiveVector]
+    ) -> EntityLike:
         """
         Finds an entity with ``name`` at a position ``position``. If multiple
         entities exist at the queried position, the one that was first placed is
@@ -160,7 +162,9 @@ class EntityCollection(metaclass=ABCMeta):
         except IndexError:
             return None
 
-    def find_entity_at_position(self, position: Union[Vector, PrimitiveVector]) -> EntityLike:
+    def find_entity_at_position(
+        self, position: Union[Vector, PrimitiveVector]
+    ) -> EntityLike:
         """
         Finds any entity at the position ``position``. If multiple entities
         exist at the queried position, the one that was first placed is returned.
@@ -176,7 +180,9 @@ class EntityCollection(metaclass=ABCMeta):
         except IndexError:
             return None
 
-    def find_entities(self, aabb: Union[AABB, PrimitiveAABB, None]=None) -> list[EntityLike]:
+    def find_entities(
+        self, aabb: Union[AABB, PrimitiveAABB, None] = None
+    ) -> list[EntityLike]:
         """
         Returns a ``list`` of all entities within the area ``aabb``. Works
         similiarly to
@@ -200,14 +206,14 @@ class EntityCollection(metaclass=ABCMeta):
 
     def find_entities_filtered(
         self,
-        position: Optional[Vector]=None,
-        radius: Optional[float]=None,
-        area: Union[AABB, PrimitiveAABB, None]=None,
-        name: Union[str, set[str], None]=None,
-        type: Union[str, set[str], None]=None,
-        direction: Optional[Direction]=None,
-        invert: bool=False,
-        limit: Optional[int]=None,
+        position: Optional[Vector] = None,
+        radius: Optional[float] = None,
+        area: Union[AABB, PrimitiveAABB, None] = None,
+        name: Union[str, set[str], None] = None,
+        type: Union[str, set[str], None] = None,
+        direction: Optional[Direction] = None,
+        invert: bool = False,
+        limit: Optional[int] = None,
     ) -> list[EntityLike]:
         """
         Returns a filtered list of entities within the ``Collection``. Works
@@ -341,10 +347,10 @@ class EntityCollection(metaclass=ABCMeta):
     # =========================================================================
 
     def add_power_connection(
-        self, 
-        entity_1: Union[EntityLike, int, str], 
-        entity_2: Union[EntityLike, int, str], 
-        side: Literal[1, 2]=1
+        self,
+        entity_1: Union[EntityLike, int, str],
+        entity_2: Union[EntityLike, int, str],
+        side: Literal[1, 2] = 1,
     ) -> None:
         """
         Adds a copper wire power connection between two entities. Each entity
@@ -495,10 +501,10 @@ class EntityCollection(metaclass=ABCMeta):
                     entity_2.neighbours.append(Association(entity_1))
 
     def remove_power_connection(
-        self, 
-        entity_1: Union[EntityLike, int, str], 
-        entity_2: Union[EntityLike, int, str], 
-        side: Literal[1, 2]=1
+        self,
+        entity_1: Union[EntityLike, int, str],
+        entity_2: Union[EntityLike, int, str],
+        side: Literal[1, 2] = 1,
     ) -> None:
         """
         Removes a copper wire power connection between two entities. Each entity
@@ -593,7 +599,9 @@ class EntityCollection(metaclass=ABCMeta):
                     entity.connections["Cu0"] = None
                     entity.connections["Cu1"] = None
 
-    def generate_power_connections(self, prefer_axis: bool=True, only_axis: bool=False) -> None:
+    def generate_power_connections(
+        self, prefer_axis: bool = True, only_axis: bool = False
+    ) -> None:
         """
         Automatically create power connections between all electric poles.
 
@@ -669,12 +677,12 @@ class EntityCollection(metaclass=ABCMeta):
     # =========================================================================
 
     def add_circuit_connection(
-        self, 
-        color: Literal["red", "green"], 
-        entity_1: Union[EntityLike, int, str], 
-        entity_2: Union[EntityLike, int, str], 
-        side1: Literal[1, 2]=1, 
-        side2: Literal[1, 2]=1
+        self,
+        color: Literal["red", "green"],
+        entity_1: Union[EntityLike, int, str],
+        entity_2: Union[EntityLike, int, str],
+        side1: Literal[1, 2] = 1,
+        side2: Literal[1, 2] = 1,
     ) -> None:
         """
         Adds a circuit wire connection between two entities. Each entity
@@ -819,12 +827,12 @@ class EntityCollection(metaclass=ABCMeta):
             current_color.append(entry)
 
     def remove_circuit_connection(
-        self, 
-        color: Literal["red", "green"], 
-        entity_1: Union[EntityLike, int, str], 
-        entity_2: Union[EntityLike, int, str], 
-        side1: Literal[1, 2]=1, 
-        side2: Literal[1, 2]=1
+        self,
+        color: Literal["red", "green"],
+        entity_1: Union[EntityLike, int, str],
+        entity_2: Union[EntityLike, int, str],
+        side1: Literal[1, 2] = 1,
+        side2: Literal[1, 2] = 1,
     ) -> None:
         """
         Removes a circuit wire connection between two entities. Each entity
@@ -939,11 +947,11 @@ class EntityCollection(metaclass=ABCMeta):
     # =========================================================================
 
     def add_train_at_position(
-        self, 
-        config: TrainConfiguration, 
-        position: Union[Vector, PrimitiveVector], 
-        direction: Direction, 
-        schedule: Optional[Schedule]=None
+        self,
+        config: TrainConfiguration,
+        position: Union[Vector, PrimitiveVector],
+        direction: Direction,
+        schedule: Optional[Schedule] = None,
     ) -> None:
         """
         Adds a train with a specified configuration and schedule at a position
@@ -1005,10 +1013,10 @@ class EntityCollection(metaclass=ABCMeta):
             current_pos += direction.to_vector(-7)  # 7 = distance between wagons
 
     def add_train_at_station(
-        self, 
-        config: TrainConfiguration, 
-        station: Union[EntityLike, str, int], 
-        schedule: Optional[Schedule]=None
+        self,
+        config: TrainConfiguration,
+        station: Union[EntityLike, str, int],
+        schedule: Optional[Schedule] = None,
     ) -> None:
         """
         Adds a train with a specified configuration and schedule behind a
@@ -1352,7 +1360,7 @@ class EntityCollection(metaclass=ABCMeta):
             Performs a equality check between each of the train configuration's
             cars and the cars in the returned trains.
         :param schedule: A :py:class:`Schedule` that the returned trains should
-            match. Only trains who's schedules match this one exactly will be 
+            match. Only trains who's schedules match this one exactly will be
             returned.
         :param invert: Whether or not to return the inversion of the search
             criteria.

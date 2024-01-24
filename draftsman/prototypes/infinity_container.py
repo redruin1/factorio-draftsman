@@ -7,6 +7,7 @@ from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
 from draftsman.signatures import DraftsmanBaseModel, uint16, uint32
+from draftsman.utils import get_first
 
 from draftsman.data.entities import infinity_containers
 from draftsman.data import items
@@ -75,7 +76,7 @@ class InfinityContainer(RequestItemsMixin, InventoryMixin, Entity):
 
     def __init__(
         self,
-        name: str = infinity_containers[0],
+        name: Optional[str] = get_first(infinity_containers),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         bar: uint16 = None,

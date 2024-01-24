@@ -17,6 +17,7 @@ from draftsman.signatures import (
     SignalID,
     int32,
 )
+from draftsman.utils import get_first
 from draftsman.warning import DraftsmanWarning, PureVirtualDisallowedWarning
 
 from draftsman.data.entities import decider_combinators
@@ -142,7 +143,7 @@ class DeciderCombinator(
 
     def __init__(
         self,
-        name: str = decider_combinators[0],
+        name: Optional[str] = get_first(decider_combinators),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
