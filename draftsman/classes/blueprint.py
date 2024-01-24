@@ -447,8 +447,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         of a regular list, as well as some extra features. For more information
         on ``EntityList``, check out this writeup
         :ref:`here <handbook.blueprints.blueprint_differences>`.
-        Note - assigning to this triggers a deep copy, so use .append()
-        or .extend() if you're building incrementally.
+
+        .. NOTE ::
+            
+            Currently, assigning to this always triggers a deep copy. To avoid
+            this, use :py:meth:`.EntityList.append()` or 
+            :py:meth:`EntityList.extend()` instead.
         """
         return self._root["entities"]
 
@@ -462,8 +466,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         elif isinstance(value, list):
             self._root["entities"] = EntityList(self, value)
         elif isinstance(value, EntityList):
-            # Just don't ask
-            self._root["entities"] = copy.deepcopy(value, memo={"new_parent": self})
+            # TODO: this is kinda wasteful, especially in the cases where we do
+            # blueprint.entities += [...]
+            # However, there's no way to distinguish the above case from a raw
+            # set, which is troublesome because entity lists in that case must
+            # be copied to avoid maximum confusion for everyone involved
+            self._root["entities"] = EntityList(self, value.data)
         else:
             raise TypeError("'entities' must be an EntityList, list, or None")
 

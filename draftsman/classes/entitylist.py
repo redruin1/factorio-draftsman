@@ -128,13 +128,13 @@ class EntityList(MutableSequence):
 
     @utils.reissue_warnings
     def extend(self, entities, copy=True, merge=False):
-        # type: (List[Union[str, EntityLike]], bool, bool, **dict) -> None
+        # type: (List[Union[str, EntityLike]], bool, bool) -> None
         """
-        Extends the entity list with the list provided.
-        Functionally the same as appending one element at a time
+        Extends this list with the list provided. Computationally the same
+        as appending one element at a time. 
 
-        :param copy: Passed through to append for each element
-        :param merge: Passed through to append for each element
+        :param copy: Whether or not to insert a copy of each element.
+        :param merge: Whether or not to merge each element, if possible.
 
         :example:
 
