@@ -449,9 +449,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         :ref:`here <handbook.blueprints.blueprint_differences>`.
 
         .. NOTE ::
-            
+
             Currently, assigning to this always triggers a deep copy. To avoid
-            this, use :py:meth:`.EntityList.append()` or 
+            this, use :py:meth:`.EntityList.append()` or
             :py:meth:`EntityList.extend()` instead.
         """
         return self._root["entities"]

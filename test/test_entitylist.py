@@ -73,8 +73,10 @@ class EntityListTesting(unittest.TestCase):
         # Test appending a list vs individually
         blueprint1 = Blueprint()
         blueprint2 = Blueprint()
-        entity_list = [new_entity("transport-belt", tile_position=(0, 0)),
-                       new_entity("wooden-chest", tile_position=(1, 1))]
+        entity_list = [
+            new_entity("transport-belt", tile_position=(0, 0)),
+            new_entity("wooden-chest", tile_position=(1, 1)),
+        ]
         blueprint1.entities.extend(entity_list)
         for e in entity_list:
             blueprint2.entities.append(e)

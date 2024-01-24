@@ -1,5 +1,11 @@
 # Changelog
 
+# 1.1.1
+* Updated `factorio-data` to version `1.1.103`
+* Merged RosieBaish's pull request:
+    * Added an `extend()` function to `EntityList` along with notes about it's performance
+* Fixed issue #101 (finally)
+
 # 1.1.0
 * Added a number of missing prototype objects that are blueprintable:
     * `SimpleEntityWithOwner`

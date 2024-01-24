@@ -131,7 +131,7 @@ class EntityList(MutableSequence):
         # type: (List[Union[str, EntityLike]], bool, bool) -> None
         """
         Extends this list with the list provided. Computationally the same
-        as appending one element at a time. 
+        as appending one element at a time.
 
         :param copy: Whether or not to insert a copy of each element.
         :param merge: Whether or not to merge each element, if possible.
@@ -151,7 +151,6 @@ class EntityList(MutableSequence):
         """
         for entity in entities:
             self.append(entity, copy=copy, merge=merge)
-
 
     @utils.reissue_warnings
     def insert(self, idx, name, copy=True, merge=False, **kwargs):
