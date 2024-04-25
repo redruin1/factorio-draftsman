@@ -19,10 +19,6 @@ def main():
     blueprint.label = "Huge Pumpjacks"
     blueprint.set_icons("pumpjack")
 
-    # We intentionally create a blueprint which has overlapping entities, so we
-    # suppress this warning here
-    warnings.simplefilter("ignore", OverlappingObjectsWarning)
-
     dimension = 64
     for y in range(dimension):
         for x in range(dimension):

@@ -136,7 +136,7 @@ class TestGroup:
         empty_blueprint_string = "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTUxMTU3q60FAHmbE1Y="
         group = Group(string=empty_blueprint_string)
         assert len(group.entities) == 0
-        assert group.entities.data == []
+        assert group.entities._root == []
 
         # Errors
         with pytest.raises(TypeError):
@@ -246,12 +246,12 @@ class TestGroup:
         # None case
         group.entities = None
         assert isinstance(group.entities, EntityList)
-        assert group.entities.data == []
+        assert group.entities._root == []
         # EntityList case
         group2 = Group("test2")
         group2.entities = group.entities
         assert isinstance(group2.entities, EntityList)
-        assert group2.entities.data == []
+        assert group2.entities._root == []
 
         group.entities = [
             Furnace("stone-furnace"),
@@ -861,9 +861,9 @@ class TestGroup:
         blueprint.entities.append(group)
 
         assert len(group.entities) == 1
-        assert group.entities.data == [group.entities[0]]
+        assert group.entities._root == [group.entities[0]]
         assert len(blueprint.entities) == 1
-        assert blueprint.entities.data == [blueprint.entities[0]]
+        assert blueprint.entities._root == [blueprint.entities[0]]
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "entities": [
@@ -981,7 +981,7 @@ class TestGroup:
         # Make sure parent of the copied group is reset to None
         assert group_copy.parent is None
         # Make sure the hashmap was copied properly and are not equivalent
-        assert group.entity_map is not group_copy.entity_map
+        assert group.entities.spatial_map is not group_copy.entities.spatial_map
 
         # Test invalid association
         blueprint.entities.append("steel-chest", tile_position=(5, 5))

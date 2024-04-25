@@ -430,7 +430,7 @@ class TestBlueprint:
 
         blueprint.entities = None
         assert isinstance(blueprint.entities, EntityList)
-        assert blueprint.entities.data == []
+        assert blueprint.entities._root == []
 
         # set by EntityList
         blueprint.entities.append("wooden-chest")
@@ -454,7 +454,7 @@ class TestBlueprint:
 
         blueprint.tiles = None
         assert isinstance(blueprint.tiles, TileList)
-        assert blueprint.tiles.data == []
+        assert blueprint.tiles._root == []
 
         blueprint.tiles.append("landfill")
         blueprint2 = Blueprint()
@@ -923,8 +923,7 @@ class TestBlueprint:
 
         blueprint.entities.append(group)
         blueprint.add_circuit_connection("green", "test container", ("powerlines", 0))
-
-        self.maxDiff = None
+        
         # Entities
         assert blueprint.entities[0].parent is blueprint
         assert (
@@ -984,6 +983,8 @@ class TestBlueprint:
             is blueprint_copy.entities["powerlines"]
         )
         assert blueprint_copy.entities["powerlines"].parent is blueprint_copy
+        print(blueprint._root_item)
+        print(blueprint_copy._root_item)
         # Outcome
         assert blueprint_copy.to_dict()["blueprint"] == {
             "item": "blueprint",
@@ -1075,7 +1076,7 @@ class TestBlueprint:
         blueprint.entities.append("steel-chest", tile_position=(10, 10))
 
         found_entities = blueprint.find_entities()
-        assert found_entities == blueprint.entities.data
+        assert found_entities == blueprint.entities._root
 
         # Explicit AABB
         found_entities = blueprint.find_entities(AABB(0, 0, 6, 6))
@@ -1090,7 +1091,7 @@ class TestBlueprint:
         blueprint.entities.append(group)
         # Unchanged
         found_entities = blueprint.find_entities()
-        assert found_entities == blueprint.entities.data
+        assert found_entities == blueprint.entities._root
         # Unchanged
         found_entities = blueprint.find_entities([0, 0, 6, 6])
         assert found_entities == [blueprint.entities[0], blueprint.entities[1]]
@@ -1113,7 +1114,7 @@ class TestBlueprint:
 
         # Return all
         found = blueprint.find_entities_filtered()
-        assert found == blueprint.entities.data
+        assert found == blueprint.entities._root
 
         # Limit
         found = blueprint.find_entities_filtered(limit=2)
@@ -1157,7 +1158,7 @@ class TestBlueprint:
         found = blueprint.find_entities_filtered(
             type={"container", "decider-combinator", "arithmetic-combinator"}
         )
-        assert found == blueprint.entities.data
+        assert found == blueprint.entities._root
 
         # Direction
         found = blueprint.find_entities_filtered(direction=Direction.NORTH)
@@ -2660,7 +2661,7 @@ class TestBlueprint:
 
         # No criteria
         result = blueprint.find_tiles_filtered()
-        assert result == blueprint.tiles.data
+        assert result == blueprint.tiles._root
 
         # Position and radius
         result = blueprint.find_tiles_filtered(position=(0, 0), radius=5)
@@ -2668,11 +2669,11 @@ class TestBlueprint:
 
         # Area (long)
         result = blueprint.find_tiles_filtered(area=AABB(0, 0, 11, 11))
-        assert result == blueprint.tiles.data
+        assert result == blueprint.tiles._root
 
         # Area (short)
         result = blueprint.find_tiles_filtered(area=[0, 0, 11, 11])
-        assert result == blueprint.tiles.data
+        assert result == blueprint.tiles._root
 
         # Name
         result = blueprint.find_tiles_filtered(name="refined-concrete")
@@ -2680,7 +2681,7 @@ class TestBlueprint:
 
         # Names
         result = blueprint.find_tiles_filtered(name={"refined-concrete", "landfill"})
-        assert result == blueprint.tiles.data
+        assert result == blueprint.tiles._root
 
         result = blueprint.find_tiles_filtered(name="refined-concrete", invert=True)
         assert result == [blueprint.tiles[1]]

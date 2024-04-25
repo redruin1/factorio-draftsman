@@ -442,6 +442,7 @@ class UpgradePlanner(Blueprintable):
             item="upgrade-planner",
             init_data=upgrade_planner,
             index=index,
+            if_unknown=if_unknown
         )
 
         self.validate_assignment = validate_assignment

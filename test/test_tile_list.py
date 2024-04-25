@@ -27,11 +27,11 @@ class TestTileList:
 
         blueprint.tiles.insert(0, "landfill")
         blueprint.tiles.insert(1, "refined-concrete", position=(1, 1))
-        assert blueprint.tiles.data == [blueprint.tiles[0], blueprint.tiles[1]]
+        assert blueprint.tiles._root == [blueprint.tiles[0], blueprint.tiles[1]]
 
         # Test merging
         blueprint.tiles.insert(2, "landfill", merge=True)
-        assert blueprint.tiles.data == [blueprint.tiles[0], blueprint.tiles[1]]
+        assert blueprint.tiles._root == [blueprint.tiles[0], blueprint.tiles[1]]
 
         with pytest.warns(OverlappingObjectsWarning):
             blueprint.tiles.insert(2, "landfill")
@@ -68,7 +68,7 @@ class TestTileList:
         assert isinstance(union.tiles, TileList)
         assert union.tiles._parent is union
         assert len(union.tiles) == 2
-        assert union.tiles.data == [Tile("landfill"), Tile("concrete", position=(1, 0))]
+        assert union.tiles._root == [Tile("landfill"), Tile("concrete", position=(1, 0))]
         assert union.tiles[0].parent is union
         assert union.tiles[1].parent is union
 
@@ -86,7 +86,7 @@ class TestTileList:
         assert isinstance(intersection.tiles, TileList)
         assert intersection.tiles._parent is intersection
         assert len(intersection.tiles) == 1
-        assert intersection.tiles.data == [
+        assert intersection.tiles._root == [
             Tile("landfill"),
         ]
         assert intersection.tiles[0].parent is intersection
@@ -112,7 +112,7 @@ class TestTileList:
         assert isinstance(difference.tiles, TileList)
         assert difference.tiles._parent is difference
         assert len(difference.tiles) == 1
-        assert difference.tiles.data == [Tile("concrete", position=(1, 0))]
+        assert difference.tiles._root == [Tile("concrete", position=(1, 0))]
         assert difference.tiles[0].parent is difference
 
     def test_getitem(self):
@@ -143,7 +143,7 @@ class TestTileList:
         # Slice
         del blueprint.tiles[:]
 
-        assert blueprint.tiles.data == []
+        assert blueprint.tiles._root == []
 
     def test_equals(self):
         blueprint = Blueprint()

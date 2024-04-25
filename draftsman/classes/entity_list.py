@@ -3,6 +3,7 @@
 from draftsman.classes.association import Association
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.exportable import Exportable, ValidationResult
+from draftsman.classes.spatial_hashmap import SpatialDataStructure, SpatialHashMap
 from draftsman.constants import ValidationMode
 from draftsman.entity import new_entity
 from draftsman.error import (
@@ -12,7 +13,7 @@ from draftsman.error import (
     InvalidEntityError,
 )
 from draftsman.utils import reissue_warnings
-from draftsman.signatures import Connections, DraftsmanBaseModel
+from draftsman.signatures import Connections, DraftsmanBaseModel, DraftsmanRootModel
 from draftsman.warning import HiddenEntityWarning
 
 from collections.abc import MutableSequence
@@ -27,13 +28,13 @@ from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
 from typing import Any, Literal, Union
 
-from typing import TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.collection import EntityCollection
 
 
-class EntityList(MutableSequence):
+class EntityList(Exportable, MutableSequence):
     """
     Custom object for storing sequences of :py:class:`.EntityLike`.
 
@@ -43,17 +44,23 @@ class EntityList(MutableSequence):
     """
 
     class Format(DraftsmanBaseModel):
-        data: list[dict]  # TODO: fix
+        _root: List[EntityLike]
+
+        root: List[Any]  # should be a better way to validate this
 
         @model_validator(mode="after")
         def ensure_no_duplicate_ids(self, info):
             known_ids = set()
-            for entitylike in self.data:
+            for entitylike in self.root:
                 if entitylike.id in known_ids:
                     raise AssertionError(
                         "Cannot have two entities with the same id"
                     )  # TODO better
-                known_ids.add(entitylike.id)
+                if entitylike.id is not None:
+                    known_ids.add(entitylike.id)
+            return self
+
+        # TODO: issue OverlappingObjectsWarnings
 
         # TODO: determine a way to check if entities can be placed in a blueprint
         # ("hidden" flag, "not-blueprintable" flag, etc.)
@@ -63,12 +70,12 @@ class EntityList(MutableSequence):
         self,
         parent: "EntityCollection" = None,
         initlist: list[EntityLike] = [],
-        # validate: Union[
-        #     ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        # ] = ValidationMode.STRICT,
-        # validate_assignment: Union[
-        #     ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        # ] = ValidationMode.STRICT,
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
         if_unknown: str = "error",  # TODO: enum
     ):
         """
@@ -81,10 +88,15 @@ class EntityList(MutableSequence):
         :exception TypeError: If any of the entries in ``initlist`` are neither
             a ``dict`` nor an ``EntityLike``.
         """
-        self.data: list[EntityLike] = []
+        # Init Exportable
+        super().__init__()
+
+        self._root: list[EntityLike] = []
         self.key_map = {}
         self.key_to_idx = {}
         self.idx_to_key = {}
+
+        self.spatial_map: SpatialDataStructure = SpatialHashMap()
 
         self._parent = parent
 
@@ -97,9 +109,9 @@ class EntityList(MutableSequence):
             else:
                 raise TypeError("Constructor either takes EntityLike or dict entries")
 
-        # self.validate_assignment = validate_assignment
+        self.validate_assignment = validate_assignment
 
-        # self.validate(mode=validate).reissue_all(stacklevel=3)
+        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     @reissue_warnings
     def append(
@@ -273,21 +285,20 @@ class EntityList(MutableSequence):
         # Do a set of idiot checks on the entity to make sure everything's okay
         self.check_entitylike(entitylike)
 
-        # In general, the parent entity is in charge of issuing Collection-
-        # specific warnings and errors, such as OverlappingObjectsWarnings and
-        # handling it's spatial map, if desired. The parent is also in charge of
-        # handling per-entity warnings, as that information is more closely tied
-        # to the parent than the `EntityList`.
-        # To keep data consistency, any changes made to the passed in entitylike
-        # during the course of the function are persistent afterwards.
-        if self._parent:
-            entitylike = self._parent.on_entity_insert(entitylike, merge)
+        # Here we issue warnings for overlapping entities, modify existing
+        # entities if merging is enabled and delete excess entities in entitylike
+        if self.validate_assignment:
+            self.spatial_map.validate_insert(entitylike, merge)
+
+        # If no errors, add this to hashmap (as well as any of it's children),
+        # merging as necessary
+        entitylike = self.spatial_map.recursive_add(entitylike, merge)
 
         if entitylike is None:  # input entitylike was entirely merged
             return  # exit without adding to list
 
         # Once the parent has itself in order, we can update our data
-        self.data.insert(idx, entitylike)
+        self._root.insert(idx, entitylike)
         self._shift_key_indices(idx, 1)
         if entitylike.id:
             self._set_key(entitylike.id, entitylike)
@@ -313,7 +324,7 @@ class EntityList(MutableSequence):
             pass
 
         # Then, try to delete the item from any sublists
-        for existing_item in self.data:
+        for existing_item in self._root:
             # if isinstance(existing_item, EntityCollection): # better, but impossible
             if hasattr(existing_item, "entities"):  # FIXME: somewhat unsafe
                 try:
@@ -322,7 +333,7 @@ class EntityList(MutableSequence):
                 except ValueError:
                     pass
 
-        # If we've made it this far, it's not anywhere in the list
+        # If we've made it this far, it's not anywhere in the list, nested or otherwise
         raise ValueError
 
     def check_entitylike(self, entitylike: "EntityLike"):
@@ -431,10 +442,11 @@ class EntityList(MutableSequence):
         return new_entity_list
 
     def clear(self):
-        del self.data[:]
+        del self._root[:]
         self.key_map.clear()
         self.key_to_idx.clear()
         self.idx_to_key.clear()
+        self.spatial_map.clear()
 
     def validate(
         self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
@@ -455,13 +467,13 @@ class EntityList(MutableSequence):
 
         try:
             result = self.Format.model_validate(
-                self._root,
+                {"root": self._root},
                 strict=False,  # TODO: ideally this should be strict
                 context=context,
             )
             # Reassign private attributes
             # Acquire the newly converted data
-            self._root = result
+            self._root = result["root"]
         except ValidationError as e:
             output.error_list.append(DataFormatError(e))
 
@@ -483,7 +495,7 @@ class EntityList(MutableSequence):
                 item = item[0]
             return new_base.entities[item]  # Raises AttributeError or KeyError
         elif isinstance(item, (int, slice)):
-            return self.data[item]  # Raises IndexError
+            return self._root[item]  # Raises IndexError
         else:
             return self.key_map[item]  # Raises KeyError
 
@@ -497,11 +509,18 @@ class EntityList(MutableSequence):
         # Make sure were not causing any problems by putting this entity in
         self.check_entitylike(value)
 
-        # Perform any logic that the parent has to do
-        self._parent.on_entity_set(self.data[idx], value)
+        # Remove the entity and its children
+        self.spatial_map.recursive_remove(self._root[idx])
+
+        # Check for overlapping entities
+        if self.validate_assignment:
+            self.spatial_map.validate_insert(value, False)
+
+        # Add the new entity and its children
+        self.spatial_map.recursive_add(value, False)
 
         # Set the new data association in the list side
-        self.data[idx] = value
+        self._root[idx] = value
 
         # If the element has a new id, set it to that
         if key:
@@ -521,8 +540,8 @@ class EntityList(MutableSequence):
                 # Get pair
                 idx, key = self.get_pair(i)
 
-                # Handle parent
-                self._parent.on_entity_remove(self.data[idx])
+                # Remove the entity and its children
+                self.spatial_map.recursive_remove(self._root[idx])
 
                 # Remove key pair
                 self._remove_key(key)
@@ -532,18 +551,18 @@ class EntityList(MutableSequence):
                 self._shift_key_indices(i, -step)
 
             # Delete all entries in the main list
-            del self.data[item]
+            del self._root[item]
         else:
             # Get pair
             if isinstance(item, int):
-                item %= len(self.data)
+                item %= len(self._root)
             idx, key = self.get_pair(item)
 
-            # Handle parent
-            self._parent.on_entity_remove(self.data[idx])
+            # Remove the entity and its children
+            self.spatial_map.recursive_remove(self._root[idx])
 
             # Delete from list
-            del self.data[idx]
+            del self._root[idx]
 
             # Remove key pair
             self._remove_key(key)
@@ -552,13 +571,13 @@ class EntityList(MutableSequence):
             self._shift_key_indices(idx, -1)
 
     def __len__(self) -> int:
-        return len(self.data)
+        return len(self._root)
 
     def __contains__(self, item: EntityLike) -> bool:
-        if item in self.data:
+        if item in self._root:
             return True
         else:  # Check every entity for sublists
-            for entity in self.data:
+            for entity in self._root:
                 if hasattr(entity, "entities"):
                     if item in entity.entities:  # recurse
                         return True
@@ -587,11 +606,11 @@ class EntityList(MutableSequence):
         if not isinstance(other, EntityList):
             return False
 
-        if len(self.data) != len(other.data):
+        if len(self._root) != len(other._root):
             return False
 
-        for i in range(len(self.data)):
-            if self.data[i] != other.data[i]:
+        for i in range(len(self._root)):
+            if self._root[i] != other._root[i]:
                 return False
 
         return True
@@ -622,7 +641,7 @@ class EntityList(MutableSequence):
         # First, we make a copy of all entities in self.data and assign them to
         # a new entity list while keeping track of which new entity corresponds
         # to which old entity
-        for entity in self.data:
+        for entity in self._root:
             entity_copy = memo.get(id(entity), deepcopy(entity, memo))
             new.append(entity_copy, copy=False)
             memo[id(entity)] = entity_copy
@@ -672,7 +691,7 @@ class EntityList(MutableSequence):
         return new
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<EntityList>{}".format(self.data)
+        return "<EntityList>{}".format(self._root)
 
     @classmethod
     def __get_pydantic_core_schema__(  # pragma: no coverage
@@ -717,7 +736,7 @@ class EntityList(MutableSequence):
         """
         if key in self.key_map:
             raise DuplicateIDError("'{}'".format(key))
-        idx = self.data.index(value)
+        idx = self._root.index(value)
         self.key_map[key] = value
         self.key_to_idx[key] = idx
         self.idx_to_key[idx] = key

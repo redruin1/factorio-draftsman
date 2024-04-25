@@ -41,7 +41,7 @@ class Transformable:
         # Entities
         for entity in self.entities:
             # Remove from map
-            self.entity_map.remove(entity)
+            self.entities.spatial_map.remove(entity)
 
             entity._parent = None
 
@@ -52,13 +52,13 @@ class Transformable:
             entity._parent = self
 
             # Re-add to map
-            self.entity_map.add(entity)
+            self.entities.spatial_map.add(entity)
 
         # Tiles
-        if hasattr(self, "tiles"):
+        if hasattr(self, "tiles"): # TODO: remove
             for tile in self.tiles:
                 # Remove from map
-                self.tile_map.remove(tile)
+                self.tiles.spatial_map.remove(tile)
 
                 tile._parent = None
 
@@ -68,7 +68,7 @@ class Transformable:
                 tile._parent = self
 
                 # Re-add to map
-                self.tile_map.add(tile)
+                self.tiles.spatial_map.add(tile)
 
     def rotate(self, angle: int):
         """
@@ -105,7 +105,7 @@ class Transformable:
         # Entities
         for entity in self.entities:
             # Remove from map
-            self.entity_map.remove(entity)
+            self.entities.spatial_map.remove(entity)
 
             entity._parent = None
 
@@ -125,13 +125,13 @@ class Transformable:
             entity._parent = self
 
             # Re-add to map
-            self.entity_map.add(entity)
+            self.entities.spatial_map.add(entity)
 
         # Tiles
         if hasattr(self, "tiles"):
             for tile in self.tiles:
                 # Remove from map
-                self.tile_map.remove(tile)
+                self.tiles.spatial_map.remove(tile)
 
                 tile._parent = None
 
@@ -148,7 +148,7 @@ class Transformable:
                 tile._parent = self
 
                 # Re-add to map
-                self.tile_map.add(tile)
+                self.tiles.spatial_map.add(tile)
 
     def flip(self, direction: Literal["horizontal", "vertical"] = "horizontal") -> None:
         """
@@ -183,7 +183,7 @@ class Transformable:
         # Entities
         for entity in self.entities:
             # Remove from map
-            self.entity_map.remove(entity)
+            self.entities.spatial_map.remove(entity)
 
             entity._parent = None
 
@@ -202,13 +202,13 @@ class Transformable:
             entity._parent = self
 
             # Re-add to map
-            self.entity_map.add(entity)
+            self.entities.spatial_map.add(entity)
 
         # Tiles
         if hasattr(self, "tiles"):
             for tile in self.tiles:
                 # Remove from map
-                self.tile_map.remove(tile)
+                self.tiles.spatial_map.remove(tile)
 
                 tile._parent = None
 
@@ -221,4 +221,4 @@ class Transformable:
                 tile._parent = self
 
                 # Re-add to map
-                self.tile_map.add(tile)
+                self.tiles.spatial_map.add(tile)

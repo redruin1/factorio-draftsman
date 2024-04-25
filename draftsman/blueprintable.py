@@ -6,8 +6,7 @@ under the namespace ``draftsman``.
 """
 
 from draftsman import utils
-from draftsman.error import IncorrectBlueprintTypeError, MalformedBlueprintStringError
-from typing import Union
+from draftsman.error import IncorrectBlueprintTypeError
 
 
 from draftsman.classes.blueprintable import Blueprintable
@@ -15,6 +14,8 @@ from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.deconstruction_planner import DeconstructionPlanner
 from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.classes.blueprint_book import BlueprintBook
+
+from draftsman.classes.group import Group
 
 
 @utils.reissue_warnings

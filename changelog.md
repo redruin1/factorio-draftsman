@@ -60,6 +60,9 @@
 * Bumped Lupa to 2.0 which allows me to specify Lua version 5.2 which Factorio uses (#50)
     * `draftsman-update` will issue a warning if it cannot specify the correct Lua version: It'll still try to load and may still work anyway, but it's not guaranteed to
 * Patched InvalidModVersionError for now (#51)
+* Removed `on_(tile/entity)_(insert/set/remove)` from all `EntityCollection` and `TileCollection` classes
+* Removed `on_(insert/set/remove)` from all `Entity` implementations as well (they were not used and are replaced with better things now)
+* Renamed `data` member to `_root` member on `EntityList` and `TileList`
 
 ## 1.1.1
 * Updated factorio-data to version 1.1.103

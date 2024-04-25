@@ -202,10 +202,10 @@ class Exportable(metaclass=ABCMeta):
     # =========================================================================
 
     @abstractmethod
-    def validate(self, mode: ValidationMode, force: bool):
+    def validate(self, mode: ValidationMode, force: bool) -> ValidationResult:
         """
         Validates the called object against it's known format. Attempts to
-        coerce data into correct forms from shorthands, and raises exceptions
+        coerce data into correct forms from shorthands, and raises exceptions.
         Method that attempts to first coerce the object into a known form, and
         then checks the values of its attributes for correctness. If unable to
         do so, this function raises :py:error:`.DataFormatError`. Otherwise,
@@ -218,7 +218,7 @@ class Exportable(metaclass=ABCMeta):
             >>> c = Container("wooden-chest")
             >>> c.bar = "incorrect"
             >>> try:
-            ...     c.validate()
+            ...     c.validate().reissue_all()
             ... except DataFormatError as e:
             ...     print("wrong! {}", e)
             wrong!

@@ -492,8 +492,8 @@ class TestUpgradePlanner:
             validation_result.reissue_all()
 
         # Redundant mapping
-        upgrade_planner = UpgradePlanner()
-        upgrade_planner.set_mapping("transport-belt", "transport-belt", 1)
+        upgrade_planner_2 = UpgradePlanner()
+        upgrade_planner_2.set_mapping("transport-belt", "transport-belt", 1)
         goal = ValidationResult(
             error_list=[],
             warning_list=[
@@ -502,7 +502,7 @@ class TestUpgradePlanner:
                 )
             ],
         )
-        validation_result = upgrade_planner.validate()
+        validation_result = upgrade_planner_2.validate()
         assert validation_result == goal
         with pytest.warns(NoEffectWarning):
             validation_result.reissue_all()

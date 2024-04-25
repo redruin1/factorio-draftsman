@@ -111,7 +111,6 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         self.name = name
         self.type = type
-        self._entity_map = SpatialHashMap()
 
         # Collision box
         self._collision_set = CollisionSet([])
@@ -473,8 +472,6 @@ class Group(Transformable, EntityCollection, EntityLike):
     @entities.setter
     @reissue_warnings
     def entities(self, value: Union[list[EntityLike], EntityList]):
-        self._entity_map.clear()
-
         if value is None:
             self._entities.clear()
         elif isinstance(value, list):
@@ -484,59 +481,6 @@ class Group(Transformable, EntityCollection, EntityLike):
             self._entities = copy.deepcopy(value, memo={"new_parent": self})
         else:
             raise TypeError("'entities' must be an EntityList, list, or None")
-
-    # =========================================================================
-
-    @property
-    def entity_map(self) -> SpatialDataStructure:
-        """
-        An implementation of :py:class:`.SpatialDataStructure` for ``entities``.
-        Not exported; read only.
-        """
-        return self._entity_map
-
-    # =========================================================================
-
-    def on_entity_insert(
-        self, entitylike: EntityLike, merge: bool
-    ) -> Optional[EntityLike]:
-        """
-        Callback function for when an ``EntityLike`` is added to this
-        Group's ``entities`` list. Handles the addition of the entity into
-        the  Group's ``SpatialHashMap``, and recalculates it's dimensions.
-        """
-        # Handle overlapping and merging
-        # if self.validate_assignment: # TODO
-        self.entity_map.validate_insert(entitylike, merge)
-
-        # Add to hashmap (as well as any children)
-        entitylike = self.entity_map.recursive_add(entitylike, merge)
-
-        return entitylike
-
-    def on_entity_set(self, old_entitylike: EntityLike, new_entitylike: EntityLike):
-        """
-        Callback function for when an entity is overwritten in a Group's
-        ``entities`` list. Handles the removal of the old ``EntityLike`` from
-        the ``SpatialHashMap`` and adds the new one in it's stead.
-        """
-        # Remove the entity and its children
-        self.entity_map.recursive_remove(old_entitylike)
-
-        # Handle overlapping
-        self.entity_map.validate_insert(new_entitylike, False)
-
-        # Add the new entity and its children
-        self.entity_map.recursive_add(new_entitylike, False)
-
-    def on_entity_remove(self, entitylike: EntityLike):
-        """
-        Callback function for when an entity is removed from a Blueprint's
-        ``entities`` list. Handles the removal of the ``EntityLike`` from the
-        ``SpatialHashMap``.
-        """
-        # Remove the entity and its children
-        self.entity_map.recursive_remove(entitylike)
 
     # =========================================================================
 
@@ -643,9 +587,9 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         # Make sure we copy "_entity_map" first so we don't get
         # OverlappingEntitiesWarnings
-        v = getattr(self, "_entity_map")
-        setattr(result, "_entity_map", copy.deepcopy(v, memo))
-        result.entity_map.clear()
+        # v = getattr(self, "_entity_map")
+        # setattr(result, "_entity_map", copy.deepcopy(v, memo))
+        # result.entity_map.clear()
         # Also make sure "_collision_set" is intialized before setting up
         # "_entities"
         v = getattr(self, "_collision_set")
@@ -655,8 +599,8 @@ class Group(Transformable, EntityCollection, EntityLike):
             if k == "_parent":
                 # Reset parent to None
                 setattr(result, k, None)
-            elif k == "_entity_map":
-                continue
+            # elif k == "_entity_map":
+            #     continue
             elif k == "_entities":
                 # Create a copy of EntityList with copied self as new parent so
                 # that `result.entities[0].parent` will be `result`

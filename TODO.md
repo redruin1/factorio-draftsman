@@ -1,5 +1,7 @@
 # TODO
 
+### Get rid of `on_tile_insert/set/remove`
+
 ### Calling validate on a blueprint should validate all of it's child entitylikes and tiles (or should it?)
 
 ### `OverlappingElementWarning` should only be issued when desired
@@ -37,8 +39,6 @@ Ideally, whether or not a entity or blueprint is considered valid can be retaine
 * Support additional keyword arguments in line with the prototype documentation
 * Perhaps there might be a way to redesign `env.py` such that it can use the data functions, encouraging code reuse
 
-### More elegantly handle when a prototype has no valid members (like `LinkedBelt`)
-
 ### Change all internal attribute accesses to use `["element"]` and `.get("element", None)` instead so that functionality should remain constant when importing dicts when `validate="none"`
 
 ### Add keyword arguments to all draftsman entities and blueprintables
@@ -48,16 +48,16 @@ So the user can quickly determine what keys are allowed without having to consul
 To help ensure that they're behaving correctly over any API changes, so they stay up-to-date
 
 ---
-### Improve import organization
-Move common constructs like `Vector` out of `draftsman.utils`, people shouldn't have to traverse all the way to `draftsman.classes.group` to import `Group`, etc.
-
----
 ### `EntityList.clear()` has some bad side effects, investigate and fix
 Might make sense to actually move all of the spatial detection code into `EntityList`
 
 ---
 ### Add constraints on `DeconstructionPlanner`
 General constraints on parameters and inputs; what you can deconstruct, what you can't, etc.
+
+--- 
+### Improve docs for `Blueprintable` copying
+See issue #117
 
 ---
 ### Write `__repr__` function for everything
@@ -74,6 +74,7 @@ Do this not only for all the blueprintable types, but also each entity. In addit
 ---
 ### Make draftsman's prototypes match Factorio's prototypes exactly (for consistency's sake)
 As of writing there are a number of classes and class types that differ due to python functionality; it might make sense to unify the two so that class `AssemblingMachine` inherits the same classes in Factorio as it does in Draftsman.
+This could also fix a few things related to their inheritance...
 
 ---
 ### Make it so that you can change the name of an `Entity` if the two collision boxes match
@@ -107,14 +108,8 @@ Documentation is currently written in [reStructuredText](https://docutils.source
 Currently all the data being extracted from the Factorio load process is all "hard-coded"; you have to manually edit `env.py` in order to change what it extracts. This is alright for the maintainers of Draftsman as we can simply edit it if we need more/less information from `data.raw`, but what if the user wants some data from Factorio that Draftsman doesn't bother extracting? In this case Draftsman would benefit from a generic editable interface where people can configure and modify exactly the information they want from the game for whatever their purposes are.
 
 ---
-### Perhaps add an option for blueprint canonicalization
+### Perhaps add options for blueprint canonicalization
 Ordering objects inside blueprints in regular ways for best compression, minimal git diff, etc.
-
----
-### Investigate more performant alternatives to `schema` for format validation
-- `validir`: peak performance (I think), but requires cython; currently we're pure python and wheel building would have to be set up. In addition, I'm not sure the feature set is complete enough for what I want
-- `pydantic`: nicer, and we wouldn't have to build it ourselves; I'm currently investigating this one now. Unfortunately, it requires modern Python, which will make 2.0's minimum version greater than 1.0's
-- Rolling our own: last resort; incredible amounts of work but features we can customize to our any need
 
 ---
 ### Add more examples

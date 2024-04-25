@@ -16,14 +16,14 @@ class TestEntityList:
     def test_constructor(self):
         blueprint = Blueprint()
         test = EntityList(blueprint)
-        assert test.data == []
+        assert test._root == []
         assert test.key_map == {}
         assert test.key_to_idx == {}
         assert test.idx_to_key == {}
 
         regular_list = []
         test = EntityList(blueprint, regular_list)
-        assert test.data == []
+        assert test._root == []
         assert test.key_map == {}
         assert test.key_to_idx == {}
         assert test.idx_to_key == {}
@@ -37,19 +37,19 @@ class TestEntityList:
             test.insert(1, "wooden-chest")
 
         test.insert(0, "substation", tile_position=(10, 10), id="other")
-        assert test.data[0].name == "substation"
-        assert test.data[1].name == "wooden-chest"
+        assert test._root[0].name == "substation"
+        assert test._root[1].name == "wooden-chest"
         assert test.key_to_idx == {"other": 0, "test": 1}
         assert test.idx_to_key == {0: "other", 1: "test"}
 
         # Test no copy
         example = Container("steel-chest", id="test2", tile_position=(1, 0))
         test.insert(0, example, copy=False)
-        assert test.data[0].name == "steel-chest"
+        assert test._root[0].name == "steel-chest"
 
         example.bar = 10
-        assert test.data[0] is example
-        assert test.data[0].bar == 10
+        assert test._root[0] is example
+        assert test._root[0].bar == 10
 
         # TODO: reimplement
         # with pytest.warns(HiddenEntityWarning):
@@ -168,9 +168,9 @@ class TestEntityList:
         test.append("wooden-chest", tile_position=(0, 0))
         test.append("wooden-chest", tile_position=(1, 0), id="something")
 
-        assert test[0] is test.data[0]
+        assert test[0] is test._root[0]
 
-        assert test[1] is test.data[1]
+        assert test[1] is test._root[1]
         assert test["something"] is test.key_map["something"]
 
         # Test tuple access
@@ -192,7 +192,7 @@ class TestEntityList:
             is test["other_group"].entities["example_group"].entities["example"]
         )
 
-        assert test[:] == [test.data[0], test.data[1], test.data[2]]
+        assert test[:] == [test._root[0], test._root[1], test._root[2]]
 
     def test_setitem(self):
         blueprint = Blueprint()
@@ -200,8 +200,8 @@ class TestEntityList:
         blueprint.entities.append("small-electric-pole", id="something")
         blueprint.entities.append("steel-chest", tile_position=(1, 1))
 
-        assert blueprint.entities["something"] == blueprint.entities.data[0]
-        assert blueprint.entities.key_map == {"something": blueprint.entities.data[0]}
+        assert blueprint.entities["something"] == blueprint.entities._root[0]
+        assert blueprint.entities.key_map == {"something": blueprint.entities._root[0]}
         assert blueprint.entities.key_to_idx == {"something": 0}
         assert blueprint.entities.idx_to_key == {0: "something"}
 
@@ -214,7 +214,7 @@ class TestEntityList:
 
         # Set index with id
         blueprint.entities[0] = Container(tile_position=(10, 10), id="new")
-        assert blueprint.entities["new"] == blueprint.entities.data[0]
+        assert blueprint.entities["new"] == blueprint.entities._root[0]
         assert blueprint.entities.key_to_idx == {"new": 0}
         assert blueprint.entities.idx_to_key == {0: "new"}
 
@@ -236,7 +236,7 @@ class TestEntityList:
         # Test index
         del blueprint.entities[0]
 
-        assert blueprint.entities.data == [blueprint.entities[0]]
+        assert blueprint.entities._root == [blueprint.entities[0]]
         assert blueprint.entities.key_map == {"a": blueprint.entities[0]}
         assert blueprint.entities.key_to_idx == {"a": 0}
         assert blueprint.entities.idx_to_key == {0: "a"}
@@ -244,7 +244,7 @@ class TestEntityList:
         # Test key
         del blueprint.entities["a"]
 
-        assert blueprint.entities.data == []
+        assert blueprint.entities._root == []
         assert blueprint.entities.key_map == {}
         assert blueprint.entities.key_to_idx == {}
         assert blueprint.entities.idx_to_key == {}
@@ -255,7 +255,7 @@ class TestEntityList:
 
         del blueprint.entities[:]
 
-        assert blueprint.entities.data == []
+        assert blueprint.entities._root == []
         assert blueprint.entities.key_map == {}
         assert blueprint.entities.key_to_idx == {}
         assert blueprint.entities.idx_to_key == {}

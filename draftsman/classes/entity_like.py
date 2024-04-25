@@ -160,20 +160,6 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     # Abstract Methods
     # =========================================================================
 
-    def on_insert(self, parent: "EntityCollection") -> None:  # pragma: no coverage
-        """
-        A callback function called when this entity is inserted into an
-        EntityCollection.
-        """
-        pass
-
-    def on_remove(self, parent: "EntityCollection") -> None:  # pragma: no coverage
-        """
-        A callback function called when this entity is removed from an
-        EntityCollection.
-        """
-        pass
-
     @abstractmethod
     def mergable_with(self, other: "EntityLike") -> bool:  # pragma: no coverage
         """

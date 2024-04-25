@@ -40,7 +40,7 @@ class TestRailPlanner:
         assert rail_planner.head_position == Vector(0, -4)
         assert rail_planner.head_direction == Direction.NORTH
         assert len(rail_planner.entities) == 2
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             StraightRail(
                 "straight-rail", tile_position=(0, 0), direction=Direction.NORTH
             ),
@@ -56,7 +56,7 @@ class TestRailPlanner:
         assert rail_planner.head_position == Vector(2, -2)
         assert rail_planner.head_direction == Direction.NORTHEAST
         assert len(rail_planner.entities) == 4
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             StraightRail(
                 "straight-rail", tile_position=(0, 0), direction=Direction.NORTH
             ),
@@ -78,7 +78,7 @@ class TestRailPlanner:
         assert rail_planner.head_position == Vector(2, -2)
         assert rail_planner.head_direction == Direction.NORTHEAST
         assert len(rail_planner.entities) == 6
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             StraightRail(
                 "straight-rail", tile_position=(0, 0), direction=Direction.NORTH
             ),
@@ -107,7 +107,7 @@ class TestRailPlanner:
         assert rail_planner.head_position == Vector(-4, -6)
         assert rail_planner.head_direction == Direction.NORTHWEST
         assert len(rail_planner.entities) == 1
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             CurvedRail("curved-rail", position=(0, -2), direction=Direction.NORTH)
         ]
 
@@ -116,7 +116,7 @@ class TestRailPlanner:
         assert rail_planner.head_position == Vector(-12, -10)
         assert rail_planner.head_direction == Direction.WEST
         assert len(rail_planner.entities) == 3
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             CurvedRail("curved-rail", position=(0, -2), direction=Direction.NORTH),
             StraightRail(
                 "straight-rail", tile_position=(-4, -6), direction=Direction.NORTHEAST
@@ -130,7 +130,7 @@ class TestRailPlanner:
         assert rail_planner.head_position == Vector(-26, -4)
         assert rail_planner.head_direction == Direction.WEST
         assert len(rail_planner.entities) == 5
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             CurvedRail("curved-rail", position=(0, -2), direction=Direction.NORTH),
             StraightRail(
                 "straight-rail", tile_position=(-4, -6), direction=Direction.NORTHEAST
@@ -148,7 +148,7 @@ class TestRailPlanner:
         assert rail_planner.head_position == Vector(4, -6)
         assert rail_planner.head_direction == Direction.NORTHEAST
         assert len(rail_planner.entities) == 1
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             CurvedRail("curved-rail", position=(2, -2), direction=Direction.NORTHEAST)
         ]
 
@@ -157,7 +157,7 @@ class TestRailPlanner:
         assert rail_planner.head_position == Vector(12, -10)
         assert rail_planner.head_direction == Direction.EAST
         assert len(rail_planner.entities) == 3
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             CurvedRail("curved-rail", position=(2, -2), direction=Direction.NORTHEAST),
             StraightRail(
                 "straight-rail", tile_position=(4, -6), direction=Direction.NORTHWEST
@@ -171,7 +171,7 @@ class TestRailPlanner:
         assert rail_planner.head_position == Vector(26, -4)
         assert rail_planner.head_direction == Direction.EAST
         assert len(rail_planner.entities) == 5
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             CurvedRail("curved-rail", position=(2, -2), direction=Direction.NORTHEAST),
             StraightRail(
                 "straight-rail", tile_position=(4, -6), direction=Direction.NORTHWEST
@@ -192,7 +192,7 @@ class TestRailPlanner:
         rail_planner.move_forward()
         rail_planner.add_signal("rail-signal")
         assert len(rail_planner.entities) == 2
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             StraightRail(
                 "straight-rail", tile_position=(0, 0), direction=Direction.NORTH
             ),
@@ -205,7 +205,7 @@ class TestRailPlanner:
         rail_planner.move_forward()
         rail_planner.add_signal("rail-signal", front=False)
         assert len(rail_planner.entities) == 2
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             StraightRail(
                 "straight-rail", tile_position=(0, 0), direction=Direction.NORTH
             ),
@@ -218,7 +218,7 @@ class TestRailPlanner:
         rail_planner.move_forward()
         rail_planner.add_signal("rail-signal", right=False)
         assert len(rail_planner.entities) == 2
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             StraightRail(
                 "straight-rail", tile_position=(0, 0), direction=Direction.NORTH
             ),
@@ -232,7 +232,7 @@ class TestRailPlanner:
         rail_planner.move_forward()
         rail_planner.add_signal("rail-signal")
         assert len(rail_planner.entities) == 2
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             StraightRail(
                 "straight-rail", tile_position=(0, 0), direction=Direction.NORTHWEST
             ),
@@ -248,7 +248,7 @@ class TestRailPlanner:
         rail_planner.move_forward()
         rail_planner.add_signal("rail-signal", right=False)
         assert len(rail_planner.entities) == 2
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             StraightRail(
                 "straight-rail", tile_position=(0, 0), direction=Direction.NORTHWEST
             ),
@@ -264,7 +264,7 @@ class TestRailPlanner:
         rail_planner.turn_right()
         rail_planner.add_signal("rail-signal")
         assert len(rail_planner.entities) == 2
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             CurvedRail("curved-rail", position=(2, -2), direction=Direction.NORTHEAST),
             RailSignal(
                 "rail-signal", tile_position=(4, -4), direction=Direction.SOUTHWEST
@@ -282,7 +282,7 @@ class TestRailPlanner:
         rail_planner.move_forward()
         rail_planner.add_station("train-stop", "station 1")
         assert len(rail_planner.entities) == 2
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             StraightRail(
                 "straight-rail", tile_position=(0, 0), direction=Direction.NORTH
             ),
@@ -299,7 +299,7 @@ class TestRailPlanner:
         # Test left side
         rail_planner.add_station("train-stop", "station 2", right=False)
         assert len(rail_planner.entities) == 3
-        assert rail_planner.entities.data == [
+        assert rail_planner.entities._root == [
             StraightRail(
                 "straight-rail", tile_position=(0, 0), direction=Direction.NORTH
             ),

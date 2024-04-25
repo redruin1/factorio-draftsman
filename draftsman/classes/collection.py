@@ -2,8 +2,6 @@
 
 from draftsman.classes.association import Association
 from draftsman.classes.entity_like import EntityLike
-from draftsman.classes.entity_list import EntityList
-from draftsman.classes.tile_list import TileList
 from draftsman.classes.train_configuration import TrainConfiguration
 from draftsman.classes.schedule import Schedule, WaitCondition, WaitConditions
 from draftsman.classes.schedule_list import ScheduleList
@@ -30,13 +28,17 @@ from draftsman.utils import AABB, PrimitiveAABB, flatten_entities, distance
 
 from abc import ABCMeta, abstractmethod
 import math
-from typing import Literal, Optional, Sequence, Union
+from typing import Literal, Optional, Sequence, Union, TYPE_CHECKING
 import warnings
 
 # TODO: move this
 from draftsman.entity import Locomotive, CargoWagon, FluidWagon, ArtilleryWagon
 
 RollingStock = Union[Locomotive, CargoWagon, FluidWagon, ArtilleryWagon]
+
+if TYPE_CHECKING:  # pragme: no coverage
+    from draftsman.classes.entity_list import EntityList
+    from draftsman.classes.tile_list import TileList
 
 
 class EntityCollection(metaclass=ABCMeta):
@@ -51,18 +53,9 @@ class EntityCollection(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def entities(self) -> EntityList:  # pragma: no coverage
+    def entities(self) -> "EntityList":  # pragma: no coverage
         """
         Object that holds the ``EntityLikes``, usually a :py:class:`.EntityList`.
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def entity_map(self) -> SpatialDataStructure:  # pragma: no coverage
-        """
-        Object that holds references to the entities organized by their spatial
-        position. An implementation of :py:class:`.SpatialDataStructure`.
         """
         pass
 
@@ -105,37 +98,37 @@ class EntityCollection(metaclass=ABCMeta):
     # Custom edge functions for EntityList interaction
     # =========================================================================
 
-    def on_entity_insert(
-        self, entitylike: EntityLike, merge: bool
-    ) -> Optional[EntityLike]:  # pragma: no coverage
-        """
-        Function called when an :py:class:`.EntityLike` is inserted into this
-        object's :py:attr:`entities` list (assuming that the ``entities`` list
-        is a :py:class:`.EntityList`). By default, this function does nothing,
-        but any child class can customize it's functionality by overriding it.
-        """
-        pass
+    # def on_entity_insert(
+    #     self, entitylike: EntityLike, merge: bool
+    # ) -> Optional[EntityLike]:  # pragma: no coverage
+    #     """
+    #     Function called when an :py:class:`.EntityLike` is inserted into this
+    #     object's :py:attr:`entities` list (assuming that the ``entities`` list
+    #     is a :py:class:`.EntityList`). By default, this function does nothing,
+    #     but any child class can customize it's functionality by overriding it.
+    #     """
+    #     pass
 
-    def on_entity_set(
-        self, old_entitylike: EntityLike, new_entitylike: EntityLike
-    ) -> None:  # pragma: no coverage
-        """
-        Function called when an :py:class:`.EntityLike` is replaced with another
-        in this object's :py:attr:`entities` list (assuming that the ``entities``
-        list is a :py:class:`.EntityList`). By default, this function does
-        nothing, but any child class can customize it's functionality by
-        overriding it.
-        """
-        pass
+    # def on_entity_set(
+    #     self, old_entitylike: EntityLike, new_entitylike: EntityLike
+    # ) -> None:  # pragma: no coverage
+    #     """
+    #     Function called when an :py:class:`.EntityLike` is replaced with another
+    #     in this object's :py:attr:`entities` list (assuming that the ``entities``
+    #     list is a :py:class:`.EntityList`). By default, this function does
+    #     nothing, but any child class can customize it's functionality by
+    #     overriding it.
+    #     """
+    #     pass
 
-    def on_entity_remove(self, entitylike: EntityLike) -> None:  # pragma: no coverage
-        """
-        Function called when an :py:class:`.EntityLike` is removed from this
-        object's :py:attr:`entities` list (assuming that the ``entities`` list
-        is a :py:class:`.EntityList`). By default, this function does nothing,
-        but any child class can customize it's functionality by overriding it.
-        """
-        pass
+    # def on_entity_remove(self, entitylike: EntityLike) -> None:  # pragma: no coverage
+    #     """
+    #     Function called when an :py:class:`.EntityLike` is removed from this
+    #     object's :py:attr:`entities` list (assuming that the ``entities`` list
+    #     is a :py:class:`.EntityList`). By default, this function does nothing,
+    #     but any child class can customize it's functionality by overriding it.
+    #     """
+    #     pass
 
     # =========================================================================
     # Entity Queries
@@ -156,7 +149,7 @@ class EntityCollection(metaclass=ABCMeta):
         :retuns: The ``EntityLike`` at ``position``, or ``None`` of none were
             found.
         """
-        results = self.entity_map.get_on_point(position)
+        results = self.entities.spatial_map.get_on_point(position)
         try:
             return list(filter(lambda x: x.name == name, results))[0]
         except IndexError:
@@ -176,7 +169,7 @@ class EntityCollection(metaclass=ABCMeta):
             found.
         """
         try:
-            return self.entity_map.get_on_point(position)[0]
+            return self.entities.spatial_map.get_on_point(position)[0]
         except IndexError:
             return None
 
@@ -202,7 +195,7 @@ class EntityCollection(metaclass=ABCMeta):
         # Normalize AABB
         aabb = AABB.from_other(aabb)
 
-        return self.entity_map.get_in_aabb(aabb)
+        return self.entities.spatial_map.get_in_aabb(aabb)
 
     def find_entities_filtered(
         self,
@@ -295,14 +288,14 @@ class EntityCollection(metaclass=ABCMeta):
         if position is not None:
             if radius is not None:
                 # Intersect entities with circle
-                search_region = self.entity_map.get_in_radius(radius, position)
+                search_region = self.entities.spatial_map.get_in_radius(radius, position)
             else:
                 # Intersect entities with point
-                search_region = self.entity_map.get_on_point(position)
+                search_region = self.entities.spatial_map.get_on_point(position)
         elif area is not None:
             # Intersect entities with area
             area = AABB.from_other(area)
-            search_region = self.entity_map.get_in_aabb(area)
+            search_region = self.entities.spatial_map.get_in_aabb(area)
         else:
             # Search all entities, but make sure it's a 1D list
             search_region = flatten_entities(self.entities)
@@ -1521,19 +1514,10 @@ class TileCollection(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def tiles(self) -> TileList:  # pragma: no coverage
+    def tiles(self) -> "TileList":  # pragma: no coverage
         """
         Object that holds the ``Tiles``, usually a
         :py:class:`~draftsman.classes.tilelist.TileList`.
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def tile_map(self) -> SpatialDataStructure:  # pragma: no coverage
-        """
-        Object that holds the spatial information for the Tiles of this object,
-        usually a :py:class:`~draftsman.classes.spatialhashmap.SpatialHashMap`.
         """
         pass
 
@@ -1587,7 +1571,7 @@ class TileCollection(metaclass=ABCMeta):
 
         :returns: The tile at ``position``, or ``None`` if there is none.
         """
-        tiles = self.tile_map.get_on_point(Vector(0.5, 0.5) + position)
+        tiles = self.tiles.spatial_map.get_on_point(Vector(0.5, 0.5) + position)
         try:
             return tiles[0]
         except IndexError:
@@ -1640,13 +1624,13 @@ class TileCollection(metaclass=ABCMeta):
 
         if "position" in kwargs and "radius" in kwargs:
             # Intersect entities with circle
-            search_region = self.tile_map.get_in_radius(
+            search_region = self.tiles.spatial_map.get_in_radius(
                 kwargs["radius"], kwargs["position"]
             )
         elif "area" in kwargs:
             # Intersect entities with area
             area = AABB.from_other(kwargs["area"])
-            search_region = self.tile_map.get_in_aabb(area)
+            search_region = self.tiles.spatial_map.get_in_aabb(area)
         else:
             search_region = self.tiles
 

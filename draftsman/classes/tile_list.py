@@ -1,33 +1,56 @@
 # tilelist.py
 
+from draftsman.classes.spatial_hashmap import SpatialDataStructure, SpatialHashMap
+from draftsman.classes.exportable import Exportable, ValidationResult
+from draftsman.constants import ValidationMode
 from draftsman.tile import Tile, new_tile
 from draftsman.data import tiles
 from draftsman.error import DataFormatError, InvalidTileError
+from draftsman.signatures import DraftsmanBaseModel
 
 from collections.abc import MutableSequence
 from copy import deepcopy
-from typing import Optional, Union, TYPE_CHECKING
+from pydantic import ValidationError
+from typing import Any, List, Literal, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.collection import TileCollection
 
 
-class TileList(MutableSequence):
+class TileList(Exportable, MutableSequence):
     """
     TODO
     """
+
+    class Format(DraftsmanBaseModel):
+        _root: List[Tile.Format] # TODO: TileLike?
+
+        root: List[Any] # TODO: there should be a way to validate this
 
     def __init__(
         self,
         parent: "TileCollection",
         initlist: Optional[list[Tile]] = None,
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
         if_unknown: str = "error",  # TODO: enum
     ) -> None:
         """
         TODO
         """
-        self.data = []
+        # Init Exportable
+        super().__init__()
+
+        self._root = []
+
+        self.spatial_map: SpatialDataStructure = SpatialHashMap()
+
         self._parent = parent
+
         if initlist is not None:
             for elem in initlist:
                 if isinstance(elem, Tile):
@@ -39,6 +62,10 @@ class TileList(MutableSequence):
                     raise DataFormatError(
                         "TileList only takes either Tile or dict entries"
                     )
+                
+        self.validate_assignment = validate_assignment
+
+        self.validate(mode=validate).reissue_all(stacklevel=3) # TODO
 
     def append(
         self,
@@ -106,17 +133,58 @@ class TileList(MutableSequence):
         if not isinstance(tile, Tile):
             raise TypeError("Entry in TileList must be a Tile")
 
-        if self._parent:
-            tile = self._parent.on_tile_insert(tile, merge)
+        # Handle overlapping and merging
+        if self.validate_assignment:
+            self.spatial_map.validate_insert(tile, merge=merge)
+
+        # Add to tile map
+        tile = self.spatial_map.add(tile, merge=merge)
 
         if tile is None:  # Tile was merged
             return  # Don't add this tile to the list
 
         # Manage TileList
-        self.data.insert(idx, tile)
+        self._root.insert(idx, tile)
 
         # Keep a reference of the parent blueprint in the tile
         tile._parent = self._parent
+
+    def clear(self) -> None:
+        del self._root[:]
+        self.spatial_map.clear()
+
+    def validate(
+        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    ) -> ValidationResult:
+        mode = ValidationMode(mode)
+
+        output = ValidationResult([], [])
+
+        if mode is ValidationMode.NONE or (self.is_valid and not force):
+            return output
+
+        context: dict[str, Any] = {
+            "mode": mode,
+            "object": self,
+            "warning_list": [],
+            "assignment": False,
+        }
+
+        try:
+            result = self.Format.model_validate(
+                {"root": self._root},
+                strict=False,  # TODO: ideally this should be strict
+                context=context,
+            )
+            # Reassign private attributes
+            # Acquire the newly converted data
+            self._root = result["root"]
+        except ValidationError as e:
+            output.error_list.append(DataFormatError(e))
+
+        output.warning_list += context["warning_list"]
+
+        return output
 
     def union(self, other: "TileList") -> "TileList":
         """
@@ -124,13 +192,13 @@ class TileList(MutableSequence):
         """
         new_tile_list = TileList(None)
 
-        for tile in self.data:
+        for tile in self._root:
             new_tile_list.append(tile)
             new_tile_list[-1]._parent = None
 
-        for other_tile in other.data:
+        for other_tile in other._root:
             already_in = False
-            for tile in self.data:
+            for tile in self._root:
                 if tile == other_tile:
                     already_in = True
                     break
@@ -145,9 +213,9 @@ class TileList(MutableSequence):
         """
         new_tile_list = TileList(None)
 
-        for tile in self.data:
+        for tile in self._root:
             in_both = False
-            for other_tile in other.data:
+            for other_tile in other._root:
                 if other_tile == tile:
                     in_both = True
                     break
@@ -162,9 +230,9 @@ class TileList(MutableSequence):
         """
         new_tile_list = TileList(None)
 
-        for tile in self.data:
+        for tile in self._root:
             different = True
-            for other_tile in other.data:
+            for other_tile in other._root:
                 if other_tile == tile:
                     different = False
                     break
@@ -174,7 +242,7 @@ class TileList(MutableSequence):
         return new_tile_list
 
     def __getitem__(self, idx: Union[int, slice]) -> Union[Tile, list[Tile]]:
-        return self.data[idx]
+        return self._root[idx]
 
     def __setitem__(self, idx: int, value: Tile) -> None:
         # TODO: handle slices
@@ -182,11 +250,15 @@ class TileList(MutableSequence):
         if not isinstance(value, Tile):
             raise TypeError("Entry in TileList must be a Tile")
 
-        # Handle parent
-        self._parent.on_tile_set(self.data[idx], value)
+        self.spatial_map.remove(self._root[idx])
+
+        if self.validate_assignment:
+            self.spatial_map.validate_insert(value, merge=False)
+
+        self.spatial_map.add(value, merge=False)
 
         # Manage the TileList
-        self.data[idx] = value
+        self._root[idx] = value
 
         # Add a reference to the container in the object
         value._parent = self._parent
@@ -197,18 +269,18 @@ class TileList(MutableSequence):
             start, stop, step = idx.indices(len(self))
             for i in range(start, stop, step):
                 # Remove from parent
-                self._parent.on_tile_remove(self.data[i])
+                self.spatial_map.remove(self._root[i])
         else:
-            self._parent.on_tile_remove(self.data[idx])
+            self.spatial_map.remove(self._root[idx])
 
         # Remove from self
-        del self.data[idx]
+        del self._root[idx]
 
     def __len__(self) -> int:
-        return len(self.data)
+        return len(self._root)
 
     def __or__(self, other: "TileList") -> "TileList":
-        # TODO: NotImplemented
+        # TODO: NotImplemented when given arguments that are not TileList
         return self.union(other)
 
     # def __ior__(self, other: "TileList") -> None:
@@ -238,10 +310,10 @@ class TileList(MutableSequence):
         #     if self.data[i] != other.data[i]:
         #         return False
         # return True
-        return self.data == other.data
+        return self._root == other._root
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<TileList>{}".format(self.data)
+        return "<TileList>{}".format(self._root)
 
     # @classmethod
     # def __get_pydantic_core_schema__(

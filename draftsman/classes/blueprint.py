@@ -498,21 +498,30 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             self.position_relative_to_grid = position_relative_to_grid
 
         ### DATA ###
-        # Create spatial hashing objects to make spatial queries much quicker
-        self._tile_map = SpatialHashMap()
-        self._entity_map = SpatialHashMap()
 
         # Data lists
         # self._root[self._root_item]["entities"] = EntityList(
         #     self, kwargs.pop("entities", None)
         # )
-        self._root._entities = EntityList(self, entities, if_unknown=if_unknown)
+        self._root._entities = EntityList(
+            self, 
+            entities, 
+            validate=validate,
+            validate_assignment=validate_assignment,
+            if_unknown=if_unknown
+        )
 
         # if "tiles" in kwargs:
         # self._root[self._root_item]["tiles"] = TileList(
         #     self, kwargs.pop("tiles", None)
         # )
-        self._root._tiles = TileList(self, tiles, if_unknown=if_unknown)
+        self._root._tiles = TileList(
+            self, 
+            tiles,
+            validate=validate,
+            validate_assignment=validate_assignment, 
+            if_unknown=if_unknown
+        )
 
         # self._root[self._root_item]["schedules"] = ScheduleList(
         #     kwargs.pop("schedules", None)
@@ -787,8 +796,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     @entities.setter
     def entities(self, value: Union[EntityList, list[EntityLike]]):
-        self._entity_map.clear()
-
         if value is None:
             # self._root[self._root_item]["entities"].clear()
             self._root._entities.clear()
@@ -799,76 +806,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             # Just don't ask
             # self._root["entities"] = copy.deepcopy(value, memo={"new_parent": self})
             # self._root[self._root_item]["entities"] = EntityList(self, value.data)
-            self._root._entities = EntityList(self, value.data)
+            self._root._entities = EntityList(self, value._root)
         else:
             raise TypeError("'entities' must be an EntityList, list, or None")
-
-    def on_entity_insert(
-        self, entitylike: EntityLike, merge: bool
-    ) -> Optional[EntityLike]:
-        """
-        Callback function for when an :py:class:`.EntityLike` is added to this
-        Blueprint's :py:attr:`entities` list. Handles the addition of the entity
-        into :py:attr:`entity_map`, and recalculates it's dimensions.
-        """
-        # Here we issue warnings for overlapping entities, modify existing
-        # entities if merging is enabled and delete excess entities in entitylike
-        if self.validate_assignment:
-            self.entity_map.validate_insert(entitylike, merge)
-
-        # Issue entity-specific warnings/errors if any exist for this entitylike
-        entitylike.on_insert(self)
-
-        # If no errors, add this to hashmap (as well as any of it's children),
-        # merging as necessary
-        entitylike = self.entity_map.recursive_add(entitylike, merge)
-
-        return entitylike
-
-    def on_entity_set(self, old_entitylike: EntityLike, new_entitylike: EntityLike):
-        """
-        Callback function for when an :py:class:`.EntityLike` is overwritten in
-        a Blueprint's :py:attr:`entities` list. Handles the removal of the old
-        ``EntityLike`` from :py:attr:`entity_map` and adds the new one in it's
-        stead.
-        """
-        # Remove the entity and its children
-        self.entity_map.recursive_remove(old_entitylike)
-
-        # Perform any remove checks on per entity basis
-        old_entitylike.on_remove(self)
-
-        # Check for overlapping entities
-        if self.validate_assignment:
-            self.entity_map.validate_insert(new_entitylike, False)
-
-        # Issue entity-specific warnings/errors if any exist for this entitylike
-        new_entitylike.on_insert(self)
-
-        # Add the new entity and its children
-        self.entity_map.recursive_add(new_entitylike, False)
-
-    def on_entity_remove(self, entitylike: EntityLike):
-        """
-        Callback function for when an :py:class:`.EntityLike` is removed from a
-        Blueprint's :py:attr:`entities` list. Handles the removal of the
-        ``EntityLike`` from :py:attr:`entity_map`.
-        """
-        # Handle entity specific warnings/errors
-        entitylike.on_remove(self)
-
-        # Remove the entity and its children
-        self.entity_map.recursive_remove(entitylike)
-
-    # =========================================================================
-
-    @property
-    def entity_map(self) -> SpatialDataStructure:
-        """
-        An implementation of :py:class:`.SpatialDataStructure` for ``entities``.
-        Not exported; read only.
-        """
-        return self._entity_map
 
     # =========================================================================
 
@@ -898,12 +838,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     @tiles.setter
     def tiles(self, value: Union[TileList, list[Tile]]):
-        self.tile_map.clear()
-
         if value is None:
-            self._root._tiles = TileList(self)  # TODO: implement clear
+            self._root._tiles.clear()
         elif isinstance(value, TileList):
-            self._root._tiles = TileList(self, value.data)
+            self._root._tiles = TileList(self, value._root)
         elif isinstance(value, list):
             self._root._tiles = TileList(self, value)
         else:
@@ -947,16 +885,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         from the :py:attr:`tile_map`.
         """
         self.tile_map.remove(tile)
-
-    # =========================================================================
-
-    @property
-    def tile_map(self) -> SpatialDataStructure:
-        """
-        An implementation of :py:class:`.SpatialDataStructure` for ``tiles``.
-        Not exported; read only.
-        """
-        return self._tile_map
 
     # =========================================================================
 
@@ -1230,18 +1158,18 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
         # Make sure we copy "_entity_hashmap" first so we don't get
         # OverlappingEntitiesWarnings
-        v = getattr(self, "_entity_map")
-        setattr(result, "_entity_map", copy.deepcopy(v, memo))
-        result.entity_map.clear()
+        # v = getattr(self, "_entity_map")
+        # setattr(result, "_entity_map", copy.deepcopy(v, memo))
+        # result.entity_map.clear()
 
-        # We copy everything else, save for the 'root' dictionary, because
-        # deepcopying those depend on some of the other attributes, so we load
-        # those first
-        for k, v in self.__dict__.items():
-            if k == "_entity_map" or k == "_root":
-                continue
-            else:
-                setattr(result, k, copy.deepcopy(v, memo))
+        # # We copy everything else, save for the 'root' dictionary, because
+        # # deepcopying those depend on some of the other attributes, so we load
+        # # those first
+        # for k, v in self.__dict__.items():
+        #     if k == "_entity_map" or k == "_root":
+        #         continue
+        #     else:
+        #         setattr(result, k, copy.deepcopy(v, memo))
 
         # Finally we can copy the root (most notably EntityList)
         # root = getattr(self, "_root")
@@ -1268,5 +1196,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         root_copy = copy.deepcopy(root, memo)
 
         setattr(result, "_root", root_copy)
+        setattr(result, "_root_item", self._root_item)
 
         return result
