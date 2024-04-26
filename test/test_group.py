@@ -756,6 +756,12 @@ class TestGroup:
 
     def test_get_world_bounding_box(self):
         group = Group("test")
+
+        # None case
+        bounding_box = group.get_world_bounding_box()
+        assert bounding_box is None
+
+        # Normal case
         group.entities.append("transport-belt")
         group.entities.append("transport-belt", tile_position=(5, 5))
         bounding_box = group.get_world_bounding_box()
@@ -763,6 +769,8 @@ class TestGroup:
         assert round(abs(bounding_box.top_left[1] - 0.1), 7) == 0
         assert round(abs(bounding_box.bot_right[0] - 5.9), 7) == 0
         assert round(abs(bounding_box.bot_right[1] - 5.9), 7) == 0
+
+        # Offset position
         group.entities.pop()
         group.position = (3, 3)
         bounding_box = group.get_world_bounding_box()
@@ -770,10 +778,12 @@ class TestGroup:
         assert round(abs(bounding_box.top_left[1] - 3.1), 7) == 0
         assert round(abs(bounding_box.bot_right[0] - 3.9), 7) == 0
         assert round(abs(bounding_box.bot_right[1] - 3.9), 7) == 0
+
+        # Removed (None) case
         group.entities.pop()
         bounding_box = group.get_world_bounding_box()
+        assert bounding_box is None
         assert group.collision_set == CollisionSet([])
-        assert bounding_box == None
 
     def test_get_dimensions(self):
         group = Group("test")
@@ -812,6 +822,17 @@ class TestGroup:
         with pytest.warns(OverlappingObjectsWarning):
             blueprint.entities.append(group)
 
+    def test_disable_entity_overlapping_warning(self):
+        group = Group("test")
+        group.entities.append("transport-belt")
+        group.entities.validate_assignment = "none"
+        group.entities.append("transport-belt") # No warning
+        assert len(group.entities) == 2
+
+        group.entities.validate_assignment = "strict"
+        with pytest.warns(OverlappingObjectsWarning):
+            group.entities.append("transport-belt")
+
     def test_double_grid_aligned(self):
         group = Group("test")
         group.entities.append("transport-belt")
@@ -832,6 +853,12 @@ class TestGroup:
         # TODO
         # group.entities.append("pumpjack", tile_position = (10, 10))
         # self.assertEqual(group.flippable, False)
+
+    def test_flags(self):
+        group = Group("test")
+        assert group.flags == set()
+        group.entities.append("transport-belt")
+        assert group.flags == set()
 
     def test_mergable_with(self):
         group1 = Group()

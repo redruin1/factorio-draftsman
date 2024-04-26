@@ -103,7 +103,7 @@ class TileList(Exportable, MutableSequence):
 
         TODO
         """
-        # Convert to new Entity if constructed via string keyword
+        # Convert to new Tile if constructed via string keyword
         new = False
         if isinstance(name, str):
             tile = new_tile(name, **kwargs, if_unknown=if_unknown)
@@ -179,7 +179,7 @@ class TileList(Exportable, MutableSequence):
             # Reassign private attributes
             # Acquire the newly converted data
             self._root = result["root"]
-        except ValidationError as e:
+        except ValidationError as e:  # pragma: no coverage
             output.error_list.append(DataFormatError(e))
 
         output.warning_list += context["warning_list"]

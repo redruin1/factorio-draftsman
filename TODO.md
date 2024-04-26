@@ -1,12 +1,14 @@
 # TODO
 
-### Get rid of `on_tile_insert/set/remove`
+### Add `tiles` to Groups (somehow)
 
 ### Calling validate on a blueprint should validate all of it's child entitylikes and tiles (or should it?)
 
 ### `OverlappingElementWarning` should only be issued when desired
 
 ### If `validate_assignment` on a blueprint is `True`, does that mean that an appended entity or tile should be validated? Should overlapping object warnings be issued?
+Answer: split blueprintable validation and entitylist/tilelist validation and have them all be separate
+It might be confusing at first, but this way every combination is possible.
 
 ### Redo validation (again)
 Swapping to Pydantic was very illuminating in the benefits that it can provide:
@@ -32,13 +34,20 @@ Based on my search, I can't think of a validation library that has all of these 
 Ideally, whether or not a entity or blueprint is considered valid can be retained as long as the entity does not change after validation. For example, if you validate a single entity, and then add that entity to a blueprint 1000 times, you only have to validate the attributes of the blueprint itself, since the entities are guaranteed to already be in a valid state. Ideally, each exportable object would have a `is_valid` attribute which would be set to false when an attribute is set, which can then be quickly checked in any parent
 `validate()` function.
 
+---
 ### Integrate with `mypy`
 
+---
+### Add `--factorio-version` command to `draftsman-update` to specify which Factorio version
+This probably requires some kind of git module.
+
+---
 ### Revamp the `add_x` data functions so that they support more features
 * Inline sorting
 * Support additional keyword arguments in line with the prototype documentation
 * Perhaps there might be a way to redesign `env.py` such that it can use the data functions, encouraging code reuse
 
+---
 ### Change all internal attribute accesses to use `["element"]` and `.get("element", None)` instead so that functionality should remain constant when importing dicts when `validate="none"`
 
 ### Add keyword arguments to all draftsman entities and blueprintables

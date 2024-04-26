@@ -130,6 +130,7 @@ from pydantic import (
     ValidationInfo,
     field_validator,
     field_serializer,
+    model_validator
 )
 
 
@@ -371,28 +372,27 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             """,
         )
 
-        @field_validator("blueprint")
-        @classmethod
+        @model_validator(mode="after")
         def check_if_unreasonable_size(
-            cls, value: BlueprintObject, info: ValidationInfo
+            self, info: ValidationInfo
         ):
-            if not info.context:
-                return value
+            if not info.context:  # pragma: no coverage
+                return self
             if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
+                return self
 
             blueprint: Blueprint = info.context["object"]
 
             # Check the blueprint for unreasonable size
             tile_width, tile_height = blueprint.get_dimensions()
             if tile_width > 10000 or tile_height > 10000:
-                raise AssertionError(
+                raise UnreasonablySizedBlueprintError(
                     "Current blueprint dimensions ({}, {}) exceeds the maximum size permitted by Factorio (10000, 10000)".format(
                         tile_width, tile_height
                     )
                 )
 
-            return value
+            return self
 
         model_config = ConfigDict(title="Blueprint")
 
@@ -437,6 +437,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
         self.validate_assignment = validate_assignment
 
+        # TODO: right now all of the shorthand conversion is also performed with
+        # this step; ideally this would not be the case
+        # That way we would only have to "validate" a newly created blueprint if
+        # init_data was provided to the constructor 
         self.validate(mode=validate).reissue_all(stacklevel=3)
 
     @reissue_warnings
@@ -846,45 +850,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             self._root._tiles = TileList(self, value)
         else:
             raise TypeError("'tiles' must be a TileList, list, or None")
-
-    def on_tile_insert(self, tile: Tile, merge: bool) -> Optional[Tile]:
-        """
-        Callback function for when a :py:class:`.Tile` is added to this
-        Blueprint's :py:attr:`tiles` list. Handles the addition of the tile
-        into :py:attr:`tile_map`, and recalculates it's dimensions.
-
-        :raises UnreasonablySizedBlueprintError: If inserting the new tile
-            causes the blueprint to exceed 10,000 x 10,000 tiles in dimension.
-        """
-        # Handle overlapping and merging
-        if self.validate_assignment:
-            self.tile_map.validate_insert(tile, merge=merge)
-
-        # Add to tile map
-        tile = self.tile_map.add(tile, merge=merge)
-
-        return tile
-
-    def on_tile_set(self, old_tile: Tile, new_tile: Tile):
-        """
-        Callback function for when a :py:class:`.Tile` is overwritten in a
-        Blueprint's :py:attr:`tiles` list. Handles the removal of the old ``Tile``
-        from :py:attr:`tile_map` and adds the new one in it's stead.
-        """
-        self.tile_map.remove(old_tile)
-
-        if self.validate_assignment:
-            self.tile_map.validate_insert(new_tile, merge=False)
-
-        self.tile_map.add(new_tile, merge=False)
-
-    def on_tile_remove(self, tile: Tile):
-        """
-        Callback function for when a :py:class:`.Tile` is removed from a
-        Blueprint's :py:attr:`tiles` list. Handles the removal of the ``Tile``
-        from the :py:attr:`tile_map`.
-        """
-        self.tile_map.remove(tile)
 
     # =========================================================================
 

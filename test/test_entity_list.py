@@ -3,7 +3,9 @@
 from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.entity_list import EntityList
+from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.group import Group
+from draftsman.constants import ValidationMode
 from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.error import DuplicateIDError
 from draftsman.utils import encode_version
@@ -224,6 +226,11 @@ class TestEntityList:
         with pytest.warns(OverlappingObjectsWarning):
             blueprint.entities[0] = new_entity("substation")
 
+        # No overlapping warning
+        blueprint.entities.validate_assignment = "none"
+        assert blueprint.entities.validate_assignment == ValidationMode.NONE
+        blueprint.entities[0] = new_entity("substation")
+
         with pytest.raises(TypeError):
             blueprint.entities[0] = "something incorrect"
 
@@ -299,3 +306,8 @@ class TestEntityList:
         blueprint2.entities.append("wooden-chest")
 
         assert blueprint1.entities == blueprint2.entities
+
+    def test_validate(self):
+        blueprint = Blueprint()
+
+        assert blueprint.entities.validate(mode="none") == ValidationResult([], [])

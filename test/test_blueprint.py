@@ -33,6 +33,8 @@ from draftsman.error import (
     DataFormatError,
     InvalidAssociationError,
     InvalidSignalError,
+    InvalidEntityError,
+    InvalidTileError,
 )
 from draftsman.signatures import Color, Icon
 from draftsman.utils import encode_version, AABB
@@ -40,6 +42,8 @@ from draftsman.warning import (
     DraftsmanWarning,
     GridAlignmentWarning,
     TooManyConnectionsWarning,
+    UnknownEntityWarning,
+    UnknownTileWarning,
 )
 
 import pytest
@@ -673,6 +677,54 @@ class TestBlueprint:
 
     # =========================================================================
 
+    def test_unknown_entities(self):
+        blueprint = Blueprint()
+
+        with pytest.raises(InvalidEntityError):
+            blueprint.entities.append("some-unknown-entity")
+        assert len(blueprint.entities) == 0
+
+        blueprint.entities.append("some-unknown-entity", if_unknown="ignore")
+        assert len(blueprint.entities) == 0
+
+        with pytest.warns(UnknownEntityWarning):
+            blueprint.entities.append("some-unknown-entity", if_unknown="accept")
+        assert len(blueprint.entities) == 1
+        assert blueprint.entities[0].name == "some-unknown-entity"
+
+    def test_unknown_tiles(self):
+        blueprint = Blueprint()
+
+        with pytest.raises(InvalidTileError):
+            blueprint.tiles.append("unknown-tile")
+        assert len(blueprint.tiles) == 0
+
+        blueprint.tiles.append("unknown-tile", if_unknown="ignore")
+        assert len(blueprint.tiles) == 0
+
+        with pytest.warns(UnknownTileWarning):
+            blueprint.tiles.append("unknown-tile", if_unknown="accept")
+        assert len(blueprint.tiles) == 1
+        assert blueprint.tiles[0].name == "unknown-tile"
+
+    # =========================================================================
+
+    def test_tile_copying(self):
+        blueprint = Blueprint()
+
+        concrete = Tile("concrete") # (0, 0)
+        
+        blueprint.tiles.append(concrete, copy=True, position=(10, 10)) # copy new position over copied tile
+        assert len(blueprint.tiles) == 1
+        assert blueprint.tiles[0].name == "concrete"
+        assert blueprint.tiles[0].position == Vector(10, 10)
+
+        # Merge a non-copy (prohibited)
+        with pytest.raises(ValueError):
+            blueprint.tiles.append(concrete, copy=False, merge=True, position=(10, 10))
+
+    # =========================================================================
+
     def test_to_dict(self):
         # List case
         blueprint = Blueprint()
@@ -923,7 +975,7 @@ class TestBlueprint:
 
         blueprint.entities.append(group)
         blueprint.add_circuit_connection("green", "test container", ("powerlines", 0))
-        
+
         # Entities
         assert blueprint.entities[0].parent is blueprint
         assert (
@@ -2787,3 +2839,19 @@ class TestBlueprint:
 
     def test_json_schema(self):
         Blueprint.json_schema()
+
+    def test_unreasonable_size(self):
+        blueprint = Blueprint()
+
+        blueprint.entities.append("transport-belt")
+        blueprint.entities.append("transport-belt", tile_position=(15000, 0))
+        with pytest.raises(UnreasonablySizedBlueprintError):
+            blueprint.validate().reissue_all()
+
+        blueprint.entities.clear()
+
+        # TODO: reimplement
+        blueprint.tiles.append("landfill")
+        blueprint.tiles.append("landfill", position=(15000, 0))
+        with pytest.raises(UnreasonablySizedBlueprintError):
+            blueprint.validate().reissue_all()

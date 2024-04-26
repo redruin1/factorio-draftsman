@@ -365,6 +365,12 @@ class TestUtils:
     def test_aabb_to_dimensions(self):
         assert utils.aabb_to_dimensions(utils.AABB(-5, -5, 10, 0)) == (15, 5)
 
+    def test_get_first(self):
+        test_list = ["a", "b", "c"]
+        assert utils.get_first(test_list) == "a"
+        test_list = []
+        assert utils.get_first(test_list) == None
+
     def test_parse_energy(self):
         # Normal
         assert utils.parse_energy("100J") == 100

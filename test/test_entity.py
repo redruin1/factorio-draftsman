@@ -3,6 +3,7 @@
 from draftsman.blueprintable import *
 from draftsman.classes.vector import Vector
 from draftsman.constants import *
+import draftsman.data.entities as data
 from draftsman.entity import *
 from draftsman.error import *
 from draftsman.warning import *
@@ -69,6 +70,7 @@ class TestEntity:
         assert (iron_chest.tile_width, iron_chest.tile_height) == (0, 0)
         assert iron_chest.inventory_bar_enabled == None
         assert iron_chest.allowed_items == None
+        assert iron_chest.get_world_bounding_box() == None
 
         with pytest.raises(DataFormatError):
             iron_chest.name = {"wrong"}

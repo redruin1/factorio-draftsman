@@ -36,7 +36,7 @@ from draftsman.entity import Locomotive, CargoWagon, FluidWagon, ArtilleryWagon
 
 RollingStock = Union[Locomotive, CargoWagon, FluidWagon, ArtilleryWagon]
 
-if TYPE_CHECKING:  # pragme: no coverage
+if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity_list import EntityList
     from draftsman.classes.tile_list import TileList
 

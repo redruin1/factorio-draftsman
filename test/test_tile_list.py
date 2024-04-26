@@ -1,8 +1,10 @@
 # test_tilelist.py
 
 from draftsman.classes.blueprint import Blueprint
+from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.tile import Tile
 from draftsman.classes.tile_list import TileList
+from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError, UnreasonablySizedBlueprintError
 from draftsman.warning import OverlappingObjectsWarning
 
@@ -38,10 +40,6 @@ class TestTileList:
 
         with pytest.raises(TypeError):
             blueprint.tiles.insert(0, TypeError)
-
-        # TODO: reimplement
-        # with pytest.raises(UnreasonablySizedBlueprintError):
-        #     blueprint.tiles.insert(0, "landfill", position=(-15000, 0))
 
         # Test no copy
         blueprint = Blueprint()
@@ -129,6 +127,15 @@ class TestTileList:
         assert blueprint.tiles[0].name == "refined-concrete"
         assert blueprint.tiles[1].name == "refined-concrete"
 
+        # No overlapping warning
+        blueprint.tiles.validate_assignment = "none"
+        assert blueprint.tiles.validate_assignment == ValidationMode.NONE
+        blueprint.tiles[0] = Tile("refined-concrete", position=(1, 1))
+
+        # Incorrect type
+        with pytest.raises(TypeError):
+            blueprint.tiles[0] = "incorrect"
+
     def test_delitem(self):
         blueprint = Blueprint()
 
@@ -163,3 +170,16 @@ class TestTileList:
         # True equality
         blueprint.tiles[0] = Tile("landfill")
         assert blueprint.tiles == other_blueprint.tiles
+
+    def test_validate(self):
+        blueprint = Blueprint()
+
+        # No validation case
+        assert blueprint.tiles.validate(mode="none") == ValidationResult([], [])
+
+        # TODO: reimplement
+        # blueprint.tiles.validate_assignment = "none"
+        # blueprint.tiles[0] = "incorrect"
+
+        # with pytest.raises(DataFormatError):
+        #     blueprint.tiles.validate().reissue_all()

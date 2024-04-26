@@ -11,7 +11,7 @@ from draftsman.constants import ValidationMode
 from draftsman.signatures import Connections, uint16, uint32
 from draftsman.utils import get_first
 
-from draftsman.data.entities import containers, raw
+from draftsman.data.entities import containers
 
 from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
