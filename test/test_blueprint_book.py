@@ -553,16 +553,32 @@ class TestBlueprintBook:
         assert blueprint_book._root["blueprint_book"]["label"] is blueprint_book.label
         assert blueprint_book["blueprint_book"]["label"] == "whatever"
 
-    def test_getitem(self):
-        pass
+    def test_import_from_string(self):
+        test_string = """0eNqVj+0KgjAYhe/l/T1hqaTuViJE3YuM1jvZhwRj996KNOhH1N/Dec5HhFEHXKwi34/GXEDEt+JAnCJInAw5b8PklaF+0QMR2ofRofeK5myjoDUD5fEK4gMoNoDBitZlBUTZHuqmK5v22PGK1ymjJPEGgicWISyzHST+0PRy/lVRpfPO70+L53cGQ568Yr+t+ZKX7knXakI="""
+        blueprint_book = BlueprintBook(test_string)
 
-
-#     def test_str(self):
-#         blueprint_book = BlueprintBook()
-#         blueprint_book.version = (1, 1, 53, 0)
-#         self.assertEqual(str(blueprint_book),
-#         """<BlueprintBook>{
-#   "item": "blueprint-book",
-#   "active_index": 0,
-#   "version": 281479275151360
-# }""")
+        assert len(blueprint_book.blueprints) == 2
+        assert blueprint_book.blueprints[0].index == 0
+        assert blueprint_book.blueprints[1].index == 3
+        assert blueprint_book.to_dict() == {
+            'blueprint_book': {
+                'item': 'blueprint-book', 
+                'version': 281479278690304, 
+                'blueprints': [
+                    {
+                        'deconstruction_planner': {
+                            'item': 'deconstruction-planner', 
+                            'version': 281479278690304
+                        }, 
+                        'index': 0
+                    }, 
+                    {
+                        'upgrade_planner': {
+                            'item': 'upgrade-planner', 
+                            'version': 281479278690304
+                        }, 
+                        'index': 3
+                    }
+                ]
+            }
+        }

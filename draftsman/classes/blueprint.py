@@ -433,6 +433,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             entities=[],
             tiles=[],
             schedules=[],
+            if_unknown=if_unknown
         )
 
         self.validate_assignment = validate_assignment

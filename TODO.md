@@ -1,15 +1,20 @@
 # TODO
 
 ### Add `tiles` to Groups (somehow)
+We could simply add a `tiles` list to `Group`, but this has some unintended consequences. See issue #118 for more info.
 
+---
 ### Calling validate on a blueprint should validate all of it's child entitylikes and tiles (or should it?)
 
-### `OverlappingElementWarning` should only be issued when desired
+---
+### A better way to filter specific errors
 
+---
 ### If `validate_assignment` on a blueprint is `True`, does that mean that an appended entity or tile should be validated? Should overlapping object warnings be issued?
 Answer: split blueprintable validation and entitylist/tilelist validation and have them all be separate
 It might be confusing at first, but this way every combination is possible.
 
+---
 ### Redo validation (again)
 Swapping to Pydantic was very illuminating in the benefits that it can provide:
 

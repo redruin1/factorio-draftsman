@@ -267,7 +267,6 @@ class BlueprintBook(Blueprintable):
     def __init__(
         self,
         blueprint_book: Optional[Union[str, dict]] = None,
-        index: Optional[uint16] = None,
         if_unknown: str = "error",  # TODO: enum
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -290,7 +289,6 @@ class BlueprintBook(Blueprintable):
             root_format=self.Format.BlueprintBookObject,
             item="blueprint-book",
             init_data=blueprint_book,
-            index=index,
             if_unknown=if_unknown,
             blueprints=[],
             active_index=0,

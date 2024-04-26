@@ -257,7 +257,6 @@ class DeconstructionPlanner(Blueprintable):
     def __init__(
         self,
         deconstruction_planner: Union[str, dict, None] = None,
-        index: Optional[uint16] = None,
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -271,12 +270,13 @@ class DeconstructionPlanner(Blueprintable):
         """
         self._root: __class__.Format
 
+        print(deconstruction_planner)
+
         super().__init__(
             root_item="deconstruction_planner",
             root_format=DeconstructionPlanner.Format.DeconstructionPlannerObject,
             item="deconstruction-planner",
             init_data=deconstruction_planner,
-            index=index,
             if_unknown=if_unknown,
         )
 

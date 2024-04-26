@@ -41,7 +41,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         root_format: DraftsmanBaseModel,
         root_item: str,
         init_data: Union[str, dict],
-        index: Optional[int],
         if_unknown="error",  # TODO: enum
         **kwargs
     ):
@@ -66,7 +65,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         # self._root = self.Format.model_construct(**{self._root_item: {"item": item, **kwargs}})
         # self._root[self._root_item] = root_format.model_construct(self._root[self._root_item])
         self._root = self.Format.model_validate(
-            {self._root_item: {"item": root_item, **kwargs}, "index": index},
+            {self._root_item: {"item": root_item, **kwargs}, "index": None},
             context={"construction": True, "mode": ValidationMode.MINIMUM},
         )
         # print("blueprintable")
@@ -81,7 +80,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         elif isinstance(init_data, str):
             self.load_from_string(init_data, if_unknown=if_unknown)
         elif isinstance(init_data, dict):
-            self.setup(**init_data[self._root_item], if_unknown=if_unknown)
+            self.setup(**init_data[self._root_item], index=init_data.get("index", None), if_unknown=if_unknown)
         else:
             raise DataFormatError(
                 "'{}' must be a factorio blueprint string, a dictionary, or None".format(
@@ -122,7 +121,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
                 )
             )
 
-        self.setup(**root[self._root_item], if_unknown=if_unknown)
+        self.setup(**root[self._root_item], index=root.get("index", None), if_unknown=if_unknown)
 
     @abstractmethod
     def setup(self, if_unknown: str = "error", **kwargs):  # pragma: no coverage
@@ -384,8 +383,8 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
         :getter: Gets the index of this blueprintable, or ``None`` if not set.
             A blueprintable's index is only generated when exporting with
-            :py:meth:`.to_dict`, so ``index`` will still be ``None`` even if
-            this blueprintable does exist within a BlueprintBook.
+            :py:meth:`.to_dict`, so ``index`` will still be ``None`` until 
+            specified otherwise.
         :setter: Sets the index of the upgrade planner, or removes it if set to
             ``None``.
         :type: ``uint16``

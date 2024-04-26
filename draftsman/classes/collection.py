@@ -28,7 +28,7 @@ from draftsman.utils import AABB, PrimitiveAABB, flatten_entities, distance
 
 from abc import ABCMeta, abstractmethod
 import math
-from typing import Literal, Optional, Sequence, Union, TYPE_CHECKING
+from typing import Literal, Optional, Sequence, Type, Union, TYPE_CHECKING
 import warnings
 
 # TODO: move this

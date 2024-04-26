@@ -410,7 +410,6 @@ class UpgradePlanner(Blueprintable):
     def __init__(
         self,
         upgrade_planner: Union[str, dict, None] = None,
-        index: Optional[uint16] = None,
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -441,7 +440,6 @@ class UpgradePlanner(Blueprintable):
             root_format=UpgradePlanner.Format.UpgradePlannerObject,
             item="upgrade-planner",
             init_data=upgrade_planner,
-            index=index,
             if_unknown=if_unknown
         )
 
