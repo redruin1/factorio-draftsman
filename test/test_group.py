@@ -543,7 +543,6 @@ class TestGroup:
         container3 = Container("wooden-chest", id="test")
         group.entities.append(container3)
         group.add_circuit_connection("red", "c2", "test")
-        print(group.entities["c2"])
         assert group.entities["c2"].to_dict() == {
             "name": "steel-chest",
             "position": {"x": 1.5, "y": 0.5},

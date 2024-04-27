@@ -2,11 +2,18 @@
 
 from draftsman.data import items
 
+import copy
 import pytest
 
 
 class TestItemsData:
     def test_add_item(self):
+        # Clone original so we can return to it afterward
+        # TODO: theres gotta be a better way than this bs
+        orig_raw = copy.deepcopy(items.raw)
+        orig_subgroups = copy.deepcopy(items.subgroups)
+        orig_groups = copy.deepcopy(items.groups)
+
         # Add item group
         items.add_group(name="new-item-group")
         assert "new-item-group" in items.groups
@@ -59,6 +66,12 @@ class TestItemsData:
 
         assert "nonexistant" not in items.subgroups
         assert "fail-new-item" not in items.raw
+
+        del items.raw["new-item"]
+        del items.subgroups["new-item-subgroup"]["items"][0]
+        del items.subgroups["new-item-subgroup"]
+        del items.groups["new-item-group"]["subgroups"][0]
+        del items.groups["new-item-group"]
 
     def test_modify_existing_item(self):
         pass

@@ -60,3 +60,7 @@ class TestInstrumentData:
             speaker.note_name = "D"
         assert speaker.note_name == None
         assert speaker.note_id == None
+
+        del instruments.raw["programmable-speaker"][-1]
+        del instruments.index_of["programmable-speaker"]["new-instrument"]
+        del instruments.name_of["programmable-speaker"][12]

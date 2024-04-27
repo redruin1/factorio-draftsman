@@ -21,8 +21,8 @@ from draftsman.classes.collision_set import CollisionSet
 from draftsman.utils import decode_version, version_string_to_tuple, AABB
 from draftsman._factorio_version import __factorio_version_info__
 
-# Lupa 2.0 is now required (for simplicities sake)
-import lupa.lua52 as lupa
+from git import Repo
+import lupa.lua52 as lupa # Lupa 2.0 is now required (for simplicities sake)
 
 import argparse
 from collections import OrderedDict
@@ -1366,7 +1366,7 @@ def extract_tiles(lua, data_location, verbose):
 # =============================================================================
 
 
-def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None):
+def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None, factorio_version=None):
     """
     Updates the data in the :py:mod:`.draftsman.data` modules.
 
@@ -1374,12 +1374,41 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
     in the same way. Then that data is extracted into the module, updating it's
     contents. Updates and changes made to the ``factorio-data`` folder are also
     reflected in this routine.
+
+    TODO: complete
     """
     # Figure out what directory we're in
     env_dir = os.path.dirname(__file__)
     # Create some quick access folders
-    factorio_data = os.path.join(env_dir, "factorio-data")
+    factorio_data_path = os.path.join(env_dir, "factorio-data")
     data_location = os.path.join(env_dir, "data")
+
+    # Check the currently checked out tag for `factorio-data`
+    repo = Repo(factorio_data_path)
+    repo.git.fetch()
+    # https://stackoverflow.com/a/32524783/8167625
+    current_tag = next((tag for tag in repo.tags if tag.commit == repo.head.commit), None)
+
+    if verbose or type(factorio_version) is bool:
+        print("Current Factorio version: {}".format(current_tag.name))
+
+    if type(factorio_version) is bool:
+        return
+    
+    # We want to handle the case where the user specifies the string "latest":
+    if factorio_version == "latest":
+        factorio_version = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)[-1]
+
+    # Checkout a different version of `factorio-data` if necessary
+    if factorio_version != current_tag.name:
+        if verbose:
+            print("Different Factorio version requested ({}) -> ({})".format(current_tag, factorio_version))
+        
+        repo.git.checkout(factorio_version)
+
+        if verbose:
+            print("Changed to Factorio version {}\n".format(factorio_version))
+
     if path is None:
         factorio_mods_folder = os.path.join(env_dir, "factorio-mods")
     else:
@@ -1389,7 +1418,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
         print("Reading mods from:", factorio_mods_folder)
 
     # Get the info from factorio-data and treat it as the "base" mod
-    with open(os.path.join(factorio_data, "base", "info.json")) as base_info_file:
+    with open(os.path.join(factorio_data_path, "base", "info.json")) as base_info_file:
         base_info = json.load(base_info_file)
         factorio_version = base_info["version"]
         # Normalize it to 4 numbers to make our versioning lives easier
@@ -1417,13 +1446,13 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
         version=factorio_version,
         archive=False,
         location=os.path.join(
-            factorio_data, "core"
+            factorio_data_path, "core"
         ),  # "./draftsman/factorio-data/core",
         info=None,
         files=None,
         data={
             "data.lua": file_to_string(
-                os.path.join(factorio_data, "core", "data.lua")
+                os.path.join(factorio_data_path, "core", "data.lua")
             )  # file_to_string("draftsman/factorio-data/core/data.lua")
         },
     )
@@ -1433,16 +1462,16 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
         version=factorio_version,
         archive=False,
         location=os.path.join(
-            factorio_data, "base"
+            factorio_data_path, "base"
         ),  # "./draftsman/factorio-data/base",
         info=None,
         files=None,
         data={
             "data.lua": file_to_string(
-                os.path.join(factorio_data, "base", "data.lua")
+                os.path.join(factorio_data_path, "base", "data.lua")
             ),  # file_to_string("draftsman/factorio-data/base/data.lua"),
             "data-updates.lua": file_to_string(
-                os.path.join(factorio_data, "base", "data-updates.lua")
+                os.path.join(factorio_data_path, "base", "data-updates.lua")
             ),  # file_to_string("draftsman/factorio-data/base/data-updates.lua")
         },
     )
@@ -1840,11 +1869,11 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
 
     # Factorio utility functions
     lua.execute(
-        file_to_string(os.path.join(factorio_data, "core", "lualib", "util.lua"))
+        file_to_string(os.path.join(factorio_data_path, "core", "lualib", "util.lua"))
     )
     # Factorio `data:extend` function
     lua.execute(
-        file_to_string(os.path.join(factorio_data, "core", "lualib", "dataloader.lua"))
+        file_to_string(os.path.join(factorio_data_path, "core", "lualib", "dataloader.lua"))
     )
 
     # Construct and send the mods table to the Lua instance in `interface.lua`
@@ -1922,7 +1951,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
     # This should probably be part of the main load process in case more than
     # "data.lua" is added to the core module, but core is kinda special and
     # would have to be integrated into the load order as a unique case anyway
-    lualib_path = os.path.join(factorio_data, "core", "lualib", "?.lua")
+    lualib_path = os.path.join(factorio_data_path, "core", "lualib", "?.lua")
     lua_add_path(lualib_path)
     load_stage(lua, mods, core_mod, "data.lua")
 
@@ -2074,6 +2103,13 @@ def main():
         const=True,
         help="Outputs a list of mods at '--path' as well as their configurations",
     )
+    parser.add_argument(
+        "--factorio-version",
+        nargs="?",
+        default=None,
+        const=True,
+        help="Displays the current Factorio version, or sets a particular Factorio version"
+    )
     args = parser.parse_args()
     if args.lua_version:
         print(
@@ -2088,4 +2124,5 @@ def main():
             show_logs=args.log,
             no_mods=args.no_mods,
             report=args.report,
+            factorio_version=args.factorio_version
         )

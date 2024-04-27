@@ -50,14 +50,8 @@ class TestAssociation:
         assert weakref.getweakrefcount(blueprint.entities[0]) == 2
         assert weakref.getweakrefcount(blueprint.entities[1]) == 2
 
-        print(blueprint.entities[0])
-        print(weakref.getweakrefs(blueprint.entities[0]))
-        print(blueprint.entities[1])
-        print(weakref.getweakrefs(blueprint.entities[1]))
-
         del blueprint.entities[1]
 
-        print(weakref.getweakrefs(blueprint.entities[0]))
         assert weakref.getweakrefcount(blueprint.entities[0]) == 1
 
         with pytest.raises(InvalidAssociationError):

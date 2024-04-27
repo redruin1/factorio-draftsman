@@ -134,7 +134,6 @@ class TestBlueprintBook:
         blueprint_book = BlueprintBook(
             "0eNpNys0KgCAQBOBXiT1bVPTrrScJrT0smYaZBNG7Z14K5jLzzQVSHbhZ0m6UxizALyCHK/AP0ggMlJCoAgyJFitmYZlxnyxtjoyO+6+/LCZHHkfSM57AcwYe7R6/ZVdUbV+2dRNSdff9AJD5LO0="
         )
-        # print(blueprint_book.version_tuple())
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 # "active_index": 0,

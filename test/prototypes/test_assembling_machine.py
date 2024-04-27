@@ -131,7 +131,6 @@ class TestAssemblingMachine:
         machine.recipe = None
         machine.items = None
 
-        print(machine.allowed_items)
         machine.set_item_request("iron-plate", 100)
         assert machine.items == {"iron-plate": 100}
         machine.recipe = "iron-gear-wheel"

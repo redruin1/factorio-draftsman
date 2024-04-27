@@ -4,7 +4,6 @@
 TODO
 """
 
-from pydantic import BaseModel, ConfigDict
 from typing import Union, Callable
 
 PrimitiveVector = tuple[Union[int, float], Union[int, float]]

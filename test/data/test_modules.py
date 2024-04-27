@@ -38,8 +38,12 @@ class TestModuleData:
 
         # Cleanup so we don't affect any of the other tests
         del modules.raw["new-productivity-module"]
+        del modules.categories["productivity"][-1]
 
     def test_add_module_category(self):
         modules.add_module_category("new-module-category")
         assert len(modules.categories) == 4
         assert modules.categories["new-module-category"] == []
+
+        # Cleanup so we don't affect any of the other tests
+        del modules.categories["new-module-category"]

@@ -14,7 +14,8 @@ class TestEntitiesData:
             try:
                 entities.flippable[entity_name]
             except KeyError:  # pragma: no coverage
-                self.fail("'{}' had no entry in entities.flippable".format(entity_name))
+                # raise Exception("'{}' had no entry in entities.flippable".format(entity_name))
+                pytest.fail("'{}' had no entry in entities.flippable".format(entity_name))
 
     def test_add_entity(self):
         # Normal
@@ -61,6 +62,11 @@ class TestEntitiesData:
         # Incorrect type
         with pytest.raises(ValueError):
             entities.add_entity("new-entity-3", "incorrect", [[0, 0], [1, 1]])
+
+        del entities.raw["new-entity-1"]
+        del entities.containers[-1]
+        del entities.raw["new-entity-2"]
+        del entities.storage_tanks[-1]
 
 
 class TestModulesData:

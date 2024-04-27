@@ -19,6 +19,8 @@ class TestStraightRail:
         straight_rail = StraightRail(
             "straight-rail", tile_position=[0, 0], direction=Direction.NORTHWEST
         )
+        print(straight_rail.static_collision_set)
+        print(straight_rail.tile_width, straight_rail.tile_height)
         assert straight_rail.to_dict() == {
             "name": "straight-rail",
             "position": {"x": 1.0, "y": 1.0},

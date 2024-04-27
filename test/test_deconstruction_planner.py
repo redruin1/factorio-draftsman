@@ -67,7 +67,6 @@ class TestDeconstructionPlannerTesting:
         broken_planner = DeconstructionPlanner(invalid_data, validate="none")
         assert broken_planner.version == "incorrect"
         assert broken_planner.description == 100
-        print(broken_planner._root)
         # Fix
         broken_planner.version = __factorio_version_info__
         broken_planner.description = "an actual string"

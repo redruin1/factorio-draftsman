@@ -256,7 +256,6 @@ class TestConstantCombinator:
         assert signal == None
 
         combinator.signals = [("signal-A", 100), ("signal-Z", 200), ("iron-ore", 1000)]
-        print(combinator.signals)
         signal = combinator.get_signal(0)
         assert signal == SignalFilter(
             **{

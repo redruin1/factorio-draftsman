@@ -7,10 +7,13 @@ from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 from collections.abc import Hashable
 import pytest
 
+# For compatibility with versions of Factorio prior to 1.0.0
+pytest.mark.skipif(len(linked_containers) == 0, "No linked containers to test")
+
 
 class TestLinkedContainer:
     def test_constructor_init(self):
-        container = LinkedContainer(link_id=1000)
+        container = LinkedContainer("linked-chest", link_id=1000)
         assert container.to_dict() == {
             "name": container.name,
             "position": container.position.to_dict(),
@@ -19,16 +22,16 @@ class TestLinkedContainer:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            LinkedContainer(unused_keyword="whatever")
+            LinkedContainer("linked-chest", unused_keyword="whatever")
         with pytest.warns(UnknownEntityWarning):
-            LinkedContainer("this is not a linked container")
+            LinkedContainer("linked-chest", "this is not a linked container")
 
         # Errors
         with pytest.raises(DataFormatError):
-            LinkedContainer(link_id="incorrect")
+            LinkedContainer("linked-chest", link_id="incorrect")
 
     def test_set_link(self):
-        container = LinkedContainer()
+        container = LinkedContainer("linked-chest")
         container.set_link(0, True)
         container.set_link(1, True)
         assert container.link_id == 0x0003
@@ -41,7 +44,7 @@ class TestLinkedContainer:
             container.set_link("incorrect", False)
 
     def test_set_links(self):
-        container = LinkedContainer()
+        container = LinkedContainer("linked-chest")
         container.link_id = 0xFFFF
         assert container.link_id == 0xFFFF
 
@@ -52,7 +55,7 @@ class TestLinkedContainer:
             container.link_id = "incorrect"
 
     def test_mergable_with(self):
-        container1 = LinkedContainer()
+        container1 = LinkedContainer("linked-chest")
         container2 = LinkedContainer(link_id=0xFFFF, tags={"some": "stuff"})
 
         assert container1.mergable_with(container1)
@@ -64,7 +67,7 @@ class TestLinkedContainer:
         assert not container1.mergable_with(container2)
 
     def test_merge(self):
-        container1 = LinkedContainer()
+        container1 = LinkedContainer("linked-chest")
         container2 = LinkedContainer(link_id=0xFFFF, tags={"some": "stuff"})
 
         container1.merge(container2)
@@ -74,8 +77,8 @@ class TestLinkedContainer:
         assert container1.tags == {"some": "stuff"}
 
     def test_eq(self):
-        container1 = LinkedContainer()
-        container2 = LinkedContainer()
+        container1 = LinkedContainer("linked-chest")
+        container2 = LinkedContainer("linked-chest")
 
         assert container1 == container2
 

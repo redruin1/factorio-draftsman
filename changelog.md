@@ -1,8 +1,8 @@
 # Changelog
 
 ## 2.0.0
-* Updated `factorio-data` to version `TODO` (latest stable)
-* Updated `compatibility/defines.lua` to `TODO` (latest stable)
+* Updated `factorio-data` to version `1.1.107` (latest stable)
+* Updated `compatibility/defines.lua` to `1.1.107` (latest stable)
 * Swapped from `schema` to `pydantic`
     * Format for specifying schemas is now much clearer
     * Because the backend of `pydantic` is in Rust, it should also be faster
@@ -58,11 +58,13 @@
 * [PERF] Reduced memory consumption by up to ~80 percent(!) (This also made it quite a bit faster to boot)
 * Made it so that default `collision_mask` keys are resolved at once at the data level when you call `draftsman-update`, so you can query `entities.raw` for the correct default value
 * Bumped Lupa to 2.0 which allows me to specify Lua version 5.2 which Factorio uses (#50)
-    * `draftsman-update` will issue a warning if it cannot specify the correct Lua version: It'll still try to load and may still work anyway, but it's not guaranteed to
+    * `draftsman-update` will issue a warning if it cannot specify the correct Lua version: It'll still try to load and may still work anyway, but it's not guaranteed to\
+* Added `--factorio-version` command for `draftsman-update` which either displays the current Factorio version or sets it to a specific Github tag
 * Patched InvalidModVersionError for now (#51)
 * Removed `on_(tile/entity)_(insert/set/remove)` from all `EntityCollection` and `TileCollection` classes
 * Removed `on_(insert/set/remove)` from all `Entity` implementations as well (they were not used and are replaced with better things now)
 * Renamed `data` member to `_root` member on `EntityList` and `TileList`
+* Fixed issue #119
 
 ## 1.1.1
 * Updated factorio-data to version 1.1.103

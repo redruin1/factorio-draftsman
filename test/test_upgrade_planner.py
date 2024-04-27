@@ -554,6 +554,8 @@ class TestUpgradePlanner:
         with pytest.warns(UpgradeProhibitedWarning):
             validation_result.reissue_all()
 
+        del entities.raw["dummy-entity-1"]
+
         # from is not minable
         upgrade_planner = UpgradePlanner()
         entities.raw["dummy-entity-2"] = {"name": "dummy-entity-2"}
@@ -566,6 +568,8 @@ class TestUpgradePlanner:
         assert validation_result == goal
         with pytest.warns(UpgradeProhibitedWarning):
             validation_result.reissue_all()
+
+        del entities.raw["dummy-entity-2"]
 
         # All mining results must not be hidden
         upgrade_planner = UpgradePlanner()
@@ -586,6 +590,8 @@ class TestUpgradePlanner:
         assert validation_result == goal
         with pytest.warns(UpgradeProhibitedWarning):
             validation_result.reissue_all()
+
+        del entities.raw["dummy-entity-3"]
 
         # Cannot upgrade rolling stock
         upgrade_planner = UpgradePlanner()

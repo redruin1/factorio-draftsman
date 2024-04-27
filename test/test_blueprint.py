@@ -1035,8 +1035,7 @@ class TestBlueprint:
             is blueprint_copy.entities["powerlines"]
         )
         assert blueprint_copy.entities["powerlines"].parent is blueprint_copy
-        print(blueprint._root_item)
-        print(blueprint_copy._root_item)
+
         # Outcome
         assert blueprint_copy.to_dict()["blueprint"] == {
             "item": "blueprint",

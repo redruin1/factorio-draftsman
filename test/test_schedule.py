@@ -499,7 +499,6 @@ class TestSchedule:
             s.remove_stop("Station B")
 
         # Remove with wait conditions
-        print(s.stops)
         s.remove_stop("Station A", wait_conditions=inactivity)
         assert len(s.stops) == 0
         assert s.stops == []
