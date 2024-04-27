@@ -791,7 +791,7 @@ class TestGroup:
         group.entities.append("transport-belt")
         group.entities.append("transport-belt", tile_position=(5, 5))
         assert group.get_dimensions() == (6, 6)
-        
+
         group.entities.append("transport-belt", tile_position=(3, 3))
         assert group.get_dimensions() == (6, 6)
 
@@ -825,7 +825,7 @@ class TestGroup:
         group = Group("test")
         group.entities.append("transport-belt")
         group.entities.validate_assignment = "none"
-        group.entities.append("transport-belt") # No warning
+        group.entities.append("transport-belt")  # No warning
         assert len(group.entities) == 2
 
         group.entities.validate_assignment = "strict"

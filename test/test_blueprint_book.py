@@ -208,8 +208,8 @@ class TestBlueprintBook:
         }
 
         with pytest.warns(DraftsmanWarning):
-            blueprint_book.setup(unused_keyword="whatever") # No warning!
-            blueprint_book.validate().reissue_all() # Warning
+            blueprint_book.setup(unused_keyword="whatever")  # No warning!
+            blueprint_book.validate().reissue_all()  # Warning
 
     def test_set_label(self):
         blueprint_book = BlueprintBook()
@@ -560,24 +560,24 @@ class TestBlueprintBook:
         assert blueprint_book.blueprints[0].index == 0
         assert blueprint_book.blueprints[1].index == 3
         assert blueprint_book.to_dict() == {
-            'blueprint_book': {
-                'item': 'blueprint-book', 
-                'version': 281479278690304, 
-                'blueprints': [
+            "blueprint_book": {
+                "item": "blueprint-book",
+                "version": 281479278690304,
+                "blueprints": [
                     {
-                        'deconstruction_planner': {
-                            'item': 'deconstruction-planner', 
-                            'version': 281479278690304
-                        }, 
-                        'index': 0
-                    }, 
+                        "deconstruction_planner": {
+                            "item": "deconstruction-planner",
+                            "version": 281479278690304,
+                        },
+                        "index": 0,
+                    },
                     {
-                        'upgrade_planner': {
-                            'item': 'upgrade-planner', 
-                            'version': 281479278690304
-                        }, 
-                        'index': 3
-                    }
-                ]
+                        "upgrade_planner": {
+                            "item": "upgrade-planner",
+                            "version": 281479278690304,
+                        },
+                        "index": 3,
+                    },
+                ],
             }
         }

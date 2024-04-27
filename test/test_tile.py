@@ -132,22 +132,25 @@ class TestTileFactory:
         # Unknown accept
         tile = new_tile("unknown", validate="minimum", if_unknown="accept")
         assert isinstance(tile, Tile)
-        
+
         # Generic entities should be able to handle attribute access and serialization
         assert tile.name == "unknown"
         assert tile.position == Vector(0, 0)
-        assert tile.to_dict() == {
-            "name": "unknown",
-            "position": {"x": 0, "y": 0}
-        }
-        
+        assert tile.to_dict() == {"name": "unknown", "position": {"x": 0, "y": 0}}
+
         # You should also be able to set new attributes to them without Draftsman
         # complaining
-        tile = new_tile("unknown", position=(1, 1), unknown_attribute="value", validate="minimum", if_unknown="accept")
+        tile = new_tile(
+            "unknown",
+            position=(1, 1),
+            unknown_attribute="value",
+            validate="minimum",
+            if_unknown="accept",
+        )
         assert tile.to_dict() == {
             "name": "unknown",
             "position": {"x": 1, "y": 1},
-            "unknown_attribute": "value"
+            "unknown_attribute": "value",
         }
 
         # After construction, as well
@@ -156,10 +159,10 @@ class TestTileFactory:
             "name": "unknown",
             "position": {"x": 1, "y": 1},
             "unknown_attribute": "value",
-            "new_thing": "extra!"
+            "new_thing": "extra!",
         }
 
-        # Draftsman will still complain about the unknown entity, but it doesn't 
+        # Draftsman will still complain about the unknown entity, but it doesn't
         # panic unless you want it to
         with pytest.warns(UnknownTileWarning):
             tile.validate(mode=ValidationMode.PEDANTIC).reissue_all()

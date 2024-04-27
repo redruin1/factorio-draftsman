@@ -23,9 +23,9 @@ class TileList(Exportable, MutableSequence):
     """
 
     class Format(DraftsmanBaseModel):
-        _root: List[Tile.Format] # TODO: TileLike?
+        _root: List[Tile.Format]  # TODO: TileLike?
 
-        root: List[Any] # TODO: there should be a way to validate this
+        root: List[Any]  # TODO: there should be a way to validate this
 
     def __init__(
         self,
@@ -62,10 +62,10 @@ class TileList(Exportable, MutableSequence):
                     raise DataFormatError(
                         "TileList only takes either Tile or dict entries"
                     )
-                
+
         self.validate_assignment = validate_assignment
 
-        self.validate(mode=validate).reissue_all(stacklevel=3) # TODO
+        self.validate(mode=validate).reissue_all(stacklevel=3)  # TODO
 
     def append(
         self,

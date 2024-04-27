@@ -259,11 +259,13 @@ class DraftsmanBaseModel(BaseModel):
         populate_by_name=True,  # Allow to pass either internal or alias to constructor
     )
 
+
 class DraftsmanRootModel(RootModel):
     model_config = ConfigDict(
         revalidate_instances="always",
         populate_by_name=True,  # Allow to pass either internal or alias to constructor
     )
+
 
 class MapperID(DraftsmanBaseModel):
     name: str  # TODO: optional?

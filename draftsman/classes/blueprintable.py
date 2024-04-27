@@ -80,7 +80,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         elif isinstance(init_data, str):
             self.load_from_string(init_data, if_unknown=if_unknown)
         elif isinstance(init_data, dict):
-            self.setup(**init_data[self._root_item], index=init_data.get("index", None), if_unknown=if_unknown)
+            self.setup(
+                **init_data[self._root_item],
+                index=init_data.get("index", None),
+                if_unknown=if_unknown
+            )
         else:
             raise DataFormatError(
                 "'{}' must be a factorio blueprint string, a dictionary, or None".format(
@@ -121,7 +125,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
                 )
             )
 
-        self.setup(**root[self._root_item], index=root.get("index", None), if_unknown=if_unknown)
+        self.setup(
+            **root[self._root_item],
+            index=root.get("index", None),
+            if_unknown=if_unknown
+        )
 
     @abstractmethod
     def setup(self, if_unknown: str = "error", **kwargs):  # pragma: no coverage
@@ -383,7 +391,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
         :getter: Gets the index of this blueprintable, or ``None`` if not set.
             A blueprintable's index is only generated when exporting with
-            :py:meth:`.to_dict`, so ``index`` will still be ``None`` until 
+            :py:meth:`.to_dict`, so ``index`` will still be ``None`` until
             specified otherwise.
         :setter: Sets the index of the upgrade planner, or removes it if set to
             ``None``.

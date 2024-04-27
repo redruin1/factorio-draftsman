@@ -66,7 +66,10 @@ class TestTileList:
         assert isinstance(union.tiles, TileList)
         assert union.tiles._parent is union
         assert len(union.tiles) == 2
-        assert union.tiles._root == [Tile("landfill"), Tile("concrete", position=(1, 0))]
+        assert union.tiles._root == [
+            Tile("landfill"),
+            Tile("concrete", position=(1, 0)),
+        ]
         assert union.tiles[0].parent is union
         assert union.tiles[1].parent is union
 

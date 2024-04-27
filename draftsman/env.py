@@ -22,7 +22,7 @@ from draftsman.utils import decode_version, version_string_to_tuple, AABB
 from draftsman._factorio_version import __factorio_version_info__
 
 from git import Repo
-import lupa.lua52 as lupa # Lupa 2.0 is now required (for simplicities sake)
+import lupa.lua52 as lupa  # Lupa 2.0 is now required (for simplicities sake)
 
 import argparse
 from collections import OrderedDict
@@ -1366,7 +1366,14 @@ def extract_tiles(lua, data_location, verbose):
 # =============================================================================
 
 
-def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None, factorio_version=None):
+def update(
+    verbose=False,
+    path=None,
+    show_logs=False,
+    no_mods=False,
+    report=None,
+    factorio_version=None,
+):
     """
     Updates the data in the :py:mod:`.draftsman.data` modules.
 
@@ -1387,23 +1394,31 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
     repo = Repo(factorio_data_path)
     repo.git.fetch()
     # https://stackoverflow.com/a/32524783/8167625
-    current_tag = next((tag for tag in repo.tags if tag.commit == repo.head.commit), None)
+    current_tag = next(
+        (tag for tag in repo.tags if tag.commit == repo.head.commit), None
+    )
 
     if verbose or type(factorio_version) is bool:
         print("Current Factorio version: {}".format(current_tag.name))
 
     if type(factorio_version) is bool:
         return
-    
+
     # We want to handle the case where the user specifies the string "latest":
     if factorio_version == "latest":
-        factorio_version = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)[-1]
+        factorio_version = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)[
+            -1
+        ]
 
     # Checkout a different version of `factorio-data` if necessary
     if factorio_version != current_tag.name:
         if verbose:
-            print("Different Factorio version requested ({}) -> ({})".format(current_tag, factorio_version))
-        
+            print(
+                "Different Factorio version requested ({}) -> ({})".format(
+                    current_tag, factorio_version
+                )
+            )
+
         repo.git.checkout(factorio_version)
 
         if verbose:
@@ -1873,7 +1888,9 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
     )
     # Factorio `data:extend` function
     lua.execute(
-        file_to_string(os.path.join(factorio_data_path, "core", "lualib", "dataloader.lua"))
+        file_to_string(
+            os.path.join(factorio_data_path, "core", "lualib", "dataloader.lua")
+        )
     )
 
     # Construct and send the mods table to the Lua instance in `interface.lua`
@@ -2108,7 +2125,7 @@ def main():
         nargs="?",
         default=None,
         const=True,
-        help="Displays the current Factorio version, or sets a particular Factorio version"
+        help="Displays the current Factorio version, or sets a particular Factorio version",
     )
     args = parser.parse_args()
     if args.lua_version:
@@ -2124,5 +2141,5 @@ def main():
             show_logs=args.log,
             no_mods=args.no_mods,
             report=args.report,
-            factorio_version=args.factorio_version
+            factorio_version=args.factorio_version,
         )

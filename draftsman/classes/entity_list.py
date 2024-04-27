@@ -49,10 +49,10 @@ class EntityList(Exportable, MutableSequence):
         root: List[Any]  # should be a better way to validate this
 
         @model_validator(mode="after")
-        def ensure_no_duplicate_ids(self, info): # TODO
+        def ensure_no_duplicate_ids(self, info):  # TODO
             known_ids = set()
             for entitylike in self.root:
-                if entitylike.id in known_ids: # pragma: no coverage
+                if entitylike.id in known_ids:  # pragma: no coverage
                     raise AssertionError(
                         "Cannot have two entities with the same id"
                     )  # TODO better

@@ -87,8 +87,8 @@ For more information on what exactly Draftsman is and does, as well as its inten
 For more examples on what exactly you can do with Draftsman, take a look at the [examples folder](https://github.com/redruin1/factorio-draftsman/tree/main/examples).
 
 ### Features
-* Compatible with the latest versions of Python 2 and 3
-* Compatible with the latest versions of Factorio (1.0+)
+* Compatible with all versions of Python 3
+* Compatible with the latest versions of Factorio (1.0.0+)
 * Compatible with Factorio mods(!)
 * Well documented
 * Intuitive and flexible API
@@ -97,7 +97,7 @@ For more examples on what exactly you can do with Draftsman, take a look at the 
     * Filter entities from blueprints by type, region and other parameters [just like Factorio's own API](https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_entities_filtered)
     * Entities are categorized and organized within `draftsman.data` for easy and flexible iteration
     * Group entities together and manipulate them all as one unit
-* Verbose Errors and Warnings ("Factorio-safety" and "Factorio-correctness")
+* Verbose Errors and Warnings (["Factorio-safety"](TODO) and ["Factorio-correctness"](TODO))
 * Expansive and rigorous test suite
 
 --------------------------------------------------------------------------------
@@ -145,7 +145,7 @@ Both `mod-info.json` and `mod-settings.dat` are recognized by `draftsman-update`
 
 ## Contributing
 
-Draftsman is a large and expansive project, intended to be used by as many people as possible. As such, it is a difficult project to maintain by myself. All support is welcome, whether it be finding/fixing bugs, improving mod compatibility, adding features, improving documentation, adding examples, or anything in-between. I maintain a [`TODO.md`] list which contains all the features that I'm currently planning on implementing (eventually, at least).
+Draftsman is a large and expansive project, intended to be used by as many people as possible. As such, it is a difficult project to maintain by myself. All support is welcome, whether it be finding/fixing bugs, improving mod compatibility, adding features, improving documentation, adding examples, or anything in-between. I maintain a [`TODO.md`](TODO.md) list which contains all the features that I'm currently planning on implementing (eventually, at least).
 
 Bugs are tracked on the issue page; If you have an issue that's affecting you, search here for your issue and create a new one if it's not there.
 

@@ -15,7 +15,9 @@ class TestEntitiesData:
                 entities.flippable[entity_name]
             except KeyError:  # pragma: no coverage
                 # raise Exception("'{}' had no entry in entities.flippable".format(entity_name))
-                pytest.fail("'{}' had no entry in entities.flippable".format(entity_name))
+                pytest.fail(
+                    "'{}' had no entry in entities.flippable".format(entity_name)
+                )
 
     def test_add_entity(self):
         # Normal

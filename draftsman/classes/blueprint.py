@@ -130,7 +130,7 @@ from pydantic import (
     ValidationInfo,
     field_validator,
     field_serializer,
-    model_validator
+    model_validator,
 )
 
 
@@ -373,9 +373,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         )
 
         @model_validator(mode="after")
-        def check_if_unreasonable_size(
-            self, info: ValidationInfo
-        ):
+        def check_if_unreasonable_size(self, info: ValidationInfo):
             if not info.context:  # pragma: no coverage
                 return self
             if info.context["mode"] <= ValidationMode.MINIMUM:
@@ -433,7 +431,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             entities=[],
             tiles=[],
             schedules=[],
-            if_unknown=if_unknown
+            if_unknown=if_unknown,
         )
 
         self.validate_assignment = validate_assignment
@@ -441,7 +439,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         # TODO: right now all of the shorthand conversion is also performed with
         # this step; ideally this would not be the case
         # That way we would only have to "validate" a newly created blueprint if
-        # init_data was provided to the constructor 
+        # init_data was provided to the constructor
         self.validate(mode=validate).reissue_all(stacklevel=3)
 
     @reissue_warnings
@@ -509,11 +507,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         #     self, kwargs.pop("entities", None)
         # )
         self._root._entities = EntityList(
-            self, 
-            entities, 
+            self,
+            entities,
             validate=validate,
             validate_assignment=validate_assignment,
-            if_unknown=if_unknown
+            if_unknown=if_unknown,
         )
 
         # if "tiles" in kwargs:
@@ -521,11 +519,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         #     self, kwargs.pop("tiles", None)
         # )
         self._root._tiles = TileList(
-            self, 
+            self,
             tiles,
             validate=validate,
-            validate_assignment=validate_assignment, 
-            if_unknown=if_unknown
+            validate_assignment=validate_assignment,
+            if_unknown=if_unknown,
         )
 
         # self._root[self._root_item]["schedules"] = ScheduleList(

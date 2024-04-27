@@ -440,7 +440,7 @@ class UpgradePlanner(Blueprintable):
             root_format=UpgradePlanner.Format.UpgradePlannerObject,
             item="upgrade-planner",
             init_data=upgrade_planner,
-            if_unknown=if_unknown
+            if_unknown=if_unknown,
         )
 
         self.validate_assignment = validate_assignment

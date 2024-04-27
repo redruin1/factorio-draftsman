@@ -712,9 +712,11 @@ class TestBlueprint:
     def test_tile_copying(self):
         blueprint = Blueprint()
 
-        concrete = Tile("concrete") # (0, 0)
-        
-        blueprint.tiles.append(concrete, copy=True, position=(10, 10)) # copy new position over copied tile
+        concrete = Tile("concrete")  # (0, 0)
+
+        blueprint.tiles.append(
+            concrete, copy=True, position=(10, 10)
+        )  # copy new position over copied tile
         assert len(blueprint.tiles) == 1
         assert blueprint.tiles[0].name == "concrete"
         assert blueprint.tiles[0].position == Vector(10, 10)

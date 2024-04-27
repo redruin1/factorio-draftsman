@@ -28,7 +28,7 @@ def main():
     assert len(mods.mod_list) == 1 and mods.mod_list["base"]
 
     # Get the current repo
-    directory = "D:\\SourceCode\\repos\\Python\\factorio-draftsman\\" # FIXME: better
+    directory = "D:\\SourceCode\\repos\\Python\\factorio-draftsman\\"  # FIXME: better
     repo = Repo(directory)
 
     # Get a list of all the tags corresponding to each Factorio version, and sort by
@@ -45,8 +45,8 @@ def main():
     # Iterate over every tag in the list up to 1.0.0 (which is our limit)
     start_version = 0
     end_version = tag_list.index("1.0.0")
-    output = "" # because pytest captures stdout, we append our results to a 
-                # buffer and print it afterwards
+    output = ""  # because pytest captures stdout, we append our results to a
+    # buffer and print it afterwards
     failed = False
     for tag in tag_list[start_version:end_version]:
 

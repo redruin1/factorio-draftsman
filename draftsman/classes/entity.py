@@ -226,7 +226,7 @@ class Entity(Exportable, EntityLike):
         """
         # If name is None, then the user didn't provide a name and a default was
         # unobtainable; error
-        # (This should only occur when the Factorio version is backported to 
+        # (This should only occur when the Factorio version is backported to
         # the point where certain entity types did not exist (e.g. LinkedBelt))
         if name is None:  # pragma: no coverage
             raise DataFormatError(

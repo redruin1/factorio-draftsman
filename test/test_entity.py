@@ -19,7 +19,7 @@ class TestEntity:
 
     def test_flags(self):
         container = Container("wooden-chest")
-        assert container.flags == ['placeable-neutral', 'player-creation']
+        assert container.flags == ["placeable-neutral", "player-creation"]
 
     def test_set_tags(self):
         container = Container("wooden-chest")
@@ -59,10 +59,15 @@ class TestEntity:
         iron_chest.name = "steel-chest"
         assert iron_chest.name == "steel-chest"
 
-        with pytest.warns(UnknownEntityWarning, match="'electric-furnace' is not a known name for a Container"):
+        with pytest.warns(
+            UnknownEntityWarning,
+            match="'electric-furnace' is not a known name for a Container",
+        ):
             iron_chest.name = "electric-furnace"
 
-        with pytest.warns(UnknownEntityWarning, match="'unknown' is not a known name for a Container"):
+        with pytest.warns(
+            UnknownEntityWarning, match="'unknown' is not a known name for a Container"
+        ):
             iron_chest.name = "unknown"
 
         assert iron_chest.collision_set == None

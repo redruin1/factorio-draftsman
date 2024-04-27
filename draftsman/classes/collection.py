@@ -288,7 +288,9 @@ class EntityCollection(metaclass=ABCMeta):
         if position is not None:
             if radius is not None:
                 # Intersect entities with circle
-                search_region = self.entities.spatial_map.get_in_radius(radius, position)
+                search_region = self.entities.spatial_map.get_in_radius(
+                    radius, position
+                )
             else:
                 # Intersect entities with point
                 search_region = self.entities.spatial_map.get_on_point(position)

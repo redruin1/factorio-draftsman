@@ -7,7 +7,7 @@ We could simply add a `tiles` list to `Group`, but this has some unintended cons
 ### Calling validate on a blueprint should validate all of it's child entitylikes and tiles (or should it?)
 
 ---
-### A better way to filter specific errors
+### A better way to filter specific errors (some further API additions to `ValidationResult`, likely)
 
 ---
 ### If `validate_assignment` on a blueprint is `True`, does that mean that an appended entity or tile should be validated? Should overlapping object warnings be issued?
@@ -43,10 +43,6 @@ Ideally, whether or not a entity or blueprint is considered valid can be retaine
 ### Integrate with `mypy`
 
 ---
-### Add `--factorio-version` command to `draftsman-update` to specify which Factorio version
-This probably requires some kind of git module.
-
----
 ### Revamp the `add_x` data functions so that they support more features
 * Inline sorting
 * Support additional keyword arguments in line with the prototype documentation
@@ -55,9 +51,7 @@ This probably requires some kind of git module.
 ---
 ### Change all internal attribute accesses to use `["element"]` and `.get("element", None)` instead so that functionality should remain constant when importing dicts when `validate="none"`
 
-### Add keyword arguments to all draftsman entities and blueprintables
-So the user can quickly determine what keys are allowed without having to consult the docs firsthand, or create an instance of it and check it's members
-
+---
 ### Add as many of the example programs to the test suite as possible
 To help ensure that they're behaving correctly over any API changes, so they stay up-to-date
 

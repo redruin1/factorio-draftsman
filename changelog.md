@@ -1,11 +1,10 @@
 # Changelog
 
 ## 2.0.0
-* Updated `factorio-data` to version `1.1.107` (latest stable)
-* Updated `compatibility/defines.lua` to `1.1.107` (latest stable)
+* Updated `factorio-data` to version `1.1.107` (latest)
+* Updated `compatibility/defines.lua` to `1.1.107` (latest)
 * Swapped from `schema` to `pydantic`
     * Format for specifying schemas is now much clearer
-    * Because the backend of `pydantic` is in Rust, it should also be faster
     * Both blueprintables and entities now share the same exporting code, overall making more sense
     * Can now create a JSON schema of any entity or blueprintable (by calling `Object.json_schema()`), which can be exported and used in any other program that reads JSON schema(!)
     * However, minimum Python version is now 3.7 to support type hints
