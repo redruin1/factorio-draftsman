@@ -61,7 +61,7 @@ setup(
         "lupa >= 2.0; python_version >= '3.0'",     # Modern Lupa
         "lupa == 1.14.1; python_version < '3.0'",   # Old Lupa, may break mod loading due to different Lua version
         "six >= 1.16.0",
-        "typing",
+        "typing; python_version < '3.5'",
         "typing_extensions; python_version < '3.8'",
         "importlib-resources; python_version < '3.7'",
         "enum34; python_version < '3.4'",
