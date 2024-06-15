@@ -17,5 +17,6 @@ Contains the ``Blueprint`` class for easily creating and exporting blueprints.
 
 .. autoclass:: Blueprint
     :members:
+    :exclude-members: Format
     :show-inheritance:
     :inherited-members:

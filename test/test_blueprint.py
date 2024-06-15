@@ -2700,10 +2700,10 @@ class TestBlueprint:
         blueprint.tiles.append("refined-concrete", position=(0, 0))
         blueprint.tiles.append("landfill", position=(10, 10))
 
-        assert blueprint.find_tile((0, 0)) is blueprint.tiles[0]
-        assert blueprint.find_tile((10, 10)) is blueprint.tiles[1]
-        with pytest.raises(AttributeError):
-            blueprint.find_tile((5, 5)).position = (15, 15)
+        assert blueprint.find_tile((0, 0))[0] is blueprint.tiles[0]
+        assert blueprint.find_tile((10, 10))[0] is blueprint.tiles[1]
+        with pytest.raises(IndexError):
+            blueprint.find_tile((5, 5))[0].position = (15, 15)
 
     # =========================================================================
 

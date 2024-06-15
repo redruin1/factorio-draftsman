@@ -20,14 +20,14 @@ class Direction(IntEnum):
     number of convenience constants and functions over working with a raw int
     value.
 
-    * ``NORTH`` (0) (Default)
-    * ``NORTHEAST`` (1)
-    * ``EAST`` (2)
-    * ``SOUTHEAST`` (3)
-    * ``SOUTH`` (4)
-    * ``SOUTHWEST`` (5)
-    * ``WEST`` (6)
-    * ``NORTHWEST`` (7)
+    * ``NORTH     (0)`` (Default)
+    * ``NORTHEAST (1)``
+    * ``EAST      (2)`` 
+    * ``SOUTHEAST (3)``
+    * ``SOUTH     (4)`` 
+    * ``SOUTHWEST (5)``
+    * ``WEST      (6)``
+    * ``NORTHWEST (7)``
     """
 
     NORTH = 0
@@ -43,6 +43,11 @@ class Direction(IntEnum):
         """
         Returns the direction opposite this one.
 
+        .. doctest:: [constants]
+
+            >>> Direction.NORTH.opposite()
+            <Direction.SOUTH: 4>
+
         :returns: A new :py:class:`Direction`.
         """
         return Direction((self.value + 4) % 8)
@@ -53,7 +58,7 @@ class Direction(IntEnum):
         ``eight_way`` determines whether or not to treat the next-most direction
         from a four-way or eight-way perspective; for example:
 
-        .. example:: python
+        .. doctest:: [constants]
 
             >>> Direction.NORTH.next(eight_way=False)
             <Direction.EAST: 2>
@@ -74,7 +79,7 @@ class Direction(IntEnum):
         previous-most direction from a four-way or eight-way perspective; for
         example:
 
-        .. example:: python
+        .. doctest:: [constants]
 
             >>> Direction.NORTH.previous(eight_way=False)
             <Direction.WEST: 6>
@@ -93,7 +98,7 @@ class Direction(IntEnum):
         Converts this direction to an :py:class:`Orientation` of corresponding
         value.
 
-        .. example:: python
+        .. doctest:: [constants]
 
             >>> Direction.EAST.to_orientation()
             <Orientation.EAST: 0.25>
@@ -121,7 +126,7 @@ class Direction(IntEnum):
         directions. Returned vectors are unit-length, unless ``magnitude`` is
         specified.
 
-        .. example:: python
+        .. doctest:: [constants]
 
             >>> Direction.NORTH.to_vector(magnitude=2)
             <Vector>(0, -2)
@@ -180,18 +185,18 @@ class Orientation(float):
 
     .. NOTE::
 
-        Currently only supports addition and subtraction; if you want to perform
-        more complex operations it's best to convert it to a float and then convert
-        it back to an Orientation when complete.
+        Currently only supports addition and subtraction. If you want to perform
+        more complex operations, it's best to convert it to a float and then 
+        convert it back to an Orientation when complete.
 
-    * ``NORTH`` (0.0) (Default)
-    * ``NORTHEAST`` (0.125)
-    * ``EAST`` (0.25)
-    * ``SOUTHEAST`` (0.375)
-    * ``SOUTH`` (0.5)
-    * ``SOUTHWEST`` (0.625)
-    * ``WEST`` (0.75)
-    * ``NORTHWEST`` (0.875)
+    * ``NORTH     (0.000)`` (Default)
+    * ``NORTHEAST (0.125)``
+    * ``EAST      (0.250)``
+    * ``SOUTHEAST (0.375)``
+    * ``SOUTH     (0.500)``
+    * ``SOUTHWEST (0.625)``
+    * ``WEST      (0.750)``
+    * ``NORTHWEST (0.875)``
     """
 
     # Note: These are overwritten with Orientation() instances after definition
@@ -228,7 +233,7 @@ class Orientation(float):
         opposite; but when calling on an arbitrary orientation the opposite may
         succumb to floating point error:
 
-        .. example:: python
+        .. doctest:: [constants]
 
             >>> Orientation.NORTH.opposite()
             <Orientation.SOUTH: 0.5>
@@ -247,6 +252,14 @@ class Orientation(float):
         orientation is imprecise, the orientation will be rounded to either the
         closest four-way or eight-way direction.
 
+        .. doctest:: [constants]
+
+            >>> example = Orientation(1.0 / 3.0)
+            >>> example.to_direction(eight_way=False)
+            <Direction.EAST: 2>
+            >>> example.to_direction(eight_way=True)
+            <Direction.SOUTHEAST: 3>
+
         :param eight_way: Whether to round to the closest four-way direction or
             eight-way direction.
 
@@ -263,7 +276,7 @@ class Orientation(float):
         vector, for various linear operations. Returned vectors are unit-length,
         unless ``magnitude`` is altered.
 
-        .. example:: python
+        .. doctest:: [constants]
 
             >>> Orientation.NORTH.to_vector(magnitude=2)
             <Vector>(0, -2)
@@ -360,9 +373,10 @@ class ReadMode(IntEnum):
     """
     Determines what manner belts and inserters should send their content signal.
 
-    * ``PULSE (0)``: Pulse the signal for one tick when first detected.
-        (Default)
-    * ``HOLD (1)``: Hold the signal for as long as the item is present.
+    * ``PULSE (0)`` 
+        Pulse the signal for one tick when first detected. (Default)
+    * ``HOLD (1)``
+        Hold the signal for as long as the item is present.
     """
 
     PULSE = 0
@@ -374,10 +388,10 @@ class MiningDrillReadMode(IntEnum):
     Used to specify whether the mining drill will read just the resources
     accessible to it or the entire resource patch.
 
-    * ``UNDER_DRILL (0)``: Only return the resources directly minable by this
-        drill. (Default)
-    * ``TOTAL_PATCH (1)``: Return the entire contents of the ore patches the
-        drill is over.
+    * ``UNDER_DRILL (0)``
+        Only return the resources directly minable by this drill. (Default)
+    * ``TOTAL_PATCH (1)``
+        Return the entire contents of the ore patches the drill is over.
     """
 
     UNDER_DRILL = 0
@@ -389,15 +403,18 @@ class InserterModeOfOperation(IntEnum):
     Inserter circuit control constants. Determines how the Entity should behave
     when connected to a circuit network.
 
-    * ``ENABLE_DISABLE (0)``: Turns the inserter on or off depending on the
-        circuit condition. (Default)
-    * ``SET_FILTERS (1)``: Sets the inserter's filter signals based on read
-        signals.
-    * ``READ_HAND_CONTENTS (2)``: Reads the contents of the inserter's hand and
-        sends it to the connected wire(s).
-    * ``NONE (3)``: Does nothing.
-    * ``SET_STACK_SIZE (4)``: Sets the stack size override to the value of an
-        input signal.
+    * ``ENABLE_DISABLE (0)`` 
+        Turns the inserter on or off depending on the circuit condition. 
+        (Default)
+    * ``SET_FILTERS (1)``
+        Sets the inserter's filter signals based on read signals.
+    * ``READ_HAND_CONTENTS (2)``
+        Reads the contents of the inserter's hand and sends it to the connected 
+        wire(s).
+    * ``NONE (3)`` 
+        Does nothing.
+    * ``SET_STACK_SIZE (4)``
+        Sets the stack size override to the value of an input signal.
     """
 
     ENABLE_DISABLE = 0
@@ -412,10 +429,11 @@ class LogisticModeOfOperation(IntEnum):
     Logistics container circuit control constants. Determines how the Entity
     should behave when connected to a circuit network.
 
-    * ``SEND_CONTENTS (0)``: Reads the inventory of the container and sends it
-        to the connected circuit network. (Default)
-    * ``SET_REQUESTS (1)``: Sets the item requests based on the input signals to
-        the container.
+    * ``SEND_CONTENTS (0)``
+        Reads the inventory of the container and sends it to the connected 
+        circuit network. (Default)
+    * ``SET_REQUESTS (1)`` 
+        Sets the item requests based on the input signals to the container.
     """
 
     SEND_CONTENTS = 0
@@ -426,8 +444,10 @@ class FilterMode(IntEnum):
     """
     Filter mode constant.
 
-    * ``WHITELIST (0)``: Include only the listed items. (Default)
-    * ``BLACKLIST (1)``: Exclude only the listed items.
+    * ``WHITELIST (0)``
+        Include only the listed items. (Default)
+    * ``BLACKLIST (1)``
+        Exclude only the listed items.
     """
 
     WHITELIST = 0
@@ -438,14 +458,18 @@ class TileSelectionMode(IntEnum):
     """
     Tile selection mode for :py:class:`.UpgradePlanner`.
 
-    * ``NORMAL``: (0) Constructed tiles are only removed if there are no
-        entities in the selected area (Default)
-    * ``ALWAYS``: (1) Constructed tiles are always scheduled for deconstruction,
-        regardless of selection contents.
-    * ``NEVER``: (2) Constructed tiles are never scheduled for deconstruction,
-        regardless of selection contents.
-    * ``ONLY``: (3) Only tiles are selected for deconstruction; entities are
-        completely ignored when using this mode.
+    * ``NORMAL (0)``
+        Constructed tiles are only removed if there are no entities in the 
+        selected area. (Default)
+    * ``ALWAYS (1)``
+        Constructed tiles are always scheduled for deconstruction, regardless of
+        selection contents.
+    * ``NEVER (2)``
+        Constructed tiles are never scheduled for deconstruction, regardless of 
+        selection contents.
+    * ``ONLY (3)`` 
+        Only tiles are selected for deconstruction; entities are completely 
+        ignored when using this mode.
     """
 
     NORMAL = 0
@@ -476,6 +500,17 @@ class Ticks(int, Enum):
         Converts a :py:class:`.timedelta` into the closest number of Factorio
         ticks that measures that duration.
 
+        :example:
+
+        .. doctest:: 
+
+            >>> from datetime import datetime
+            >>> t1 = datetime.strptime("10:15:04", "%H:%M:%S")
+            >>> t2 = datetime.strptime("10:19:27", "%H:%M:%S")
+            >>> td = t2 - t1
+            >>> Ticks.from_timedelta(td)
+            15780
+
         :param timedelta: The difference in time between two points.
         :returns: The equivalent number of ticks representing this difference,
             rounded to the nearest tick.
@@ -492,23 +527,30 @@ class WaitConditionType(str, Enum):
     All valid string identifiers for the type of a train's
     :py:class:`WaitCondition` object.
 
-    * ``TIME_PASSED``: Triggered when a certain number of ticks has passed.
-    * ``INACTIVITY``: Triggered when the state of the train currently at the
-        station is unaltered for a number of ticks.
-    * ``FULL_CARGO``: Triggered when there is no more room for any new cargo in
-        any of the stopped train's wagons.
-    * ``EMPTY_CARGO``: Triggered when there is no more cargo in any of the
+    * ``TIME_PASSED``
+        Triggered when a certain number of ticks has passed.
+    * ``INACTIVITY``
+        Triggered when the state of the train currently at the station is 
+        unaltered for a number of ticks.
+    * ``FULL_CARGO``
+        Triggered when there is no more room for any new cargo in any of the 
         stopped train's wagons.
-    * ``ITEM_COUNT``: Triggered when the count of some loaded item passes some
+    * ``EMPTY_CARGO``
+        Triggered when there is no more cargo in any of the stopped train's 
+        wagons.
+    * ``ITEM_COUNT``
+        Triggered when the count of some loaded item passes some specified 
+        condition.
+    * ``FLUID_COUNT``
+        Triggered when the count of some loaded fluid passes some specified 
+        condition.
+    * ``CIRCUIT_CONDITION``
+        Triggered when a circuit signal passed to the train stop passes some 
         specified condition.
-    * ``FLUID_COUNT``: Triggered when the count of some loaded fluid passes some
-        specified condition.
-    * ``CIRCUIT_CONDITION``: Triggered when a circuit signal passed to the
-        train stop passes some specified condition.
-    * ``PASSENGER_PRESENT``: Triggered if a player is inside any of the stopped
-        train's wagons.
-    * ``PASSENGER_NOT_PRESENT``: Triggered if a player is not inside any of the
-        stopped train's wagons.
+    * ``PASSENGER_PRESENT``
+        Triggered if a player is inside any of the stopped train's wagons.
+    * ``PASSENGER_NOT_PRESENT``
+        Triggered if a player is not inside any of the stopped train's wagons.
     """
 
     TIME_PASSED = "time"
@@ -527,8 +569,10 @@ class WaitConditionCompareType(str, Enum):
     All valid string identitfiers for the type of comparison between multiple
     :py:class:`WaitCondition` objects.
 
-    * ``AND``: Boolean AND this condition with the subsequent one.
-    * ``OR``: Boolean OR this conditions with the subsequent one.
+    * ``AND``
+        Boolean AND this condition with the subsequent one.
+    * ``OR``
+        Boolean OR this conditions with the subsequent one.
     """
 
     AND = "and"
@@ -540,8 +584,10 @@ class WireColor(str, Enum):
     The valid wire colors for circuit connection types in Factorio, either red
     or green.
 
-    * ``RED``: Red wire.
-    * ``GREEN``: Green wire.
+    * ``RED``
+        Red wire.
+    * ``GREEN``
+        Green wire.
     """
 
     RED = "red"
@@ -552,7 +598,28 @@ class WireColor(str, Enum):
 class ValidationMode(Enum):
     """
     The manner in which to validate a given Draftsman object.
-    TODO
+
+    * ``NONE``
+        No validation will be performed at all. If the attribute
+        supports a shorthand format, it will *not* be converted using this mode.
+        Consider this mode a simple "passthrough" mode, where any value given
+        to Draftsman is taken verbatim.
+    * ``MINIMUM``
+        The minimum amount of validation needed in order to coerce shorthand
+        formats into their expected form, as well as validate that the structure
+        of the object conforms to what Factorio expects. Importing an object 
+        that has been validated with this mode is not guaranteed to succeed, as
+        while the object might be structurally correct, the data inside of it
+        might still be malformed.
+    * ``STRICT``
+        The default mode. Includes all of the errors from ``MINIMUM``, 
+        but attempts to point out and remedy issues with the objects values. 
+        Also includes conceptual faults that will not result in the intended 
+        effect, such as setting an assembling machine's recipe to something that
+        it cannot produce.
+    * ``PEDANTIC``
+        The most verbose option. Includes all of the previous errors and 
+        warnings, in addition to more linting-like behavior.
     """
 
     NONE = "none"

@@ -11,7 +11,7 @@ from draftsman.signatures import DraftsmanBaseModel
 from collections.abc import MutableSequence
 from copy import deepcopy
 from pydantic import ValidationError
-from typing import Any, List, Literal, Optional, Union, TYPE_CHECKING
+from typing import Any, Callable, Iterator, List, Literal, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.collection import TileCollection
@@ -278,6 +278,8 @@ class TileList(Exportable, MutableSequence):
 
     def __len__(self) -> int:
         return len(self._root)
+    
+    __iter__: Callable[..., Iterator[Tile]]
 
     def __or__(self, other: "TileList") -> "TileList":
         # TODO: NotImplemented when given arguments that are not TileList

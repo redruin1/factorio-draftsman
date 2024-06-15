@@ -242,7 +242,6 @@ class ArithmeticCombinator(
         :getter: Gets the first operand of the operation, or ``None`` if not set.
         :setter: Sets the first operand of the operation. Removes the key if set
             to ``None``.
-        :type: :py:data:`.SIGNAL_ID_OR_CONSTANT`
 
         :exception TypeError: If set to anything other than a ``SIGNAL_ID``, the
             ``str`` name of a valid signal, an ``int``, or ``None``.
@@ -313,7 +312,6 @@ class ArithmeticCombinator(
 
         :getter: Gets the current operation, or ``None`` if not set.
         :setter: Sets the current operation. Removes the key if set to ``None``.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than one of the values
             specified above.
@@ -366,7 +364,6 @@ class ArithmeticCombinator(
             set.
         :setter: Sets the second operand of the operation. Removes the key if
             set to ``None``.
-        :type: :py:data:`.SIGNAL_ID_OR_CONSTANT`
 
         :exception TypeError: If set to anything other than a ``SIGNAL_ID``, the
             ``str`` name of a valid signal, an ``int``, or ``None``.
@@ -432,7 +429,6 @@ class ArithmeticCombinator(
 
         :getter: Gets the output signal, or ``None`` if not set.
         :setter: Sets the output signal. Removes the key if set to ``None``.
-        :type: :py:data:`.SIGNAL_ID`
 
         :exception TypeError: If set to anything other than a ``SIGNAL_ID`` or
             ``None``.

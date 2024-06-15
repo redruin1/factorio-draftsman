@@ -5,6 +5,7 @@ from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import DirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
+from draftsman.signatures import ItemName
 from draftsman.utils import get_first
 
 from draftsman.data.entities import splitters
@@ -41,7 +42,7 @@ class Splitter(DirectionalMixin, Entity):
             'filter', if set. 'none' means no preference and no filtering.
             """,
         )
-        filter: Optional[str] = Field(  # TODO: ItemID
+        filter: Optional[ItemName] = Field(
             None,
             description="""
             The item that this splitter will filter, output on the 
@@ -104,7 +105,6 @@ class Splitter(DirectionalMixin, Entity):
 
         :getter: Gets the input priority.
         :setter: Sets the input priority.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than a ``str`` or ``None``.
         :exception InvalidSideError: If set to an invalid side as specified
@@ -132,7 +132,6 @@ class Splitter(DirectionalMixin, Entity):
 
         :getter: Gets the output priority.
         :setter: Sets the output priority.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than a ``str`` or ``None``.
         :exception InvalidSideError: If set to an invalid side as specified
@@ -153,14 +152,13 @@ class Splitter(DirectionalMixin, Entity):
     # =========================================================================
 
     @property
-    def filter(self) -> str:  # TODO: ItemID
+    def filter(self) -> Optional[ItemName]:
         """
         Sets the Splitter's filter. If ``filter`` is set but ``output_priority``
         is not, then the output side defaults to ``"left"``.
 
-        :getter: Gets the splitter's item filter.
+        :getter: Gets the splitter's item filter, or ``None`` if not set.
         :setter: Sets the splitter's item filter.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than a ``str`` or ``None``.
         :exception InvalidItemError: If set to an invalid item name.
@@ -168,7 +166,7 @@ class Splitter(DirectionalMixin, Entity):
         return self._root.filter
 
     @filter.setter
-    def filter(self, value: str):  # TODO: ItemID
+    def filter(self, value: ItemName):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self, type(self).Format, self._root, "filter", value

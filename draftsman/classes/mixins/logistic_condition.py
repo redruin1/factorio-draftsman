@@ -44,7 +44,6 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
             if not set.
         :setter: Sets the value of ``connect_to_logistic_network``. Removes the
             key if set to ``None``.
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.

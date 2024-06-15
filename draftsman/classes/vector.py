@@ -34,7 +34,6 @@ class Vector(object):
 
         :getter: Gets the x-coordinate.
         :setter: Sets the x-coordinate.
-        :type: Either ``float`` or ``int``.
         """
         return self._data[0]
 
@@ -50,7 +49,6 @@ class Vector(object):
 
         :getter: Gets the y-coordinate.
         :setter: Sets the y-coordinate.
-        :type: Either ``float`` or ``int``.
         """
         return self._data[1]
 

@@ -52,7 +52,6 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
 
         :getter: Gets the red output signal, or ``None`` if not set.
         :setter: Sets the red output signal. Removes the key if set to ``None``.
-        :type: :py:class:`draftsman.signatures.SIGNAL_ID`
 
         :exception InvalidSignalID: If set to a string that is not a valid
             signal name.
@@ -93,7 +92,6 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
 
         :getter: Gets the yellow output signal, or ``None`` if not set.
         :setter: Sets the yellow output signal. Removes the key if set to ``None``.
-        :type: :py:class:`draftsman.signatures.SIGNAL_ID`
 
         :exception InvalidSignalID: If set to a string that is not a valid
             signal name.
@@ -133,7 +131,6 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
 
         :getter: Gets the green output signal, or ``None`` if not set.
         :setter: Sets the green output signal. Removes the key if set to ``None``.
-        :type: :py:class:`draftsman.signatures.SIGNAL_ID`
 
         :exception InvalidSignalID: If set to a string that is not a valid
             signal name.

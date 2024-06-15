@@ -46,7 +46,6 @@ class CircuitReadResourceMixin:  # (ControlBehaviorMixin)
 
         :getter: Gets the value of ``read_resources``, or ``None`` if not set.
         :setter: Sets the value of ``read_resources``.
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.
@@ -78,7 +77,6 @@ class CircuitReadResourceMixin:  # (ControlBehaviorMixin)
 
         :getter: Gets the value of ``read_mode``, or ``None`` if not set.
         :setter: Sets the value of ``read_mode``.
-        :type: :py:data:`~draftsman.constants.MiningDrillReadMode`
 
         :exception ValueError: If set to anything other than a
             ``MiningDrillReadMode`` value or their ``int`` equivalent.

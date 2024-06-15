@@ -135,7 +135,6 @@ from pydantic import (
 
 
 def _normalize_internal_structure(input_root, entities_in, tiles_in, schedules_in):
-    """ """
     # TODO make this a member of blueprint?
     def _throw_invalid_association(entity):
         raise InvalidAssociationError(
@@ -319,7 +318,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                 coordinates, or to the position of the first blueprint built.
                 """,
             )
-            # snapping_grid_position: Optional[IntPosition] = Field(None, exclude=True) # TODO: remove
             position_relative_to_grid: Optional[IntPosition] = Field(
                 IntPosition(x=0, y=0),
                 alias="position-relative-to-grid",
@@ -329,19 +327,19 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                 """,
             )
 
-            entities: Optional[list[dict]] = Field(  # TODO
+            entities: Optional[list[dict]] = Field(
                 [],
                 description="""
                 The list of all entities contained in the blueprint.
                 """,
             )
-            tiles: Optional[list[dict]] = Field(  # TODO
+            tiles: Optional[list[dict]] = Field(
                 [],
                 description="""
                 The list of all tiles contained in the blueprint.
                 """,
             )
-            schedules: Optional[list[dict]] = Field(  # TODO
+            schedules: Optional[list[dict]] = Field(
                 [],
                 description="""
                 The list of all schedules contained in the blueprint.
@@ -466,7 +464,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         ] = ValidationMode.STRICT,
         if_unknown: str = "error",  # TODO: enum
         **kwargs,
-    ):  # TODO: keyword arguments
+    ):
 
         self._root.blueprint = Blueprint.Format.BlueprintObject(item="blueprint")
 
@@ -570,7 +568,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         # Change all locomotive numbers to use Associations
         for schedule in self.schedules:
             for i, locomotive in enumerate(schedule.locomotives):
-                schedule.locomotives[i] = Association(self.entities[locomotive - 1])
+                if isinstance(locomotive, int):
+                    entity: Entity = self.entities[locomotive - 1]
+                    schedule.locomotives[i] = Association(entity)
 
     # =========================================================================
     # Blueprint properties
@@ -594,7 +594,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
         :getter: Gets the color of the label, or ``None`` if not set.
         :setter: Sets the label color of the ``Blueprint``.
-        :type: ``dict{"r": number, "g": number, "b": number, Optional("a"): number}``
 
         :exception DataFormatError: If the input ``label_color`` does not match
             the above specification.
@@ -647,7 +646,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         :getter: Gets the size of the snapping grid, or ``None`` if not set.
         :setter: Sets the size of the snapping grid. Removes the attribute if
             set to ``None``
-        :type: ``dict{"x": int, "y": int}``
         """
         # return self._root[self._root_item].get("snap-to-grid", None)
         return self._root.blueprint._snap_to_grid
@@ -687,7 +685,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             set.
         :setter: Sets the offset amount of the snapping grid. Removes the
             attribute if set to ``None``.
-        :type: ``dict{"x": int, "y": int}``
         """
         # return self._root[self._root_item].get("snapping_grid_position", None)
         return self._root.blueprint._snapping_grid_position
@@ -723,7 +720,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             or ``None`` if not set.
         :setter: Sets whether or not to use absolute-snapping. Removes the
             attribute if set to ``None``.
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.
@@ -752,9 +748,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         The absolute position of the snapping grid in the world. Only used if
         ``absolute_snapping`` is set to ``True`` or ``None``.
 
-        :getter: Gets the absolute grid-position offset, or ``None`` if not set.
-        :setter: Sets the a
-        :type: ``dict{"x": int, "y": int}``
+        :getter: Gets the absolute grid-position offset.
+        :setter: Sets the absolute grid-position offset. Is given a value of 
+            ``(0, 0)`` if set to ``None``
         """
         return self._root.blueprint._position_relative_to_grid
 
@@ -791,8 +787,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         on ``EntityList``, check out this writeup
         :ref:`here <handbook.blueprints.blueprint_differences>`.
 
-        :getter: TODO
-        :setter: TODO
+        :getter: Gets the EntityList object associated with this blueprint.
+        :setter: Sets the EntityList object associated with this blueprint. If
+            a regular list is passed in, it is converted to an EntityList, and
+            setting to ``None`` clears the list.
         """
         # return self._root[self._root_item]["entities"]
         return self._root._entities
@@ -864,7 +862,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         :getter: Gets the schedules of the Blueprint.
         :setter: Sets the schedules of the Blueprint. Defaults to an empty
             :py:class:`.ScheduleList` if set to ``None``.
-        :type: ``list[Schedule]``
 
         :exception ValueError: If set to anything other than a ``list`` of
             :py:class:`.Schedule` or .
@@ -879,7 +876,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         # wipe the locomotives of each schedule when doing so
         if value is None:
             # self._root[self._root_item]["schedules"] = ScheduleList()
-            self._root._schedules = ScheduleList()  # TODO: clear
+            self._root._schedules.clear()
         elif isinstance(value, ScheduleList):
             # self._root[self._root_item]["schedules"] = value
             self._root._schedules = value
@@ -896,38 +893,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         the grid that rail entities use, like rails and train-stops. If the
         blueprint has any entities that are double-grid-aligned, the Blueprint
         is considered double-grid-aligned. Read only.
-
-        :type: ``bool``
         """
         for entity in self.entities:
             if entity.double_grid_aligned:
                 return True
 
         return False
-
-    # =========================================================================
-
-    # @property
-    # def index(self) -> Optional[uint16]:
-    #     """
-    #     The index of the blueprint in a parent :py:class:`BlueprintBook`. Index
-    #     is automatically generated if omitted, but can be manually set with this
-    #     attribute. ``index`` has no meaning when the Blueprint is not located in
-    #     a BlueprintBook.
-
-    #     :getter: Gets the index of the blueprint, or ``None`` if not set.
-    #     :setter: Sets the index of the blueprint, or removes it if set to ``None``.
-    #     :type: ``int``
-    #     """
-    #     return self._root.index
-
-    # @index.setter
-    # def index(self, value: Optional[uint16]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(self, self.Format, self._root, "index", value)
-    #         self._root.index = result
-    #     else:
-    #         self._root.index = value
 
     # =========================================================================
     # Utility functions
@@ -939,6 +910,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         within this blueprint. If the blueprint is empty of entities or tiles,
         or if all of the entities contained within it have no known dimension,
         then this function returns ``None``.
+
+        :returns: The smallest :py:class:`.AABB` which encompasses all entities
+            and tiles currently contained.
         """
         area = None
         for entity in self.entities:
@@ -954,6 +928,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         Calculates the maximum extents of the blueprint along the x and y axis
         in tiles. Returns ``(0, 0)`` if the blueprint's world bounding box is
         ``None``.
+
+        :returns: A 2-length tuple with the maximum tile width as the first 
+            entry and the maximum tile height as the second entry.
         """
         return aabb_to_dimensions(self.get_world_bounding_box())
 
@@ -978,7 +955,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             # print(self._root)
             result = self.Format.model_validate(
                 self._root,
-                strict=False,  # TODO: ideally this should be strict
+                strict=False,  # Ideally this should be strict
                 context=context,
             )
             # print(result)

@@ -74,8 +74,6 @@ class EntityCollection(metaclass=ABCMeta):
         Whether or not this collection can be rotated or not. Included for
         posterity; always returns True, even when containing entities that have
         no direction component. Read only.
-
-        :type: ``bool``
         """
         return True
 
@@ -85,8 +83,6 @@ class EntityCollection(metaclass=ABCMeta):
         Whether or not this collection can be flipped or not. This is determined
         by whether or not any of the entities contained can be flipped or not.
         Read only.
-
-        :type: ``bool``
         """
         for entity in self.entities:
             if not entity.flippable:
@@ -267,7 +263,7 @@ class EntityCollection(metaclass=ABCMeta):
         :param radius: The radius of the circle centered around ``position`` to
             search. Must be defined alongside ``position`` in order to search in
             a circular area.
-        :param aabb: The :py:class:`AABB` or (``PrimitiveAABB``) to search in.
+        :param aabb: The :py:class:`.AABB` or ``PrimitiveAABB`` to search in.
         :param name: Either a ``str``, or a ``set[str]`` where each entry is a
             name of an entity to be returned.
         :param type: Either a ``str``, or a ``set[str]`` where each entry is a
@@ -281,7 +277,7 @@ class EntityCollection(metaclass=ABCMeta):
         :param limit: The total number of matching entities to return. Unlimited
             by default.
 
-        :returns: A list of entity references inside the searched collection
+        :returns: A list of Entity references inside the searched collection
             that satisfy the search criteria.
         """
 
@@ -719,8 +715,6 @@ class EntityCollection(metaclass=ABCMeta):
         :exception EntityNotCircuitConnectableError: If either `entity_1` or
             `entity_2` do not have the capability to be circuit wire connected.
         """
-        # TODO: swap these all with pydantic models
-
         if not isinstance(entity_1, EntityLike):
             entity_1 = self.entities[entity_1]
         if not isinstance(entity_2, EntityLike):
@@ -1084,10 +1078,19 @@ class EntityCollection(metaclass=ABCMeta):
         self,
         train_cars: Union[Locomotive, list[RollingStock]],
         schedule: Optional[Schedule],
-    ):
+    ) -> None:
         """
-        Sets the schedule of a given entity
-        TODO
+        Sets the schedule of a particular locomotive, or an entire list of 
+        RollingStock. The list of rolling stock can include non-locomotive cars,
+        they will just be skipped when setting schedules. The list of rolling
+        stock can also include locomotives across multiple trains; in this case
+        all connected train cars from every touched train will be given the new
+        schedule. If ``schedule`` is set to ``None``, then any touched 
+        locomotive will have their schedule cleared instead of set.
+
+        :param train_cars: The single Locomotive, or a list of RollingStock.
+        :param schedule: The :py:class:`.Schedule` to give each connected train,
+            or ``None`` to remove the schedule from each connected train.
         """
         # Normalize train cars to a list
         if not isinstance(train_cars, Sequence):
@@ -1137,11 +1140,11 @@ class EntityCollection(metaclass=ABCMeta):
         removing any locomotive associations in any corresponding
         :py:class:`Schedule` object(s). Does nothing if ``cars`` is empty.
 
-        :raises KeyError: If the specified entities within the list do not exist
-            within the collection being accessed.
-
         :param cars: A ``list`` of references to :py:class:`EntityLike`s within
             the collection.
+
+        :raises KeyError: If the specified entities within the list do not exist
+            within the collection being accessed.
         """
         associations_to_remove = set()
         for car in cars:
@@ -1562,25 +1565,29 @@ class TileCollection(metaclass=ABCMeta):
     # Queries
     # =========================================================================
 
-    def find_tile(self, position: Union[Vector, PrimitiveVector]) -> Tile:
+    def find_tile(self, position: Union[Vector, PrimitiveVector]) -> list[Tile]:
         """
-        Returns the tile at the tile coordinate ``position``. If there are
-        multiple tiles at that location, the entity that was inserted first is
+        Returns a list containing all the tiles at the tile coordinate 
+        ``position``. If there are no tiles at that position, an empty list is 
         returned.
 
-        :param position: The position to search, either a PrimitiveVector or a
-            :py:class:`.Vector`.
+        :param position: The position to search, either a ``PrimitiveVector`` or 
+            a :py:class:`.Vector`.
 
-        :returns: The tile at ``position``, or ``None`` if there is none.
+        :returns: A list of all tiles at ``position``.
         """
-        tiles = self.tiles.spatial_map.get_on_point(Vector(0.5, 0.5) + position)
-        try:
-            return tiles[0]
-        except IndexError:
-            return None
+        return self.tiles.spatial_map.get_on_point(Vector(0.5, 0.5) + position)
+        
 
-    def find_tiles_filtered(self, **kwargs) -> list[Tile]:
-        # TODO: keyword arguments
+    def find_tiles_filtered(
+        self, 
+        position: Union[Vector, PrimitiveVector, None] = None,
+        radius: Optional[float] = None,
+        area: Union[AABB, PrimitiveAABB, None] = None,
+        name: Optional[str] = None,
+        invert: bool = False,
+        limit: Optional[int] = None,
+    ) -> list[Tile]:
         """
         Returns a filtered list of tiles within the blueprint. Works
         similarly to
@@ -1618,38 +1625,55 @@ class TileCollection(metaclass=ABCMeta):
               - ``int``
               - | Limit the maximum size of the returned list to this amount.
                 | Unlimited by default.
+            * - ``invert``
+              - ``bool``
+              - | Whether or not to return the inverse of the search. ``False``
+                | by default.
 
-        ``position`` and ``radius`` take precidence over ``aabb`` if all are
-        specified. If no region keywords are specified, the entire Collection is
-        searched.
+        :param position: The global position to search the source Collection.
+            Can be used in conjunction with ``radius`` to search a circle
+            instead of a single point. Takes precedence over ``area``.
+        :param radius: The radius of the circle centered around ``position`` to
+            search. Must be defined alongside ``position`` in order to search in
+            a circular area.
+        :param aabb: The :py:class:`.AABB` or ``PrimitiveAABB`` to search in.
+        :param name: Either a ``str``, or a ``set[str]`` where each entry is a
+            name of an entity to be returned.
+        :param invert: Whether or not to return the inversion of the search
+            criteria.
+        :param limit: The total number of matching entities to return. Unlimited
+            by default.
+
+        :returns: A list of Tile references inside the searched collection that 
+            match the specified criteria.
         """
 
-        if "position" in kwargs and "radius" in kwargs:
+        if position is not None and radius is not None:
             # Intersect entities with circle
             search_region = self.tiles.spatial_map.get_in_radius(
-                kwargs["radius"], kwargs["position"]
+                radius, position
             )
-        elif "area" in kwargs:
+        elif area is not None:
             # Intersect entities with area
-            area = AABB.from_other(kwargs["area"])
+            area = AABB.from_other(area)
             search_region = self.tiles.spatial_map.get_in_aabb(area)
         else:
             search_region = self.tiles
 
-        if isinstance(kwargs.get("name", None), str):
-            names = {kwargs.pop("name", None)}
+        if isinstance(name, str):
+            names = {name}
         else:
-            names = kwargs.pop("name", None)
+            names = name
 
         # Keep track of how many
-        limit = kwargs.pop("limit", len(search_region))
+        limit = len(search_region) if limit is None else limit
 
         def test(tile):
             if names is not None and tile.name not in names:
                 return False
             return True
 
-        if kwargs.get("invert", False):
+        if invert:
             return list(filter(lambda tile: not test(tile), search_region))[:limit]
         else:
             return list(filter(lambda tile: test(tile), search_region))[:limit]

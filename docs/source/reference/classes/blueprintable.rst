@@ -12,3 +12,4 @@ More specifically, a "Blueprintable" object is a JSON dict that can be parsed as
 .. autoclass:: Blueprintable
     :members:
     :inherited-members:
+    :show-inheritance:

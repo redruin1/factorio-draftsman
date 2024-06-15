@@ -144,7 +144,6 @@ class RailSignal(
         :getter: Gets whether or not to read the signal, or ``None`` if not set.
         :setter: Sets whether or not to read the signal. Removes the key if set
             to ``None``.
-        :type: ``bool``
 
         :exception DataFormatError: If set to anything other than a ``bool`` or
             ``None``.

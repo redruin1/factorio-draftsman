@@ -111,7 +111,6 @@ class RailChainSignal(
 
         :getter: Gets the blue output signal, or ``None`` if not set.
         :setter: Sets the blue output signal. Removes the key if set to ``None``.
-        :type: :py:class:`draftsman.signatures.SIGNAL_ID`
 
         :exception InvalidSignalID: If set to a string that is not a valid
             signal name.

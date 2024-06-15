@@ -62,7 +62,7 @@
 * Patched InvalidModVersionError for now (#51)
 * Removed `on_(tile/entity)_(insert/set/remove)` from all `EntityCollection` and `TileCollection` classes
 * Removed `on_(insert/set/remove)` from all `Entity` implementations as well (they were not used and are replaced with better things now)
-* Renamed `data` member to `_root` member on `EntityList` and `TileList`
+* Renamed `data` member to `_root` member on `EntityList` and `TileList` (Internal reasons)
 * Fixed issue #119
 
 ## 1.1.1

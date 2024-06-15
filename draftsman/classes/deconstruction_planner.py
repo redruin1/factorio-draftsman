@@ -332,15 +332,7 @@ class DeconstructionPlanner(Blueprintable):
     @property
     def entity_filter_count(self) -> uint8:
         """
-        The method of filtering entities for deconstruction. Can be either ``0``
-        (whitelist) or ``1`` (blacklist).
-
-        :getter: Gets the entity filter mode, or ``None`` if not set.
-        :setter: Sets the entity filter mode. Deletes the key if set to ``None``.
-        :type: :py:data:`.FilterMode`
-
-        :raises ValueError: If not set to an valid :py:data:`.FilterMode` or
-            ``None``.
+        TODO
         """
         return items.raw[self.item].get("entity_filter_count", 0)
 
@@ -402,8 +394,7 @@ class DeconstructionPlanner(Blueprintable):
         (whitelist) or ``1`` (blacklist).
 
         :getter: Gets the entity filter mode, or ``None`` if not set.
-        :setter: Sets the entity filter mode. Deletes the key if set to ``None``.
-        :type: :py:data:`.FilterMode`
+        :setter: Sets the entity filter mode. Deletes the key if set to ``None``
 
         :raises ValueError: If not set to an valid :py:data:`.FilterMode` or
             ``None``.
@@ -459,7 +450,6 @@ class DeconstructionPlanner(Blueprintable):
 
         :getter: Gets the flag, or returns ``None`` if not set.
         :setter: Sets the flag, or deletes the key if set to ``None``.
-        :type: ``bool``
 
         :raises TypeError: If set to anything other than a ``bool`` or ``None``.
         """
@@ -489,7 +479,6 @@ class DeconstructionPlanner(Blueprintable):
 
         :getter: Gets the tile filter mode, or ``None`` if not set.
         :setter: Sets the tile filter mode. Deletes the key if set to ``None``.
-        :type: :py:data:`.FilterMode`
 
         :raises ValueError: If not set to an valid :py:data:`.FilterMode` or
             ``None``.
@@ -550,7 +539,6 @@ class DeconstructionPlanner(Blueprintable):
 
         :getter: Gets the entity filter mode, or ``None`` if not set.
         :setter: Sets the entity filter mode. Deletes the key if set to ``None``.
-        :type: :py:data:`.TileSelectionMode`
 
         :raises ValueError: If not set to a valid :py:data:`.TileSelectionMode`
             or ``None``.

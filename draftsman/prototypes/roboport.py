@@ -77,7 +77,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         connections: Connections = {},
-        control_behavior: Format.ControlBehavior() = {},
+        control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -119,7 +119,6 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             set.
         :setter: Sets whether or not the logistics are read. Removes the key if
             set to ``None``.
-        :type: bool
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
@@ -151,7 +150,6 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             not set.
         :setter: Sets whether or not the robot counts are read. Removes the key
             if set to ``None``.
-        :type: bool
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
@@ -183,7 +181,6 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             set.
         :setter: Sets the available logistic robot signal. Removes the key if
             set to ``None``.
-        :type: :py:data:`.SIGNAL_ID`
 
         :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
             or ``None``.
@@ -215,7 +212,6 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         :getter: Gets the total logistic robot signal, or ``None`` if not set.
         :setter: Sets the total logistic robot signal. Removes the key if set to
             ``None``.
-        :type: :py:data:`.SIGNAL_ID`
 
         :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
             or ``None``.
@@ -248,7 +244,6 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             not set.
         :setter: Sets the available construction robot signal. Removes the key
             if set to ``None``.
-        :type: :py:data:`.SIGNAL_ID`
 
         :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
             or ``None``.
@@ -281,7 +276,6 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             set.
         :setter: Sets the total construction robot signal. Removes the key if
             set to ``None``.
-        :type: :py:data:`.SIGNAL_ID`
 
         :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
             or ``None``.

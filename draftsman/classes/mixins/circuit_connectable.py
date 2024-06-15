@@ -51,8 +51,6 @@ class CircuitConnectableMixin:
         The maximum distance that this entity can reach for circuit connections.
         Returns ``None`` if the entity's name is not recognized by Draftsman.
         Not exported; read only.
-
-        :type: ``float``
         """
         return entities.raw.get(self.name, {"circuit_wire_max_distance": None}).get(
             "circuit_wire_max_distance", 0
@@ -65,8 +63,6 @@ class CircuitConnectableMixin:
         """
         Connections dictionary. Primarily holds information about the Entity's
         circuit connections (as well as copper wire connections).
-
-        :type: See :py:data:`draftsman.signatures.CONNECTIONS`
 
         :exception DataFormatError: If set to anything that does not match the
             format of :py:data:`draftsman.signatures.CONNECTIONS`.

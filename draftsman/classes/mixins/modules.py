@@ -102,8 +102,6 @@ class ModulesMixin:  # (RequestItemsMixin)
         """
         The total number of module slots in the Entity. Returns ``None`` if this
         entity's name is not recognized by Draftsman. Not exported; read only.
-
-        :type: ``int``
         """
         # If not recognized, return None
         # If recognized, but no module specification, then return 0
@@ -118,8 +116,6 @@ class ModulesMixin:  # (RequestItemsMixin)
         """
         The total number of module slots that are currently taken by inserted
         modules. Not exported; read only.
-
-        :type: ``int``
         """
         return sum([v for k, v in self.items.items() if k in modules.raw])
 

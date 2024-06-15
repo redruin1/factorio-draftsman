@@ -58,6 +58,20 @@ from typing import Any, Literal, Optional, Sequence
 
 
 def get_suggestion(name, choices, n=3, cutoff=60):
+    """
+    Looks for similarly-named strings from ``choices`` and suggests ``n`` 
+    results, provided they lie above ``cutoff``.
+
+    :param name: The unrecognized name to look for alternatives to.
+    :param choices: An iterable containing valid choices to search.
+    :param n: The maximum number of suggestions to return, provided there are
+        more than ``n`` options.
+    :param cutoff: The minimum "similarity score", where suggestions with lower
+        scores than this are ignored.
+
+    :returns: A string intended to be appended to an error or warning message,
+        containing the suggested alternative(s).
+    """
     suggestions = [
         suggestion[0]
         for suggestion in process.extract(name, choices, limit=n)
@@ -133,7 +147,11 @@ TileName = Annotated[
 
 class DraftsmanBaseModel(BaseModel):
     """
-    TODO
+    A custom wrapper around Pydantic's ``BaseModel``.
+
+    Includes things like arbitrary construction, warning of unused attributes,
+    and adds getters and setters so that it blends in more seamlessly with 
+    unvalidated dicts.
     """
 
     @classmethod
@@ -248,20 +266,10 @@ class DraftsmanBaseModel(BaseModel):
 
         return json_schema
 
-    # def __repr__(self): # TODO
-    #     return "{}{{{}}}".format(__class__.__name__, super().__repr__())
-
     # Factorio seems to be permissive when it comes to extra keys, so we allow
     # them and issue warnings if desired
     model_config = ConfigDict(
         extra="allow",
-        revalidate_instances="always",
-        populate_by_name=True,  # Allow to pass either internal or alias to constructor
-    )
-
-
-class DraftsmanRootModel(RootModel):
-    model_config = ConfigDict(
         revalidate_instances="always",
         populate_by_name=True,  # Allow to pass either internal or alias to constructor
     )

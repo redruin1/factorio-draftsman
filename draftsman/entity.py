@@ -80,9 +80,9 @@ def new_entity(
     name: str, if_unknown: Literal["error", "ignore", "accept"] = "error", **kwargs
 ):
     """
-    Factory function for creating a new :py:cls:`Entity`. The class used will be
+    Factory function for creating a new :py:class:`.Entity`. The class used will be
     based on the entity's name, so ``new_entity("wooden-chest")`` will return a
-    :py:mod:`Container` instance. Useful if you know the name of the Entity you
+    :py:mod:`.Container` instance. Useful if you know the name of the Entity you
     want to make, but don't know what type it is.
 
     Any additional keyword arguments are passed to the entity's constructor,
@@ -93,14 +93,15 @@ def new_entity(
     in is not recognized by that Entity's class constructor.
 
     :param name: The string name of an Entity.
-    :param unknown: TODO
+    :param if_unknown: How to behave if the name of the entity is unrecognized 
+        by Draftsman. See TODO for more information.
     :param kwargs: A dict of all the keyword arguments to pass to the
         constructor.
 
-    :returns: A new :py:cls:`Entity` subclass, or ``None`` if none could be
-        found and ``unknown`` was ``"ignore"``
+    :returns: A new :py:class:`.Entity` subclass, or ``None`` if none could be
+        found and ``if_unknown`` was ``"ignore"``
 
-    :exception InvalidEntityID: If the name passed in is not recognized as any
+    :exception InvalidEntityError: If the name passed in is not recognized as any
         valid entity name.
     :exception ValueError: If ``unknown`` is set to a string that is not
         ``"error"``, ``"ignore"``, nor ``"pass"``.
@@ -114,7 +115,7 @@ def new_entity(
     if name in underground_belts:
         return UndergroundBelt(name, **kwargs)
     if name in splitters:
-        return Splitter(name, **kwargs)  # etc.
+        return Splitter(name, **kwargs)
     if name in inserters:
         return Inserter(name, **kwargs)
     if name in filter_inserters:

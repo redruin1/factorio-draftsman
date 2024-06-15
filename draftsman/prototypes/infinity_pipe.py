@@ -134,7 +134,6 @@ class InfinityPipe(Entity):
         :getter: Gets the ``infinity_settings`` of the ``InfinityPipe``.
         :setter: Sets the ``infinity_settings`` of the ``InfinityPipe``.
             Defaults to an empty ``dict`` if set to ``None``.
-        :type: :py:data:`.INFINITY_PIPE`
 
         :exception DataFormatError: If set to anything that does not match the
             :py:data:`.INFINITY_PIPE` format.
@@ -160,7 +159,6 @@ class InfinityPipe(Entity):
 
         :getter: Gets the infinite fluid name, or ``None`` if not set.
         :setter: Sets the infinite fluid name. Removes the key if set to ``None``.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than a ``str`` or ``None``.
         :exception InvalidFluidError: If set to an invalid fluid name.
@@ -190,7 +188,6 @@ class InfinityPipe(Entity):
 
         :getter: Gets the percentage full, or ``None`` if not set.
         :setter: Sets the percentage full. Removes the key if set to ``None``.
-        :type: float
 
         :exception TypeError: If set to anything other than an number or ``None``.
         :exception ValueError: If set to a negative percentage, which is forbidden.
@@ -230,7 +227,6 @@ class InfinityPipe(Entity):
 
         :getter: Gets the fluid mode, or ``None`` if not set.
         :setter: Sets the fluid mode. Removes the key if set to ``None``.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than a ``str`` or ``None``.
         :exception InvalidModeError: If set to anything other than one of the
@@ -266,7 +262,6 @@ class InfinityPipe(Entity):
 
         :getter: Gets the fluid temperature, or ``None`` if not set.
         :setter: Sets the fluid temperature. Removes the key if set to ``None``.
-        :type: ``int``
 
         :exception TypeError: If set to anything other than a number or ``None``.
         """

@@ -15,13 +15,27 @@ def new_tile(
     name: str, if_unknown: Literal["error", "ignore", "accept"] = "error", **kwargs
 ):
     """
-    Factory function for creating a new :py:cls:`Tile`.
+    Factory function for creating a new :py:class:`.Tile`.
 
     Currently, it's not required to construct a generic tile using this function,
     since there is only one kind of ``Tile`` class. However, this function has
     the same behavior as :py:func:`new_entity`, in that you can specify the
     keyword ``if_unknown`` to raise an error if the tile is not a recognized
     entity.
+
+    :param name: The string name of a Tile.
+    :param if_unknown: How to behave if the name of the entity is unrecognized 
+        by Draftsman. See TODO for more information.
+    :param kwargs: A dict of all the keyword arguments to pass to the
+        constructor.
+
+    :returns: A new :py:class:`.Tile` instance, or ``None`` if none could be
+        found and ``if_unknown`` was ``"ignore"``.
+
+    :exception InvalidTileError: If the name passed in is not recognized as any
+        valid tile name, and ``if_unknown`` was ``"error"``.
+    :exception ValueError: If ``unknown`` is set to a string that is not
+        ``"error"``, ``"ignore"``, nor ``"pass"``.
     """
     if name in tiles.raw or if_unknown == "accept":
         # Construct tile as normal

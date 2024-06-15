@@ -158,7 +158,6 @@ class FilterInserter(
 
         :getter: Gets the filter mode.
         :setter: Sets the filter mode.
-        :type: ``str``
 
         :exception ValueError: If set to a ``str`` that is neither ``"whitelist"``
             nor ``"blacklist"``.

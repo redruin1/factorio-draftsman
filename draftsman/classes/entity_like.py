@@ -47,8 +47,6 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
         The parent :py:class:`.EntityCollection` object that contains the entity,
         or ``None`` if the entity does not currently exist within an
         :py:class:`.EntityCollection`. Not exported; read only.
-
-        :type: ``EntityCollection``
         """
         return self._parent
 
@@ -59,8 +57,6 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
         """
         Whether or not this EntityLike can be connected using power wires. Not
         exported; read only.
-
-        :type: ``bool``
         """
         return False
 
@@ -71,8 +67,6 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
         """
         Whether or not this EntityLike has two power connection points. Not
         exported; read only.
-
-        :type: ``bool``
         """
         return False
 
@@ -83,8 +77,6 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
         """
         Whether or not this EntityLike can be connected using circuit wires. Not
         exported; read only.
-
-        :type: ``bool``
         """
         return False
 
@@ -95,8 +87,6 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
         """
         Whether or not this EntityLike has two circuit connection points. Not
         exported; read only.
-
-        :type: ``bool``
         """
         return False
 
@@ -107,8 +97,6 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
         """
         Whether or not this EntityLike is "double-grid-aligned", which applies
         to a number of rail entities. Not exported; read only.
-
-        :type: ``bool``
         """
         return False
 
@@ -122,8 +110,6 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
         this EntityLike does not have a concept of different rotation angles.
         For example, any :py:class:`.Reactor` entity will always return
         ``rotatable`` as ``False`` when queried. Not exported; read only.
-
-        :type: ``bool``
         """
         return False
 
@@ -199,9 +185,13 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
 
     def get(self) -> Union["Entity", list["Entity"]]:
         """
-        Gets this :py:class:`.Entity`. Redundant for regular
-        :py:class:`.Entity`s, but is needed for :py:class:`.EntityCollections`
+        Gets this :py:class:`.Entity`. Redundant for regular instances of 
+        :py:class:`.Entity`, but is needed for :py:class:`.EntityCollections`
         like :py:class:`.Group`.
+
+        This function represents the resolution from some abstract EntityLike
+        object (which can have no relation to Factorio whatsoever) to one or 
+        more valid Factorio-importable Entity instances.
 
         :returns: This :py:class:`.EntityLike` minimum :py:class:`.Entity`
             representation.

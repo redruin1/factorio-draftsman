@@ -1,11 +1,6 @@
 Reference
 =========
 
-.. NOTE:: 
-
-    On Python 2.7, all string parameters are treated as **unicode strings** for consistency with Python 3 and with the encoding of Factorio blueprint strings.
-    However, setters should take byte strings as input and convert them to unicode automatically, so you *shouldn't* have to worry about it in most cases.
-
 .. toctree::
     :maxdepth: 2
 
@@ -14,6 +9,7 @@ Reference
     entity.rst
     env.rst
     error.rst
+    extras.rst
     signatures.rst
     tile.rst
     utils.rst

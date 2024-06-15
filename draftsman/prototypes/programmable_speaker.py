@@ -390,8 +390,6 @@ class ProgrammableSpeaker(
         has. Each key is the name of the instrument, and each value a ``set`` of
         string names of each note corresponding to that instrument. Not exported;
         read only.
-
-        :type: ``dict[str, set]``.
         """
         return self._instruments
 
@@ -404,7 +402,6 @@ class ProgrammableSpeaker(
 
         :getter: Gets the parameters of the speaker.
         :setter: Sets the parameters of the speaker.
-        :type: :py:class:`.PARAMETERS`
 
         :exception DataFormatError: If set to anything that does not match the
             :py:class:`.PARAMETERS` format.
@@ -431,7 +428,6 @@ class ProgrammableSpeaker(
 
         :getter: Gets the alert parameters of the speaker.
         :setter: Sets the alert parameters of the speaker.
-        :type: :py:class:`.ALERT_PARAMETERS`
 
         :exception DataFormatError: If set to anything that does not match the
             :py:class:`.ALERT_PARAMETERS` format.
@@ -461,7 +457,6 @@ class ProgrammableSpeaker(
         :getter: Gets the volume of the speaker, or ``None`` if not set.
         :setter: Sets the volume of the speaker. Removes the key if set to
             ``None``.
-        :type: ``float``
 
         :exception TypeError: If set to anything other than a ``float`` or
             ``None``.
@@ -490,8 +485,6 @@ class ProgrammableSpeaker(
         Whether or not to play this sound at a constant volume regardless of
         distance.
 
-        :type: ``bool``
-
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
         return self.parameters.playback_globally
@@ -516,8 +509,6 @@ class ProgrammableSpeaker(
     def show_alert(self) -> Optional[bool]:
         """
         Whether or not to show an alert to the player(s) if a sound is played.
-
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
@@ -544,8 +535,6 @@ class ProgrammableSpeaker(
         """
         Whether or not to allow the speaker to play multiple notes at once.
 
-        :type: ``bool``
-
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
         return self.parameters.allow_polyphony
@@ -570,8 +559,6 @@ class ProgrammableSpeaker(
     def show_alert_on_map(self) -> Optional[bool]:
         """
         Whether or not to show the alert on the map where the speaker lives.
-
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
@@ -598,8 +585,6 @@ class ProgrammableSpeaker(
         """
         What icon to show to the player(s) and on the map if the speaker makes a
         sound (and alerts are enabled).
-
-        :type: :py:class:`.SIGNAL_ID`
 
         :exception InvalidSignalError: If set to a ``str`` that is not a valid
             signal ID.
@@ -630,8 +615,6 @@ class ProgrammableSpeaker(
         What message to show to the player(s) if the speaker makes a sound (and
         alerts are enabled).
 
-        :type: :py:class:`.SIGNAL_ID`
-
         :exception InvalidSignalError: If set to a ``str`` that is not a valid
             signal ID.
         :exception DataFormatError: If set to a ``dict`` that does not match
@@ -660,8 +643,6 @@ class ProgrammableSpeaker(
         """
         Whether or not the value of a signal determines the pitch of the note to
         play.
-
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """

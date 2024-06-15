@@ -75,8 +75,6 @@ class SimpleEntityWithForce(DirectionalMixin, Entity):
     def variation(self) -> Optional[uint16]:
         """
         The number representing the graphical variation of the entity.
-
-        :type: ``uint16``
         """
         return self._root.variation
 

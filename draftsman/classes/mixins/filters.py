@@ -52,8 +52,6 @@ class FiltersMixin:
         the ``"filter_count"`` key in Factorio's ``data.raw``. Returns ``None``
         if this entity's name is not recognized by Draftsman. Not exported; read
         only.
-
-        :type: ``int``
         """
         return entities.raw.get(self.name, {"filter_count": None}).get(
             "filter_count", 0

@@ -153,7 +153,6 @@ class ElectricEnergyInterface(Entity):
 
         :getter: Gets the value of the buffer.
         :setter: Sets the value of the buffer.
-        :type: ``int``
 
         :exception TypeError: If set to anything other than an ``int`` or
             ``None``.
@@ -179,7 +178,6 @@ class ElectricEnergyInterface(Entity):
 
         :getter: Gets how much to make.
         :setter: Sets how much to make.
-        :type: ``int``
 
         :exception TypeError: If set to anything other than an ``int`` or
             ``None``.
@@ -205,7 +203,6 @@ class ElectricEnergyInterface(Entity):
 
         :getter: Gets how much to use.
         :setter: Sets how much to use.
-        :type: ``int``
 
         :exception TypeError: If set to anything other than an ``int`` or
             ``None``.

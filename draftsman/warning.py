@@ -113,7 +113,8 @@ class ItemCapacityWarning(DraftsmanWarning):
 
 class FuelLimitationWarning(DraftsmanWarning):
     """
-    TODO
+    Raised when a fuel item is requested to an entity that cannot burn it, such
+    as requesting uranium fuel cells to a boiler.
     """
 
     pass
@@ -121,7 +122,8 @@ class FuelLimitationWarning(DraftsmanWarning):
 
 class FuelCapacityWarning(DraftsmanWarning):
     """
-    TODO
+    Raised if the amount of fuel requested to this entity exceeds it's internal
+    fuel storage buffer.
     """
 
     pass
@@ -156,7 +158,8 @@ class ModuleCapacityWarning(DraftsmanWarning):
 
 class RecipeLimitationWarning(DraftsmanWarning):
     """
-    TODO
+    Raised when a recipe is set in a machine that does not support it, such as
+    setting an assembling machine to produce plastic.
     """
 
     pass
@@ -239,7 +242,8 @@ class UnknownElementWarning(DraftsmanWarning):
 
 class UnknownEntityWarning(UnknownElementWarning):
     """
-    TODO
+    Raised when an entity is specified who is not recognized by Draftsman, but
+    has been explicitly permitted with the `if_unknown="accept"` kwarg.
     """
 
     pass
@@ -247,7 +251,7 @@ class UnknownEntityWarning(UnknownElementWarning):
 
 class UnknownFluidWarning(UnknownElementWarning):
     """
-    TODO
+    Raised if an unrecognized fluid is specified in an ``InfinityPipe``.
     """
 
     pass
@@ -255,7 +259,7 @@ class UnknownFluidWarning(UnknownElementWarning):
 
 class UnknownItemWarning(UnknownElementWarning):
     """
-    TODO
+    Raised if an unrecognized item is specified.
     """
 
     pass
@@ -263,7 +267,7 @@ class UnknownItemWarning(UnknownElementWarning):
 
 class UnknownInstrumentWarning(UnknownElementWarning):
     """
-    TODO
+    Raised if an unrecognized instrument is selected in a programmable speaker.
     """
 
     pass
@@ -271,7 +275,8 @@ class UnknownInstrumentWarning(UnknownElementWarning):
 
 class UnknownNoteWarning(UnknownElementWarning):
     """
-    TODO
+    Raised if an unrecognized note for the current instrument is selected in a
+    programmable speaker.
     """
 
     pass
@@ -279,7 +284,8 @@ class UnknownNoteWarning(UnknownElementWarning):
 
 class UnknownRecipeWarning(UnknownElementWarning):
     """
-    TODO
+    Raised if an assembling machine/chemical plant/oil refinery/etc. is given a 
+    recipe that Draftsman does not recognize. 
     """
 
     pass
@@ -287,7 +293,7 @@ class UnknownRecipeWarning(UnknownElementWarning):
 
 class UnknownSignalWarning(UnknownElementWarning):
     """
-    TODO
+    Raised if an unrecognized signal is specified.
     """
 
     pass
@@ -295,7 +301,9 @@ class UnknownSignalWarning(UnknownElementWarning):
 
 class MalformedSignalWarning(DraftsmanWarning):
     """
-    TODO
+    Raised when a signal is erroneously given the incorrect type, such as 
+    setting the virtual signal `signal-A` to have a type of `"item"` when it 
+    should be `"virtual"` instead.
     """
 
     pass
@@ -303,7 +311,7 @@ class MalformedSignalWarning(DraftsmanWarning):
 
 class UnknownTileWarning(UnknownElementWarning):
     """
-    TODO
+    Raised when an unrecognized tile is specified.
     """
 
     pass
@@ -354,18 +362,6 @@ class RedundantOperationWarning(DraftsmanWarning):
     noticable change, making it's execution needless. For example, setting a
     mapping in an upgrade planner to upgrade "transport-belt" to
     "transport-belt" is possible, but performs no upgrade operation when used.
-    """
-
-    pass
-
-
-class UnrecognizedElementWarning(DraftsmanWarning):
-    """
-    Raised when Draftsman detects a entity/item/signal/tile or any other
-    Factorio construct that it cannot resolve under it's current data
-    configuration. This is usually either because the identifier was mistyped,
-    or because the element in question belongs to a mod that Draftsman has not
-    been updated to recognize.
     """
 
     pass

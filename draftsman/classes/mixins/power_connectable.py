@@ -46,8 +46,6 @@ class PowerConnectableMixin(object):
         The maximum distance that this entity can reach for power connections.
         Returns ``None`` if this entity's name is not recognized by Draftsman.
         Not exported; read only.
-
-        :type: ``float``
         """
         return entities.raw.get(self.name, {"maximum_wire_distance": None})[
             "maximum_wire_distance"
@@ -64,9 +62,7 @@ class PowerConnectableMixin(object):
         one representing the index of the entity in the parent blueprint that
         this Entity connects to, in 1-indexed notation. For example, if
         ``entity.neighbours == [1, 2]``, then ``entity`` would have power wires
-        to ``blueprint.entities[0]`` and ``blueprint.entities[1]``. If you're
-        importing from an already existing blueprint string, then this is the
-        format you should expect.
+        to ``blueprint.entities[0]`` and ``blueprint.entities[1]``.
 
         Draftsman implements a more sophisticated neighbours format, where
         entities themselves (or rather, references to them) are used as the
@@ -94,7 +90,6 @@ class PowerConnectableMixin(object):
         :getter: Gets the neighbours of the Entity.
         :setter: Sets the neighbours of the Entity. Defaults to an empty list if
             set to ``None``.
-        :type: See :py:data:`draftsman.signatures.NEIGHBOURS`
 
         :exception DataFormatError: If set to anything that does not match the
             specification above.

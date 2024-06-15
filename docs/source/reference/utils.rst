@@ -64,9 +64,13 @@ Collision Functions
 
 .. autofunction:: aabb_to_dimensions
 
-.. autofunction:: flatten_entities
-
 Miscellaneous
 -------------
+
+.. autofunction:: get_first
+
+.. autofunction:: flatten_entities
+
+.. autofunction:: parse_energy
 
 .. autodecorator:: reissue_warnings

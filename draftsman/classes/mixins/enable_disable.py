@@ -38,7 +38,6 @@ class EnableDisableMixin:  # (ControlBehaviorMixin)
         :getter: Gets the value of ``enable_disable``, or ``None`` if not set.
         :setter: Sets the value of ``enable_disable``. Removes the attribute if
             set to ``None``.
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.

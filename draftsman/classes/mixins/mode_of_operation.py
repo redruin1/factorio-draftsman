@@ -34,7 +34,6 @@ class InserterModeOfOperationMixin:  # (ControlBehaviorMixin)
 
         :getter: Gets the mode of operation, or ``None`` if not set.
         :setter: Sets the mode of operation. Removes the key if set to ``None``.
-        :type: :py:data:`draftsman.constants.InserterModeOfOperation`
 
         :exception ValueError: If set to a value that cannot be interpreted as a
             valid ``InserterModeOfOperation``.
@@ -83,7 +82,6 @@ class LogisticModeOfOperationMixin:  # (ControlBehaviorMixin)
 
         :getter: Gets the mode of operation, or ``None`` if not set.
         :setter: Sets the mode of operation. Removes the key if set to ``None``.
-        :type: :py:data:`draftsman.constants.LogisticModeOfOperation`
 
         :exception ValueError: If set to a value that cannot be interpreted as a
             valid ``LogisticModeOfOperation``.

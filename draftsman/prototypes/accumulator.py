@@ -86,7 +86,6 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
 
         :getter: Gets the output signal, or ``None`` if not set.
         :setter: Sets the output signal. Removes the key if set to ``None``.
-        :type: :py:data:`.SIGNAL_ID`
 
         :exception InvalidSignalError: If set to a string not recognized as a valid
             signal name.

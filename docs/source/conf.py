@@ -39,6 +39,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.doctest",
     "sphinx_copybutton",
+    "sphinxcontrib.autodoc_pydantic"
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -55,12 +56,14 @@ autodoc_typehints_format = "short"
 autodoc_member_order = "groupwise"
 # Keep class names simple
 add_module_names = False
+# Split into multiple lines if single definitions are too long
+maximum_signature_line_length = 88
 
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = "sphinx_rtd_theme"
+html_theme = "furo"
 
 html_theme_options = {
     # TOC options

@@ -32,7 +32,7 @@ import os
 import pickle
 import re
 import struct
-from typing import Optional, Union
+from typing import Optional, TypedDict, Union
 import zipfile
 
 
@@ -120,13 +120,19 @@ def archive_to_string(archive: zipfile.ZipFile, filepath: str) -> str:
         return formatted_file.read()
 
 
-def get_mod_settings(
-    location: str,
-) -> dict:  # TODO: maybe more descriptive type/struct?
+ModSettings = TypedDict("ModSettings", {"startup": dict, "runtime-global": dict, "runtime-per-user": dict})
+
+def get_mod_settings(location: str) -> ModSettings:
     """
     Reads `mod_settings.dat` and stores it as an easy-to-read dict. Would be
     trivial to implement an editor with this function. (Well, assuming you write
     a function to export back to a ``.dat`` file)
+
+    :param location: The path to the directory where 'mod-settings.dat' is 
+        located.
+
+    :returns: A dictionary with 3 keys: ``"startup"``, ``"runtime-global"``, and
+        ``"runtime-per-user"``, which contain all of their respective settings.
     """
     # Property Tree Enum
     PropertyTreeType = {
@@ -182,14 +188,16 @@ def get_mod_settings(
     with open(
         os.path.join(location, "mod-settings.dat"), mode="rb"
     ) as mod_settings_dat:
-        # header
+        # Header
         version_num = struct.unpack("<Q", mod_settings_dat.read(8))[0]
-        version = decode_version(version_num)
+        version = decode_version(version_num)[::-1] # Reversed, for some reason
         header_flag = bool(struct.unpack("<?", mod_settings_dat.read(1))[0])
-        # TODO: check the above?
-        # probably best to treat this as a warning instead of an error now that
-        # I've turned a new leaf
-        # assert version[::-1] >= __factorio_version_info__ and not header_flag
+        # It might be nice to print out the version for additional context, but
+        # this doesn't seem to prohibit loading (as far as I know)
+        #print(version)
+        # However, we do ensure that the header flag is 0, as we are dealing 
+        # with a malformed input otherwise
+        assert not header_flag, "mod-settings.dat header did not end with 0 byte, malformed input"
         mod_settings = get_data(mod_settings_dat)
 
     return mod_settings
@@ -1373,7 +1381,7 @@ def update(
     no_mods=False,
     report=None,
     factorio_version=None,
-):
+) -> None:
     """
     Updates the data in the :py:mod:`.draftsman.data` modules.
 
@@ -1382,7 +1390,28 @@ def update(
     contents. Updates and changes made to the ``factorio-data`` folder are also
     reflected in this routine.
 
-    TODO: complete
+    :param verbose: Whether or not to print status updates to stdout.
+    :param path: The specific path to use when searching for mods. Defaults to
+        the folder `factorio-mods` located in the install directory of Draftsman.
+    :param show_logs: Whether or not to display logs created by the Factorio 
+        load process itself to stdout.
+    :param no_mods: Whether or not to ignore mods when performing the update.
+    :param report: If true, prints a list of all mods being used under the 
+        current configuration and then exits.
+    :param factorio_version: If true, prints the current Git tag that the 
+        currently installed `factorio-data` uses and exits. If specified to a 
+        string, this function will treat that as the "target" tag and will 
+        attempt to set that tag to the new version. In addition to all known 
+        tags, `factorio_version` also reserves the phrase `"latest"`, which 
+        is simply a shorthand to the latest released version.
+
+    .. NOTE::
+
+        You'd think that the Git tag used for ``factorio-data`` and the 
+        generated value of ``draftsman.__factorio_version__`` would be equivalent;
+        but this is NOT the case. In general the generated ``__factorio_version__``
+        by Draftsman always points 1 version ahead of stable, while the git tag 
+        is always the stable version.
     """
     # Figure out what directory we're in
     env_dir = os.path.dirname(__file__)
@@ -1406,9 +1435,12 @@ def update(
 
     # We want to handle the case where the user specifies the string "latest":
     if factorio_version == "latest":
-        factorio_version = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)[
-            -1
-        ]
+        factorio_version = sorted(
+            repo.tags, key=lambda t: t.commit.committed_datetime
+        )[-1]
+    # If no preferred version was provided, we adopt the current version
+    elif factorio_version is None:
+        factorio_version = current_tag.name
 
     # Checkout a different version of `factorio-data` if necessary
     if factorio_version != current_tag.name:
@@ -1594,9 +1626,6 @@ def update(
 
         elif os.path.isdir(mod_location):
             # Folder
-            # mod_name = mod_obj
-            # TODO: assert mod folder name matches either "name" or "name_version"
-            # format
             m = mod_folder_regex.match(mod_obj)
             if not m:
                 raise IncorrectModFormatError(
@@ -1791,8 +1820,6 @@ def update(
         mods[mod_name] = current_mod
 
     if report:
-        # TODO: add some extra features, like piping output to a file instead of
-        # stdout, as well as some formatting things
         return
 
     # Create the dependency tree

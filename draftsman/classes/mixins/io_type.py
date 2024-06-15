@@ -53,7 +53,6 @@ class IOTypeMixin(object):
 
         :getter: Sets the input/output type of the Entity.
         :setter: Gets the input/output type of the Entity.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than a ``str`` or ``None``.
         :exception ValueError: If set to anything other than ``"input"`` or

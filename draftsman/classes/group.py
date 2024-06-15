@@ -93,7 +93,7 @@ class Group(Transformable, EntityCollection, EntityLike):
             inherits all entities and schedules and populates the Group with
             them.
         :param id: A unique string ID to give the group, for indexing in an
-            :py:cls:`.EntityList`.
+            :py:class:`.EntityList`.
         :param name: A string name to give this Group, to allow easier searching.
         :param type: Similar to ``name``, except this one describes the type or
             category of the group. Also used to aid in searching/identification.
@@ -227,7 +227,6 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         :getter: Gets the name of the Group.
         :setter: Sets the name of the Group.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than a ``str``.
         """
@@ -258,7 +257,6 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         :getter: Gets the type of the Group.
         :setter: Sets the type of the Group.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than a ``str``.
         """
@@ -281,7 +279,6 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         :getter: Gets the ID of the Group.
         :setter: Sets the ID of the Group.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than a ``str`` or ``None``.
         """
@@ -314,7 +311,6 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         :getter: Gets the position of the Group.
         :setter: Sets the position of the Group.
-        :type: ``dict{"x": float, "y": float}``
 
         :exception IndexError: If the set value does not match the above
             specification.
@@ -351,8 +347,6 @@ class Group(Transformable, EntityCollection, EntityLike):
         global position is equivalent to the sum of all parent positions plus
         it's own position. Used when recursing the position of any sub-entity
         contained within the ``Group``. Read only.
-
-        :type: ``dict{"x": float, "y": float}``
         """
         if self.parent and hasattr(self.parent, "global_position"):
             return self.parent.global_position + self.position
@@ -394,7 +388,6 @@ class Group(Transformable, EntityCollection, EntityLike):
         :getter: Gets the collision mask of the Group.
         :setter: Sets the collision mask of the Group, or sets it to an empty
             set if ``None`` was input.
-        :type: ``set{str}``
 
         :exception TypeError: If set to anything other than a `set` or None.
         """
@@ -408,44 +401,6 @@ class Group(Transformable, EntityCollection, EntityLike):
             self._collision_mask = value
         else:
             raise TypeError("'collision_mask' must be a set or None")
-
-    # =========================================================================
-
-    # @property
-    # def tile_width(self) -> int:
-    #     """
-    #     The width of the Group's ``collision_box``, rounded up to the nearest
-    #     tile. Read only.
-
-    #     :type: ``int``
-    #     """
-    #     raise NotImplementedError("Use `get_dimensions()` instead") # TODO: FIXME
-
-    # @tile_width.setter
-    # def tile_width(self, value: int):
-    #     if isinstance(value, six.integer_types):
-    #         self._tile_width = value
-    #     else:
-    #         raise TypeError("'tile_width' must be an int")
-
-    # =========================================================================
-
-    # @property
-    # def tile_height(self) -> int:
-    #     """
-    #     The width of the Group's ``collision_box``, rounded up to the nearest
-    #     tile. Read only.
-
-    #     :type: ``int``
-    #     """
-    #     raise NotImplementedError("Use `get_dimensions()` instead") # TODO: FIXME
-
-    # @tile_height.setter
-    # def tile_height(self, value: int):
-    #     if isinstance(value, six.integer_types):
-    #         self._tile_height = value
-    #     else:
-    #         raise TypeError("'tile_height' must be an int")
 
     # =========================================================================
 
@@ -496,7 +451,6 @@ class Group(Transformable, EntityCollection, EntityLike):
         :getter: Gets the schedules of the Blueprint.
         :setter: Sets the schedules of the Blueprint. Defaults to ``[]`` if set
             to ``None``.
-        :type: ``list[SCHEDULE]``
 
         :exception DataFormatError: If set to anything other than a ``list`` of
             :py:data:`.SCHEDULE`.

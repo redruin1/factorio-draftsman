@@ -65,7 +65,7 @@ class OrientationMixin:
         """
         The angle that the current Entity is facing, expressed as a ``float``
         in the range ``[0.0, 1.0)``, where ``0.0`` is North and increases
-        clockwise. TODO: update
+        clockwise.
 
         Raises :py:class:`.ValueWarning` if set to a value not in the range
         ``[0.0, 1.0)``.
@@ -78,7 +78,6 @@ class OrientationMixin:
         :getter: Gets the orientation of the Entity.
         :setter: Sets the orientation of the Entity. Orients the object to north
             (0.0) if set to ``None``.
-        :type: ``float``
         """
         return self._root.orientation
 

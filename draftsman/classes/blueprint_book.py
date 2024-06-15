@@ -305,9 +305,9 @@ class BlueprintBook(Blueprintable):
         label_color: Optional[Color] = None,
         description: Optional[str] = None,
         icons: Optional[list[Icon]] = None,
-        version: Optional[uint64] = __factorio_version_info__,
+        version: Optional[uint64] = encode_version(*__factorio_version_info__),
         active_index: Optional[uint16] = 0,
-        blueprints: Union[BlueprintableList, list[Blueprintable]] = [],
+        blueprints: Union[BlueprintableList, list[Blueprintable], list[dict]] = [],
         index: Optional[uint16] = None,
         if_unknown: str = "error",  # TODO: enum
         **kwargs
@@ -340,7 +340,10 @@ class BlueprintBook(Blueprintable):
         #     # self._root[self._root_item]["blueprints"] = BlueprintableList()
         #     self._root._blueprints = BlueprintableList()
 
-        self._root._blueprints = BlueprintableList(blueprints, if_unknown=if_unknown)
+        if isinstance(blueprints, BlueprintableList):
+            self._root._blueprints = BlueprintableList(blueprints.data, if_unknown=if_unknown)
+        else:
+            self._root._blueprints = BlueprintableList(blueprints, if_unknown=if_unknown)
 
         # A bit scuffed, but
         for kwarg, value in kwargs.items():
@@ -368,7 +371,6 @@ class BlueprintBook(Blueprintable):
 
         :getter: Gets the color of the label, or ``None`` if not set.
         :setter: Sets the label color of the BlueprintBook.
-        :type: ``dict{"r": number, "g": number, "b": number, Optional("a"): number}``
 
         :exception DataFormatError: If the input ``label_color`` does not match
             the above specification.
@@ -418,7 +420,6 @@ class BlueprintBook(Blueprintable):
             book.
         :setter: Sets the index of the currently selected blueprint or blueprint
             book. If the value is ``None``, ``active_index`` defaults to ``0``.
-        :type: ``int``
 
         :exception TypeError: If set to anything other than an ``int`` or
             ``None``.
@@ -450,7 +451,6 @@ class BlueprintBook(Blueprintable):
         :getter: Gets the list of Blueprintables.
         :setter: Sets the list of Blueprintables. The list is initialized empty
             if set to ``None``.
-        :type: ``BlueprintableList``
 
         :exception TypeError: If set to anything other than ``list`` or
             ``None``.
@@ -526,41 +526,6 @@ class BlueprintBook(Blueprintable):
         #     super().validate()
 
         return output
-
-    # def inspect(self) -> ValidationResult:
-    #     result = super().inspect()
-
-    #     # By nature of necessity, we must ensure that all members of upgrade
-    #     # planner are in a correct and known format, so we must call:
-    #     try:
-    #         self.validate()
-    #     except Exception as e:
-    #         # If validation fails, it's in a format that we do not expect; and
-    #         # therefore unreasonable for us to assume that we can continue
-    #         # checking for issues relating to that non-existent format.
-    #         # Therefore, we add the errors to the error list and early exit
-    #         # TODO: figure out the proper way to reraise
-    #         result.error_list.append(DataFormatError(str(e)))
-    #         return result
-
-    #     # Warn if active_index is out of reasonable bounds
-    #     if not 0 <= self.active_index < len(self.blueprints):
-    #         result.warning_list.append(
-    #             IndexWarning(
-    #                 "'active_index' ({}) must be in range [0, {}) or else it will have no effect".format(
-    #                     self.active_index,
-    #                     len(self.blueprints),
-    #                 )
-    #             )
-    #         )
-
-    #     # Inspect every sub-blueprint and concatenate all errors and warnings
-    #     for blueprintable in self.blueprints:
-    #         subresult = blueprintable.inspect()
-    #         result.error_list.extend(subresult.error_list)
-    #         result.warning_list.extend(subresult.warning_list)
-
-    #     return result
 
     def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
         """

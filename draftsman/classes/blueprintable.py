@@ -47,8 +47,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         """
         Initializes the private ``_root`` data dictionary, as well as setting
         the ``item`` name.
-
-        TODO
         """
         self._root: self.Format
 
@@ -177,8 +175,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         Always the name of the corresponding Factorio item to this blueprintable
         instance. Read only.
 
-        :type: str
-
         :example:
 
         .. doctest::
@@ -206,7 +202,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
         :getter: Gets the label, or ``None`` if not set.
         :setter: Sets the label of this object.
-        :type: ``str``
 
         :exception TypeError: When setting ``label`` to something other than
             ``str`` or ``None``.
@@ -234,7 +229,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :getter: Gets the description, or ``None`` if not set.
         :setter: Sets the description of the object. Removes the attribute if
             set to ``None``.
-        :type: ``str``
 
         :exception TypeError: If setting to anything other than a ``str`` or
             ``None``.
@@ -260,10 +254,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     @property
     def icons(self) -> Optional[list[Icon]]:
         """
-        The visible icons of the blueprintable, shown in as the objects icon.
+        The visible icons of the blueprintable, as shown in the icon in 
+        Factorio's GUI.
 
-        Stored as a list of ``ICON`` objects, which are dicts that contain a
-        ``SIGNAL_ID`` and an ``index`` key. Icons can be specified in this
+        Stored as a list of ``Icon`` objects, which are dicts that contain a
+        ``"signal"`` dict and an ``"index"`` key. Icons can be specified in this
         format, or they can be specified more succinctly with a simple list of
         signal names as strings.
 
@@ -274,7 +269,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :getter: Gets the list if icons, or ``None`` if not set.
         :setter: Sets the icons of the Blueprint. Removes the attribute if set
             to ``None``.
-        :type: ``{"index": int, "signal": {"name": str, "type": str}}``
 
         :exception DataFormatError: If the set value does not match either of
             the specifications above.
@@ -337,7 +331,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :getter: Gets the version, or ``None`` if not set.
         :setter: Sets the version of the Blueprint. Removes the attribute if set
             to ``None``.
-        :type: ``int``
 
         :exception TypeError: If set to anything other than an ``int``, sequence
             of ``ints``, or ``None``.
@@ -376,7 +369,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         :param patch: The current patch number.
         :param dev_ver: The (internal) development version.
         """
-        # TODO: use this method in constructor
         self.version = encode_version(major, minor, patch, dev_ver)
 
     # =========================================================================
@@ -391,11 +383,10 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
         :getter: Gets the index of this blueprintable, or ``None`` if not set.
             A blueprintable's index is only generated when exporting with
-            :py:meth:`.to_dict`, so ``index`` will still be ``None`` until
-            specified otherwise.
-        :setter: Sets the index of the upgrade planner, or removes it if set to
-            ``None``.
-        :type: ``uint16``
+            :py:meth:`.Blueprintable.to_dict`, so ``index`` will still be ``None`` 
+            until specified otherwise.
+        :setter: Sets the index of the :py:class:`.Blueprintable`, or removes it 
+            if set to ``None``.
         """
         return self._root.get("index", None)
 
@@ -416,7 +407,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     #     """
     #     Returns a formatted string for the console that can be displayed with
     #     the python module ``rich``.
-
     #     """
     #     if not self.label:
     #         return self.label
@@ -475,18 +465,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     def validate(
         self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
     ) -> ValidationResult:
-        """
-        TODO
-        If ``mode`` is NONE, then this function will return an empty validation
-        Result.
-
-        :param mode: The validation mode to evaluate the object against.
-            Determines the contents of the returned ValidationResult.
-        :param force: Whether or not to force revalidation, even if ``is_valid``
-            on this entity is ``True``. Useful if you know that an object is
-            dirty when Draftsman doesn't, which can happen in [select
-            circumstances.](TODO)
-        """
         mode = ValidationMode(mode)
 
         output = ValidationResult([], [])

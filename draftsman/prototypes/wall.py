@@ -39,7 +39,7 @@ class Wall(
     ):
         class ControlBehavior(
             CircuitConditionMixin.ControlFormat,
-            DraftsmanBaseModel,  # TODO: is this the way to do it?
+            DraftsmanBaseModel
         ):
             circuit_open_gate: Optional[bool] = Field(
                 True,
@@ -133,8 +133,6 @@ class Wall(
         """
         Whether or not to read the state of an adjacent gate, whether it's
         opened or closed.
-
-        :type: ``bool``
         """
         return self.control_behavior.circuit_read_sensor
 
@@ -157,7 +155,8 @@ class Wall(
     @property
     def output_signal(self) -> Optional[SignalID]:
         """
-        What signal to output the state of the adjacent gate.
+        What signal to output the state of the adjacent gate, if this wall is
+        connected to a circuit network.
         """
         return self.control_behavior.output_signal
 

@@ -98,8 +98,6 @@ class InventoryFilterMixin:
         ``"inventory_size"`` key in Factorio's ``data.raw``. Returns ``None`` if
         this entity's name is not recognized by Draftsman. Not exported; read
         only.
-
-        :type: ``int``
         """
         return entities.raw.get(self.name, {"inventory_size": None})["inventory_size"]
 
@@ -124,7 +122,6 @@ class InventoryFilterMixin:
         :getter: Gets the value of the Entity's ``inventory`` object.
         :setter: Sets the value of the Entity's ``inventory`` object. Defaults
             to an empty ``dict`` if set to ``None``.
-        :type: See :py:class:`draftsman.signatures.INVENTORY_FILTER`.
 
         :exception DataFormatError: If the set value differs from the
             ``INVENTORY_FILTER`` specification.
@@ -192,7 +189,6 @@ class InventoryFilterMixin:
         :getter: Gets the bar location of the inventory, or ``None`` if not set.
         :setter: Sets the bar location of the inventory. Removes the entry from
             the ``inventory`` object.
-        :type: ``int``
 
         :exception TypeError: If set to anything other than an ``int`` or
             ``None``.

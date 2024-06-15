@@ -6,5 +6,6 @@
 
 .. autoclass:: FilterInserter
     :members:
+    :exclude-members: Format
     :show-inheritance:
     :inherited-members:

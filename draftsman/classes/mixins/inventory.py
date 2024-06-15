@@ -78,8 +78,6 @@ class InventoryMixin:
         ``"inventory_size"`` key in Factorio's ``data.raw``. Returns ``None`` if
         this entity's name is not recognized by Draftsman. Not exported; read
         only.
-
-        :type: ``int``
         """
         return entities.raw.get(self.name, {}).get("inventory_size", None)
 
@@ -92,8 +90,6 @@ class InventoryMixin:
         Equivalent to the ``"enable_inventory_bar"`` key in Factorio's
         ``data.raw``, or ``True`` if not present. Returns ``None`` if this
         entity is not recognized by Draftsman. Not exported; read only.
-
-        :type: ``bool``
         """
         return entities.raw.get(self.name, {"enable_inventory_bar": None}).get(
             "enable_inventory_bar", True
@@ -137,7 +133,6 @@ class InventoryMixin:
 
         :getter: Gets the bar location of the inventory.
         :setter: Sets the bar location of the inventory.
-        :type: ``int``
 
         :exception DraftsmanError: If attempting to set the bar of an Entity
             that has the ``inventory_bar_enabled`` attribute set to ``False``.

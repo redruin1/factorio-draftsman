@@ -69,8 +69,6 @@ class Lab(ModulesMixin, RequestItemsMixin, Entity):
         The inputs that this Lab uses to research, ordered by their Factorio
         order. Returns ``None`` if this entity is not recognized by Draftsman.
         Not exported; read only.
-
-        :type: ``list[str]``
         """
         return entities.raw.get(self.name, {"inputs": None})["inputs"]
 

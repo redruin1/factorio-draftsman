@@ -69,7 +69,7 @@ class AABB(Shape):
         position: Union[Vector, PrimitiveVector] = (0, 0),
     ):
         """
-        TODO
+        Axis-Aligned Bounding Box constructor.
 
         .. NOTE::
 
@@ -125,8 +125,6 @@ class AABB(Shape):
         Gets the top left of the :py:class:`.AABB`, as offset by it's ``position``.
         As the attribute suggests, this is typically the top-left of the box in
         world space. Read only.
-
-        :type: PrimitiveVector
         """
         return [
             self.top_left[0] + self.position[0],
@@ -139,8 +137,6 @@ class AABB(Shape):
         Gets the bottom right of the :py:class:`.AABB`, as offset by it's
         ``position``. As the attribute suggests, this is typically the top-left
         of the box in world space. Read only.
-
-        :type: PrimitiveVector
         """
         return [
             self.bot_right[0] + self.position[0],
@@ -208,8 +204,8 @@ class AABB(Shape):
         # TODO: do this routine with a lookup table instead of float math and
         # min/max
 
-        rot_top_left = rotate_vector(self.top_left, math.radians(amt * 45))
-        rot_bot_right = rotate_vector(self.bot_right, math.radians(amt * 45))
+        rot_top_left = rotate_point(self.top_left, math.radians(amt * 45))
+        rot_bot_right = rotate_point(self.bot_right, math.radians(amt * 45))
 
         # top_left = Vector(
         #     min(rot_top_left.x, rot_bot_right.x), min(rot_top_left.y, rot_bot_right.y)
@@ -307,7 +303,7 @@ class Rectangle(Shape):
             Rectangle's corners.
         """
         rot_points = [
-            rotate_vector(point, math.radians(self.angle)) for point in self.points
+            rotate_point(point, math.radians(self.angle)) for point in self.points
         ]
         return [
             [point[0] + self.position[0], point[1] + self.position[1]]
@@ -353,7 +349,7 @@ class Rectangle(Shape):
             degrees.
         """
         return Rectangle(
-            rotate_vector(self.position, math.radians(amt * 45)),
+            rotate_point(self.position, math.radians(amt * 45)),
             self.width,
             self.height,
             self.angle + amt * 45,
@@ -512,9 +508,9 @@ def distance(point1: PrimitiveVector, point2: PrimitiveVector) -> float:
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
 
 
-def rotate_vector(
+def rotate_point(
     a: PrimitiveVector, angle: float
-) -> PrimitiveVector:  # TODO: change to rotate_point to be consistent
+) -> PrimitiveVector:
     """
     Rotate a given vector by ``angle`` radians around the origin.
 
@@ -799,6 +795,11 @@ def get_first(entity_names: list[str]):
     method to return the first element of the list and ``None`` otherwise. Used
     to grab the default entity name if one is not supplied to the constructor
     of an Entity.
+
+    :param entity_names: The list of entities to attempt to get the first entry
+        from.
+
+    :returns: ``entity_names[0]``, or ``None`` if no such entry exists.
     """
     try:
         return entity_names[0]
@@ -840,13 +841,13 @@ def parse_energy(energy_string: str) -> int:
     a Watt string is input, it will convert the output result to Joules/tick
     instead of Joules/second (1/60th Watts).
 
-    :raises ValueError: If the input string is missing it's Joule/Watt
-        identifier, it's magnitude character is not recognized, or if the string
-        remainder cannot be parsed to an integer.
-
     :param energy_string: The correctly formatted input string to parse.
     :returns: a properly-scaled integer representing the Joule or Watt amount
         input.
+
+    :raises ValueError: If the input string is missing it's Joule/Watt
+        identifier, it's magnitude character is not recognized, or if the string
+        remainder cannot be parsed to an integer.
     """
     energy_chars = {
         "k": 10**3,

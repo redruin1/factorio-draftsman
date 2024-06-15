@@ -524,8 +524,6 @@ class UpgradePlanner(Blueprintable):
     def mapper_count(self) -> uint8:
         """
         The total number of unique mappings that this entity can have. Read only.
-
-        :type: int
         """
         return items.raw[self.item]["mapper_count"]
 
@@ -544,7 +542,6 @@ class UpgradePlanner(Blueprintable):
         :getter: Gets the mappers dictionary, or ``None`` if not set.
         :setter: Sets the mappers dictionary, or deletes the dictionary if set
             to ``None``
-        :type: ``[{"from": {...}, "to": {...}, "index": int}]``
         """
         return self._root[self._root_item]["settings"].get("mappers", None)
 

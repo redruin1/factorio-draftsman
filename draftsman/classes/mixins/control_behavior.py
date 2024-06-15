@@ -72,7 +72,6 @@ class ControlBehaviorMixin:
         :getter: Gets the ``control_behavior``.
         :setter: Sets the ``control_behavior``. Gets set to an empty ``dict`` if
             set to ``None``.
-        :type: See :py:data:`draftsman.signatures.CONTROL_BEHAVIOR`
 
         :exception DataFormatError: If set to anything that does not match the
             ``CONTROL_BEHAVIOR`` signature.

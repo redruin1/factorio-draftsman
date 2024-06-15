@@ -5,7 +5,7 @@ from draftsman.error import DataFormatError
 
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
-from typing import Any, MutableSequence
+from typing import Any, Callable, Iterator, MutableSequence
 
 
 class ScheduleList(MutableSequence):
@@ -40,6 +40,9 @@ class ScheduleList(MutableSequence):
 
         self.data.insert(index, schedule)
 
+    def clear(self) -> None:
+        self.data.clear()
+
     def __getitem__(self, index: int) -> Schedule:
         return self.data[index]
 
@@ -63,6 +66,8 @@ class ScheduleList(MutableSequence):
 
     def __len__(self) -> int:
         return len(self.data)
+    
+    __iter__: Callable[..., Iterator[Schedule]]
 
     def __eq__(self, other: "ScheduleList") -> bool:
         if not isinstance(other, ScheduleList):

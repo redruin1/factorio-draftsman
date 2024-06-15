@@ -6,3 +6,5 @@
 .. automodule:: draftsman.blueprintable
 
 .. autofunction:: get_blueprintable_from_string
+
+.. autofunction:: get_blueprintable_from_JSON

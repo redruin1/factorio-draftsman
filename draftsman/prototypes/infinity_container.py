@@ -125,7 +125,6 @@ class InfinityContainer(RequestItemsMixin, InventoryMixin, Entity):
         :getter: Gets the ``infinity_settings`` of the ``InfinityContainer``.
         :setter: Sets the ``infinity_settings`` of the ``InfinityContainer``.
             Defaults to an empty ``dict`` if set to ``None``.
-        :type: :py:data:`.INFINITY_CONTAINER`
 
         :exception DataFormatError: If set to anything that does not match the
             :py:data:`.INFINITY_CONTAINER` format.
@@ -149,8 +148,6 @@ class InfinityContainer(RequestItemsMixin, InventoryMixin, Entity):
         """
         Whether or not to remove items that exceed the amounts specified in the
         ``InfinityContainer``'s filters.
-
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.

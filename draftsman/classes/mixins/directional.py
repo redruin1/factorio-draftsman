@@ -175,7 +175,6 @@ class DirectionalMixin:
         :getter: Gets the direction that the Entity is facing.
         :setter: Sets the direction of the Entity. Defaults to ``Direction.NORTH``
             if set to ``None``.
-        :type: :py:data:`~draftsman.constants.Direction`
 
         :exception DraftsmanError: If the direction is set while inside a
             Collection, and the target entity is both non-square and the

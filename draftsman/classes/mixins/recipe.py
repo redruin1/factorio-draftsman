@@ -122,8 +122,6 @@ class RecipeMixin:
         A list of all the recipes that this Entity can set itself to assemble.
         Returns ``None`` if the entity's name is not recognized by Draftsman.
         Not exported; read only.
-
-        :type: ``list[str]``
         """
         return recipes.for_machine.get(self.name, None)
 
@@ -143,7 +141,6 @@ class RecipeMixin:
 
         :getter: Gets the current recipe of the Entity.
         :setter: Sets the current recipe of the Entity.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than a ``str`` or
             ``None``.

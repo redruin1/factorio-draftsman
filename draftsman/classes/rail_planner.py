@@ -55,13 +55,9 @@ class RailPlanner(Group):
         The turtle "head" of the rail planner. This is the rail-tile position
         where the next placed rail will go.
 
-        .. see-also::
+        .. seealso::
 
             :py:attr:`.head_direction`
-
-        :getter: TODO
-        :setter: TODO
-        :type: :py:class:`Vector`
         """
         return self._head_position
 
@@ -80,13 +76,9 @@ class RailPlanner(Group):
         in. Note that this direction is not necessarily equal to the direction
         of the placed rail entities themselves.
 
-        .. see-also::
+        .. seealso::
 
-            :py:attr:`.head_direction`
-
-        :getter: TODO
-        :setter: TODO
-        :type: :py:enum:`.Direction`
+            :py:attr:`.head_position`
         """
         return self._head_direction
 

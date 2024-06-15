@@ -65,7 +65,6 @@ class StackSizeMixin:  # (ControlBehaviorMixin)
 
         :getter: Gets the overridden stack size.
         :setter: Sets the overridden stack size.
-        :type: ``int``
 
         :exception TypeError:
         """
@@ -92,7 +91,6 @@ class StackSizeMixin:  # (ControlBehaviorMixin)
             ``None`` if not set.
         :setter: Sets whether or not the circuit stack size is enabled. Removes
             the key if set to ``None``.
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.
@@ -133,7 +131,6 @@ class StackSizeMixin:  # (ControlBehaviorMixin)
         :getter: Gets the stack control signal, or ``None`` if not set.
         :setter: Sets the stack control signal. Removes the key if set to
             ``None``.
-        :type: :py:class:`draftsman.signatures.SIGNAL_ID`
 
         :exception InvalidSignalID: If set to a string that is not a valid
             signal name.

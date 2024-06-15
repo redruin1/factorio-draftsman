@@ -6,5 +6,6 @@
 
 .. autoclass:: Gate
     :members:
+    :exclude-members: Format
     :show-inheritance:
     :inherited-members:

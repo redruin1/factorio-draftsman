@@ -125,8 +125,6 @@ class ConstantCombinator(
         hold. Equivalent to ``"item_slot_count"`` from Factorio's ``data.raw``.
         Returns ``None`` if the entity's name is not recognized by Draftsman.
         Not exported; read only.
-
-        :type: ``int``
         """
         return entities.raw.get(self.name, {"item_slot_count": None})["item_slot_count"]
 
@@ -155,7 +153,6 @@ class ConstantCombinator(
             set.
         :setter: Sets the signals of the combinators. Removes the key if set to
             ``None``.
-        :type: :py:data:`.SIGNAL_FILTERS`
 
         :exception DataFormatError: If set to anything that does not match the
             format specified above.
@@ -188,7 +185,6 @@ class ConstantCombinator(
             not set.
         :setter: Sets whether or not this combinator is enabled. Removes the key
             if set to ``None``.
-        :type: ``bool``
         """
         return self.control_behavior.is_on
 

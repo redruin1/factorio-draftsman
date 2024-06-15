@@ -95,7 +95,6 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
 
         :getter: Gets the link ID of the ``LinkedContainer``.
         :setter: Sets the link ID of the ``LinkedContainer``.
-        :type: ``int``
 
         :exception TypeError: If set to anything other than an ``int`` or ``None``.
         """

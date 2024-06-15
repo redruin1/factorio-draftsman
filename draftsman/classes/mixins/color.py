@@ -58,7 +58,6 @@ class ColorMixin:
 
         :getter: Gets the color of the Entity, or ``None`` if not set.
         :setter: Sets the color of the Entity.
-        :type: ``dict{"r": float, "g": float, "b": float, Optional("a"): float}``
 
         :exception DataFormatError: If the set ``color`` does not match the
             above specification.

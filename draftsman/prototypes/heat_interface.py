@@ -107,7 +107,6 @@ class HeatInterface(Entity):
 
         :getter: Gets the temperature of the interface.
         :setter: Sets the temperature of the interface
-        :type: ``int``
 
         :exception TypeError: If set to anything other than an ``int`` or
             ``None``.
@@ -142,7 +141,6 @@ class HeatInterface(Entity):
 
         :getter: Gets the mode of the interface.
         :setter: Sets the mode of the interface.
-        :type: ``str``
 
         :exception InvalidModeError: If set to anything other than one of the
             valid strings above or ``None``.

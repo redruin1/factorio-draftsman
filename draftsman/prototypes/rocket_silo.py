@@ -78,7 +78,6 @@ class RocketSilo(RequestItemsMixin, Entity):
 
         :getter: Gets whether or not to automatically launch.
         :setter: Sets whether or not to automatically launch.
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """

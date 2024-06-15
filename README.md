@@ -87,7 +87,7 @@ For more information on what exactly Draftsman is and does, as well as its inten
 For more examples on what exactly you can do with Draftsman, take a look at the [examples folder](https://github.com/redruin1/factorio-draftsman/tree/main/examples).
 
 ### Features
-* Compatible with all versions of Python 3
+* Compatible with all versions of Python >= 3.7
 * Compatible with the latest versions of Factorio (1.0.0+)
 * Compatible with Factorio mods(!)
 * Well documented

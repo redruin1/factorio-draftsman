@@ -131,7 +131,6 @@ class PowerSwitch(
 
         :getter: Gets the value of the switch state.
         :setter: Sets the value of the switch state.
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """

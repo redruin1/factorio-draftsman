@@ -24,7 +24,7 @@ class TestLinkedContainer:
         with pytest.warns(UnknownKeywordWarning):
             LinkedContainer("linked-chest", unused_keyword="whatever")
         with pytest.warns(UnknownEntityWarning):
-            LinkedContainer("linked-chest", "this is not a linked container")
+            LinkedContainer("this is not a linked container")
 
         # Errors
         with pytest.raises(DataFormatError):

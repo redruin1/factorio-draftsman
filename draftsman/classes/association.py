@@ -51,7 +51,7 @@ class Association(weakref.ref):
         checks for equality between the referenced objects.
         """
         if isinstance(other, Association):
-            return self() is other()  # TODO: think about
+            return self() is other()
         else:
             return False
 

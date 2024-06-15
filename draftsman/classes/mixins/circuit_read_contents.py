@@ -45,7 +45,6 @@ class CircuitReadContentsMixin:  # (ControlBehaviorMixin)
 
         :getter: Gets the value of ``read_contents``, or ``None`` if not set.
         :setter: Sets the value of ``read_contents``.
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.
@@ -76,7 +75,6 @@ class CircuitReadContentsMixin:  # (ControlBehaviorMixin)
 
         :getter: Gets the value of ``read_mode``, or ``None`` if not set.
         :setter: Sets the value of ``read_mode``.
-        :type: :py:data:`~draftsman.constants.ReadMode`
 
         :exception ValueError: If set to anything other than a ``ReadMode``
             value or their ``int`` equivalent.

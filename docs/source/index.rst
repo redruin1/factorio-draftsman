@@ -42,7 +42,7 @@ Draftsman is also unique in that it emulates the `Factorio data lifecycle <https
 This ensures a direct continuity between Factorio's data and Draftsman, which makes the module much easier to maintain over specific Factorio versions, as well as over time.
 By emulating the data-lifecycle in this manner, Draftsman is also the first package of this type to allow mod support *built-in*.
 
-Draftsman is cross-platform, and guaranteed to work on the latest versions of Python 2 and 3.
+Draftsman is cross-platform, and guaranteed to work on all versions of Python >= 3.7.
 Draftsman is also guaranteed to work with versions of Factorio 1.0 and up. 
 Prior to that most functionality *should* still work, but your mileage may vary.
 

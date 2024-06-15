@@ -139,7 +139,6 @@ class Tile(SpatialLike, Exportable):
 
         :getter: Gets the name of the Tile.
         :setter: Sest the name of the Tile.
-        :type: ``str``
 
         :exception InvalidTileError: If the set name is not a valid Factorio
             tile id.
@@ -172,7 +171,6 @@ class Tile(SpatialLike, Exportable):
 
         :getter: Gets the position of the Entity.
         :setter: Sets the position of the Entity.
-        :type: ``dict{"x": int, "y": int}``
 
         :exception IndexError: If the set value does not match the above
             specification.
@@ -235,14 +233,6 @@ class Tile(SpatialLike, Exportable):
         :param other: The other tile underneath this one.
         """
         pass
-
-    # def to_dict(self) -> dict:
-    #     """
-    #     Converts the Tile to its JSON-dict representation.
-
-    #     :returns: The exported JSON-dict representation of the Tile.
-    #     """
-    #     return {"name": self.name, "position": self.position.to_dict()}
 
     def validate(
         self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False

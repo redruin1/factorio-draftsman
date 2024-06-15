@@ -13,7 +13,7 @@ from draftsman.error import (
     InvalidEntityError,
 )
 from draftsman.utils import reissue_warnings
-from draftsman.signatures import Connections, DraftsmanBaseModel, DraftsmanRootModel
+from draftsman.signatures import Connections, DraftsmanBaseModel
 from draftsman.warning import HiddenEntityWarning
 
 from collections.abc import MutableSequence
@@ -26,7 +26,7 @@ from pydantic import (
 )
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
-from typing import Any, Literal, Union
+from typing import Any, Callable, Iterator, Literal, Union
 
 from typing import List, TYPE_CHECKING
 
@@ -572,6 +572,8 @@ class EntityList(Exportable, MutableSequence):
 
     def __len__(self) -> int:
         return len(self._root)
+    
+    __iter__: Callable[..., Iterator[EntityLike]]
 
     def __contains__(self, item: EntityLike) -> bool:
         if item in self._root:

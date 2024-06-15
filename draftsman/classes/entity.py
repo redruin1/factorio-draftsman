@@ -142,7 +142,7 @@ class Entity(Exportable, EntityLike):
         def check_unknown_name(cls, value: str, info: ValidationInfo):
             """
             Warn if the name is not any known Draftsman entity name. Only called
-            when the entity is an instance of the base class :py:cls:`Entity`.
+            when the entity is an instance of the base class :py:class:`Entity`.
             """
             if not info.context:
                 return value
@@ -314,10 +314,6 @@ class Entity(Exportable, EntityLike):
     def name(self) -> str:
         """
         The name of the entity. Must be a valid Factorio ID string. Read only.
-
-        TODO: How to make this changable, or alert the user of it's danger?
-
-        :type: ``str``
         """
         return self._root.name
 
@@ -365,8 +361,6 @@ class Entity(Exportable, EntityLike):
         :py:meth:`.EntityCollection.find_entities_filtered`. Returns ``None`` if
         this entity's name is not recognized when created without validation.
         Not exported; read only.
-
-        :type: ``str``
         """
         return entities.raw.get(self.name, {"type": None})["type"]
 
@@ -381,7 +375,6 @@ class Entity(Exportable, EntityLike):
 
         :getter: Gets the ID of the entity, or ``None`` if the entity has no ID.
         :setter: Sets the ID of the entity.
-        :type: ``str``
 
         :exception TypeError: If the set value is anything other than a ``str``
             or ``None``.
@@ -432,7 +425,6 @@ class Entity(Exportable, EntityLike):
 
         :getter: Gets the position of the Entity.
         :setter: Sets the position of the Entity.
-        :type: :py:class:`.Vector`
 
         :exception IndexError: If the set value does not match the above
             specification.
@@ -475,7 +467,6 @@ class Entity(Exportable, EntityLike):
 
         :getter: Gets the tile position of the Entity.
         :setter: Sets the tile position of the Entity.
-        :type: :py:class:`.Vector`
 
         :exception IndexError: If the set value does not match the above
             specification.
@@ -517,8 +508,6 @@ class Entity(Exportable, EntityLike):
         when adding to a :py:class:`.SpatialHashMap` and when querying the
         entity by region. This attribute is always exported, but renamed to
         "position"; read only.
-
-        :type: ``Vector``
         """
         if self.parent and hasattr(self.parent, "global_position"):
             return self.parent.global_position + self.position
@@ -530,7 +519,11 @@ class Entity(Exportable, EntityLike):
     @property
     def static_collision_set(self) -> Optional[CollisionSet]:
         """
-        TODO
+        The set of all CollisionShapes that this entity inherits. This set is 
+        always the shape of the entity with it's default orientation (typically
+        facing north) and does not change when the entity is rotated/flipped. If 
+        you want the collision shape of this entity that does change when 
+        rotated, use :py:attr:`.static_collision_set` instead.
         """
         return entities.collision_sets.get(self.name, None)
 
@@ -539,7 +532,11 @@ class Entity(Exportable, EntityLike):
     @property
     def collision_set(self) -> Optional[CollisionSet]:
         """
-        TODO
+        The set of all CollisionShapes that this entity inherits. This set is
+        dynamically updated based on the rotation or orientation of the entity, 
+        if applicable. If you want the collision shape of this entity that does 
+        not change via rotation or orientation, use :py:attr:`.static_collision_set`
+        instead.
         """
         return entities.collision_sets.get(self.name, None)
 
@@ -551,8 +548,6 @@ class Entity(Exportable, EntityLike):
         The set of all collision layers that this Entity collides with,
         specified as strings. Equivalent to Factorio's ``data.raw`` equivalent.
         Not exported; read only.
-
-        :type: ``set{str}``
         """
         # We guarantee that the "collision_mask" key will exist during
         # `draftsman-update`, and that it will have it's proper default based
@@ -566,8 +561,6 @@ class Entity(Exportable, EntityLike):
         """
         The width of the entity in tiles, rounded up to the nearest integer.
         Not exported; read only.
-
-        :type: ``int``
         """
         return self._tile_width
 
@@ -578,8 +571,6 @@ class Entity(Exportable, EntityLike):
         """
         The height of the entity in tiles, rounded up to the nearest integer.
         Not exported; read only.
-
-        :type: ``int``
         """
         return self._tile_height
 
@@ -622,7 +613,6 @@ class Entity(Exportable, EntityLike):
 
         :getter: Gets the tags of the Entity, or ``None`` if not set.
         :setter: Sets the Entity's tags.
-        :type: ``dict{Any: Any}``
 
         :exception TypeError: If tags is set to anything other than a ``dict``
             or ``None``.
@@ -644,18 +634,6 @@ class Entity(Exportable, EntityLike):
     def validate(
         self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
     ) -> ValidationResult:
-        """
-        TODO
-        If ``mode`` is NONE, then this function will return an empty validation
-        Result.
-
-        :param mode: The validation mode to evaluate the object against.
-            Determines the contents of the returned ValidationResult.
-        :param force: Whether or not to force revalidation, even if ``is_valid``
-            on this entity is ``True``. Useful if you know that an object is
-            dirty when Draftsman doesn't, which can happen in [select
-            circumstances.](TODO)
-        """
         mode = ValidationMode(mode)
 
         output = ValidationResult([], [])

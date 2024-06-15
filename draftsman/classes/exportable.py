@@ -11,7 +11,7 @@ import pprint  # TODO: think about
 
 
 def attempt_and_reissue(
-    object: Any, format_model: BaseModel, target: Any, name: str, value: Any, **kwargs
+    object: Any, format_model: Any, target: Any, name: str, value: Any, **kwargs
 ):
     """
     Helper function that normalizes assignment validation
@@ -36,16 +36,6 @@ def attempt_and_reissue(
     for warning in context["warning_list"]:
         warnings.warn(warning, stacklevel=4)
     return getattr(result, name)
-
-
-# def normalize_validation_mode(value):
-#     allowed_values = {None, "minimum", "strict", "pedantic"}
-#     if value in allowed_values:
-#         return value
-#     else:
-#         raise ValueError(
-#             "'validate_assignment' should be a bool or one of {}".format(allowed_values)
-#         )
 
 
 class ValidationResult:
@@ -133,7 +123,7 @@ class Exportable(metaclass=ABCMeta):
         Validity is lost anytime any attribute of a valid object is altered, and
         gained when :py:meth:`.validate` is called:
 
-        .. example::
+        .. doctest::
 
             >>> from draftsman.entity import Container
             >>> c = Container("wooden-chest")
@@ -163,8 +153,6 @@ class Exportable(metaclass=ABCMeta):
         basis, so multiple instances of otherwise identical entities can have
         different validation configurations.
 
-        TODO: table of all the different values
-
         .. NOTE ::
 
             Item-assignment (``entity["field"] = obj``) is *never* validated,
@@ -173,10 +161,9 @@ class Exportable(metaclass=ABCMeta):
             indicate a "raw" modification that is guaranteed to be cheap and
             will never trigger validation by itself.
 
-        :getter:
+        :getter: Gets the assignment mode.
         :setter: Sets the assignment mode. Raises a :py:class:`.DataFormatError`
             if set to an invalid value.
-        :type: ``str``
         """
         return self._validate_assignment
 
@@ -194,8 +181,6 @@ class Exportable(metaclass=ABCMeta):
         If this flag is ``True``, then most validation for this instance is
         disabled, only issuing errors/warnings for issues that Draftsman has
         sufficient information to diagnose.
-
-        :type: bool
         """
         return self._unknown
 
@@ -211,7 +196,9 @@ class Exportable(metaclass=ABCMeta):
         do so, this function raises :py:error:`.DataFormatError`. Otherwise,
         no errors are raised and :py:attr:`.is_valid` is set to ``True``.
 
-        .. example::
+        :example:
+
+        .. doctest::
 
             >>> from draftsman.entity import Container
             >>> from draftsman.error import DataFormatError
@@ -230,8 +217,6 @@ class Exportable(metaclass=ABCMeta):
 
         :returns: A :py:class:`ValidationResult` object containing the
             corresponding errors and warnings.
-
-        :raises DataFormatError: If the type inputs
         """
         # NOTE: Subsequent objects must implement this method and then call this
         # parent method to cache successful validity
@@ -262,7 +247,7 @@ class Exportable(metaclass=ABCMeta):
         schema can be used with any compliant JSON schema validation library to
         check if a given blueprint string will import into Factorio.
 
-        .. see-also::
+        .. seealso::
 
             https://json-schema.org/
 

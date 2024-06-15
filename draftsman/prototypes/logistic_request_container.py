@@ -116,7 +116,6 @@ class LogisticRequestContainer(
 
         :getter: Gets whether or not to recieve from buffers.
         :setter: Sets whether or not to recieve from buffers.
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """

@@ -95,7 +95,6 @@ class Lamp(
         :getter: Gets whether or not to use colors, or ``None`` if not set.
         :setter: Sets whether or not to use colors. Removes the key if set to
             ``None``.
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
