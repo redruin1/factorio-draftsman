@@ -59,7 +59,7 @@ setup(
     install_requires = [
         "pydantic >= 2.3.0",
         "lupa >= 2.0",
-        "GitPython >= 3.1.43"
+        "GitPython >= 3.1.43",
         "typing",
         "typing_extensions; python_version < '3.8'",
         "importlib-resources; python_version < '3.7'",

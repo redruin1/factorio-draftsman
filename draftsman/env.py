@@ -1820,6 +1820,8 @@ def update(
         mods[mod_name] = current_mod
 
     if report:
+        if len(mods) == 1: # just the base mod
+            print("No mods found at '{}'.".format(factorio_mods_folder))
         return
 
     # Create the dependency tree
