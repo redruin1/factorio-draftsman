@@ -37,7 +37,7 @@ Vector Operations
 
 .. autofunction:: distance
 
-.. autofunction:: rotate_vector
+.. autofunction:: rotate_point
 
 .. autofunction:: dot_product
 

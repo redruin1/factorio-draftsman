@@ -129,12 +129,6 @@ class Exportable(metaclass=ABCMeta):
             >>> c = Container("wooden-chest")
             >>> c.is_valid
             False
-            >>> c.validate()
-            >>> c.is_valid
-            True
-            >>> c.bar = 10  # Even though 10 is a valid value, validate() must
-            >>> c.is_valid  # be called again for draftsman to know this
-            False
 
         Read only.
         """
@@ -193,7 +187,7 @@ class Exportable(metaclass=ABCMeta):
         coerce data into correct forms from shorthands, and raises exceptions.
         Method that attempts to first coerce the object into a known form, and
         then checks the values of its attributes for correctness. If unable to
-        do so, this function raises :py:error:`.DataFormatError`. Otherwise,
+        do so, this function raises :py:class:`.DataFormatError`. Otherwise,
         no errors are raised and :py:attr:`.is_valid` is set to ``True``.
 
         :example:
@@ -202,12 +196,12 @@ class Exportable(metaclass=ABCMeta):
 
             >>> from draftsman.entity import Container
             >>> from draftsman.error import DataFormatError
-            >>> c = Container("wooden-chest")
+            >>> c = Container("wooden-chest", validate_assignment="none")
             >>> c.bar = "incorrect"
             >>> try:
             ...     c.validate().reissue_all()
             ... except DataFormatError as e:
-            ...     print("wrong! {}", e)
+            ...     print("wrong!")
             wrong!
 
         :param mode: How strict to be when valiating the object, corresponding
