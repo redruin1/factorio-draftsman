@@ -56,6 +56,7 @@ from draftsman.signatures import (
     DraftsmanBaseModel,
     EntityFilter,
     TileFilter,
+    normalize_icons,
     uint8,
     uint16,
     uint64,
@@ -129,8 +130,10 @@ class DeconstructionPlanner(Blueprintable):
                     None,
                     description="""
                     A set of signal pictures to associate with this 
-                    DeconstructionPlanner.
+                    DeconstructionPlanner. Hard-capped to 4 entries total; 
+                    having more than 4 will raise an error in import.
                     """,
+                    max_length=4,
                 )
 
                 entity_filter_mode: Optional[FilterMode] = Field(
@@ -191,16 +194,7 @@ class DeconstructionPlanner(Blueprintable):
                 @field_validator("icons", mode="before")
                 @classmethod
                 def normalize_icons(cls, value: Any):
-                    if isinstance(value, Sequence):
-                        result = [None] * len(value)
-                        for i, signal in enumerate(value):
-                            if isinstance(signal, str):
-                                result[i] = {"index": i + 1, "signal": signal}
-                            else:
-                                result[i] = signal
-                        return result
-                    else:
-                        return value
+                    return normalize_icons(value)
 
                 @field_validator("entity_filters", mode="before")
                 @classmethod
@@ -257,13 +251,13 @@ class DeconstructionPlanner(Blueprintable):
     def __init__(
         self,
         deconstruction_planner: Union[str, dict, None] = None,
+        index: Optional[uint16] = None,
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
-        if_unknown: str = "error",  # TODO: enum
     ):
         """
         TODO
@@ -277,12 +271,11 @@ class DeconstructionPlanner(Blueprintable):
             root_format=DeconstructionPlanner.Format.DeconstructionPlannerObject,
             item="deconstruction-planner",
             init_data=deconstruction_planner,
-            if_unknown=if_unknown,
+            index=index,
+            validate=validate,
         )
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     @reissue_warnings
     def setup(
@@ -291,7 +284,9 @@ class DeconstructionPlanner(Blueprintable):
         version: uint64 = __factorio_version_info__,
         settings: Format.DeconstructionPlannerObject.Settings = {},
         index: Optional[uint16] = None,
-        if_unknown: str = "error",  # TODO: enum
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
         **kwargs
     ):
         # Item (type identifier)
@@ -324,6 +319,9 @@ class DeconstructionPlanner(Blueprintable):
         # Issue warnings for any keyword not recognized by UpgradePlanner
         for kwarg, value in kwargs.items():
             self._root[kwarg] = value
+
+        if validate:
+            self.validate(mode=validate).reissue_all()
 
     # =========================================================================
     # Properties

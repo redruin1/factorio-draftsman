@@ -1,14 +1,16 @@
 # group.py
+# TODO: needs quite a bit of a rework due to the changed functionality of JSON
+# obejects
+# TODO: add tiles to this bad boy (somehow)
 
 from draftsman.classes.association import Association
 from draftsman.classes.collection import EntityCollection
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.entity_list import EntityList
+from draftsman.classes.exportable import ValidationMode, ValidationResult
 from draftsman.classes.schedule import Schedule
 from draftsman.classes.schedule_list import ScheduleList
-from draftsman.classes.spatial_data_structure import SpatialDataStructure
-from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.classes.transformable import Transformable
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.error import (
@@ -26,7 +28,7 @@ from draftsman.utils import (
 )
 
 import copy
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
 
 class Group(Transformable, EntityCollection, EntityLike):
@@ -87,6 +89,9 @@ class Group(Transformable, EntityCollection, EntityLike):
         entities: Union[list[EntityLike], EntityList] = [],
         schedules: Union[list[Schedule], ScheduleList] = [],
         string: str = None,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
     ):
         """
         :param string: A blueprint string to use as the basis for this Group;
@@ -106,6 +111,9 @@ class Group(Transformable, EntityCollection, EntityLike):
         :param schedules: A list of schedules to associate with this group.
         """
         super().__init__()  # EntityLike
+
+        # TODO: better mixin inheritance
+        self.validate_assignment = validate_assignment
 
         self.id = id
 
@@ -519,13 +527,31 @@ class Group(Transformable, EntityCollection, EntityLike):
     def merge(self, other: "Group"):
         # For now, we assume that Groups themselves are not mergable
         return  # Do nothing
+    
+    def validate( # TODO: inherit this
+        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    ) -> ValidationResult:
+        # Validate regular attributes
+        output = ValidationResult([], [])
+
+        # Validate recursive attributes
+        output += self.entities.validate(mode=mode, force=force)
+        # output += self.tiles.validate(mode=mode, force=force)
+
+        # if len(output.error_list) == 0:
+        #     # Set the `is_valid` attribute
+        #     # This means that if mode="pedantic", an entity that issues only
+        #     # warnings will still not be considered valid
+        #     super().validate()
+
+        return output
 
     def __str__(self) -> str:  # pragma: no coverage
         # TODO: better formatting
-        return "<Group>" + str(self.entities.data)
+        return "<Group>" + str(self.entities._root)
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<Group>{}".format(self.entities.data)
+        return "<Group>{}".format(self.entities._root)
 
     def __deepcopy__(self, memo: dict) -> "Group":
         """

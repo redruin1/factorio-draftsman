@@ -76,7 +76,7 @@ class TestUpgradePlanner:
 
         # Warnings
         with pytest.warns(DraftsmanWarning):
-            UpgradePlanner({"upgrade_planner": {"unused": "keyword"}})
+            UpgradePlanner({"upgrade_planner": {"unused": "keyword"}}).validate().reissue_all()
 
         # Correct format, but incorrect type
         with pytest.raises(IncorrectBlueprintTypeError):
@@ -432,13 +432,12 @@ class TestUpgradePlanner:
         upgrade_planner = UpgradePlanner()
 
         # Empty should validate
-        upgrade_planner.validate()
+        upgrade_planner.validate().reissue_all()
 
         # Ensure early-exit is_valid caching works
-        upgrade_planner.validate()
+        # upgrade_planner.validate().reissue_all() # TODO
 
         # Errors
-        # TODO: more
         with pytest.raises(DataFormatError):
             upgrade_planner.mappers = [
                 {"from": "incorrect", "to": "incorrect", "index": 1}

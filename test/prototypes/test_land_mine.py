@@ -12,9 +12,9 @@ class TestLandMine:
         land_mine = LandMine()
 
         with pytest.warns(UnknownKeywordWarning):
-            LandMine(unused_keyword="whatever")
+            LandMine(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            LandMine("this is not a rocket silo")
+            LandMine("this is not a land mine").validate().reissue_all()
 
     def test_mergable_with(self):
         landmine1 = LandMine("land-mine")

@@ -14,7 +14,7 @@ class PowerConnectableMixin(object):
     """
 
     class Format(BaseModel):
-        neighbours: Optional[list[uint64]] = Field(
+        neighbours: Optional[list[Association.Format]] = Field(
             [],
             description="""
             The 'entity_number's of each neighbouring power pole that this power

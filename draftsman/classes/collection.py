@@ -672,8 +672,8 @@ class EntityCollection(metaclass=ABCMeta):
         color: Literal["red", "green"],
         entity_1: Union[EntityLike, int, str],
         entity_2: Union[EntityLike, int, str],
-        side1: Literal[1, 2] = 1,
-        side2: Literal[1, 2] = 1,
+        side_1: Literal[1, 2] = 1,
+        side_2: Literal[1, 2] = 1,
     ) -> None:
         """
         Adds a circuit wire connection between two entities. Each entity
@@ -731,24 +731,24 @@ class EntityCollection(metaclass=ABCMeta):
 
         if color not in {"red", "green"}:
             raise InvalidWireTypeError(color)
-        if side1 not in {1, 2}:
-            raise InvalidConnectionSideError("'{}'".format(side1))
-        if side2 not in {1, 2}:
-            raise InvalidConnectionSideError("'{}'".format(side2))
+        if side_1 not in {1, 2}:
+            raise InvalidConnectionSideError("'{}'".format(side_1))
+        if side_2 not in {1, 2}:
+            raise InvalidConnectionSideError("'{}'".format(side_2))
 
         if not entity_1.circuit_connectable:
             raise EntityNotCircuitConnectableError(entity_1.name)
         if not entity_2.circuit_connectable:
             raise EntityNotCircuitConnectableError(entity_2.name)
 
-        if side1 == 2 and not entity_1.dual_circuit_connectable:
+        if side_1 == 2 and not entity_1.dual_circuit_connectable:
             warnings.warn(
                 "'side1' was specified as 2, but entity '{}' is not"
                 " dual circuit connectable".format(type(entity_1).__name__),
                 ConnectionSideWarning,
                 stacklevel=2,
             )
-        if side2 == 2 and not entity_2.dual_circuit_connectable:
+        if side_2 == 2 and not entity_2.dual_circuit_connectable:
             warnings.warn(
                 "'side2' was specified as 2, but entity '{}' is not"
                 " dual circuit connectable".format(type(entity_2).__name__),
@@ -777,7 +777,7 @@ class EntityCollection(metaclass=ABCMeta):
 
         # if entity_1.connections[str(side1)] is None:
         #     entity_1.connections[str(side1)] = Connections.CircuitConnections()
-        current_side = entity_1.connections[str(side1)]
+        current_side = entity_1.connections[str(side_1)]
 
         # if color not in current_side:
         if current_side[color] is None:
@@ -786,7 +786,7 @@ class EntityCollection(metaclass=ABCMeta):
 
         # If dual circuit connectable specify the target side
         if entity_2.dual_circuit_connectable:
-            entry = {"entity_id": Association(entity_2), "circuit_id": side2}
+            entry = {"entity_id": Association(entity_2), "circuit_id": side_2}
         else:
             # However, for most entities you dont need a target side
             entry = {"entity_id": Association(entity_2)}
@@ -798,7 +798,7 @@ class EntityCollection(metaclass=ABCMeta):
 
         # if entity_2.connections[str(side2)] is None:
         #     entity_2.connections[str(side2)] = Connections.CircuitConnections()
-        current_side = entity_2.connections[str(side2)]
+        current_side = entity_2.connections[str(side_2)]
 
         # if color not in current_side:
         if current_side[color] is None:
@@ -807,7 +807,7 @@ class EntityCollection(metaclass=ABCMeta):
 
         # If dual circuit connectable specify the target side
         if entity_1.dual_circuit_connectable:
-            entry = {"entity_id": Association(entity_1), "circuit_id": side1}
+            entry = {"entity_id": Association(entity_1), "circuit_id": side_1}
         else:
             # However, for most entities you dont need a target side
             entry = {"entity_id": Association(entity_1)}
@@ -820,8 +820,8 @@ class EntityCollection(metaclass=ABCMeta):
         color: Literal["red", "green"],
         entity_1: Union[EntityLike, int, str],
         entity_2: Union[EntityLike, int, str],
-        side1: Literal[1, 2] = 1,
-        side2: Literal[1, 2] = 1,
+        side_1: Literal[1, 2] = 1,
+        side_2: Literal[1, 2] = 1,
     ) -> None:
         """
         Removes a circuit wire connection between two entities. Each entity
@@ -868,25 +868,25 @@ class EntityCollection(metaclass=ABCMeta):
 
         if color not in {"red", "green"}:
             raise InvalidWireTypeError(color)
-        if side1 not in {1, 2}:
-            raise InvalidConnectionSideError(side1)
-        if side2 not in {1, 2}:
-            raise InvalidConnectionSideError(side2)
+        if side_1 not in {1, 2}:
+            raise InvalidConnectionSideError(side_1)
+        if side_2 not in {1, 2}:
+            raise InvalidConnectionSideError(side_2)
 
         # Remove from source
         if entity_2.dual_circuit_connectable:
-            entry = {"entity_id": Association(entity_2), "circuit_id": side2}
+            entry = {"entity_id": Association(entity_2), "circuit_id": side_2}
         else:
             # However, for most entities you dont need a target side
             entry = {"entity_id": Association(entity_2)}
 
         try:
-            current_side = entity_1.connections[str(side1)]
+            current_side = entity_1.connections[str(side_1)]
             current_color = current_side[color]
             current_color.remove(entry)
             # Remove redundant structures from source if applicable
             if len(current_color) == 0:
-                entity_1.connections[str(side1)][color] = None
+                entity_1.connections[str(side_1)][color] = None
             # if len(current_side) == 0:
             #     del entity_1.connections[str(side1)]
         except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
@@ -894,18 +894,18 @@ class EntityCollection(metaclass=ABCMeta):
 
         # Remove from target
         if entity_1.dual_circuit_connectable:
-            entry = {"entity_id": Association(entity_1), "circuit_id": side1}
+            entry = {"entity_id": Association(entity_1), "circuit_id": side_1}
         else:
             # However, for most entities you dont need a target side
             entry = {"entity_id": Association(entity_1)}
 
         try:
-            current_side = entity_2.connections[str(side2)]
+            current_side = entity_2.connections[str(side_2)]
             current_color = current_side[color]
             current_color.remove(entry)
             # Remove redundant structures from target if applicable
             if len(current_color) == 0:
-                entity_2.connections[str(side2)][color] = None
+                entity_2.connections[str(side_2)][color] = None
             # if len(current_side) == 0:
             #     del entity_2.connections[str(side2)]
         except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
@@ -1135,10 +1135,10 @@ class EntityCollection(metaclass=ABCMeta):
 
     def remove_train(self, cars: list[EntityLike]) -> None:
         """
-        Removes all of the rolling stock specified as the list ``cars``. Very
-        easy to perform this task yourself, but this function also takes care of
-        removing any locomotive associations in any corresponding
-        :py:class:`Schedule` object(s). Does nothing if ``cars`` is empty.
+        Removes all of the rolling stock specified as the list ``cars``, and 
+        also takes care of removing any locomotive associations in any 
+        corresponding :py:class:`Schedule` object(s). Does nothing if ``cars`` 
+        is empty.
 
         :param cars: A ``list`` of references to :py:class:`EntityLike`s within
             the collection.

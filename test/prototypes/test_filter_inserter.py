@@ -82,39 +82,39 @@ class TestFilterInserter:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            FilterInserter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5)
+            FilterInserter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5).validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            FilterInserter(control_behavior={"unused": "keyword"})
+            FilterInserter(control_behavior={"unused": "keyword"}).validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
             FilterInserter(
                 "filter-inserter", connections={"this is": ["very", "wrong"]}
-            )
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            FilterInserter("this is not a filter inserter")
+            FilterInserter("this is not a filter inserter").validate().reissue_all()
 
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            FilterInserter("filter-inserter", id=25)
+            FilterInserter("filter-inserter", id=25).validate().reissue_all()
 
         with pytest.raises(TypeError):
-            FilterInserter("filter-inserter", position=TypeError)
+            FilterInserter("filter-inserter", position=TypeError).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            FilterInserter("filter-inserter", direction="incorrect")
+            FilterInserter("filter-inserter", direction="incorrect").validate().reissue_all()
         with pytest.raises(DataFormatError):
-            FilterInserter("filter-inserter", override_stack_size="incorrect")
+            FilterInserter("filter-inserter", override_stack_size="incorrect").validate().reissue_all()
         with pytest.raises(DataFormatError):
-            FilterInserter("filter-inserter", connections="incorrect")
+            FilterInserter("filter-inserter", connections="incorrect").validate().reissue_all()
         with pytest.raises(DataFormatError):
             FilterInserter(
                 "filter-inserter",
                 control_behavior="incorrect",
-            )
+            ).validate().reissue_all()
         with pytest.raises(DataFormatError):
-            FilterInserter(filter_mode=TypeError)
+            FilterInserter(filter_mode=TypeError).validate().reissue_all()
         with pytest.raises(DataFormatError):
-            FilterInserter("filter-inserter", filter_mode="wrong")
+            FilterInserter("filter-inserter", filter_mode="wrong").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in filter_inserters:

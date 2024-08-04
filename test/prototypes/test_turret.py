@@ -11,12 +11,15 @@ import pytest
 class TestTurret:
     def test_constructor_init(self):
         turret = Turret("gun-turret")
+        turret.validate().reissue_all()
 
         with pytest.warns(UnknownKeywordWarning):
-            Turret("gun-turret", unused_keyword="whatever")
+            turret = Turret("gun-turret", unused_keyword="whatever")
+            turret.validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            Turret("this is not a turret")
+            turret = Turret("this is not a turret")
+            turret.validate().reissue_all()
 
     def test_flags(self):
         turret = Turret("gun-turret")

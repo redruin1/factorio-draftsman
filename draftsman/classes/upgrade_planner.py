@@ -9,7 +9,7 @@
 
 from draftsman import __factorio_version_info__
 from draftsman.classes.blueprintable import Blueprintable
-from draftsman.classes.exportable import ValidationResult, attempt_and_reissue
+from draftsman.classes.exportable import ValidationResult, attempt_and_reissue, test_replace_me
 from draftsman.constants import ValidationMode
 from draftsman.data import entities, items
 from draftsman.error import DataFormatError
@@ -19,6 +19,7 @@ from draftsman.signatures import (
     Mapper,
     MapperID,
     mapper_dict,
+    normalize_icons,
     uint8,
     uint16,
     uint64,
@@ -267,6 +268,7 @@ class UpgradePlanner(Blueprintable):
                     A set of signal pictures to associate with this 
                     UpgradePlanner.
                     """,
+                    max_length=4,
                 )
                 mappers: Optional[list[Mapper]] = Field(
                     None,
@@ -278,21 +280,12 @@ class UpgradePlanner(Blueprintable):
                 @field_validator("icons", mode="before")
                 @classmethod
                 def normalize_icons(cls, value: Any):
-                    if isinstance(value, Sequence):
-                        result = [None] * len(value)
-                        for i, signal in enumerate(value):
-                            if isinstance(signal, str):
-                                result[i] = {"index": i + 1, "signal": signal}
-                            else:
-                                result[i] = signal
-                        return result
-                    else:
-                        return value
+                    return normalize_icons(value)
 
                 @field_validator("mappers", mode="before")
                 @classmethod
                 def normalize_mappers(cls, value: Any):
-                    if isinstance(value, Sequence):
+                    try:
                         result = []
                         for i, mapper in enumerate(value):
                             if isinstance(mapper, Sequence):
@@ -304,7 +297,7 @@ class UpgradePlanner(Blueprintable):
                             else:
                                 result.append(mapper)
                         return result
-                    else:
+                    except Exception:
                         return value
 
                 @model_validator(mode="after")
@@ -410,13 +403,13 @@ class UpgradePlanner(Blueprintable):
     def __init__(
         self,
         upgrade_planner: Union[str, dict, None] = None,
+        index: Optional[uint16] = None,
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
-        if_unknown: str = "error",  # TODO: enum
     ):
         """
         Constructs a new :py:class:`.UpgradePlanner`.
@@ -440,28 +433,37 @@ class UpgradePlanner(Blueprintable):
             root_format=UpgradePlanner.Format.UpgradePlannerObject,
             item="upgrade-planner",
             init_data=upgrade_planner,
-            if_unknown=if_unknown,
+            index=index,
+            validate=validate,
         )
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     @reissue_warnings
     def setup(
         self,
         label: str = None,
         version: uint64 = __factorio_version_info__,
-        settings: Format.UpgradePlannerObject.Settings = Format.UpgradePlannerObject.Settings(),
+        settings: Format.UpgradePlannerObject.Settings = {},
         index: Optional[uint16] = None,
-        if_unknown: str = "error",  # TODO: enum
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
         **kwargs
     ):
         kwargs.pop("item", None)
 
         self.label = label
         self.version = version
-        self._root[self._root_item]["settings"] = settings
+        # self._root[self._root_item]["settings"] = settings
+        test_replace_me(
+            self,
+            self.Format.UpgradePlannerObject,
+            self._root[self._root_item],
+            "settings",
+            settings,
+            self.validate_assignment
+        )
 
         # self._root[self._root_item]["settings"] = {}
         # input_settings = kwargs.pop("settings", None)
@@ -476,6 +478,9 @@ class UpgradePlanner(Blueprintable):
         for kwarg, value in kwargs.items():
             self._root[kwarg] = value
 
+        if validate:
+            self.validate(mode=validate).reissue_all()
+
     # =========================================================================
     # Properties
     # =========================================================================
@@ -486,17 +491,25 @@ class UpgradePlanner(Blueprintable):
 
     @description.setter
     def description(self, value: Optional[str]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                self.Format.UpgradePlannerObject.Settings,
-                self._root[self._root_item]["settings"],
-                "description",
-                value,
-            )
-            self._root[self._root_item]["settings"]["description"] = result
-        else:
-            self._root[self._root_item]["settings"]["description"] = value
+        test_replace_me(
+            self,
+            self.Format.UpgradePlannerObject.Settings,
+            self._root[self._root_item]["settings"],
+            "description",
+            value,
+            self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self,
+        #         self.Format.UpgradePlannerObject.Settings,
+        #         self._root[self._root_item]["settings"],
+        #         "description",
+        #         value,
+        #     )
+        #     self._root[self._root_item]["settings"]["description"] = result
+        # else:
+        #     self._root[self._root_item]["settings"]["description"] = value
 
     # =========================================================================
 
@@ -506,17 +519,25 @@ class UpgradePlanner(Blueprintable):
 
     @icons.setter
     def icons(self, value: Union[list[str], list[Icon], None]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                self.Format.UpgradePlannerObject.Settings,
-                self._root[self._root_item]["settings"],
-                "icons",
-                value,
-            )
-            self._root[self._root_item]["settings"]["icons"] = result
-        else:
-            self._root[self._root_item]["settings"]["icons"] = value
+        test_replace_me(
+            self,
+            self.Format.UpgradePlannerObject.Settings,
+            self._root[self._root_item]["settings"],
+            "icons",
+            value,
+            self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self,
+        #         self.Format.UpgradePlannerObject.Settings,
+        #         self._root[self._root_item]["settings"],
+        #         "icons",
+        #         value,
+        #     )
+        #     self._root[self._root_item]["settings"]["icons"] = result
+        # else:
+        #     self._root[self._root_item]["settings"]["icons"] = value
 
     # =========================================================================
 
@@ -547,17 +568,25 @@ class UpgradePlanner(Blueprintable):
 
     @mappers.setter
     def mappers(self, value: Optional[list[Union[tuple[str, str], Mapper]]]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                self.Format.UpgradePlannerObject.Settings,
-                self._root[self._root_item]["settings"],
-                "mappers",
-                value,
-            )
-            self._root[self._root_item]["settings"]["mappers"] = result
-        else:
-            self._root[self._root_item]["settings"]["mappers"] = value
+        test_replace_me(
+            self,
+            self.Format.UpgradePlannerObject.Settings,
+            self._root[self._root_item]["settings"],
+            "mappers",
+            value,
+            self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self,
+        #         self.Format.UpgradePlannerObject.Settings,
+        #         self._root[self._root_item]["settings"],
+        #         "mappers",
+        #         value,
+        #     )
+        #     self._root[self._root_item]["settings"]["mappers"] = result
+        # else:
+        #     self._root[self._root_item]["settings"]["mappers"] = value
 
     # =========================================================================
 

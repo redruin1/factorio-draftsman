@@ -14,10 +14,10 @@ class TestBoiler:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Boiler(unused_keyword="whatever")
+            Boiler(unused_keyword="whatever").validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            Boiler("not a boiler")
+            Boiler("not a boiler").validate().reissue_all()
 
         # Errors
 

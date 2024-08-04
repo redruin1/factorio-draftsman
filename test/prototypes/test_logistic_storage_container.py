@@ -71,32 +71,32 @@ class TestLogisticStorageContainer:
         with pytest.warns(UnknownKeywordWarning):
             LogisticStorageContainer(
                 "logistic-chest-storage", position=[0, 0], invalid_keyword="100"
-            )
+            ).validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
             LogisticStorageContainer(
                 "logistic-chest-storage", connections={"this is": ["very", "wrong"]}
-            )
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            LogisticStorageContainer("this is not a logistics storage chest")
+            LogisticStorageContainer("this is not a logistics storage chest").validate().reissue_all()
 
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            LogisticStorageContainer("logistic-chest-storage", id=25)
+            LogisticStorageContainer("logistic-chest-storage", id=25).validate().reissue_all()
 
         with pytest.raises(TypeError):
-            LogisticStorageContainer("logistic-chest-storage", position=TypeError)
+            LogisticStorageContainer("logistic-chest-storage", position=TypeError).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            LogisticStorageContainer("logistic-chest-storage", bar="not even trying")
+            LogisticStorageContainer("logistic-chest-storage", bar="not even trying").validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            LogisticStorageContainer("logistic-chest-storage", connections="incorrect")
+            LogisticStorageContainer("logistic-chest-storage", connections="incorrect").validate().reissue_all()
 
         with pytest.raises(DataFormatError):
             LogisticStorageContainer(
                 "logistic-chest-storage", request_filters="incorrect"
-            )
+            ).validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in logistic_storage_containers:

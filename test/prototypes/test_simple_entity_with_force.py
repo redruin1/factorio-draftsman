@@ -14,10 +14,10 @@ class TestSimpleEntityWithForce:
         assert entity.variation == 13
 
         with pytest.warns(UnknownKeywordWarning):
-            SimpleEntityWithForce(unused_keyword="whatever")
+            SimpleEntityWithForce(unused_keyword="whatever").validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            SimpleEntityWithForce("this is not correct")
+            SimpleEntityWithForce("this is not correct").validate().reissue_all()
 
     def test_to_dict(self):
         entity = SimpleEntityWithForce("simple-entity-with-force")

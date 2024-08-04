@@ -63,9 +63,6 @@ class Splitter(DirectionalMixin, Entity):
         output_priority: Literal["left", "none", "right"] = "none",
         filter: str = None,  # TODO: ItemID
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -92,8 +89,6 @@ class Splitter(DirectionalMixin, Entity):
         self.filter = filter
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

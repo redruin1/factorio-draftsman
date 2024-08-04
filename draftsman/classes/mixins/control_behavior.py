@@ -96,7 +96,9 @@ class ControlBehaviorMixin:
         self.control_behavior = other.control_behavior
 
     def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
-        result = super().to_dict(exclude_none, exclude_defaults)
+        result = super().to_dict(
+            exclude_none=exclude_none, exclude_defaults=exclude_defaults
+        )
         if "control_behavior" in result and result["control_behavior"] == {}:
             del result["control_behavior"]
         return result

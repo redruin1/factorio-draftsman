@@ -22,13 +22,13 @@ class TestLinkedContainer:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            LinkedContainer("linked-chest", unused_keyword="whatever")
+            LinkedContainer("linked-chest", unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            LinkedContainer("this is not a linked container")
+            LinkedContainer("this is not a linked container").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            LinkedContainer("linked-chest", link_id="incorrect")
+            LinkedContainer("linked-chest", link_id="incorrect").validate().reissue_all()
 
     def test_set_link(self):
         container = LinkedContainer("linked-chest")

@@ -82,9 +82,6 @@ class Inserter(
         connections: Connections = {},
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -104,8 +101,6 @@ class Inserter(
         )
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

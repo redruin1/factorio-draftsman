@@ -92,15 +92,15 @@ class TestConstantCombinator:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            ConstantCombinator(unused_keyword="whatever")
+            ConstantCombinator(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            ConstantCombinator(control_behavior={"unused_key": "something"})
+            ConstantCombinator(control_behavior={"unused_key": "something"}).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            ConstantCombinator("this is not a constant combinator")
+            ConstantCombinator("this is not a constant combinator").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            ConstantCombinator(control_behavior="incorrect")
+            ConstantCombinator(control_behavior="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in constant_combinators:

@@ -17,11 +17,11 @@ class TestSolarPanel:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            SolarPanel(unused_keyword="whatever")
+            SolarPanel(unused_keyword="whatever").validate().reissue_all()
 
         # Errors
         with pytest.warns(UnknownEntityWarning):
-            SolarPanel("not a solar_panel")
+            SolarPanel("not a solar_panel").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in solar_panels:

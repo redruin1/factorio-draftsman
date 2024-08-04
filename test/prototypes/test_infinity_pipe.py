@@ -36,15 +36,15 @@ class TestInfinityPipe:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            InfinityPipe(unused_keyword="whatever")
+            InfinityPipe(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            InfinityPipe(infinity_settings={"clearly": "wrong"})
+            InfinityPipe(infinity_settings={"clearly": "wrong"}).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            InfinityPipe("this is not an infinity pipe")
+            InfinityPipe("this is not an infinity pipe").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            InfinityPipe(infinity_settings="incorrect")
+            InfinityPipe(infinity_settings="incorrect").validate().reissue_all()
 
     def test_set_infinity_settings(self):
         pipe = InfinityPipe()

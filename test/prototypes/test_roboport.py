@@ -111,13 +111,13 @@ class TestRoboport:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Roboport("roboport", unused_keyword="whatever")
+            Roboport("roboport", unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            Roboport("this is not a roboport")
+            Roboport("this is not a roboport").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            Roboport(control_behavior="incorrect")
+            Roboport(control_behavior="incorrect").validate().reissue_all()
 
     def test_set_read_logistics(self):
         roboport = Roboport()

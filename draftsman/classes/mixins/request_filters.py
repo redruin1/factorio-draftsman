@@ -1,6 +1,6 @@
 # request_filters.py
 
-from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.data import items
 from draftsman.error import DataFormatError
 from draftsman.signatures import RequestFilter
@@ -63,13 +63,16 @@ class RequestFiltersMixin:
 
     @request_filters.setter
     def request_filters(self, value: Optional[list[RequestFilter]]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "request_filters", value
-            )
-            self._root.request_filters = result
-        else:
-            self._root.request_filters = value
+        test_replace_me(
+            self, type(self).Format, self._root, "request_filters", value, self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self, type(self).Format, self._root, "request_filters", value
+        #     )
+        #     self._root.request_filters = result
+        # else:
+        #     self._root.request_filters = value
 
     # =========================================================================
 

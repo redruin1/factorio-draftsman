@@ -242,8 +242,8 @@ class UnknownElementWarning(DraftsmanWarning):
 
 class UnknownEntityWarning(UnknownElementWarning):
     """
-    Raised when an entity is specified who is not recognized by Draftsman, but
-    has been explicitly permitted with the `if_unknown="accept"` kwarg.
+    Raised when an entity is specified who is not recognized by the current 
+    Factorio environment.
     """
 
     pass

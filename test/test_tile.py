@@ -24,14 +24,14 @@ class TestTile:
 
         # Invalid name
         with pytest.warns(UnknownTileWarning, match="Unknown tile 'weeeeee'"):
-            tile = Tile("weeeeee")
+            tile = Tile("weeeeee").validate().reissue_all()
 
         # Invalid name with suggestion
         with pytest.warns(
             UnknownTileWarning,
             match="Unknown tile 'stonepath'; did you mean 'stone-path'?",
         ):
-            tile = Tile("stonepath")
+            tile = Tile("stonepath").validate().reissue_all()
 
         # TODO: test closure
         # with self.assertRaises(InvalidTileError):
@@ -45,10 +45,10 @@ class TestTile:
             UnknownTileWarning,
             match="Unknown tile 'stonepath'; did you mean 'stone-path'?",
         ):
-            tile = Tile("stonepath")
+            tile = Tile("stonepath").validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            tile = Tile(name=100)
+            tile = Tile(name=100).validate().reissue_all()
 
         # validation off
         tile = Tile(name=100, validate="none")
@@ -117,21 +117,13 @@ class TestTileFactory:
         assert isinstance(tile, Tile)
         assert tile.name == "landfill"
 
-        # Invalid mode
-        with pytest.raises(ValueError):
-            tile = new_tile("unknown", if_unknown="wrong")
-
-        # Unknown error (default)
-        with pytest.raises(InvalidTileError):
-            tile = new_tile("unknown", if_unknown="error")
-
-        # Unknown ignore
-        tile = new_tile("unknown", if_unknown="ignore")
-        assert tile is None
-
-        # Unknown accept
-        tile = new_tile("unknown", validate="minimum", if_unknown="accept")
+        # Unknown tiles are accepted
+        tile = new_tile("unknown")
         assert isinstance(tile, Tile)
+
+        # Draftsman will only complain if you ask it to
+        with pytest.warns(UnknownTileWarning):
+            tile.validate().reissue_all()
 
         # Generic entities should be able to handle attribute access and serialization
         assert tile.name == "unknown"
@@ -144,8 +136,6 @@ class TestTileFactory:
             "unknown",
             position=(1, 1),
             unknown_attribute="value",
-            validate="minimum",
-            if_unknown="accept",
         )
         assert tile.to_dict() == {
             "name": "unknown",
@@ -162,12 +152,11 @@ class TestTileFactory:
             "new_thing": "extra!",
         }
 
-        # Draftsman will still complain about the unknown entity, but it doesn't
-        # panic unless you want it to
-        with pytest.warns(UnknownTileWarning):
-            tile.validate(mode=ValidationMode.PEDANTIC).reissue_all()
+        # Don't complain if minimum
+        tile.validate(mode="minimum").reissue_all()
 
         # However, setting known attributes incorrectly should still create
         # issues
+        assert tile.validate_assignment is ValidationMode.STRICT
         with pytest.raises(DataFormatError):
             tile.name = 100

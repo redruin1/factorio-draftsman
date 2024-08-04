@@ -213,7 +213,7 @@ class TestBlueprintBook:
 
     def test_set_label(self):
         blueprint_book = BlueprintBook()
-        blueprint_book.set_version(1, 1, 54, 0)
+        blueprint_book.version = (1, 1, 54, 0)
         # String
         blueprint_book.label = "testing The LABEL"
         assert blueprint_book.label == "testing The LABEL"
@@ -237,7 +237,7 @@ class TestBlueprintBook:
 
     def test_set_label_color(self):
         blueprint_book = BlueprintBook()
-        blueprint_book.set_version(1, 1, 54, 0)
+        blueprint_book.version = (1, 1, 54, 0)
         # Valid 3 args
         # Test for floating point conversion error by using 0.1
         blueprint_book.set_label_color(0.5, 0.1, 0.5)
@@ -345,7 +345,7 @@ class TestBlueprintBook:
 
     def test_set_version(self):
         blueprint_book = BlueprintBook()
-        blueprint_book.set_version(1, 0, 40, 0)
+        blueprint_book.version = (1, 0, 40, 0)
         assert blueprint_book.version == 281474979332096
 
         blueprint_book.version = None
@@ -354,11 +354,11 @@ class TestBlueprintBook:
             "blueprint_book": {"item": "blueprint-book"}
         }
 
-        with pytest.raises(TypeError):
-            blueprint_book.set_version(TypeError)
+        with pytest.raises(DataFormatError):
+            blueprint_book.version = TypeError
 
-        with pytest.raises(TypeError):
-            blueprint_book.set_version("1", "0", "40", "0")
+        with pytest.raises(DataFormatError):
+            blueprint_book.version = ("1", "0", "40", "0")
 
     def test_set_blueprints(self):
         blueprint_book = BlueprintBook()
@@ -525,18 +525,18 @@ class TestBlueprintBook:
     def test_version_tuple(self):
         blueprint_book = BlueprintBook()
         assert blueprint_book.version_tuple() == __factorio_version_info__
-        blueprint_book.set_version(0, 0, 0, 0)
+        blueprint_book.version = 0
         assert blueprint_book.version_tuple() == (0, 0, 0, 0)
 
     def test_version_string(self):
         blueprint_book = BlueprintBook()
         assert blueprint_book.version_string() == __factorio_version__
-        blueprint_book.set_version(0, 0, 0, 0)
+        blueprint_book.version = (0, 0, 0, 0)
         assert blueprint_book.version_string() == "0.0.0.0"
 
     def test_to_string(self):
         blueprint_book = BlueprintBook()
-        blueprint_book.set_version(1, 1, 53, 0)
+        blueprint_book.version = (1, 1, 53, 0)
         # self.assertEqual(
         #     blueprint_book.to_string(),
         #     "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTQ1NDY3NDGprAVVBHPY="

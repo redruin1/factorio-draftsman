@@ -38,15 +38,17 @@ class TestStraightRail:
 
         # Warnings:
         with pytest.warns(DraftsmanWarning):
-            StraightRail("straight-rail", invalid_keyword="whatever")
+            rail = StraightRail("straight-rail", invalid_keyword="whatever")
+            rail.validate().reissue_all()
         # if entity is not on a grid pos / 2, then warn the user of the incoming
         # shift
         with pytest.warns(GridAlignmentWarning):
-            StraightRail("straight-rail", tile_position=[1, 1])
+            rail = StraightRail("straight-rail", tile_position=[1, 1])
+            rail.validate().reissue_all()
 
         # Errors
         with pytest.warns(UnknownEntityWarning):
-            StraightRail("this is not a straight rail")
+            StraightRail("this is not a straight rail").validate().reissue_all()
 
         # Assert validation with no context still works
         StraightRail.Format.model_validate(straight_rail._root)

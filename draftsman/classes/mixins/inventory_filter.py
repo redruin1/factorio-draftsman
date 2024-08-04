@@ -1,6 +1,6 @@
 # inventory_filter.py
 
-from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.data import entities
 from draftsman.data import items
 from draftsman.error import (
@@ -130,15 +130,18 @@ class InventoryFilterMixin:
 
     @inventory.setter
     def inventory(self, value: Format.InventoryFilters):
-        if self.validate_assignment:
-            value = attempt_and_reissue(
-                self, type(self).Format, self._root, "inventory", value
-            )
+        test_replace_me(
+            self, type(self).Format, self._root, "inventory", value, self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     value = attempt_and_reissue(
+        #         self, type(self).Format, self._root, "inventory", value
+        #     )
 
-        if value is None:
-            self._root.inventory = __class__.Format.InventoryFilters()
-        else:
-            self._root.inventory = value
+        # if value is None:
+        #     self._root.inventory = __class__.Format.InventoryFilters()
+        # else:
+        #     self._root.inventory = value
 
     # =========================================================================
 
@@ -163,17 +166,20 @@ class InventoryFilterMixin:
 
     @filters.setter
     def filters(self, value: Optional[list[FilterEntry]]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                __class__.Format.InventoryFilters,
-                self.inventory,
-                "filters",
-                value,
-            )
-            self.inventory.filters = result
-        else:
-            self.inventory.filters = value
+        test_replace_me(
+            self, type(self).Format.InventoryFilters, self.inventory, "filters", value, self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self,
+        #         __class__.Format.InventoryFilters,
+        #         self.inventory,
+        #         "filters",
+        #         value,
+        #     )
+        #     self.inventory.filters = result
+        # else:
+        #     self.inventory.filters = value
 
     # =========================================================================
 
@@ -199,13 +205,16 @@ class InventoryFilterMixin:
 
     @bar.setter
     def bar(self, value: uint16):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, __class__.Format.InventoryFilters, self.inventory, "bar", value
-            )
-            self.inventory.bar = result
-        else:
-            self.inventory.bar = value
+        test_replace_me(
+            self, type(self).Format.InventoryFilters, self.inventory, "bar", value, self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self, __class__.Format.InventoryFilters, self.inventory, "bar", value
+        #     )
+        #     self.inventory.bar = result
+        # else:
+        #     self.inventory.bar = value
 
     # =========================================================================
 

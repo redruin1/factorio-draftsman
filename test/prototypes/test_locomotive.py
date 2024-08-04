@@ -26,17 +26,17 @@ class TestLocomotive:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Locomotive("locomotive", unused_keyword="whatever")
+            Locomotive("locomotive", unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            Locomotive("this is not a locomotive")
+            Locomotive("this is not a locomotive").validate().reissue_all()
         # Warn if the locomotive is not on a rail (close enough to one?)
         # TODO (Complex)
 
         # Errors
         with pytest.raises(DataFormatError):
-            Locomotive("locomotive", orientation="wrong")
+            Locomotive("locomotive", orientation="wrong").validate().reissue_all()
         with pytest.raises(DataFormatError):
-            Locomotive("locomotive", color="also wrong")
+            Locomotive("locomotive", color="also wrong").validate().reissue_all()
 
     def test_mergable_with(self):
         train1 = Locomotive("locomotive")

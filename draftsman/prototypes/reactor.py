@@ -30,9 +30,6 @@ class Reactor(BurnerEnergySourceMixin, RequestItemsMixin, Entity):
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         items: dict[str, uint32] = {},
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -58,8 +55,6 @@ class Reactor(BurnerEnergySourceMixin, RequestItemsMixin, Entity):
         # BurnerEnergySourceMixin are only used in the correct configuration
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

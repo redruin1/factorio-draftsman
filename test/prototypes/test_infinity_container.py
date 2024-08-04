@@ -39,11 +39,9 @@ class TestInfinityContainer:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            InfinityContainer(unused_keyword="whatever")
+            InfinityContainer(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            InfinityContainer("this is not an infinity container")
-
-        # Errors
+            InfinityContainer("this is not an infinity container").validate().reissue_all()
 
     def test_set_infinity_settings(self):
         container = InfinityContainer()

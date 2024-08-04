@@ -20,10 +20,10 @@ class TestBeacon:
         beacon = Beacon()
 
         with pytest.warns(UnknownKeywordWarning):
-            Beacon(unused_keyword="whatever")
+            Beacon(unused_keyword="whatever").validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            Beacon("this is not a beacon")
+            Beacon("this is not a beacon").validate().reissue_all()
 
     def test_set_item_request(self):
         beacon = Beacon()

@@ -4,13 +4,14 @@ from draftsman.classes.exportable import (
     Exportable,
     ValidationResult,
     attempt_and_reissue,
+    apply_assignment,
+    test_replace_me
 )
 from draftsman.constants import ValidationMode
-from draftsman.data.signals import signal_dict
 from draftsman.error import DataFormatError, IncorrectBlueprintTypeError
-from draftsman.signatures import DraftsmanBaseModel, Icon, uint16, uint64
+from draftsman.signatures import DraftsmanBaseModel, Icon, normalize_version, uint16, uint64
+from draftsman.data.signals import signal_dict
 from draftsman.utils import (
-    encode_version,
     decode_version,
     JSON_to_string,
     string_to_JSON,
@@ -40,8 +41,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         self,
         root_format: DraftsmanBaseModel,
         root_item: str,
-        init_data: Union[str, dict],
-        if_unknown="error",  # TODO: enum
+        init_data: Union[str, dict, None],
+        index: uint16,
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
         **kwargs
     ):
         """
@@ -62,26 +66,28 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         self._root_format = root_format
         # self._root = self.Format.model_construct(**{self._root_item: {"item": item, **kwargs}})
         # self._root[self._root_item] = root_format.model_construct(self._root[self._root_item])
+        # Create a Pydantic model instance for quick validation (at the cost of
+        # startup time and memory)
         self._root = self.Format.model_validate(
-            {self._root_item: {"item": root_item, **kwargs}, "index": None},
-            context={"construction": True, "mode": ValidationMode.MINIMUM},
+            {self._root_item: {"item": root_item, **kwargs}, "index": index},
+            context={"construction": True, "mode": ValidationMode.NONE},
         )
         # print("blueprintable")
         # print(self._root)
 
         # self._root = {}
         # self._root[self._root_item] = {}
-        # self._root[self._root_item]["item"] = six.text_type(item)
+        # self._root[self._root_item]["item"] = root_item
 
         if init_data is None:
-            self.setup(if_unknown=if_unknown)
+            self.setup()
         elif isinstance(init_data, str):
-            self.load_from_string(init_data, if_unknown=if_unknown)
+            self.load_from_string(init_data, validate=validate)
         elif isinstance(init_data, dict):
             self.setup(
                 **init_data[self._root_item],
                 index=init_data.get("index", None),
-                if_unknown=if_unknown
+                validate=validate,
             )
         else:
             raise DataFormatError(
@@ -91,8 +97,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             )
 
     @reissue_warnings
-    def load_from_string(self, string: str, if_unknown: str = "error"):
-        # TODO: if_unknown enum
+    def load_from_string(self, string: str, validate: Union[ValidationMode, Literal["none", "minimum", "strict", "pedantic"]] = ValidationMode.STRICT):
         """
         Load the :py:class:`.Blueprintable` with the contents of ``string``.
 
@@ -100,8 +105,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         keywords in the blueprint string for this particular blueprintable.
 
         :param string: Factorio-encoded blueprint string.
-        :param if_unknown: How Draftsman should behave if it encounters a tile
-            or entity that it doesn't recognize with it's current configuration.
 
         :exception MalformedBlueprintStringError: If the input string is not
             decodable to a JSON object.
@@ -126,11 +129,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         self.setup(
             **root[self._root_item],
             index=root.get("index", None),
-            if_unknown=if_unknown
+            validate=validate,
         )
 
     @abstractmethod
-    def setup(self, if_unknown: str = "error", **kwargs):  # pragma: no coverage
+    def setup(self, **kwargs):  # pragma: no coverage
         """
         Setup the Blueprintable's parameters with the input keywords as values.
         Primarily used by the constructor, but can be used at any time to set
@@ -139,8 +142,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         Raises :py:class:`.DraftsmanWarning` if any of the input keywords are
         unrecognized.
 
-        :param if_unknown: How Draftsman should behave if it encounters a tile
-            or entity that it doesn't recognize with it's current configuration.
         :param kwargs: The dict of all keywords to set in the blueprint.
 
         .. NOTE::
@@ -210,13 +211,16 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     @label.setter
     def label(self, value: Optional[str]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, self._root_format, self._root[self._root_item], "label", value
-            )
-            self._root[self._root_item]["label"] = result
-        else:
-            self._root[self._root_item]["label"] = value
+        test_replace_me(
+            self, self._root_format, self._root[self._root_item], "label", value, self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self, self._root_format, self._root[self._root_item], "label", value
+        #     )
+        #     self._root[self._root_item]["label"] = result
+        # else:
+        #     self._root[self._root_item]["label"] = value
 
     # =========================================================================
 
@@ -287,13 +291,31 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     @icons.setter
     def icons(self, value: Union[list[str], list[Icon], None]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, self._root_format, self._root[self._root_item], "icons", value
-            )
-            self._root[self._root_item]["icons"] = result
-        else:
-            self._root[self._root_item]["icons"] = value
+        test_replace_me(
+            self, self._root_format, self._root[self._root_item], "icons", value, self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     print("validated")
+        #     # Question; does the validation of an assignment depend on other components?
+        #     # Or, in other words, do we have to rerun the entire validation suite when
+        #     # we change just one entry?
+        #     # A: perhaps. For example, what if we change the position of an entity
+        #     # which should now issue overlapping warnings, or even worse, an entire
+        #     # group object?
+        #     # In a perfect world it might be possible to "optimize" the amount
+        #     # of validation that occurs, but that currently lies firmly outside
+        #     # the scope of 2.0
+        #     print(self._root[self._root_item])
+        #     result = attempt_and_reissue(
+        #         self, self._root_format, self._root[self._root_item], "icons", value
+        #     )
+        #     self._root[self._root_item]["icons"] = result
+        # else:
+        #     print("non-validated")
+        #     result = apply_assignment(
+        #         self, self._root_format, self._root[self._root_item], "icons", value
+        #     )
+        #     self._root[self._root_item]["icons"] = result
 
     def set_icons(self, *icon_names):
         """
@@ -301,7 +323,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         """
         new_icons = [None] * len(icon_names)
         for i, icon in enumerate(icon_names):
-            new_icons[i] = {"index": i + 1, "signal": signal_dict(icon)}
+            new_icons[i] = {"index": i + 1, "signal": icon}
         self.icons = new_icons
 
     # =========================================================================
@@ -350,6 +372,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     @version.setter
     def version(self, value: Union[uint64, Sequence[uint16]]):
+        value = normalize_version(value)
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self, self._root_format, self._root[self._root_item], "version", value
@@ -357,19 +380,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             self._root[self._root_item]["version"] = result
         else:
             self._root[self._root_item]["version"] = value
-
-    def set_version(self, major, minor, patch=0, dev_ver=0):
-        """
-        Convenience function for setting a Blueprintable's version by it's
-        component semantic version numbers. Loose wrapper around
-        :py:func:`.encode_version`.
-
-        :param major: The major Factorio version.
-        :param minor: The minor Factorio version.
-        :param patch: The current patch number.
-        :param dev_ver: The (internal) development version.
-        """
-        self.version = encode_version(major, minor, patch, dev_ver)
 
     # =========================================================================
 
@@ -457,8 +467,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> blueprint.version_string()
             '1.2.3.0'
         """
-        version_tuple = decode_version(self._root[self._root_item]["version"])
-        return version_tuple_to_string(version_tuple)
+        return version_tuple_to_string(self.version_tuple())
 
     # =========================================================================
 
@@ -469,7 +478,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE or (self.is_valid and not force):
+        if mode is ValidationMode.NONE and not force: #(self.is_valid and not force):
             return output
 
         context = {
@@ -480,15 +489,9 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         }
 
         try:
-            # self.Format(**self._root, position=self.global_position, entity_number=0)
-            # self._root.position = self.global_position
-            result = self.Format.model_validate(
+            self.Format.model_validate(
                 self._root, strict=True, context=context
             )
-            # Reassign private attributes
-            # TODO
-            # Acquire the newly converted data
-            self._root = result
         except ValidationError as e:
             output.error_list.append(DataFormatError(e))
 

@@ -1,7 +1,7 @@
 # color.py
 
-from draftsman.classes.exportable import attempt_and_reissue
-from draftsman.signatures import Color
+from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
+from draftsman.signatures import Color, normalize_color
 
 from pydantic import (
     BaseModel,
@@ -66,13 +66,17 @@ class ColorMixin:
 
     @color.setter
     def color(self, value: Union[list[float], Color]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "color", value
-            )
-            self._root.color = result
-        else:
-            self._root.color = value
+        # value = normalize_color(value)
+        test_replace_me(
+            self, type(self).Format, self._root, "color", value, self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self, type(self).Format, self._root, "color", value
+        #     )
+        #     self._root.color = result
+        # else:
+        #     self._root.color = value
 
     # =========================================================================
 

@@ -261,7 +261,7 @@ class WaitCondition(Exportable):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE or (self.is_valid and not force):
+        if mode is ValidationMode.NONE and not force: # (self.is_valid and not force):
             return output
 
         context = {
@@ -272,14 +272,14 @@ class WaitCondition(Exportable):
         }
 
         try:
-            result = self.Format.model_validate(
+            self.Format.model_validate(
                 self._root, strict=False, context=context
             )
             # print("result:", result)
             # Reassign private attributes
             # TODO
             # Acquire the newly converted data
-            self._root = result
+            # self._root = result
         except ValidationError as e:
             output.error_list.append(DataFormatError(e))
 
@@ -460,9 +460,6 @@ class Schedule(Exportable):
         self,
         locomotives: list[Association] = [],
         schedule: list[Format.Stop] = [],
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -498,8 +495,6 @@ class Schedule(Exportable):
         #         stop["wait_conditions"] = WaitConditions(stop["wait_conditions"])
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
@@ -650,7 +645,7 @@ class Schedule(Exportable):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE or (self.is_valid and not force):
+        if mode is ValidationMode.NONE and not force: #or (self.is_valid and not force):
             return output
 
         context = {

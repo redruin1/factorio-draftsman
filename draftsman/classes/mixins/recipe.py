@@ -42,7 +42,7 @@ class RecipeMixin:
             if value not in recipes.raw:
                 warning_list.append(
                     UnknownRecipeWarning(
-                        "'{}' is not a known recipe;{}".format(
+                        "'{}' is not a known recipe{}".format(
                             value, get_suggestion(value, recipes.raw.keys(), 1)
                         )
                     )

@@ -93,7 +93,6 @@ class BlueprintableList(MutableSequence):
     def __init__(
         self,
         initlist: list[Union[dict, Blueprintable]] = [],
-        if_unknown: str = "error",  # TODO: enum
     ):
         self.data: list[Blueprintable] = []
         for elem in initlist:
@@ -101,19 +100,19 @@ class BlueprintableList(MutableSequence):
                 # fmt: off
                 if "blueprint" in elem:
                     self.append(
-                        Blueprint(elem, if_unknown=if_unknown)
+                        Blueprint(elem)
                     )
                 elif "deconstruction_planner" in elem:
                     self.append(
-                        DeconstructionPlanner(elem, if_unknown=if_unknown)
+                        DeconstructionPlanner(elem)
                     )
                 elif "upgrade_planner" in elem:
                     self.append(
-                        UpgradePlanner(elem, if_unknown=if_unknown)
+                        UpgradePlanner(elem)
                     )
                 elif "blueprint_book" in elem:
                     self.append(
-                        BlueprintBook(elem, if_unknown=if_unknown)
+                        BlueprintBook(elem)
                     )
                 else:
                     raise DataFormatError(
@@ -202,6 +201,7 @@ class BlueprintBook(Blueprintable):
                 description="""
                 A set of signal pictures to associate with this BlueprintBook.
                 """,
+                max_length=4,
             )
             active_index: Optional[uint16] = Field(
                 0,
@@ -240,14 +240,6 @@ class BlueprintBook(Blueprintable):
                 """,
             )
 
-            @field_validator("version", mode="before")
-            @classmethod
-            def normalize_to_int(cls, value: Any):
-                # TODO: improve this
-                if isinstance(value, Sequence) and not isinstance(value, str):
-                    return encode_version(*value)
-                return value
-
         blueprint_book: BlueprintBookObject
         index: Optional[uint16] = Field(
             None,
@@ -267,10 +259,7 @@ class BlueprintBook(Blueprintable):
     def __init__(
         self,
         blueprint_book: Optional[Union[str, dict]] = None,
-        if_unknown: str = "error",  # TODO: enum
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
+        index: Optional[uint16] = None,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -289,14 +278,12 @@ class BlueprintBook(Blueprintable):
             root_format=self.Format.BlueprintBookObject,
             item="blueprint-book",
             init_data=blueprint_book,
-            if_unknown=if_unknown,
+            index=index,
             blueprints=[],
             active_index=0,
         )
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     @reissue_warnings
     def setup(
@@ -309,7 +296,6 @@ class BlueprintBook(Blueprintable):
         active_index: Optional[uint16] = 0,
         blueprints: Union[BlueprintableList, list[Blueprintable], list[dict]] = [],
         index: Optional[uint16] = None,
-        if_unknown: str = "error",  # TODO: enum
         **kwargs
     ):
         # self._root = {}
@@ -341,9 +327,9 @@ class BlueprintBook(Blueprintable):
         #     self._root._blueprints = BlueprintableList()
 
         if isinstance(blueprints, BlueprintableList):
-            self._root._blueprints = BlueprintableList(blueprints.data, if_unknown=if_unknown)
+            self._root._blueprints = BlueprintableList(blueprints.data)
         else:
-            self._root._blueprints = BlueprintableList(blueprints, if_unknown=if_unknown)
+            self._root._blueprints = BlueprintableList(blueprints)
 
         # A bit scuffed, but
         for kwarg, value in kwargs.items():
@@ -399,7 +385,7 @@ class BlueprintBook(Blueprintable):
         else:
             self._root[self._root_item]["label_color"] = value
 
-    def set_label_color(self, r, g, b, a=None):
+    def set_label_color(self, r, g, b, a=None): # TODO: remove
         """
         TODO
         """
@@ -488,7 +474,7 @@ class BlueprintBook(Blueprintable):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE or (self.is_valid and not force):
+        if mode is ValidationMode.NONE and not force: #(self.is_valid and not force):
             return output
 
         context: dict[str, Any] = {

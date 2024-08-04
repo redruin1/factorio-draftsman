@@ -39,9 +39,6 @@ class CargoWagon(RequestItemsMixin, InventoryFilterMixin, OrientationMixin, Enti
         items: dict[str, uint32] = {},  # TODO: ItemID
         inventory: Format.InventoryFilters = {},
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -60,8 +57,6 @@ class CargoWagon(RequestItemsMixin, InventoryFilterMixin, OrientationMixin, Enti
         )
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # TODO: check for item requests exceeding cargo capacity
 

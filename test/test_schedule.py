@@ -326,9 +326,9 @@ class TestSchedule:
         ]
 
         with pytest.raises(DataFormatError):
-            s = Schedule(locomotives="incorrect")
+            s = Schedule(locomotives="incorrect").validate().reissue_all()
 
-        s = Schedule(locomotives="incorrect", validate="none")
+        s = Schedule(locomotives="incorrect")
         assert s.to_dict() == {
             "locomotives": "incorrect",
         }

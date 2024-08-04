@@ -66,29 +66,36 @@ class TestTransportBelt:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            temp = TransportBelt("fast-transport-belt", invalid_param=100)
+            belt = TransportBelt("fast-transport-belt", invalid_param=100)
+            belt.validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            TransportBelt("this is not a storage tank")
+            belt = TransportBelt("this is not a storage tank")
+            belt.validate().reissue_all()
 
         # Errors
         with pytest.raises(TypeError):
-            TransportBelt("transport-belt", id=25)
+            belt = TransportBelt("transport-belt", id=25)
+            belt.validate().reissue_all()
 
         with pytest.raises(TypeError):
-            TransportBelt("transport-belt", position=TypeError)
+            belt = TransportBelt("transport-belt", position=TypeError)
+            belt.validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            TransportBelt("transport-belt", direction="incorrect")
+            belt = TransportBelt("transport-belt", direction="incorrect")
+            belt.validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            TransportBelt("transport-belt", connections=["very", "wrong"])
+            belt = TransportBelt("transport-belt", connections=["very", "wrong"])
+            belt.validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            TransportBelt(
+            belt = TransportBelt(
                 "transport-belt",
                 control_behavior=["also", "very", "wrong"],
             )
+            belt.validate().reissue_all()
 
     def test_set_enable_disable(self):
         belt = TransportBelt("transport-belt")

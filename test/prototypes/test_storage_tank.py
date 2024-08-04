@@ -51,23 +51,25 @@ class TestStorageTank:
         }
         # Warnings
         with pytest.warns(DraftsmanWarning):
-            StorageTank(position=[0, 0], direction=Direction.WEST, invalid_keyword=5)
+            StorageTank(position=[0, 0], direction=Direction.WEST, invalid_keyword=5) \
+                .validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            StorageTank("this is not a storage tank")
+            StorageTank("this is not a storage tank").validate().reissue_all()
 
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            StorageTank("storage-tank", id=25)
+            StorageTank("storage-tank", id=25).validate().reissue_all()
 
         with pytest.raises(TypeError):
-            StorageTank("storage-tank", position=TypeError)
+            StorageTank("storage-tank", position=TypeError).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            StorageTank("storage-tank", direction="incorrect")
+            StorageTank("storage-tank", direction="incorrect").validate().reissue_all()
+            
         with pytest.raises(DataFormatError):
-            StorageTank("storage-tank", connections=["very", "wrong"])
+            StorageTank("storage-tank", connections=["very", "wrong"]).validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for storage_tank_name in storage_tanks:

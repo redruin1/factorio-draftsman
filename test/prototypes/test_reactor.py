@@ -20,9 +20,9 @@ class TestReactor:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Reactor("nuclear-reactor", unused_keyword="whatever")
+            Reactor("nuclear-reactor", unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            Reactor("not a reactor")
+            Reactor("this is not a reactor").validate().reissue_all()
 
     def test_set_fuel_request(self):
         reactor = Reactor("nuclear-reactor")

@@ -18,8 +18,6 @@ class TestCurvedRail:
         curved_rail = CurvedRail(
             "curved-rail", tile_position=[0, 0], direction=Direction.NORTHWEST
         )
-        print(curved_rail.tile_width, curved_rail.tile_height)
-        print(curved_rail.collision_set)
         assert curved_rail.to_dict() == {
             "name": "curved-rail",
             "position": {"x": 4.0, "y": 2.5},
@@ -28,13 +26,13 @@ class TestCurvedRail:
 
         # Warnings:
         with pytest.warns(UnknownKeywordWarning):
-            CurvedRail("curved-rail", invalid_keyword="whatever")
+            CurvedRail("curved-rail", invalid_keyword="whatever").validate().reissue_all()
         # if entity is not on a grid pos / 2, then warn the user of the incoming
         # shift
         with pytest.warns(GridAlignmentWarning):
-            CurvedRail("curved-rail", tile_position=[1, 1])
+            CurvedRail("curved-rail", tile_position=[1, 1]).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            CurvedRail("this is not a curved rail")
+            CurvedRail("this is not a curved rail").validate().reissue_all()
 
     def test_flags(self):
         rail = CurvedRail("curved-rail")

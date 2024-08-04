@@ -90,9 +90,6 @@ class AssemblingMachine(
         recipe: str = None,
         items: dict[str, uint32] = {},
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -115,8 +112,6 @@ class AssemblingMachine(
         )
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # @utils.reissue_warnings
     # def set_item_request(self, item: str, count: uint32):

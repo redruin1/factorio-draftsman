@@ -116,7 +116,6 @@ class TestProgrammableSpeakerTesting:
             },
         }
 
-        # TODO: ensure this
         speaker = ProgrammableSpeaker(control_behavior={"circuit_enable_disable": True})
         assert speaker.to_dict() == {
             "name": "programmable-speaker",
@@ -134,15 +133,15 @@ class TestProgrammableSpeakerTesting:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            ProgrammableSpeaker(unused_keyword="whatever")
+            ProgrammableSpeaker(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            ProgrammableSpeaker(control_behavior={"unused_key": "something"})
+            ProgrammableSpeaker(control_behavior={"unused_key": "something"}).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            ProgrammableSpeaker("not a programmable speaker")
+            ProgrammableSpeaker("not a programmable speaker").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            ProgrammableSpeaker(control_behavior="incorrect")
+            ProgrammableSpeaker(control_behavior="incorrect").validate().reissue_all()
 
         # Test no errors when validating without context
         ProgrammableSpeaker.Format.model_validate(speaker._root)

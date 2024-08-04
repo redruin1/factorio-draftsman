@@ -76,9 +76,7 @@ from draftsman.prototypes.player_port import PlayerPort, player_ports
 from typing import Literal
 
 
-def new_entity(
-    name: str, if_unknown: Literal["error", "ignore", "accept"] = "error", **kwargs
-):
+def new_entity(name: str, **kwargs):
     """
     Factory function for creating a new :py:class:`.Entity`. The class used will be
     based on the entity's name, so ``new_entity("wooden-chest")`` will return a
@@ -93,18 +91,12 @@ def new_entity(
     in is not recognized by that Entity's class constructor.
 
     :param name: The string name of an Entity.
-    :param if_unknown: How to behave if the name of the entity is unrecognized 
-        by Draftsman. See TODO for more information.
     :param kwargs: A dict of all the keyword arguments to pass to the
         constructor.
 
-    :returns: A new :py:class:`.Entity` subclass, or ``None`` if none could be
-        found and ``if_unknown`` was ``"ignore"``
-
-    :exception InvalidEntityError: If the name passed in is not recognized as any
-        valid entity name.
-    :exception ValueError: If ``unknown`` is set to a string that is not
-        ``"error"``, ``"ignore"``, nor ``"pass"``.
+    :returns: A new :py:class:`.Entity` subclass, or an instance of 
+        :py:class:`.Entity` if `name` could not be deduced under the current 
+        Factorio environment. 
     """
     if name in containers:
         return Container(name, **kwargs)
@@ -229,38 +221,20 @@ def new_entity(
     if name in player_ports:
         return PlayerPort(name, **kwargs)
 
-    # At this point, the name is unrecognized by the current environment:
-    if if_unknown == "error":
-        # Raise an issue where this entity is not known; useful in cases where
-        # the user wants to make sure that Draftsman knows about every entity in
-        # a modded blueprint, for example.
-        raise InvalidEntityError("Unknown entity '{}'".format(name))
-    elif if_unknown == "ignore":
-        # Simply return nothing; if importing from a blueprint string, any
-        # unrecognized entity will simply be omitted from the Draftsman
-        # blueprint; matches the game's behavior.
-        return None
-    elif if_unknown == "accept":
-        # Otherwise, we want Draftsman to at least try to parse it and serialize
-        # it, if not entirely validate it. Thus, we construct a generic instance
-        # of `Entity`and return that.
-        result = Entity(name, similar_entities=None, **kwargs)
+    # At this point, the name is unrecognized by the current environment.
+    # We want Draftsman to at least try to parse it and serialize it, if not 
+    # entirely validate it. Thus, we construct a generic instance of `Entity`
+    # and return that.
+    result = Entity(name, similar_entities=None, **kwargs)
 
-        # Mark this class as unknown format, so some validation checks are
-        # omitted
-        result._unknown = True
+    # Mark this class as unknown format, so some validation checks are
+    # omitted
+    # TODO: is this necessary?
+    result._unknown = True
 
-        # Of course, since entity is normally a base class, we have to do a
-        # little magic to make it behave similar to all other classes
-        validate_assignment = kwargs.get("validate_assignment", ValidationMode.STRICT)
-        result.validate_assignment = validate_assignment
+    # Of course, since entity is normally a base class, we have to do a
+    # little magic to make it behave similar to all other classes
+    validate_assignment = kwargs.get("validate_assignment", ValidationMode.STRICT)
+    result.validate_assignment = validate_assignment
 
-        validate = kwargs.get("validate", ValidationMode.STRICT)
-        result.validate(mode=validate).reissue_all(stacklevel=3)
-
-        return result
-    else:
-        raise ValueError(
-            "Unknown parameter value '{}' for `unknown`; must be one of 'error', 'ignore', or 'accept'",
-            if_unknown,
-        )
+    return result

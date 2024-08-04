@@ -74,9 +74,6 @@ class BurnerGenerator(
         direction: Direction = Direction.NORTH,
         items: dict[str, uint32] = {},  # TODO: ItemID
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -98,8 +95,6 @@ class BurnerGenerator(
         )
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

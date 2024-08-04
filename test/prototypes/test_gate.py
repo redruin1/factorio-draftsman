@@ -13,10 +13,10 @@ class TestGate:
         gate = Gate("gate")
 
         with pytest.warns(UnknownKeywordWarning):
-            Gate("gate", unused_keyword="whatever")
+            Gate("gate", unused_keyword="whatever").validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            Gate("this is not a gate")
+            Gate("this is not a gate").validate().reissue_all()
 
     def test_mergable_with(self):
         gate1 = Gate("gate", tile_position=(1, 1))

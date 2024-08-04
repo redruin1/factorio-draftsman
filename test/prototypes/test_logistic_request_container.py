@@ -82,35 +82,35 @@ class TestLogisticRequestContainer:
         with pytest.warns(UnknownKeywordWarning):
             LogisticRequestContainer(
                 "logistic-chest-requester", position=[0, 0], invalid_keyword="100"
-            )
+            ).validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            LogisticRequestContainer(control_behavior={"unused_key": "something"})
+            LogisticRequestContainer(control_behavior={"unused_key": "something"}).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            LogisticRequestContainer("this is not a logistics storage chest")
+            LogisticRequestContainer("this is not a logistics storage chest").validate().reissue_all()
 
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            LogisticRequestContainer("logistic-chest-requester", id=25)
+            LogisticRequestContainer("logistic-chest-requester", id=25).validate().reissue_all()
         with pytest.raises(TypeError):
-            LogisticRequestContainer("logistic-chest-requester", position=TypeError)
+            LogisticRequestContainer("logistic-chest-requester", position=TypeError).validate().reissue_all()
         with pytest.raises(DataFormatError):
-            LogisticRequestContainer("logistic-chest-requester", bar="not even trying")
+            LogisticRequestContainer("logistic-chest-requester", bar="not even trying").validate().reissue_all()
         with pytest.raises(DataFormatError):
             LogisticRequestContainer(
                 "logistic-chest-requester", connections="incorrect"
-            )
+            ).validate().reissue_all()
         with pytest.raises(DataFormatError):
             LogisticRequestContainer(
                 "logistic-chest-requester",
                 request_filters={"this is": ["very", "wrong"]},
-            )
+            ).validate().reissue_all()
         with pytest.raises(DataFormatError):
             LogisticRequestContainer(
                 "logistic-chest-requester", request_from_buffers="invalid"
-            )
+            ).validate().reissue_all()
         with pytest.raises(DataFormatError):
-            LogisticRequestContainer(control_behavior="incorrect")
+            LogisticRequestContainer(control_behavior="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in logistic_request_containers:

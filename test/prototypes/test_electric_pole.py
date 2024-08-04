@@ -17,13 +17,13 @@ class TestElectricPole:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            ElectricPole("small-electric-pole", unused_keyword=10)
+            ElectricPole("small-electric-pole", unused_keyword=10).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            ElectricPole("this is not an electric pole")
+            ElectricPole("this is not an electric pole").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            ElectricPole(neighbours="incorrect")
+            ElectricPole(neighbours="incorrect").validate().reissue_all()
 
     def test_neighbours(self):
         electric_pole = ElectricPole("small-electric-pole")
@@ -64,9 +64,12 @@ class TestElectricPole:
         group.add_circuit_connection("red", 0, 1)
         group.add_circuit_connection("green", 0, 1)
 
+        print(group.entities[0].connections)
+
         blueprint = Blueprint()
         blueprint.entities.append(group)
         group.position = (2, 0)
+        print(blueprint.entities[0].entities[0].connections)
         blueprint.entities.append(group, merge=True)
         blueprint.add_power_connection((0, 0), (1, 0))
 

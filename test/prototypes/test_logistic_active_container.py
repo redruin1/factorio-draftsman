@@ -56,35 +56,35 @@ class TestContainer:
         with pytest.warns(UnknownKeywordWarning):
             LogisticActiveContainer(
                 "logistic-chest-active-provider", position=[0, 0], invalid_keyword="100"
-            )
+            ).validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
             LogisticActiveContainer(
                 "logistic-chest-active-provider",
                 connections={"this is": ["very", "wrong"]},
-            )
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            LogisticActiveContainer("this is not an active provider chest")
+            LogisticActiveContainer("this is not an active provider chest").validate().reissue_all()
 
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            LogisticActiveContainer("logistic-chest-active-provider", id=25)
+            LogisticActiveContainer("logistic-chest-active-provider", id=25).validate().reissue_all()
 
         with pytest.raises(TypeError):
             LogisticActiveContainer(
                 "logistic-chest-active-provider", position=TypeError
-            )
+            ).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
             LogisticActiveContainer(
                 "logistic-chest-active-provider", bar="not even trying"
-            )
+            ).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
             LogisticActiveContainer(
                 "logistic-chest-active-provider",
                 connections="incorrect",
-            )
+            ).validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for container_name in logistic_active_containers:

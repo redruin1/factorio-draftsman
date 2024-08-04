@@ -16,15 +16,15 @@ class TestOffshorePump:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            OffshorePump(unused_keyword="whatever")
+            OffshorePump(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            OffshorePump(control_behavior={"unused_key": "something"})
+            OffshorePump(control_behavior={"unused_key": "something"}).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            OffshorePump("not a heat pipe")
+            OffshorePump("not a heat pipe").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            OffshorePump(control_behavior="incorrect")
+            OffshorePump(control_behavior="incorrect").validate().reissue_all()
 
     def test_control_behavior(self):
         pump = OffshorePump("offshore-pump")

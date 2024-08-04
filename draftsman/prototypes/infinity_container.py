@@ -1,7 +1,7 @@
 # infinity_container.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.classes.mixins import RequestItemsMixin, InventoryMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
@@ -83,9 +83,6 @@ class InfinityContainer(RequestItemsMixin, InventoryMixin, Entity):
         items: dict[str, uint32] = {},  # TODO: ItemID
         infinity_settings: Format.InfinitySettings = {},
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -112,8 +109,6 @@ class InfinityContainer(RequestItemsMixin, InventoryMixin, Entity):
 
         self.validate_assignment = validate_assignment
 
-        self.validate(mode=validate).reissue_all(stacklevel=3)
-
     # =========================================================================
 
     @property
@@ -133,13 +128,16 @@ class InfinityContainer(RequestItemsMixin, InventoryMixin, Entity):
 
     @infinity_settings.setter
     def infinity_settings(self, value: Optional[Format.InfinitySettings]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "infinity_settings", value
-            )
-            self._root.infinity_settings = result
-        else:
-            self._root.infinity_settings = value
+        test_replace_me(
+            self, type(self).Format, self._root, "infinity_settings", value, self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self, type(self).Format, self._root, "infinity_settings", value
+        #     )
+        #     self._root.infinity_settings = result
+        # else:
+        #     self._root.infinity_settings = value
 
     # =========================================================================
 

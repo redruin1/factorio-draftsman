@@ -19,10 +19,10 @@ class TestBurnerGenerator:
         generator = BurnerGenerator("burner-generator")
 
         with pytest.warns(UnknownKeywordWarning):
-            BurnerGenerator(unused_keyword="whatever")
+            BurnerGenerator(unused_keyword="whatever").validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            BurnerGenerator("this is not a burner generator")
+            BurnerGenerator("this is not a burner generator").validate().reissue_all()
 
     def test_set_items(self):
         generator = BurnerGenerator("burner-generator")

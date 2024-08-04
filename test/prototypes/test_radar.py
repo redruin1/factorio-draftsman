@@ -12,10 +12,10 @@ class TestRadar:
         radar = Radar()
 
         with pytest.warns(UnknownKeywordWarning):
-            Radar(unused_keyword="whatever")
+            Radar(unused_keyword="whatever").validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            Radar("this is not a radar")
+            Radar("this is not a radar").validate().reissue_all()
 
     def test_mergable_with(self):
         radar1 = Radar("radar")

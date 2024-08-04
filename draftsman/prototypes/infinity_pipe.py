@@ -1,7 +1,7 @@
 # infinity_pipe.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.signatures import DraftsmanBaseModel, int64, FluidName
@@ -11,7 +11,7 @@ from draftsman.data.entities import infinity_pipes
 from draftsman.data import fluids
 
 import copy
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import ConfigDict, Field, ValidationInfo, model_validator
 from typing import Any, Literal, Optional, Union
 
 
@@ -61,12 +61,17 @@ class InfinityPipe(Entity):
             )
 
             @model_validator(mode="after")
-            def validate_temperature_range(self):
+            def validate_temperature(self, info: ValidationInfo):
                 """
                 Factorio errors if a fluid temperature is set when no fluid name
                 is set, or if the fluid temperature exceeds the allowed range
                 for the set fluid name.
                 """
+                if not info.context:
+                    return self
+                if info.context["mode"] <= ValidationMode.MINIMUM:
+                    return self
+
                 if self.temperature is not None:
                     if self.name is None:
                         raise ValueError(
@@ -94,9 +99,6 @@ class InfinityPipe(Entity):
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         infinity_settings: Format.InfinitySettings = {},
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -121,8 +123,6 @@ class InfinityPipe(Entity):
 
         self.validate_assignment = validate_assignment
 
-        self.validate(mode=validate).reissue_all(stacklevel=3)
-
     # =========================================================================
 
     @property
@@ -142,13 +142,21 @@ class InfinityPipe(Entity):
 
     @infinity_settings.setter
     def infinity_settings(self, value: Optional[Format.InfinitySettings]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "infinity_settings", value
-            )
-            self._root.infinity_settings = result
-        else:
-            self._root.infinity_settings = value
+        test_replace_me(
+            self,
+            type(self).Format,
+            self._root,
+            "infinity_settings",
+            value,
+            self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self, type(self).Format, self._root, "infinity_settings", value
+        #     )
+        #     self._root.infinity_settings = result
+        # else:
+        #     self._root.infinity_settings = value
 
     # =========================================================================
 
@@ -167,17 +175,25 @@ class InfinityPipe(Entity):
 
     @infinite_fluid_name.setter
     def infinite_fluid_name(self, value: Optional[str]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.InfinitySettings,
-                self.infinity_settings,
-                "name",
-                value,
-            )
-            self.infinity_settings.name = result
-        else:
-            self.infinity_settings.name = value
+        test_replace_me(
+            self,
+            type(self).Format.InfinitySettings,
+            self.infinity_settings,
+            "name",
+            value,
+            self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self,
+        #         type(self).Format.InfinitySettings,
+        #         self.infinity_settings,
+        #         "name",
+        #         value,
+        #     )
+        #     self.infinity_settings.name = result
+        # else:
+        #     self.infinity_settings.name = value
 
     # =========================================================================
 
@@ -196,17 +212,25 @@ class InfinityPipe(Entity):
 
     @infinite_fluid_percentage.setter
     def infinite_fluid_percentage(self, value: Optional[float]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.InfinitySettings,
-                self.infinity_settings,
-                "percentage",
-                value,
-            )
-            self.infinity_settings.percentage = result
-        else:
-            self.infinity_settings.percentage = value
+        test_replace_me(
+            self,
+            type(self).Format.InfinitySettings,
+            self.infinity_settings,
+            "percentage",
+            value,
+            self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self,
+        #         type(self).Format.InfinitySettings,
+        #         self.infinity_settings,
+        #         "percentage",
+        #         value,
+        #     )
+        #     self.infinity_settings.percentage = result
+        # else:
+        #     self.infinity_settings.percentage = value
 
     # =========================================================================
 
@@ -238,17 +262,25 @@ class InfinityPipe(Entity):
     def infinite_fluid_mode(
         self, value: Literal["at-least", "at-most", "exactly", "add", "remove", None]
     ):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.InfinitySettings,
-                self.infinity_settings,
-                "mode",
-                value,
-            )
-            self.infinity_settings.mode = result
-        else:
-            self.infinity_settings.mode = value
+        test_replace_me(
+            self,
+            type(self).Format.InfinitySettings,
+            self.infinity_settings,
+            "mode",
+            value,
+            self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self,
+        #         type(self).Format.InfinitySettings,
+        #         self.infinity_settings,
+        #         "mode",
+        #         value,
+        #     )
+        #     self.infinity_settings.mode = result
+        # else:
+        #     self.infinity_settings.mode = value
 
     # =========================================================================
 
@@ -269,17 +301,25 @@ class InfinityPipe(Entity):
 
     @infinite_fluid_temperature.setter
     def infinite_fluid_temperature(self, value: Optional[int64]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.InfinitySettings,
-                self.infinity_settings,
-                "temperature",
-                value,
-            )
-            self.infinity_settings.temperature = result
-        else:
-            self.infinity_settings.temperature = value
+        test_replace_me(
+            self,
+            type(self).Format.InfinitySettings,
+            self.infinity_settings,
+            "temperature",
+            value,
+            self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self,
+        #         type(self).Format.InfinitySettings,
+        #         self.infinity_settings,
+        #         "temperature",
+        #         value,
+        #     )
+        #     self.infinity_settings.temperature = result
+        # else:
+        #     self.infinity_settings.temperature = value
 
     # =========================================================================
 

@@ -914,7 +914,7 @@ def reissue_warnings(func):
     @wraps(func)
     def inner(*args, **kwargs):
         with warnings.catch_warnings(record=True) as warning_list:
-            result = func(*args, **kwargs)
+            result = func(*args, **kwargs) # === @reissue_warnings === #
 
         for warning in warning_list:
             warnings.warn(warning.message, warning.category, stacklevel=2)

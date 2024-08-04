@@ -26,7 +26,7 @@ from pydantic import (
 )
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
-from typing import Any, Callable, Iterator, Literal, Union
+from typing import Any, Callable, Iterator, Literal, Optional, Union
 
 from typing import List, TYPE_CHECKING
 
@@ -69,14 +69,10 @@ class EntityList(Exportable, MutableSequence):
     def __init__(
         self,
         parent: "EntityCollection" = None,
-        initlist: list[EntityLike] = [],
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
+        initlist: Optional[list[EntityLike]] = [],
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        if_unknown: str = "error",  # TODO: enum
+        ] = ValidationMode.STRICT
     ):
         """
         Instantiates a new ``EntityList``.
@@ -100,18 +96,17 @@ class EntityList(Exportable, MutableSequence):
 
         self._parent = parent
 
-        for elem in initlist:
-            if isinstance(elem, EntityLike):
-                self.append(elem, if_unknown=if_unknown)
-            elif isinstance(elem, dict):
-                name = elem.pop("name")
-                self.append(name, **elem, if_unknown=if_unknown)
-            else:
-                raise TypeError("Constructor either takes EntityLike or dict entries")
+        if initlist is not None:
+            for elem in initlist:
+                if isinstance(elem, EntityLike):
+                    self.append(elem)
+                elif isinstance(elem, dict):
+                    name = elem.pop("name")
+                    self.append(name, **elem)
+                else:
+                    raise TypeError("Constructor either takes EntityLike or dict entries")
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     @reissue_warnings
     def append(
@@ -119,7 +114,6 @@ class EntityList(Exportable, MutableSequence):
         name: Union[str, "EntityLike"],
         copy: bool = True,
         merge: bool = False,
-        if_unknown: str = "error",  # TODO: enum
         **kwargs
     ):
         """
@@ -142,9 +136,6 @@ class EntityList(Exportable, MutableSequence):
             same position. Merged entities share non-overlapping attributes and
             prefer the attributes of the last entity added. Useful for merging
             things like rails or power-poles on the edges of tiled blueprints.
-        :param if_unknown: The behavior this method should perform if ``name``
-            is not recognized as any known valid entity. See TODO for a more
-            complete explanation.
         :param kwargs: Any other keyword arguments to pass to the entity
             instance. This is used primarily when constructing a new entity from
             a string name, but can also be used to overwrite certain attributes
@@ -184,7 +175,6 @@ class EntityList(Exportable, MutableSequence):
             name=name,
             copy=copy,
             merge=merge,
-            if_unknown=if_unknown,
             **kwargs
         )
 
@@ -195,7 +185,6 @@ class EntityList(Exportable, MutableSequence):
         name: Union[str, "EntityLike"],
         copy: bool = True,
         merge: bool = False,
-        if_unknown: str = "error",
         **kwargs
     ):
         """
@@ -219,9 +208,6 @@ class EntityList(Exportable, MutableSequence):
             same position. Merged entities share non-overlapping attributes and
             prefer the attributes of the last entity added. Useful for merging
             things like rails or power-poles on the edges of tiled blueprints.
-        :param if_unknown: The behavior this method should perform if ``name``
-            is not recognized as any known valid entity. See TODO for a more
-            complete explanation.
         :param kwargs: Any other keyword arguments to pass to the entity
             instance. This is used primarily when constructing a new entity from
             a string name, but can also be used to overwrite certain attributes
@@ -259,7 +245,7 @@ class EntityList(Exportable, MutableSequence):
         # Convert to new Entity if constructed via string keyword
         new = False
         if isinstance(name, str):
-            entitylike = new_entity(name, **kwargs, if_unknown=if_unknown)
+            entitylike = new_entity(name, **kwargs)
             if entitylike is None:
                 return
             new = True
@@ -285,9 +271,19 @@ class EntityList(Exportable, MutableSequence):
         # Do a set of idiot checks on the entity to make sure everything's okay
         self.check_entitylike(entitylike)
 
-        # Here we issue warnings for overlapping entities, modify existing
-        # entities if merging is enabled and delete excess entities in entitylike
+        # Sometimes, you want to validate the object while adding (to check for
+        # typing mistakes, commonly) as opposed to a complete digest at the end.
+        # This way also allows for issueing `OverlappingEntityWarnings` at the 
+        # place where the entities are added, improving readability.
+        # Of course, this feature is optional, so if you're going to validate
+        # the final blueprintable at the end anyway you can disable this feature
+        # and save some overhead
         if self.validate_assignment:
+            # Validate the object itself
+            # entitylike.validate(mode=self.validate_assignment).reissue_all()
+            # Check for issues regarding placing this entity in the parent object
+            # (Also handle merging logic)
+            # TODO: Maybe it would be better if merging was it's own function...
             self.spatial_map.validate_insert(entitylike, merge)
 
         # If no errors, add this to hashmap (as well as any of it's children),
@@ -455,7 +451,7 @@ class EntityList(Exportable, MutableSequence):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE or (self.is_valid and not force):
+        if mode is ValidationMode.NONE and not force: #(self.is_valid and not force):
             return output
 
         context: dict[str, Any] = {
@@ -478,6 +474,11 @@ class EntityList(Exportable, MutableSequence):
             output.error_list.append(DataFormatError(e))
 
         output.warning_list += context["warning_list"]
+
+        for entity in self:
+            result = entity.validate(mode=mode, force=force)
+            output.warning_list += result.warning_list
+            output.error_list += result.error_list
 
         return output
 
@@ -502,18 +503,34 @@ class EntityList(Exportable, MutableSequence):
     @reissue_warnings
     def __setitem__(self, item: Union[int, str], value: "EntityLike"):
         # TODO: handle slices
+        # TODO: does this function validate `value`???
 
         # Get the key and index of the item
         idx, key = self.get_pair(item)
 
+        # If we're passed a dict, try to coerce it to an Entity
+        if isinstance(value, dict):
+            value = new_entity(**value)
+
         # Make sure were not causing any problems by putting this entity in
+        # TODO: right now we always assert that an added item must be an `Entity`,
+        # but ideally to make it consistent with the rest of the API we would
+        # allow arbitrary values instead
+        # This would mean we would have to revamp a lot of other code though,
+        # such as calculating bounding boxes, spatial hash map placement, etc.
+        # Like, where does a string value exist in a spatial hash map? Probably
+        # nowhere.
+        # Of course, there's basically no reason (that I know of) for a user to
+        # do this, so it's can-kicking time
         self.check_entitylike(value)
 
         # Remove the entity and its children
         self.spatial_map.recursive_remove(self._root[idx])
 
         # Check for overlapping entities
-        if self.validate_assignment:
+        validate = self._parent.validate_assignment
+        if validate: # self.validate_assignment
+            value.validate(mode=validate).reissue_all()
             self.spatial_map.validate_insert(value, False)
 
         # Add the new entity and its children
@@ -532,7 +549,7 @@ class EntityList(Exportable, MutableSequence):
         # Add a reference to the parent in the object
         value._parent = self._parent
 
-    def __delitem__(self, item: Union[int, str]):
+    def __delitem__(self, item: Union[int, str, slice]):
         if isinstance(item, slice):
             # Get slice parameters
             start, stop, step = item.indices(len(self))

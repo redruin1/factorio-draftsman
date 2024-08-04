@@ -59,27 +59,27 @@ class TestLogisticPassiveContainer:
                 "logistic-chest-passive-provider",
                 position=[0, 0],
                 invalid_keyword="100",
-            )
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            LogisticPassiveContainer("this is not a logistics passive chest")
+            LogisticPassiveContainer("this is not a logistics passive chest").validate().reissue_all()
 
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            LogisticPassiveContainer("logistic-chest-passive-provider", id=25)
+            LogisticPassiveContainer("logistic-chest-passive-provider", id=25).validate().reissue_all()
         with pytest.raises(TypeError):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider", position=TypeError
-            )
+            ).validate().reissue_all()
         with pytest.raises(DataFormatError):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider", bar="not even trying"
-            )
+            ).validate().reissue_all()
         with pytest.raises(DataFormatError):
             LogisticPassiveContainer(
                 "logistic-chest-passive-provider",
                 connections="incorrect",
-            )
+            ).validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in logistic_passive_containers:

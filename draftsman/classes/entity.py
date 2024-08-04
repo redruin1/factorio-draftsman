@@ -112,7 +112,7 @@ class Entity(Exportable, EntityLike):
             ...,
             description="""
             The position of the entity, almost always measured from it's center. 
-            Measured in Factorio tiles.
+            Uses Factorio tiles as its unit.
             """,
         )
         entity_number: uint64 = Field(
@@ -141,8 +141,8 @@ class Entity(Exportable, EntityLike):
         @classmethod
         def check_unknown_name(cls, value: str, info: ValidationInfo):
             """
-            Warn if the name is not any known Draftsman entity name. Only called
-            when the entity is an instance of the base class :py:class:`Entity`.
+            Warn if the name is not any known Draftsman entity name, either for
+            this specific entity class or any entity at all.
             """
             if not info.context:
                 return value
@@ -638,7 +638,7 @@ class Entity(Exportable, EntityLike):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE or (self.is_valid and not force):
+        if mode is ValidationMode.NONE and not force: #(self.is_valid and not force):
             return output
 
         context = {

@@ -31,13 +31,9 @@ class TileList(Exportable, MutableSequence):
         self,
         parent: "TileCollection",
         initlist: Optional[list[Tile]] = None,
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
-        if_unknown: str = "error",  # TODO: enum
     ) -> None:
         """
         TODO
@@ -54,10 +50,10 @@ class TileList(Exportable, MutableSequence):
         if initlist is not None:
             for elem in initlist:
                 if isinstance(elem, Tile):
-                    self.append(elem, if_unknown=if_unknown)
+                    self.append(elem)
                 elif isinstance(elem, dict):
                     name = elem.pop("name")
-                    self.append(name, **elem, if_unknown=if_unknown)
+                    self.append(name, **elem)
                 else:
                     raise DataFormatError(
                         "TileList only takes either Tile or dict entries"
@@ -65,14 +61,11 @@ class TileList(Exportable, MutableSequence):
 
         self.validate_assignment = validate_assignment
 
-        self.validate(mode=validate).reissue_all(stacklevel=3)  # TODO
-
     def append(
         self,
         name: Union[str, Tile],
         copy: bool = True,
         merge: bool = False,
-        if_unknown: str = "error",  # TODO: enum
         **kwargs
     ) -> None:
         """
@@ -85,7 +78,6 @@ class TileList(Exportable, MutableSequence):
             name=name,
             copy=copy,
             merge=merge,
-            if_unknown=if_unknown,
             **kwargs
         )
 
@@ -95,7 +87,6 @@ class TileList(Exportable, MutableSequence):
         name: Union[str, Tile],
         copy: bool = True,
         merge: bool = False,
-        if_unknown: str = "error",  # TODO: enum
         **kwargs
     ) -> None:
         """
@@ -106,7 +97,7 @@ class TileList(Exportable, MutableSequence):
         # Convert to new Tile if constructed via string keyword
         new = False
         if isinstance(name, str):
-            tile = new_tile(name, **kwargs, if_unknown=if_unknown)
+            tile = new_tile(name, **kwargs)
             if tile is None:
                 return
             new = True
@@ -135,6 +126,7 @@ class TileList(Exportable, MutableSequence):
 
         # Handle overlapping and merging
         if self.validate_assignment:
+            tile.validate(mode=self.validate_assignment).reissue_all()
             self.spatial_map.validate_insert(tile, merge=merge)
 
         # Add to tile map
@@ -160,7 +152,7 @@ class TileList(Exportable, MutableSequence):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE or (self.is_valid and not force):
+        if mode is ValidationMode.NONE and not force: # (self.is_valid and not force):
             return output
 
         context: dict[str, Any] = {
@@ -246,6 +238,7 @@ class TileList(Exportable, MutableSequence):
 
     def __setitem__(self, idx: int, value: Tile) -> None:
         # TODO: handle slices
+
         # Check tile
         if not isinstance(value, Tile):
             raise TypeError("Entry in TileList must be a Tile")
@@ -253,6 +246,7 @@ class TileList(Exportable, MutableSequence):
         self.spatial_map.remove(self._root[idx])
 
         if self.validate_assignment:
+            # value.validate(mode=self.validate_assignment).reissue_all()
             self.spatial_map.validate_insert(value, merge=False)
 
         self.spatial_map.add(value, merge=False)

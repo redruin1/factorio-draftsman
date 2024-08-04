@@ -1,7 +1,7 @@
 # circuit_connectable.py
 
 from draftsman.classes.association import Association
-from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.data import entities
 from draftsman.signatures import DraftsmanBaseModel, Connections
 
@@ -71,13 +71,16 @@ class CircuitConnectableMixin:
 
     @connections.setter
     def connections(self, value: Connections):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "connections", value
-            )
-            self._root.connections = result
-        else:
-            self._root.connections = value
+        test_replace_me(
+            self, type(self).Format, self._root, "connections", value, self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self, type(self).Format, self._root, "connections", value
+        #     )
+        #     self._root.connections = result
+        # else:
+        #     self._root.connections = value
 
     def merge(self, other: Format):
         super().merge(other)
@@ -91,6 +94,7 @@ class CircuitConnectableMixin:
                 self.connections[side][color].append(point)
                 association_added = True
 
+            print(point)
             # Determine the location where `point` points to
             association = point["entity_id"]
             associated_entity = association()
@@ -100,6 +104,7 @@ class CircuitConnectableMixin:
             else:
                 target = {"entity_id": Association(self)}
 
+            print(target_side, color)
             target_location = associated_entity.connections[str(target_side)][color]
             for point in target_location:
                 if point["entity_id"] == Association(other):
@@ -137,6 +142,7 @@ class CircuitConnectableMixin:
         # Most importantly, develop a standard in regards to supporing pydantic
         # BaseModels and/or raw dictionary values
         for side in other.connections.export_key_values():
+            print(side)
             if other.connections[side] is None:
                 continue
             # if other.connections[side] is not None:

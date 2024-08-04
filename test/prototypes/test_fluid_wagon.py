@@ -23,15 +23,15 @@ class TestFluidWagon:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            FluidWagon("fluid-wagon", unused_keyword="whatever")
+            FluidWagon("fluid-wagon", unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            FluidWagon("this is not a fluid wagon")
+            FluidWagon("this is not a fluid wagon").validate().reissue_all()
         # Warn if the locomotive is not on a rail (close enough to one?)
         # TODO (Complex)
 
         # Errors
         with pytest.raises(DataFormatError):
-            FluidWagon("fluid-wagon", orientation="wrong")
+            FluidWagon("fluid-wagon", orientation="wrong").validate().reissue_all()
 
     def test_mergable_with(self):
         wagon1 = FluidWagon("fluid-wagon")

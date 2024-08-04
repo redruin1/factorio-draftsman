@@ -41,15 +41,15 @@ class TestAssemblingMachine:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            AssemblingMachine(unused_keyword="whatever")
+            AssemblingMachine(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownRecipeWarning):
-            AssemblingMachine(recipe="incorrect")
+            AssemblingMachine(recipe="incorrect").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            AssemblingMachine("not an assembling machine")
+            AssemblingMachine("not an assembling machine").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            AssemblingMachine(recipe=100)
+            AssemblingMachine(recipe=100).validate().reissue_all()
 
     def test_set_recipe(self):
         machine = AssemblingMachine("assembling-machine-3")

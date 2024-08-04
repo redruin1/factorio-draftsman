@@ -44,14 +44,11 @@ class LogisticStorageContainer(
         name: Optional[str] = get_first(logistic_storage_containers),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        bar: uint16 = None,
+        bar: Optional[uint16] = None,
         request_filters: list[RequestFilter] = [],
         items: dict[str, uint32] = {},  # TODO: ItemID
         connections: Connections = {},
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -75,8 +72,6 @@ class LogisticStorageContainer(
         )
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

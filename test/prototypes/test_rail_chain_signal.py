@@ -59,13 +59,13 @@ class TestRailChainSignal:
 
         # Warnings:
         with pytest.warns(UnknownKeywordWarning):
-            RailChainSignal("rail-chain-signal", invalid_keyword="whatever")
+            RailChainSignal("rail-chain-signal", invalid_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            RailChainSignal("this is not a rail chain signal")
+            RailChainSignal("this is not a rail chain signal").validate().reissue_all()
 
         # Errors:
         with pytest.raises(DataFormatError):
-            RailChainSignal(control_behavior="incorrect")
+            RailChainSignal(control_behavior="incorrect").validate().reissue_all()
 
     def test_set_blue_output_signal(self):
         rail_signal = RailChainSignal()

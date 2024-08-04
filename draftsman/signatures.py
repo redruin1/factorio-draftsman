@@ -23,6 +23,7 @@ from draftsman.data.signals import (
 )
 from draftsman.data import entities, fluids, items, signals, tiles
 from draftsman.error import InvalidMapperError, InvalidSignalError
+from draftsman.utils import encode_version
 from draftsman.warning import (
     BarWarning,
     MalformedSignalWarning,
@@ -494,6 +495,67 @@ class Icon(DraftsmanBaseModel):
         ..., description="""Numerical index of the icon, 1-based."""
     )  # TODO: is it numerical order which determines appearance, or order in parent list?
 
+    # @classmethod
+    # def resolve_shorthand(cls, value):
+    #     try:
+    #         result = []
+    #         for i, signal in enumerate(value):
+    #             if isinstance(signal, str)
+    #                 result.append({"index": i + 1, "signal": signal})
+    #             else:
+    #                 result.append(signal)
+    #         return result
+    #     except Exception:
+    #         return value
+
+
+    #     if isinstance(value, Sequence):
+    #         result = [None] * len(value)
+    #         for i, signal in enumerate(value):
+    #             if isinstance(signal, str):
+    #                 result[i] = signal_dict(signal)
+    #             else:
+    #                 result[i] = signal
+    #         return result
+    #     else:
+    #         return value
+
+
+def normalize_icons(value: Any):
+    if isinstance(value, str):
+        return value
+    elif isinstance(value, Sequence):
+        result = []
+        for i, signal in enumerate(value):
+            if isinstance(signal, str):
+                result.append({"index": i + 1, "signal": signal_dict(signal)})
+            elif isinstance(signal, dict) and "type" in signal:
+                result.append({"index": i + 1, "signal": signal})
+            else:
+                result.append(signal)
+        return result
+    else:
+        return value
+
+def normalize_version(value: Any):
+    try:
+        return encode_version(*value)
+    except Exception:
+        return value
+    
+def normalize_color(value: Any):
+    try:
+        color_dict = {}
+        color_dict["r"] = value[0]
+        color_dict["g"] = value[1]
+        color_dict["b"] = value[2]
+        try:
+            color_dict["a"] = value[3]
+        except IndexError:
+            pass
+        return color_dict
+    except Exception:
+        return value
 
 # class Icons(DraftsmanRootModel):
 #     root: list[Icon] = Field(

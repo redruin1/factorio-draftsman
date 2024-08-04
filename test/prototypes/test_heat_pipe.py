@@ -14,11 +14,9 @@ class TestHeatPipe:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            HeatPipe(unused_keyword="whatever")
+            HeatPipe(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            HeatPipe("not a heat pipe")
-
-        # Errors
+            HeatPipe("not a heat pipe").validate().reissue_all()
 
     def test_mergable_with(self):
         pipe1 = HeatPipe("heat-pipe")

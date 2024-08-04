@@ -14,9 +14,9 @@ class TestLoader:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Loader("loader", unused_keyword=10)
+            Loader("loader", unused_keyword=10).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            Loader("this is not a loader")
+            Loader("this is not a loader").validate().reissue_all()
 
         # Errors
 

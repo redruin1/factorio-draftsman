@@ -35,10 +35,10 @@ class TestSplitter:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Splitter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5)
+            Splitter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5).validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            Splitter("this is not a splitter")
+            Splitter("this is not a splitter").validate().reissue_all()
 
         # TODO
         # with pytest.raises(UnknownItemWarning):
@@ -47,28 +47,28 @@ class TestSplitter:
         # Errors
         # Raises errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            Splitter("splitter", id=25)
+            Splitter("splitter", id=25).validate().reissue_all()
 
         with pytest.raises(TypeError):
-            Splitter("splitter", position=TypeError)
+            Splitter("splitter", position=TypeError).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            Splitter("splitter", direction="incorrect")
+            Splitter("splitter", direction="incorrect").validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            Splitter("splitter", input_priority=TypeError)
+            Splitter("splitter", input_priority=TypeError).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            Splitter("splitter", input_priority="wrong")
+            Splitter("splitter", input_priority="wrong").validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            Splitter("splitter", output_priority=TypeError)
+            Splitter("splitter", output_priority=TypeError).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            Splitter("splitter", output_priority="wrong")
+            Splitter("splitter", output_priority="wrong").validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            Splitter("splitter", filter=TypeError)
+            Splitter("splitter", filter=TypeError).validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in splitters:

@@ -79,33 +79,33 @@ class TestInserter:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Inserter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5)
+            Inserter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5).validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
             Inserter(
                 "inserter", control_behavior={"this is": ["also", "very", "wrong"]}
-            )
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            Inserter("this is not an inserter")
+            Inserter("this is not an inserter").validate().reissue_all()
 
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            Inserter("inserter", id=25)
+            Inserter("inserter", id=25).validate().reissue_all()
 
         with pytest.raises(TypeError):
-            Inserter("inserter", position=TypeError)
+            Inserter("inserter", position=TypeError).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            Inserter("inserter", direction="incorrect")
+            Inserter("inserter", direction="incorrect").validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            Inserter("inserter", override_stack_size="incorrect")
+            Inserter("inserter", override_stack_size="incorrect").validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            Inserter("inserter", connections="incorrect")
+            Inserter("inserter", connections="incorrect").validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            Inserter("inserter", control_behavior="incorrect")
+            Inserter("inserter", control_behavior="incorrect").validate().reissue_all()
 
     def test_set_read_contents(self):
         inserter = Inserter("inserter")

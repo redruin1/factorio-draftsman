@@ -21,15 +21,15 @@ class TestPowerSwitch:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            PowerSwitch(unused_keyword="whatever")
+            PowerSwitch(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            PowerSwitch(control_behavior={"unused_key": "something"})
+            PowerSwitch(control_behavior={"unused_key": "something"}).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            PowerSwitch("this is not a power switch")
+            PowerSwitch("this is not a power switch").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            PowerSwitch(control_behavior="incorrect")
+            PowerSwitch(control_behavior="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in power_switches:

@@ -1,7 +1,7 @@
 # programmable_speaker.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.classes.mixins import (
     CircuitConditionMixin,
     ControlBehaviorMixin,
@@ -340,9 +340,6 @@ class ProgrammableSpeaker(
         parameters: Format.Parameters = {},
         alert_parameters: Format.AlertParameters = {},
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -379,8 +376,6 @@ class ProgrammableSpeaker(
 
         self.validate_assignment = validate_assignment
 
-        self.validate(mode=validate).reissue_all(stacklevel=3)
-
     # =========================================================================
 
     @property
@@ -410,13 +405,16 @@ class ProgrammableSpeaker(
 
     @parameters.setter
     def parameters(self, value: Optional[Format.Parameters]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "parameters", value
-            )
-            self._root.parameters = result
-        else:
-            self._root.parameters = value
+        test_replace_me(
+            self, type(self).Format, self._root, "parameters", value, self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self, type(self).Format, self._root, "parameters", value
+        #     )
+        #     self._root.parameters = result
+        # else:
+        #     self._root.parameters = value
 
     # =========================================================================
 
@@ -436,13 +434,16 @@ class ProgrammableSpeaker(
 
     @alert_parameters.setter
     def alert_parameters(self, value: Optional[Format.AlertParameters]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "alert_parameters", value
-            )
-            self._root.alert_parameters = result
-        else:
-            self._root.alert_parameters = value
+        test_replace_me(
+            self, type(self).Format, self._root, "alert_parameters", value, self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self, type(self).Format, self._root, "alert_parameters", value
+        #     )
+        #     self._root.alert_parameters = result
+        # else:
+        #     self._root.alert_parameters = value
 
     # =========================================================================
 

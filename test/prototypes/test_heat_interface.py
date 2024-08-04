@@ -25,16 +25,16 @@ class TestHeatInterface:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            HeatInterface(unused_keyword="whatever")
+            HeatInterface(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            HeatInterface("this is not a heat interface")
+            HeatInterface("this is not a heat interface").validate().reissue_all()
 
         with pytest.warns(TemperatureRangeWarning):
-            HeatInterface(temperature=100_000, validate="pedantic")
+            HeatInterface(temperature=100_000).validate(mode="pedantic").reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            HeatInterface(temperature="incorrect")
+            HeatInterface(temperature="incorrect").validate().reissue_all()
 
     def test_set_temperature(self):
         interface = HeatInterface()

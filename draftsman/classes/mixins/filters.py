@@ -1,6 +1,6 @@
 # filters.py
 
-from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.data import items, entities
 from draftsman.error import InvalidItemError, DataFormatError
 from draftsman.signatures import DraftsmanBaseModel, FilterEntry, ItemName, int64
@@ -24,7 +24,7 @@ class FiltersMixin:
 
         @field_validator("filters", mode="before")
         @classmethod
-        def normalize_validate(cls, value: Any):
+        def normalize_filters(cls, value: Any):
             if isinstance(value, (list, tuple)):
                 result = []
                 for i, entry in enumerate(value):
@@ -66,13 +66,16 @@ class FiltersMixin:
 
     @filters.setter
     def filters(self, value: Optional[list[FilterEntry]]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "filters", value
-            )
-            self._root.filters = result
-        else:
-            self._root.filters = value
+        test_replace_me(
+            self, type(self).Format, self._root, "filters", value, self.validate_assignment
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self, type(self).Format, self._root, "filters", value
+        #     )
+        #     self._root.filters = result
+        # else:
+        #     self._root.filters = value
 
     # =========================================================================
 

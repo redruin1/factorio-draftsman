@@ -99,19 +99,19 @@ class TestArithmeticCombinator:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            ArithmeticCombinator(unused_keyword="whatever")
+            ArithmeticCombinator(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            ArithmeticCombinator(control_behavior={"unused_key": "something"})
+            ArithmeticCombinator(control_behavior={"unused_key": "something"}).validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
             ArithmeticCombinator(
                 control_behavior={"arithmetic_conditions": {"unused_key": "something"}}
-            )
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            ArithmeticCombinator("this is not an arithmetic combinator")
+            ArithmeticCombinator("this is not an arithmetic combinator").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            ArithmeticCombinator(control_behavior="incorrect")
+            ArithmeticCombinator(control_behavior="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in arithmetic_combinators:

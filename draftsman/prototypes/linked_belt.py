@@ -13,7 +13,7 @@ from pydantic import ConfigDict
 from typing import Any, Literal, Union
 
 
-class LinkedBelt(DirectionalMixin, Entity):
+class LinkedBelt(DirectionalMixin, Entity): # TODO: finish
     """
     A belt object that can transfer items over any distance, regardless of
     constraint, as long as the two are paired together.
@@ -34,9 +34,6 @@ class LinkedBelt(DirectionalMixin, Entity):
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -63,8 +60,6 @@ class LinkedBelt(DirectionalMixin, Entity):
         )
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

@@ -32,9 +32,6 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
         neighbours: list[uint64] = [],
         connections: Connections = {},
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -56,8 +53,6 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
         )
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

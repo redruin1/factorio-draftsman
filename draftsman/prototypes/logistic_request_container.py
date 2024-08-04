@@ -77,9 +77,6 @@ class LogisticRequestContainer(
         control_behavior: Format.ControlBehavior = {},
         request_from_buffers: bool = False,
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -104,8 +101,6 @@ class LogisticRequestContainer(
         self.request_from_buffers = request_from_buffers
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

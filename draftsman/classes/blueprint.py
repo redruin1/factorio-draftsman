@@ -289,6 +289,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                 description="""
                 A set of signal pictures to associate with this Blueprint.
                 """,
+                max_length=4,
             )
             version: Optional[uint64] = Field(
                 None,
@@ -346,13 +347,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                 """,
             )
 
-            @field_validator("version", mode="before")
-            @classmethod
-            def normalize_to_int(cls, value: Any):
-                if isinstance(value, Sequence) and not isinstance(value, str):
-                    return encode_version(*value)
-                return value
-
             @field_serializer("snap_to_grid", when_used="unless-none")
             def serialize_snapping_grid(self, _):
                 return self._snap_to_grid.to_dict()
@@ -400,14 +394,13 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     def __init__(
         self,
         blueprint: Union[str, dict] = None,
-        index: uint16 = None,
+        index: Optional[uint16] = None,
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
-        if_unknown: str = "error",  # TODO: enum
     ):
         """
         Creates a ``Blueprint`` class. Will load the data from ``blueprint`` if
@@ -426,19 +419,13 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             item="blueprint",
             init_data=blueprint,
             index=index,
+            validate=validate,
             entities=[],
             tiles=[],
             schedules=[],
-            if_unknown=if_unknown,
         )
 
         self.validate_assignment = validate_assignment
-
-        # TODO: right now all of the shorthand conversion is also performed with
-        # this step; ideally this would not be the case
-        # That way we would only have to "validate" a newly created blueprint if
-        # init_data was provided to the constructor
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     @reissue_warnings
     def setup(
@@ -459,14 +446,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        if_unknown: str = "error",  # TODO: enum
         **kwargs,
     ):
 
-        self._root.blueprint = Blueprint.Format.BlueprintObject(item="blueprint")
+        # self._root.blueprint = Blueprint.Format.BlueprintObject(item="blueprint")
 
         # Item (type identifier)
         kwargs.pop("item", None)
@@ -481,11 +464,13 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
         # Snapping grid parameters
         # Handle their true keys, as well as the Draftsman attribute label
+        # self._root[self._root_item]["snap-to-grid"] = Vector(0, 0) # TODO: move
         if "snap-to-grid" in kwargs:
             self.snapping_grid_size = kwargs.pop("snap-to-grid")
         else:
             self.snapping_grid_size = snapping_grid_size
 
+        # self._root[self._root_item]["snapping_grid_position"] = Vector(0, 0) # TODO: move
         self.snapping_grid_position = snapping_grid_position
 
         if "absolute-snapping" in kwargs:
@@ -493,6 +478,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         else:
             self.absolute_snapping = absolute_snapping
 
+        # self._root[self._root_item]["position-relative-to-grid"] = Vector(0, 0) # TODO: move
         if "position-relative-to-grid" in kwargs:
             self.position_relative_to_grid = kwargs.pop("position-relative-to-grid")
         else:
@@ -502,30 +488,24 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
         # Data lists
         # self._root[self._root_item]["entities"] = EntityList(
-        #     self, kwargs.pop("entities", None)
+        #     self, entities
         # )
         self._root._entities = EntityList(
             self,
             entities,
-            validate=validate,
-            validate_assignment=validate_assignment,
-            if_unknown=if_unknown,
         )
 
         # if "tiles" in kwargs:
         # self._root[self._root_item]["tiles"] = TileList(
-        #     self, kwargs.pop("tiles", None)
+        #     self, tiles
         # )
         self._root._tiles = TileList(
             self,
             tiles,
-            validate=validate,
-            validate_assignment=validate_assignment,
-            if_unknown=if_unknown,
         )
 
         # self._root[self._root_item]["schedules"] = ScheduleList(
-        #     kwargs.pop("schedules", None)
+        #     schedules
         # )
         self._root._schedules = ScheduleList(schedules)
 
@@ -572,6 +552,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                     entity: Entity = self.entities[locomotive - 1]
                     schedule.locomotives[i] = Association(entity)
 
+        if validate:
+            self.validate(mode=validate).reissue_all()
+
     # =========================================================================
     # Blueprint properties
     # =========================================================================
@@ -610,6 +593,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     @label_color.setter
     def label_color(self, value: Optional[Color]):
+        # TODO: normalization
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -621,15 +605,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             self._root[self._root_item]["label_color"] = result
         else:
             self._root[self._root_item]["label_color"] = value
-
-    def set_label_color(self, r, g, b, a=None):
-        """
-        TODO
-        """
-        try:
-            self._root[self._root_item]["label_color"] = Color(r=r, g=g, b=b, a=a)
-        except ValidationError as exc:
-            raise DataFormatError from exc
 
     # =========================================================================
 
@@ -691,17 +666,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     @snapping_grid_position.setter
     def snapping_grid_position(self, value: Union[Vector, PrimitiveVector, None]):
-        # if self.validate_assignment:
-        #     result = attempt_and_reissue(
-        #         self,
-        #         self.Format.BlueprintObject,
-        #         self._root.blueprint,
-        #         "snapping_grid_position",
-        #         value
-        #     )
-        #     self._root[self._root_item]["snapping_grid_position"] = result
+        # if value is None:
+        #     self._root[self._root_item]["snapping_grid_position"].update_from_other((0, 0), int)
         # else:
-        #     self._root[self._root_item]["snapping_grid_position"] = value
+        #     self._root[self._root_item]["snapping_grid_position"].update_from_other(value, int)
         if value is None:
             self._root.blueprint._snapping_grid_position.update_from_other((0, 0), int)
         else:
@@ -752,21 +720,19 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         :setter: Sets the absolute grid-position offset. Is given a value of 
             ``(0, 0)`` if set to ``None``
         """
+        # return self._root[self._root_item]["position-relative-to-grid"]
         return self._root.blueprint._position_relative_to_grid
 
     @position_relative_to_grid.setter
     def position_relative_to_grid(self, value: Union[Vector, PrimitiveVector, None]):
-        # if self.validate_assignment:
-        #     result = attempt_and_reissue(
-        #         self,
-        #         self.Format.BlueprintObject,
-        #         self._root.blueprint,
-        #         "position_relative_to_grid",
-        #         value
+        # if value is None:
+        #     self._root[self._root_item]["position-relative-to-grid"].update_from_other(
+        #         (0, 0), int
         #     )
-        #     self._root[self._root_item]["position_relative_to_grid"] = result
         # else:
-        #     self._root[self._root_item]["position_relative_to_grid"] = value
+        #     self._root[self._root_item]["position-relative-to-grid"].update_from_other(
+        #         value, int
+        #     )
         if value is None:
             self._root.blueprint._position_relative_to_grid.update_from_other(
                 (0, 0), int
@@ -796,20 +762,19 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         return self._root._entities
 
     @entities.setter
-    def entities(self, value: Union[EntityList, list[EntityLike]]):
+    @reissue_warnings
+    def entities(self, value: Union[EntityList, list[EntityLike], None]):
         if value is None:
             # self._root[self._root_item]["entities"].clear()
             self._root._entities.clear()
-        elif isinstance(value, list):
-            # self._root[self._root_item]["entities"] = EntityList(self, value)
-            self._root._entities = EntityList(self, value)
         elif isinstance(value, EntityList):
             # Just don't ask
             # self._root["entities"] = copy.deepcopy(value, memo={"new_parent": self})
-            # self._root[self._root_item]["entities"] = EntityList(self, value.data)
+            # self._root[self._root_item]["entities"] = EntityList(self, value._root)
             self._root._entities = EntityList(self, value._root)
         else:
-            raise TypeError("'entities' must be an EntityList, list, or None")
+            # self._root[self._root_item]["entities"] = EntityList(self, value)
+            self._root._entities = EntityList(self, value)
 
     # =========================================================================
 
@@ -838,15 +803,17 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         return self._root._tiles
 
     @tiles.setter
-    def tiles(self, value: Union[TileList, list[Tile]]):
+    @reissue_warnings
+    def tiles(self, value: Union[TileList, list[Tile], None]):
         if value is None:
+            # self._root[self._root_item]["tiles"].clear()
             self._root._tiles.clear()
         elif isinstance(value, TileList):
+            # self._root[self._root_item]["tiles"] = TileList(self, value._root)
             self._root._tiles = TileList(self, value._root)
-        elif isinstance(value, list):
-            self._root._tiles = TileList(self, value)
         else:
-            raise TypeError("'tiles' must be a TileList, list, or None")
+            # self._root[self._root_item]["tiles"] = TileList(self, value)
+            self._root._tiles = TileList(self, value)
 
     # =========================================================================
 
@@ -870,7 +837,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         return self._root._schedules
 
     @schedules.setter
-    def schedules(self, value: Union[ScheduleList, list[Schedule]]):
+    @reissue_warnings
+    def schedules(self, value: Union[ScheduleList, list[Schedule], None]):
         # TODO: this needs to be more complex. What about associations already
         # set to one blueprint being copied over to another? Should probably
         # wipe the locomotives of each schedule when doing so
@@ -937,45 +905,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     def validate(
         self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
     ) -> ValidationResult:
-        mode = ValidationMode(mode)
+        # Validate regular attributes
+        output = super().validate(mode=mode, force=force)
 
-        output = ValidationResult([], [])
-
-        if mode is ValidationMode.NONE or (self.is_valid and not force):
-            return output
-
-        context: dict[str, Any] = {
-            "mode": mode,
-            "object": self,
-            "warning_list": [],
-            "assignment": False,
-        }
-
-        try:
-            # print(self._root)
-            result = self.Format.model_validate(
-                self._root,
-                strict=False,  # Ideally this should be strict
-                context=context,
-            )
-            # print(result)
-            # Reassign private attributes
-            result._entities = self._root._entities
-            result._tiles = self._root._tiles
-            result._schedules = self._root._schedules
-            result.blueprint._snap_to_grid = self._root.blueprint._snap_to_grid
-            result.blueprint._snapping_grid_position = (
-                self._root.blueprint._snapping_grid_position
-            )
-            result.blueprint._position_relative_to_grid = (
-                self._root.blueprint._position_relative_to_grid
-            )
-            # Acquire the newly converted data
-            self._root = result
-        except ValidationError as e:
-            output.error_list.append(DataFormatError(e))
-
-        output.warning_list += context["warning_list"]
+        # Validate recursive attributes
+        output += self.entities.validate(mode=mode, force=force)
+        output += self.tiles.validate(mode=mode, force=force)
 
         # if len(output.error_list) == 0:
         #     # Set the `is_valid` attribute

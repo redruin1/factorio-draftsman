@@ -35,7 +35,77 @@ def attempt_and_reissue(
         raise DataFormatError(e) from None
     for warning in context["warning_list"]:
         warnings.warn(warning, stacklevel=4)
+    # result = result.model_dump(warnings=False)
+    # return result[name]
     return getattr(result, name)
+
+def apply_assignment(object: "Exportable", format_model: BaseModel, target: BaseModel, name: str, value: Any, **kwargs):
+    """
+    TODO
+    """
+    context = {
+        "mode": ValidationMode.NONE,
+        "object": object,
+        "warning_list": [],
+        "assignment": True,
+        "construction": True,
+        **kwargs,
+    }
+    # try:
+    result = format_model.__pydantic_validator__.validate_assignment(
+        target,
+        name,
+        value,
+        strict=True,  # TODO: disallow any weird string -> int / string -> bool conversions
+        context=context,
+    )
+    # except ValidationError as e:
+    #     raise DataFormatError(e) from None
+    # for warning in context["warning_list"]:
+    #     warnings.warn(warning, stacklevel=4)
+    return getattr(result, name)
+
+def test_replace_me(object: "Exportable", format_model: BaseModel, target: BaseModel, name: str, value: Any, mode: ValidationMode, **kwargs):
+    """
+    Attempts to coerce a input value to a particular Pydantic model format, and
+    run validation at the same time if requested by the caller. Utility function
+    to increase code reuse.
+
+    The input value is expected to be in a standard JSON format, what you would
+    expect a regular input to look like. Any shorthand formats should be handled
+    *before* passing to this function.
+
+    If the passed in mode is `ValidationMode.NONE`, then this function attempts
+    to just coerce the input to a Pydantic BaseModel using the "construction"
+    key. Because using this key should generate no errors or warnings, the 
+    original value will just be returned when it is indeterminate. Under any 
+    other passed in `mode`, the validation suite is run corresponding to that 
+    mode.
+    """
+    context = {
+        "mode": mode,
+        "object": object,
+        "warning_list": [],
+        "assignment": True, # Do not revalidate the entire object; just this attr
+        **kwargs,
+    }
+    # Functions check for presence, not value; so we only add it when necessary
+    if mode is ValidationMode.NONE:
+        context["construction"] = True
+    
+    try:
+        result = format_model.__pydantic_validator__.validate_assignment(
+            target,
+            name,
+            value,
+            strict=True,  # TODO: disallow any weird str to int or str to bool conversions
+            context=context,
+        )
+    except ValidationError as e:
+        raise DataFormatError(e) from None
+    for warning in context["warning_list"]:
+        warnings.warn(warning, stacklevel=4)
+    target[name] = getattr(result, name)
 
 
 class ValidationResult:
@@ -75,6 +145,13 @@ class ValidationResult:
             ):
                 return False
         return True
+    
+    def __iadd__(self, other):
+        if not isinstance(other, ValidationResult):
+            raise NotImplemented
+        self.warning_list += other.warning_list
+        self.error_list += other.error_list
+        return self
 
     def __str__(self):  # pragma: no coverage
         return "ValidationResult{{\n    errors={},\n    warnings={}\n}}".format(
@@ -114,25 +191,26 @@ class Exportable(metaclass=ABCMeta):
 
     # =========================================================================
 
-    @property
-    def is_valid(self) -> bool:
-        """
-        Read-only attribute that indicates whether or not this object is
-        validated. If this attribute is true, you can assume that all component
-        attributes of this object are formatted correctly and value tolerant.
-        Validity is lost anytime any attribute of a valid object is altered, and
-        gained when :py:meth:`.validate` is called:
+    # TODO
+    # @property
+    # def is_valid(self) -> bool:
+    #     """
+    #     Read-only attribute that indicates whether or not this object is
+    #     validated. If this attribute is true, you can assume that all component
+    #     attributes of this object are formatted correctly and value tolerant.
+    #     Validity is lost anytime any attribute of a valid object is altered, and
+    #     gained when :py:meth:`.validate` is called:
 
-        .. doctest::
+    #     .. doctest::
 
-            >>> from draftsman.entity import Container
-            >>> c = Container("wooden-chest")
-            >>> c.is_valid
-            False
+    #         >>> from draftsman.entity import Container
+    #         >>> c = Container("wooden-chest")
+    #         >>> c.is_valid
+    #         False
 
-        Read only.
-        """
-        return self._is_valid
+    #     Read only.
+    #     """
+    #     return self._is_valid
 
     # =========================================================================
 
@@ -183,8 +261,7 @@ class Exportable(metaclass=ABCMeta):
     @abstractmethod
     def validate(self, mode: ValidationMode, force: bool) -> ValidationResult:
         """
-        Validates the called object against it's known format. Attempts to
-        coerce data into correct forms from shorthands, and raises exceptions.
+        Validates the called object against it's known format.
         Method that attempts to first coerce the object into a known form, and
         then checks the values of its attributes for correctness. If unable to
         do so, this function raises :py:class:`.DataFormatError`. Otherwise,
@@ -265,9 +342,10 @@ class Exportable(metaclass=ABCMeta):
 
     # =========================================================================
 
-    def __setattr__(self, name, value):
-        super().__setattr__("_is_valid", False)
-        super().__setattr__(name, value)
+    # TODO
+    # def __setattr__(self, name, value):
+    #     super().__setattr__("_is_valid", False)
+    #     super().__setattr__(name, value)
 
     def __setitem__(self, key: str, value: Any):
         self._root[key] = value

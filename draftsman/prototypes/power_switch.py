@@ -72,9 +72,6 @@ class PowerSwitch(
         control_behavior: Format.ControlBehavior = {},
         switch_state: bool = False,
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -94,8 +91,6 @@ class PowerSwitch(
         self.switch_state = switch_state
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 

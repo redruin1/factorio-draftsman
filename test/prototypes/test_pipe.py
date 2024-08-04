@@ -13,9 +13,9 @@ class TestPipe:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Pipe("pipe", unused_keyword=10)
+            Pipe("pipe", unused_keyword=10).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            Pipe("Ceci n'est pas une pipe.")
+            Pipe("Ceci n'est pas une pipe.").validate().reissue_all()
 
     def test_mergable_with(self):
         pipe1 = Pipe("pipe")

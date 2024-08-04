@@ -14,10 +14,10 @@ class TestSimpleEntityWithOwner:
         assert entity.variation == 13
 
         with pytest.warns(UnknownKeywordWarning):
-            SimpleEntityWithOwner(unused_keyword="whatever")
+            SimpleEntityWithOwner(unused_keyword="whatever").validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            SimpleEntityWithOwner("this is not correct")
+            SimpleEntityWithOwner("this is not correct").validate().reissue_all()
 
     def test_to_dict(self):
         entity = SimpleEntityWithOwner("simple-entity-with-owner")

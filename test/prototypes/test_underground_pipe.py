@@ -14,11 +14,13 @@ class TestUndergroundPipe:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            UndergroundPipe("pipe-to-ground", unused_keyword=10)
+            pipe = UndergroundPipe("pipe-to-ground", unused_keyword=10)
+            pipe.validate().reissue_all()
 
         # Errors
         with pytest.warns(UnknownEntityWarning):
-            UndergroundPipe("this is not an underground pipe")
+            pipe = UndergroundPipe("this is not an underground pipe")
+            pipe.validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in underground_pipes:

@@ -31,9 +31,6 @@ class Boiler(RequestItemsMixin, DirectionalMixin, Entity):
         direction: Direction = Direction.NORTH,
         items: dict[str, uint32] = {},  # TODO: ItemID
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -55,8 +52,6 @@ class Boiler(RequestItemsMixin, DirectionalMixin, Entity):
         )
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # TODO: ensure fuel requests to this entity match it's allowed fuel categories
 

@@ -24,9 +24,9 @@ class TestFurnace:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Furnace("stone-furnace", unused_keyword="whatever")
+            Furnace("stone-furnace", unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            Furnace("not a furnace")
+            Furnace("not a furnace").validate().reissue_all()
 
         # Errors
 

@@ -22,21 +22,24 @@ class TestWall:
         # ========================
 
         # Known entity
-        wall = Wall("stone-wall", validate=vm.NONE)
+        wall = Wall("stone-wall")
+        wall.validate(mode=vm.NONE).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
         }
 
         # Unkown entity
-        wall = Wall("unknown-wall", validate=vm.NONE)
+        wall = Wall("unknown-wall")
+        wall.validate(mode=vm.NONE).reissue_all()
         assert wall.to_dict() == {
             "name": "unknown-wall",
             "position": {"x": 0.0, "y": 0.0},
         }
 
         # Unknown keyword
-        wall = Wall("stone-wall", unused_keyword="whatever", validate=vm.NONE)
+        wall = Wall("stone-wall", unused_keyword="whatever")
+        wall.validate(mode=vm.NONE).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -58,8 +61,8 @@ class TestWall:
                 "output_signal": "signal-B",
             },
             tags={"some": "stuff"},
-            validate=vm.NONE,
         )
+        wall.validate(mode=vm.NONE).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -82,8 +85,8 @@ class TestWall:
             "stone-wall",
             connections="incorrect",
             control_behavior="incorrect",
-            validate=vm.NONE,
         )
+        wall.validate(mode=vm.NONE).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -96,21 +99,24 @@ class TestWall:
         # ===================
 
         # Known entity
-        wall = Wall("stone-wall", validate=vm.MINIMUM)
+        wall = Wall("stone-wall")
+        wall.validate(mode=vm.MINIMUM).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
         }
 
         # Unkown entity
-        wall = Wall("unknown-wall", validate=vm.MINIMUM)
+        wall = Wall("unknown-wall")
+        wall.validate(mode=vm.MINIMUM).reissue_all()
         assert wall.to_dict() == {
             "name": "unknown-wall",
             "position": {"x": 0.0, "y": 0.0},
         }
 
         # Unknown keyword
-        wall = Wall("stone-wall", unused_keyword="whatever", validate=vm.MINIMUM)
+        wall = Wall("stone-wall", unused_keyword="whatever")
+        wall.validate(mode=vm.MINIMUM).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -132,8 +138,8 @@ class TestWall:
                 "output_signal": "signal-B",
             },
             tags={"some": "stuff"},
-            validate=vm.MINIMUM,
         )
+        wall.validate(mode=vm.MINIMUM).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -157,15 +163,16 @@ class TestWall:
                 "stone-wall",
                 connections="incorrect",
                 control_behavior="incorrect",
-                validate=vm.MINIMUM,
             )
+            wall.validate(mode=vm.MINIMUM).reissue_all()
 
         # =================
         # Strict validation
         # =================
 
         # Known entity
-        wall = Wall("stone-wall", validate=vm.STRICT)
+        wall = Wall("stone-wall")
+        wall.validate(mode=vm.STRICT).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -173,7 +180,8 @@ class TestWall:
 
         # Unkown entity
         with pytest.warns(UnknownEntityWarning):
-            wall = Wall("unknown-wall", validate=vm.STRICT)
+            wall = Wall("unknown-wall")
+            wall.validate(mode=vm.STRICT).reissue_all()
         assert wall.to_dict() == {
             "name": "unknown-wall",
             "position": {"x": 0.0, "y": 0.0},
@@ -181,7 +189,8 @@ class TestWall:
 
         # Unknown keyword
         with pytest.warns(UnknownKeywordWarning):
-            wall = Wall("stone-wall", unused_keyword="whatever", validate=vm.STRICT)
+            wall = Wall("stone-wall", unused_keyword="whatever")
+            wall.validate(mode=vm.STRICT).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -203,8 +212,8 @@ class TestWall:
                 "output_signal": "signal-B",
             },
             tags={"some": "stuff"},
-            validate=vm.STRICT,
         )
+        wall.validate(mode=vm.STRICT).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -228,15 +237,16 @@ class TestWall:
                 "stone-wall",
                 connections="incorrect",
                 control_behavior="incorrect",
-                validate=vm.STRICT,
             )
+            wall.validate(mode=vm.STRICT).reissue_all()
 
         # ===================
         # Pedantic validation
         # ===================
 
         # Known entity
-        wall = Wall("stone-wall", validate=vm.PEDANTIC)
+        wall = Wall("stone-wall")
+        wall.validate(mode=vm.PEDANTIC).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -244,11 +254,13 @@ class TestWall:
 
         # Unkown entity
         with pytest.warns(UnknownEntityWarning):
-            wall = Wall("unknown-wall", validate=vm.PEDANTIC)
+            wall = Wall("unknown-wall")
+            wall.validate(mode=vm.PEDANTIC).reissue_all()
 
         # Unknown keyword
         with pytest.warns(UnknownKeywordWarning):
-            wall = Wall("stone-wall", unused_keyword="whatever", validate=vm.PEDANTIC)
+            wall = Wall("stone-wall", unused_keyword="whatever")
+            wall.validate(mode=vm.PEDANTIC).reissue_all()
 
         # Import from correct dictionary
         wall = Wall(
@@ -265,8 +277,8 @@ class TestWall:
                 "output_signal": "signal-B",
             },
             tags={"some": "stuff"},
-            validate=vm.PEDANTIC,
         )
+        wall.validate(mode=vm.PEDANTIC).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -290,8 +302,8 @@ class TestWall:
                 "stone-wall",
                 connections="incorrect",
                 control_behavior="incorrect",
-                validate=vm.PEDANTIC,
             )
+            wall.validate(mode=vm.PEDANTIC).reissue_all()
 
     def test_set_enable_disable(self):
         # ========================

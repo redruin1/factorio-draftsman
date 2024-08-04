@@ -13,6 +13,7 @@ class TestUndergroundBelt:
     def test_constructor_init(self):
         # Valid
         underground_belt = UndergroundBelt("underground-belt")
+        underground_belt.validate().reissue_all()
         assert underground_belt.to_dict() == {
             "name": "underground-belt",
             "position": {"x": 0.5, "y": 0.5},
@@ -24,6 +25,7 @@ class TestUndergroundBelt:
             tile_position=[1, 1],
             io_type="output",
         )
+        underground_belt.validate().reissue_all()
         assert underground_belt.to_dict() == {
             "name": "underground-belt",
             "position": {"x": 1.5, "y": 1.5},
@@ -32,6 +34,7 @@ class TestUndergroundBelt:
         }
 
         underground_belt = UndergroundBelt("underground-belt", type="output")
+        underground_belt.validate().reissue_all()
         assert underground_belt.to_dict() == {
             "name": "underground-belt",
             "position": {"x": 0.5, "y": 0.5},
@@ -40,30 +43,36 @@ class TestUndergroundBelt:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            UndergroundBelt(
+            underground_belt = UndergroundBelt(
                 position=[0, 0], direction=Direction.WEST, invalid_keyword=5
             )
+            underground_belt.validate().reissue_all()
 
-        # Errors
-        # Raises InvalidEntityID when not in containers
+        # Not in Underground Belts
         with pytest.warns(UnknownEntityWarning):
-            UndergroundBelt("this is not an underground belt")
+            underground_belt = UndergroundBelt("this is not an underground belt")
+            underground_belt.validate().reissue_all()
 
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            UndergroundBelt("underground-belt", id=25)
+            underground_belt = UndergroundBelt("underground-belt", id=25)
+            underground_belt.validate().reissue_all()
 
         with pytest.raises(TypeError):
-            UndergroundBelt("underground-belt", position=TypeError)
+            underground_belt = UndergroundBelt("underground-belt", position=TypeError)
+            underground_belt.validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            UndergroundBelt("underground-belt", direction="incorrect")
+            underground_belt = UndergroundBelt("underground-belt", direction="incorrect")
+            underground_belt.validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            UndergroundBelt("underground-belt", type="incorrect")
+            underground_belt = UndergroundBelt("underground-belt", type="incorrect")
+            underground_belt.validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            UndergroundBelt("underground-belt", io_type="incorrect")
+            underground_belt = UndergroundBelt("underground-belt", io_type="incorrect")
+            underground_belt.validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in underground_belts:

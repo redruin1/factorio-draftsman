@@ -74,28 +74,28 @@ class TestLogisticBufferContainer:
         with pytest.warns(UnknownKeywordWarning):
             LogisticBufferContainer(
                 "logistic-chest-buffer", position=[0, 0], invalid_keyword="100"
-            )
+            ).validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            LogisticBufferContainer(control_behavior={"unused_key": "something"})
+            LogisticBufferContainer(control_behavior={"unused_key": "something"}).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            LogisticBufferContainer("this is not a logistics storage chest")
+            LogisticBufferContainer("this is not a logistics storage chest").validate().reissue_all()
 
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            LogisticBufferContainer("logistic-chest-buffer", id=25)
+            LogisticBufferContainer("logistic-chest-buffer", id=25).validate().reissue_all()
         with pytest.raises(TypeError):
-            LogisticBufferContainer("logistic-chest-buffer", position=TypeError)
+            LogisticBufferContainer("logistic-chest-buffer", position=TypeError).validate().reissue_all()
         with pytest.raises(DataFormatError):
-            LogisticBufferContainer("logistic-chest-buffer", bar="not even trying")
+            LogisticBufferContainer("logistic-chest-buffer", bar="not even trying").validate().reissue_all()
         with pytest.raises(DataFormatError):
-            LogisticBufferContainer("logistic-chest-buffer", connections="incorrect")
+            LogisticBufferContainer("logistic-chest-buffer", connections="incorrect").validate().reissue_all()
         with pytest.raises(DataFormatError):
             LogisticBufferContainer(
                 "logistic-chest-buffer", request_filters={"this is": ["very", "wrong"]}
-            )
+            ).validate().reissue_all()
         with pytest.raises(DataFormatError):
-            LogisticBufferContainer(control_behavior="incorrect")
+            LogisticBufferContainer(control_behavior="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in logistic_buffer_containers:

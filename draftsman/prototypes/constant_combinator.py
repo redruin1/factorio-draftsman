@@ -85,9 +85,6 @@ class ConstantCombinator(
         connections: Connections = {},
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -113,8 +110,6 @@ class ConstantCombinator(
         )
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
@@ -240,15 +235,6 @@ class ConstantCombinator(
 
         if existing_index is None:
             new_filters.append(new_entry)
-
-        result = attempt_and_reissue(
-            self,
-            type(self).Format.ControlBehavior,
-            self.control_behavior,
-            "filters",
-            new_filters,
-        )
-        self.control_behavior.filters = result
 
     def get_signal(self, index: int64) -> Optional[SignalFilter]:
         """

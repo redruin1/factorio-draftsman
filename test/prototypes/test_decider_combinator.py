@@ -75,15 +75,15 @@ class TestDeciderCombinator:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            DeciderCombinator(unused_keyword="whatever")
+            DeciderCombinator(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            DeciderCombinator(control_behavior={"unused_key": "something"})
+            DeciderCombinator(control_behavior={"unused_key": "something"}).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            DeciderCombinator("this is not an arithmetic combinator")
+            DeciderCombinator("this is not an arithmetic combinator").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            DeciderCombinator(control_behavior="incorrect")
+            DeciderCombinator(control_behavior="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in decider_combinators:

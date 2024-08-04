@@ -7,6 +7,7 @@ from draftsman.classes.blueprint import TileList
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.entity_list import EntityList
+from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.group import Group
 from draftsman.classes.schedule import Schedule, WaitCondition
 from draftsman.classes.schedule_list import ScheduleList
@@ -19,7 +20,7 @@ from draftsman.constants import (
     ValidationMode,
 )
 from draftsman.entity import Container, ElectricPole, new_entity
-from draftsman.tile import Tile
+from draftsman.tile import Tile, new_tile
 from draftsman.error import (
     MalformedBlueprintStringError,
     IncorrectBlueprintTypeError,
@@ -43,6 +44,7 @@ from draftsman.warning import (
     GridAlignmentWarning,
     TooManyConnectionsWarning,
     UnknownEntityWarning,
+    UnknownSignalWarning,
     UnknownTileWarning,
 )
 
@@ -91,30 +93,23 @@ class TestBlueprint:
         blueprint = Blueprint(example)
         assert blueprint.to_dict() == example
 
-        blueprint = Blueprint(example, validate="none")
-        assert blueprint.to_dict() == example
-
         broken_example = {"blueprint": {"item": "blueprint", "version": "incorrect"}}
 
-        with pytest.raises(DataFormatError):
-            Blueprint(broken_example)
-
-        blueprint = Blueprint(broken_example, validate="none")
+        blueprint = Blueprint(broken_example)
         assert blueprint.to_dict() == broken_example
 
-        # # TypeError
-        # with self.assertRaises(TypeError):
-        #     Blueprint(TypeError)
+        with pytest.raises(DataFormatError):
+            blueprint.validate().reissue_all()
 
-        # # Valid format, but incorrect type
-        # with self.assertRaises(IncorrectBlueprintTypeError):
-        #     blueprint = Blueprint(
-        #         "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
-        #     )
+        # Valid format, but incorrect type
+        with pytest.raises(IncorrectBlueprintTypeError):
+            blueprint = Blueprint(
+                "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
+            )
 
-        # # Invalid format
-        # with self.assertRaises(MalformedBlueprintStringError):
-        #     blueprint = get_blueprintable_from_string("0lmaothisiswrong")
+        # Invalid format
+        with pytest.raises(MalformedBlueprintStringError):
+            blueprint = get_blueprintable_from_string("0lmaothisiswrong")
 
         ### Complex blueprint ###
         # TODO
@@ -198,7 +193,7 @@ class TestBlueprint:
 
     def test_set_label(self):
         blueprint = Blueprint()
-        blueprint.set_version(1, 1, 54, 0)
+        blueprint.version = (1, 1, 54, 0)
         # String
         blueprint.label = "testing The LABEL"
         assert blueprint.label == "testing The LABEL"
@@ -218,23 +213,40 @@ class TestBlueprint:
 
     def test_set_label_color(self):
         blueprint = Blueprint()
-        blueprint.set_version(1, 1, 54, 0)
-        # Valid 3 args
+        blueprint.version = (1, 1, 54, 0)
+        
+        # Valid 3 args list
         # Test for floating point conversion error by using 0.1
-        blueprint.set_label_color(0.5, 0.1, 0.5)
+        blueprint.label_color = (0.5, 0.1, 0.5)
         assert blueprint.label_color == Color(**{"r": 0.5, "g": 0.1, "b": 0.5})
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "label_color": {"r": 0.5, "g": 0.1, "b": 0.5},
             "version": encode_version(1, 1, 54, 0),
         }
-        # Valid 4 args
-        blueprint.set_label_color(1.0, 1.0, 1.0, 0.25)
+        
+        # Valid 4 args list
+        blueprint.label_color = (1.0, 1.0, 1.0, 0.25)
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "label_color": {"r": 1.0, "g": 1.0, "b": 1.0, "a": 0.25},
             "version": encode_version(1, 1, 54, 0),
         }
+        # Valid 3 args dict
+        blueprint.label_color = {"r": 255, "g": 255, "b": 255}
+        assert blueprint.to_dict()["blueprint"] == {
+            "item": "blueprint",
+            "label_color": {"r": 255, "g": 255, "b": 255},
+            "version": encode_version(1, 1, 54, 0),
+        }
+
+        blueprint.label_color = {"r": 100, "g": 100, "b": 100, "a": 200}
+        assert blueprint.to_dict()["blueprint"] == {
+            "item": "blueprint",
+            "label_color": {"r": 100, "g": 100, "b": 100, "a": 200},
+            "version": encode_version(1, 1, 54, 0),
+        }
+        
         # Valid None
         blueprint.label_color = None
         assert blueprint.label_color == None
@@ -242,16 +254,37 @@ class TestBlueprint:
             "item": "blueprint",
             "version": encode_version(1, 1, 54, 0),
         }
+
         # Invalid Data
         with pytest.raises(DataFormatError):
-            blueprint.set_label_color("red", blueprint, 5)
+            blueprint.label_color = "wrong"
+
+        # Turn off validation
+        blueprint.validate_assignment = "none"
+        assert blueprint.validate_assignment is ValidationMode.NONE
+
+        # Incorrect Data now works
+        blueprint.label_color = "wrong"
+        assert blueprint.label_color == "wrong"
+        assert blueprint.to_dict()["blueprint"] == {
+            "item": "blueprint",
+            "label_color": "wrong",
+            "version": encode_version(1, 1, 54, 0),
+        }
+
+        # We can set label color to anything
+        blueprint.label_color = ("red", blueprint, 5)
+        # But we can't always serialize it
+        blueprint.to_dict()
+
+        
 
     # =========================================================================
 
     def test_set_icons(self):
         blueprint = Blueprint()
         # Single Icon
-        blueprint.set_icons("signal-A")
+        blueprint.icons = ["signal-A"]
         assert blueprint.icons == [
             Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
         ]
@@ -259,7 +292,7 @@ class TestBlueprint:
             Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
         ]
         # Multiple Icon
-        blueprint.set_icons("signal-A", "signal-B", "signal-C")
+        blueprint.icons = ("signal-A", "signal-B", "signal-C")
         assert blueprint["blueprint"]["icons"] == [
             Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}),
             Icon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}),
@@ -267,11 +300,18 @@ class TestBlueprint:
         ]
 
         # Raw signal dicts:
-        # TODO: reimplement
-        # blueprint.set_icons({"name": "some-signal", "type": "some-type"})
-        # assert blueprint["blueprint"]["icons"] == [
-        #     {"signal": {"name": "some-signal", "type": "some-type"}, "index": 1}
-        # ]
+
+        blueprint.icons = [{"name": "signal-A", "type": "virtual"}]
+        assert blueprint["blueprint"]["icons"] == [
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
+        ]
+
+        # Unrecognized dict
+        with pytest.warns(UnknownSignalWarning):
+            blueprint.icons = [{"name": "some-signal", "type": "item"}]
+        assert blueprint["blueprint"]["icons"] == [
+            Icon(**{"signal": {"name": "some-signal", "type": "item"}, "index": 1})
+        ]
 
         # None
         blueprint.icons = None
@@ -282,16 +322,12 @@ class TestBlueprint:
         }
 
         # Incorrect Signal Name
-        with pytest.raises(InvalidSignalError):
-            blueprint.set_icons("wrong!")
-
-        # Incorrect Signal Type
-        with pytest.raises(InvalidSignalError):
-            blueprint.set_icons(123456, "uh-oh")
+        with pytest.raises(DataFormatError):
+            blueprint.icons = ["wrong!"]
 
         # Incorrect Signal dict format
-        # with pytest.raises(TypeError):
-        #     blueprint.set_icons({"incorrectly": "formatted"})
+        with pytest.raises(DataFormatError):
+            blueprint.icons = {"incorrectly": "formatted"}
 
         with pytest.raises(DataFormatError):
             blueprint.icons = "incorrect"
@@ -320,20 +356,27 @@ class TestBlueprint:
 
     # =========================================================================
 
-    def test_set_version(self):
+    def test_version(self):
         blueprint = Blueprint()
-        blueprint.set_version(1, 0, 40, 0)
+
+        blueprint.version = 1000
+        assert blueprint.version == 1000
+
+        blueprint.version = (1, 0, 40, 0)
         assert blueprint.version == 281474979332096
 
         blueprint.version = None
         assert blueprint.version == None
         assert blueprint.to_dict()["blueprint"] == {"item": "blueprint"}
 
-        with pytest.raises(TypeError):
-            blueprint.set_version(TypeError, TypeError)
+        blueprint.validate_assignment = "none"
+        blueprint.version = "wrong"
+        assert blueprint.version == "wrong"
+        assert blueprint.to_dict()["blueprint"] == {"item": "blueprint", "version": "wrong"}
 
-        with pytest.raises(TypeError):
-            blueprint.set_version("1", "0", "40", "0")
+        with pytest.raises(DataFormatError):
+            blueprint.validate_assignment = "strict"
+            blueprint.version = "wrong"
 
     # =========================================================================
 
@@ -431,12 +474,13 @@ class TestBlueprint:
         blueprint = Blueprint()
         blueprint.entities = [Container()]
         assert isinstance(blueprint.entities, EntityList)
+        assert len(blueprint.entities) == 1
 
         blueprint.entities = None
         assert isinstance(blueprint.entities, EntityList)
         assert blueprint.entities._root == []
 
-        # set by EntityList
+        # Set by EntityList
         blueprint.entities.append("wooden-chest")
         blueprint.entities.append("wooden-chest", tile_position=(1, 0))
         blueprint.add_circuit_connection("red", 0, 1)
@@ -444,10 +488,44 @@ class TestBlueprint:
         blueprint2.entities = blueprint.entities
         assert isinstance(blueprint.entities, EntityList)
         assert isinstance(blueprint2.entities, EntityList)
-        # Ensure blueprint1 is still correct
+        assert blueprint.entities is not blueprint2.entities
+        
+        # Set by list of dict
+        blueprint.entities = [{"name": "wooden-chest", "position": (0.5, 0.5)}]
+        assert isinstance(blueprint.entities, EntityList)
+        assert len(blueprint.entities) == 1
+        assert blueprint.entities[-1].name == "wooden-chest"
+        assert blueprint.entities[-1].position.to_dict() == {"x": 0.5, "y": 0.5}
 
+        # Set individual as Entity
+        blueprint.entities[-1] = Container("steel-chest")
+        assert len(blueprint.entities) == 1
+        assert blueprint.entities[-1].name == "steel-chest"
+        assert blueprint.entities[-1].position.to_dict() == {"x": 0.5, "y": 0.5}
+
+        # Set individual as dict
+        blueprint.entities[-1] = {"name": "steel-chest", "position": (0.5, 0.5)}
+        assert len(blueprint.entities) == 1
+        assert blueprint.entities[-1].name == "steel-chest"
+        assert blueprint.entities[-1].position.to_dict() == {"x": 0.5, "y": 0.5}
+
+        # Warn unknown entity (list)
+        blueprint.validate_assignment = "none" 
+        blueprint.entities = [new_entity("undocumented-entity")] # No warning
+        with pytest.warns(UnknownEntityWarning):
+            blueprint.validate_assignment = "strict"
+            blueprint.entities = [new_entity("undocumented-entity")] # Warning
+        
+        # Warn unknown entity (individual)
+        blueprint.validate_assignment = "none" 
+        blueprint.entities[-1] = new_entity("undocumented-entity") # No warning
+        with pytest.warns(UnknownEntityWarning):
+            blueprint.validate_assignment = "strict"
+            blueprint.entities[-1] = new_entity("undocumented-entity") # Warning
+
+        # Format error
         with pytest.raises(TypeError):
-            blueprint.entities = dict()
+            blueprint.entities = "wrong"
 
     # =========================================================================
 
@@ -460,16 +538,54 @@ class TestBlueprint:
         assert isinstance(blueprint.tiles, TileList)
         assert blueprint.tiles._root == []
 
+        # Set by TileList
         blueprint.tiles.append("landfill")
         blueprint2 = Blueprint()
         blueprint2.tiles = blueprint.tiles
         assert isinstance(blueprint.tiles, TileList)
         assert isinstance(blueprint2.tiles, TileList)
+        assert blueprint.tiles is not blueprint2.tiles
         assert blueprint.tiles[0].parent is blueprint
         assert blueprint2.tiles[0].parent is not blueprint
 
-        with pytest.raises(TypeError):
-            blueprint.tiles = dict()
+        # Set by list of dict
+        blueprint.tiles = [{"name": "landfill", "position": (0, 0)}]
+        assert isinstance(blueprint.tiles, TileList)
+        assert len(blueprint.tiles) == 1
+        assert isinstance(blueprint.tiles[-1], Tile)
+        assert blueprint.tiles[-1].name == "landfill"
+        assert blueprint.tiles[-1].position.to_dict() == {"x": 0, "y": 0}
+
+        # Set individual as Entity
+        blueprint.tiles[-1] = Tile("landfill")
+        assert len(blueprint.tiles) == 1
+        assert blueprint.tiles[-1].name == "landfill"
+        assert blueprint.tiles[-1].position.to_dict() == {"x": 0, "y": 0}
+
+        # Set individual as dict
+        blueprint.tiles[-1] = {"name": "landfill", "position": (1, 1)}
+        assert len(blueprint.tiles) == 1
+        assert isinstance(blueprint.tiles[-1], Tile)
+        assert blueprint.tiles[-1].name == "landfill"
+        assert blueprint.tiles[-1].position.to_dict() == {"x": 1, "y": 1}
+
+        # Warn unknown entity (list)
+        blueprint.validate_assignment = "none" 
+        blueprint.tiles = [new_tile("undocumented-tile")] # No warning
+        with pytest.warns(UnknownTileWarning):
+            blueprint.validate_assignment = "strict"
+            blueprint.tiles = [new_tile("undocumented-tile")] # Warning
+        
+        # Warn unknown entity (individual)
+        blueprint.validate_assignment = "minimum" 
+        blueprint.tiles[-1] = new_tile("undocumented-tile") # No warning
+        with pytest.warns(UnknownTileWarning):
+            blueprint.validate_assignment = "strict"
+            blueprint.tiles[-1] = new_tile("undocumented-tile") # Warning
+
+        # Format error
+        with pytest.raises(DataFormatError):
+            blueprint.tiles = "wrong"
 
     # =========================================================================
 
@@ -621,7 +737,7 @@ class TestBlueprint:
 
     def test_add_tile(self):
         blueprint = Blueprint()
-        blueprint.set_version(1, 1, 54, 0)
+        blueprint.version = (1, 1, 54, 0)
 
         # Checkerboard grid
         for x in range(2):
@@ -654,7 +770,7 @@ class TestBlueprint:
     def test_version_tuple(self):
         blueprint = Blueprint()
         assert blueprint.version_tuple() == __factorio_version_info__
-        blueprint.set_version(0, 0, 0, 0)
+        blueprint.version = 0
         assert blueprint.version_tuple() == (0, 0, 0, 0)
 
     # =========================================================================
@@ -662,7 +778,7 @@ class TestBlueprint:
     def test_version_string(self):
         blueprint = Blueprint()
         assert blueprint.version_string() == __factorio_version__
-        blueprint.set_version(0, 0, 0, 0)
+        blueprint.version = (0, 0, 0, 0)
         assert blueprint.version_string() == "0.0.0.0"
 
     # =========================================================================
@@ -674,38 +790,6 @@ class TestBlueprint:
         # TODO: reimplement
         # with pytest.raises(UnreasonablySizedBlueprintError):
         #     blueprint.entities[1] = Container(tile_position=(10002, 0))
-
-    # =========================================================================
-
-    def test_unknown_entities(self):
-        blueprint = Blueprint()
-
-        with pytest.raises(InvalidEntityError):
-            blueprint.entities.append("some-unknown-entity")
-        assert len(blueprint.entities) == 0
-
-        blueprint.entities.append("some-unknown-entity", if_unknown="ignore")
-        assert len(blueprint.entities) == 0
-
-        with pytest.warns(UnknownEntityWarning):
-            blueprint.entities.append("some-unknown-entity", if_unknown="accept")
-        assert len(blueprint.entities) == 1
-        assert blueprint.entities[0].name == "some-unknown-entity"
-
-    def test_unknown_tiles(self):
-        blueprint = Blueprint()
-
-        with pytest.raises(InvalidTileError):
-            blueprint.tiles.append("unknown-tile")
-        assert len(blueprint.tiles) == 0
-
-        blueprint.tiles.append("unknown-tile", if_unknown="ignore")
-        assert len(blueprint.tiles) == 0
-
-        with pytest.warns(UnknownTileWarning):
-            blueprint.tiles.append("unknown-tile", if_unknown="accept")
-        assert len(blueprint.tiles) == 1
-        assert blueprint.tiles[0].name == "unknown-tile"
 
     # =========================================================================
 
@@ -933,6 +1017,9 @@ class TestBlueprint:
 
             def merge(self, other):  # pragma: no coverage
                 return self
+            
+            def validate(self, mode):
+                return ValidationResult([], [])
 
             def to_dict(self):  # pragma: no coverage
                 return "incorrect"

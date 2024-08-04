@@ -34,17 +34,17 @@ class TestAccumulator:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Accumulator(unused_keyword="whatever")
+            Accumulator(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            Accumulator(control_behavior={"unused_keyword": "whatever"})
+            Accumulator(control_behavior={"unused_keyword": "whatever"}).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            Accumulator("not an accumulator")
+            Accumulator("not an accumulator").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            Accumulator(control_behavior="incorrect")
+            Accumulator(control_behavior="incorrect").validate().reissue_all()
         with pytest.raises(DataFormatError):
-            Accumulator(control_behavior={"output_signal": "incorrect"})
+            Accumulator(control_behavior={"output_signal": "incorrect"}).validate().reissue_all()
 
     def test_output_signal(self):
         accumulator = Accumulator()
@@ -337,7 +337,7 @@ class TestAccumulator:
                 "position": {
                     "allOf": [{"$ref": "#/$defs/FloatPosition"}],
                     "description": "The position of the entity, almost always measured from it's center. \n"
-                    "Measured in Factorio tiles.",
+                    "Uses Factorio tiles as its unit.",
                 },
                 "tags": {
                     "anyOf": [{"type": "object"}, {"type": "null"}],

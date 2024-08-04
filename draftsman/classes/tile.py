@@ -19,8 +19,9 @@ from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError, DraftsmanError, InvalidTileError
-from draftsman.signatures import DraftsmanBaseModel, IntPosition, TileName
+from draftsman.signatures import DraftsmanBaseModel, IntPosition, TileName, get_suggestion
 from draftsman.utils import AABB
+from draftsman.warning import UnknownTileWarning
 
 import draftsman.data.tiles as tiles
 
@@ -30,7 +31,9 @@ from pydantic import (
     Field,
     PrivateAttr,
     ValidationError,
+    ValidationInfo,
     field_serializer,
+    field_validator,
 )
 from pydantic_core import CoreSchema, core_schema
 from typing import Any, Literal, Optional, Union, TYPE_CHECKING
@@ -60,6 +63,30 @@ class Tile(SpatialLike, Exportable):
             """,
         )
 
+        @field_validator("name")
+        @classmethod
+        def check_unknown_name(cls, value: str, info: ValidationInfo):
+            """
+            Warn if the name is not any known Draftsman tile name.
+            """
+            if not info.context:
+                return value
+            if info.context["mode"] <= ValidationMode.MINIMUM:
+                return value
+
+            warning_list: list = info.context["warning_list"]
+
+            if value not in tiles.raw:
+                warning_list.append(
+                    UnknownTileWarning(
+                        "Unknown tile '{}'{}".format(
+                            value, get_suggestion(value, tiles.raw.keys(), n=1)
+                        )
+                    )
+                )
+
+            return value
+
         @field_serializer("position")
         def serialize_position(self, _):
             # TODO: make this use global position for when we add this to groups
@@ -73,13 +100,9 @@ class Tile(SpatialLike, Exportable):
         self,
         name: str,
         position=(0, 0),
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
-        if_unknown: str = "error",
         **kwargs,
     ):
         """
@@ -117,8 +140,6 @@ class Tile(SpatialLike, Exportable):
         self.position = position
 
         self.validate_assignment = validate_assignment
-
-        self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # =========================================================================
 
@@ -241,7 +262,7 @@ class Tile(SpatialLike, Exportable):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE or (self.is_valid and not force):
+        if mode is ValidationMode.NONE and not force: # or (self.is_valid and not force):
             return output
 
         context = {
@@ -252,13 +273,13 @@ class Tile(SpatialLike, Exportable):
         }
 
         try:
-            result = self.Format.model_validate(
-                self._root, strict=False, context=context
+            self.Format.model_validate(
+                self._root, strict=True, context=context
             )
             # Reassign private attributes
-            result._position = self._root._position
+            # result._position = self._root._position
             # Acquire the newly converted data
-            self._root = result
+            # self._root = result
         except ValidationError as e:
             output.error_list.append(DataFormatError(e))
 

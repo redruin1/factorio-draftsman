@@ -19,13 +19,13 @@ class TestRocketSilo:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            RocketSilo(unused_keyword="whatever")
+            RocketSilo(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            RocketSilo("this is not a rocket silo")
+            RocketSilo("this is not a rocket silo").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            RocketSilo(auto_launch="incorrect")
+            RocketSilo(auto_launch="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in rocket_silos:

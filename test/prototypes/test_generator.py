@@ -13,9 +13,9 @@ class TestGenerator:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Generator("steam-engine", unused_keyword="whatever")
+            Generator("steam-engine", unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            Generator("not a generator")
+            Generator("not a generator").validate().reissue_all()
 
         # Errors
 

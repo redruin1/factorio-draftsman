@@ -79,17 +79,17 @@ class TestCargoWagon:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            CargoWagon("cargo-wagon", unused_keyword="whatever")
+            CargoWagon("cargo-wagon", unused_keyword="whatever").validate().reissue_all()
         # Warn if the cargo wagon is not on a rail (close enough to one?)
         # TODO (Complex)
         with pytest.warns(UnknownEntityWarning):
-            CargoWagon("this is not a cargo-wagon")
+            CargoWagon("this is not a cargo-wagon").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            CargoWagon("cargo-wagon", orientation="wrong")
+            CargoWagon("cargo-wagon", orientation="wrong").validate().reissue_all()
         with pytest.raises(DataFormatError):
-            CargoWagon("cargo-wagon", inventory="incorrect")
+            CargoWagon("cargo-wagon", inventory="incorrect").validate().reissue_all()
 
     def test_set_orientation(self):
         wagon = CargoWagon("cargo-wagon")

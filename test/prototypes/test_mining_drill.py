@@ -29,21 +29,22 @@ class TestMiningDrill:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            MiningDrill(unused_keyword="whatever")
+            MiningDrill(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            MiningDrill(control_behavior={"unused": "keyword"})
-        # with pytest.warns(ModuleCapacityWarning): # TODO
-        #     MiningDrill("electric-mining-drill", items={"productivity-module": 5})
+            MiningDrill(control_behavior={"unused": "keyword"}).validate().reissue_all()
+        with pytest.warns(ModuleCapacityWarning): # TODO
+            drill = MiningDrill("electric-mining-drill", items={"productivity-module": 5})
+            drill.validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            MiningDrill("not a mining drill")
+            MiningDrill("not a mining drill").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            MiningDrill(items="incorrect")
+            MiningDrill(items="incorrect").validate().reissue_all()
         with pytest.raises(DataFormatError):
-            MiningDrill(connections="incorrect")
+            MiningDrill(connections="incorrect").validate().reissue_all()
         with pytest.raises(DataFormatError):
-            MiningDrill(control_behavior="incorrect")
+            MiningDrill(control_behavior="incorrect").validate().reissue_all()
 
     def test_set_item_request(self):
         mining_drill = MiningDrill("electric-mining-drill")

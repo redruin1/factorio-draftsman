@@ -12,10 +12,10 @@ class TestPlayerPort:
         port = PlayerPort()
 
         with pytest.warns(UnknownKeywordWarning):
-            PlayerPort(unused_keyword="whatever")
+            PlayerPort(unused_keyword="whatever").validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            PlayerPort("this is not a player port")
+            PlayerPort("this is not a player port").validate().reissue_all()
 
     def test_mergable_with(self):
         port1 = PlayerPort("player-port")

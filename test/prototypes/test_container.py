@@ -57,22 +57,22 @@ class TestContainer:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Container("wooden-chest", position=[0, 0], invalid_keyword="100")
+            Container("wooden-chest", position=[0, 0], invalid_keyword="100").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            Container("wooden-chest", connections={"this is": ["very", "wrong"]})
+            Container("wooden-chest", connections={"this is": ["very", "wrong"]}).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            Container("this is not a container")
+            Container("this is not a container").validate().reissue_all()
 
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            Container("wooden-chest", id=25)
+            Container("wooden-chest", id=25).validate().reissue_all()
         with pytest.raises(TypeError):
-            Container("wooden-chest", position=TypeError)
+            Container("wooden-chest", position=TypeError).validate().reissue_all()
         with pytest.raises(DataFormatError):
-            Container("wooden-chest", bar="not even trying")
+            Container("wooden-chest", bar="not even trying").validate().reissue_all()
         with pytest.raises(DataFormatError):
-            Container("wooden-chest", connections="incorrect")
+            Container("wooden-chest", connections="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for container_name in containers:

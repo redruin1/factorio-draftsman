@@ -60,13 +60,13 @@ class TestRailSignal:
 
         # Warnings:
         with pytest.warns(UnknownKeywordWarning):
-            RailSignal("rail-signal", invalid_keyword="whatever")
+            RailSignal("rail-signal", invalid_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            RailSignal("this is not a rail signal")
+            RailSignal("this is not a rail signal").validate().reissue_all()
 
         # Errors:
         with pytest.raises(DataFormatError):
-            RailSignal(control_behavior="incorrect")
+            RailSignal(control_behavior="incorrect").validate().reissue_all()
 
     def test_flags(self):
         assert RailSignal("rail-signal").rotatable == True
