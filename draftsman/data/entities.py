@@ -40,7 +40,7 @@ with pkg_resources.open_binary(data, "entities.pkl") as inp:
     underground_pipes: list[str] = _data["underground_pipes"]
     pumps: list[str] = _data["pumps"]
     straight_rails: list[str] = _data["straight_rails"]
-    curved_rails: list[str] = _data["curved_rails"]
+    # curved_rails: list[str] = _data["curved_rails"]
     train_stops: list[str] = _data["train_stops"]
     rail_signals: list[str] = _data["rail_signals"]
     rail_chain_signals: list[str] = _data["rail_chain_signals"]
@@ -87,7 +87,7 @@ with pkg_resources.open_binary(data, "entities.pkl") as inp:
     infinity_containers: list[str] = _data["infinity_containers"]
     infinity_pipes: list[str] = _data["infinity_pipes"]
     burner_generators: list[str] = _data["burner_generators"]
-    player_ports: list[str] = _data["player_ports"]
+    # player_ports: list[str] = _data["player_ports"]
 
     all: list[str] = _data["all"]
 

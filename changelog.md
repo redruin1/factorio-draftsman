@@ -1,8 +1,15 @@
 # Changelog
 
 ## 2.0.0
-* Updated `factorio-data` to version `1.1.107` (latest)
-* Updated `compatibility/defines.lua` to `1.1.107` (latest)
+* Updated `factorio-data` to version `2.0.15` (latest)
+* Updated `compatibility/defines.lua` to `2.0.15` (latest)
+* Removed command line utility `draftsman-update`
+* Added command line utility `draftsman` with multiple subcommands
+    * `draftsman update ...` for the original functionality of modifying a Factorio environment 
+    * `draftsman list` to list all mods detected under a particular environment
+    * `draftsman enable/disable ...` enables or disables one or more mods
+    * `draftsman factorio-version` reports or sets the version of Factorio's data
+    * `draftsman version` reports Draftsman's own semantic version
 * Swapped from `schema` to `pydantic`
     * Format for specifying schemas is now much clearer
     * Both blueprintables and entities now share the same exporting code, overall making more sense

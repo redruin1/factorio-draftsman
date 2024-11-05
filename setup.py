@@ -69,7 +69,8 @@ setup(
     ],
     entry_points = {
         'console_scripts': [
-                'draftsman-update = draftsman.env:main'
+                #'draftsman-update = draftsman.env:main'
+                'draftsman = draftsman.environment.script:main'
         ]
     },
     classifiers=[

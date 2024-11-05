@@ -1,10 +1,9 @@
 -- settings.lua
+---@diagnostic disable:lowercase-global
 
 -- Bridges the gap from the settings lifecycle to the data lifecycle.
 -- Converts the settings data stored in data.raw and stores it in the global
 -- table 'settings'.
-
----@diagnostic disable:lowercase-global
 
 -- Factorio and Factorio mods use this for serialization/debugging, so we
 -- include it as well
