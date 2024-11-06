@@ -4,6 +4,8 @@ import draftsman
 from draftsman._version import __version__
 from draftsman._factorio_version import __factorio_version__
 
+from draftsman.environment.mod_list import discover_mods, display_mods, set_mods_enabled
+from draftsman.environment.mod_settings import read_mod_settings, write_mod_settings
 from draftsman.environment.update import specify_factorio_version, update_draftsman_data
 
 import argparse
@@ -18,6 +20,9 @@ class DraftsmanCommandArgs(argparse.Namespace):
         
         # `factorio-version`
         desired_version: str
+
+        # `enable/disable`
+        recursive: bool
 
 def main():
     """
@@ -41,10 +46,10 @@ def main():
         "--game-path",
         type=str,
         default=default_game_path,
-        help="The path to the location of the games files; defaults to: "
+        help="The path to the data folder of the game; defaults to: "
         "`[python_install]/site-packages/draftsman/factorio-data`. If you own "
-        "the game, You can also pass in the folder where Factorio is installed, "
-        "which will allow you to extract asset data as well as regular "
+        "the game, you can pass in the folder where Factorio is installed, "
+        "which will give you the ability to extract asset data in addition to "
         "prototype data."
     )
     parser.add_argument(
@@ -76,7 +81,8 @@ def main():
         type=str,
         help="The name of the mod you want to enable. Modifies (or creates) the "
         "`mod-list.json` file located at the mod directory (-m). Passing in the "
-        "keyword `all` will enable all present mods."
+        "keyword `all` will enable all present mods EXCEPT for `base` and `core`, "
+        "which must be manually specified."
     )
     enable_command.add_argument(
         "-r",
@@ -88,21 +94,24 @@ def main():
     # `draftsman disable [-r] mod-name [mod-name ...] `
     disable_command = subparsers.add_parser("disable", help="Disables a mod or mods.")
     disable_command.add_argument(
-        "mod-name",
+        "mod_names",
+        metavar="mod-name",
         nargs="+", 
         type=str, 
         help="The name of the mod you want to disable. Modifies (or creates) the "
         "`mod-list.json` file located at the mod directory (-m). Passing in the "
-        "keyword `all` will disable all present mods."
+        "keyword `all` will disable all present mods EXCEPT for `base` and `core`, "
+        "which must be manually specified."
     )
     disable_command.add_argument(
         "-r",
         "--recursive",
         action="store_true",
         help="Recursively disable the dependencies of the specified mods. Note "
-        "that this will only disable mod dependencies if no other enabled mod "
-        "still depends on it. This flag will also not disable the `base` mod, "
-        "though it will disable official Wube mods like `space-age`."
+        "that this will only disable mod dependencies of a particular mod if no "
+        "other enabled mod still depends on it. This flag will also not disable "
+        "the `base` or `core` mod, though it will disable official Wube mods "
+        "like `space-age`."
     )
 
     # `draftsman version [-h]`
@@ -154,26 +163,21 @@ def main():
             # Ensure we're not trying to update the actual game
             # TODO: this should be more specific, since it's hypothetically
             # possible that someone might want to update a different git repo
-            assert args.game_path == default_game_path, "Can only update local `factorio-data`; cannot upgrade a regular Factorio instllation"
-            try:
-                specify_factorio_version(game_path=args.game_path, desired_version=args.desired_version, verbose=args.verbose)
-            except ValueError as e:
-                print("ERROR: {}".format(e))
+            assert args.game_path == default_game_path, "Can only update local `factorio-data`; cannot upgrade a regular Factorio installation"
+            
+            specify_factorio_version(game_path=args.game_path, desired_version=args.desired_version, verbose=args.verbose)
 
     elif args.operation == "list":
-        # Traverse the game directory for it's modules
-        # Traverse the mod directory for it's mods
-        # Register every mod (if enabled)
-        # Iterate over every mod
-        pass
+        mod_list = discover_mods(args.game_path, args.mods_path)
+        display_mods(mod_list, verbose=args.verbose)
 
     elif args.operation == "enable":
-        pass # TODO
+        set_mods_enabled(args.game_path, args.mods_path, args.mod_names, True, args.recursive, args.verbose)
 
     elif args.operation == "disable":
-        pass # TODO
+        set_mods_enabled(args.game_path, args.mods_path, args.mod_names, False, args.recursive, args.verbose)
 
-    elif args.operation in ("list", "update"):
+    elif args.operation in "update":
         update_draftsman_data(
             verbose=args.verbose,
             mods_path=args.mods_path,

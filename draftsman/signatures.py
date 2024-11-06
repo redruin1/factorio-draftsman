@@ -58,7 +58,7 @@ from thefuzz import process
 from typing import Any, Literal, Optional, Sequence
 
 
-def get_suggestion(name, choices, n=3, cutoff=60):
+def get_suggestion(name, choices, n=3, cutoff=60): # TODO: move this
     """
     Looks for similarly-named strings from ``choices`` and suggests ``n`` 
     results, provided they lie above ``cutoff``.
