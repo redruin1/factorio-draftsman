@@ -80,7 +80,7 @@ class Mod:
             dependency = Dependency(flag=m[1], name=m[2], operation=m[3], version=m[4])
             # Replace
             dependencies[i] = dependency
-        self.dependencies = dependencies
+        self.dependencies: list[Dependency] = dependencies
 
         self.feature_flags = {
             "quality": quality_required,
@@ -118,6 +118,12 @@ class Mod:
         Initialize the internal structure with folder data.
         """
         self.is_archive = False
+
+    def depends_on(self, mod_name):
+        """
+        Returns true if ``mod`` is a required dependency of this Mod.
+        """
+        return mod_name in {dep.name for dep in self.dependencies}
 
     def add_dependency(self, dependency):
         self.dependencies.append(dependency)
@@ -531,7 +537,7 @@ def set_mods_enabled(game_path: str, mods_path: str, mod_names: list[str], enabl
         mod_list_dict = read_mod_list_json(mods_path=mods_path)
     except FileNotFoundError:
         # Generate default
-        mod_list_dict = {"mods": [{"name": mod.name, "enabled": True} for mod in mods]}
+        mod_list_dict = {"mods": [{"name": mod, "enabled": True} for mod in mods]}
 
     if mod_names == ["all"]:
         mod_names = [mod for mod in mods if mod.name not in ("base", "core")]
@@ -566,32 +572,27 @@ def set_mods_enabled(game_path: str, mods_path: str, mod_names: list[str], enabl
             # * Up the tree, as long as no other mods still depend on them
             # * Down the tree, if other mods depend on the mod we want to disable
 
-            # Handle down the tree first. Iterate over every mod in the 
+            # Handle children mods first. Iterate over every mod in the 
             # environment, check their dependencies to see if they require this
-            # mod, and then disable them.
+            # mod, and then disable them if they do.
             for mod_name in mod_names:
-                # The first mod among the mod versions is the one that the configuration
-                # will use
-                selected_mod = mods[mod_name][0]
+                final_mod_names.append(mod_name)
 
                 for _, mod_ver_list in mods.items():
-                    dep_names = {dep.name for dep in mod_ver_list[0].dependencies}
-                    print(dep_names)
-                    print(mod_name in dep_names)
-                mods_that_depend_on_this = [mod for mod in mods if mod_name in {dep.names for dep in mod.dependencies}]
+                    selected_mod = mod_ver_list[0]
+                    print(selected_mod)
+                    print(mod_name)
 
-            for mod_name in mod_names:
-                # The first mod among the mod versions is the one that the configuration
-                # will use
+                    print(selected_mod.depends_on(mod_name))
+                    if selected_mod.depends_on(mod_name):
+                        final_mod_names.append(selected_mod.name)
+
+                # Now go the other way. For every dependency that this mod has,
+                # check to see if there is any other mod that depends on this.
                 selected_mod = mods[mod_name][0]
-
-                # prune base from any dependencies, since we don't affect it here
-                deps = [dep for dep in selected_mod.dependencies if dep.name != "base" and dep.flag is None]
-
-                print(deps)
-
-                # For each dependency, check to see if there's any other mods
-                # that depend on it's dependencies
+                for dep in selected_mod.dependencies:
+                    dep_mod = mods[dep.name][0]
+                    # for dependency in dep_mod
 
     for mod_name in mod_names:
         i = next((i for i, mod_dict in enumerate(mod_list_dict["mods"]) if mod_dict["name"] == mod_name))
