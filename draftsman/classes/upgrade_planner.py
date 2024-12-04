@@ -9,7 +9,11 @@
 
 from draftsman import __factorio_version_info__
 from draftsman.classes.blueprintable import Blueprintable
-from draftsman.classes.exportable import ValidationResult, attempt_and_reissue, test_replace_me
+from draftsman.classes.exportable import (
+    ValidationResult,
+    attempt_and_reissue,
+    test_replace_me,
+)
 from draftsman.constants import ValidationMode
 from draftsman.data import entities, items
 from draftsman.error import DataFormatError
@@ -462,7 +466,7 @@ class UpgradePlanner(Blueprintable):
             self._root[self._root_item],
             "settings",
             settings,
-            self.validate_assignment
+            self.validate_assignment,
         )
 
         # self._root[self._root_item]["settings"] = {}
@@ -497,7 +501,7 @@ class UpgradePlanner(Blueprintable):
             self._root[self._root_item]["settings"],
             "description",
             value,
-            self.validate_assignment
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(
@@ -525,7 +529,7 @@ class UpgradePlanner(Blueprintable):
             self._root[self._root_item]["settings"],
             "icons",
             value,
-            self.validate_assignment
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(
@@ -574,7 +578,7 @@ class UpgradePlanner(Blueprintable):
             self._root[self._root_item]["settings"],
             "mappers",
             value,
-            self.validate_assignment
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(

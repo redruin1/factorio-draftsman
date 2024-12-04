@@ -247,9 +247,9 @@ class TestUtils:
         assert utils.version_tuple_to_string((1, 15, 2, 3)) == "1.15.2.3"
 
     def test_get_signal_type(self):
-        assert signals.get_signal_type("signal-anything") == "virtual"
-        assert signals.get_signal_type("water") == "fluid"
-        assert signals.get_signal_type("wooden-chest") == "item"
+        assert signals.get_signal_types("signal-anything") == {"virtual"}
+        assert signals.get_signal_types("water") == {"fluid"}
+        assert signals.get_signal_types("wooden-chest") == {"item", "recipe", "entity"}
         with pytest.raises(InvalidSignalError):
             signals.get_signal_type("incorrect")
 

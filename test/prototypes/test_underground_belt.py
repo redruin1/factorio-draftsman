@@ -29,7 +29,7 @@ class TestUndergroundBelt:
         assert underground_belt.to_dict() == {
             "name": "underground-belt",
             "position": {"x": 1.5, "y": 1.5},
-            "direction": 2,
+            "direction": Direction.EAST,
             "type": "output",
         }
 

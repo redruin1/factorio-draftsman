@@ -134,7 +134,7 @@ from pydantic import (
 )
 
 
-def _normalize_internal_structure(input_root, entities_in, tiles_in, schedules_in):
+def _normalize_internal_structure(input_root, entities_in, tiles_in, schedules_in, wires_in):
     # TODO make this a member of blueprint?
     def _throw_invalid_association(entity):
         raise InvalidAssociationError(
@@ -234,6 +234,17 @@ def _normalize_internal_structure(input_root, entities_in, tiles_in, schedules_i
 
     input_root["schedules"] = schedules_out
 
+    wires_out = []
+    for wire in wires_in:
+        entity_1 = wire[0]
+        entity_2 = wire[2]
+        wires_out.append([
+            flattened_entities.index(entity_1()) + 1, wire[1],
+            flattened_entities.index(entity_2()) + 1, wire[3]
+        ])
+
+    input_root["wires"] = wires_out
+
 
 class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     """
@@ -251,6 +262,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         _entities: EntityList = PrivateAttr()
         _tiles: TileList = PrivateAttr()
         _schedules: ScheduleList = PrivateAttr()
+        _wires: list[tuple[Association, int, Association, int]] = PrivateAttr()
 
         class BlueprintObject(DraftsmanBaseModel):
             # Private Internals (Not exported)
@@ -345,6 +357,13 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                 description="""
                 The list of all schedules contained in the blueprint.
                 """,
+            )
+            wires: Optional[list[list[int]]] = Field(
+                [],
+                description="""
+                (2.0) The definitions of all wires in the blueprint, including
+                both power and circuit connections.
+                """
             )
 
             @field_serializer("snap_to_grid", when_used="unless-none")
@@ -442,6 +461,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         entities: Union[EntityList, list[EntityLike]] = [],
         tiles: Union[TileList, list[Tile]] = [],
         schedules: Union[ScheduleList, list[Schedule]] = [],
+        wires: list[list[int]] = [],
         index: Optional[uint16] = None,
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -509,41 +529,44 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         # )
         self._root._schedules = ScheduleList(schedules)
 
+        self._root._wires = wires
+
         self.index = index
 
         # A bit scuffed, but
         for kwarg, value in kwargs.items():
             self._root[kwarg] = value
 
+        # 1.0 code
         # Convert circuit and power connections to Associations
-        for entity in self.entities:
-            if hasattr(entity, "connections"):  # Wire connections
-                connections: Connections = entity.connections
-                for side in connections.true_model_fields():
-                    if connections[side] is None:
-                        continue
+        # for entity in self.entities:
+        #     if hasattr(entity, "connections"):  # Wire connections
+        #         connections: Connections = entity.connections
+        #         for side in connections.true_model_fields():
+        #             if connections[side] is None:
+        #                 continue
 
-                    if side in {"1", "2"}:
-                        for color, _ in connections[side]:  # TODO fix
-                            connection_points = connections[side][color]
-                            if connection_points is None:
-                                continue
-                            for point in connection_points:
-                                old = point["entity_id"] - 1
-                                point["entity_id"] = Association(self.entities[old])
+        #             if side in {"1", "2"}:
+        #                 for color, _ in connections[side]:  # TODO fix
+        #                     connection_points = connections[side][color]
+        #                     if connection_points is None:
+        #                         continue
+        #                     for point in connection_points:
+        #                         old = point["entity_id"] - 1
+        #                         point["entity_id"] = Association(self.entities[old])
 
-                    elif side in {"Cu0", "Cu1"}:  # pragma: no branch
-                        connection_points = connections[side]
-                        if connection_points is None:
-                            continue  # pragma: no coverage
-                        for point in connection_points:
-                            old = point["entity_id"] - 1
-                            point["entity_id"] = Association(self.entities[old])
+        #             elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+        #                 connection_points = connections[side]
+        #                 if connection_points is None:
+        #                     continue  # pragma: no coverage
+        #                 for point in connection_points:
+        #                     old = point["entity_id"] - 1
+        #                     point["entity_id"] = Association(self.entities[old])
 
-            if hasattr(entity, "neighbours"):  # Power pole connections
-                neighbours = entity.neighbours
-                for i, neighbour in enumerate(neighbours):
-                    neighbours[i] = Association(self.entities[neighbour - 1])
+        #     if hasattr(entity, "neighbours"):  # Power pole connections
+        #         neighbours = entity.neighbours
+        #         for i, neighbour in enumerate(neighbours):
+        #             neighbours[i] = Association(self.entities[neighbour - 1])
 
         # Change all locomotive numbers to use Associations
         for schedule in self.schedules:
@@ -717,7 +740,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         ``absolute_snapping`` is set to ``True`` or ``None``.
 
         :getter: Gets the absolute grid-position offset.
-        :setter: Sets the absolute grid-position offset. Is given a value of 
+        :setter: Sets the absolute grid-position offset. Is given a value of
             ``(0, 0)`` if set to ``None``
         """
         # return self._root[self._root_item]["position-relative-to-grid"]
@@ -897,7 +920,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         in tiles. Returns ``(0, 0)`` if the blueprint's world bounding box is
         ``None``.
 
-        :returns: A 2-length tuple with the maximum tile width as the first 
+        :returns: A 2-length tuple with the maximum tile width as the first
             entry and the maximum tile height as the second entry.
         """
         return aabb_to_dimensions(self.get_world_bounding_box())
@@ -943,7 +966,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         # 1-dimensional lists, flattening any Groups that this blueprint
         # contains, and swapping their Associations into integer indexes
         _normalize_internal_structure(
-            result[self._root_item], self.entities, self.tiles, self.schedules
+            result[self._root_item], self.entities, self.tiles, self.schedules, self._root._wires
         )
 
         # # Construct a model with the flattened data, not running any validation

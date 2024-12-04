@@ -44,7 +44,7 @@ _collision_set_rotation[Direction.NORTHWEST] = _diagonal_collision
 
 class StraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     """
-    A straight rail entity.
+    An old, 1.0 straight rail entity.
     """
 
     class Format(

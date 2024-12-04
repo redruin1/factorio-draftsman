@@ -1,4 +1,5 @@
 # exportable.py
+from draftsman import __factorio_version_info__
 from draftsman.constants import ValidationMode
 
 from draftsman.error import DataFormatError
@@ -21,6 +22,7 @@ def attempt_and_reissue(
         "object": object,
         "warning_list": [],
         "assignment": True,
+        "environment_version": __factorio_version_info__,
         **kwargs,
     }
     try:
@@ -39,7 +41,15 @@ def attempt_and_reissue(
     # return result[name]
     return getattr(result, name)
 
-def apply_assignment(object: "Exportable", format_model: BaseModel, target: BaseModel, name: str, value: Any, **kwargs):
+
+def apply_assignment(
+    object: "Exportable",
+    format_model: BaseModel,
+    target: BaseModel,
+    name: str,
+    value: Any,
+    **kwargs
+):
     """
     TODO
     """
@@ -65,7 +75,16 @@ def apply_assignment(object: "Exportable", format_model: BaseModel, target: Base
     #     warnings.warn(warning, stacklevel=4)
     return getattr(result, name)
 
-def test_replace_me(object: "Exportable", format_model: BaseModel, target: BaseModel, name: str, value: Any, mode: ValidationMode, **kwargs):
+
+def test_replace_me(
+    object: "Exportable",
+    format_model: BaseModel,
+    target: BaseModel,
+    name: str,
+    value: Any,
+    mode: ValidationMode,
+    **kwargs
+):
     """
     Attempts to coerce a input value to a particular Pydantic model format, and
     run validation at the same time if requested by the caller. Utility function
@@ -77,22 +96,23 @@ def test_replace_me(object: "Exportable", format_model: BaseModel, target: BaseM
 
     If the passed in mode is `ValidationMode.NONE`, then this function attempts
     to just coerce the input to a Pydantic BaseModel using the "construction"
-    key. Because using this key should generate no errors or warnings, the 
-    original value will just be returned when it is indeterminate. Under any 
-    other passed in `mode`, the validation suite is run corresponding to that 
+    key. Because using this key should generate no errors or warnings, the
+    original value will just be returned when it is indeterminate. Under any
+    other passed in `mode`, the validation suite is run corresponding to that
     mode.
     """
     context = {
         "mode": mode,
         "object": object,
         "warning_list": [],
-        "assignment": True, # Do not revalidate the entire object; just this attr
+        "assignment": True,  # Do not revalidate the entire object; just this attr
+        "environment_version": __factorio_version_info__,
         **kwargs,
     }
     # Functions check for presence, not value; so we only add it when necessary
     if mode is ValidationMode.NONE:
         context["construction"] = True
-    
+
     try:
         result = format_model.__pydantic_validator__.validate_assignment(
             target,
@@ -145,7 +165,7 @@ class ValidationResult:
             ):
                 return False
         return True
-    
+
     def __iadd__(self, other):
         if not isinstance(other, ValidationResult):
             raise NotImplemented

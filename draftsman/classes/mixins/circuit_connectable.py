@@ -72,7 +72,12 @@ class CircuitConnectableMixin:
     @connections.setter
     def connections(self, value: Connections):
         test_replace_me(
-            self, type(self).Format, self._root, "connections", value, self.validate_assignment
+            self,
+            type(self).Format,
+            self._root,
+            "connections",
+            value,
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(

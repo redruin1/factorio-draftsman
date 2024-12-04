@@ -66,7 +66,7 @@ class ScheduleList(MutableSequence):
 
     def __len__(self) -> int:
         return len(self.data)
-    
+
     __iter__: Callable[..., Iterator[Schedule]]
 
     def __eq__(self, other: "ScheduleList") -> bool:

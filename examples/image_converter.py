@@ -25,7 +25,7 @@ https://github.com/wube/factorio-data/blob/master/core/prototypes/utility-consta
 Requirements:
     pillow
     numpy
-    pyperclip (or you can just output the contents to a file)
+    [Optional] pyperclip
 """
 
 # TODO: investigate slowdown; profile
@@ -71,10 +71,7 @@ def main():
     # The example image is square, so we use one parameter for simplicity
     target_size = 256
 
-    print("Filepath of image to covert:")
-    img_path = input()
-
-    print("Filepath of image to covert:")
+    print("Filepath of image to convert:")
     img_path = input()
 
     # open an image

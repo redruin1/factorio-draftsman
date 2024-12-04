@@ -20,7 +20,7 @@ from draftsman.signatures import (
     uint64,
 )
 from draftsman.warning import UnknownEntityWarning
-from draftsman import utils
+from draftsman import utils, __factorio_version_info__
 
 import copy
 from pydantic import (
@@ -122,11 +122,6 @@ class Entity(Exportable, EntityLike):
             The number of the entity in it's parent blueprint, 1-based. In
             practice this is the index of the dictionary in the blueprint's 
             'entities' list, but this is not enforced.
-
-            NOTE: The range of this number is described as a 64-bit unsigned int,
-            but due to limitations with Factorio's PropertyTree implementation,
-            values above 2^53 will suffer from floating-point precision error.
-            See here: https://forums.factorio.com/viewtopic.php?p=592165#p592165
             """,
         )
         tags: Optional[dict[str, Any]] = Field(
@@ -230,7 +225,7 @@ class Entity(Exportable, EntityLike):
         # the point where certain entity types did not exist (e.g. LinkedBelt))
         if name is None:  # pragma: no coverage
             raise DataFormatError(
-                "Unable to create a default entity; 'similar_entities' is an empty list"
+                "Unable to create a default entity; the current environment has no entitites of type '{}'".format(self.__class__.__name__)
             )
 
         # Init Exportable
@@ -519,11 +514,11 @@ class Entity(Exportable, EntityLike):
     @property
     def static_collision_set(self) -> Optional[CollisionSet]:
         """
-        The set of all CollisionShapes that this entity inherits. This set is 
+        The set of all CollisionShapes that this entity inherits. This set is
         always the shape of the entity with it's default orientation (typically
-        facing north) and does not change when the entity is rotated/flipped. If 
-        you want the collision shape of this entity that does change when 
-        rotated, use :py:attr:`.static_collision_set` instead.
+        facing north) and does not change when the entity is rotated/flipped. If
+        you want the collision shape of this entity that does change when
+        rotated, use :py:attr:`.collision_set` instead.
         """
         return entities.collision_sets.get(self.name, None)
 
@@ -533,8 +528,8 @@ class Entity(Exportable, EntityLike):
     def collision_set(self) -> Optional[CollisionSet]:
         """
         The set of all CollisionShapes that this entity inherits. This set is
-        dynamically updated based on the rotation or orientation of the entity, 
-        if applicable. If you want the collision shape of this entity that does 
+        dynamically updated based on the rotation or orientation of the entity,
+        if applicable. If you want the collision shape of this entity that does
         not change via rotation or orientation, use :py:attr:`.static_collision_set`
         instead.
         """
@@ -638,7 +633,7 @@ class Entity(Exportable, EntityLike):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE and not force: #(self.is_valid and not force):
+        if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
             return output
 
         context = {
@@ -646,6 +641,7 @@ class Entity(Exportable, EntityLike):
             "object": self,
             "warning_list": [],
             "assignment": False,
+            "environment_version": __factorio_version_info__,
         }
 
         try:

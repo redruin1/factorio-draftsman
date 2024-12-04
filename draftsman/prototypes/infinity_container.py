@@ -129,7 +129,12 @@ class InfinityContainer(RequestItemsMixin, InventoryMixin, Entity):
     @infinity_settings.setter
     def infinity_settings(self, value: Optional[Format.InfinitySettings]):
         test_replace_me(
-            self, type(self).Format, self._root, "infinity_settings", value, self.validate_assignment
+            self,
+            type(self).Format,
+            self._root,
+            "infinity_settings",
+            value,
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(

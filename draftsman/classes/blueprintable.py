@@ -1,15 +1,22 @@
 # blueprintable.py
 
+from draftsman import __factorio_version_info__
 from draftsman.classes.exportable import (
     Exportable,
     ValidationResult,
     attempt_and_reissue,
     apply_assignment,
-    test_replace_me
+    test_replace_me,
 )
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError, IncorrectBlueprintTypeError
-from draftsman.signatures import DraftsmanBaseModel, Icon, normalize_version, uint16, uint64
+from draftsman.signatures import (
+    DraftsmanBaseModel,
+    Icon,
+    normalize_version,
+    uint16,
+    uint64,
+)
 from draftsman.data.signals import signal_dict
 from draftsman.utils import (
     decode_version,
@@ -97,7 +104,13 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             )
 
     @reissue_warnings
-    def load_from_string(self, string: str, validate: Union[ValidationMode, Literal["none", "minimum", "strict", "pedantic"]] = ValidationMode.STRICT):
+    def load_from_string(
+        self,
+        string: str,
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+    ):
         """
         Load the :py:class:`.Blueprintable` with the contents of ``string``.
 
@@ -212,7 +225,12 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     @label.setter
     def label(self, value: Optional[str]):
         test_replace_me(
-            self, self._root_format, self._root[self._root_item], "label", value, self.validate_assignment
+            self,
+            self._root_format,
+            self._root[self._root_item],
+            "label",
+            value,
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(
@@ -258,7 +276,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     @property
     def icons(self) -> Optional[list[Icon]]:
         """
-        The visible icons of the blueprintable, as shown in the icon in 
+        The visible icons of the blueprintable, as shown in the icon in
         Factorio's GUI.
 
         Stored as a list of ``Icon`` objects, which are dicts that contain a
@@ -292,7 +310,12 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     @icons.setter
     def icons(self, value: Union[list[str], list[Icon], None]):
         test_replace_me(
-            self, self._root_format, self._root[self._root_item], "icons", value, self.validate_assignment
+            self,
+            self._root_format,
+            self._root[self._root_item],
+            "icons",
+            value,
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     print("validated")
@@ -393,9 +416,9 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
         :getter: Gets the index of this blueprintable, or ``None`` if not set.
             A blueprintable's index is only generated when exporting with
-            :py:meth:`.Blueprintable.to_dict`, so ``index`` will still be ``None`` 
+            :py:meth:`.Blueprintable.to_dict`, so ``index`` will still be ``None``
             until specified otherwise.
-        :setter: Sets the index of the :py:class:`.Blueprintable`, or removes it 
+        :setter: Sets the index of the :py:class:`.Blueprintable`, or removes it
             if set to ``None``.
         """
         return self._root.get("index", None)
@@ -478,7 +501,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE and not force: #(self.is_valid and not force):
+        if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
             return output
 
         context = {
@@ -486,12 +509,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             "object": self,
             "warning_list": [],
             "assignment": False,
+            "environment_version": __factorio_version_info__,
         }
 
         try:
-            self.Format.model_validate(
-                self._root, strict=True, context=context
-            )
+            self.Format.model_validate(self._root, strict=True, context=context)
         except ValidationError as e:
             output.error_list.append(DataFormatError(e))
 

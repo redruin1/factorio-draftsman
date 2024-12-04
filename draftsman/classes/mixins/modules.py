@@ -33,8 +33,8 @@ class ModulesMixin:  # (RequestItemsMixin)
 
             if entity.total_module_slots is None:  # entity not recognized
                 return value
-            if entity.total_module_slots == 0:  # Better warning issued elsewhere
-                return value
+            # if entity.total_module_slots == 0:  # Better warning issued elsewhere (where?)
+            #     return value
 
             if entity.module_slots_occupied > entity.total_module_slots:
                 warning_list.append(
@@ -105,9 +105,10 @@ class ModulesMixin:  # (RequestItemsMixin)
         """
         # If not recognized, return None
         # If recognized, but no module specification, then return 0
-        return entities.raw.get(
-            self.name, {"module_specification": {"module_slots": None}}
-        ).get("module_specification", {"module_slots": 0})["module_slots"]
+        # return entities.raw.get(
+        #     self.name, {"module_specification": {"module_slots": None}}
+        # ).get("module_specification", {"module_slots": 0})["module_slots"]
+        return entities.raw.get(self.name, {"module_slots": None}).get("module_slots", 0)
 
     # =========================================================================
 
@@ -134,9 +135,9 @@ class ModulesMixin:  # (RequestItemsMixin)
             return None
         # If name known, but no key, then return default list
         result = entity.get(
-            "allowed_effects", ["speed", "productivity", "consumption", "pollution"]
+            "allowed_effects", ["speed", "productivity", "consumption", "pollution", "quality"]
         )
-        # Normalize single string effect to a 1-length list
+        # Normalize single string effect to a 1-length set
         return {result} if isinstance(result, str) else set(result)
 
     # =========================================================================
@@ -150,6 +151,7 @@ class ModulesMixin:  # (RequestItemsMixin)
         Draftsman. Not exported; read only.
         """
         return modules.get_modules_from_effects(self.allowed_effects, None)
+        # return entities.raw.get(self.name, {"allowed_module_categories": []})["allowed_module_categories"]
 
     # =========================================================================
 

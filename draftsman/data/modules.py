@@ -58,7 +58,9 @@ def get_modules_from_effects(allowed_effects: set[str], recipe: str = None) -> s
     if allowed_effects is None:
         return None
     output = set()
+    print(allowed_effects, "\n")
     for module_name, module in raw.items():
+        print(module_name, set(module["effect"]))
         if recipe is not None:
             # Skip adding this module if the recipe provided does not fit within
             # this module's limitations
@@ -69,9 +71,10 @@ def get_modules_from_effects(allowed_effects: set[str], recipe: str = None) -> s
                 and recipe in module["limitation_blacklist"]
             ):
                 continue  # pragma: no coverage
-        # I think the effects module has to be a subset of the allowed effects
-        # in order to be included
-        if set(module["effect"]).issubset(allowed_effects):
+        # I think the module's positive effects has to be a subset of the 
+        # set of allowed effects
+        positive_effects = {effect for effect, value in module["effect"].items() if value > 0}
+        if positive_effects.issubset(allowed_effects):
             output.add(module_name)
 
     return output

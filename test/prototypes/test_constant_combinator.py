@@ -252,20 +252,34 @@ class TestConstantCombinator:
 
     def test_get_signal(self):
         combinator = ConstantCombinator()
-        signal = combinator.get_signal(0)
-        assert signal == None
 
-        combinator.signals = [("signal-A", 100), ("signal-Z", 200), ("iron-ore", 1000)]
-        signal = combinator.get_signal(0)
+        section = combinator.add_section()
+        section.filters = [
+            SignalFilter(**{
+                "index": 1,
+                "name": "signal-A",
+                "type": "virtual",
+                "comparator": "=",
+                "count": 100,
+                "max_count": 100
+            })
+        ]
+
+        print(section.filters)
+
+        signal = section.get_signal(0)
         assert signal == SignalFilter(
             **{
                 "index": 1,
-                "signal": {"name": "signal-A", "type": "virtual"},
+                "name": "signal-A",
+                "type": "virtual",
+                "comparator": "=",
                 "count": 100,
+                "max_count": 100
             }
         )
 
-        signal = combinator.get_signal(50)
+        signal = section.get_signal(50)
         assert signal == None
 
     def test_is_on(self):
@@ -289,7 +303,7 @@ class TestConstantCombinator:
             "entity_number": 1,
             "name": "constant-combinator",
             "position": {"x": 155.5, "y": -108.5},
-            "direction": 6,
+            "direction": Direction.WEST,
             "control_behavior": {
                 "filters": [
                     {
@@ -346,48 +360,62 @@ class TestConstantCombinator:
         comb2 = ConstantCombinator(
             "constant-combinator",
             control_behavior={
-                "filters": [
-                    {
-                        "index": 1,
-                        "signal": {"name": "signal-A", "type": "virtual"},
-                        "count": 100,
-                    }
-                ]
+                "sections": {
+                    "sections": [
+                        {
+                            "index": 1,
+                            "filters": [
+                                {
+                                    "index": 1,
+                                    "name": "signal-A",
+                                    "type": "virtual",
+                                    "count": 100,
+                                }
+                            ]
+                        }
+                    ]
+                }
             },
         )
-
-        print(comb1.control_behavior)
-        print(comb2.control_behavior)
 
         comb1.merge(comb2)
         del comb2
 
         assert comb1.control_behavior == ConstantCombinator.Format.ControlBehavior(
             **{
-                "filters": [
-                    {
-                        "index": 1,
-                        "signal": {"name": "signal-A", "type": "virtual"},
-                        "count": 100,
-                    }
-                ]
+                "sections": {
+                    "sections": [
+                        {
+                            "index": 1,
+                            "filters": [
+                                {
+                                    "index": 1,
+                                    "name": "signal-A",
+                                    "type": "virtual",
+                                    "count": 100,
+                                }
+                            ]
+                        }
+                    ]
+                }
             }
         )
 
     def test_eq(self):
-        generator1 = ConstantCombinator("constant-combinator")
-        generator2 = ConstantCombinator("constant-combinator")
+        cc1 = ConstantCombinator("constant-combinator")
+        cc2 = ConstantCombinator("constant-combinator")
 
-        assert generator1 == generator2
+        assert cc1 == cc2
 
-        generator1.set_signal(0, "signal-check", 100)
+        cc1.add_section()
+        cc1.sections[-1].set_signal(0, "signal-check", 100)
 
-        assert generator1 != generator2
+        assert cc1 != cc2
 
         container = Container()
 
-        assert generator1 != container
-        assert generator2 != container
+        assert cc1 != container
+        assert cc2 != container
 
         # hashable
-        assert isinstance(generator1, Hashable)
+        assert isinstance(cc1, Hashable)

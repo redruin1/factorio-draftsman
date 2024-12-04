@@ -1,37 +1,36 @@
-# test_turret.py
+# test_ammo_turret.py
 
-from draftsman.entity import Turret, turrets, Container
-from draftsman.error import InvalidEntityError
+from draftsman.entity import AmmoTurret, ammo_turrets, Container
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
 
 
-class TestTurret:
+class TestAmmoTurret:
     def test_constructor_init(self):
-        turret = Turret("gun-turret")
+        turret = AmmoTurret("gun-turret")
         turret.validate().reissue_all()
 
         with pytest.warns(UnknownKeywordWarning):
-            turret = Turret("gun-turret", unused_keyword="whatever")
+            turret = AmmoTurret("gun-turret", unused_keyword="whatever")
             turret.validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            turret = Turret("this is not a turret")
+            turret = AmmoTurret("this is not a turret")
             turret.validate().reissue_all()
 
     def test_flags(self):
-        turret = Turret("gun-turret")
+        turret = AmmoTurret("gun-turret")
         assert turret.rotatable == True
         assert turret.square == True
-        turret = Turret("flamethrower-turret")
+        turret = AmmoTurret("flamethrower-turret")
         assert turret.rotatable == True
         assert turret.square == False
 
     def test_mergable_with(self):
-        turret1 = Turret("gun-turret")
-        turret2 = Turret("gun-turret", tags={"some": "stuff"})
+        turret1 = AmmoTurret("gun-turret")
+        turret2 = AmmoTurret("gun-turret", tags={"some": "stuff"})
 
         assert turret1.mergable_with(turret1)
 
@@ -42,8 +41,8 @@ class TestTurret:
         assert not turret1.mergable_with(turret2)
 
     def test_merge(self):
-        turret1 = Turret("gun-turret")
-        turret2 = Turret("gun-turret", tags={"some": "stuff"})
+        turret1 = AmmoTurret("gun-turret")
+        turret2 = AmmoTurret("gun-turret", tags={"some": "stuff"})
 
         turret1.merge(turret2)
         del turret2
@@ -51,8 +50,8 @@ class TestTurret:
         assert turret1.tags == {"some": "stuff"}
 
     def test_eq(self):
-        turret1 = Turret("gun-turret")
-        turret2 = Turret("gun-turret")
+        turret1 = AmmoTurret("gun-turret")
+        turret2 = AmmoTurret("gun-turret")
 
         assert turret1 == turret2
 

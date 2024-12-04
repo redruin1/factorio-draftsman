@@ -19,7 +19,12 @@ from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError, DraftsmanError, InvalidTileError
-from draftsman.signatures import DraftsmanBaseModel, IntPosition, TileName, get_suggestion
+from draftsman.signatures import (
+    DraftsmanBaseModel,
+    IntPosition,
+    TileName,
+    get_suggestion,
+)
 from draftsman.utils import AABB
 from draftsman.warning import UnknownTileWarning
 
@@ -262,7 +267,9 @@ class Tile(SpatialLike, Exportable):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE and not force: # or (self.is_valid and not force):
+        if (
+            mode is ValidationMode.NONE and not force
+        ):  # or (self.is_valid and not force):
             return output
 
         context = {
@@ -273,9 +280,7 @@ class Tile(SpatialLike, Exportable):
         }
 
         try:
-            self.Format.model_validate(
-                self._root, strict=True, context=context
-            )
+            self.Format.model_validate(self._root, strict=True, context=context)
             # Reassign private attributes
             # result._position = self._root._position
             # Acquire the newly converted data

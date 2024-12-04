@@ -18,12 +18,12 @@ from draftsman.constants import ValidationMode
 from draftsman.data.signals import (
     signal_dict,
     mapper_dict,
-    get_signal_type,
+    get_signal_types,
     pure_virtual,
 )
 from draftsman.data import entities, fluids, items, signals, tiles
 from draftsman.error import InvalidMapperError, InvalidSignalError
-from draftsman.utils import encode_version
+from draftsman.utils import encode_version, get_suggestion
 from draftsman.warning import (
     BarWarning,
     MalformedSignalWarning,
@@ -56,35 +56,6 @@ from pydantic_core import CoreSchema
 from textwrap import dedent
 from thefuzz import process
 from typing import Any, Literal, Optional, Sequence
-
-
-def get_suggestion(name, choices, n=3, cutoff=60): # TODO: move this
-    """
-    Looks for similarly-named strings from ``choices`` and suggests ``n`` 
-    results, provided they lie above ``cutoff``.
-
-    :param name: The unrecognized name to look for alternatives to.
-    :param choices: An iterable containing valid choices to search.
-    :param n: The maximum number of suggestions to return, provided there are
-        more than ``n`` options.
-    :param cutoff: The minimum "similarity score", where suggestions with lower
-        scores than this are ignored.
-
-    :returns: A string intended to be appended to an error or warning message,
-        containing the suggested alternative(s).
-    """
-    suggestions = [
-        suggestion[0]
-        for suggestion in process.extract(name, choices, limit=n)
-        if suggestion[1] >= cutoff
-    ]
-    if len(suggestions) == 0:
-        return ""
-    elif len(suggestions) == 1:
-        return "; did you mean '{}'?".format(suggestions[0])
-    else:
-        return "; did you mean one of {}?".format(suggestions)  # pragma: no coverage
-        # return "; did you mean one of {}?".format(", ".join(["or " + str(item) if i == len(suggestions) - 1 else str(item) for i, item in enumerate(suggestions)]))
 
 
 # TODO: might make sense to move this into another file, so other files can use
@@ -151,7 +122,7 @@ class DraftsmanBaseModel(BaseModel):
     A custom wrapper around Pydantic's ``BaseModel``.
 
     Includes things like arbitrary construction, warning of unused attributes,
-    and adds getters and setters so that it blends in more seamlessly with 
+    and adds getters and setters so that it blends in more seamlessly with
     unvalidated dicts.
     """
 
@@ -259,9 +230,9 @@ class DraftsmanBaseModel(BaseModel):
                 input_obj["description"] = dedent(input_obj["description"]).strip()
 
         normalize_description(json_schema)
-        # if "properties" in json_schema: # Maybe not needed?
-        for property_spec in json_schema["properties"].values():
-            normalize_description(property_spec)
+        if "properties" in json_schema: # Maybe not needed?
+            for property_spec in json_schema["properties"].values():
+                normalize_description(property_spec)
         # if "items" in json_schema: # Maybe not needed?
         #     normalize_description(json_schema["items"])
 
@@ -383,8 +354,8 @@ class SignalID(DraftsmanBaseModel):
         removed on import/export cycle.
         """,
     )
-    type: Literal["item", "fluid", "virtual"] = Field(
-        ..., description="""Category of the signal."""
+    type: Literal["virtual", "item", "fluid", "recipe", "entity", "space-location", "asteroid-chunk", "quality"] = Field(
+        "item", description="""Category of the signal."""
     )
 
     @model_validator(mode="before")
@@ -457,12 +428,12 @@ class SignalID(DraftsmanBaseModel):
         warning_list: list = info.context["warning_list"]
 
         if value["name"] in signals.raw:
-            expected_type = get_signal_type(value["name"])
-            if expected_type != value["type"]:
+            expected_types = get_signal_types(value["name"])
+            if value["type"] not in expected_types:
                 warning_list.append(
                     MalformedSignalWarning(
-                        "Known signal '{}' was given a mismatching type (expected '{}', found '{}')".format(
-                            value["name"], expected_type, value["type"]
+                        "Known signal '{}' was given a mismatching type (expected one of {}, found '{}')".format(
+                            value["name"], expected_types, value["type"]
                         )
                     )
                 )
@@ -508,7 +479,6 @@ class Icon(DraftsmanBaseModel):
     #     except Exception:
     #         return value
 
-
     #     if isinstance(value, Sequence):
     #         result = [None] * len(value)
     #         for i, signal in enumerate(value):
@@ -537,12 +507,14 @@ def normalize_icons(value: Any):
     else:
         return value
 
+
 def normalize_version(value: Any):
     try:
         return encode_version(*value)
     except Exception:
         return value
-    
+
+
 def normalize_color(value: Any):
     try:
         color_dict = {}
@@ -556,6 +528,7 @@ def normalize_color(value: Any):
         return color_dict
     except Exception:
         return value
+
 
 # class Icons(DraftsmanRootModel):
 #     root: list[Icon] = Field(
@@ -679,6 +652,18 @@ class IntPosition(DraftsmanBaseModel):
 #         return self.root
 
 
+class NetworkSpecification(DraftsmanBaseModel):
+    red: Optional[bool] = Field(
+        True,
+        description="Whether or not inputs from the red wire are permitted."
+    )
+
+    green: Optional[bool] = Field(
+        True,
+        description="Whether or not inputs from the green wire are permitted."
+    )
+
+
 class Condition(DraftsmanBaseModel):
     first_signal: Optional[SignalID] = Field(
         None,
@@ -686,6 +671,10 @@ class Condition(DraftsmanBaseModel):
         The first signal to specify for this condition. A null value results
         in an empty slot.
         """,
+    )
+    first_signal_networks: Optional[NetworkSpecification] = Field(
+        NetworkSpecification(red=True, green=False),
+        description="Wire input specification for the first signal, if present."
     )
     comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
         "<",
@@ -708,6 +697,10 @@ class Condition(DraftsmanBaseModel):
         The second signal of the condition, if applicable. Takes 
         precedence over 'constant', if both are set at the same time.
         """,
+    )
+    second_signal_networks: Optional[NetworkSpecification] = Field(
+        NetworkSpecification(red=True, green=False),
+        description="Wire input specification for the second signal, if present."
     )
 
     @model_validator(mode="before")
@@ -1009,15 +1002,37 @@ class SignalFilter(DraftsmanBaseModel):
         the maximum number of slots that this constant combinator can contain.
         """,
     )
-    signal: Optional[SignalID] = Field(
-        None,
+    name: str = Field(
+        ...,
         description="""
-        Signal to broadcast. If this value is omitted the occupied slot will
-        behave as if no signal exists within it. Cannot be a pure virtual
-        (logic) signal like "signal-each", "signal-any", or 
-        "signal-everything"; if such signals are set they will be removed
-        on import.
-        """,
+        Name of the signal.
+        """
+    )
+    type: Optional[Literal["virtual", "item", "fluid", "recipe", "entity", "space-location", "asteroid-chunk", "quality"]] = Field(
+        "item",
+        description="Type of the signal."
+    )
+    # signal: Optional[SignalID] = Field(
+    #     None,
+    #     description="""
+    #     Signal to broadcast. If this value is omitted the occupied slot will
+    #     behave as if no signal exists within it. Cannot be a pure virtual
+    #     (logic) signal like "signal-each", "signal-any", or 
+    #     "signal-everything"; if such signals are set they will be removed
+    #     on import.
+    #     """,
+    # )
+    # TODO: make this dynamic based on current environment?
+    quality: Optional[Literal["normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"]] = Field(
+        "any",
+        description="""
+        Quality flag of the signal. If unspecified, this value is effectively 
+        equal to 'any' quality level.
+        """
+    )
+    comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
+        None,
+        description="Comparison operator when deducing the quality type."
     )
     count: int32 = Field(
         ...,
@@ -1025,38 +1040,46 @@ class SignalFilter(DraftsmanBaseModel):
         Value of the signal to emit.
         """,
     )
-
-    @field_validator("index")
-    @classmethod
-    def ensure_index_within_range(cls, value: int64, info: ValidationInfo):
+    max_count: Optional[int32] = Field(
+        None,
+        description="""
+        The maximum value of the signal to emit. Only used with logistics-type
+        requests.
         """
-        Factorio does not permit signal values outside the range of it's item
-        slot count; this method raises an error IF item slot count is known.
-        """
-        if not info.context:
-            return value
-        if info.context["mode"] <= ValidationMode.MINIMUM:
-            return value
+    )
 
-        entity = info.context["object"]
+    # Deprecated in 2.0
+    # @field_validator("index")
+    # @classmethod
+    # def ensure_index_within_range(cls, value: int64, info: ValidationInfo):
+    #     """
+    #     Factorio does not permit signal values outside the range of it's item
+    #     slot count; this method raises an error IF item slot count is known.
+    #     """
+    #     if not info.context:
+    #         return value
+    #     if info.context["mode"] <= ValidationMode.MINIMUM:
+    #         return value
 
-        # If Draftsman doesn't recognize entity, early exit
-        if entity.item_slot_count is None:
-            return value
+    #     entity = info.context["object"]
 
-        # TODO: what happens if index is 0?
-        if not 0 < value <= entity.item_slot_count:
-            raise ValueError(
-                "Signal 'index' ({}) must be in the range [0, {})".format(
-                    value, entity.item_slot_count
-                )
-            )
+    #     # If Draftsman doesn't recognize entity, early exit
+    #     if entity.item_slot_count is None:
+    #         return value
 
-        return value
+    #     # TODO: what happens if index is 0?
+    #     if not 0 < value <= entity.item_slot_count:
+    #         raise ValueError(
+    #             "Signal 'index' ({}) must be in the range [0, {})".format(
+    #                 value, entity.item_slot_count
+    #             )
+    #         )
 
-    @field_validator("signal")
+    #     return value
+
+    @field_validator("name")
     @classmethod
-    def ensure_not_pure_virtual(cls, value: Optional[SignalID], info: ValidationInfo):
+    def ensure_not_pure_virtual(cls, value: Optional[str], info: ValidationInfo):
         """
         Warn if pure virtual signals (like "signal-each", "signal-any", and
         "signal-everything") are entered inside of a constant combinator.
@@ -1068,7 +1091,7 @@ class SignalFilter(DraftsmanBaseModel):
 
         warning_list: list = info.context["warning_list"]
 
-        if value.name in pure_virtual:
+        if value in pure_virtual:
             warning_list.append(
                 PureVirtualDisallowedWarning(
                     "Cannot set pure virtual signal '{}' in a constant combinator".format(

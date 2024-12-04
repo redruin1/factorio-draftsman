@@ -76,7 +76,9 @@ class TestPowerSwitch:
 
         # Test power switch connections
         group_left = Group("left")
+        print(group_left)
         group_left.entities.append("small-electric-pole", tile_position=(-2, 0))
+        print(group_left.entities[-1])
         group_left.entities.append("power-switch")
         group_left.add_power_connection(0, 1, side=1)
 

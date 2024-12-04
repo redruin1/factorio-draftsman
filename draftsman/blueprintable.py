@@ -26,13 +26,13 @@ def get_blueprintable_from_string(blueprintable_string: str) -> Blueprintable:
     "Blueprintable object" in this context means either a :py:class:`.Blueprint`,
     :py:class:`.DeconstructionPlanner`, :py:class:`.UpgradePlanner`, or a
     :py:class:`.BlueprintBook`, depending on the particular string you passed in.
-    This function allows you generically accept export strings of any of the 
+    This function allows you generically accept export strings of any of the
     above types and return the appropriate class instance.
 
     :param blueprintable_string: The blueprint string to interpret.
 
     :returns: A :py:class:`.Blueprint`, :py:class:`.BlueprintBook`,
-        :py:class:`.DeconstructionPlanner`, or :py:class:`.UpgradePlanner` 
+        :py:class:`.DeconstructionPlanner`, or :py:class:`.UpgradePlanner`
         object.
 
     :exception MalformedBlueprintStringError: If the ``blueprint_string`` cannot
@@ -70,7 +70,7 @@ def get_blueprintable_from_JSON(blueprintable_JSON: dict) -> Blueprintable:
     :param blueprintable_JSON: The blueprint JSON dict to interpret.
 
     :returns: A :py:class:`.Blueprint`, :py:class:`.BlueprintBook`,
-        :py:class:`.DeconstructionPlanner`, or :py:class:`.UpgradePlanner` 
+        :py:class:`.DeconstructionPlanner`, or :py:class:`.UpgradePlanner`
         object.
 
     :exception IncorrectBlueprintTypeError: If the root level of the

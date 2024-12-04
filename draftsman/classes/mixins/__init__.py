@@ -22,6 +22,7 @@ from draftsman.classes.mixins.mode_of_operation import InserterModeOfOperationMi
 from draftsman.classes.mixins.mode_of_operation import LogisticModeOfOperationMixin
 from draftsman.classes.mixins.modules import ModulesMixin
 from draftsman.classes.mixins.orientation import OrientationMixin
+from draftsman.classes.mixins.player_description import PlayerDescriptionMixin
 from draftsman.classes.mixins.power_connectable import PowerConnectableMixin
 from draftsman.classes.mixins.read_rail_signal import ReadRailSignalMixin
 from draftsman.classes.mixins.recipe import RecipeMixin

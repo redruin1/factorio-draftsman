@@ -242,7 +242,7 @@ class UnknownElementWarning(DraftsmanWarning):
 
 class UnknownEntityWarning(UnknownElementWarning):
     """
-    Raised when an entity is specified who is not recognized by the current 
+    Raised when an entity is specified who is not recognized by the current
     Factorio environment.
     """
 
@@ -284,8 +284,8 @@ class UnknownNoteWarning(UnknownElementWarning):
 
 class UnknownRecipeWarning(UnknownElementWarning):
     """
-    Raised if an assembling machine/chemical plant/oil refinery/etc. is given a 
-    recipe that Draftsman does not recognize. 
+    Raised if an assembling machine/chemical plant/oil refinery/etc. is given a
+    recipe that Draftsman does not recognize.
     """
 
     pass
@@ -301,8 +301,8 @@ class UnknownSignalWarning(UnknownElementWarning):
 
 class MalformedSignalWarning(DraftsmanWarning):
     """
-    Raised when a signal is erroneously given the incorrect type, such as 
-    setting the virtual signal `signal-A` to have a type of `"item"` when it 
+    Raised when a signal is erroneously given the incorrect type, such as
+    setting the virtual signal `signal-A` to have a type of `"item"` when it
     should be `"virtual"` instead.
     """
 

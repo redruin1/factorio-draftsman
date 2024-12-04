@@ -76,7 +76,7 @@ class TestMiningDrill:
             mining_drill.set_item_request("incorrect", 2)
 
     def test_set_read_resources(self):
-        mining_drill = MiningDrill()
+        mining_drill = MiningDrill("burner-mining-drill")
         mining_drill.read_resources = True
         assert mining_drill.read_resources == True
 
@@ -98,7 +98,7 @@ class TestMiningDrill:
         }
 
     def test_set_read_mode(self):
-        mining_drill = MiningDrill()
+        mining_drill = MiningDrill("burner-mining-drill")
         mining_drill.read_mode = MiningDrillReadMode.UNDER_DRILL
         assert mining_drill.read_mode == MiningDrillReadMode.UNDER_DRILL
 
@@ -140,12 +140,15 @@ class TestMiningDrill:
         assert drill1.total_module_slots == 3
         assert drill1.module_slots_occupied == 0
         assert drill1.allowed_modules == {
-            "effectivity-module",
-            "effectivity-module-2",
-            "effectivity-module-3",
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
             "productivity-module",
             "productivity-module-2",
             "productivity-module-3",
+            "quality-module",
+            "quality-module-2",
+            "quality-module-3",
             "speed-module",
             "speed-module-2",
             "speed-module-3",

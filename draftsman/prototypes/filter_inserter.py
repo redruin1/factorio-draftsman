@@ -1,4 +1,5 @@
 # filter_inserter.py
+# TODO: remove this class
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue
@@ -16,10 +17,11 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
+from draftsman.data.entities import of_type
 from draftsman.signatures import Connections, DraftsmanBaseModel, FilterEntry, uint8
 from draftsman.utils import get_first
 
-from draftsman.data.entities import filter_inserters
+# from draftsman.data.entities import filter_inserters
 
 from pydantic import ConfigDict, Field, field_validator
 from typing import Any, Literal, Optional, Union
@@ -104,7 +106,7 @@ class FilterInserter(
 
     def __init__(
         self,
-        name: Optional[str] = get_first(filter_inserters),
+        name: Optional[str] = get_first(of_type["inserter"]),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
@@ -127,7 +129,7 @@ class FilterInserter(
 
         super().__init__(
             name,
-            filter_inserters,
+            of_type["inserter"],
             position=position,
             tile_position=tile_position,
             direction=direction,

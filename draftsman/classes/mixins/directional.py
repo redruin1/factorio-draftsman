@@ -56,9 +56,9 @@ class DirectionalMixin:
             warning_list: list = info.context["warning_list"]
             entity: Entity = info.context["object"]
 
-            if input not in {0, 2, 4, 6}:
+            if input not in {0, 4, 8, 12}:
                 # Default to a known orientation
-                output = Direction(int(input / 2) * 2)
+                output = Direction(int(input / 4) * 4)
 
                 warning_list.append(
                     DirectionWarning(

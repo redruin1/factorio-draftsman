@@ -27,11 +27,11 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
     def __init__(
         self,
         name: Optional[str] = get_first(electric_poles),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        neighbours: list[uint64] = [],
-        connections: Connections = {},
-        tags: dict[str, Any] = {},
+        position: Union[Vector, PrimitiveVector, None] = None,
+        tile_position: Union[Vector, PrimitiveVector, None] = (0, 0),
+        neighbours: Optional[list[uint64]] = None,
+        connections: Optional[Connections] = None,
+        tags: Optional[dict[str, Any]] = None,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -46,9 +46,9 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
             electric_poles,
             position=position,
             tile_position=tile_position,
-            neighbours=neighbours,
-            connections=connections,
-            tags=tags,
+            neighbours=[] if neighbours is None else neighbours,
+            connections={} if connections is None else connections,
+            tags={} if tags is None else tags,
             **kwargs
         )
 

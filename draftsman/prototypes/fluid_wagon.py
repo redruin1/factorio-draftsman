@@ -8,7 +8,6 @@ from draftsman.utils import get_first
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import fluid_wagons
-from draftsman.data import entities
 
 from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union

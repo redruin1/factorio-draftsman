@@ -12,16 +12,22 @@ import importlib.resources as pkg_resources
 with pkg_resources.open_binary(data, "signals.pkl") as inp:
     _data = pickle.load(inp)
 
-    raw: dict[str, dict] = _data[0]
+    raw: dict[str, dict] = _data["raw"]
 
     # Look up table for a particular signal's type
-    type_of: dict[str, str] = _data[1]
+    type_of: dict[str, set[str]] = _data["type_of"]
 
     # Lists of signal names organized by their type for easy iteration
-    item: list[str] = _data[2]
-    fluid: list[str] = _data[3]
-    virtual: list[str] = _data[4]
-    pure_virtual = ["signal-everything", "signal-anything", "signal-each"]
+    virtual: list[str] = _data["virtual"]
+    item: list[str] = _data["item"]
+    fluid: list[str] = _data["fluid"]
+    recipe: list[str] = _data["recipe"]
+    entity: list[str] = _data["entity"]
+    space_location: list[str] = _data["space-location"]
+    asteroid_chunk: list[str] = _data["asteroid-chunk"]
+    quality: list[str] = _data["quality"]
+    # hidden: list[str] = _data["hidden"]
+    pure_virtual: list[str] = ["signal-everything", "signal-anything", "signal-each"]
 
 
 def add_signal(name: str, type: str):
@@ -44,32 +50,45 @@ def add_signal(name: str, type: str):
     :param name: The in-game string ID of the signal.
     :param type: The signal-dict type of the signal.
     """
-    if type not in {"item", "fluid", "virtual"}:
-        raise ValueError("Signal type must be one of 'item', 'fluid', or 'virtual'")
+    permitted_types = {"item", "fluid", "recipe", "entity", "space-location", "asteroid-chunk", "quality", "virtual"}
+    if type not in permitted_types:
+        raise ValueError("Signal type must be one of {}".format(permitted_types))
 
     raw[name] = {"name": name, "type": type}
-    type_of[name] = type
-    if type == "item":
+    type_of[name].add(type)
+    # TODO: sorting
+    if type == "virtual":
+        virtual.append(name)
+    elif type == "item":
         item.append(name)
     elif type == "fluid":
         fluid.append(name)
-    else:  # type == "virtual":
-        virtual.append(name)
+    elif type == "recipe":
+        recipe.append(name)
+    elif type == "entity":
+        entity.append(name)
+    elif type == "space-location":
+        space_location.append(name)
+    elif type == "asteroid-chunk":
+        asteroid_chunk.append(name)
+    elif type == "quality":
+        quality.append(name)
 
 
-def get_signal_type(signal_name: str) -> str:
+def get_signal_types(signal_name: str) -> set[str]:
     """
-    Returns the type of the signal based on its ID string.
+    Returns the set of types that a given signal can have based on its ID string.
 
-    SignalID objects in blueprints require a ``"type"`` field when specifying
-    them. However, this information is redundant most of the time, as the type
-    for any signal is always the same, making writing it out arduous. This
-    function conveniently gets the signal type from the signal's name.
+    Typically, signals can only be selected with a single type, but the game
+    distinguishes between signals of different types in the circuit network. 
+    This means that you can have multiple different versions of the "same"
+    signal, with the only difference being their type. For example,
+    ``transport-belt`` can have a type of ``"item"``, ``"recipe"``, or ``"entity"``.
 
     :param signal_name: The name of the signal.
-    :returns: One of ``"item"``, ``"fluid"``, or ``"virtual"``.
+    :returns: A set of strings that this signal's type can be.
     :exception InvalidSignalError: If the signal name is not contained within
-        :py:mod:`draftsman.data.signals`, and thus it's type cannot be deduced.
+        :py:mod:`draftsman.data.signals`, and thus it's types cannot be deduced.
     """
     try:
         return type_of[signal_name]
@@ -92,7 +111,10 @@ def signal_dict(signal: str) -> dict:
     if signal is None or isinstance(signal, dict):
         return signal
     else:
-        return {"name": str(signal), "type": get_signal_type(signal)}
+        if "item" in get_signal_types(signal):
+            return {"name": str(signal), "type": "item"}
+        else:
+            return {"name": str(signal), "type": next(iter(get_signal_types(signal)))}
 
 
 def get_mapper_type(mapper_name: str) -> str:

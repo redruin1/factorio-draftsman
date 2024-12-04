@@ -185,12 +185,12 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
 
     def get(self) -> Union["Entity", list["Entity"]]:
         """
-        Gets this :py:class:`.Entity`. Redundant for regular instances of 
+        Gets this :py:class:`.Entity`. Redundant for regular instances of
         :py:class:`.Entity`, but is needed for :py:class:`.EntityCollections`
         like :py:class:`.Group`.
 
         This function represents the resolution from some abstract EntityLike
-        object (which can have no relation to Factorio whatsoever) to one or 
+        object (which can have no relation to Factorio whatsoever) to one or
         more valid Factorio-importable Entity instances.
 
         :returns: This :py:class:`.EntityLike` minimum :py:class:`.Entity`

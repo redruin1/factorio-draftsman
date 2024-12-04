@@ -6,6 +6,9 @@ from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 from typing import Hashable
 import pytest
 
+# For compatibility with versions of Factorio post 2.0
+if len(player_ports) == 0:
+    pytest.skip("No player ports to test", allow_module_level=True)
 
 class TestPlayerPort:
     def test_contstructor_init(self):

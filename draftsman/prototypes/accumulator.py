@@ -6,12 +6,10 @@ from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
-from draftsman.error import DataFormatError
 from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID
 from draftsman.utils import get_first
 
 from draftsman.data.entities import accumulators
-from draftsman.data.signals import signal_dict
 
 from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union

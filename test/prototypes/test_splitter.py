@@ -27,7 +27,7 @@ class TestSplitter:
         assert splitter.to_dict() == {
             "name": "splitter",
             "position": {"x": 1.5, "y": 2.0},
-            "direction": 2,
+            "direction": Direction.EAST,
             "input_priority": "left",
             "output_priority": "right",
             "filter": "small-lamp",

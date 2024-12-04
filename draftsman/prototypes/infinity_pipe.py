@@ -148,7 +148,7 @@ class InfinityPipe(Entity):
             self._root,
             "infinity_settings",
             value,
-            self.validate_assignment
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(
@@ -181,7 +181,7 @@ class InfinityPipe(Entity):
             self.infinity_settings,
             "name",
             value,
-            self.validate_assignment
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(
@@ -218,7 +218,7 @@ class InfinityPipe(Entity):
             self.infinity_settings,
             "percentage",
             value,
-            self.validate_assignment
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(
@@ -268,7 +268,7 @@ class InfinityPipe(Entity):
             self.infinity_settings,
             "mode",
             value,
-            self.validate_assignment
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(
@@ -307,7 +307,7 @@ class InfinityPipe(Entity):
             self.infinity_settings,
             "temperature",
             value,
-            self.validate_assignment
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(

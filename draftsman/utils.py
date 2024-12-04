@@ -15,6 +15,7 @@ import json
 import math
 from functools import wraps
 import six
+from thefuzz import process
 from typing import Optional, Union, TYPE_CHECKING
 import warnings
 import zlib
@@ -508,9 +509,7 @@ def distance(point1: PrimitiveVector, point2: PrimitiveVector) -> float:
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
 
 
-def rotate_point(
-    a: PrimitiveVector, angle: float
-) -> PrimitiveVector:
+def rotate_point(a: PrimitiveVector, angle: float) -> PrimitiveVector:
     """
     Rotate a given vector by ``angle`` radians around the origin.
 
@@ -914,7 +913,7 @@ def reissue_warnings(func):
     @wraps(func)
     def inner(*args, **kwargs):
         with warnings.catch_warnings(record=True) as warning_list:
-            result = func(*args, **kwargs) # === @reissue_warnings === #
+            result = func(*args, **kwargs)  # === @reissue_warnings === #
 
         for warning in warning_list:
             warnings.warn(warning.message, warning.category, stacklevel=2)
@@ -922,3 +921,32 @@ def reissue_warnings(func):
         return result
 
     return inner
+
+
+def get_suggestion(name, choices, n=3, cutoff=60):
+    """
+    Looks for similarly-named strings from ``choices`` and suggests ``n``
+    results, provided they lie above ``cutoff``.
+
+    :param name: The unrecognized name to look for alternatives to.
+    :param choices: An iterable containing valid choices to search.
+    :param n: The maximum number of suggestions to return, provided there are
+        more than ``n`` options.
+    :param cutoff: The minimum "similarity score", where suggestions with lower
+        scores than this are ignored.
+
+    :returns: A string intended to be appended to an error or warning message,
+        containing the suggested alternative(s).
+    """
+    suggestions = [
+        suggestion[0]
+        for suggestion in process.extract(name, choices, limit=n)
+        if suggestion[1] >= cutoff
+    ]
+    if len(suggestions) == 0:
+        return ""
+    elif len(suggestions) == 1:
+        return "; did you mean '{}'?".format(suggestions[0])
+    else:
+        return "; did you mean one of {}?".format(suggestions)  # pragma: no coverage
+        # return "; did you mean one of {}?".format(", ".join(["or " + str(item) if i == len(suggestions) - 1 else str(item) for i, item in enumerate(suggestions)]))

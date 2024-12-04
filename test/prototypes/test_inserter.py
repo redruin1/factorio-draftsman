@@ -305,7 +305,7 @@ class TestInserter:
             "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
-                "stack_control_input_signal": {"name": "unknown", "type": "item"}
+                "stack_control_input_signal": {"name": "unknown"}
             },
         }
 

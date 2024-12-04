@@ -46,7 +46,7 @@ class TestStorageTank:
         assert storage_tank.to_dict() == {
             "name": "storage-tank",
             "position": {"x": 16.5, "y": 4.5},
-            "direction": 2,
+            "direction": Direction.EAST,
             "tags": {"A": "B"},
         }
         # Warnings

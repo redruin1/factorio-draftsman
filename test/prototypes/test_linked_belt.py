@@ -6,9 +6,9 @@ from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 from collections.abc import Hashable
 import pytest
 
-
 # For compatibility with versions of Factorio prior to 1.1.6
-pytest.mark.skipif(len(linked_belts) == 0, "No linked belts to test")
+if len(linked_belts) == 0:
+    pytest.skip("No linked belts to test", allow_module_level=True)
 
 
 class TestLinkedBelt:

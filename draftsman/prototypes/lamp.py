@@ -8,8 +8,8 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode
-from draftsman.signatures import Connections, DraftsmanBaseModel
+from draftsman.constants import ValidationMode, LampColorMode
+from draftsman.signatures import Color, Connections, DraftsmanBaseModel
 from draftsman.utils import get_first
 
 from draftsman.data.entities import lamps
@@ -41,8 +41,27 @@ class Lamp(
                 first lexographical order is emitted.
                 """,
             )
+            color_mode: Optional[LampColorMode] = Field(
+                LampColorMode.COLOR_MAPPING,
+                description="""
+                How the lamp should interpret signals when specifying it's color.
+                """
+            )
 
         control_behavior: Optional[ControlBehavior] = ControlBehavior()
+
+        color: Optional[Color] = Field(
+            Color(r=1, g=1, b=1, a=1),
+            description="""
+            The constant color of the lamp. Superceeded by any dynamic value 
+            given to the lamp, if configured as such.
+            """
+        )
+
+        always_on: Optional[bool] = Field(
+            False,
+            description="""Whether or not this lamp is always on."""
+        )
 
         model_config = ConfigDict(title="Lamp")
 
@@ -51,6 +70,7 @@ class Lamp(
         name: Optional[str] = get_first(lamps),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        always_on: Optional[bool] = False,
         connections: Connections = {},
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
@@ -76,6 +96,8 @@ class Lamp(
             tags=tags,
             **kwargs
         )
+
+        self.always_on = always_on
 
         self.validate_assignment = validate_assignment
 
@@ -108,6 +130,46 @@ class Lamp(
             self.control_behavior.use_colors = result
         else:
             self.control_behavior.use_colors = value
+
+    # =========================================================================
+
+    @property
+    def color_mode(self) -> Optional[LampColorMode]:
+        return self.control_behavior.color_mode
+
+    @color_mode.setter
+    def color_mode(self, value: Optional[LampColorMode]) -> None:
+        self.control_behavior.color_mode = value
+
+    # =========================================================================
+
+    @property
+    def always_on(self) -> Optional[bool]:
+        """
+        Whether or not this entity should always be active, regardless of the 
+        current day-night cycle. This option is superceeded by any condition
+        specified.
+
+        :getter: Gets whether or not this lamp is always on, or ``None`` if not
+            set.
+        :setter: Sets whether or not the lamp is always on. Removes the key if 
+            set to ``None``.
+        """
+        return self._root.always_on
+    
+    @always_on.setter
+    def always_on(self, value: Optional[bool]) -> None:
+        self._root.always_on = value
+
+    # =========================================================================
+
+    @property
+    def color(self) -> Optional[Color]:
+        return self._root.color
+    
+    @color.setter
+    def color(self, value: Optional[Color]):
+        self._root.color = value
 
     # =========================================================================
 

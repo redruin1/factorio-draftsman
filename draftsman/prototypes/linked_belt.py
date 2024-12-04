@@ -4,7 +4,6 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.error import DraftsmanError
 from draftsman.utils import get_first
 
 from draftsman.data.entities import linked_belts
@@ -13,7 +12,7 @@ from pydantic import ConfigDict
 from typing import Any, Literal, Union
 
 
-class LinkedBelt(DirectionalMixin, Entity): # TODO: finish
+class LinkedBelt(DirectionalMixin, Entity):  # TODO: finish
     """
     A belt object that can transfer items over any distance, regardless of
     constraint, as long as the two are paired together.
@@ -42,13 +41,6 @@ class LinkedBelt(DirectionalMixin, Entity): # TODO: finish
         """
         TODO
         """
-
-        # TODO: this should be better
-        if len(linked_belts) == 0:  # pragma: no coverage
-            raise DraftsmanError(
-                "There is no LinkedBelt to create; check your Factorio version"
-            )
-
         super().__init__(
             name,
             linked_belts,

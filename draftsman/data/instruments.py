@@ -5,7 +5,8 @@ import pickle
 import importlib.resources as pkg_resources
 
 from draftsman import data
-from draftsman.data.entities import programmable_speakers
+from draftsman.data.entities import of_type
+# from draftsman.data.entities import programmable_speakers
 
 
 with pkg_resources.open_binary(data, "instruments.pkl") as inp:
@@ -24,7 +25,7 @@ def add_instrument(
     """
     TODO
     """
-    if entity_name not in programmable_speakers:
+    if entity_name not in of_type["programmable-speaker"]:
         raise TypeError(
             "Cannot add instrument to unknown programmable speaker '{}'".format(
                 entity_name

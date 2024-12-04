@@ -22,9 +22,158 @@ class Direction(IntEnum):
 
     * ``NORTH     (0)`` (Default)
     * ``NORTHEAST (1)``
-    * ``EAST      (2)`` 
+    * ``EAST      (2)``
     * ``SOUTHEAST (3)``
-    * ``SOUTH     (4)`` 
+    * ``SOUTH     (4)``
+    * ``SOUTHWEST (5)``
+    * ``WEST      (6)``
+    * ``NORTHWEST (7)``
+    """
+
+    NORTH = 0
+    NORTHNORTHEAST = 1
+    NORTHEAST = 2
+    EASTNORTHEAST = 3
+    EAST = 4
+    EASTSOUTHEAST = 5
+    SOUTHEAST = 6
+    SOUTHSOUTHEAST = 7
+    SOUTH = 8
+    SOUTHSOUTHWEST = 9
+    SOUTHWEST = 10
+    WESTSOUTHWEST = 11
+    WEST = 12
+    WESTNORTHWEST = 13
+    NORTHWEST = 14
+    NORTHNORTHWEST = 15
+
+    def opposite(self) -> "Direction":
+        """
+        Returns the direction opposite this one.
+
+        .. doctest:: [constants]
+
+            >>> Direction.NORTH.opposite()
+            <Direction.SOUTH: 4>
+
+        :returns: A new :py:class:`Direction`.
+        """
+        return Direction((self.value + 8) % 16)
+
+    def next(self, four_way: bool=True) -> "Direction":
+        """
+        Returns the direction one unit clockwise from the current direction.
+        ``eight_way`` determines whether or not to treat the next-most direction
+        from a four-way or eight-way perspective; for example:
+
+        .. doctest:: [constants]
+
+            >>> Direction.NORTH.next(eight_way=False)
+            <Direction.EAST: 2>
+            >>> Direction.NORTH.next(eight_way=True)
+            <Direction.NORTHEAST: 1>
+
+        :param eight_way: Whether to increment the current direction by 1 or 2
+            units.
+
+        :returns: A new :py:class:`Direction` object.
+        """
+        return Direction((self.value + (4 if four_way else 1)) % 16)
+
+    def previous(self, four_way: bool=True) -> "Direction":
+        """
+        Returns the direction one unit counter-clockwise from the current
+        direction. ``eight_way`` determines whether or not to treat the
+        previous-most direction from a four-way or eight-way perspective; for
+        example:
+
+        .. doctest:: [constants]
+
+            >>> Direction.NORTH.previous(eight_way=False)
+            <Direction.WEST: 6>
+            >>> Direction.NORTH.previous(eight_way=True)
+            <Direction.NORTHWEST: 7>
+
+        :param eight_way: Whether to increment the current direction by 1 or 2
+            units.
+
+        :returns: A new :py:class:`Direction` object.
+        """
+        return Direction((self.value - (4 if four_way else 1)) % 16)
+
+    def to_orientation(self) -> "Orientation":
+        """
+        Converts this direction to an :py:class:`Orientation` of corresponding
+        value.
+
+        .. doctest:: [constants]
+
+            >>> Direction.EAST.to_orientation()
+            <Orientation.EAST: 0.25>
+
+        :returns: An equivalent :py:class:`Orientation` object.
+        """
+        mapping = {
+            # fmt: off
+            Direction.NORTH:     Orientation.NORTH,
+            Direction.NORTHEAST: Orientation.NORTHEAST,
+            Direction.EAST:      Orientation.EAST,
+            Direction.SOUTHEAST: Orientation.SOUTHEAST,
+            Direction.SOUTH:     Orientation.SOUTH,
+            Direction.SOUTHWEST: Orientation.SOUTHWEST,
+            Direction.WEST:      Orientation.WEST,
+            Direction.NORTHWEST: Orientation.NORTHWEST,
+            # fmt: on
+        }
+        return mapping[self]
+
+    def to_vector(self, magnitude: float = 1.0) -> Vector:
+        """
+        Converts a :py:class:`Direction` into an equivalent 2-dimensional vector,
+        for various linear operations. Works with both four-way and eight-way
+        directions. Returned vectors are unit-length, unless ``magnitude`` is
+        specified.
+
+        .. doctest:: [constants]
+
+            >>> Direction.NORTH.to_vector(magnitude=2)
+            <Vector>(0, -2)
+            >>> Direction.SOUTHWEST.to_vector()
+            <Vector>(-0.7071067811865476, 0.7071067811865476)
+
+        :param magnitude: The magnitude (total length) of the vector to create.
+
+        :returns: A new :py:class:`Vector` object pointing in the correct
+            direction.
+        """
+        srt2 = 2 ** (-1 / 2)
+        mapping = {
+            # fmt: off
+            Direction.NORTH:     Vector(0, -1),
+            Direction.NORTHEAST: Vector(srt2, -srt2),
+            Direction.EAST:      Vector(1, 0),
+            Direction.SOUTHEAST: Vector(srt2, srt2),
+            Direction.SOUTH:     Vector(0, 1),
+            Direction.SOUTHWEST: Vector(-srt2, srt2),
+            Direction.WEST:      Vector(-1, 0),
+            Direction.NORTHWEST: Vector(-srt2, -srt2),
+            # fmt: on
+        }
+        return mapping[self] * magnitude
+    
+
+class LegacyDirection(IntEnum):
+    """
+    Factorio direction enum. Encompasses all 8 cardinal directions and diagonals
+    in the range [0, 7] where north is 0 and increments clockwise. Provides a
+    number of convenience constants and functions over working with a raw int
+    value.
+
+    * ``NORTH     (0)`` (Default)
+    * ``NORTHEAST (1)``
+    * ``EAST      (2)``
+    * ``SOUTHEAST (3)``
+    * ``SOUTH     (4)``
     * ``SOUTHWEST (5)``
     * ``WEST      (6)``
     * ``NORTHWEST (7)``
@@ -39,7 +188,7 @@ class Direction(IntEnum):
     WEST = 6
     NORTHWEST = 7
 
-    def opposite(self) -> "Direction":
+    def opposite(self) -> "LegacyDirection":
         """
         Returns the direction opposite this one.
 
@@ -52,7 +201,7 @@ class Direction(IntEnum):
         """
         return Direction((self.value + 4) % 8)
 
-    def next(self, eight_way: bool = False) -> "Direction":
+    def next(self, eight_way: bool = False) -> "LegacyDirection":
         """
         Returns the direction one unit clockwise from the current direction.
         ``eight_way`` determines whether or not to treat the next-most direction
@@ -72,7 +221,7 @@ class Direction(IntEnum):
         """
         return Direction((self.value + 1 + (not eight_way)) % 8)
 
-    def previous(self, eight_way: bool = False) -> "Direction":
+    def previous(self, eight_way: bool = False) -> "LegacyDirection":
         """
         Returns the direction one unit counter-clockwise from the current
         direction. ``eight_way`` determines whether or not to treat the
@@ -186,7 +335,7 @@ class Orientation(float):
     .. NOTE::
 
         Currently only supports addition and subtraction. If you want to perform
-        more complex operations, it's best to convert it to a float and then 
+        more complex operations, it's best to convert it to a float and then
         convert it back to an Orientation when complete.
 
     * ``NORTH     (0.000)`` (Default)
@@ -350,7 +499,7 @@ class Orientation(float):
         return "<%s%s: %r>" % (self.__class__.__name__, special_name, self._value_)
 
     @classmethod
-    def __get_pydantic_core_schema__(cls, _):
+    def __get_pydantic_core_schema__(cls, a, b):
         return core_schema.float_schema()
 
 
@@ -373,7 +522,7 @@ class ReadMode(IntEnum):
     """
     Determines what manner belts and inserters should send their content signal.
 
-    * ``PULSE (0)`` 
+    * ``PULSE (0)``
         Pulse the signal for one tick when first detected. (Default)
     * ``HOLD (1)``
         Hold the signal for as long as the item is present.
@@ -403,15 +552,15 @@ class InserterModeOfOperation(IntEnum):
     Inserter circuit control constants. Determines how the Entity should behave
     when connected to a circuit network.
 
-    * ``ENABLE_DISABLE (0)`` 
-        Turns the inserter on or off depending on the circuit condition. 
+    * ``ENABLE_DISABLE (0)``
+        Turns the inserter on or off depending on the circuit condition.
         (Default)
     * ``SET_FILTERS (1)``
         Sets the inserter's filter signals based on read signals.
     * ``READ_HAND_CONTENTS (2)``
-        Reads the contents of the inserter's hand and sends it to the connected 
+        Reads the contents of the inserter's hand and sends it to the connected
         wire(s).
-    * ``NONE (3)`` 
+    * ``NONE (3)``
         Does nothing.
     * ``SET_STACK_SIZE (4)``
         Sets the stack size override to the value of an input signal.
@@ -424,15 +573,23 @@ class InserterModeOfOperation(IntEnum):
     SET_STACK_SIZE = 4
 
 
+class LampColorMode(IntEnum):
+    """
+    TODO
+    """
+    COLOR_MAPPING = 0
+    COMPONENTS = 1
+    PACKED_RGB = 2
+
 class LogisticModeOfOperation(IntEnum):
     """
     Logistics container circuit control constants. Determines how the Entity
     should behave when connected to a circuit network.
 
     * ``SEND_CONTENTS (0)``
-        Reads the inventory of the container and sends it to the connected 
+        Reads the inventory of the container and sends it to the connected
         circuit network. (Default)
-    * ``SET_REQUESTS (1)`` 
+    * ``SET_REQUESTS (1)``
         Sets the item requests based on the input signals to the container.
     """
 
@@ -459,16 +616,16 @@ class TileSelectionMode(IntEnum):
     Tile selection mode for :py:class:`.UpgradePlanner`.
 
     * ``NORMAL (0)``
-        Constructed tiles are only removed if there are no entities in the 
+        Constructed tiles are only removed if there are no entities in the
         selected area. (Default)
     * ``ALWAYS (1)``
         Constructed tiles are always scheduled for deconstruction, regardless of
         selection contents.
     * ``NEVER (2)``
-        Constructed tiles are never scheduled for deconstruction, regardless of 
+        Constructed tiles are never scheduled for deconstruction, regardless of
         selection contents.
-    * ``ONLY (3)`` 
-        Only tiles are selected for deconstruction; entities are completely 
+    * ``ONLY (3)``
+        Only tiles are selected for deconstruction; entities are completely
         ignored when using this mode.
     """
 
@@ -502,7 +659,7 @@ class Ticks(int, Enum):
 
         :example:
 
-        .. doctest:: 
+        .. doctest::
 
             >>> from datetime import datetime
             >>> t1 = datetime.strptime("10:15:04", "%H:%M:%S")
@@ -530,22 +687,22 @@ class WaitConditionType(str, Enum):
     * ``TIME_PASSED``
         Triggered when a certain number of ticks has passed.
     * ``INACTIVITY``
-        Triggered when the state of the train currently at the station is 
+        Triggered when the state of the train currently at the station is
         unaltered for a number of ticks.
     * ``FULL_CARGO``
-        Triggered when there is no more room for any new cargo in any of the 
+        Triggered when there is no more room for any new cargo in any of the
         stopped train's wagons.
     * ``EMPTY_CARGO``
-        Triggered when there is no more cargo in any of the stopped train's 
+        Triggered when there is no more cargo in any of the stopped train's
         wagons.
     * ``ITEM_COUNT``
-        Triggered when the count of some loaded item passes some specified 
+        Triggered when the count of some loaded item passes some specified
         condition.
     * ``FLUID_COUNT``
-        Triggered when the count of some loaded fluid passes some specified 
+        Triggered when the count of some loaded fluid passes some specified
         condition.
     * ``CIRCUIT_CONDITION``
-        Triggered when a circuit signal passed to the train stop passes some 
+        Triggered when a circuit signal passed to the train stop passes some
         specified condition.
     * ``PASSENGER_PRESENT``
         Triggered if a player is inside any of the stopped train's wagons.
@@ -607,18 +764,18 @@ class ValidationMode(Enum):
     * ``MINIMUM``
         The minimum amount of validation needed in order to coerce shorthand
         formats into their expected form, as well as validate that the structure
-        of the object conforms to what Factorio expects. Importing an object 
+        of the object conforms to what Factorio expects. Importing an object
         that has been validated with this mode is not guaranteed to succeed, as
         while the object might be structurally correct, the data inside of it
         might still be malformed.
     * ``STRICT``
-        The default mode. Includes all of the errors from ``MINIMUM``, 
-        but attempts to point out and remedy issues with the objects values. 
-        Also includes conceptual faults that will not result in the intended 
+        The default mode. Includes all of the errors from ``MINIMUM``,
+        but attempts to point out and remedy issues with the objects values.
+        Also includes conceptual faults that will not result in the intended
         effect, such as setting an assembling machine's recipe to something that
         it cannot produce.
     * ``PEDANTIC``
-        The most verbose option. Includes all of the previous errors and 
+        The most verbose option. Includes all of the previous errors and
         warnings, in addition to more linting-like behavior.
     """
 

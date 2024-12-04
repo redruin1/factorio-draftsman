@@ -27,11 +27,22 @@ class TestBurnerGenerator:
     def test_set_items(self):
         generator = BurnerGenerator("burner-generator")
         assert generator.allowed_fuel_items == {
+            "biter-egg",
+            "carbon",
             "coal",
-            "solid-fuel",
-            "wood",
+            "jelly",
+            "jellynut",
+            "jellynut-seed",
             "nuclear-fuel",
+            "pentapod-egg",
             "rocket-fuel",
+            "solid-fuel",
+            "spoilage",
+            "tree-seed",
+            "wood",
+            "yumako",
+            "yumako-mash",
+            "yumako-seed",
         }
 
         generator.set_item_request("coal", 50)

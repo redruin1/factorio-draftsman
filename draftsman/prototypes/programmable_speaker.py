@@ -406,7 +406,12 @@ class ProgrammableSpeaker(
     @parameters.setter
     def parameters(self, value: Optional[Format.Parameters]):
         test_replace_me(
-            self, type(self).Format, self._root, "parameters", value, self.validate_assignment
+            self,
+            type(self).Format,
+            self._root,
+            "parameters",
+            value,
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(
@@ -435,7 +440,12 @@ class ProgrammableSpeaker(
     @alert_parameters.setter
     def alert_parameters(self, value: Optional[Format.AlertParameters]):
         test_replace_me(
-            self, type(self).Format, self._root, "alert_parameters", value, self.validate_assignment
+            self,
+            type(self).Format,
+            self._root,
+            "alert_parameters",
+            value,
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(

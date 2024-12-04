@@ -5,7 +5,7 @@ from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.vector import PrimitiveVector, PrimitiveIntVector
 from draftsman.prototypes.straight_rail import StraightRail
-from draftsman.prototypes.curved_rail import CurvedRail
+from draftsman.prototypes.legacy_curved_rail import LegacyCurvedRail
 from draftsman.prototypes.gate import Gate
 from draftsman.utils import (
     AABB,
@@ -130,8 +130,8 @@ class SpatialHashMap(SpatialDataStructure):
                 # StraightRails and CurvedRails cannot collide with each other
                 # UNLESS they are the same type, face the same direction, and
                 # exist at the exact same place
-                if isinstance(item, (StraightRail, CurvedRail)) and isinstance(
-                    overlapping_item, (StraightRail, CurvedRail)
+                if isinstance(item, (StraightRail, LegacyCurvedRail)) and isinstance(
+                    overlapping_item, (StraightRail, LegacyCurvedRail)
                 ):
                     identical = (
                         item.name == overlapping_item.name

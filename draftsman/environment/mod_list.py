@@ -1,45 +1,60 @@
 # mod_list.py
 
-from draftsman.signatures import get_suggestion
+from draftsman.utils import get_suggestion
 from draftsman._factorio_version import __factorio_version_info__
 from draftsman.error import IncorrectModFormatError, MissingModError
 from draftsman.utils import version_string_to_tuple, version_tuple_to_string
 
 import io
-from collections import namedtuple
 import json
 import os
 import re
+from typing import NamedTuple
 import zipfile
 
 
-Dependency = namedtuple("Dependency", ["flag", "name", "operation", "version"])
+class Dependency(NamedTuple):
+    flag: str
+    name: str
+    operation: str
+    version: str
+
+    def __str__(self):
+        return "{} {} {} {}".format(
+            self.flag if self.flag else "",
+            self.name,
+            self.operation if self.operation else "",
+            self.version if self.version else "",
+        )
+
 
 class Mod:
     """
     Mod object that stores metadata during the load process. Mostly used for
     structuring the data and determining the load order.
     """
+
     archive_regex = re.compile(r"(([\w\D]+)_([\d\.]+))\.zip")
     folder_regex = re.compile(r"([^\s.]+)(?:_([\d\.]+))?$")
-    dependency_regex = re.compile(r"^(\!|\?|\(\?\)|~)?[^\w\?\!]*([\w-]+)([><=]=?)?([\d\.]+)?")
+    dependency_regex = re.compile(
+        r"^(\!|\?|\(\?\)|~)?[^\w\?\!]*([\w-]+)([><=]=?)?([\d\.]+)?"
+    )
 
     def __init__(
-        self, 
+        self,
         # Path to the parent folder or archive file
         location: str,
-
+        stages: set[str],
         # Standard info.json data
         name: str,
         title: str,
-        author: str, 
-        version: str = "", # Required, but `core` is special for some reason
+        author: str,
+        version: str = "",  # Required, but `core` is special for some reason
         contact: str | None = None,
         homepage: str | None = None,
         description: str | None = None,
         factorio_version: str | None = None,
         dependencies: list[str] = ["base"],
-
         # Feature flags (new in 2.0)
         quality_required: bool = False,
         rail_bridges_required: bool = False,
@@ -48,20 +63,19 @@ class Mod:
         freezing_required: bool = False,
         segmented_units_required: bool = False,
         expansion_shaders_required: bool = False,
-
         # Other goodies not normally included, but nice to know
         enabled: bool = True,
         # is_archive: bool,
-        # internal_folder: str,  
-        # location: str, 
-        # info: json, 
-        # files: dict[str, str], 
+        # internal_folder: str,
+        # location: str,
+        # info: json,
+        # files: dict[str, str],
         # data: zipfile.ZipFile,
-
         # All other keys are free for users to write, so we collect them here
         **kwargs
     ):
         self.location = location
+        self.stages = stages
 
         self.name = name
         self.title = title
@@ -71,7 +85,7 @@ class Mod:
         self.homepage = homepage
         self.description = description
         self.factorio_version = factorio_version
-        
+
         for i, dependency in enumerate(dependencies):
             # Remove whitespace
             dependency = dependency.replace(" ", "")
@@ -89,9 +103,9 @@ class Mod:
             "spoiling": spoiling_required,
             "freezing": freezing_required,
             "segmented_units": segmented_units_required,
-            "expansion_shaders": expansion_shaders_required
+            "expansion_shaders": expansion_shaders_required,
         }
-        
+
         self.enabled = enabled
 
         # self.name = name
@@ -125,23 +139,33 @@ class Mod:
         """
         return mod_name in {dep.name for dep in self.dependencies}
 
-    def add_dependency(self, dependency):
-        self.dependencies.append(dependency)
-
     def get_depth(self):
         depth = 1
         for dependency in self.dependencies:
+            dependency: "Mod"
             depth = max(depth, depth + dependency.get_depth())
         return depth
 
+    def get_file(self, filepath) -> str:
+        """
+        Grabs the data from the file as a string.
+        """
+        if self.is_archive:
+            return archive_to_string(self.data) # TODO
+        else:
+            return file_to_string(filepath=self.location + "/" + filepath)
+        pass
+
     def __lt__(self, other: "Mod") -> bool:
-        return self.name < other.name and version_string_to_tuple(self.version) < version_string_to_tuple(other.version)
-    
+        return self.name < other.name
+
     def __repr__(self):
         return str(self)
 
     def __str__(self):
-        return "Mod('{}' {})".format(self.name, self.version)
+        return "Mod('{}'{})".format(
+            self.name, " " + self.version if self.version else ""
+        )
 
 
 def file_to_string(filepath: str) -> str:
@@ -186,11 +210,12 @@ def write_mod_list_json(mods_path, json_dict):
         fixed = re.sub(r"^(\s*){$", "\n\\1{", out, flags=re.M)
         mod_list_file.write(fixed)
 
+
 def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
     """
-    Attempts to create a :py:class:`.Mod` object from the given folder or zip 
+    Attempts to create a :py:class:`.Mod` object from the given folder or zip
     file. This function not only touches the archive or folder pointed to, but
-    also determines whether or not it's enabled from the ``mod_list_json`` 
+    also determines whether or not it's enabled from the ``mod_list_json``
     parameter (if present).
     """
 
@@ -238,27 +263,21 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
             # Why do I always get the short end of the stick!?
             raise IncorrectModFormatError(
                 "Mod archive '{}' has more than one internal folder, and "
-                "none of the internal folders match it's external name".format(
-                    mod_name
-                )
+                "none of the internal folders match it's external name".format(mod_name)
             )
 
         try:
-            # Zipfiles don't like backslashes on Windows, so we manually 
+            # Zipfiles don't like backslashes on Windows, so we manually
             # concatenate
-            mod_info = json.loads(
-                archive_to_string(files, mod_folder + "/info.json")
-            )
+            mod_info = json.loads(archive_to_string(files, mod_folder + "/info.json"))
         except KeyError:
             raise IncorrectModFormatError(
-                "Mod '{}' has no 'info.json' file in its root folder".format(
-                    mod_name
-                )
+                "Mod '{}' has no 'info.json' file in its root folder".format(mod_name)
             )
 
         mod_version = mod_info["version"]
         is_archive = True
-        location = mod_location #containing_dir + "/" + mod_name
+        location = mod_location  # containing_dir + "/" + mod_name
 
     elif os.path.isdir(mod_location):
         # Folder
@@ -276,19 +295,19 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
                 mod_info = json.load(info_file)
         except FileNotFoundError:
             raise IncorrectModFormatError(
-                "Mod '{}' has no 'info.json' file in its root folder".format(
-                    mod_name
-                )
+                "Mod '{}' has no 'info.json' file in its root folder".format(mod_name)
             )
 
         mod_folder = mod_location
-        mod_version = mod_info.get("version", "") # "core" doesn't have a version
+        mod_version = mod_info.get("version", "")  # "core" doesn't have a version
         is_archive = False
         files = None
         location = mod_location
 
     else:  # Regular file
-        raise IncorrectModFormatError("Given path '{}' not interpretable as a mod".format(mod_location))
+        raise IncorrectModFormatError(
+            "Given path '{}' not interpretable as a mod".format(mod_location)
+        )
 
     # # First make sure the mod is enabled, and skip if not
     # # (The mod itself is not guaranteed to be in the enabled_mod_list if we
@@ -313,42 +332,58 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
         mod_factorio_version = version_string_to_tuple(mod_info["factorio_version"])
         assert mod_factorio_version <= __factorio_version_info__
 
-    mod_data = {}
+    mod_stages = set()
     if is_archive:
         # Attempt to load any setting files present
-        settings_stages = ("settings.lua", "settings-updates.lua", "settings-final-fixes.lua")
+        settings_stages = (
+            "settings.lua",
+            "settings-updates.lua",
+            "settings-final-fixes.lua",
+        )
         for stage in settings_stages:
             try:
-                mod_data[stage] = archive_to_string(files, mod_folder + "/" + stage)
+                # mod_data[stage] = archive_to_string(files, mod_folder + "/" + stage)
+                files.getinfo(mod_folder + "/" + stage)
+                mod_stages.add(stage)
             except KeyError:
                 pass
         # Attempt to load any data files present
         data_stages = ("data.lua", "data-updates.lua", "data-final-fixes.lua")
         for stage in data_stages:
             try:
-                mod_data[stage] = archive_to_string(files, mod_folder + "/" + stage)
+                # mod_data[stage] = archive_to_string(files, mod_folder + "/" + stage)
+                files.getinfo(mod_folder + "/" + stage)
+                mod_stages.add(stage)
             except KeyError:
                 pass
     else:  # folder
         # Attempt to load any setting files present
-        settings_stages = ("settings.lua", "settings-updates.lua", "settings-final-fixes.lua")
+        settings_stages = (
+            "settings.lua",
+            "settings-updates.lua",
+            "settings-final-fixes.lua",
+        )
         for stage in settings_stages:
-            try:
-                mod_data[stage] = file_to_string(mod_folder + "/" + stage)
-            except FileNotFoundError:
-                pass
+            if os.path.isfile(mod_folder + "/" + stage):
+                mod_stages.add(stage)
         # Attempt to load any data files present
         data_stages = ("data.lua", "data-updates.lua", "data-final-fixes.lua")
         for stage in data_stages:
-            try:
-                mod_data[stage] = file_to_string(mod_folder + "/" + stage)
-            except FileNotFoundError:
-                pass
+            if os.path.isfile(mod_folder + "/" + stage):
+                mod_stages.add(stage)
 
-    enabled = next((mod_dict for mod_dict in mod_list_json["mods"] if mod_dict["name"] == mod_name), {"enabled": True})["enabled"]
+    enabled = next(
+        (
+            mod_dict
+            for mod_dict in mod_list_json["mods"]
+            if mod_dict["name"] == mod_name
+        ),
+        {"enabled": True},
+    )["enabled"]
 
     current_mod = Mod(
-        location=location.replace("\\", "/"), # Make sure forward slashes
+        location=location.replace("\\", "/"),  # Make sure forward slashes
+        stages=mod_stages,
         **mod_info,
         enabled=enabled,
     )
@@ -373,10 +408,15 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
     return current_mod
 
 
-def discover_mods(game_path: str, mods_path: str) -> dict[str, list[Mod]]:
+def discover_mods(game_path: str, mods_path: str, no_mods: bool=False) -> dict[str, list[Mod]]:
     """
-    Returns an (unsorted) list of all mods detected at a specific game data 
+    Returns an (unsorted) list of all mods detected at a specific game data
     and mod folder location, including different versions of the same mod.
+
+    :param game_path: Path to the directory which houses Factorio's game data.
+    :param mods_path: Path the the directory which houses the desired user mods.
+    :param no_mods: Omits any user mods found at ``mods_path``, while leaving
+        game data untouched.
     """
 
     # Check that our paths actually exist
@@ -384,7 +424,7 @@ def discover_mods(game_path: str, mods_path: str) -> dict[str, list[Mod]]:
         raise OSError("Directory '{}' not found".format(game_path))
     if not os.path.isdir(mods_path):
         raise OSError("Directory '{}' not found".format(mods_path))
-    
+
     # Attempt to read `mod-list.json`
     try:
         mod_list_json = read_mod_list_json(mods_path=mods_path)
@@ -403,7 +443,7 @@ def discover_mods(game_path: str, mods_path: str) -> dict[str, list[Mod]]:
 
     # Traverse the game-data folder to find Wube "mods", like `base` and `core`
     for game_obj in os.listdir(game_path):
-        location = game_path + "/" + game_obj # TODO: better
+        location = game_path + "/" + game_obj  # TODO: better
 
         # In the game data folder, modules must be folders
         if not os.path.isdir(location):
@@ -411,46 +451,55 @@ def discover_mods(game_path: str, mods_path: str) -> dict[str, list[Mod]]:
 
         # Add the mod to the list of mods
         mod = register_mod(
-            mod_name=game_obj, 
-            mod_location=location, 
-            mod_list_json=mod_list_json, 
+            mod_name=game_obj,
+            mod_location=location,
+            mod_list_json=mod_list_json,
         )
         if mod.name in mod_list:
-            mod_list[mod.name].append(mod) # TODO: sorted insert
+            mod_list[mod.name].append(mod)  # TODO: sorted insert
         else:
             mod_list[mod.name] = [mod]
 
     # After that, we can register all of the regular mods, if present at path
-    for mod_obj in os.listdir(mods_path):
-        location = mods_path + "/" + mod_obj # TODO: better
+    # and the no_mods flag is false
+    if not no_mods:
+        for mod_obj in os.listdir(mods_path):
+            location = mods_path + "/" + mod_obj  # TODO: better
 
-        # Only consider folders and zipfiles
-        if not os.path.isdir(location) and not zipfile.is_zipfile(location):
-            continue
+            # Only consider folders and zipfiles
+            if not os.path.isdir(location) and not zipfile.is_zipfile(location):
+                continue
 
-        # Add the mod to the list of mods
-        mod = register_mod(
-            mod_name=mod_obj, 
-            mod_location=location, 
-            mod_list_json=mod_list_json, 
-        )
-        if mod.name in mod_list:
-            mod_list[mod.name].append(mod) # TODO: sorted insert
-        else:
-            mod_list[mod.name] = [mod]
+            # Add the mod to the list of mods
+            mod = register_mod(
+                mod_name=mod_obj,
+                mod_location=location,
+                mod_list_json=mod_list_json,
+            )
+            if mod.name in mod_list:
+                mod_list[mod.name].append(mod)  # TODO: sorted insert
+            else:
+                mod_list[mod.name] = [mod]
 
     # Sort mods of different versions, preferring more modern ones. If two mods
     # of the same version are found and one is a folder, the folder is preferred
     # (since it's likely being locally developed)
+    # After sort, the first item in the mod versions list should be the mod that
+    # Factorio would use during its load process.
     for mod_name, mod_versions in mod_list.items():
-        if mod_name == "core": # Skip core because it has no versions to sort
+        if mod_name == "core":  # Skip core because it has no versions to sort
             continue
-        sorted_versions = sorted(mod_versions, key=lambda x: (version_string_to_tuple(x.version), not x.is_archive), reverse=True)
+        sorted_versions = sorted(
+            mod_versions,
+            key=lambda x: (version_string_to_tuple(x.version), not x.is_archive),
+            reverse=True,
+        )
         mod_list[mod_name] = sorted_versions
 
     # Populate mod-dependencies.
 
     return mod_list
+
 
 def display_mods(mods: dict[str, list[Mod]], verbose=False) -> None:
     """
@@ -463,75 +512,105 @@ def display_mods(mods: dict[str, list[Mod]], verbose=False) -> None:
 
     # Determine the max length of each dynamic category
     name_width = clamp(4, max(len(mod_name) for mod_name in mods), 50)
-    version_width = clamp(7, max(len(submod.version) for _, mod in mods.items() for submod in mod), 30)
-    location_width = clamp(8, max(len(submod.location) for _, mod in mods.items() for submod in mod), 100)
+    version_width = clamp(
+        7, max(len(submod.version) for _, mod in mods.items() for submod in mod), 30
+    )
+    location_width = clamp(
+        8, max(len(submod.location) for _, mod in mods.items() for submod in mod), 100
+    )
 
     def truncate_str(input_str, max_length):
         """
         Truncate a given string to a fixed length with the last characters being "...".
         """
-        return input_str[0:max_length-3] + "..." if len(input_str) > max_length else input_str
+        return (
+            input_str[0 : max_length - 3] + "..."
+            if len(input_str) > max_length
+            else input_str
+        )
 
     if verbose:
         # Print header lines
-        print("{} ┃ {:<5} ┃ {:<{name_width}} ┃ {:<{version_width}} ┃ {}".format(
-            "on?", "type", "name", "version",  "location", 
-            name_width=name_width,
-            version_width=version_width
-        ))
-        print("{0:━<3}━╋━{0:━<5}━╋━{0:━<{name_width}}━╋━{0:━<{version_width}}━╋━{0:━<{location_width}}".format(
-            "━", 
-            name_width=name_width,
-            version_width=version_width,
-            location_width=location_width
-        ))
+        print(
+            "{} ┃ {:<5} ┃ {:<{name_width}} ┃ {:<{version_width}} ┃ {}".format(
+                "on?",
+                "type",
+                "name",
+                "version",
+                "location",
+                name_width=name_width,
+                version_width=version_width,
+            )
+        )
+        print(
+            "{0:━<3}━╋━{0:━<5}━╋━{0:━<{name_width}}━╋━{0:━<{version_width}}━╋━{0:━<{location_width}}".format(
+                "━",
+                name_width=name_width,
+                version_width=version_width,
+                location_width=location_width,
+            )
+        )
 
         for mod_name, mod_versions in mods.items():
             for i, mod in enumerate(mod_versions):
                 if i == 0:
                     printed_name = truncate_str(mod.name, name_width)
                 elif i == len(mod_versions) - 1:
-                    printed_name = "└" + ("─" * (len(mod_name)-2)) + ">"
+                    printed_name = "└" + ("─" * (len(mod_name) - 2)) + ">"
                 else:
-                    printed_name = "├" + ("─" * (len(mod_name)-2)) + ">"
+                    printed_name = "├" + ("─" * (len(mod_name) - 2)) + ">"
 
-                print("{} ┃ {} ┃ {:<{name_width}} ┃ {:>{version_width}} ┃ {}".format(
-                    " ✓ " if mod.enabled and i == 0 else "   ",
-                    "(zip)" if mod.is_archive else "(dir)",
-                    printed_name,
-                    "-" if mod.version == "" else truncate_str(mod.version, version_width),
-                    truncate_str(mod.location, location_width),
-                    name_width=name_width,
-                    version_width=version_width
-                ))
+                print(
+                    "{} ┃ {} ┃ {:<{name_width}} ┃ {:>{version_width}} ┃ {}".format(
+                        " ✓ " if mod.enabled and i == 0 else "   ",
+                        "(zip)" if mod.is_archive else "(dir)",
+                        printed_name,
+                        "-"
+                        if mod.version == ""
+                        else truncate_str(mod.version, version_width),
+                        truncate_str(mod.location, location_width),
+                        name_width=name_width,
+                        version_width=version_width,
+                    )
+                )
     else:
         for mod_name, mod_versions in mods.items():
             for i, mod in enumerate(mod_versions):
                 if i == 0:
                     printed_name = truncate_str(mod.name, name_width)
                 elif i == len(mod_versions) - 1:
-                    printed_name = "└" + ("─" * (len(mod_name)-2)) + ">"
+                    printed_name = "└" + ("─" * (len(mod_name) - 2)) + ">"
                 else:
-                    printed_name = "├" + ("─" * (len(mod_name)-2)) + ">"
+                    printed_name = "├" + ("─" * (len(mod_name) - 2)) + ">"
 
-                print("{} {} {:<{name_width}}    {:>{version_width}}".format(
-                    "✓" if mod.enabled and i == 0 else " ",
-                    "(zip)" if mod.is_archive else "(dir)",
-                    printed_name,
-                    "-" if mod.version == "" else truncate_str(mod.version, version_width),
-                    name_width=name_width,
-                    version_width=version_width
-                ))
-        
+                print(
+                    "{} {} {:<{name_width}}    {:>{version_width}}".format(
+                        "✓" if mod.enabled and i == 0 else " ",
+                        "(zip)" if mod.is_archive else "(dir)",
+                        printed_name,
+                        "-"
+                        if mod.version == ""
+                        else truncate_str(mod.version, version_width),
+                        name_width=name_width,
+                        version_width=version_width,
+                    )
+                )
 
-def set_mods_enabled(game_path: str, mods_path: str, mod_names: list[str], enabled: bool=True, recursive: bool=False, verbose: bool=False):
+
+def set_mods_enabled(
+    game_path: str,
+    mods_path: str,
+    mod_names: list[str],
+    enabled: bool = True,
+    verbose: bool = False,
+):
     """
-    Sets a given list of mod names to be either enabled or disabled, based on 
+    Sets a given list of mod names to be either enabled or disabled, based on
     parameter ``enabled``.
     """
     # Grab the mods at `game_path` and `mods_path`
     mods = discover_mods(game_path=game_path, mods_path=mods_path)
-    
+
     # Grab the current `mod-list.json` (or get default if not present)
     try:
         mod_list_dict = read_mod_list_json(mods_path=mods_path)
@@ -545,57 +624,20 @@ def set_mods_enabled(game_path: str, mods_path: str, mod_names: list[str], enabl
         # Check to make sure that all of the mods given point to discovered mods
         for mod_name in mod_names:
             if mod_name not in mods:
-                raise MissingModError("Unrecognized mod name '{}'{}".format(mod_name, get_suggestion(mod_name, mods.keys(), n=1)))
-
-    def disable_parents(mod):
-        pass
-
-    def disable_children(mod):
-        pass
-
-    # If recursive, traverse dependencies
-    if recursive:
-        # Recursive beahves slightly differently depending on whether or not 
-        # we're enabling or disabling mods
-        if enabled:
-            final_mod_names = []
-            for mod_name in mod_names:
-                # The first mod among the mod versions is the one that the configuration
-                # will use
-                selected_mod = mods[mod_name][0]
-
-                selected_mod.dependencies
-        else:
-            final_mod_names = []
-
-            # If we recursively disable a mod, we have to handle 2 directions:
-            # * Up the tree, as long as no other mods still depend on them
-            # * Down the tree, if other mods depend on the mod we want to disable
-
-            # Handle children mods first. Iterate over every mod in the 
-            # environment, check their dependencies to see if they require this
-            # mod, and then disable them if they do.
-            for mod_name in mod_names:
-                final_mod_names.append(mod_name)
-
-                for _, mod_ver_list in mods.items():
-                    selected_mod = mod_ver_list[0]
-                    print(selected_mod)
-                    print(mod_name)
-
-                    print(selected_mod.depends_on(mod_name))
-                    if selected_mod.depends_on(mod_name):
-                        final_mod_names.append(selected_mod.name)
-
-                # Now go the other way. For every dependency that this mod has,
-                # check to see if there is any other mod that depends on this.
-                selected_mod = mods[mod_name][0]
-                for dep in selected_mod.dependencies:
-                    dep_mod = mods[dep.name][0]
-                    # for dependency in dep_mod
+                raise MissingModError(
+                    "Unrecognized mod name '{}'{}".format(
+                        mod_name, get_suggestion(mod_name, mods.keys(), n=1)
+                    )
+                )
 
     for mod_name in mod_names:
-        i = next((i for i, mod_dict in enumerate(mod_list_dict["mods"]) if mod_dict["name"] == mod_name))
+        i = next(
+            (
+                i
+                for i, mod_dict in enumerate(mod_list_dict["mods"])
+                if mod_dict["name"] == mod_name
+            )
+        )
         mod_list_dict["mods"][i]["enabled"] = enabled
 
     if verbose:
@@ -603,74 +645,3 @@ def set_mods_enabled(game_path: str, mods_path: str, mod_names: list[str], enabl
 
     # Write the new `mod-list.json` back out
     write_mod_list_json(mods_path=mods_path, json_dict=mod_list_dict)
-
-# def enable_mods(game_path: str, mods_path: str, mods_to_enable: list[Mod], recursive: bool = False):
-#     """
-#     Enables one or more mods.
-#     """
-#     # Grab the mods at `game_path` and `mods_path`
-#     mods = discover_mods(game_path=game_path, mods_path=mods_path)
-    
-#     # Grab the current `mod-list.json` (or get default if not present)
-#     try:
-#         mod_list_dict = read_mod_list_json(mods_path=mods_path)
-#     except FileNotFoundError:
-#         # Generate default
-#         # FIXME: this will generate duplicates if there is more than 1 version of the same mod
-#         mod_list_dict = {"mods": [{"name": mod.name, "enabled": True} for mod in mods]}
-    
-#     # If we use the special keyword all, then we just write mod_list_dict and
-#     # call it a day
-#     if mods_to_enable == ["all"]:
-#         mod_list_dict = {"mods": [{"name": mod.name, "enabled": True} for mod in mods]}
-#         write_mod_list_json(mods_path=mods_path, json_dict=mod_list_dict)
-#         return
-
-#     # TODO: check to make sure that the mods in mods_to_disable are actually in mod_list
-
-#     if recursive:
-#         # Determine the dependency tree
-#         pass # TODO
-
-#     for mod_to_enable in mods_to_enable:
-#         i = next((i for i, mod_dict in enumerate(mod_list_dict["mods"]) if mod_dict["name"] == mod_to_enable))
-#         mod_list_dict["mods"][i]["enabled"] = True
-
-#     # Write the new `mod-list.json` back out
-#     write_mod_list_json(mods_path=mods_path, json_dict=mod_list_dict)
-
-# def disable_mods(game_path: str, mods_path: str, mods_to_disable: list[str], recursive: bool = False):
-#     """
-#     Disables one or more mods.
-#     """
-#     # Grab the mods at `game_path` and `mods_path`
-#     mods = discover_mods(game_path=game_path, mods_path=mods_path)
-    
-#     # Grab the current `mod-list.json` (or get default if not present)
-#     try:
-#         mod_list_dict = read_mod_list_json(mods_path=mods_path)
-#     except FileNotFoundError:
-#         # Generate default
-#         # FIXME: this will generate duplicates if there is more than 1 version of the same mod
-#         mod_list_dict = {"mods": [{"name": mod.name, "enabled": True} for mod in mods]}
-
-#     # If we use the special keyword all, then we just write mod_list_dict and
-#     # call it a day
-#     if mods_to_disable == ["all"]:
-#         mod_list_dict = {"mods": [{"name": mod.name, "enabled": False} for mod in mods]}
-#         write_mod_list_json(mods_path=mods_path, json_dict=mod_list_dict)
-#         return
-
-#     # TODO: check to make sure that the mods in mods_to_disable are actually in mod_list
-
-
-#     if recursive:
-#         # Determine the dependency tree
-#         pass # TODO
-
-#     for mod_to_disable in mods_to_disable:
-#         i = next((i for i, mod_dict in enumerate(mod_list_dict["mods"]) if mod_dict["name"] == mod_to_disable))
-#         mod_list_dict["mods"][i]["enabled"] = False
-
-#     # Write the new `mod-list.json` back out
-#     write_mod_list_json(mods_path=mods_path, json_dict=mod_list_dict)

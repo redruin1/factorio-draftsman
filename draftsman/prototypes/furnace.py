@@ -184,12 +184,6 @@ class Furnace(
         for crafting_category in crafting_categories:
             total_recipes.extend(recipes.categories[crafting_category])
 
-        # _valid_input_ingredients[] = set()
-        # for recipe_name in total_recipes:
-        #     # TODO: what about expensive mode?
-        #     _valid_input_ingredients[name].update(
-        #         recipes.get_recipe_ingredients(recipe_name)
-        #     )
         return set(
             item
             for recipe_name in total_recipes

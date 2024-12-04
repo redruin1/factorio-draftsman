@@ -64,7 +64,12 @@ class RequestFiltersMixin:
     @request_filters.setter
     def request_filters(self, value: Optional[list[RequestFilter]]):
         test_replace_me(
-            self, type(self).Format, self._root, "request_filters", value, self.validate_assignment
+            self,
+            type(self).Format,
+            self._root,
+            "request_filters",
+            value,
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(

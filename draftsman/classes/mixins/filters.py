@@ -67,7 +67,12 @@ class FiltersMixin:
     @filters.setter
     def filters(self, value: Optional[list[FilterEntry]]):
         test_replace_me(
-            self, type(self).Format, self._root, "filters", value, self.validate_assignment
+            self,
+            type(self).Format,
+            self._root,
+            "filters",
+            value,
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(

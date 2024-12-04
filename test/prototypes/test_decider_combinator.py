@@ -63,7 +63,7 @@ class TestDeciderCombinator:
         assert combinator.to_dict() == {
             "name": "decider-combinator",
             "position": {"x": 4.0, "y": 3.5},
-            "direction": 2,
+            "direction": Direction.EAST,
             "control_behavior": {
                 "decider_conditions": {
                     "first_signal": {"name": "signal-A", "type": "virtual"},

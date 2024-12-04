@@ -68,7 +68,12 @@ class ColorMixin:
     def color(self, value: Union[list[float], Color]):
         # value = normalize_color(value)
         test_replace_me(
-            self, type(self).Format, self._root, "color", value, self.validate_assignment
+            self,
+            type(self).Format,
+            self._root,
+            "color",
+            value,
+            self.validate_assignment,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(

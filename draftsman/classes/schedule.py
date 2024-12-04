@@ -261,7 +261,7 @@ class WaitCondition(Exportable):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE and not force: # (self.is_valid and not force):
+        if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
             return output
 
         context = {
@@ -272,9 +272,7 @@ class WaitCondition(Exportable):
         }
 
         try:
-            self.Format.model_validate(
-                self._root, strict=False, context=context
-            )
+            self.Format.model_validate(self._root, strict=False, context=context)
             # print("result:", result)
             # Reassign private attributes
             # TODO
@@ -645,7 +643,9 @@ class Schedule(Exportable):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE and not force: #or (self.is_valid and not force):
+        if (
+            mode is ValidationMode.NONE and not force
+        ):  # or (self.is_valid and not force):
             return output
 
         context = {

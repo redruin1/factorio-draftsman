@@ -11,7 +11,16 @@ from draftsman.signatures import DraftsmanBaseModel
 from collections.abc import MutableSequence
 from copy import deepcopy
 from pydantic import ValidationError
-from typing import Any, Callable, Iterator, List, Literal, Optional, Union, TYPE_CHECKING
+from typing import (
+    Any,
+    Callable,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Union,
+    TYPE_CHECKING,
+)
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.collection import TileCollection
@@ -62,24 +71,14 @@ class TileList(Exportable, MutableSequence):
         self.validate_assignment = validate_assignment
 
     def append(
-        self,
-        name: Union[str, Tile],
-        copy: bool = True,
-        merge: bool = False,
-        **kwargs
+        self, name: Union[str, Tile], copy: bool = True, merge: bool = False, **kwargs
     ) -> None:
         """
         Appends the Tile to the end of the sequence.
 
         TODO
         """
-        self.insert(
-            idx=len(self),
-            name=name,
-            copy=copy,
-            merge=merge,
-            **kwargs
-        )
+        self.insert(idx=len(self), name=name, copy=copy, merge=merge, **kwargs)
 
     def insert(
         self,
@@ -152,7 +151,7 @@ class TileList(Exportable, MutableSequence):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE and not force: # (self.is_valid and not force):
+        if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
             return output
 
         context: dict[str, Any] = {
@@ -272,7 +271,7 @@ class TileList(Exportable, MutableSequence):
 
     def __len__(self) -> int:
         return len(self._root)
-    
+
     __iter__: Callable[..., Iterator[Tile]]
 
     def __or__(self, other: "TileList") -> "TileList":

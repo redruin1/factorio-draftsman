@@ -69,6 +69,12 @@ class Lab(ModulesMixin, RequestItemsMixin, Entity):
 
     # =========================================================================
 
+    # @property # TODO
+    # def allowed_items(self) -> Optional[set[str]]:
+    #     return {module_name for module_name in modules.raw}
+
+    # =========================================================================
+
     @reissue_warnings
     def set_item_request(self, item: str, count: Optional[uint32]):  # TODO: ItemID
         super().set_item_request(item, count)

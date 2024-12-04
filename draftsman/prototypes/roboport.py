@@ -1,6 +1,7 @@
 # roboport.py
 
 # TODO: can roboports request items?
+# 2.0: well, definitely now they can
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue

@@ -385,7 +385,7 @@ class BlueprintBook(Blueprintable):
         else:
             self._root[self._root_item]["label_color"] = value
 
-    def set_label_color(self, r, g, b, a=None): # TODO: remove
+    def set_label_color(self, r, g, b, a=None):  # TODO: remove
         """
         TODO
         """
@@ -474,7 +474,7 @@ class BlueprintBook(Blueprintable):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE and not force: #(self.is_valid and not force):
+        if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
             return output
 
         context: dict[str, Any] = {

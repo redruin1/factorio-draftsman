@@ -72,7 +72,7 @@ class EntityList(Exportable, MutableSequence):
         initlist: Optional[list[EntityLike]] = [],
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT
+        ] = ValidationMode.STRICT,
     ):
         """
         Instantiates a new ``EntityList``.
@@ -104,7 +104,9 @@ class EntityList(Exportable, MutableSequence):
                     name = elem.pop("name")
                     self.append(name, **elem)
                 else:
-                    raise TypeError("Constructor either takes EntityLike or dict entries")
+                    raise TypeError(
+                        "Constructor either takes EntityLike or dict entries"
+                    )
 
         self.validate_assignment = validate_assignment
 
@@ -115,7 +117,7 @@ class EntityList(Exportable, MutableSequence):
         copy: bool = True,
         merge: bool = False,
         **kwargs
-    ):
+    ) -> EntityLike:
         """
         Appends the ``EntityLike`` to the end of the sequence.
 
@@ -170,13 +172,7 @@ class EntityList(Exportable, MutableSequence):
             assert inserter is blueprint.entities[-1]
             assert blueprint.entities[-1].stack_size_override == 1
         """
-        self.insert(
-            idx=len(self),
-            name=name,
-            copy=copy,
-            merge=merge,
-            **kwargs
-        )
+        return self.insert(idx=len(self), name=name, copy=copy, merge=merge, **kwargs)
 
     @reissue_warnings
     def insert(
@@ -186,7 +182,7 @@ class EntityList(Exportable, MutableSequence):
         copy: bool = True,
         merge: bool = False,
         **kwargs
-    ):
+    ) -> EntityLike:
         """
         Inserts an ``EntityLike`` into the sequence.
 
@@ -245,7 +241,9 @@ class EntityList(Exportable, MutableSequence):
         # Convert to new Entity if constructed via string keyword
         new = False
         if isinstance(name, str):
+            print(kwargs)
             entitylike = new_entity(name, **kwargs)
+            print("new entity: ", entitylike)
             if entitylike is None:
                 return
             new = True
@@ -273,7 +271,7 @@ class EntityList(Exportable, MutableSequence):
 
         # Sometimes, you want to validate the object while adding (to check for
         # typing mistakes, commonly) as opposed to a complete digest at the end.
-        # This way also allows for issueing `OverlappingEntityWarnings` at the 
+        # This way also allows for issueing `OverlappingEntityWarnings` at the
         # place where the entities are added, improving readability.
         # Of course, this feature is optional, so if you're going to validate
         # the final blueprintable at the end anyway you can disable this feature
@@ -302,6 +300,8 @@ class EntityList(Exportable, MutableSequence):
         # We make sure the entity we just added points to the correct parent now
         # that it's inserted
         entitylike._parent = self._parent
+
+        return entitylike
 
     def recursive_remove(self, item: "EntityLike") -> None:
         """
@@ -451,7 +451,7 @@ class EntityList(Exportable, MutableSequence):
 
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE and not force: #(self.is_valid and not force):
+        if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
             return output
 
         context: dict[str, Any] = {
@@ -529,7 +529,7 @@ class EntityList(Exportable, MutableSequence):
 
         # Check for overlapping entities
         validate = self._parent.validate_assignment
-        if validate: # self.validate_assignment
+        if validate:  # self.validate_assignment
             value.validate(mode=validate).reissue_all()
             self.spatial_map.validate_insert(value, False)
 
@@ -589,7 +589,7 @@ class EntityList(Exportable, MutableSequence):
 
     def __len__(self) -> int:
         return len(self._root)
-    
+
     __iter__: Callable[..., Iterator[EntityLike]]
 
     def __contains__(self, item: EntityLike) -> bool:

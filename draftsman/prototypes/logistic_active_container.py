@@ -8,10 +8,11 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
+from draftsman.data.entities import of_type
 from draftsman.signatures import Connections, uint16, uint32
 from draftsman.utils import get_first
 
-from draftsman.data.entities import logistic_active_containers
+# from draftsman.data.entities import logistic_active_containers
 
 from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
@@ -35,7 +36,7 @@ class LogisticActiveContainer(
 
     def __init__(
         self,
-        name: Optional[str] = get_first(logistic_active_containers),
+        name: Optional[str] = get_first(of_type["logistic-container"]),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         bar: uint16 = None,
@@ -49,7 +50,7 @@ class LogisticActiveContainer(
     ):
         super().__init__(
             name,
-            logistic_active_containers,
+            of_type["logistic-container"],
             position=position,
             tile_position=tile_position,
             bar=bar,

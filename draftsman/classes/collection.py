@@ -449,6 +449,8 @@ class EntityCollection(metaclass=ABCMeta):
         # Issue a warning if the either of the connected entities have 5 or more
         # power connections
         if len(entity_1.neighbours) >= 5:
+            print(entity_1)
+            print(len(entity_1.neighbours))
             warnings.warn(
                 "'entity_1' ({}) has more than 5 connections".format(entity_1.name),
                 TooManyConnectionsWarning,
@@ -670,10 +672,8 @@ class EntityCollection(metaclass=ABCMeta):
     def add_circuit_connection(
         self,
         color: Literal["red", "green"],
-        entity_1: Union[EntityLike, int, str],
-        entity_2: Union[EntityLike, int, str],
-        side_1: Literal[1, 2] = 1,
-        side_2: Literal[1, 2] = 1,
+        location_1: Union[EntityLike, int, str, tuple[Union[EntityLike, int, str], Optional[Literal["input", "output"]]]],
+        location_2: Union[EntityLike, int, str, tuple[Union[EntityLike, int, str], Optional[Literal["input", "output"]]]],
     ) -> None:
         """
         Adds a circuit wire connection between two entities. Each entity
@@ -715,10 +715,20 @@ class EntityCollection(metaclass=ABCMeta):
         :exception EntityNotCircuitConnectableError: If either `entity_1` or
             `entity_2` do not have the capability to be circuit wire connected.
         """
-        if not isinstance(entity_1, EntityLike):
-            entity_1 = self.entities[entity_1]
-        if not isinstance(entity_2, EntityLike):
-            entity_2 = self.entities[entity_2]
+        # Normalize to tuple form
+        if not isinstance(location_1, tuple):
+            location_1 = (location_1, "input")
+        if not isinstance(location_2, tuple):
+            location_2 = (location_2, "input")
+
+        if not isinstance(location_1[0], EntityLike):
+            entity_1 = self.entities[location_1[0]]
+        else:
+            entity_1 = location_1[0]
+        if not isinstance(location_2[0], EntityLike):
+            entity_2 = self.entities[location_2[0]]
+        else:
+            entity_2 = location_2[0]
 
         if entity_1 not in self.entities:
             raise InvalidAssociationError(
@@ -731,24 +741,24 @@ class EntityCollection(metaclass=ABCMeta):
 
         if color not in {"red", "green"}:
             raise InvalidWireTypeError(color)
-        if side_1 not in {1, 2}:
-            raise InvalidConnectionSideError("'{}'".format(side_1))
-        if side_2 not in {1, 2}:
-            raise InvalidConnectionSideError("'{}'".format(side_2))
+        if location_1[1] not in {"input", "output"}:
+            raise InvalidConnectionSideError("'{}'".format(location_1[1]))
+        if location_2[1] not in {"input", "output"}:
+            raise InvalidConnectionSideError("'{}'".format(location_2[1]))
 
         if not entity_1.circuit_connectable:
             raise EntityNotCircuitConnectableError(entity_1.name)
         if not entity_2.circuit_connectable:
             raise EntityNotCircuitConnectableError(entity_2.name)
 
-        if side_1 == 2 and not entity_1.dual_circuit_connectable:
+        if location_1[1] == "output" and not entity_1.dual_circuit_connectable:
             warnings.warn(
                 "'side1' was specified as 2, but entity '{}' is not"
                 " dual circuit connectable".format(type(entity_1).__name__),
                 ConnectionSideWarning,
                 stacklevel=2,
             )
-        if side_2 == 2 and not entity_2.dual_circuit_connectable:
+        if location_1[1] == "output" and not entity_2.dual_circuit_connectable:
             warnings.warn(
                 "'side2' was specified as 2, but entity '{}' is not"
                 " dual circuit connectable".format(type(entity_2).__name__),
@@ -773,55 +783,69 @@ class EntityCollection(metaclass=ABCMeta):
                 stacklevel=2,
             )
 
-        # Add entity_2 to entity_1.connections
+        # 1.0 code
+        # # Add entity_2 to entity_1.connections
 
-        # if entity_1.connections[str(side1)] is None:
-        #     entity_1.connections[str(side1)] = Connections.CircuitConnections()
-        current_side = entity_1.connections[str(side_1)]
+        # # if entity_1.connections[str(side1)] is None:
+        # #     entity_1.connections[str(side1)] = Connections.CircuitConnections()
+        # current_side = entity_1.connections[str(side_1)]
 
-        # if color not in current_side:
-        if current_side[color] is None:
-            current_side[color] = []
-        current_color = current_side[color]
+        # # if color not in current_side:
+        # if current_side[color] is None:
+        #     current_side[color] = []
+        # current_color = current_side[color]
 
-        # If dual circuit connectable specify the target side
-        if entity_2.dual_circuit_connectable:
-            entry = {"entity_id": Association(entity_2), "circuit_id": side_2}
-        else:
-            # However, for most entities you dont need a target side
-            entry = {"entity_id": Association(entity_2)}
+        # # If dual circuit connectable specify the target side
+        # if entity_2.dual_circuit_connectable:
+        #     entry = {"entity_id": Association(entity_2), "circuit_id": side_2}
+        # else:
+        #     # However, for most entities you dont need a target side
+        #     entry = {"entity_id": Association(entity_2)}
 
-        if entry not in current_color:
-            current_color.append(entry)
+        # if entry not in current_color:
+        #     current_color.append(entry)
 
-        # Add entity_1 to entity_2.connections
+        # # Add entity_1 to entity_2.connections
 
-        # if entity_2.connections[str(side2)] is None:
-        #     entity_2.connections[str(side2)] = Connections.CircuitConnections()
-        current_side = entity_2.connections[str(side_2)]
+        # # if entity_2.connections[str(side2)] is None:
+        # #     entity_2.connections[str(side2)] = Connections.CircuitConnections()
+        # current_side = entity_2.connections[str(side_2)]
 
-        # if color not in current_side:
-        if current_side[color] is None:
-            current_side[color] = []
-        current_color = current_side[color]
+        # # if color not in current_side:
+        # if current_side[color] is None:
+        #     current_side[color] = []
+        # current_color = current_side[color]
 
-        # If dual circuit connectable specify the target side
-        if entity_1.dual_circuit_connectable:
-            entry = {"entity_id": Association(entity_1), "circuit_id": side_1}
-        else:
-            # However, for most entities you dont need a target side
-            entry = {"entity_id": Association(entity_1)}
+        # # If dual circuit connectable specify the target side
+        # if entity_1.dual_circuit_connectable:
+        #     entry = {"entity_id": Association(entity_1), "circuit_id": side_1}
+        # else:
+        #     # However, for most entities you dont need a target side
+        #     entry = {"entity_id": Association(entity_1)}
 
-        if entry not in current_color:
-            current_color.append(entry)
+        # if entry not in current_color:
+        #     current_color.append(entry)
+
+        # 2.0 code
+        color_value = {
+            "red": 1,
+            "green": 2
+        }
+        dir_value = {
+            "input": 0,
+            "output": 2
+        }
+
+        wire_type_1 = color_value[color] + dir_value[location_1[1]]
+        wire_type_2 = color_value[color] + dir_value[location_2[1]]
+
+        self._root._wires.append([Association(entity_1), wire_type_1, Association(entity_2), wire_type_2])
 
     def remove_circuit_connection(
         self,
         color: Literal["red", "green"],
-        entity_1: Union[EntityLike, int, str],
-        entity_2: Union[EntityLike, int, str],
-        side_1: Literal[1, 2] = 1,
-        side_2: Literal[1, 2] = 1,
+        location_1: Union[EntityLike, int, str, tuple[Union[EntityLike, int, str], Optional[Literal["input", "output"]]]],
+        location_2: Union[EntityLike, int, str, tuple[Union[EntityLike, int, str], Optional[Literal["input", "output"]]]],
     ) -> None:
         """
         Removes a circuit wire connection between two entities. Each entity
@@ -852,10 +876,20 @@ class EntityCollection(metaclass=ABCMeta):
         :exception InvalidAssociationError: If ``entity_1`` and/or ``entity_2``
             are not inside the parent Collection.
         """
-        if not isinstance(entity_1, EntityLike):
-            entity_1 = self.entities[entity_1]
-        if not isinstance(entity_2, EntityLike):
-            entity_2 = self.entities[entity_2]
+        # Normalize to tuple form
+        if not isinstance(location_1, tuple):
+            location_1 = (location_1, "input")
+        if not isinstance(location_2, tuple):
+            location_2 = (location_2, "input")
+
+        if not isinstance(location_1[0], EntityLike):
+            entity_1 = self.entities[location_1[0]]
+        else:
+            entity_1 = location_1[0]
+        if not isinstance(location_2[0], EntityLike):
+            entity_2 = self.entities[location_2[0]]
+        else:
+            entity_2 = location_2[0]
 
         if entity_1 not in self.entities:
             raise InvalidAssociationError(
@@ -868,47 +902,66 @@ class EntityCollection(metaclass=ABCMeta):
 
         if color not in {"red", "green"}:
             raise InvalidWireTypeError(color)
-        if side_1 not in {1, 2}:
-            raise InvalidConnectionSideError(side_1)
-        if side_2 not in {1, 2}:
-            raise InvalidConnectionSideError(side_2)
+        if location_1[1] not in {"input", "output"}:
+            raise InvalidConnectionSideError("'{}'".format(location_1[1]))
+        if location_2[1] not in {"input", "output"}:
+            raise InvalidConnectionSideError("'{}'".format(location_2[1]))
 
-        # Remove from source
-        if entity_2.dual_circuit_connectable:
-            entry = {"entity_id": Association(entity_2), "circuit_id": side_2}
-        else:
-            # However, for most entities you dont need a target side
-            entry = {"entity_id": Association(entity_2)}
+        # 1.0 code
+        # # Remove from source
+        # if entity_2.dual_circuit_connectable:
+        #     entry = {"entity_id": Association(entity_2), "circuit_id": side_2}
+        # else:
+        #     # However, for most entities you dont need a target side
+        #     entry = {"entity_id": Association(entity_2)}
+
+        # try:
+        #     current_side = entity_1.connections[str(side_1)]
+        #     current_color = current_side[color]
+        #     current_color.remove(entry)
+        #     # Remove redundant structures from source if applicable
+        #     if len(current_color) == 0:
+        #         entity_1.connections[str(side_1)][color] = None
+        #     # if len(current_side) == 0:
+        #     #     del entity_1.connections[str(side1)]
+        # except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
+        #     pass
+
+        # # Remove from target
+        # if entity_1.dual_circuit_connectable:
+        #     entry = {"entity_id": Association(entity_1), "circuit_id": side_1}
+        # else:
+        #     # However, for most entities you dont need a target side
+        #     entry = {"entity_id": Association(entity_1)}
+
+        # try:
+        #     current_side = entity_2.connections[str(side_2)]
+        #     current_color = current_side[color]
+        #     current_color.remove(entry)
+        #     # Remove redundant structures from target if applicable
+        #     if len(current_color) == 0:
+        #         entity_2.connections[str(side_2)][color] = None
+        #     # if len(current_side) == 0:
+        #     #     del entity_2.connections[str(side2)]
+        # except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
+        #     pass
+
+        # 2.0 code
+        color_value = {
+            "red": 1,
+            "green": 2
+        }
+        dir_value = {
+            "input": 0,
+            "output": 2
+        }
+
+        wire_type_1 = color_value[color] + dir_value[location_1[1]]
+        wire_type_2 = color_value[color] + dir_value[location_2[1]]
 
         try:
-            current_side = entity_1.connections[str(side_1)]
-            current_color = current_side[color]
-            current_color.remove(entry)
-            # Remove redundant structures from source if applicable
-            if len(current_color) == 0:
-                entity_1.connections[str(side_1)][color] = None
-            # if len(current_side) == 0:
-            #     del entity_1.connections[str(side1)]
-        except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
-            pass
-
-        # Remove from target
-        if entity_1.dual_circuit_connectable:
-            entry = {"entity_id": Association(entity_1), "circuit_id": side_1}
-        else:
-            # However, for most entities you dont need a target side
-            entry = {"entity_id": Association(entity_1)}
-
-        try:
-            current_side = entity_2.connections[str(side_2)]
-            current_color = current_side[color]
-            current_color.remove(entry)
-            # Remove redundant structures from target if applicable
-            if len(current_color) == 0:
-                entity_2.connections[str(side_2)][color] = None
-            # if len(current_side) == 0:
-            #     del entity_2.connections[str(side2)]
-        except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
+            self._root._wires.remove([Association(entity_1), wire_type_1, Association(entity_2), wire_type_2])
+        except ValueError:
             pass
 
     def remove_circuit_connections(self) -> None:
@@ -1080,12 +1133,12 @@ class EntityCollection(metaclass=ABCMeta):
         schedule: Optional[Schedule],
     ) -> None:
         """
-        Sets the schedule of a particular locomotive, or an entire list of 
+        Sets the schedule of a particular locomotive, or an entire list of
         RollingStock. The list of rolling stock can include non-locomotive cars,
         they will just be skipped when setting schedules. The list of rolling
         stock can also include locomotives across multiple trains; in this case
         all connected train cars from every touched train will be given the new
-        schedule. If ``schedule`` is set to ``None``, then any touched 
+        schedule. If ``schedule`` is set to ``None``, then any touched
         locomotive will have their schedule cleared instead of set.
 
         :param train_cars: The single Locomotive, or a list of RollingStock.
@@ -1135,9 +1188,9 @@ class EntityCollection(metaclass=ABCMeta):
 
     def remove_train(self, cars: list[EntityLike]) -> None:
         """
-        Removes all of the rolling stock specified as the list ``cars``, and 
-        also takes care of removing any locomotive associations in any 
-        corresponding :py:class:`Schedule` object(s). Does nothing if ``cars`` 
+        Removes all of the rolling stock specified as the list ``cars``, and
+        also takes care of removing any locomotive associations in any
+        corresponding :py:class:`Schedule` object(s). Does nothing if ``cars``
         is empty.
 
         :param cars: A ``list`` of references to :py:class:`EntityLike`s within
@@ -1567,20 +1620,19 @@ class TileCollection(metaclass=ABCMeta):
 
     def find_tile(self, position: Union[Vector, PrimitiveVector]) -> list[Tile]:
         """
-        Returns a list containing all the tiles at the tile coordinate 
-        ``position``. If there are no tiles at that position, an empty list is 
+        Returns a list containing all the tiles at the tile coordinate
+        ``position``. If there are no tiles at that position, an empty list is
         returned.
 
-        :param position: The position to search, either a ``PrimitiveVector`` or 
+        :param position: The position to search, either a ``PrimitiveVector`` or
             a :py:class:`.Vector`.
 
         :returns: A list of all tiles at ``position``.
         """
         return self.tiles.spatial_map.get_on_point(Vector(0.5, 0.5) + position)
-        
 
     def find_tiles_filtered(
-        self, 
+        self,
         position: Union[Vector, PrimitiveVector, None] = None,
         radius: Optional[float] = None,
         area: Union[AABB, PrimitiveAABB, None] = None,
@@ -1644,15 +1696,13 @@ class TileCollection(metaclass=ABCMeta):
         :param limit: The total number of matching entities to return. Unlimited
             by default.
 
-        :returns: A list of Tile references inside the searched collection that 
+        :returns: A list of Tile references inside the searched collection that
             match the specified criteria.
         """
 
         if position is not None and radius is not None:
             # Intersect entities with circle
-            search_region = self.tiles.spatial_map.get_in_radius(
-                radius, position
-            )
+            search_region = self.tiles.spatial_map.get_in_radius(radius, position)
         elif area is not None:
             # Intersect entities with area
             area = AABB.from_other(area)

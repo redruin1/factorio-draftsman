@@ -18,14 +18,10 @@ from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID, uint
 from draftsman.utils import get_first
 
 from draftsman.data.entities import train_stops
-from draftsman.data.signals import signal_dict
 
 from pydantic import (
     ConfigDict,
     Field,
-    ValidationInfo,
-    ValidatorFunctionWrapHandler,
-    field_validator,
 )
 from typing import Any, Literal, Optional, Union
 

@@ -120,7 +120,10 @@ def archive_to_string(archive: zipfile.ZipFile, filepath: str) -> str:
         return formatted_file.read()
 
 
-ModSettings = TypedDict("ModSettings", {"startup": dict, "runtime-global": dict, "runtime-per-user": dict})
+ModSettings = TypedDict(
+    "ModSettings", {"startup": dict, "runtime-global": dict, "runtime-per-user": dict}
+)
+
 
 def get_mod_settings(location: str) -> ModSettings:
     """
@@ -128,7 +131,7 @@ def get_mod_settings(location: str) -> ModSettings:
     trivial to implement an editor with this function. (Well, assuming you write
     a function to export back to a ``.dat`` file)
 
-    :param location: The path to the directory where 'mod-settings.dat' is 
+    :param location: The path to the directory where 'mod-settings.dat' is
         located.
 
     :returns: A dictionary with 3 keys: ``"startup"``, ``"runtime-global"``, and
@@ -190,14 +193,16 @@ def get_mod_settings(location: str) -> ModSettings:
     ) as mod_settings_dat:
         # Header
         version_num = struct.unpack("<Q", mod_settings_dat.read(8))[0]
-        version = decode_version(version_num)[::-1] # Reversed, for some reason
+        version = decode_version(version_num)[::-1]  # Reversed, for some reason
         header_flag = bool(struct.unpack("<?", mod_settings_dat.read(1))[0])
         # It might be nice to print out the version for additional context, but
         # this doesn't seem to prohibit loading (as far as I know)
-        #print(version)
-        # However, we do ensure that the header flag is 0, as we are dealing 
+        # print(version)
+        # However, we do ensure that the header flag is 0, as we are dealing
         # with a malformed input otherwise
-        assert not header_flag, "mod-settings.dat header did not end with 0 byte, malformed input"
+        assert (
+            not header_flag
+        ), "mod-settings.dat header did not end with 0 byte, malformed input"
         mod_settings = get_data(mod_settings_dat)
 
     return mod_settings
@@ -1377,6 +1382,7 @@ def extract_tiles(lua, data_location, verbose):
 
 # =============================================================================
 
+
 def register_mod(mod_name, mod_location, mods, factorio_version_info, verbose, report):
     external_mod_version = None  # Optional (the version indicated by filepath)
 
@@ -1422,27 +1428,21 @@ def register_mod(mod_name, mod_location, mods, factorio_version_info, verbose, r
             # Why do I always get the short end of the stick!?
             raise IncorrectModFormatError(
                 "Mod archive '{}' has more than one internal folder, and "
-                "none of the internal folders match it's external name".format(
-                    mod_name
-                )
+                "none of the internal folders match it's external name".format(mod_name)
             )
 
         try:
-            # Zipfiles don't like backslashes on Windows, so we manually 
+            # Zipfiles don't like backslashes on Windows, so we manually
             # concatenate
-            mod_info = json.loads(
-                archive_to_string(files, mod_folder + "/info.json")
-            )
+            mod_info = json.loads(archive_to_string(files, mod_folder + "/info.json"))
         except KeyError:
             raise IncorrectModFormatError(
-                "Mod '{}' has no 'info.json' file in its root folder".format(
-                    mod_name
-                )
+                "Mod '{}' has no 'info.json' file in its root folder".format(mod_name)
             )
 
         mod_version = mod_info["version"]
         archive = True
-        location = mod_location #containing_dir + "/" + mod_name
+        location = mod_location  # containing_dir + "/" + mod_name
 
     elif os.path.isdir(mod_location):
         # Folder
@@ -1460,13 +1460,11 @@ def register_mod(mod_name, mod_location, mods, factorio_version_info, verbose, r
                 mod_info = json.load(info_file)
         except FileNotFoundError:
             raise IncorrectModFormatError(
-                "Mod '{}' has no 'info.json' file in its root folder".format(
-                    mod_name
-                )
+                "Mod '{}' has no 'info.json' file in its root folder".format(mod_name)
             )
 
         mod_folder = mod_location
-        mod_version = mod_info.get("version", "") # "core" doesn't have version
+        mod_version = mod_info.get("version", "")  # "core" doesn't have version
         archive = False
         files = None
         location = mod_location
@@ -1506,9 +1504,7 @@ def register_mod(mod_name, mod_location, mods, factorio_version_info, verbose, r
         except KeyError:
             pass
         try:
-            settings = archive_to_string(
-                files, mod_folder + "/settings-updates.lua"
-            )
+            settings = archive_to_string(files, mod_folder + "/settings-updates.lua")
             mod_data["settings-updates.lua"] = settings
         except KeyError:
             pass
@@ -1526,9 +1522,7 @@ def register_mod(mod_name, mod_location, mods, factorio_version_info, verbose, r
         except KeyError:
             pass
         try:
-            data_updates = archive_to_string(
-                files, mod_folder + "/data-updates.lua"
-            )
+            data_updates = archive_to_string(files, mod_folder + "/data-updates.lua")
             mod_data["data-updates.lua"] = data_updates
         except KeyError:
             pass
@@ -1622,9 +1616,9 @@ def register_mod(mod_name, mod_location, mods, factorio_version_info, verbose, r
                     previous_mod.version, current_mod.version
                 )
             )
-        elif version_string_to_tuple(
-            previous_mod.version
-        ) > version_string_to_tuple(current_mod.version):
+        elif version_string_to_tuple(previous_mod.version) > version_string_to_tuple(
+            current_mod.version
+        ):
             print(
                 "\tSkipping older version ({}) in favor of newer version ({})".format(
                     current_mod.version, previous_mod.version
@@ -1661,35 +1655,35 @@ def update(
     reflected in this routine.
 
     :param verbose: Whether or not to print status updates to stdout.
-    :param game_path: The specific path of the game installation. By default, 
+    :param game_path: The specific path of the game installation. By default,
         this value points to the `factorio-data` repo inside of Draftsman, but
         this repo does not contain any assets. If you own the game and wish to
         extract these assets, then you can use this path to point directly to
         wherever your Factorio install is.
-    :param mods_path: The specific path to use when searching for mods. Defaults 
-        to the folder `factorio-mods` located in the install directory of 
+    :param mods_path: The specific path to use when searching for mods. Defaults
+        to the folder `factorio-mods` located in the install directory of
         Draftsman. A common alternative path to use is your current Factorio
         install's mod folder, typically in `%APPDATA%/Roaming/Factorio/mods/`.
-    :param show_logs: Whether or not to display logs created by the Factorio 
+    :param show_logs: Whether or not to display logs created by the Factorio
         load process itself to stdout.
-    :param no_mods: Whether or not to ignore non-official mods when performing 
+    :param no_mods: Whether or not to ignore non-official mods when performing
         the update. Wube developed expansions (mods) such as Quality, Elevated
         Rails, and Space Age are not omitted with this flag.
-    :param report: If true, prints a list of all mods being used under the 
+    :param report: If true, prints a list of all mods being used under the
         current configuration and then exits.
-    :param factorio_version: If true, prints the current Git tag that the 
-        currently installed `factorio-data` uses and exits. If specified to a 
-        string, this function will treat that as the "target" tag and will 
-        attempt to set that tag to the new version. In addition to all known 
-        tags, `factorio_version` also reserves the phrase `"latest"`, which 
+    :param factorio_version: If true, prints the current Git tag that the
+        currently installed `factorio-data` uses and exits. If specified to a
+        string, this function will treat that as the "target" tag and will
+        attempt to set that tag to the new version. In addition to all known
+        tags, `factorio_version` also reserves the phrase `"latest"`, which
         is simply a shorthand to the latest released version.
 
     .. NOTE::
 
-        You'd think that the Git tag used for ``factorio-data`` and the 
+        You'd think that the Git tag used for ``factorio-data`` and the
         generated value of ``draftsman.__factorio_version__`` would be equivalent;
         but this is NOT the case. In general the generated ``__factorio_version__``
-        by Draftsman always points 1 version ahead of stable, while the git tag 
+        by Draftsman always points 1 version ahead of stable, while the git tag
         is always the stable version.
     """
     # TODO: `--report` and `--factorio-version` should really be extricated from
@@ -1717,9 +1711,9 @@ def update(
 
     # We want to handle the case where the user specifies the string "latest":
     if factorio_version == "latest":
-        factorio_version = sorted(
-            repo.tags, key=lambda t: t.commit.committed_datetime
-        )[-1]
+        factorio_version = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)[
+            -1
+        ]
     # If no preferred version was provided, we adopt the current version
     elif factorio_version is None:
         factorio_version = current_tag.name
@@ -1784,7 +1778,7 @@ def update(
                     mod["enabled"] and not no_mods
                 )
     except FileNotFoundError:  # If no such file is found
-        pass # Every mod is enabled by default, unless `no_mods` is True
+        pass  # Every mod is enabled by default, unless `no_mods` is True
         # enabled_mod_list["base"] = True
         # for mod_obj in os.listdir(factorio_mods_folder):
         #     if mod_obj.lower().endswith(".zip"):
@@ -1802,10 +1796,10 @@ def update(
     # and `core` are also considered "mods".
     mods: dict[str, Mod] = {}
 
-    # Because of this lack of distinction, we traverse the game-data folder and 
+    # Because of this lack of distinction, we traverse the game-data folder and
     # treat every folder inside of it as a mod:
     for game_obj in os.listdir(factorio_data_path):
-        location = factorio_data_path + "/" + game_obj # TODO: better
+        location = factorio_data_path + "/" + game_obj  # TODO: better
         if not os.path.isdir(location):
             continue
 
@@ -1814,18 +1808,22 @@ def update(
             continue
 
         # Add the mod to the list of mods
-        mods[game_obj] = register_mod(game_obj, location, mods, factorio_version_info, verbose, report)
+        mods[game_obj] = register_mod(
+            game_obj, location, mods, factorio_version_info, verbose, report
+        )
 
     # After that, we can register all of the regular mods, if present
     for mod_obj in os.listdir(factorio_mods_folder):
-        location = factorio_mods_folder + "/" + mod_obj # TODO: better
+        location = factorio_mods_folder + "/" + mod_obj  # TODO: better
 
         # First make sure the mod is enabled, and skip if not
         if not enabled_mod_list.get(mod_obj, not no_mods):
             continue
 
         # Add the mod to the list of mods
-        mods[mod_obj] = register_mod(mod_obj, location, mods, factorio_version_info, verbose, report)
+        mods[mod_obj] = register_mod(
+            mod_obj, location, mods, factorio_version_info, verbose, report
+        )
 
     if report:
         # TODO: reimplement properly
@@ -1925,7 +1923,7 @@ def update(
 
     # "interface.lua" houses a number of patching functions used to emulate
     # Factorio's internal load process.
-    # Primarily, it updates the require function to now handle python_require, 
+    # Primarily, it updates the require function to now handle python_require,
     # and fixes a few small discrepancies that Factorio's environment has.
     lua.execute(file_to_string(os.path.join(env_dir, "compatibility", "interface.lua")))
 

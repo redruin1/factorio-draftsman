@@ -32,11 +32,18 @@ class TestFurnace:
 
     def test_set_item_request(self):
         furnace = Furnace("stone-furnace")
-        assert furnace.allowed_modules == set()
+        assert furnace.allowed_modules == {
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+        }
         assert furnace.total_module_slots == 0
 
-        # Module on stone furnace disallowed
-        with pytest.warns(ModuleNotAllowedWarning):
+        # No slots on stone furnace for modules
+        with pytest.warns(ModuleCapacityWarning):
             furnace.set_item_request("speed-module", 2)
         assert furnace.items == {"speed-module": 2}
 
@@ -55,12 +62,15 @@ class TestFurnace:
             "speed-module",
             "speed-module-2",
             "speed-module-3",
-            "effectivity-module",
-            "effectivity-module-2",
-            "effectivity-module-3",
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
             "productivity-module",
             "productivity-module-2",
             "productivity-module-3",
+            "quality-module",
+            "quality-module-2",
+            "quality-module-3",
         }
         assert furnace.total_module_slots == 2
         # Module on electric furnace

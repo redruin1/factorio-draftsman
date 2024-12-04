@@ -17,6 +17,7 @@ class Turret(RequestItemsMixin, DirectionalMixin, Entity):
     """
     An entity that automatically targets and attacks other forces within range.
     Catch-all class for every type of turret in Factorio.
+    TODO: update to 2.0 terminology
     """
 
     class Format(RequestItemsMixin.Format, DirectionalMixin.Format, Entity.Format):

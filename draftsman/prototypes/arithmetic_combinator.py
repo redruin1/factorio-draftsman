@@ -3,6 +3,7 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
+    PlayerDescriptionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
@@ -19,10 +20,15 @@ from draftsman.data.entities import arithmetic_combinators
 
 from pydantic import ConfigDict, Field, ValidationInfo, field_validator, model_validator
 from typing import Any, Literal, Optional, Union
+from typing_extensions import TypedDict
 
+
+class SignalNetworkSpec(TypedDict): # TODO: make this a DraftsmanBaseModel and move to signatures
+    red: bool
+    green: bool
 
 class ArithmeticCombinator(
-    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
+    PlayerDescriptionMixin, ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
 ):
     """
     An arithmetic combinator. Peforms a mathematical or bitwise operation on
@@ -30,6 +36,7 @@ class ArithmeticCombinator(
     """
 
     class Format(
+        PlayerDescriptionMixin.Format,
         ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
         DirectionalMixin.Format,
@@ -50,6 +57,16 @@ class ArithmeticCombinator(
                     both this key and 'first_constant' are defined, this key
                     takes precedence.
                     """,
+                )
+                first_signal_networks: Optional[SignalNetworkSpec] = Field(
+                    {
+                        "red": True,
+                        "green": True,
+                    },
+                    description="""
+                    Which input wire networks to pull from when evaluating the 
+                    value of the first signal.
+                    """
                 )
                 operation: Literal[
                     "*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR", None
@@ -72,6 +89,16 @@ class ArithmeticCombinator(
                     both this key and 'second_constant' are defined, this key
                     takes precedence.
                     """,
+                )
+                second_signal_networks: Optional[SignalNetworkSpec] = Field(
+                    {
+                        "red": True,
+                        "green": True,
+                    },
+                    description="""
+                    Which input wire networks to pull from when evaluating the 
+                    value of the second signal.
+                    """
                 )
                 output_signal: Optional[SignalID] = Field(
                     None,
@@ -120,6 +147,34 @@ class ArithmeticCombinator(
                     return self
 
                 @model_validator(mode="after")
+                def prohibit_2_each_signals(self, info: ValidationInfo):
+                    if not info.context:
+                        return self
+                    if info.context["mode"] <= ValidationMode.MINIMUM:
+                        return self
+                    
+                    # This check only applies to Factorio 1.X
+                    if info.context["environment_version"] >= (2, 0):
+                        return self
+
+                    warning_list: list = info.context["warning_list"]
+
+                    # Ensure that "signal-each" does not occupy both first and
+                    # second signal slots
+                    if self.first_signal is not None and self.second_signal is not None:
+                        if (
+                            self.first_signal.name == "signal-each"
+                            and self.second_signal.name == "signal-each"
+                        ):
+                            warning_list.append(
+                                SignalConfigurationWarning(
+                                    "Cannot have 'signal-each' occupy both the first and second slots of an arithmetic combinator"
+                                )
+                            )
+
+                    return self
+
+                @model_validator(mode="after")
                 def ensure_proper_each_configuration(self, info: ValidationInfo):
                     if not info.context:
                         return self
@@ -131,18 +186,7 @@ class ArithmeticCombinator(
                     # TODO: ensure this is only called on validation of the entire
                     # thing
 
-                    # Ensure that "signal-each" does not occupy both first and
-                    # second signal
-                    if self.first_signal is not None and self.second_signal is not None:
-                        if (
-                            self.first_signal.name == "signal-each"
-                            and self.second_signal.name == "signal-each"
-                        ):
-                            warning_list.append(
-                                SignalConfigurationWarning(
-                                    "Cannot have 'signal-each' occupy both the first and second slots of an arithmetic combinator"
-                                )
-                            )
+                    
 
                     # Ensure that if the output signal is set to "signal-each",
                     # one of the input signals must also be "signal-each"
@@ -185,7 +229,8 @@ class ArithmeticCombinator(
         name: Optional[str] = get_first(arithmetic_combinators),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        direction: Direction = Direction.NORTH,
+        direction: Optional[Direction] = Direction.NORTH,
+        player_description: Optional[str] = None,
         connections: Connections = {},
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
@@ -206,6 +251,7 @@ class ArithmeticCombinator(
             position=position,
             tile_position=tile_position,
             direction=direction,
+            player_description=player_description,
             connections=connections,
             control_behavior=control_behavior,
             tags=tags,
@@ -464,10 +510,12 @@ class ArithmeticCombinator(
     def set_arithmetic_conditions(
         self,
         first_operand: Union[str, SignalID, int32, None] = None,
+        first_wires: set[Literal["red", "green"]] = {"red", "green"},
         operation: Literal[
             "*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR", None
         ] = "*",
         second_operand: Union[str, SignalID, int32, None] = 0,
+        second_wires: set[Literal["red", "green"]] = {"red", "green"},
         output_signal: Union[str, SignalID, None] = None,
     ):
         """
@@ -487,7 +535,9 @@ class ArithmeticCombinator(
         """
         new_control_behavior = {
             "arithmetic_conditions": {
+                "first_signal_networks": {key: key in first_wires for key in {"red", "green"}},
                 "operation": "*" if operation is None else operation,
+                "second_signal_networks": {key: key in second_wires for key in {"red", "green"}},
                 "output_signal": output_signal,
             }
         }

@@ -12,7 +12,7 @@ from typing import cast as typing_cast
 def reverse_belts(blueprint: EntityCollection) -> None:
     """
     Modifies the passed in blueprint or group in-place to swap the direction of
-    all belts. Instead of just inverting the direction of each belt, this 
+    all belts. Instead of just inverting the direction of each belt, this
     function properly inverts corners which have specific semantics.
     """
     # If a transport belt is pointed to by one other belt going in a different

@@ -55,7 +55,10 @@ class TestOffshorePump:
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
                 "circuit_condition": {
-                    "first_signal": {"name": "iron-ore", "type": "item"},
+                    "first_signal": {
+                        "name": "iron-ore", 
+                        # "type": "item" # Default
+                    },
                     "comparator": ">",
                     "constant": 1000,
                 }
@@ -75,9 +78,15 @@ class TestOffshorePump:
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
                 "circuit_condition": {
-                    "first_signal": {"name": "iron-ore", "type": "item"},
+                    "first_signal": {
+                        "name": "iron-ore", 
+                        # "type": "item"
+                    },
                     "comparator": "≥",
-                    "second_signal": {"name": "copper-ore", "type": "item"},
+                    "second_signal": {
+                        "name": "copper-ore", 
+                        # "type": "item"
+                    },
                 }
             },
         }

@@ -60,7 +60,7 @@ def add_subgroup(name: str, group: str, items=[], order: str = "", **kwargs):
 
     if group not in groups:
         raise TypeError(
-            "Unknown item group '{}'; if you want to add a new item group, call `items.add_group(mame='{}', ...)`"
+            "Unknown item group '{}'; if you want to add a new item group, call `items.add_group(name='{}', ...)`"
         )
     else:
         # TODO: sorted insert
@@ -107,7 +107,7 @@ def add_item(
 
     if subgroup not in subgroups:
         raise TypeError(
-            "Unknown item subgroup '{}'; if you want to add a new item subgroup, call `items.add_subgroup(mame='{}', ...)`"
+            "Unknown item subgroup '{}'; if you want to add a new item subgroup, call `items.add_subgroup(name='{}', ...)`"
         )
     else:
         # TODO: sorted insert
@@ -128,3 +128,9 @@ def get_stack_size(item_name: str) -> int:
         slot.
     """
     return raw.get(item_name, {"stack_size": None})["stack_size"]
+
+def get_weight(item_name: str) -> float:
+    """
+    TODO
+    """
+    return 0.0

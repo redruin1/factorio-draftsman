@@ -527,8 +527,8 @@ class Group(Transformable, EntityCollection, EntityLike):
     def merge(self, other: "Group"):
         # For now, we assume that Groups themselves are not mergable
         return  # Do nothing
-    
-    def validate( # TODO: inherit this
+
+    def validate(  # TODO: inherit this
         self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
     ) -> ValidationResult:
         # Validate regular attributes

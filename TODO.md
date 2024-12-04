@@ -1,5 +1,8 @@
 # TODO
 
+### Add a more proper interface to accessing prototype parameters directly from Draftsman objects
+So have something like `Car.prototype["base_speed"]` instead of having to do something like `entities.raw["car"]["car"]["base_speed"]`
+
 ### Add `tiles` to Groups (somehow)
 We could simply add a `tiles` list to `Group`, but this has some unintended consequences. See issue #118 for more info.
 

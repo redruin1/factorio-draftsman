@@ -49,8 +49,8 @@ def main() -> None:
             ),
         ]
     )
-    # Using the Enums is rather verbose, so if you want to be more terse (at
-    # the cost of safety) you can use the equivalent strings:
+    # Using the Enums is rather verbose, so if you want to be more terse you can 
+    # use the equivalent strings:
     dropoff_conditions = WaitConditions(
         [
             WaitCondition("empty"),
