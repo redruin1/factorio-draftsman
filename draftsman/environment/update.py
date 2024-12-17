@@ -1309,6 +1309,10 @@ def extract_signals(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
     # hidden_signals = []
 
     def add_signals(signal_category_name, target_location, signal_type):
+        # Depending on configuration, some items/signals might not exist
+        if signal_category_name not in data.raw:
+            return
+        
         signal_category = convert_table_to_dict(data.raw[signal_category_name])
         for signal_name in signal_category:
             signal_obj = signal_category[signal_name]
@@ -1448,7 +1452,7 @@ def extract_signals(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
     add_signals("pipe", entity_signals, "entity")
     add_signals("pipe-to-ground", entity_signals, "entity")
     add_signals("plant", entity_signals, "entity")
-    # add_signals("player-port", entity_signals, "entity") # Deprecated in 2.0
+    add_signals("player-port", entity_signals, "entity") # Deprecated in 2.0
     add_signals("power-switch", entity_signals, "entity")
     add_signals("programmable-speaker", entity_signals, "entity")
     add_signals("projectile", entity_signals, "entity")
@@ -1500,7 +1504,7 @@ def extract_signals(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
     add_signals("space-location", space_location_signals, "space-location")
 
     # Asteroid Chunks Signals
-    #add_signals("asteroid-chunk", asteroid_chunk_signals, "asteroid-chunk")
+    add_signals("asteroid-chunk", asteroid_chunk_signals, "asteroid-chunk")
 
     # Quality Signals
     add_signals("quality", quality_signals, "quality")
