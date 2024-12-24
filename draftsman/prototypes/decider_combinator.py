@@ -48,6 +48,88 @@ _signal_blacklist = {
 }
 
 
+from pydantic_core import core_schema
+
+class Temp:
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type: Any, handler):
+        """
+        Dict instances get converted to cls.Format instances
+        cls.Format instances get passed through unchanged
+        everything else is a validation failure
+        """
+        print(source_type)
+        # print(handler())
+        def validate_from_dict(value: dict):
+            result = source_type(**value)
+            return result
+
+        from_dict_schema = core_schema.chain_schema(
+            [
+                core_schema.dict_schema(),
+                core_schema.no_info_plain_validator_function(validate_from_dict),
+            ]
+        )
+
+        return core_schema.json_or_python_schema(
+            json_schema=source_type.Format.__pydantic_core_schema__,
+            python_schema=core_schema.union_schema(
+                [
+                    # check if it's an instance first before doing any further work
+                    core_schema.is_instance_schema(source_type),
+                    from_dict_schema,
+                ]
+            ),
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                lambda instance: instance._root
+            ),
+        )
+
+class DeciderInput(Temp):
+    pass
+
+
+class DeciderOutput(Temp): # TODO: Exportable
+    class Format(DraftsmanBaseModel):
+        signal: SignalID = Field(
+            ...,
+            description="""The signal type to output."""
+        )
+        copy_count_from_input: Optional[bool] = Field(
+            True,
+            description="""
+            Broadcasts the given input value to the output if true, or a unit
+            value if false.
+            """
+        )
+        networks:  Optional[NetworkSpecification] = Field(
+            NetworkSpecification(red=True, green=True),
+            description="""What wires this output should be broadcast to."""
+        )
+
+        model_config = ConfigDict(title="DeciderOutput")
+
+    def __init__(self, signal, copy_count_from_input=False, networks={"red", "green"}):
+        self._root: DeciderOutput.Format
+        self._root = self.__class__.Format.model_validate(
+            {"signal": signal, "copy_count_from_input": copy_count_from_input, "networks": networks}, 
+            strict=False,
+            context={"construction": True, "mode": ValidationMode.NONE}
+        )
+
+    @property
+    def signal(self):
+        return self._root.signal
+    
+    @property
+    def copy_count_from_input(self):
+        return self._root.copy_count_from_input
+    
+    @property
+    def networks(self):
+        return self._root.networks
+
+
 class DeciderCombinator(
     PlayerDescriptionMixin, ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
 ):
@@ -145,23 +227,6 @@ class DeciderCombinator(
 
     #     model_config = ConfigDict(title="DeciderCombinator")
 
-    class Output(DraftsmanBaseModel):
-        signal: SignalID
-        copy_count_from_input: bool = Field(
-            True,
-            description="""
-            Whether or not to copy the value of the selected output
-            signal from the input circuit network, or to output the 
-            selected 'output_signal' with a value of 1.
-            """,
-        )
-        networks: Optional[NetworkSpecification] = Field(
-            NetworkSpecification(),
-            description="""
-            What wires to pull values from if 'copy_count_from_input'
-            is true."""
-        )
-
     class Format(
         PlayerDescriptionMixin.Format,
         ControlBehaviorMixin.Format,
@@ -171,13 +236,30 @@ class DeciderCombinator(
     ):
         class ControlBehavior(DraftsmanBaseModel):
             class DeciderConditions(DraftsmanBaseModel):
+                class Output(DraftsmanBaseModel):
+                    signal: SignalID
+                    copy_count_from_input: bool = Field(
+                        True,
+                        description="""
+                        Whether or not to copy the value of the selected output
+                        signal from the input circuit network, or to output the 
+                        selected 'output_signal' with a value of 1.
+                        """,
+                    )
+                    networks: Optional[NetworkSpecification] = Field(
+                        NetworkSpecification(),
+                        description="""
+                        What wires to pull values from if 'copy_count_from_input'
+                        is true."""
+                    )
+
                 conditions: list[Condition] = Field(
                     [],
                     description="""
                     A list of Condition objects specifying when (and what) this
                     decider combinator should output."""
                 )
-                outputs: list["DeciderCombinator.Output"] = Field(
+                outputs: list[DeciderOutput] = Field(
                     [],
                     description="""
                     A list of Output objects specifying what signals should be
@@ -292,11 +374,11 @@ class DeciderCombinator(
     # =========================================================================
 
     @property
-    def outputs(self) -> list[Output]:
+    def outputs(self) -> list[Format.ControlBehavior.DeciderConditions.Output]:
         return self.control_behavior.decider_conditions.outputs
     
     @outputs.setter
-    def outputs(self, value: Optional[list[Output]]) -> None:
+    def outputs(self, value: Optional[list[Format.ControlBehavior.DeciderConditions.Output]]) -> None:
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
@@ -541,47 +623,47 @@ class DeciderCombinator(
 
     # =========================================================================
 
-    @reissue_warnings
-    def set_decider_conditions(
-        self,
-        first_operand: Union[str, SignalID, None] = None,
-        operation: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "<",
-        second_operand: Union[str, SignalID, int32, None] = 0,
-        output_signal: Union[str, SignalID, None] = None,
-        copy_count_from_input: bool = True,
-    ):
-        """
-        Set the operation for the ``DeciderCombinator`` all at once. All of the
-        restrictions to the individual attributes still apply.
+    # @reissue_warnings
+    # def set_decider_conditions(
+    #     self,
+    #     first_operand: Union[str, SignalID, None] = None,
+    #     operation: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "<",
+    #     second_operand: Union[str, SignalID, int32, None] = 0,
+    #     output_signal: Union[str, SignalID, None] = None,
+    #     copy_count_from_input: bool = True,
+    # ):
+    #     """
+    #     Set the operation for the ``DeciderCombinator`` all at once. All of the
+    #     restrictions to the individual attributes still apply.
 
-        :param first_operand: The name of the first signal to set, or ``None``.
-        :param operation: The comparison operator to use. See :py:data:`.COMPARATOR`
-            for more information on valid values.
-        :param second_operand: The name of the second signal, some constant, or
-            ``None``.
-        :param output_signal: The name of the output signal to set, or ``None``.
-        :param copy_count_from_input: Whether or not to copy input signal values
-            to output signal values. Defaults to ``None``, which also means ``True``.
+    #     :param first_operand: The name of the first signal to set, or ``None``.
+    #     :param operation: The comparison operator to use. See :py:data:`.COMPARATOR`
+    #         for more information on valid values.
+    #     :param second_operand: The name of the second signal, some constant, or
+    #         ``None``.
+    #     :param output_signal: The name of the output signal to set, or ``None``.
+    #     :param copy_count_from_input: Whether or not to copy input signal values
+    #         to output signal values. Defaults to ``None``, which also means ``True``.
 
-        :exception DataFormatError: If the any of the arguments fail to match
-            their correct formats.
-        """
-        new_control_behavior = {
-            "decider_conditions": {
-                "first_signal": first_operand,
-                "comparator": operation,
-                "output_signal": output_signal,
-                "copy_count_from_input": copy_count_from_input,
-            }
-        }
+    #     :exception DataFormatError: If the any of the arguments fail to match
+    #         their correct formats.
+    #     """
+    #     new_control_behavior = {
+    #         "decider_conditions": {
+    #             "first_signal": first_operand,
+    #             "comparator": operation,
+    #             "output_signal": output_signal,
+    #             "copy_count_from_input": copy_count_from_input,
+    #         }
+    #     }
 
-        if isinstance(second_operand, (int, float)):
-            new_control_behavior["decider_conditions"]["constant"] = second_operand
-        else:
-            new_control_behavior["decider_conditions"]["second_signal"] = second_operand
+    #     if isinstance(second_operand, (int, float)):
+    #         new_control_behavior["decider_conditions"]["constant"] = second_operand
+    #     else:
+    #         new_control_behavior["decider_conditions"]["second_signal"] = second_operand
 
-        # Set
-        self.control_behavior = new_control_behavior
+    #     # Set
+    #     self.control_behavior = new_control_behavior
 
     def remove_decider_conditions(self):
         """
