@@ -87,6 +87,13 @@ class TestEntity:
         ):
             Container("wodenchest")
 
+    def test_create_with_position(self):
+        iron_chest = new_entity('iron-chest', tile_position=(3,3))
+        assert iron_chest.position.x == 3.5 and iron_chest.position.y == 3.5
+
+        active_provider_chest = new_entity('active-provider-chest', tile_position=(10,10))
+        assert active_provider_chest.position.x == 10.5 and active_provider_chest.position.y == 10.5
+
     def test_set_position(self):
         iron_chest = Container("iron-chest")
         iron_chest.position = (1.23, 1.34)
