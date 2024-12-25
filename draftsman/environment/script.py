@@ -187,7 +187,21 @@ def main():
 
     elif args.operation == "factorio-version":
         if args.desired_version is None:
-            print("Factorio {}".format(__factorio_version__))
+            # Grab and populate the repo, making sure its a git repo we expect
+            import git
+            repo = git.Repo(args.game_path)
+            repo.git.fetch()
+            assert (
+                repo.remotes.origin.url == "https://github.com/wube/factorio-data"
+            ), "Targeted repo is not `wube/factorio-data`"
+
+            # Grab the currently checked out tag for this repo
+            # https://stackoverflow.com/a/32524783/8167625
+            current_tag = next(
+                (tag for tag in repo.tags if tag.commit == repo.head.commit), None
+            )
+
+            print("Factorio {}".format(current_tag))
         else:
             # This command will only work if we're pointing at a git repo of the
             # correct type

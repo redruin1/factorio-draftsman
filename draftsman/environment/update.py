@@ -245,9 +245,6 @@ def specify_factorio_version(
     :param verbose: Whether or not to print status messages to stdout for
         clarity/readability. When ``false``, this function behaves silently.
     """
-    if verbose:
-        print()
-
     # Grab and populate the repo, making sure its a git repo we expect
     repo = git.Repo(game_path)
     repo.git.fetch()
@@ -1243,7 +1240,23 @@ def extract_modules(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
 # =============================================================================
 
 
-def extract_recipes(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool=False):
+def extract_planets(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool=False) -> None:
+    data = lua.globals().data
+
+    planets = convert_table_to_dict(data.raw["planet"])
+
+    with open(os.path.join(draftsman_path, "data", "planets.pkl"), "wb") as out:
+        data = [planets]
+        pickle.dump(data, out, 4)
+
+    if verbose:
+        print("Extracted planets...")
+
+
+# =============================================================================
+
+
+def extract_recipes(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool=False) -> None:
     """
     Extracts the recipes to ``recipes.pkl`` in :py:mod:`draftsman.data`.
     """
@@ -1607,6 +1620,7 @@ def extract_data(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool=False)
     extract_instruments(lua, draftsman_path, verbose)
     extract_items(lua, draftsman_path, items, verbose)
     extract_modules(lua, draftsman_path, items, verbose)
+    extract_planets(lua, draftsman_path, verbose)
     extract_recipes(lua, draftsman_path, items, verbose)
     extract_signals(lua, draftsman_path, items, verbose)
     extract_tiles(lua, draftsman_path, verbose)

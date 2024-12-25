@@ -1,6 +1,7 @@
 # recipes.py
 
 import pickle
+import math
 
 import importlib.resources as pkg_resources
 
@@ -64,3 +65,18 @@ def get_recipe_ingredients(recipe_name: str, expensive: bool = False):
             x[0] if isinstance(x, list) else x["name"]
             for x in raw[recipe_name][cost_type]["ingredients"]
         }
+    
+def is_usable_on(recipe: dict, surface: dict) -> bool:
+    if "surface_conditions" not in recipe:
+        return True
+
+    for condition in recipe["surface_conditions"]:
+        property_name = condition["property"]
+        if property_name in surface["surface_properties"]:
+            value = surface["surface_properties"][property_name]
+            min_val = condition.get("min", -math.inf)
+            max_val = condition.get("max", math.inf)
+            if not (min_val <= value <= max_val):
+                return False
+            
+    return True
