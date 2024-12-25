@@ -56,7 +56,7 @@ class DirectionalMixin:
             warning_list: list = info.context["warning_list"]
             entity: Entity = info.context["object"]
 
-            if input not in {0, 4, 8, 12}:
+            if input not in {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST}:
                 # Default to a known orientation
                 output = Direction(int(input / 4) * 4)
 
@@ -106,13 +106,13 @@ class DirectionalMixin:
                 # TODO: would probably be better to do this in env.py, but how?
                 if super().collision_set:
                     _rotated_collision_sets[name] = {}
-                    for i in {0, 2, 4, 6}:
+                    for i in {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST}:
                         _rotated_collision_sets[name][i] = super().collision_set.rotate(
-                            i
+                            i/2
                         )
                 else:
                     _rotated_collision_sets[name] = {}
-                    for i in {0, 2, 4, 6}:
+                    for i in {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST}:
                         _rotated_collision_sets[name][i] = None
                 # self._collision_set_rotation = _rotated_collision_sets[self.name]
 

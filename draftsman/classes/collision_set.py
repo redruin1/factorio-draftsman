@@ -77,6 +77,8 @@ class CollisionSet:
 
         :returns: A new :py:class:`CollisionSet` with the rotated contents.
         """
+
+        # TODO: Update to work with 22.5 degree world.
         rotated_shapes = []
 
         for shape in self.shapes:
