@@ -5,7 +5,7 @@ from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     ColorMixin,
     CircuitConditionMixin,
-    EnableDisableMixin,
+    CircuitEnableMixin,
     LogisticConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
@@ -30,7 +30,7 @@ class TrainStop(
     ColorMixin,
     CircuitConditionMixin,
     LogisticConditionMixin,
-    EnableDisableMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DoubleGridAlignedMixin,
@@ -45,7 +45,7 @@ class TrainStop(
         ColorMixin.Format,
         CircuitConditionMixin.Format,
         LogisticConditionMixin.Format,
-        EnableDisableMixin.Format,
+        CircuitEnableMixin.Format,
         ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
         DoubleGridAlignedMixin.Format,
@@ -55,7 +55,7 @@ class TrainStop(
         class ControlBehavior(
             CircuitConditionMixin.ControlFormat,
             LogisticConditionMixin.ControlFormat,
-            EnableDisableMixin.ControlFormat,
+            CircuitEnableMixin.ControlFormat,
             DraftsmanBaseModel,
         ):
             send_to_train: Optional[bool] = Field(

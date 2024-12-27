@@ -1,8 +1,32 @@
 # Changelog
 
 ## 2.0.0
-* Updated `factorio-data` to version `2.0.15` (latest)
-* Updated `compatibility/defines.lua` to `2.0.15` (latest)
+* Updated `factorio-data` to version `2.0.28` (latest)
+* Updated `compatibility/defines.lua` to `2.0.28` (latest)
+* Updated all prototypes to match Factorio 2.0
+* Added new prototypes in Factorio 2.0
+  * `AgriculturalTower`
+  * `AsteroidCollector`
+  * `Car`
+  * `CargoBay`
+  * `CargoLandingPad`
+  * `CurvedRailA`
+  * `CurvedRailB`
+  * `DisplayPanel`
+  * `ElevatedCurvedRailA`
+  * `ElevatedCurvedRailB`
+  * `ElevatedHalfDiagonalRail`
+  * `ElevatedStraightRail`
+  * `FusionGenerator`
+  * `FusionReactor`
+  * `HalfDiagonalRail`
+  * `LightningAttractor`
+  * `RailRamp`
+  * `RailSupport`
+  * `SelectorCombinator`
+  * `SpacePlatformHub`
+  * `SpiderVehicle`
+  * `Thruster`
 * Removed command line utility `draftsman-update`
 * Added command line utility `draftsman` with multiple subcommands
     * `draftsman update ...` for the original functionality of modifying a Factorio environment 
@@ -10,6 +34,7 @@
     * `draftsman enable/disable ...` enables or disables one or more mods
     * `draftsman factorio-version` reports or sets the version of Factorio's data
     * `draftsman version` reports Draftsman's own semantic version
+    * Write `draftsman -h` or `draftsman [command] -h` for more information
 * Swapped from `schema` to `pydantic`
     * Format for specifying schemas is now much clearer
     * Both blueprintables and entities now share the same exporting code, overall making more sense
@@ -19,11 +44,12 @@
 * Changed the code to be primarily Python3 compatible with the new minimum version
 * Added `extras` module which implements some handy new features:
     * Added `flip_belts(blueprint)` which flips all belt entities inside the blueprint (preserving continuity)
-* Added a bunch of equivalent functions from Factorio StdLib:
+* Added a bunch of equivalent functions from the Factorio StdLib:
     * Added `opposite()`, `next()`, `previous()`, `to_orientation()`, and `to_vector()` to `Direction`
     * Added `Orientation` class, similar to `Direction`; comes with it's own suite of `__add__()`, `to_direction()`, and `to_vector()` helpers
     * Added `constants.Ticks` enumeration which contains `SECONDS`, `MINUTES`, `HOURS`, etc. stored as quantities of Factorio ticks
 * Added `union`, `intersection`, and `difference` to `EntityList`, `TileList`, and `ScheduleList`
+* Updated `Direction` to now be the Factorio 2.0 16-direction enum; use `LegacyDirection` for the old enumerations
 * Added `TrainConfiguration`, which allows you to specify entire trains with strings like `"1-4-1"` and customize them on a per-car basis
 * Added `WaitCondition` and `WaitConditions` objects which keep track of train station condition trees
     * `WaitConditions` can be combined using bitwise `and` and `or` in order to collect them into a `WaitConditions` object:
@@ -32,6 +58,7 @@
 * Added `Collection.find_trains_filtered()` to allow users to search Blueprints/Groups for trains of particular types
 * Added `RailPlanner` (finally)
 * Added `data.fluids` module with some useful helpers
+* Added `data.planets` module allowing you to access planet metadata for things like surface properties
 * Added `data.items.fuels` which is dict of sets of item names that fall under their respective fuel categories
 * Added data functions `signals.add_signal()`, `tiles.add_tile()`, `entities.add_entity()`, etc. which allow you to add entities on the fly (primarily for Factorio environment compatibility)
 * Added `RequestItemsMixin` to `Locomotive`, `CargoWagon`, and `ArtilleryWagon`

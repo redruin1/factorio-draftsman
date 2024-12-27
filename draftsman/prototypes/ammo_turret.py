@@ -1,10 +1,20 @@
 # ammo_turret.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import RequestItemsMixin, DirectionalMixin
+from draftsman.classes.mixins import (
+    RequestItemsMixin,
+    ReadAmmoMixin,
+    TargetPrioritiesMixin,
+    CircuitConditionMixin,
+    LogisticConditionMixin,
+    CircuitEnableMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    DirectionalMixin,
+)
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import uint32
+from draftsman.signatures import DraftsmanBaseModel, uint32
 from draftsman.utils import get_first
 
 from draftsman.data.entities import ammo_turrets
@@ -13,14 +23,48 @@ from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
 
-class AmmoTurret(RequestItemsMixin, DirectionalMixin, Entity):
+class AmmoTurret(
+    RequestItemsMixin, 
+    ReadAmmoMixin, 
+    TargetPrioritiesMixin,
+    CircuitConditionMixin,
+    LogisticConditionMixin,
+    CircuitEnableMixin,
+    ControlBehaviorMixin, 
+    CircuitConnectableMixin,
+    DirectionalMixin, 
+    Entity
+):
     """
     An entity that automatically targets and attacks other forces within range.
     Consumes item-based ammunition.
     """
 
-    class Format(RequestItemsMixin.Format, DirectionalMixin.Format, Entity.Format):
-        model_config = ConfigDict(title="Turret")
+    class Format(
+        RequestItemsMixin.Format,
+        ReadAmmoMixin.Format,
+        TargetPrioritiesMixin.Format,
+        CircuitConditionMixin.Format,
+        LogisticConditionMixin.Format,
+        CircuitEnableMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(
+            ReadAmmoMixin.ControlFormat,
+            TargetPrioritiesMixin.ControlFormat,
+            CircuitConditionMixin.ControlFormat,
+            LogisticConditionMixin.ControlFormat,
+            CircuitEnableMixin.ControlFormat,
+            DraftsmanBaseModel
+        ):
+            pass
+
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+
+        model_config = ConfigDict(title="AmmoTurret")
 
     def __init__(
         self,
@@ -36,7 +80,7 @@ class AmmoTurret(RequestItemsMixin, DirectionalMixin, Entity):
         **kwargs
     ):
         """
-        Construct a new turret.
+        Construct a new ammo turret.
 
         TODO
         """

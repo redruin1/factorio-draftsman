@@ -1,4 +1,4 @@
-# enable_disable.py
+# circuit_enable.py
 
 from draftsman.classes.exportable import attempt_and_reissue
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 
-class EnableDisableMixin:  # (ControlBehaviorMixin)
+class CircuitEnableMixin:  # (ControlBehaviorMixin)
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
 
@@ -15,8 +15,8 @@ class EnableDisableMixin:  # (ControlBehaviorMixin)
     """
 
     class ControlFormat(BaseModel):
-        circuit_enable_disable: Optional[bool] = Field(
-            None,
+        circuit_enabled: Optional[bool] = Field(
+            False,
             description="""
             Whether or not this machine will be toggled by some circuit 
             condition. Many machines reuse this parameter name, but others have
@@ -28,32 +28,32 @@ class EnableDisableMixin:  # (ControlBehaviorMixin)
         pass
 
     @property
-    def enable_disable(self) -> Optional[bool]:
+    def circuit_enabled(self) -> Optional[bool]:
         """
         Whether or not the machine enables its operation based on a circuit
         condition. Only used on entities that have multiple operation states,
         including (but not limited to) a inserters, belts, train-stops,
         power-switches, etc.
 
-        :getter: Gets the value of ``enable_disable``, or ``None`` if not set.
-        :setter: Sets the value of ``enable_disable``. Removes the attribute if
+        :getter: Gets the value of ``circuit_enable``, or ``None`` if not set.
+        :setter: Sets the value of ``circuit_enable``. Removes the attribute if
             set to ``None``.
 
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.
         """
-        return self.control_behavior.circuit_enable_disable
+        return self.control_behavior.circuit_enable
 
-    @enable_disable.setter
-    def enable_disable(self, value: Optional[bool]):
+    @circuit_enabled.setter
+    def circuit_enabled(self, value: Optional[bool]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,
                 type(self).Format.ControlBehavior,
                 self.control_behavior,
-                "circuit_enable_disable",
+                "circuit_enable",
                 value,
             )
-            self.control_behavior.circuit_enable_disable = result
+            self.control_behavior.circuit_enable = result
         else:
-            self.control_behavior.circuit_enable_disable = value
+            self.control_behavior.circuit_enable = value

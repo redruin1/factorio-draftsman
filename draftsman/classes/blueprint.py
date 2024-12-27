@@ -134,7 +134,9 @@ from pydantic import (
 )
 
 
-def _normalize_internal_structure(input_root, entities_in, tiles_in, schedules_in, wires_in):
+def _normalize_internal_structure(
+    input_root, entities_in, tiles_in, schedules_in, wires_in
+):
     # TODO make this a member of blueprint?
     def _throw_invalid_association(entity):
         raise InvalidAssociationError(
@@ -238,10 +240,14 @@ def _normalize_internal_structure(input_root, entities_in, tiles_in, schedules_i
     for wire in wires_in:
         entity_1 = wire[0]
         entity_2 = wire[2]
-        wires_out.append([
-            flattened_entities.index(entity_1()) + 1, wire[1],
-            flattened_entities.index(entity_2()) + 1, wire[3]
-        ])
+        wires_out.append(
+            [
+                flattened_entities.index(entity_1()) + 1,
+                wire[1],
+                flattened_entities.index(entity_2()) + 1,
+                wire[3],
+            ]
+        )
 
     input_root["wires"] = wires_out
 
@@ -363,7 +369,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                 description="""
                 (2.0) The definitions of all wires in the blueprint, including
                 both power and circuit connections.
-                """
+                """,
             )
 
             @field_serializer("snap_to_grid", when_used="unless-none")
@@ -468,7 +474,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         ] = ValidationMode.STRICT,
         **kwargs,
     ):
-
         # self._root.blueprint = Blueprint.Format.BlueprintObject(item="blueprint")
 
         # Item (type identifier)
@@ -966,7 +971,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         # 1-dimensional lists, flattening any Groups that this blueprint
         # contains, and swapping their Associations into integer indexes
         _normalize_internal_structure(
-            result[self._root_item], self.entities, self.tiles, self.schedules, self._root._wires
+            result[self._root_item],
+            self.entities,
+            self.tiles,
+            self.schedules,
+            self._root._wires,
         )
 
         # # Construct a model with the flattened data, not running any validation
@@ -1026,6 +1035,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             del result["blueprint"]["tiles"]
         if len(result["blueprint"]["schedules"]) == 0:
             del result["blueprint"]["schedules"]
+        if len(result["blueprint"]["wires"]) == 0:
+            del result["blueprint"]["wires"]
 
         return result
 

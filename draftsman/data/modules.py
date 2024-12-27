@@ -71,9 +71,11 @@ def get_modules_from_effects(allowed_effects: set[str], recipe: str = None) -> s
                 and recipe in module["limitation_blacklist"]
             ):
                 continue  # pragma: no coverage
-        # I think the module's positive effects has to be a subset of the 
+        # I think the module's positive effects has to be a subset of the
         # set of allowed effects
-        positive_effects = {effect for effect, value in module["effect"].items() if value > 0}
+        positive_effects = {
+            effect for effect, value in module["effect"].items() if value > 0
+        }
         if positive_effects.issubset(allowed_effects):
             output.add(module_name)
 

@@ -2,5 +2,10 @@
 
 from draftsman.data.entities import fluid_turrets
 
-class FluidTurret():
+
+class FluidTurret:
+    """
+    A turret which uses a fluid as ammunition.
+    """
+
     pass

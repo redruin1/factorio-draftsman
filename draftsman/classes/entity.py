@@ -225,7 +225,9 @@ class Entity(Exportable, EntityLike):
         # the point where certain entity types did not exist (e.g. LinkedBelt))
         if name is None:  # pragma: no coverage
             raise DataFormatError(
-                "Unable to create a default entity; the current environment has no entitites of type '{}'".format(self.__class__.__name__)
+                "Unable to create a default entity; the current environment has no entitites of type '{}'".format(
+                    self.__class__.__name__
+                )
             )
 
         # Init Exportable

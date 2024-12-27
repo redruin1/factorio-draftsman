@@ -2,7 +2,7 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    InputIngredientsMixin,
+    # InputIngredientsMixin,
     ModulesMixin,
     RequestItemsMixin,
 )
@@ -17,13 +17,12 @@ from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
 
-class Beacon(InputIngredientsMixin, ModulesMixin, RequestItemsMixin, Entity):
+class Beacon(ModulesMixin, RequestItemsMixin, Entity):
     """
     An entity designed to apply module effects to other machine's in it's radius.
     """
 
     class Format(
-        InputIngredientsMixin.Format,
         ModulesMixin.Format,
         RequestItemsMixin.Format,
         Entity.Format,
@@ -35,7 +34,7 @@ class Beacon(InputIngredientsMixin, ModulesMixin, RequestItemsMixin, Entity):
         name: Optional[str] = get_first(beacons),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        items: dict[str, uint32] = {},  # TODO: ItemID
+        items: list[RequestItemsMixin.Format.ItemRequest] = [],
         tags: dict[str, Any] = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -60,14 +59,14 @@ class Beacon(InputIngredientsMixin, ModulesMixin, RequestItemsMixin, Entity):
 
     # =========================================================================
 
-    @property
-    def allowed_input_ingredients(self) -> set[str]:
-        """
-        Gets the list of items that are valid inputs ingredients for crafting
-        machines of all types. Returns ``None`` if this entity's name is not
-        recognized by Draftsman. Not exported; read only.
-        """
-        return set()
+    # @property
+    # def allowed_input_ingredients(self) -> set[str]:
+    #     """
+    #     Gets the list of items that are valid inputs ingredients for crafting
+    #     machines of all types. Returns ``None`` if this entity's name is not
+    #     recognized by Draftsman. Not exported; read only.
+    #     """
+    #     return set()
 
     # =========================================================================
 

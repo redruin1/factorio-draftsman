@@ -5,7 +5,7 @@ from draftsman.classes.mixins import (
     CircuitReadContentsMixin,
     LogisticConditionMixin,
     CircuitConditionMixin,
-    EnableDisableMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
@@ -25,7 +25,7 @@ class TransportBelt(
     CircuitReadContentsMixin,
     CircuitConditionMixin,
     LogisticConditionMixin,
-    EnableDisableMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
@@ -39,7 +39,7 @@ class TransportBelt(
         CircuitReadContentsMixin.Format,
         CircuitConditionMixin.Format,
         LogisticConditionMixin.Format,
-        EnableDisableMixin.Format,
+        CircuitEnableMixin.Format,
         ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
         DirectionalMixin.Format,
@@ -49,7 +49,7 @@ class TransportBelt(
             CircuitReadContentsMixin.ControlFormat,
             CircuitConditionMixin.ControlFormat,
             LogisticConditionMixin.ControlFormat,
-            EnableDisableMixin.ControlFormat,
+            CircuitEnableMixin.ControlFormat,
         ):
             pass
 

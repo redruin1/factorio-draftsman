@@ -117,19 +117,20 @@ try:
         underground_belts: list[str] = of_type["underground-belt"]
         underground_pipes: list[str] = of_type["pipe-to-ground"]
         walls: list[str] = of_type["wall"]
-        
+
         # logistic_passive_containers: list[str] = of_type["logistic_passive_containers"]
         # logistic_active_containers: list[str] = of_type["logistic_active_containers"]
         # logistic_storage_containers: list[str] = of_type["logistic_storage_containers"]
         # logistic_buffer_containers: list[str] = of_type["logistic_buffer_containers"]
         # logistic_request_containers: list[str] = of_type["logistic_request_containers"]
-        
+
 
 except FileNotFoundError:
-    raw: dict[str, dict] ={}
+    raw: dict[str, dict] = {}
     of_type: dict[str, list[dict]] = {}
     flippable: dict[str, bool] = {}
     collision_sets: dict[str, CollisionSet] = {}
+
 
 def add_entity(
     name: str,
@@ -137,7 +138,7 @@ def add_entity(
     collision_box: PrimitiveAABB,
     collision_mask: set[str] = None,
     hidden: bool = False,
-    target: tuple[dict[str, dict], dict[str, list]]=(raw, of_type),
+    target: tuple[dict[str, dict], dict[str, list]] = (raw, of_type),
     **kwargs
 ):
     """
@@ -250,6 +251,6 @@ def add_entity(
     )
 
     if type in of_type:
-        of_type[type].append(name) # FIXME
+        of_type[type].append(name)  # FIXME
     else:
         of_type[type] = [name]

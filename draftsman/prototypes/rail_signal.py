@@ -5,7 +5,7 @@ from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     ReadRailSignalMixin,
     CircuitConditionMixin,
-    EnableDisableMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     EightWayDirectionalMixin,
@@ -24,7 +24,7 @@ from typing import Any, Literal, Optional, Union
 class RailSignal(
     ReadRailSignalMixin,
     CircuitConditionMixin,
-    EnableDisableMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     EightWayDirectionalMixin,
@@ -38,7 +38,7 @@ class RailSignal(
     class Format(
         ReadRailSignalMixin.Format,
         CircuitConditionMixin.Format,
-        EnableDisableMixin.Format,
+        CircuitEnableMixin.Format,
         ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
         EightWayDirectionalMixin.Format,
@@ -47,9 +47,9 @@ class RailSignal(
         class ControlBehavior(
             ReadRailSignalMixin.ControlFormat,
             CircuitConditionMixin.ControlFormat,
+            CircuitEnableMixin.ControlFormat,
             DraftsmanBaseModel,
         ):
-
             circuit_close_signal: Optional[bool] = Field(
                 False,
                 description="""

@@ -22,7 +22,7 @@ from draftsman.signatures import (
     uint32,
 )
 from draftsman.utils import get_first
-from draftsman.warning import PureVirtualDisallowedWarning # TODO
+from draftsman.warning import PureVirtualDisallowedWarning  # TODO
 
 from draftsman.data.entities import constant_combinators
 from draftsman.data import entities
@@ -32,7 +32,11 @@ from typing import Any, Literal, Optional, Union
 
 
 class ConstantCombinator(
-    PlayerDescriptionMixin, ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
+    PlayerDescriptionMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    DirectionalMixin,
+    Entity,
 ):
     """
     A combinator that holds a number of constant signals that can be output to
@@ -51,7 +55,7 @@ class ConstantCombinator(
         #     filters: Optional[list[SignalFilter]] = Field(
         #         [],
         #         description="""
-        #         The set of constant signals that are emitted when this 
+        #         The set of constant signals that are emitted when this
         #         combinator is turned on.
         #         """,
         #     )
@@ -83,36 +87,46 @@ class ConstantCombinator(
                     filters: Optional[list[SignalFilter]] = []
                     group: Optional[str] = Field(
                         None,
-                        description="Name of this particular signal section group."
+                        description="Name of this particular signal section group.",
                     )
 
                     def set_signal(
-                        self, 
-                        index: int64, 
-                        name: Union[str, None], 
+                        self,
+                        index: int64,
+                        name: Union[str, None],
                         count: int32 = 0,
-                        quality: Literal["normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"] = "normal",
+                        quality: Literal[
+                            "normal",
+                            "uncommon",
+                            "rare",
+                            "epic",
+                            "legendary",
+                            "quality-unknown",
+                            "any",
+                        ] = "normal",
                         type: Optional[str] = None,
                     ) -> None:
                         try:
                             new_entry = SignalFilter(
-                                index=index, 
-                                name=name, 
-                                type=type, 
-                                quality=quality, 
-                                comparator="=", 
-                                count=count
+                                index=index,
+                                name=name,
+                                type=type,
+                                quality=quality,
+                                comparator="=",
+                                count=count,
                             )
                             new_entry.index += 1
                         except ValidationError as e:
                             raise DataFormatError(e) from None
-                        
+
                         new_filters = [] if self.filters is None else self.filters
 
                         # Check to see if filters already contains an entry with the same index
                         existing_index = None
                         for i, signal_filter in enumerate(new_filters):
-                            if index + 1 == signal_filter["index"]:  # Index already exists in the list
+                            if (
+                                index + 1 == signal_filter["index"]
+                            ):  # Index already exists in the list
                                 if name is None:  # Delete the entry
                                     del new_filters[i]
                                 else:
@@ -136,8 +150,15 @@ class ConstantCombinator(
                         if not self.filters:
                             return None
 
-                        return next((item for item in self.filters if item["index"] == index + 1), None)
-                    
+                        return next(
+                            (
+                                item
+                                for item in self.filters
+                                if item["index"] == index + 1
+                            ),
+                            None,
+                        )
+
                     @field_validator("filters", mode="before")
                     @classmethod
                     def normalize_input(cls, value: Any):
@@ -150,21 +171,20 @@ class ConstantCombinator(
                                         "type": next(iter(get_signal_types(entry[0]))),
                                         "comparator": "=",
                                         "count": entry[1],
-                                        "max_count": entry[1]
+                                        "max_count": entry[1],
                                     }
 
                         return value
-                
-                sections: Optional[list[Section]] = Field(
-                    [],
-                    description="""TODO"""
-                )
+
+                sections: Optional[list[Section]] = Field([], description="""TODO""")
 
                 def __getitem__(self, key):
                     # Custom getitem for this thing specfically
-                    # return self.sections[key] 
+                    # return self.sections[key]
                     if isinstance(key, str):
-                        return next(section for section in self.sections if section.group == key)
+                        return next(
+                            section for section in self.sections if section.group == key
+                        )
                     else:
                         return self.sections[key]
 
@@ -172,7 +192,7 @@ class ConstantCombinator(
                 Sections(),
                 description="""
                 The signal sections specified in this combinator (or elsewhere?)
-                """
+                """,
             )
 
             is_on: Optional[bool] = Field(
@@ -233,8 +253,8 @@ class ConstantCombinator(
         Returns ``None`` if the entity's name is not recognized by Draftsman.
         Not exported; read only.
 
-        Note: Deprecated in Factorio 2.0; each combinator signal section can 
-        hold up to 1000 signals, and a combinator can as many signal sections as 
+        Note: Deprecated in Factorio 2.0; each combinator signal section can
+        hold up to 1000 signals, and a combinator can as many signal sections as
         desired.
         """
         return entities.raw.get(self.name, {"item_slot_count": None})["item_slot_count"]
@@ -287,7 +307,7 @@ class ConstantCombinator(
     @property
     def sections(self) -> Optional[list[Format.ControlBehavior.Sections.Section]]:
         return self.control_behavior.sections.sections
-    
+
     @sections.setter
     def sections(self, value: Optional[list[Format.ControlBehavior.Sections.Section]]):
         if self.validate_assignment:
@@ -336,14 +356,14 @@ class ConstantCombinator(
     def add_section(
         self,
         group: Union[str, None] = None,
-        index: Optional[int] = None, # TODO: integer size
-        active: bool = True
+        index: Optional[int] = None,  # TODO: integer size
+        active: bool = True,
     ) -> "ConstantCombinator.Format.ControlBehavior.Sections.Section":
         """
         Adds a new section to the constant combinator.
 
         NOTE:: Beware of giving sections the same or existing names! If a named
-            group already exists within a save, then that group will take 
+            group already exists within a save, then that group will take
             precedence over a newly added group.
 
         :param group: The name to give this group. The group will have no name
@@ -369,10 +389,10 @@ class ConstantCombinator(
     # =========================================================================
 
     # def set_signal(
-    #     self,  
-    #     index: int64, 
-    #     name: str, 
-    #     count: int32 = 0, 
+    #     self,
+    #     index: int64,
+    #     name: str,
+    #     count: int32 = 0,
     #     type: Optional[str] = None,
     #     quality: Literal["normal", "uncommon", "rare", "epic", "legendary"] = "normal"
     # ):

@@ -2,5 +2,6 @@
 
 from draftsman.data.entities import elevated_curved_rails_a
 
-class ElevatedCurvedRailA():
+
+class ElevatedCurvedRailA:
     pass

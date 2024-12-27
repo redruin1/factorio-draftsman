@@ -21,7 +21,7 @@ class DraftsmanWarning(UserWarning):
 class ValueWarning(DraftsmanWarning):
     """
     Generic warning, similar to ``ValueError``. Raised when a input value is
-    incorrect, but wont cause the blueprint to fail import.
+    incorrect, but won't cause the blueprint to fail import.
     """
 
     pass

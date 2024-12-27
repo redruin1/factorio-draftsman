@@ -222,13 +222,13 @@ def new_entity(name: str, **kwargs):
     if name in of_type["turret"]:
         return Turret(name, **kwargs)
     if name in of_type["ammo-turret"]:
-        return Turret(name, **kwargs) # TODO: AmmoTurret
+        return Turret(name, **kwargs)  # TODO: AmmoTurret
     if name in of_type["electric-turret"]:
-        return Turret(name, **kwargs) # TODO: ElectricTurret
+        return Turret(name, **kwargs)  # TODO: ElectricTurret
     if name in of_type["fluid-turret"]:
-        return Turret(name, **kwargs) # TODO: FluidTurret
+        return Turret(name, **kwargs)  # TODO: FluidTurret
     if name in of_type["artillery-turret"]:
-        return Turret(name, **kwargs) # TODO: ArtilleryTurret
+        return Turret(name, **kwargs)  # TODO: ArtilleryTurret
     if name in of_type["radar"]:
         return Radar(name, **kwargs)
     if name in of_type["simple-entity-with-owner"]:

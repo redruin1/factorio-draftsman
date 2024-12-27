@@ -59,7 +59,7 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
                 self,
                 type(self).Format.ControlBehavior,
                 self.control_behavior,
-                "circuit_enable_disable",
+                "circuit_enabled",
                 value,
             )
             self.control_behavior.circuit_enabled = result

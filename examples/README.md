@@ -56,7 +56,7 @@ The tool only allows you to specify one item and amount at a time, but it can be
 
 ![item_stack_signals.png](images/item_stack_signals.png)
 
-Generates a matrix of constant combinators where the value of each signal is that item's stack size. Dynamically adjusts to whatever mods that Draftsman is initialized with, so you can use it to quickly determine how many inventory slots are occupied by a particular item on any sort of save. Additional circuitry not included.
+Generates a matrix of constant combinators where the value of each signal is that item's stack size. Obsolete as of Factorio 2.0 with the new selector combinator, but retained for instructional purposes.
 
 ## [`ltn_train_stop.py`](ltn_train_stop.py)
 

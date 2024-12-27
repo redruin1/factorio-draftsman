@@ -129,6 +129,7 @@ def get_stack_size(item_name: str) -> int:
     """
     return raw.get(item_name, {"stack_size": None})["stack_size"]
 
+
 def get_weight(item_name: str) -> float:
     """
     TODO

@@ -149,7 +149,6 @@ class SpatialHashMap(SpatialDataStructure):
                     or isinstance(item, Gate)
                     and isinstance(overlapping_item, StraightRail)
                 ):
-
                     parallel = (item.direction - overlapping_item.direction) % 4 == 0
                     if not parallel:
                         continue

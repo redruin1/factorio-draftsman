@@ -2,5 +2,10 @@
 
 from draftsman.data.entities import selector_combinators
 
-class SelectorCombinator():
+
+class SelectorCombinator:
+    """
+    An entity which has a number of miscellaneous combinator functions.
+    """
+
     pass

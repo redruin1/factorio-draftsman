@@ -2,5 +2,10 @@
 
 from draftsman.data.entities import electric_turrets
 
-class ElectricTurret():
+
+class ElectricTurret:
+    """
+    A turret which uses electricity as ammunition.
+    """
+
     pass

@@ -37,6 +37,8 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
     class Format(BaseModel):
         pass
 
+    # =========================================================================
+
     @property
     def red_output_signal(self) -> Optional[SignalID]:
         """
@@ -79,8 +81,7 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
     @property
     def yellow_output_signal(self) -> Optional[SignalID]:
         """
-        The yellow (internally: orange) output signal. Sent when the rail
-        signal's state is yellow.
+        The yellow output signal. Sent when the rail signal's state is yellow.
 
         Stored as a ``dict`` in the format ``{"name": str, "type": str}``, where
         ``name`` is the name of the signal and ``type`` is it's type, either

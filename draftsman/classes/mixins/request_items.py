@@ -12,12 +12,16 @@ from draftsman.warning import ItemLimitationWarning, UnknownItemWarning
 from pydantic import Field, ValidationInfo, field_validator
 from copy import deepcopy
 
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
 
 class RequestItemsMixin:
     """
-    Enables an entity to request items during its construction. Note that this
+    Enables an entity to request items during its construction.
+
+    Not to be confused with
+
+    Note that this
     is *not* for Logistics requests such as requester and buffer chests (that's
     what :py:class:`~.mixins.request_filters.RequestFiltersMixin` is for).
     Instead this is for specifying additional construction components, things
@@ -26,7 +30,37 @@ class RequestItemsMixin:
     """
 
     class Format(DraftsmanBaseModel):
-        items: Optional[dict[ItemName, uint32]] = Field(
+        class ItemRequest(DraftsmanBaseModel):
+            class ItemSpecification(DraftsmanBaseModel):
+                class InventoryLocation(DraftsmanBaseModel):
+                    inventory: uint32 = Field(  # TODO: size
+                        ..., description="Which inventory this item sits in, 1-indexed."
+                    )
+                    stack: uint32 = Field(  # TODO: size
+                        ...,
+                        description="Which slot in the inventory it lies in, 0-indexed.",
+                    )
+                    count: Optional[uint32] = Field(  # TODO: size
+                        1, description="The amount of the item to request to that slot."
+                    )
+
+                in_inventory: Optional[list[InventoryLocation]] = Field(
+                    [], description="Which slots this item should occupy"
+                )
+                grid_count: Optional[uint32] = Field(
+                    0, description="The amount to request to the associated grid."
+                )
+
+            id: SignalID = Field(..., description="The name of the item to request.")
+            items: ItemSpecification = Field(
+                [],
+                description="""
+                A list of all requested items and their locations within the 
+                entity.
+                """,
+            )
+
+        items: Optional[list[ItemRequest]] = Field(
             {},
             description="""
             List of construction item requests (such as delivering modules for 
@@ -116,7 +150,16 @@ class RequestItemsMixin:
     # =========================================================================
 
     @reissue_warnings
-    def set_item_request(self, item: str, count: Optional[uint32]):
+    def set_item_request(
+        self,
+        item: str,
+        quality: Literal[
+            "normal", "uncommon", "rare", "epic", "legendary", "any"
+        ] = "normal",
+        count: Optional[uint32] = None,
+        inventory: uint32 = 0,
+        slot: Optional[uint32] = None,
+    ):
         """
         Requests an amount of an item. Removes the item request if ``count`` is
         set to ``0`` or ``None``. Manages ``module_slots_occupied``.
@@ -127,7 +170,13 @@ class RequestItemsMixin:
         item that is not a module to a Beacon entity.
 
         :param item: The string name of the requested item.
-        :param count: The desired amount of that item.
+        :param quality: The quality of the requested item.
+        :param count: The desired amount of that item. If omitted a count of
+            ``0`` will be assumed.
+        :param inventory: The particular inventory to request this item to. If
+            omitted it will default to the first (typically only) inventory.
+        :param slot: The particular slot in the inventory to place the item. The
+            next open slot will be chosen automatically if omitted.
 
         :exception TypeError: If ``item`` is anything other than a ``str``, or
             if ``count`` is anything other than an ``int`` or ``None``.
@@ -140,10 +189,59 @@ class RequestItemsMixin:
         # TODO: inefficient
         new_items = deepcopy(self.items)
 
+        print(new_items)
+
         if count == 0:
-            new_items.pop(item, None)
+            # new_items.pop(item, None)
+            new_items = [i_item for i_item in new_items if i_item["id"]["name"] != item]
         else:
-            new_items[item] = count
+            # Try to find an existing entry for `item` with the same quality
+            existing_spec = next(
+                filter(
+                    lambda x: x["id"]["name"] == item
+                    and x["id"].get("quality", "normal") == quality,
+                    new_items,
+                ),
+                None,
+            )
+            if existing_spec is None:
+                # If not, add a new item entry
+                print("yes")
+                new_items.append(
+                    {
+                        "id": {"name": item, "quality": quality},
+                        "items": {
+                            "in_inventory": [
+                                {
+                                    "inventory": inventory + 1,
+                                    "stack": slot,
+                                    "count": count,
+                                }
+                            ]
+                        },
+                    }
+                )
+            else:
+                # Try to find an existing entry at the same slot in the same inventory
+                # TODO: what if there's an entry, but slot is None? Do we just pick
+                # the first valid entry?
+                existing_slot = next(
+                    filter(
+                        lambda x: x["inventory"] == inventory and x["stack"] == slot,
+                        existing_spec["items"]["in_inventory"],
+                    ),
+                    None,
+                )
+                if existing_slot is None:
+                    # If not, make a new one
+                    existing_spec["items"]["in_inventory"].append(
+                        {"inventory": inventory + 1, "stack": slot, "count": count}
+                    )
+                else:
+                    # If so, simply modify the count
+                    existing_slot["count"] = count
+
+        print(new_items)
 
         try:
             original_items = self._root.items

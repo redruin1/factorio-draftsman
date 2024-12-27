@@ -23,12 +23,19 @@ from typing import Any, Literal, Optional, Union
 from typing_extensions import TypedDict
 
 
-class SignalNetworkSpec(TypedDict): # TODO: make this a DraftsmanBaseModel and move to signatures
+class SignalNetworkSpec(
+    TypedDict
+):  # TODO: make this a DraftsmanBaseModel and move to signatures
     red: bool
     green: bool
 
+
 class ArithmeticCombinator(
-    PlayerDescriptionMixin, ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
+    PlayerDescriptionMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    DirectionalMixin,
+    Entity,
 ):
     """
     An arithmetic combinator. Peforms a mathematical or bitwise operation on
@@ -66,7 +73,7 @@ class ArithmeticCombinator(
                     description="""
                     Which input wire networks to pull from when evaluating the 
                     value of the first signal.
-                    """
+                    """,
                 )
                 operation: Literal[
                     "*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR", None
@@ -98,7 +105,7 @@ class ArithmeticCombinator(
                     description="""
                     Which input wire networks to pull from when evaluating the 
                     value of the second signal.
-                    """
+                    """,
                 )
                 output_signal: Optional[SignalID] = Field(
                     None,
@@ -152,7 +159,7 @@ class ArithmeticCombinator(
                         return self
                     if info.context["mode"] <= ValidationMode.MINIMUM:
                         return self
-                    
+
                     # This check only applies to Factorio 1.X
                     if info.context["environment_version"] >= (2, 0):
                         return self
@@ -185,8 +192,6 @@ class ArithmeticCombinator(
 
                     # TODO: ensure this is only called on validation of the entire
                     # thing
-
-                    
 
                     # Ensure that if the output signal is set to "signal-each",
                     # one of the input signals must also be "signal-each"
@@ -535,9 +540,13 @@ class ArithmeticCombinator(
         """
         new_control_behavior = {
             "arithmetic_conditions": {
-                "first_signal_networks": {key: key in first_wires for key in {"red", "green"}},
+                "first_signal_networks": {
+                    key: key in first_wires for key in {"red", "green"}
+                },
                 "operation": "*" if operation is None else operation,
-                "second_signal_networks": {key: key in second_wires for key in {"red", "green"}},
+                "second_signal_networks": {
+                    key: key in second_wires for key in {"red", "green"}
+                },
                 "output_signal": output_signal,
             }
         }

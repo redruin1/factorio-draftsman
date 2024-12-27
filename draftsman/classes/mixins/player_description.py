@@ -19,7 +19,7 @@ class PlayerDescriptionMixin:
             description="""
             The user-facing description given to this entity. Supports rich text
             and item icons.
-            """
+            """,
         )
 
     def __init__(self, name, similar_entities, **kwargs):
@@ -38,7 +38,7 @@ class PlayerDescriptionMixin:
         documentation purposes.
         """
         return self._root.player_description
-    
+
     @player_description.setter
     def player_description(self, value: Optional[str]):
         # TODO: validation

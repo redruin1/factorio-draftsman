@@ -189,6 +189,7 @@ def main():
         if args.desired_version is None:
             # Grab and populate the repo, making sure its a git repo we expect
             import git
+
             repo = git.Repo(args.game_path)
             repo.git.fetch()
             assert (

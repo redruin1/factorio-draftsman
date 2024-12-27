@@ -17,7 +17,11 @@ from draftsman.environment.mod_list import (
     display_mods,
 )
 from draftsman.environment.mod_settings import read_mod_settings
-from draftsman.error import MissingModError, IncompatableModError, IncorrectModVersionError
+from draftsman.error import (
+    MissingModError,
+    IncompatableModError,
+    IncorrectModVersionError,
+)
 from draftsman.utils import AABB, version_string_to_tuple, version_tuple_to_string
 
 import git
@@ -113,7 +117,7 @@ def get_default_collision_mask(entity_type):
             "player-layer",
             "water-tile",
         }
-    
+
 
 def get_order(objects_to_sort, sort_objects, sort_subgroups, sort_groups):
     """
@@ -302,6 +306,7 @@ def specify_factorio_version(
                 )
             )
 
+
 def python_require(
     mod: Mod, mod_folder: str, module_name: str, package_path: str
 ) -> tuple[str | None, str]:
@@ -347,9 +352,8 @@ def python_require(
     # Otherwise, we found squat
     return None, "no file '{}' found in '{}' archive".format(module_name, mod.name)
 
-def run_mod_phase(
-    lua: lupa.LuaRuntime, mod: Mod, stage: str
-) -> None:
+
+def run_mod_phase(lua: lupa.LuaRuntime, mod: Mod, stage: str) -> None:
     """
     Runs one of the mod entry-points for either the settings or the data stage.
     (`settings.lua`, `data-updates.lua`, etc.)
@@ -365,14 +369,20 @@ def run_mod_phase(
     lua.execute(mod.get_file(stage))
 
 
-def run_settings_stage(lua: lupa.LuaRuntime, load_order: list[Mod], mods_path: str, draftsman_path: str, base_path: str, verbose: bool=False):
+def run_settings_stage(
+    lua: lupa.LuaRuntime,
+    load_order: list[Mod],
+    mods_path: str,
+    draftsman_path: str,
+    base_path: str,
+    verbose: bool = False,
+):
     stages = ("settings.lua", "settings-updates.lua", "settings-final-fixes.lua")
     for stage in stages:
         if verbose:
             print(stage.upper() + ":")
 
         for mod in load_order:
-
             # Reset the directory so we dont require from different mods
             # Well, unless we need to. Otherwise, avoid it
             # TODO: fixme
@@ -382,16 +392,18 @@ def run_settings_stage(lua: lupa.LuaRuntime, load_order: list[Mod], mods_path: s
                 if verbose:
                     print("\tmod:", mod.name)
 
-                run_mod_phase(lua, mod, stage)                
+                run_mod_phase(lua, mod, stage)
 
                 # Reset the included modules
                 lua.globals().lua_unload_cache()
 
     # Factorio then converts the settings which were stored in data.raw
     # to the global 'settings' table: We emulate that here in 'settings.lua':
-    lua.execute(file_to_string(os.path.join(draftsman_path, "compatibility", "settings.lua")))
+    lua.execute(
+        file_to_string(os.path.join(draftsman_path, "compatibility", "settings.lua"))
+    )
 
-    # If there is a `mod-settings.dat` file present, we overwrite the current 
+    # If there is a `mod-settings.dat` file present, we overwrite the current
     # values with the user-specified ones:
     try:
         user_settings = read_mod_settings(mods_path)
@@ -405,7 +417,9 @@ def run_settings_stage(lua: lupa.LuaRuntime, load_order: list[Mod], mods_path: s
         pass
 
 
-def run_data_stage(lua: lupa.LuaRuntime, load_order: list[Mod], base_path: str, verbose: bool=False):
+def run_data_stage(
+    lua: lupa.LuaRuntime, load_order: list[Mod], base_path: str, verbose: bool = False
+):
     """
     TODO
     """
@@ -470,7 +484,7 @@ def run_data_lifecycle(
     # Currently, `mods` contains all versions of each mod detected under each
     # mod name. Once we get to the actual load process however, we only want the
     # active mods, and only one version of each mod if there are multiple.
-    # Here we select only the enabled mods and collapse the list of different 
+    # Here we select only the enabled mods and collapse the list of different
     # mod versions to just the first mod in the list, since that Mod should be
     # the one that Factorio should select:
     mods = {name: mod_list[0] for name, mod_list in mods.items() if mod_list[0].enabled}
@@ -517,17 +531,23 @@ def run_data_lifecycle(
 
             # Ensure the mod's version is correct
             if dependency.version is not None:
-                assert dependency.operation in ["==", ">=", "<=", ">", "<"], "incorrect operation"
+                assert dependency.operation in [
+                    "==",
+                    ">=",
+                    "<=",
+                    ">",
+                    "<",
+                ], "incorrect operation"
                 actual_version = version_string_to_tuple(mods[dependency.name].version)
                 target_version = version_string_to_tuple(dependency.version)
                 expr = str(actual_version) + dependency.operation + str(target_version)
                 if not eval(expr):
                     raise IncorrectModVersionError(
                         "mod '{}' version {} not {} {}".format(
-                            mod_name, 
-                            actual_version, 
-                            dependency.operation, 
-                            target_version
+                            mod_name,
+                            actual_version,
+                            dependency.operation,
+                            target_version,
                         )
                     )
 
@@ -606,9 +626,7 @@ def run_data_lifecycle(
     lua.globals().python_require = python_require
 
     # Factorio utility functions
-    lua.execute(
-        file_to_string(os.path.join(game_path, "core", "lualib", "util.lua"))
-    )
+    lua.execute(file_to_string(os.path.join(game_path, "core", "lualib", "util.lua")))
 
     # Because Lupa can't handle byte-order marks in input files, we can't rely
     # on Lua itself to load raw files using require unmodified
@@ -636,9 +654,7 @@ def run_data_lifecycle(
 
     # Factorio `data:extend` function
     lua.execute(
-        file_to_string(
-            os.path.join(game_path, "core", "lualib", "dataloader.lua")
-        )
+        file_to_string(os.path.join(game_path, "core", "lualib", "dataloader.lua"))
     )
 
     # Construct and send the mods table to the Lua instance in `interface.lua`
@@ -650,7 +666,7 @@ def run_data_lifecycle(
     # of code to convert the `python_mods` global to the `mods` Lua table
     # Factorio wants
     lua.execute(
-    """
+        """
     mods = {}
     for k in python.iter(python_mods) do
         mods[k] = python_mods[k]
@@ -680,12 +696,12 @@ def run_data_lifecycle(
 
     # Load the settings stage
     run_settings_stage(
-        lua=lua, 
-        load_order=load_order, 
-        mods_path=mods_path, 
-        draftsman_path=draftsman_path, 
-        base_path=base_path, 
-        verbose=verbose
+        lua=lua,
+        load_order=load_order,
+        mods_path=mods_path,
+        draftsman_path=draftsman_path,
+        base_path=base_path,
+        verbose=verbose,
     )
 
     # Load the data stage
@@ -840,7 +856,9 @@ def get_items(lua):
     return sorted_items, sorted_subgroups, sorted_groups
 
 
-def extract_mods(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool=False) -> None:
+def extract_mods(
+    lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = False
+) -> None:
     """
     Extract all the mod versions to ``mods.pkl`` in :py:mod:`draftsman.data`.
     """
@@ -851,7 +869,11 @@ def extract_mods(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool=False)
     #     out_mods[mod] = version_string_to_tuple(mod.version)
 
     # print(out_mods)
-    out_mods = {key: value for key, value in convert_table_to_dict(lua.globals().mods).items() if key != "core"}
+    out_mods = {
+        key: value
+        for key, value in convert_table_to_dict(lua.globals().mods).items()
+        if key != "core"
+    }
 
     with open(os.path.join(draftsman_path, "data", "mods.pkl"), "wb") as out:
         pickle.dump(out_mods, out, 4)
@@ -859,7 +881,10 @@ def extract_mods(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool=False)
     if verbose:
         print("Extracted mods...")
 
-def extract_entities(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool=False) -> None:
+
+def extract_entities(
+    lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool = False
+) -> None:
     """
     Extracts the entities to ``entities.pkl`` in :py:mod:`draftsman.data`.
     """
@@ -946,7 +971,7 @@ def extract_entities(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verb
 
     def categorize_entity(entity_name, entity):
         flags = entity.get("flags", set())
-        if ("not-blueprintable" in flags):  # or "hidden" in flags
+        if "not-blueprintable" in flags:  # or "hidden" in flags
             return False
 
         collision_mask = entity.get("collision_mask", None)
@@ -962,7 +987,7 @@ def extract_entities(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verb
         # unordered_entities_raw[entity_name] = entity
         return True
 
-    def sort(target_list): # TODO: FIXME
+    def sort(target_list):  # TODO: FIXME
         # sorted_list = get_order(target_list, *sort_tuple)
         # for i, x in enumerate(sorted_list):
         #     target_list[i] = x
@@ -985,38 +1010,38 @@ def extract_entities(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verb
         sort(entities["of_type"][prototype_name])
 
     add_entities("accumulator")
-    add_entities("agricultural-tower") # Space Age
+    add_entities("agricultural-tower")  # Space Age
     add_entities("ammo-turret")
     add_entities("arithmetic-combinator")
     add_entities("artillery-turret")
     add_entities("artillery-wagon")
     add_entities("assembling-machine")
-    add_entities("asteroid-collector") # Space Age
+    add_entities("asteroid-collector")  # Space Age
     add_entities("beacon")
     add_entities("boiler")
     add_entities("burner-generator")
-    add_entities("car") # Blueprintable in 2.0
-    add_entities("cargo-bay") # Space Age
-    add_entities("cargo-landing-pad") # Space Age
+    add_entities("car")  # Blueprintable in 2.0
+    add_entities("cargo-bay")  # Space Age
+    add_entities("cargo-landing-pad")  # Space Age
     add_entities("cargo-wagon")
     add_entities("constant-combinator")
     add_entities("container")
     add_entities("curved-rail-a")
     add_entities("curved-rail-b")
     add_entities("decider-combinator")
-    add_entities("display-panel") # Space Age (?)
+    add_entities("display-panel")  # Space Age (?)
     add_entities("electric-energy-interface")
     add_entities("electric-pole")
     add_entities("electric-turret")
-    add_entities("elevated-curved-rail-a") # Elevated rails
-    add_entities("elevated-curved-rail-b") # Elevated rails
-    add_entities("elevated-half-diagonal-rail") # Elevated rails
-    add_entities("elevated-straight-rail") # Elevated rails
+    add_entities("elevated-curved-rail-a")  # Elevated rails
+    add_entities("elevated-curved-rail-b")  # Elevated rails
+    add_entities("elevated-half-diagonal-rail")  # Elevated rails
+    add_entities("elevated-straight-rail")  # Elevated rails
     add_entities("fluid-turret")
     add_entities("fluid-wagon")
     add_entities("furnace")
-    add_entities("fusion-generator") # Space Age
-    add_entities("fusion-reactor") # Space Age
+    add_entities("fusion-generator")  # Space Age
+    add_entities("fusion-reactor")  # Space Age
     add_entities("gate")
     add_entities("generator")
     add_entities("half-diagonal-rail")
@@ -1030,7 +1055,7 @@ def extract_entities(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verb
     add_entities("land-mine")
     add_entities("legacy-straight-rail")
     add_entities("legacy-curved-rail")
-    add_entities("lightning-attractor") # Space Age
+    add_entities("lightning-attractor")  # Space Age
     add_entities("linked-belt")
     add_entities("linked-container")
     add_entities("loader")
@@ -1042,7 +1067,7 @@ def extract_entities(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verb
     add_entities("offshore-pump")
     add_entities("pipe")
     add_entities("pipe-to-ground")
-    add_entities("player-port") # Deprecated in 2.0
+    add_entities("player-port")  # Deprecated in 2.0
     add_entities("power-switch")
     add_entities("programmable-speaker")
     add_entities("pump")
@@ -1059,14 +1084,14 @@ def extract_entities(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verb
     add_entities("simple-entity-with-owner")
     add_entities("solar-panel")
     add_entities("space-platform-hub")
-    add_entities("spider-vehicle") # Blueprintable in 2.0
+    add_entities("spider-vehicle")  # Blueprintable in 2.0
     add_entities("splitter")
     add_entities("storage-tank")
     add_entities("straight-rail")
-    add_entities("thruster") # Space Age
+    add_entities("thruster")  # Space Age
     add_entities("train-stop")
     add_entities("transport-belt")
-    add_entities("turret") # turrets that require no ammo whatsoever
+    add_entities("turret")  # turrets that require no ammo whatsoever
     add_entities("underground-belt")
     add_entities("wall")
 
@@ -1117,7 +1142,9 @@ def extract_entities(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verb
 # =============================================================================
 
 
-def extract_fluids(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool=False):
+def extract_fluids(
+    lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool = False
+):
     """
     Extracts the fluids to ``fluids.pkl`` in :py:mod:`draftsman.data`.
     """
@@ -1140,7 +1167,9 @@ def extract_fluids(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbos
 # =============================================================================
 
 
-def extract_instruments(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool=False):
+def extract_instruments(
+    lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = False
+):
     """
     Extracts the instruments to ``instruments.pkl`` in :py:mod:`draftsman.data`.
     """
@@ -1205,7 +1234,9 @@ def extract_items(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose
 # =============================================================================
 
 
-def extract_modules(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool=False):
+def extract_modules(
+    lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool = False
+):
     """
     Extracts the modules to ``modules.pkl`` in :py:mod:`draftsman.data`.
     """
@@ -1240,7 +1271,9 @@ def extract_modules(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
 # =============================================================================
 
 
-def extract_planets(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool=False) -> None:
+def extract_planets(
+    lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = False
+) -> None:
     data = lua.globals().data
 
     planets = convert_table_to_dict(data.raw["planet"])
@@ -1256,7 +1289,9 @@ def extract_planets(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool=Fal
 # =============================================================================
 
 
-def extract_recipes(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool=False) -> None:
+def extract_recipes(
+    lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool = False
+) -> None:
     """
     Extracts the recipes to ``recipes.pkl`` in :py:mod:`draftsman.data`.
     """
@@ -1301,7 +1336,9 @@ def extract_recipes(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
 # =============================================================================
 
 
-def extract_signals(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool=False):
+def extract_signals(
+    lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool = False
+):
     """
     Extracts the signals to ``signals.pkl`` in :py:mod:`draftsman.data`.
     """
@@ -1325,7 +1362,7 @@ def extract_signals(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
         # Depending on configuration, some items/signals might not exist
         if signal_category_name not in data.raw:
             return
-        
+
         signal_category = convert_table_to_dict(data.raw[signal_category_name])
         for signal_name in signal_category:
             signal_obj = signal_category[signal_name]
@@ -1347,7 +1384,7 @@ def extract_signals(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
                 type_of_signals[signal_name] = {signal_type}
             else:
                 type_of_signals[signal_name].add(signal_type)
-            
+
             target_location.append(signal_category[signal_name])
 
     # Virtual Signals
@@ -1380,6 +1417,7 @@ def extract_signals(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
     add_signals("recipe", recipe_signals, "recipe")
 
     # Entity Signals
+    # fmt: off
     add_signals("accumulator", entity_signals, "entity")
     add_signals("agricultural-tower", entity_signals, "entity")
     add_signals("ammo-turret", entity_signals, "entity")
@@ -1415,14 +1453,14 @@ def extract_signals(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
     add_signals("curved-rail-b", entity_signals, "entity")
     add_signals("decider-combinator", entity_signals, "entity")
     add_signals("deconstructible-tile-proxy", entity_signals, "entity")
-    add_signals("display-panel", entity_signals, "entity") # Space Age (?)
+    add_signals("display-panel", entity_signals, "entity")  # Space Age (?)
     add_signals("electric-energy-interface", entity_signals, "entity")
     add_signals("electric-pole", entity_signals, "entity")
     add_signals("electric-turret", entity_signals, "entity")
-    add_signals("elevated-curved-rail-a", entity_signals, "entity") # Elevated rails
-    add_signals("elevated-curved-rail-b", entity_signals, "entity") # Elevated rails
-    add_signals("elevated-half-diagonal-rail", entity_signals, "entity") # Elevated rails
-    add_signals("elevated-straight-rail", entity_signals, "entity") # Elevated rails
+    add_signals("elevated-curved-rail-a", entity_signals, "entity")  # Elevated rails
+    add_signals("elevated-curved-rail-b", entity_signals, "entity")  # Elevated rails
+    add_signals("elevated-half-diagonal-rail", entity_signals, "entity")  # Elevated rails
+    add_signals("elevated-straight-rail", entity_signals, "entity")  # Elevated rails
     add_signals("entity-ghost", entity_signals, "entity")
     add_signals("explosion", entity_signals, "entity")
     add_signals("fluid-turret", entity_signals, "entity")
@@ -1430,8 +1468,8 @@ def extract_signals(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
     add_signals("fire", entity_signals, "entity")
     add_signals("fish", entity_signals, "entity")
     add_signals("furnace", entity_signals, "entity")
-    add_signals("fusion-generator", entity_signals, "entity") # Space Age
-    add_signals("fusion-reactor", entity_signals, "entity") # Space Age
+    add_signals("fusion-generator", entity_signals, "entity")  # Space Age
+    add_signals("fusion-reactor", entity_signals, "entity")  # Space Age
     add_signals("gate", entity_signals, "entity")
     add_signals("generator", entity_signals, "entity")
     add_signals("half-diagonal-rail", entity_signals, "entity")
@@ -1465,7 +1503,7 @@ def extract_signals(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
     add_signals("pipe", entity_signals, "entity")
     add_signals("pipe-to-ground", entity_signals, "entity")
     add_signals("plant", entity_signals, "entity")
-    add_signals("player-port", entity_signals, "entity") # Deprecated in 2.0
+    add_signals("player-port", entity_signals, "entity")  # Deprecated in 2.0
     add_signals("power-switch", entity_signals, "entity")
     add_signals("programmable-speaker", entity_signals, "entity")
     add_signals("projectile", entity_signals, "entity")
@@ -1501,17 +1539,18 @@ def extract_signals(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
     add_signals("straight-rail", entity_signals, "entity")
     add_signals("stream", entity_signals, "entity")
     add_signals("temporary-container", entity_signals, "entity")
-    add_signals("thruster", entity_signals, "entity") # Space Age
+    add_signals("thruster", entity_signals, "entity")  # Space Age
     add_signals("tile-ghost", entity_signals, "entity")
     add_signals("train-stop", entity_signals, "entity")
     add_signals("transport-belt", entity_signals, "entity")
     add_signals("tree", entity_signals, "entity")
-    add_signals("turret", entity_signals, "entity") # turrets that require no ammo whatsoever
+    add_signals("turret", entity_signals, "entity")  # turrets that require no ammo whatsoever
     add_signals("underground-belt", entity_signals, "entity")
     add_signals("unit", entity_signals, "entity")
     add_signals("unit-spawner", entity_signals, "entity")
     add_signals("wall", entity_signals, "entity")
-    
+    # fmt: on
+
     # Space Location Signals
     add_signals("planet", space_location_signals, "space-location")
     add_signals("space-location", space_location_signals, "space-location")
@@ -1522,7 +1561,16 @@ def extract_signals(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
     # Quality Signals
     add_signals("quality", quality_signals, "quality")
 
-    all_signals = virtual_signals + item_signals + fluid_signals + recipe_signals + entity_signals + space_location_signals + asteroid_chunk_signals + quality_signals
+    all_signals = (
+        virtual_signals
+        + item_signals
+        + fluid_signals
+        + recipe_signals
+        + entity_signals
+        + space_location_signals
+        + asteroid_chunk_signals
+        + quality_signals
+    )
     all_signals_order = get_order(all_signals, *sort_tuple)
 
     virtual_signals = get_order(virtual_signals, *sort_tuple)
@@ -1542,7 +1590,6 @@ def extract_signals(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
         data = {
             "raw": raw_signals,
             "type_of": type_of_signals,
-
             "virtual": virtual_signals,
             "item": item_signals,
             "fluid": fluid_signals,
@@ -1562,7 +1609,7 @@ def extract_signals(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbo
 # =============================================================================
 
 
-def extract_tiles(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool=False):
+def extract_tiles(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = False):
     """
     Extracts the tiles to ``tiles.pkl`` in :py:mod:`draftsman.data`.
     """
@@ -1592,7 +1639,7 @@ def extract_tiles(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool=False
         print("Extracted tiles...")
 
 
-def extract_data(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool=False):
+def extract_data(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = False):
     # TODO: this needs to be customizable; how do we do this?
     # Ideally we would have some user-friendly pattern syntax that users could
     # specify...
@@ -1643,19 +1690,19 @@ def update_draftsman_data(
     game's data in whatever manner you wish, then instead use
     :py:meth:`.run_data_lifecycle`.
 
-    :param game_path: The path pointing to Factorio's data, where "official" 
+    :param game_path: The path pointing to Factorio's data, where "official"
         mods like `base` and `core` live.
     :param mods_path: The path pointing to the user mods folder. Also the
-        location where ``mod-settings.dat`` and ``mod-list.json`` files are 
+        location where ``mod-settings.dat`` and ``mod-list.json`` files are
         searched for and parsed from.
     :param no_mods: Whether or not to actually use any of the mods at ``mods_path``.
-        Does not omit any "official" mods found at ``game_path``. Useful to 
-        quickly toggle modded/unmodded configurations without having to 
+        Does not omit any "official" mods found at ``game_path``. Useful to
+        quickly toggle modded/unmodded configurations without having to
         respecify any paths.
     :param verbose: Pretty-prints additional status messages and information to
         stdout.
     :param show_logs: If enabled, any `log()` messages created on the Lua side
-        of things will be printed to stdout. This will happen regardless of the 
+        of things will be printed to stdout. This will happen regardless of the
         value of ``verbose``.
     """
     draftsman_path = os.path.dirname(os.path.abspath(draftsman_root_file))
@@ -1669,7 +1716,7 @@ def update_draftsman_data(
         verbose=verbose,
     )
 
-    # Get the version of Factorio specified by the game data, and write 
+    # Get the version of Factorio specified by the game data, and write
     # `_factorio_version.py` with the current factorio version
     with open(os.path.join(game_path, "base", "info.json")) as base_info_file:
         base_info = json.load(base_info_file)
@@ -1678,8 +1725,10 @@ def update_draftsman_data(
         if factorio_version.count(".") == 2:
             factorio_version += ".0"
         factorio_version_info = version_string_to_tuple(factorio_version)
-    
-    with open(os.path.join(draftsman_path, "_factorio_version.py"), "w") as version_file:
+
+    with open(
+        os.path.join(draftsman_path, "_factorio_version.py"), "w"
+    ) as version_file:
         version_file.write("# _factorio_version.py\n\n")
         version_file.write('__factorio_version__ = "' + factorio_version + '"\n')
         version_file.write(
@@ -1687,7 +1736,7 @@ def update_draftsman_data(
         )
 
     data_raw = convert_table_to_dict(lua_instance.globals().data.raw)
-    #print(data_raw.keys())
+    # print(data_raw.keys())
 
     # At this point, `data.raw` in `lua_instance` and should(!) be properly
     # initialized. Hence, we can now extract the data we wish:

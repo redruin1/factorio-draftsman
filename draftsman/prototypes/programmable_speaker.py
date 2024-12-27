@@ -6,7 +6,7 @@ from draftsman.classes.mixins import (
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
-    EnableDisableMixin,
+    CircuitEnableMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
@@ -32,7 +32,7 @@ from typing import Any, Literal, Optional, Union
 
 class ProgrammableSpeaker(
     CircuitConditionMixin,
-    EnableDisableMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     Entity,
@@ -44,14 +44,14 @@ class ProgrammableSpeaker(
 
     class Format(
         CircuitConditionMixin.Format,
-        EnableDisableMixin.Format,
+        CircuitEnableMixin.Format,
         ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
         Entity.Format,
     ):
         class ControlBehavior(
             CircuitConditionMixin.ControlFormat,
-            EnableDisableMixin.ControlFormat,
+            CircuitEnableMixin.ControlFormat,
             DraftsmanBaseModel,
         ):
             class CircuitParameters(DraftsmanBaseModel):

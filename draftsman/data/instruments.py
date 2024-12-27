@@ -6,6 +6,7 @@ import importlib.resources as pkg_resources
 
 from draftsman import data
 from draftsman.data.entities import of_type
+
 # from draftsman.data.entities import programmable_speakers
 
 

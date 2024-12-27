@@ -50,7 +50,16 @@ def add_signal(name: str, type: str):
     :param name: The in-game string ID of the signal.
     :param type: The signal-dict type of the signal.
     """
-    permitted_types = {"item", "fluid", "recipe", "entity", "space-location", "asteroid-chunk", "quality", "virtual"}
+    permitted_types = {
+        "item",
+        "fluid",
+        "recipe",
+        "entity",
+        "space-location",
+        "asteroid-chunk",
+        "quality",
+        "virtual",
+    }
     if type not in permitted_types:
         raise ValueError("Signal type must be one of {}".format(permitted_types))
 
@@ -80,7 +89,7 @@ def get_signal_types(signal_name: str) -> set[str]:
     Returns the set of types that a given signal can have based on its ID string.
 
     Typically, signals can only be selected with a single type, but the game
-    distinguishes between signals of different types in the circuit network. 
+    distinguishes between signals of different types in the circuit network.
     This means that you can have multiple different versions of the "same"
     signal, with the only difference being their type. For example,
     ``transport-belt`` can have a type of ``"item"``, ``"recipe"``, or ``"entity"``.

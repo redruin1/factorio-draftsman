@@ -45,7 +45,7 @@ class Lamp(
                 LampColorMode.COLOR_MAPPING,
                 description="""
                 How the lamp should interpret signals when specifying it's color.
-                """
+                """,
             )
 
         control_behavior: Optional[ControlBehavior] = ControlBehavior()
@@ -55,12 +55,11 @@ class Lamp(
             description="""
             The constant color of the lamp. Superceeded by any dynamic value 
             given to the lamp, if configured as such.
-            """
+            """,
         )
 
         always_on: Optional[bool] = Field(
-            False,
-            description="""Whether or not this lamp is always on."""
+            False, description="""Whether or not this lamp is always on."""
         )
 
         model_config = ConfigDict(title="Lamp")
@@ -135,6 +134,9 @@ class Lamp(
 
     @property
     def color_mode(self) -> Optional[LampColorMode]:
+        """
+        TODO
+        """
         return self.control_behavior.color_mode
 
     @color_mode.setter
@@ -146,17 +148,17 @@ class Lamp(
     @property
     def always_on(self) -> Optional[bool]:
         """
-        Whether or not this entity should always be active, regardless of the 
+        Whether or not this entity should always be active, regardless of the
         current day-night cycle. This option is superceeded by any condition
         specified.
 
         :getter: Gets whether or not this lamp is always on, or ``None`` if not
             set.
-        :setter: Sets whether or not the lamp is always on. Removes the key if 
+        :setter: Sets whether or not the lamp is always on. Removes the key if
             set to ``None``.
         """
         return self._root.always_on
-    
+
     @always_on.setter
     def always_on(self, value: Optional[bool]) -> None:
         self._root.always_on = value
@@ -165,8 +167,11 @@ class Lamp(
 
     @property
     def color(self) -> Optional[Color]:
+        """
+        TODO
+        """
         return self._root.color
-    
+
     @color.setter
     def color(self, value: Optional[Color]):
         self._root.color = value

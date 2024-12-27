@@ -230,7 +230,7 @@ class DraftsmanBaseModel(BaseModel):
                 input_obj["description"] = dedent(input_obj["description"]).strip()
 
         normalize_description(json_schema)
-        if "properties" in json_schema: # Maybe not needed?
+        if "properties" in json_schema:  # Maybe not needed?
             for property_spec in json_schema["properties"].values():
                 normalize_description(property_spec)
         # if "items" in json_schema: # Maybe not needed?
@@ -354,8 +354,25 @@ class SignalID(DraftsmanBaseModel):
         removed on import/export cycle.
         """,
     )
-    type: Literal["virtual", "item", "fluid", "recipe", "entity", "space-location", "asteroid-chunk", "quality"] = Field(
-        "item", description="""Category of the signal."""
+    type: Literal[
+        "virtual",
+        "item",
+        "fluid",
+        "recipe",
+        "entity",
+        "space-location",
+        "asteroid-chunk",
+        "quality",
+    ] = Field("item", description="""Category of the signal.""")
+    quality: Optional[
+        Literal[
+            "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
+        ]
+    ] = Field(
+        "normal",
+        description="""
+        Quality flag of the signal.
+        """,
     )
 
     @model_validator(mode="before")
@@ -378,6 +395,8 @@ class SignalID(DraftsmanBaseModel):
                 ) from None
         else:
             return input
+
+    # TODO: add routine to create SignalID from tuple like ("epic", "signal-A")?
 
     # @field_validator("name")
     # @classmethod
@@ -458,6 +477,27 @@ class SignalID(DraftsmanBaseModel):
     #             ) from None
     #     else:
     #         return {"name": self["name"], "type": self["type"]}
+
+
+class TargetID(DraftsmanBaseModel):
+    index: uint32 = Field(
+        ...,
+        description="TODO"
+    ) # TODO: size
+    name: str = Field( # TODO: TargetName?
+        ...,
+        description="TODO"
+    )
+
+class ChunkID(DraftsmanBaseModel):
+    index: uint32 = Field(
+        ...,
+        description="TODO"
+    ) # TODO: size
+    name: str = Field( # TODO: ChunkName?
+        ...,
+        description="TODO"
+    )
 
 
 class Icon(DraftsmanBaseModel):
@@ -654,14 +694,20 @@ class IntPosition(DraftsmanBaseModel):
 
 class NetworkSpecification(DraftsmanBaseModel):
     red: Optional[bool] = Field(
-        True,
-        description="Whether or not inputs from the red wire are permitted."
+        True, description="Whether or not inputs from the red wire are permitted."
     )
 
     green: Optional[bool] = Field(
-        True,
-        description="Whether or not inputs from the green wire are permitted."
+        True, description="Whether or not inputs from the green wire are permitted."
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def convert_from_set(cls, value: Any):
+        if isinstance(value, set):
+            return {elem: False for elem in ("red", "green") if elem not in value}
+        else:
+            return value
 
 
 class Condition(DraftsmanBaseModel):
@@ -673,8 +719,8 @@ class Condition(DraftsmanBaseModel):
         """,
     )
     first_signal_networks: Optional[NetworkSpecification] = Field(
-        NetworkSpecification(red=True, green=False),
-        description="Wire input specification for the first signal, if present."
+        NetworkSpecification(red=True, green=True),
+        description="Wire input specification for the first signal, if present.",
     )
     comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
         "<",
@@ -699,8 +745,8 @@ class Condition(DraftsmanBaseModel):
         """,
     )
     second_signal_networks: Optional[NetworkSpecification] = Field(
-        NetworkSpecification(red=True, green=False),
-        description="Wire input specification for the second signal, if present."
+        NetworkSpecification(red=True, green=True),
+        description="Wire input specification for the second signal, if present.",
     )
 
     @model_validator(mode="before")
@@ -718,6 +764,14 @@ class Condition(DraftsmanBaseModel):
             return result
         else:
             return value
+
+    # @field_validator("first_signal_networks", "second_signal_networks", mode="before")
+    # @classmethod
+    # def convert_from_set(cls, value: Any):
+    #     if isinstance(value, set):
+    #         return {elem: True for elem in value}
+    #     else:
+    #         return value
 
     @field_validator("comparator", mode="before")
     @classmethod
@@ -1006,33 +1060,44 @@ class SignalFilter(DraftsmanBaseModel):
         ...,
         description="""
         Name of the signal.
-        """
+        """,
     )
-    type: Optional[Literal["virtual", "item", "fluid", "recipe", "entity", "space-location", "asteroid-chunk", "quality"]] = Field(
-        "item",
-        description="Type of the signal."
-    )
+    type: Optional[
+        Literal[
+            "virtual",
+            "item",
+            "fluid",
+            "recipe",
+            "entity",
+            "space-location",
+            "asteroid-chunk",
+            "quality",
+        ]
+    ] = Field("item", description="Type of the signal.")
     # signal: Optional[SignalID] = Field(
     #     None,
     #     description="""
     #     Signal to broadcast. If this value is omitted the occupied slot will
     #     behave as if no signal exists within it. Cannot be a pure virtual
-    #     (logic) signal like "signal-each", "signal-any", or 
+    #     (logic) signal like "signal-each", "signal-any", or
     #     "signal-everything"; if such signals are set they will be removed
     #     on import.
     #     """,
     # )
     # TODO: make this dynamic based on current environment?
-    quality: Optional[Literal["normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"]] = Field(
+    quality: Optional[
+        Literal[
+            "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
+        ]
+    ] = Field(
         "any",
         description="""
         Quality flag of the signal. If unspecified, this value is effectively 
         equal to 'any' quality level.
-        """
+        """,
     )
     comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
-        None,
-        description="Comparison operator when deducing the quality type."
+        None, description="Comparison operator when deducing the quality type."
     )
     count: int32 = Field(
         ...,
@@ -1045,7 +1110,7 @@ class SignalFilter(DraftsmanBaseModel):
         description="""
         The maximum value of the signal to emit. Only used with logistics-type
         requests.
-        """
+        """,
     )
 
     # Deprecated in 2.0

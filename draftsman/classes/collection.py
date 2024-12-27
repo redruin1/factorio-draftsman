@@ -672,8 +672,18 @@ class EntityCollection(metaclass=ABCMeta):
     def add_circuit_connection(
         self,
         color: Literal["red", "green"],
-        location_1: Union[EntityLike, int, str, tuple[Union[EntityLike, int, str], Optional[Literal["input", "output"]]]],
-        location_2: Union[EntityLike, int, str, tuple[Union[EntityLike, int, str], Optional[Literal["input", "output"]]]],
+        location_1: Union[
+            EntityLike,
+            int,
+            str,
+            tuple[Union[EntityLike, int, str], Optional[Literal["input", "output"]]],
+        ],
+        location_2: Union[
+            EntityLike,
+            int,
+            str,
+            tuple[Union[EntityLike, int, str], Optional[Literal["input", "output"]]],
+        ],
     ) -> None:
         """
         Adds a circuit wire connection between two entities. Each entity
@@ -827,25 +837,31 @@ class EntityCollection(metaclass=ABCMeta):
         #     current_color.append(entry)
 
         # 2.0 code
-        color_value = {
-            "red": 1,
-            "green": 2
-        }
-        dir_value = {
-            "input": 0,
-            "output": 2
-        }
+        color_value = {"red": 1, "green": 2}
+        dir_value = {"input": 0, "output": 2}
 
         wire_type_1 = color_value[color] + dir_value[location_1[1]]
         wire_type_2 = color_value[color] + dir_value[location_2[1]]
 
-        self._root._wires.append([Association(entity_1), wire_type_1, Association(entity_2), wire_type_2])
+        self._root._wires.append(
+            [Association(entity_1), wire_type_1, Association(entity_2), wire_type_2]
+        )
 
     def remove_circuit_connection(
         self,
         color: Literal["red", "green"],
-        location_1: Union[EntityLike, int, str, tuple[Union[EntityLike, int, str], Optional[Literal["input", "output"]]]],
-        location_2: Union[EntityLike, int, str, tuple[Union[EntityLike, int, str], Optional[Literal["input", "output"]]]],
+        location_1: Union[
+            EntityLike,
+            int,
+            str,
+            tuple[Union[EntityLike, int, str], Optional[Literal["input", "output"]]],
+        ],
+        location_2: Union[
+            EntityLike,
+            int,
+            str,
+            tuple[Union[EntityLike, int, str], Optional[Literal["input", "output"]]],
+        ],
     ) -> None:
         """
         Removes a circuit wire connection between two entities. Each entity
@@ -947,20 +963,16 @@ class EntityCollection(metaclass=ABCMeta):
         #     pass
 
         # 2.0 code
-        color_value = {
-            "red": 1,
-            "green": 2
-        }
-        dir_value = {
-            "input": 0,
-            "output": 2
-        }
+        color_value = {"red": 1, "green": 2}
+        dir_value = {"input": 0, "output": 2}
 
         wire_type_1 = color_value[color] + dir_value[location_1[1]]
         wire_type_2 = color_value[color] + dir_value[location_2[1]]
 
         try:
-            self._root._wires.remove([Association(entity_1), wire_type_1, Association(entity_2), wire_type_2])
+            self._root._wires.remove(
+                [Association(entity_1), wire_type_1, Association(entity_2), wire_type_2]
+            )
         except ValueError:
             pass
 

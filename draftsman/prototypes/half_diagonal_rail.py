@@ -2,5 +2,10 @@
 
 from draftsman.data.entities import half_diagonal_rails
 
-class HalfDiagonalRail():
+
+class HalfDiagonalRail:
+    """
+    Straight rail segments that lie at 22.5 degree angles.
+    """
+
     pass

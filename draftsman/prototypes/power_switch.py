@@ -32,8 +32,7 @@ class PowerSwitch(
     Entity,
 ):
     """
-    An entity that connects or disconnects a power network. Can be controlled
-    with a circuit condition, a logistics condition, or manually.
+    An entity that connects or disconnects a power network.
     """
 
     class Format(

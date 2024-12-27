@@ -18,77 +18,77 @@ class ModulesMixin:  # (RequestItemsMixin)
     """
 
     class Format(BaseModel):
-        @field_validator("items", check_fields=False)
-        @classmethod
-        def ensure_not_too_many_modules(
-            cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-        ):
-            if not info.context or value is None:
-                return value
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
+        # @field_validator("items", check_fields=False) # TODO: reimplement
+        # @classmethod
+        # def ensure_not_too_many_modules(
+        #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+        # ):
+        #     if not info.context or value is None:
+        #         return value
+        #     if info.context["mode"] <= ValidationMode.MINIMUM:
+        #         return value
 
-            entity: "ModulesMixin" = info.context["object"]
-            warning_list: list = info.context["warning_list"]
+        #     entity: "ModulesMixin" = info.context["object"]
+        #     warning_list: list = info.context["warning_list"]
 
-            if entity.total_module_slots is None:  # entity not recognized
-                return value
-            # if entity.total_module_slots == 0:  # Better warning issued elsewhere (where?)
-            #     return value
+        #     if entity.total_module_slots is None:  # entity not recognized
+        #         return value
+        #     # if entity.total_module_slots == 0:  # Better warning issued elsewhere (where?)
+        #     #     return value
 
-            if entity.module_slots_occupied > entity.total_module_slots:
-                warning_list.append(
-                    ModuleCapacityWarning(
-                        "Current number of module slots used ({}) greater than max module capacity ({}) for entity '{}'".format(
-                            entity.module_slots_occupied,
-                            entity.total_module_slots,
-                            entity.name,
-                        )
-                    )
-                )
+        #     if entity.module_slots_occupied > entity.total_module_slots:
+        #         warning_list.append(
+        #             ModuleCapacityWarning(
+        #                 "Current number of module slots used ({}) greater than max module capacity ({}) for entity '{}'".format(
+        #                     entity.module_slots_occupied,
+        #                     entity.total_module_slots,
+        #                     entity.name,
+        #                 )
+        #             )
+        #         )
 
-            return value
+        #     return value
 
-        @field_validator("items", check_fields=False)
-        @classmethod
-        def ensure_module_type_matches_entity(
-            cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-        ):
-            if not info.context or value is None:
-                return value
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
+        # @field_validator("items", check_fields=False) # TODO: reimplement
+        # @classmethod
+        # def ensure_module_type_matches_entity(
+        #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+        # ):
+        #     if not info.context or value is None:
+        #         return value
+        #     if info.context["mode"] <= ValidationMode.MINIMUM:
+        #         return value
 
-            entity: "ModulesMixin" = info.context["object"]
-            warning_list: list = info.context["warning_list"]
+        #     entity: "ModulesMixin" = info.context["object"]
+        #     warning_list: list = info.context["warning_list"]
 
-            if entity.allowed_modules is None:  # entity not recognized
-                return value
+        #     if entity.allowed_modules is None:  # entity not recognized
+        #         return value
 
-            for item in entity.module_items:
-                if item not in entity.allowed_modules:
-                    if (
-                        entity.allowed_modules is not None
-                        and len(entity.allowed_modules) > 0
-                    ):
-                        reason_string = "allowed modules are {}".format(
-                            entity.allowed_modules
-                        )
-                    else:
-                        reason_string = "this machine does not accept modules"
+        #     for item in entity.module_items:
+        #         if item not in entity.allowed_modules:
+        #             if (
+        #                 entity.allowed_modules is not None
+        #                 and len(entity.allowed_modules) > 0
+        #             ):
+        #                 reason_string = "allowed modules are {}".format(
+        #                     entity.allowed_modules
+        #                 )
+        #             else:
+        #                 reason_string = "this machine does not accept modules"
 
-                    warning_list.append(
-                        ModuleNotAllowedWarning(
-                            "Cannot add module '{}' to '{}'; {}".format(
-                                item, entity.name, reason_string
-                            )
-                        )
-                    )
+        #             warning_list.append(
+        #                 ModuleNotAllowedWarning(
+        #                     "Cannot add module '{}' to '{}'; {}".format(
+        #                         item, entity.name, reason_string
+        #                     )
+        #                 )
+        #             )
 
-            return value
+        #     return value
+        pass
 
     def __init__(self, name: str, similar_entities: list[str], **kwargs):
-
         # Keep track of the current module slots currently used
         # self._module_slots_occupied = 0
         # self.module_items = {}
@@ -108,7 +108,9 @@ class ModulesMixin:  # (RequestItemsMixin)
         # return entities.raw.get(
         #     self.name, {"module_specification": {"module_slots": None}}
         # ).get("module_specification", {"module_slots": 0})["module_slots"]
-        return entities.raw.get(self.name, {"module_slots": None}).get("module_slots", 0)
+        return entities.raw.get(self.name, {"module_slots": None}).get(
+            "module_slots", 0
+        )
 
     # =========================================================================
 
@@ -118,7 +120,7 @@ class ModulesMixin:  # (RequestItemsMixin)
         The total number of module slots that are currently taken by inserted
         modules. Not exported; read only.
         """
-        return sum([v for k, v in self.items.items() if k in modules.raw])
+        return sum([v for k, v in self.items if k in modules.raw])  # TODO: FIXME
 
     # =========================================================================
 
@@ -135,7 +137,8 @@ class ModulesMixin:  # (RequestItemsMixin)
             return None
         # If name known, but no key, then return default list
         result = entity.get(
-            "allowed_effects", ["speed", "productivity", "consumption", "pollution", "quality"]
+            "allowed_effects",
+            ["speed", "productivity", "consumption", "pollution", "quality"],
         )
         # Normalize single string effect to a 1-length set
         return {result} if isinstance(result, str) else set(result)

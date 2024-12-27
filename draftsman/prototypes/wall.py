@@ -4,7 +4,7 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     CircuitConditionMixin,
-    EnableDisableMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
 )
@@ -21,7 +21,7 @@ from typing import Any, Literal, Optional, Union
 
 class Wall(
     CircuitConditionMixin,
-    EnableDisableMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     Entity,
@@ -32,17 +32,17 @@ class Wall(
 
     class Format(
         CircuitConditionMixin.Format,
-        EnableDisableMixin.Format,
+        CircuitEnableMixin.Format,
         ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
         Entity.Format,
     ):
-        class ControlBehavior(CircuitConditionMixin.ControlFormat, DraftsmanBaseModel):
+        class ControlBehavior(CircuitConditionMixin.ControlFormat, CircuitEnableMixin.ControlFormat, DraftsmanBaseModel):
             circuit_open_gate: Optional[bool] = Field(
                 True,
                 description="""
                 Whether or not this gate should be activated based on an input
-                condition. 'circuit_enable_disable' equivalent, specifically for
+                condition. 'circuit_enabled' equivalent, specifically for
                 walls.
                 """,
             )

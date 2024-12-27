@@ -18,9 +18,3 @@ try:
 
 except FileNotFoundError:
     raw = {}
-
-def supports(object) -> bool:
-    """
-    Checks to see if a 
-    """
-    pass

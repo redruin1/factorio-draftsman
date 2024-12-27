@@ -65,7 +65,8 @@ def get_recipe_ingredients(recipe_name: str, expensive: bool = False):
             x[0] if isinstance(x, list) else x["name"]
             for x in raw[recipe_name][cost_type]["ingredients"]
         }
-    
+
+
 def is_usable_on(recipe: dict, surface: dict) -> bool:
     if "surface_conditions" not in recipe:
         return True
@@ -78,5 +79,5 @@ def is_usable_on(recipe: dict, surface: dict) -> bool:
             max_val = condition.get("max", math.inf)
             if not (min_val <= value <= max_val):
                 return False
-            
+
     return True

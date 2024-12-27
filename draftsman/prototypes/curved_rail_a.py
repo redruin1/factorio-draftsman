@@ -2,5 +2,10 @@
 
 from draftsman.data.entities import curved_rails_a
 
-class CurvedRailA():
+
+class CurvedRailA:
+    """
+    First set of curved rail entities with 2.0 rails. (TODO)
+    """
+
     pass

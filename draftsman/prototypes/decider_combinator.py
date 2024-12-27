@@ -24,10 +24,11 @@ from draftsman.warning import DraftsmanWarning, PureVirtualDisallowedWarning
 
 from draftsman.data.entities import decider_combinators
 from draftsman.data import signals
+from draftsman.signatures import int32
 from draftsman.utils import reissue_warnings
 
 from pydantic import ConfigDict, Field, ValidationInfo, model_validator, validate_call
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Optional, Type, Union
 
 
 # Matrix of values, where keys are the name of the first_operand and
@@ -50,7 +51,8 @@ _signal_blacklist = {
 
 from pydantic_core import core_schema
 
-class Temp:
+
+class Temp:  # TODO: fixme
     @classmethod
     def __get_pydantic_core_schema__(cls, source_type: Any, handler):
         """
@@ -58,8 +60,7 @@ class Temp:
         cls.Format instances get passed through unchanged
         everything else is a validation failure
         """
-        print(source_type)
-        # print(handler())
+
         def validate_from_dict(value: dict):
             result = source_type(**value)
             return result
@@ -85,57 +86,210 @@ class Temp:
             ),
         )
 
-class DeciderInput(Temp):
-    pass
 
-
-class DeciderOutput(Temp): # TODO: Exportable
-    class Format(DraftsmanBaseModel):
-        signal: SignalID = Field(
-            ...,
-            description="""The signal type to output."""
+class DeciderCondition(Temp):
+    class Format(Condition):
+        compare_type: Optional[Literal["or", "and"]] = Field(
+            "or",
+            description="""
+            Whether or not to boolean OR or AND this condition
+            with the previous one in the list.
+            """,
         )
+
+        model_config = ConfigDict(title="DeciderCondition")
+
+    def __init__(
+        self,
+        first_signal,
+        first_signal_networks={"red", "green"},
+        comparator=">",
+        constant=None,
+        second_signal=None,
+        second_signal_networks={"red", "green"},
+        compare_type="or",
+    ):
+        # self.first_signal = first_signal
+        # self.first_signal_networks = first_signal_networks
+        # self.comparator = comparator
+        # self.constant = constant
+        # self.second_signal = second_signal
+        # self.second_signal_networks = second_signal_networks
+        # self.compare_type = compare_type
+
+        self._root = self.Format.model_validate(
+            {
+                "first_signal": first_signal,
+                "first_signal_networks": first_signal_networks,
+                "comparator": comparator,
+                "constant": constant,
+                "second_signal": second_signal,
+                "second_signal_networks": second_signal_networks,
+                "compare_type": compare_type,
+            },
+            strict=False,
+            context={"construction": True, "mode": ValidationMode.NONE},
+        )
+
+    def __or__(self, other):
+        if isinstance(other, DeciderCondition):
+            other._root.compare_type = "or"
+            return [self, other]
+        elif isinstance(other, list):
+            other[0]._root.compare_type = "or"
+            return [self] + other
+        else:
+            return NotImplemented
+
+    def __ror__(self, other):
+        if isinstance(other, DeciderCondition):
+            self._root.compare_type = "or"
+            return [other, self]
+        elif isinstance(other, list):
+            self._root.compare_type = "or"
+            return other + [self]
+        else:
+            return NotImplemented
+
+    def __and__(self, other):
+        if isinstance(other, DeciderCondition):
+            other._root.compare_type = "and"
+            return [self, other]
+        elif isinstance(other, list):
+            other[0]._root.compare_type = "and"
+            return [self] + other
+        else:
+            return NotImplemented
+
+    def __rand__(self, other):
+        if isinstance(other, DeciderCondition):
+            self._root.compare_type = "and"
+            return [other, self]
+        elif isinstance(other, list):
+            self._root.compare_type = "and"
+            return other + [self]
+        else:
+            return NotImplemented
+
+    def __repr__(self):
+        return repr(self._root)
+
+
+class DeciderInput:
+    def __init__(self, signal, networks: set[str] = {"red", "green"}):
+        self.signal = signal
+        self.networks = networks
+
+    def _output_condition(self, comparator, other):
+        if isinstance(other, DeciderInput):
+            return DeciderCondition(
+                first_signal=self.signal,
+                first_signal_networks=self.networks,
+                comparator=comparator,
+                second_signal=other.signal,
+                second_signal_networks=other.networks,
+            )
+        if isinstance(other, (int)):
+            return DeciderCondition(
+                first_signal=self.signal,
+                first_signal_networks=self.networks,
+                comparator=comparator,
+                constant=other,
+            )
+        else:
+            return NotImplemented
+
+    def __eq__(self, other: "DeciderInput") -> Condition:
+        return self._output_condition("=", other)
+
+    def __ne__(self, other) -> DeciderCondition:
+        return self._output_condition("!=", other)
+
+    def __gt__(self, other) -> DeciderCondition:
+        return self._output_condition(">", other)
+
+    def __lt__(self, other) -> DeciderCondition:
+        return self._output_condition("<", other)
+
+    def __ge__(self, other) -> DeciderCondition:
+        return self._output_condition("<=", other)
+
+    def __le__(self, other) -> DeciderCondition:
+        return self._output_condition(">=", other)
+
+
+class DeciderOutput(Temp):  # TODO: Exportable
+    class Format(DraftsmanBaseModel):
+        signal: SignalID = Field(..., description="""The signal type to output.""")
         copy_count_from_input: Optional[bool] = Field(
             True,
             description="""
             Broadcasts the given input value to the output if true, or a unit
             value if false.
-            """
+            """,
         )
-        networks:  Optional[NetworkSpecification] = Field(
+        networks: Optional[NetworkSpecification] = Field(
             NetworkSpecification(red=True, green=True),
-            description="""What wires this output should be broadcast to."""
+            description="""What wires this output should be broadcast to.""",
+        )
+        constant: Optional[int32] = Field(
+            1,
+            description="""
+            What value the constant output should be if "copy_count_from_input"
+            is false. Always specified as 1 in game, but can be overwritten
+            externally and will be respected.
+            """,
         )
 
         model_config = ConfigDict(title="DeciderOutput")
 
-    def __init__(self, signal, copy_count_from_input=False, networks={"red", "green"}):
+    def __init__(
+        self, signal, copy_count_from_input=True, constant=1, networks={"red", "green"}
+    ):
         self._root: DeciderOutput.Format
         self._root = self.__class__.Format.model_validate(
-            {"signal": signal, "copy_count_from_input": copy_count_from_input, "networks": networks}, 
+            {
+                "signal": signal,
+                "copy_count_from_input": copy_count_from_input,
+                "constant": constant,
+                "networks": networks,
+            },
             strict=False,
-            context={"construction": True, "mode": ValidationMode.NONE}
+            context={"construction": True, "mode": ValidationMode.NONE},
         )
 
     @property
     def signal(self):
         return self._root.signal
-    
+
     @property
     def copy_count_from_input(self):
         return self._root.copy_count_from_input
-    
+
+    @property
+    def constant(self):
+        return self._root.constant
+
     @property
     def networks(self):
         return self._root.networks
 
 
 class DeciderCombinator(
-    PlayerDescriptionMixin, ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
+    PlayerDescriptionMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    DirectionalMixin,
+    Entity,
 ):
     """
     A decider combinator. Makes comparisons based on circuit network inputs.
     """
+
+    # Alias the external objects so we can access them easily without importing
+    Input = DeciderInput
+    Condition = DeciderCondition
+    Output = DeciderOutput
 
     # 1.0 format
     # class Format(
@@ -150,8 +304,8 @@ class DeciderCombinator(
     #             output_signal: Optional[SignalID] = Field(
     #                 None,
     #                 description="""
-    #                 The output signal to output if the condition is met. The 
-    #                 value of the output signal is determined by the 
+    #                 The output signal to output if the condition is met. The
+    #                 value of the output signal is determined by the
     #                 'copy_count_from_input' key.
     #                 """,
     #             )
@@ -159,7 +313,7 @@ class DeciderCombinator(
     #                 True,
     #                 description="""
     #                 Whether or not to copy the value of the selected output
-    #                 signal from the input circuit network, or to output the 
+    #                 signal from the input circuit network, or to output the
     #                 selected 'output_signal' with a value of 1.
     #                 """,
     #             )
@@ -236,28 +390,28 @@ class DeciderCombinator(
     ):
         class ControlBehavior(DraftsmanBaseModel):
             class DeciderConditions(DraftsmanBaseModel):
-                class Output(DraftsmanBaseModel):
-                    signal: SignalID
-                    copy_count_from_input: bool = Field(
-                        True,
-                        description="""
-                        Whether or not to copy the value of the selected output
-                        signal from the input circuit network, or to output the 
-                        selected 'output_signal' with a value of 1.
-                        """,
-                    )
-                    networks: Optional[NetworkSpecification] = Field(
-                        NetworkSpecification(),
-                        description="""
-                        What wires to pull values from if 'copy_count_from_input'
-                        is true."""
-                    )
+                # class Output(DraftsmanBaseModel):
+                #     signal: SignalID
+                #     copy_count_from_input: bool = Field(
+                #         True,
+                #         description="""
+                #         Whether or not to copy the value of the selected output
+                #         signal from the input circuit network, or to output the
+                #         selected 'output_signal' with a value of 1.
+                #         """,
+                #     )
+                #     networks: Optional[NetworkSpecification] = Field(
+                #         NetworkSpecification(red=True, green=True),
+                #         description="""
+                #         What wires to pull values from if 'copy_count_from_input'
+                #         is true.""",
+                #     )
 
-                conditions: list[Condition] = Field(
+                conditions: list[DeciderCondition] = Field(
                     [],
                     description="""
                     A list of Condition objects specifying when (and what) this
-                    decider combinator should output."""
+                    decider combinator should output.""",
                 )
                 outputs: list[DeciderOutput] = Field(
                     [],
@@ -265,7 +419,7 @@ class DeciderCombinator(
                     A list of Output objects specifying what signals should be
                     passed to the output wire when the conditions evaluate to
                     true.
-                    """
+                    """,
                 )
 
                 # @model_validator(mode="after")
@@ -317,7 +471,7 @@ class DeciderCombinator(
         direction: Optional[Direction] = Direction.NORTH,
         player_description: Optional[str] = None,
         connections: Connections = {},
-        control_behavior: Format.ControlBehavior = {},
+        control_behavior: Optional[Format.ControlBehavior] = None,
         tags: dict[str, Any] = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -338,7 +492,7 @@ class DeciderCombinator(
             direction=direction,
             player_description=player_description,
             connections=connections,
-            control_behavior=control_behavior,
+            control_behavior={} if control_behavior is None else control_behavior,
             tags=tags,
             **kwargs
         )
@@ -374,11 +528,11 @@ class DeciderCombinator(
     # =========================================================================
 
     @property
-    def outputs(self) -> list[Format.ControlBehavior.DeciderConditions.Output]:
+    def outputs(self) -> list[DeciderOutput]:
         return self.control_behavior.decider_conditions.outputs
-    
+
     @outputs.setter
-    def outputs(self, value: Optional[list[Format.ControlBehavior.DeciderConditions.Output]]) -> None:
+    def outputs(self, value: Optional[list[DeciderOutput]]) -> None:
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,

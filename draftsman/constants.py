@@ -60,7 +60,7 @@ class Direction(IntEnum):
         """
         return Direction((self.value + 8) % 16)
 
-    def next(self, four_way: bool=True) -> "Direction":
+    def next(self, four_way: bool = True) -> "Direction":
         """
         Returns the direction one unit clockwise from the current direction.
         ``eight_way`` determines whether or not to treat the next-most direction
@@ -80,7 +80,7 @@ class Direction(IntEnum):
         """
         return Direction((self.value + (4 if four_way else 1)) % 16)
 
-    def previous(self, four_way: bool=True) -> "Direction":
+    def previous(self, four_way: bool = True) -> "Direction":
         """
         Returns the direction one unit counter-clockwise from the current
         direction. ``eight_way`` determines whether or not to treat the
@@ -160,7 +160,7 @@ class Direction(IntEnum):
             # fmt: on
         }
         return mapping[self] * magnitude
-    
+
 
 class LegacyDirection(IntEnum):
     """
@@ -577,9 +577,11 @@ class LampColorMode(IntEnum):
     """
     TODO
     """
+
     COLOR_MAPPING = 0
     COMPONENTS = 1
     PACKED_RGB = 2
+
 
 class LogisticModeOfOperation(IntEnum):
     """

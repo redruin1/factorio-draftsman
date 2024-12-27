@@ -151,7 +151,7 @@ class Mod:
         Grabs the data from the file as a string.
         """
         if self.is_archive:
-            return archive_to_string(self.data) # TODO
+            return archive_to_string(self.data)  # TODO
         else:
             return file_to_string(filepath=self.location + "/" + filepath)
         pass
@@ -408,7 +408,9 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
     return current_mod
 
 
-def discover_mods(game_path: str, mods_path: str, no_mods: bool=False) -> dict[str, list[Mod]]:
+def discover_mods(
+    game_path: str, mods_path: str, no_mods: bool = False
+) -> dict[str, list[Mod]]:
     """
     Returns an (unsorted) list of all mods detected at a specific game data
     and mod folder location, including different versions of the same mod.

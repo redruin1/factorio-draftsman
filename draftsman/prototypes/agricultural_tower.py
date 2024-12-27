@@ -3,14 +3,13 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
-    RequestItemsMixin,
     CircuitConditionMixin,
     LogisticConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
 )
 from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import DraftsmanBaseModel, uint8
+from draftsman.signatures import DraftsmanBaseModel, uint8, uint32
 from draftsman.utils import Vector, PrimitiveVector, get_first
 
 from draftsman.data.entities import agricultural_towers
@@ -18,19 +17,19 @@ from draftsman.data.entities import agricultural_towers
 from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
+
 class AgriculturalTower(
-    # RequestItemsMixin, # TODO
     LogisticConditionMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
-    Entity
+    Entity,
 ):
     """
     An entity that can plant and harvest growables.
     """
+
     class Format(
-        # RequestItemsMixin.Format,
         CircuitConditionMixin.Format,
         LogisticConditionMixin.Format,
         ControlBehaviorMixin.Format,
@@ -47,13 +46,12 @@ class AgriculturalTower(
                 description="""
                 Whether or not to broadcast the current inventory of the tower
                 to any connected circuit network.
-                """
+                """,
             )
 
         control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
         model_config = ConfigDict(title="AgriculturalTower")
-
 
     def __init__(
         self,
@@ -63,6 +61,7 @@ class AgriculturalTower(
         direction: Direction = Direction.NORTH,
         override_stack_size: uint8 = None,
         control_behavior: Format.ControlBehavior = {},
+        items: dict[str, uint32] = {},  # TODO: ItemID
         tags: dict[str, Any] = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -77,6 +76,7 @@ class AgriculturalTower(
             direction=direction,
             override_stack_size=override_stack_size,
             control_behavior=control_behavior,
+            items=items,
             tags=tags,
             **kwargs
         )
@@ -88,7 +88,7 @@ class AgriculturalTower(
     @property
     def read_contents(self) -> Optional[bool]:
         """
-        Whether or not this Entity is set to output it's contents to a 
+        Whether or not this Entity is set to output it's contents to a
         connected circuit network.
 
         :getter: Gets the value of ``read_contents``, or ``None`` if not set.

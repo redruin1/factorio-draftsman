@@ -18,7 +18,6 @@ class UndergroundBelt(IOTypeMixin, DirectionalMixin, Entity):
     """
 
     class Format(IOTypeMixin.Format, DirectionalMixin.Format, Entity.Format):
-
         model_config = ConfigDict(title="UndergroundBelt")
 
     def __init__(
