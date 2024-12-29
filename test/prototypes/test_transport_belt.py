@@ -1,6 +1,6 @@
 # test_transport_belt.py
 
-from draftsman.constants import Direction, ReadMode, ValidationMode
+from draftsman.constants import Direction, BeltReadMode, ValidationMode
 from draftsman.entity import TransportBelt, transport_belts, Container
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
@@ -18,7 +18,7 @@ class TestTransportBelt:
             direction=Direction.EAST,
             connections={"1": {"green": [{"entity_id": 1}]}},
             control_behavior={
-                "circuit_enable_disable": True,
+                "circuit_enabled": True,
                 "circuit_condition": {
                     "first_signal": {"name": "signal-blue", "type": "virtual"},
                     "comparator": "=",
@@ -34,7 +34,7 @@ class TestTransportBelt:
                     "constant": 0,
                 },
                 "circuit_read_hand_contents": False,
-                "circuit_contents_read_mode": ReadMode.HOLD,
+                "circuit_contents_read_mode": BeltReadMode.HOLD,
             },
         )
 
@@ -44,7 +44,7 @@ class TestTransportBelt:
             "position": {"x": 0.5, "y": 0.5},
             "connections": {"1": {"green": [{"entity_id": 1}]}},
             "control_behavior": {
-                "circuit_enable_disable": True,
+                "circuit_enabled": True,
                 "circuit_condition": {
                     "first_signal": {"name": "signal-blue", "type": "virtual"},
                     "comparator": "=",
@@ -60,7 +60,7 @@ class TestTransportBelt:
                     # "constant": 0, # Default
                 },
                 "circuit_read_hand_contents": False,
-                "circuit_contents_read_mode": ReadMode.HOLD,
+                "circuit_contents_read_mode": BeltReadMode.HOLD,
             },
         }
 
@@ -97,41 +97,40 @@ class TestTransportBelt:
             )
             belt.validate().reissue_all()
 
-    def test_set_enable_disable(self):
+    def test_set_circuit_enabled(self):
         belt = TransportBelt("transport-belt")
-        assert belt.enable_disable == None
+        assert belt.circuit_enabled == False # Default
         assert belt.to_dict() == {
             "name": "transport-belt",
             "position": {"x": 0.5, "y": 0.5},
         }
 
-        belt.enable_disable = True
-        assert belt.enable_disable == True
+        belt.circuit_enabled = True
+        assert belt.circuit_enabled == True
         assert belt.to_dict() == {
             "name": "transport-belt",
             "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_enable_disable": True},
+            "control_behavior": {"circuit_enabled": True},
         }
 
-        belt.enable_disable = False
-        assert belt.enable_disable == False
+        belt.circuit_enabled = None
+        assert belt.circuit_enabled == None
         assert belt.to_dict() == {
             "name": "transport-belt",
             "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_enable_disable": False},
         }
 
         with pytest.raises(DataFormatError):
-            belt.enable_disable = "incorrect"
+            belt.circuit_enabled = "incorrect"
 
         belt.validate_assignment = "none"
         assert belt.validate_assignment == ValidationMode.NONE
-        belt.enable_disable = "incorrect"
-        assert belt.enable_disable == "incorrect"
+        belt.circuit_enabled = "incorrect"
+        assert belt.circuit_enabled == "incorrect"
         assert belt.to_dict() == {
             "name": "transport-belt",
             "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_enable_disable": "incorrect"},
+            "control_behavior": {"circuit_enabled": "incorrect"},
         }
 
     def test_set_read_contents(self):
@@ -173,12 +172,12 @@ class TestTransportBelt:
             "position": {"x": 0.5, "y": 0.5},
         }
 
-        belt.read_mode = ReadMode.HOLD
-        assert belt.read_mode == ReadMode.HOLD
+        belt.read_mode = BeltReadMode.HOLD
+        assert belt.read_mode == BeltReadMode.HOLD
         assert belt.to_dict() == {
             "name": "transport-belt",
             "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_contents_read_mode": ReadMode.HOLD},
+            "control_behavior": {"circuit_contents_read_mode": BeltReadMode.HOLD},
         }
 
         belt.read_mode = None
@@ -216,7 +215,7 @@ class TestTransportBelt:
         belt2 = TransportBelt(
             "fast-transport-belt",
             control_behavior={
-                "circuit_enable_disable": True,
+                "circuit_enabled": True,
                 "circuit_condition": {
                     "first_signal": "signal-blue",
                     "comparator": "=",
@@ -229,7 +228,7 @@ class TestTransportBelt:
                     "constant": 0,
                 },
                 "circuit_read_hand_contents": False,
-                "circuit_contents_read_mode": ReadMode.HOLD,
+                "circuit_contents_read_mode": BeltReadMode.HOLD,
             },
             tags={"some": "stuff"},
         )
@@ -247,7 +246,7 @@ class TestTransportBelt:
         belt2 = TransportBelt(
             "fast-transport-belt",
             control_behavior={
-                "circuit_enable_disable": True,
+                "circuit_enabled": True,
                 "circuit_condition": {
                     "first_signal": {"name": "signal-blue", "type": "virtual"},
                     "comparator": "=",
@@ -263,7 +262,7 @@ class TestTransportBelt:
                     "constant": 0,
                 },
                 "circuit_read_hand_contents": False,
-                "circuit_contents_read_mode": ReadMode.HOLD,
+                "circuit_contents_read_mode": BeltReadMode.HOLD,
             },
             tags={"some": "stuff"},
         )
@@ -272,7 +271,7 @@ class TestTransportBelt:
         del belt2
 
         assert belt1.to_dict()["control_behavior"] == {
-            "circuit_enable_disable": True,
+            "circuit_enabled": True,
             "circuit_condition": {
                 "first_signal": {"name": "signal-blue", "type": "virtual"},
                 "comparator": "=",
@@ -288,7 +287,7 @@ class TestTransportBelt:
                 # "constant": 0, # Default
             },
             "circuit_read_hand_contents": False,
-            "circuit_contents_read_mode": ReadMode.HOLD,
+            "circuit_contents_read_mode": BeltReadMode.HOLD,
         }
         assert belt1.tags == {"some": "stuff"}
 

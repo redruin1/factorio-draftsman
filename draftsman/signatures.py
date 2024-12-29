@@ -22,7 +22,7 @@ from draftsman.data.signals import (
     pure_virtual,
 )
 from draftsman.data import entities, fluids, items, signals, tiles
-from draftsman.error import InvalidMapperError, InvalidSignalError
+from draftsman.error import InvalidMapperError, InvalidSignalError, DataFormatError
 from draftsman.utils import encode_version, get_suggestion
 from draftsman.warning import (
     BarWarning,
@@ -55,7 +55,7 @@ from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema
 from textwrap import dedent
 from thefuzz import process
-from typing import Any, Literal, Optional, Sequence
+from typing import Any, Literal, Optional, Sequence, Union
 
 
 # TODO: might make sense to move this into another file, so other files can use
@@ -480,24 +480,13 @@ class SignalID(DraftsmanBaseModel):
 
 
 class TargetID(DraftsmanBaseModel):
-    index: uint32 = Field(
-        ...,
-        description="TODO"
-    ) # TODO: size
-    name: str = Field( # TODO: TargetName?
-        ...,
-        description="TODO"
-    )
+    index: uint32 = Field(..., description="TODO")  # TODO: size
+    name: str = Field(..., description="TODO")  # TODO: TargetName?
+
 
 class ChunkID(DraftsmanBaseModel):
-    index: uint32 = Field(
-        ...,
-        description="TODO"
-    ) # TODO: size
-    name: str = Field( # TODO: ChunkName?
-        ...,
-        description="TODO"
-    )
+    index: uint32 = Field(..., description="TODO")  # TODO: size
+    name: str = Field(..., description="TODO")  # TODO: ChunkName?
 
 
 class Icon(DraftsmanBaseModel):
@@ -1166,3 +1155,146 @@ class SignalFilter(DraftsmanBaseModel):
             )
 
         return value
+
+
+class Section(DraftsmanBaseModel):
+    index: uint32
+    filters: Optional[list[SignalFilter]] = []
+    group: Optional[str] = Field(
+        None,
+        description="Name of this particular signal section group.",
+    )
+
+    def set_signal(
+        self,
+        index: int64,
+        name: Union[str, None],
+        count: int32 = 0,
+        quality: Literal[
+            "normal",
+            "uncommon",
+            "rare",
+            "epic",
+            "legendary",
+            "quality-unknown",
+            "any",
+        ] = "normal",
+        type: Optional[str] = None,
+    ) -> None:
+        try:
+            new_entry = SignalFilter(
+                index=index,
+                name=name,
+                type=type,
+                quality=quality,
+                comparator="=",
+                count=count,
+            )
+            new_entry.index += 1
+        except ValidationError as e:
+            raise DataFormatError(e) from None
+
+        new_filters = [] if self.filters is None else self.filters
+
+        # Check to see if filters already contains an entry with the same index
+        existing_index = None
+        for i, signal_filter in enumerate(new_filters):
+            if index + 1 == signal_filter["index"]:  # Index already exists in the list
+                if name is None:  # Delete the entry
+                    del new_filters[i]
+                else:
+                    new_filters[i] = new_entry
+                existing_index = i
+                break
+
+        if existing_index is None:
+            new_filters.append(new_entry)
+
+    def get_signal(self, index):
+        """
+        Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
+        if it exists.
+
+        :param index: The index of the signal to analyze.
+
+        :returns: A ``dict`` that conforms to :py:data:`.SIGNAL_FILTER`, or
+            ``None`` if nothing was found at that index.
+        """
+        if not self.filters:
+            return None
+
+        return next(
+            (item for item in self.filters if item["index"] == index + 1),
+            None,
+        )
+
+    @field_validator("filters", mode="before")
+    @classmethod
+    def normalize_input(cls, value: Any):
+        if isinstance(value, list):
+            for i, entry in enumerate(value):
+                if isinstance(entry, tuple):
+                    value[i] = {
+                        "index": i + 1,
+                        "name": entry[0],
+                        "type": next(iter(get_signal_types(entry[0]))),
+                        "comparator": "=",
+                        "count": entry[1],
+                        "max_count": entry[1],
+                    }
+
+        return value
+
+
+class QualityFilter(DraftsmanBaseModel):
+    quality: Optional[
+        Literal[
+            "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
+        ]
+    ] = Field("any", description="""The quality of the signal to compare against.""")
+    comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
+        "=",
+        description="""The comparison operator to use when evaluating signal comparisons.""",
+    )
+
+    @field_validator("comparator", mode="before")
+    @classmethod
+    def normalize_comparator_python_equivalents(cls, input: Any):
+        conversions = {"==": "=", ">=": "≥", "<=": "≤", "!=": "≠"}
+        if input in conversions:
+            return conversions[input]
+        else:
+            return input
+
+
+
+class ItemSpecification(DraftsmanBaseModel):
+    class InventoryLocation(DraftsmanBaseModel):
+        inventory: uint32 = Field(  # TODO: size
+            ..., description="Which inventory this item sits in, 1-indexed."
+        )
+        stack: uint32 = Field(  # TODO: size
+            ...,
+            description="Which slot in the inventory it lies in, 0-indexed.",
+        )
+        count: Optional[uint32] = Field(  # TODO: size
+            1, description="The amount of the item to request to that slot."
+        )
+
+    in_inventory: Optional[list[InventoryLocation]] = Field(
+        [], description="Which slots this item should occupy"
+    )
+    grid_count: Optional[uint32] = Field(
+        0, description="The amount to request to the associated grid."
+    )
+
+
+class ItemRequest(DraftsmanBaseModel):
+    id: SignalID = Field(..., description="The name of the item to request.")
+    items: ItemSpecification = Field(
+        ...,
+        description="""
+        A list of all requested items and their locations within the 
+        entity.
+        """,
+    )

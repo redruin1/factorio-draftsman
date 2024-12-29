@@ -18,7 +18,7 @@ class CircuitSetFiltersMixin:
             False,
             description="""
             Whether or not the circuit network sets this entity's filters.
-            """
+            """,
         )
 
     class Format(BaseModel):
@@ -32,16 +32,16 @@ class CircuitSetFiltersMixin:
         TODO
         """
         return self.control_behavior.circuit_set_filters
-    
+
     @circuit_set_filters.setter
     def circuit_set_filters(self, value: Optional[bool]) -> None:
         if self.validate_assignment:
             result = attempt_and_reissue(
-                self, 
-                type(self).Format.ControlBehavior, 
-                self.control_behavior, 
-                "circuit_set_filters", 
-                value
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "circuit_set_filters",
+                value,
             )
             self.control_behavior.circuit_set_filters = result
         else:

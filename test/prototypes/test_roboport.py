@@ -367,18 +367,22 @@ class TestRoboport:
             "read_robot_stats": True,
             "available_logistic_output_signal": {
                 "name": "signal-A",
+                "quality": "normal",
                 "type": "virtual",
             },
             "total_logistic_output_signal": {
                 "name": "signal-B",
+                "quality": "normal",
                 "type": "virtual",
             },
             "available_construction_output_signal": {
                 "name": "signal-C",
+                "quality": "normal",
                 "type": "virtual",
             },
             "total_construction_output_signal": {
                 "name": "signal-D",
+                "quality": "normal",
                 "type": "virtual",
             },
         }

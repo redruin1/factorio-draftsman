@@ -37,7 +37,11 @@ class Wall(
         CircuitConnectableMixin.Format,
         Entity.Format,
     ):
-        class ControlBehavior(CircuitConditionMixin.ControlFormat, CircuitEnableMixin.ControlFormat, DraftsmanBaseModel):
+        class ControlBehavior(
+            CircuitConditionMixin.ControlFormat,
+            CircuitEnableMixin.ControlFormat,
+            DraftsmanBaseModel,
+        ):
             circuit_open_gate: Optional[bool] = Field(
                 True,
                 description="""

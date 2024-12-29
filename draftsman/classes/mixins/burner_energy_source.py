@@ -12,6 +12,11 @@ from typing import Optional
 
 _valid_fuel_items: dict[str, set[str]] = {}
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from draftsman.classes.mixins import RequestItemsMixin
+
 
 class BurnerEnergySourceMixin:  # (RequestItemsMixin)
     """
@@ -42,7 +47,7 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
                 return value
 
             for item in entity.fuel_items:
-                if item not in entity.allowed_fuel_items:
+                if item["id"]["name"] not in entity.allowed_fuel_items:
                     if len(entity.allowed_fuel_items) == 0:
                         context_string = " this entity does not consume items for power"
                     else:
@@ -55,44 +60,44 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
                     warning_list.append(
                         FuelLimitationWarning(
                             "Cannot add fuel item '{}' to '{}';{}".format(
-                                item, entity.name, context_string
+                                item["id"]["name"], entity.name, context_string
                             )
                         )
                     )
 
             return value
 
-        @field_validator("items", check_fields=False)
-        @classmethod
-        def ensure_fuel_doesnt_exceed_slots(
-            cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-        ):
-            """
-            Warn the user if they request valid burnable fuel, but the amount
-            they request will exceed the number if internal fuel slots for this
-            entity.
-            """
-            if not info.context or value is None:
-                return value
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
+        # @field_validator("items", check_fields=False)
+        # @classmethod
+        # def ensure_fuel_doesnt_exceed_slots( # TODO: reimplement
+        #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+        # ):
+        #     """
+        #     Warn the user if they request valid burnable fuel, but the amount
+        #     they request will exceed the number if internal fuel slots for this
+        #     entity.
+        #     """
+        #     if not info.context or value is None:
+        #         return value
+        #     if info.context["mode"] <= ValidationMode.MINIMUM:
+        #         return value
 
-            entity: "BurnerEnergySourceMixin" = info.context["object"]
-            warning_list: list = info.context["warning_list"]
+        #     entity: "BurnerEnergySourceMixin" = info.context["object"]
+        #     warning_list: list = info.context["warning_list"]
 
-            if entity.total_fuel_slots is None:  # entity not recognized
-                return value
+        #     if entity.total_fuel_slots is None:  # entity not recognized
+        #         return value
 
-            if entity.fuel_slots_occupied > entity.total_fuel_slots:
-                issue = FuelCapacityWarning(
-                    "Amount of slots occupied by fuel items ({}) exceeds available fuel slots ({}) for entity '{}'".format(
-                        entity.fuel_slots_occupied, entity.total_fuel_slots, entity.name
-                    )
-                )
+        #     if entity.fuel_slots_occupied > entity.total_fuel_slots:
+        #         issue = FuelCapacityWarning(
+        #             "Amount of slots occupied by fuel items ({}) exceeds available fuel slots ({}) for entity '{}'".format(
+        #                 entity.fuel_slots_occupied, entity.total_fuel_slots, entity.name
+        #             )
+        #         )
 
-                warning_list.append(issue)
+        #         warning_list.append(issue)
 
-            return value
+        #     return value
 
     def __init__(self, name: str, similar_entities: list[str], **kwargs):
         # Cache a set of valid fuel items for this entity, if they have not been
@@ -155,18 +160,18 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
 
     # =========================================================================
 
-    @property
-    def fuel_slots_occupied(self) -> int:
-        """
-        Gets the total number of fuel slots currently occupied by fuel item
-        requests. Items not recognized by Draftsman are ignored from the
-        returned count.
-        """
-        return sum(
-            int(math.ceil(count / float(items.raw[item]["stack_size"])))
-            for item, count in self.fuel_items.items()
-            if item in items.raw
-        )
+    # @property
+    # def fuel_slots_occupied(self) -> int: # TODO: reimplment
+    #     """
+    #     Gets the total number of fuel slots currently occupied by fuel item
+    #     requests. Items not recognized by Draftsman are ignored from the
+    #     returned count.
+    #     """
+    #     return sum(
+    #         int(math.ceil(count / float(items.raw[item]["stack_size"])))
+    #         for item, count in self.fuel_items
+    #         if item in items.raw
+    #     )
 
     # =========================================================================
 
@@ -184,11 +189,11 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
     # =========================================================================
 
     @property
-    def fuel_items(self) -> dict[ItemName, uint32]:
+    def fuel_items(self) -> list["RequestItemsMixin.Format.ItemRequest"]:
         """
         The subset of :py:attr:`.items` where each key is a valid item fuel
         source that can be consumed by this entity. Returns an empty dict if
         none of the keys of ``items`` are known as valid module names. Not
         exported; read only.
         """
-        return {k: v for k, v in self.items.items() if k in items.all_fuel_items}
+        return [item for item in self.items if item["id"]["name"] in items.all_fuel_items]

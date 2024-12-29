@@ -1,7 +1,7 @@
 # circuit_read_contents.py
 
 from draftsman.classes.exportable import attempt_and_reissue
-from draftsman.constants import ReadMode
+from draftsman.constants import BeltReadMode
 
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -26,7 +26,7 @@ class CircuitReadContentsMixin:  # (ControlBehaviorMixin)
             Whether or not to read the contents of this belt's surface.
             """,
         )
-        circuit_contents_read_mode: Optional[ReadMode] = Field(
+        circuit_contents_read_mode: Optional[BeltReadMode] = Field(
             None,
             description="""
             Whether to hold or pulse the belt's surface items, if 
@@ -68,7 +68,7 @@ class CircuitReadContentsMixin:  # (ControlBehaviorMixin)
     # =========================================================================
 
     @property
-    def read_mode(self) -> Optional[ReadMode]:
+    def read_mode(self) -> Optional[BeltReadMode]:
         """
         The mode in which the contents of the Entity should be read. Either
         ``ReadMode.PULSE`` or ``ReadMode.HOLD``.
@@ -82,7 +82,7 @@ class CircuitReadContentsMixin:  # (ControlBehaviorMixin)
         return self.control_behavior.circuit_contents_read_mode
 
     @read_mode.setter
-    def read_mode(self, value: Optional[ReadMode]):
+    def read_mode(self, value: Optional[BeltReadMode]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,

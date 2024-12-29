@@ -49,22 +49,20 @@ class AsteroidCollector(
             CircuitEnableMixin.ControlFormat,
             DraftsmanBaseModel,
         ):
-            circuit_read_contents: Optional[bool] = False # TODO
+            circuit_read_contents: Optional[bool] = False  # TODO
             include_hands: Optional[bool] = Field(
                 True,
                 description="""
                 Whether or not to include chunks currently in the collectors 
                 arms when broadcasting the contained amount to connected circuit 
                 networks.
-                """
+                """,
             )
 
         control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        result_inventory: None = Field( # TODO: what is this?
-            None,
-            alias="result-inventory",
-            description="TODO"
+        result_inventory: None = Field(  # TODO: what is this?
+            None, alias="result-inventory", description="TODO"
         )
 
         chunk_filter: Optional[list[ChunkID]] = Field(
@@ -73,7 +71,7 @@ class AsteroidCollector(
             description="""
             Fixed set of asteroid chunk filters. Superceeded by circuit network 
             filters, if enabled.
-            """
+            """,
         )
 
         @field_validator("chunk_filter", mode="before")
@@ -83,7 +81,7 @@ class AsteroidCollector(
                 result = []
                 for i, elem in enumerate(value):
                     if isinstance(elem, str):
-                        result.append({"index": i+1, "name": elem})
+                        result.append({"index": i + 1, "name": elem})
                     else:
                         result.append(elem)
                 return result
@@ -92,15 +90,13 @@ class AsteroidCollector(
 
         model_config = ConfigDict(title="AsteroidCollector")
 
-    # =========================================================================
-
     def __init__(
         self,
         name: Optional[str] = get_first(asteroid_collectors),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
-        result_inventory = None,
+        result_inventory=None,
         chunk_filter: list[ChunkID] = [],
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
@@ -139,7 +135,7 @@ class AsteroidCollector(
         TODO
         """
         return self._root.result_inventory
-    
+
     # =========================================================================
 
     @property
@@ -148,7 +144,7 @@ class AsteroidCollector(
         TODO
         """
         return self._root.chunk_filter
-    
+
     @chunk_filter.setter
     def chunk_filter(self, value: Optional[list[ChunkID]]) -> None:
         if self.validate_assignment:

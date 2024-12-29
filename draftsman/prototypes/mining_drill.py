@@ -15,7 +15,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import Connections, DraftsmanBaseModel, uint32
+from draftsman.signatures import Connections, DraftsmanBaseModel, ItemRequest
 from draftsman.utils import get_first
 
 from draftsman.data.entities import mining_drills
@@ -73,7 +73,7 @@ class MiningDrill(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
-        items: dict[str, uint32] = {},  # TODO: ItemID
+        items: Optional[list[ItemRequest]] = [],  # TODO: ItemID
         connections: Connections = {},
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},

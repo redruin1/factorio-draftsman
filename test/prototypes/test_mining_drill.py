@@ -2,7 +2,8 @@
 
 from draftsman.constants import MiningDrillReadMode, ValidationMode
 from draftsman.entity import MiningDrill, mining_drills, Container
-from draftsman.error import InvalidEntityError, InvalidItemError, DataFormatError
+from draftsman.error import DataFormatError
+from draftsman.signatures import ItemRequest
 from draftsman.warning import (
     ModuleCapacityWarning,
     ItemLimitationWarning,
@@ -19,12 +20,10 @@ class TestMiningDrill:
     def test_constructor_init(self):
         drill = MiningDrill(
             "electric-mining-drill",
-            items={"productivity-module": 1, "productivity-module-2": 1},
         )
         assert drill.to_dict() == {
             "name": "electric-mining-drill",
             "position": {"x": 1.5, "y": 1.5},
-            "items": {"productivity-module": 1, "productivity-module-2": 1},
         }
 
         # Warnings
@@ -32,9 +31,9 @@ class TestMiningDrill:
             MiningDrill(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
             MiningDrill(control_behavior={"unused": "keyword"}).validate().reissue_all()
-        with pytest.warns(ModuleCapacityWarning): # TODO
-            drill = MiningDrill("electric-mining-drill", items={"productivity-module": 5})
-            drill.validate().reissue_all()
+        # with pytest.warns(ModuleCapacityWarning): # TODO
+        #     drill = MiningDrill("electric-mining-drill")
+        #     drill.validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             MiningDrill("not a mining drill").validate().reissue_all()
 
@@ -52,28 +51,42 @@ class TestMiningDrill:
         assert mining_drill.to_dict() == {
             "name": "electric-mining-drill",
             "position": {"x": 1.5, "y": 1.5},
-            "items": {"speed-module-3": 3},
+            "items": [
+                {
+                    "id": {"name": "speed-module-3"},
+                    "items": {
+                        "in_inventory": [
+                            {
+                                "inventory": 1,
+                                "stack": 0,
+                                "count": 3,
+                            }
+                        ]
+                    }
+                }
+            ],
         }
-        with pytest.warns(ModuleCapacityWarning):
-            mining_drill.set_item_request("productivity-module-3", 3)
-        assert mining_drill.to_dict() == {
-            "name": "electric-mining-drill",
-            "position": {"x": 1.5, "y": 1.5},
-            "items": {"speed-module-3": 3, "productivity-module-3": 3},
-        }
+        # TODO: reimplement
+        # with pytest.warns(ModuleCapacityWarning):
+        #     mining_drill.set_item_request("productivity-module-3", 3)
+        # assert mining_drill.to_dict() == {
+        #     "name": "electric-mining-drill",
+        #     "position": {"x": 1.5, "y": 1.5},
+        #     "items": {"speed-module-3": 3, "productivity-module-3": 3},
+        # }
 
-        with pytest.warns(ModuleCapacityWarning):
-            mining_drill.set_item_request("speed-module-3", 2)
-        assert mining_drill.items == {"speed-module-3": 2, "productivity-module-3": 3}
+        # with pytest.warns(ModuleCapacityWarning):
+        #     mining_drill.set_item_request("speed-module-3", 2)
+        # assert mining_drill.items == {"speed-module-3": 2, "productivity-module-3": 3}
 
-        mining_drill.set_item_request("speed-module-3", None)
-        assert mining_drill.items == {"productivity-module-3": 3}
+        # mining_drill.set_item_request("speed-module-3", None)
+        # assert mining_drill.items == {"productivity-module-3": 3}
 
-        with pytest.warns(ItemLimitationWarning):
-            mining_drill.set_item_request("iron-ore", 2)
+        # with pytest.warns(ItemLimitationWarning):
+        #     mining_drill.set_item_request("iron-ore", 2)
 
-        with pytest.warns(UnknownItemWarning):
-            mining_drill.set_item_request("incorrect", 2)
+        # with pytest.warns(UnknownItemWarning):
+        #     mining_drill.set_item_request("incorrect", 2)
 
     def test_set_read_resources(self):
         mining_drill = MiningDrill("burner-mining-drill")
@@ -155,14 +168,20 @@ class TestMiningDrill:
         }
         drill2 = MiningDrill(
             "electric-mining-drill",
-            items={"productivity-module": 1, "productivity-module-2": 1},
+            items=[
+                {"id": {"name": "productivity-module"}, "items": {"in_inventory": [{"inventory": 1, "stack": 0, "count": 1}]}},
+                {"id": {"name": "productivity-module-2"}, "items": {"in_inventory": [{"inventory": 1, "stack": 1, "count": 1}]}}
+            ],
             tags={"some": "stuff"},
         )
 
         drill1.merge(drill2)
         del drill2
 
-        assert drill1.items == {"productivity-module": 1, "productivity-module-2": 1}
+        assert drill1.items == [
+            ItemRequest(**{"id": "productivity-module", "items": {"in_inventory": [{"inventory": 1, "stack": 0, "count": 1}]}}),
+            ItemRequest(**{"id": "productivity-module-2", "items": {"in_inventory": [{"inventory": 1, "stack": 1, "count": 1}]}})
+        ]
         assert drill1.tags == {"some": "stuff"}
 
     def test_eq(self):

@@ -2,7 +2,7 @@
 
 from draftsman.constants import (
     Direction,
-    ReadMode,
+    InserterReadMode,
     ValidationMode,
     InserterModeOfOperation,
 )
@@ -35,7 +35,7 @@ class TestInserter:
                 "connect_to_logistic_network": True,
                 "logistic_condition": {},
                 "circuit_read_hand_contents": True,
-                "circuit_hand_read_mode": ReadMode.PULSE,
+                "circuit_hand_read_mode": InserterReadMode.PULSE,
             },
             connections={"1": {"green": [{"entity_id": 2, "circuit_id": 1}]}},
         )
@@ -55,7 +55,7 @@ class TestInserter:
                 "connect_to_logistic_network": True,
                 # "logistic_condition": {}, # Default
                 "circuit_read_hand_contents": True,
-                "circuit_hand_read_mode": ReadMode.PULSE,
+                "circuit_hand_read_mode": InserterReadMode.PULSE,
             },
             "connections": {"1": {"green": [{"entity_id": 2, "circuit_id": 1}]}},
         }
@@ -154,12 +154,12 @@ class TestInserter:
             "position": {"x": 0.5, "y": 0.5},
         }
 
-        inserter.read_mode = ReadMode.HOLD
-        assert inserter.read_mode == ReadMode.HOLD
+        inserter.read_mode = InserterReadMode.HOLD
+        assert inserter.read_mode == InserterReadMode.HOLD
         assert inserter.to_dict() == {
             "name": "inserter",
             "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_hand_read_mode": ReadMode.HOLD},
+            "control_behavior": {"circuit_hand_read_mode": InserterReadMode.HOLD},
         }
 
         inserter.read_mode = None

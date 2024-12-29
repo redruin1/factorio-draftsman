@@ -12,7 +12,7 @@ from draftsman.warning import (
 )
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
@@ -27,6 +27,11 @@ class RecipeMixin:
     class Format(BaseModel):
         recipe: Optional[str] = Field(
             None, description="""The name of the entity's selected recipe."""
+        )
+        recipe_quality: Literal[
+            "normal", "uncommon", "rare", "epic", "legendary"
+        ] = Field(
+            "normal", description="""The specified quality of the selected recipe."""
         )
 
         @field_validator("recipe")
@@ -113,6 +118,7 @@ class RecipeMixin:
 
         # Recipe that this machine is currently set to
         self.recipe = kwargs.get("recipe", None)
+        self.recipe_quality = kwargs.get("recipe_quality", None)
 
     # =========================================================================
 
@@ -124,6 +130,17 @@ class RecipeMixin:
         Not exported; read only.
         """
         return recipes.for_machine.get(self.name, None)
+
+    # =========================================================================
+
+    @property
+    def allowed_input_ingredients(self):
+        """
+        Returns a ``set`` of all ingredient names that are valid inputs for the
+        currently selected recipe and recipe quality. Returns ``None`` if there
+        is insufficient information to deduce this. Not exported; read only.
+        """
+        return recipes.get_recipe_ingredients(self.recipe, self.recipe_quality)
 
     # =========================================================================
 
@@ -163,8 +180,28 @@ class RecipeMixin:
     # =========================================================================
 
     @property
-    def allowed_input_ingredients(self):
-        return recipes.get_recipe_ingredients(self.recipe)
+    def recipe_quality(self) -> Optional[str]:
+        """
+        The quality of the recipe that this Entity is selected to make.
+
+        :getter: Gets the current recipe quality of the Entity.
+        :setter: Sets the current recipe quality of the Entity.
+
+        :exception TypeError: If set to anything other than a ``str`` or
+            ``None``.
+        """
+        return self._root.recipe
+
+    @recipe_quality.setter
+    def recipe_quality(self, value: str):
+        if self.validate_assignment:
+            self._root.recipe_quality = value  # TODO: FIXME; this is bad practice
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "recipe_quality", value
+            )
+            self._root.recipe_quality = result
+        else:
+            self._root.recipe_quality = value
 
     # =========================================================================
 

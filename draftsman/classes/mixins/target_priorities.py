@@ -10,16 +10,17 @@ from typing import Any, Literal, Optional, Union
 
 class TargetPrioritiesMixin:
     """
-    Enables the entity to prioritize specific targets either statically or 
+    Enables the entity to prioritize specific targets either statically or
     dynamically via the circuit network.
     """
+
     class ControlFormat(BaseModel):
         set_priority_list: Optional[bool] = Field(
             False,
             description="""
             Whether or not to have the priorities be set by the circuit network.
             If this is True, the contents of "priority-list" are ignored.
-            """
+            """,
         )
 
         set_ignore_unlisted_targets: Optional[bool] = Field(
@@ -27,7 +28,7 @@ class TargetPrioritiesMixin:
             description="""
             Whether or not target ignoring should be determined by the circuit
             network, determined by "ignore_unlisted_targets_condition".
-            """
+            """,
         )
 
         ignore_unlisted_targets_condition: Optional[Condition] = Field(
@@ -35,7 +36,7 @@ class TargetPrioritiesMixin:
             description="""
             A condition that enables the entity to ignore enemies not present
             in its targeting filters.
-            """
+            """,
         )
 
     class Format(BaseModel):
@@ -44,32 +45,29 @@ class TargetPrioritiesMixin:
             alias="priority-list",
             description="""
             A list of fixed entities to specify as targets.
-            """
+            """,
         )
         ignore_unprioritized: Optional[bool] = Field(
             False,
             description="""
             Whether or not to completely ignore targets within range if they
             are not present in this entities target filters.
-            """
+            """,
         )
 
         @field_validator("priority_list", mode="before")
         @classmethod
-        def convert_from_str(
-            cls, value: Any, info: ValidationInfo
-        ):
+        def convert_from_str(cls, value: Any, info: ValidationInfo):
             try:
                 result = []
                 for i, elem in enumerate(value):
                     if isinstance(elem, str):
-                        result.append({"index": i+1, "name": elem})
+                        result.append({"index": i + 1, "name": elem})
                     else:
                         result.append(elem)
                 return result
             except:
                 return value
-            
 
     # =========================================================================
 
@@ -125,7 +123,7 @@ class TargetPrioritiesMixin:
         TODO
         """
         return self.control_behavior.set_priority_list
-    
+
     @set_priority_list.setter
     def set_priority_list(self, value: Optional[bool]) -> None:
         if self.validate_assignment:
@@ -148,7 +146,7 @@ class TargetPrioritiesMixin:
         TODO
         """
         return self.control_behavior.set_ignore_unlisted_targets
-    
+
     @set_ignore_unlisted_targets.setter
     def set_ignore_unlisted_targets(self, value: Optional[bool]) -> None:
         if self.validate_assignment:

@@ -37,19 +37,20 @@ class ArtilleryTurret(
     Entity,
 ):
     """
-    A turret which can only target fixed enemy structures and uses artillery 
+    A turret which can only target fixed enemy structures and uses artillery
     ammunition.
     """
+
     class Format(
-        RequestItemsMixin.Format, 
+        RequestItemsMixin.Format,
         ReadAmmoMixin.Format,
         CircuitConditionMixin.Format,
         LogisticConditionMixin.Format,
         CircuitEnableMixin.Format,
         ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
-        DirectionalMixin.Format, 
-        Entity.Format
+        DirectionalMixin.Format,
+        Entity.Format,
     ):
         class ControlBehavior(
             ReadAmmoMixin.ControlFormat,
@@ -67,7 +68,7 @@ class ArtilleryTurret(
             description="""
             Whether or not this turret automatically targets enemy structures 
             in its range.
-            """
+            """,
         )
 
         model_config = ConfigDict(title="ArtilleryTurret")
@@ -109,7 +110,7 @@ class ArtilleryTurret(
         TODO
         """
         return self._root.artillery_auto_targeting
-    
+
     @auto_target.setter
     def auto_target(self, value: Optional[bool]) -> None:
         if self.validate_assignment:

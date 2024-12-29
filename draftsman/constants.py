@@ -518,9 +518,26 @@ Orientation.WEST = Orientation(0.75)
 Orientation.NORTHWEST = Orientation(0.875)
 
 
-class ReadMode(IntEnum):
+class BeltReadMode(IntEnum):
     """
-    Determines what manner belts and inserters should send their content signal.
+    Determines what manner belts should send their contents signal.
+
+    * ``PULSE (0)``
+        Pulse the signal for one tick when first detected. (Default)
+    * ``HOLD (1)``
+        Hold the signal for as long as the item is present.
+    * ``HOLD_ALL_BELTS (2)``
+        Hold the signal for all items on all contiguous connected belt segments.
+    """
+
+    PULSE = 0
+    HOLD = 1
+    HOLD_ALL_BELTS = 2
+
+
+class InserterReadMode(IntEnum):
+    """
+    Determines what manner inserters should send their contents signal.
 
     * ``PULSE (0)``
         Pulse the signal for one tick when first detected. (Default)
@@ -545,6 +562,23 @@ class MiningDrillReadMode(IntEnum):
 
     UNDER_DRILL = 0
     TOTAL_PATCH = 1
+
+
+class SiloReadMode(IntEnum):
+    """
+    Determines how rocket silos should interact with the circuit network.
+
+    * ``NONE (0)``
+        Do nothing.
+    * ``READ_CONTENTS (1)``
+        Send the contents of the currently loaded rocket. (Default)
+    * ``READ_ORBITAL_REQUESTS (2)``
+        Send the set of items desired by any space platforms in orbit.
+    """
+
+    NONE = 0
+    READ_CONTENTS = 1
+    READ_ORBITAL_REQUESTS = 2
 
 
 class InserterModeOfOperation(IntEnum):
@@ -593,10 +627,13 @@ class LogisticModeOfOperation(IntEnum):
         circuit network. (Default)
     * ``SET_REQUESTS (1)``
         Sets the item requests based on the input signals to the container.
+    * ``NONE (2)``
+        Does nothing with a connected circuit network.
     """
 
     SEND_CONTENTS = 0
     SET_REQUESTS = 1
+    NONE = 2
 
 
 class FilterMode(IntEnum):

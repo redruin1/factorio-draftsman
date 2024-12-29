@@ -99,12 +99,6 @@ class LegacyCurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity)
     # =========================================================================
 
     @property
-    def double_grid_aligned(self) -> bool:
-        return True
-
-    # =========================================================================
-
-    @property
     def static_collision_set(self) -> Optional[CollisionSet]:
         return _collision_set_rotation.get(Direction.NORTH, None)
 

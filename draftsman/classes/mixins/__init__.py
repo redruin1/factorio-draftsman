@@ -12,6 +12,7 @@ from draftsman.classes.mixins.control_behavior import ControlBehaviorMixin
 from draftsman.classes.mixins.directional import DirectionalMixin
 from draftsman.classes.mixins.double_grid_aligned import DoubleGridAlignedMixin
 from draftsman.classes.mixins.eight_way_directional import EightWayDirectionalMixin
+from draftsman.classes.mixins.equipment_grid import EquipmentGridMixin
 from draftsman.classes.mixins.circuit_enable import CircuitEnableMixin
 from draftsman.classes.mixins.filters import FiltersMixin
 from draftsman.classes.mixins.input_ingredients import InputIngredientsMixin
@@ -21,6 +22,7 @@ from draftsman.classes.mixins.io_type import IOTypeMixin
 from draftsman.classes.mixins.logistic_condition import LogisticConditionMixin
 from draftsman.classes.mixins.mode_of_operation import InserterModeOfOperationMixin
 from draftsman.classes.mixins.mode_of_operation import LogisticModeOfOperationMixin
+from draftsman.classes.mixins.mode_of_operation import CargoHubModeOfOperationMixin
 from draftsman.classes.mixins.modules import ModulesMixin
 from draftsman.classes.mixins.orientation import OrientationMixin
 from draftsman.classes.mixins.player_description import PlayerDescriptionMixin
@@ -32,3 +34,4 @@ from draftsman.classes.mixins.request_filters import RequestFiltersMixin
 from draftsman.classes.mixins.request_items import RequestItemsMixin
 from draftsman.classes.mixins.stack_size import StackSizeMixin
 from draftsman.classes.mixins.target_priorities import TargetPrioritiesMixin
+from draftsman.classes.mixins.vehicle import VehicleMixin

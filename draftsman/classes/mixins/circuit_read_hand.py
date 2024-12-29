@@ -1,7 +1,7 @@
 # circuit_read_hand.py
 
 from draftsman.classes.exportable import attempt_and_reissue
-from draftsman.constants import ReadMode
+from draftsman.constants import InserterReadMode
 
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -26,7 +26,7 @@ class CircuitReadHandMixin:  # (ControlBehaviorMixin)
             Whether or not to read the contents of this inserter's hand.
             """,
         )
-        circuit_hand_read_mode: Optional[ReadMode] = Field(
+        circuit_hand_read_mode: Optional[InserterReadMode] = Field(
             None,  # TODO: default = ReadMode.PULSE
             description="""
             Whether to hold or pulse the inserter's held items, if 
@@ -69,7 +69,7 @@ class CircuitReadHandMixin:  # (ControlBehaviorMixin)
     # =========================================================================
 
     @property
-    def read_mode(self) -> Optional[ReadMode]:
+    def read_mode(self) -> Optional[InserterReadMode]:
         """
         The mode in which the contents of the Entity should be read. Either
         ``ReadMode.PULSE`` or ``ReadMode.HOLD``.
@@ -83,7 +83,7 @@ class CircuitReadHandMixin:  # (ControlBehaviorMixin)
         return self.control_behavior.circuit_hand_read_mode
 
     @read_mode.setter
-    def read_mode(self, value: Optional[ReadMode]):
+    def read_mode(self, value: Optional[InserterReadMode]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,

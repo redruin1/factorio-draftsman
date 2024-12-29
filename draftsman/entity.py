@@ -64,7 +64,6 @@ from draftsman.prototypes.loader import Loader, loaders
 # from draftsman.prototypes.loader_1x1 import Loader1x1, loaders_1x1
 from draftsman.prototypes.locomotive import Locomotive, locomotives
 from draftsman.prototypes.logistic_container import LogisticContainer, logistic_containers
-from draftsman.prototypes.market import Market, markets
 from draftsman.prototypes.mining_drill import MiningDrill, mining_drills
 from draftsman.prototypes.offshore_pump import OffshorePump, offshore_pumps
 from draftsman.prototypes.pipe import Pipe, pipes

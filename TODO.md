@@ -1,34 +1,13 @@
 # TODO
 
 ### Finish implementing stub classes
-* `Car`
-* `CargoBay`
-* `CargoLandingPad`
-* `CurvedRailA`
-* `CurvedRailB`
-* `DisplayPanel`
-* `ElectricTurret`
-* `ElevatedCurvedRailA`
-* `ElevatedCurvedRailB`
-* `ElevatedHalfDiagonalRail`
-* `ElevatedStraightRail`
-* `FluidTurret`
-* `FusionGenerator`
-* `FusionReactor`
-* `HalfDiagonalRail`
-* `LightningAttractor`
 * `LogisticContainer`
-* `Market`
-* `RailRamp`
-* `RailSupport`
 * `SelectorCombinator`
-* `SpacePlatformHub`
-* `SpiderVehicle`
-* `Thruster`
 
 ### Remove classes:
 * `FilterInserter`
 * `LogisticsStorageContainer`, `LogisticsPassiveContainer`, ...
+* `Turret`
 
 ### Add a more proper interface to accessing prototype parameters directly from Draftsman objects
 So have something like `Car.prototype["base_speed"]` instead of having to do something like `entities.raw["car"]["car"]["base_speed"]`

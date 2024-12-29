@@ -43,7 +43,8 @@ class DoubleGridAlignedMixin:
 
             return input
 
-    def __init__(self, name: str, similar_entities: list[str], **kwargs):
-        super().__init__(name, similar_entities, **kwargs)
+    # =========================================================================
 
-        self._double_grid_aligned = True
+    @property
+    def double_grid_aligned(self) -> bool:
+        return True

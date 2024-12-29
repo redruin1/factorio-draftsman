@@ -5,7 +5,7 @@ from draftsman.data import items
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
-from draftsman.signatures import DraftsmanBaseModel, SignalID, uint32, ItemName
+from draftsman.signatures import DraftsmanBaseModel, ItemRequest, uint32, ItemName
 from draftsman.utils import reissue_warnings
 from draftsman.warning import ItemLimitationWarning, UnknownItemWarning
 
@@ -30,38 +30,8 @@ class RequestItemsMixin:
     """
 
     class Format(DraftsmanBaseModel):
-        class ItemRequest(DraftsmanBaseModel):
-            class ItemSpecification(DraftsmanBaseModel):
-                class InventoryLocation(DraftsmanBaseModel):
-                    inventory: uint32 = Field(  # TODO: size
-                        ..., description="Which inventory this item sits in, 1-indexed."
-                    )
-                    stack: uint32 = Field(  # TODO: size
-                        ...,
-                        description="Which slot in the inventory it lies in, 0-indexed.",
-                    )
-                    count: Optional[uint32] = Field(  # TODO: size
-                        1, description="The amount of the item to request to that slot."
-                    )
-
-                in_inventory: Optional[list[InventoryLocation]] = Field(
-                    [], description="Which slots this item should occupy"
-                )
-                grid_count: Optional[uint32] = Field(
-                    0, description="The amount to request to the associated grid."
-                )
-
-            id: SignalID = Field(..., description="The name of the item to request.")
-            items: ItemSpecification = Field(
-                [],
-                description="""
-                A list of all requested items and their locations within the 
-                entity.
-                """,
-            )
-
         items: Optional[list[ItemRequest]] = Field(
-            {},
+            [],
             description="""
             List of construction item requests (such as delivering modules for 
             beacons). Distinct from logistics requests, which are a separate 
@@ -69,37 +39,37 @@ class RequestItemsMixin:
             """,
         )
 
-        @field_validator("items")
-        @classmethod
-        def ensure_in_allowed_items(
-            cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-        ):
-            """
-            Warn the user if they set a fuel item that is disallowed for this
-            particular entity.
-            """
-            if not info.context or value is None:
-                return value
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
+        # @field_validator("items")
+        # @classmethod
+        # def ensure_in_allowed_items( # TODO: reimplment
+        #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+        # ):
+        #     """
+        #     Warn the user if they set a fuel item that is disallowed for this
+        #     particular entity.
+        #     """
+        #     if not info.context or value is None:
+        #         return value
+        #     if info.context["mode"] <= ValidationMode.MINIMUM:
+        #         return value
 
-            entity: "RequestItemsMixin" = info.context["object"]
-            warning_list: list = info.context["warning_list"]
+        #     entity: "RequestItemsMixin" = info.context["object"]
+        #     warning_list: list = info.context["warning_list"]
 
-            if entity.allowed_items is None:  # entity not recognized
-                return value
+        #     if entity.allowed_items is None:  # entity not recognized
+        #         return value
 
-            for item in entity.items:
-                if item not in entity.allowed_items:
-                    warning_list.append(
-                        ItemLimitationWarning(
-                            "Cannot request item '{}' to '{}'; this entity cannot recieve it".format(
-                                item, entity.name
-                            )
-                        )
-                    )
+        #     for item in entity.items:
+        #         if item["id"]["name"] not in entity.allowed_items:
+        #             warning_list.append(
+        #                 ItemLimitationWarning(
+        #                     "Cannot request item '{}' to '{}'; this entity cannot recieve it".format(
+        #                         item["id"]["name"], entity.name
+        #                     )
+        #                 )
+        #             )
 
-            return value
+        #     return value
 
     def __init__(self, name: str, similar_entities: list[str], **kwargs):
         self._root: __class__.Format
@@ -117,14 +87,14 @@ class RequestItemsMixin:
     # =========================================================================
 
     @property
-    def items(self) -> Optional[dict[str, uint32]]:
+    def items(self) -> Optional[list[ItemRequest]]:
         """
         TODO
         """
         return self._root.items
 
     @items.setter
-    def items(self, value: dict[str, uint32]):
+    def items(self, value: Optional[list[ItemRequest]]) -> None:
         if self.validate_assignment:
             # In the validator functions for `items`, we use a lot of internal
             # properties that operate on the current items value instead of the
@@ -143,7 +113,7 @@ class RequestItemsMixin:
                 raise e
 
         if value is None:
-            self._root.items = {}
+            self._root.items = []
         else:
             self._root.items = value
 
@@ -153,10 +123,10 @@ class RequestItemsMixin:
     def set_item_request(
         self,
         item: str,
+        count: Optional[uint32] = None,
         quality: Literal[
             "normal", "uncommon", "rare", "epic", "legendary", "any"
         ] = "normal",
-        count: Optional[uint32] = None,
         inventory: uint32 = 0,
         slot: Optional[uint32] = None,
     ):
@@ -204,9 +174,11 @@ class RequestItemsMixin:
                 ),
                 None,
             )
+            print("existing_spec:", existing_spec)
             if existing_spec is None:
                 # If not, add a new item entry
-                print("yes")
+                if slot is None:
+                    slot = len(new_items)
                 new_items.append(
                     {
                         "id": {"name": item, "quality": quality},

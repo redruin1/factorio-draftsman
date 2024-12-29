@@ -12,6 +12,7 @@ class ReadAmmoMixin:
 
     Enables the entity to broadcast its ammo count to the circuit network.
     """
+
     class ControlFormat(BaseModel):
         read_ammo: Optional[bool] = Field(
             True,

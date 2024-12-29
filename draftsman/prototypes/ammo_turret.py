@@ -24,16 +24,16 @@ from typing import Any, Literal, Optional, Union
 
 
 class AmmoTurret(
-    RequestItemsMixin, 
-    ReadAmmoMixin, 
+    RequestItemsMixin,
+    ReadAmmoMixin,
     TargetPrioritiesMixin,
     CircuitConditionMixin,
     LogisticConditionMixin,
     CircuitEnableMixin,
-    ControlBehaviorMixin, 
+    ControlBehaviorMixin,
     CircuitConnectableMixin,
-    DirectionalMixin, 
-    Entity
+    DirectionalMixin,
+    Entity,
 ):
     """
     An entity that automatically targets and attacks other forces within range.
@@ -58,7 +58,7 @@ class AmmoTurret(
             CircuitConditionMixin.ControlFormat,
             LogisticConditionMixin.ControlFormat,
             CircuitEnableMixin.ControlFormat,
-            DraftsmanBaseModel
+            DraftsmanBaseModel,
         ):
             pass
 

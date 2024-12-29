@@ -97,12 +97,6 @@ class LegacyStraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entit
     # =========================================================================
 
     @property
-    def double_grid_aligned(self) -> bool:
-        return True
-
-    # =========================================================================
-
-    @property
     def collision_set(self) -> Optional[CollisionSet]:
         return _collision_set_rotation.get(self.direction, None)
 

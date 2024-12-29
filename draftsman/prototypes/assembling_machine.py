@@ -5,6 +5,7 @@ from draftsman.classes.mixins import (
     InputIngredientsMixin,
     ModulesMixin,
     RequestItemsMixin,
+    CircuitConnectableMixin,
     RecipeMixin,
     DirectionalMixin,
 )
@@ -25,6 +26,7 @@ class AssemblingMachine(
     InputIngredientsMixin,
     ModulesMixin,
     RequestItemsMixin,
+    CircuitConnectableMixin,
     RecipeMixin,
     DirectionalMixin,
     Entity,
