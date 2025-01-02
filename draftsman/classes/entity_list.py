@@ -174,6 +174,32 @@ class EntityList(Exportable, MutableSequence):
         """
         return self.insert(idx=len(self), name=name, copy=copy, merge=merge, **kwargs)
 
+    @utils.reissue_warnings
+    def extend(self, entities, copy=True, merge=False):
+        # type: (List[Union[str, EntityLike]], bool, bool) -> None
+        """
+        Extends this list with the list provided. Computationally the same
+        as appending one element at a time.
+
+        :param copy: Whether or not to insert a copy of each element.
+        :param merge: Whether or not to merge each element, if possible.
+
+        :example:
+
+        .. code-block :: python
+
+            blueprint = Blueprint()
+            assert isinstance(blueprint.entities, EntityList)
+
+            # Append Entity instance
+            blueprint.entities.extend([Container("steel-chest"), Container("wooden-chest", tile_position=(1, 1)])
+            assert blueprint.entities[-2].name == "steel-chest"
+            assert blueprint.entities[-1].name == "wooden-chest"
+            assert blueprint.entities[-1].tile_position == {"x": 1, "y": 1}
+        """
+        for entity in entities:
+            self.append(entity, copy=copy, merge=merge)
+
     @reissue_warnings
     def insert(
         self,
