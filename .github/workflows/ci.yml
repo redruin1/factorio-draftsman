@@ -23,13 +23,13 @@ jobs:
         pip install -e .
         coverage run
         coverage xml
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v2
-      with:
-        directory: ./coverage/reports/
-        env_vars: PYTHON
-        fail_ci_if_error: true
-        files: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        verbose: true
+    # - name: Upload coverage to Codecov
+    #   uses: codecov/codecov-action@v2
+    #   with:
+    #     directory: ./coverage/reports/
+    #     env_vars: PYTHON
+    #     fail_ci_if_error: true
+    #     files: ./coverage.xml
+    #     flags: unittests
+    #     name: codecov-umbrella
+    #     verbose: true
