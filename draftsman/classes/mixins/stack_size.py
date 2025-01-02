@@ -6,7 +6,7 @@ from draftsman.signatures import SignalID, uint8
 from draftsman.data.signals import signal_dict
 
 from pydantic import BaseModel, Field
-import six
+# import six
 from typing import Optional
 
 from typing import TYPE_CHECKING

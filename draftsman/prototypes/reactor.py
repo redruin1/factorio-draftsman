@@ -51,6 +51,8 @@ class Reactor(
                 description="""What signal to broadcast the reactors temperature on, if "read_temperature" is true.""",
             )
 
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+
         model_config = ConfigDict(title="Reactor")
 
     def __init__(

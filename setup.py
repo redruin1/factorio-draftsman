@@ -49,6 +49,7 @@ setup(
         'draftsman', 
         'draftsman.classes', 
         'draftsman.classes.mixins',
+        'draftsman.environment',
         'draftsman.data',
         'draftsman.prototypes'
     ],
@@ -62,10 +63,11 @@ setup(
         "GitPython >= 3.1.43",
         "typing",
         "typing_extensions; python_version < '3.8'",
-        "importlib-resources; python_version < '3.7'",
-        "enum34; python_version < '3.4'",
-        "future; python_version < '3.0'",
-        "unittest2 >= 1.1.0; python_version < '3.0'",
+        "thefuzz",
+        # "importlib-resources; python_version < '3.7'",
+        # "enum34; python_version < '3.4'",
+        # "future; python_version < '3.0'",
+        # "unittest2 >= 1.1.0; python_version < '3.0'",
     ],
     entry_points = {
         'console_scripts': [
@@ -75,7 +77,7 @@ setup(
     },
     classifiers=[
         "Development Status :: 4 - Beta",
-        "Programming Language :: Python :: 2",
+        # "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 3",
         "Intended Audience :: Developers",
         "Intended Audience :: End Users/Desktop",

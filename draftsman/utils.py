@@ -14,7 +14,7 @@ import base64
 import json
 import math
 from functools import wraps
-import six
+# import six
 from thefuzz import process
 from typing import Optional, Union, TYPE_CHECKING
 import warnings
@@ -29,8 +29,7 @@ if TYPE_CHECKING:  # pragma: no coverage
 # =============================================================================
 
 
-@six.add_metaclass(ABCMeta)
-class Shape:
+class Shape(metaclass=ABCMeta):
     """
     Abstract Shape class. Must be overwritten with an implementation. Contains a
     single attribute, a PrimitiveVector :py:attr:`position`.
@@ -488,7 +487,7 @@ def version_tuple_to_string(version_tuple: tuple[int, ...]) -> str:
 
     :returns: A str of the format ``"a.b.c"`` from ``(a, b, c)``
     """
-    return ".".join(six.text_type(x) for x in version_tuple)
+    return ".".join(str(x) for x in version_tuple)
 
 
 # =============================================================================

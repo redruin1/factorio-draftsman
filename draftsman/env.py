@@ -4,6 +4,9 @@
 Manages the Factorio environment. Primarily holds :py:func:`draftsman.env.update()`,
 which runs through the Factorio data lifecycle and updates the data in 
 :py:mod:`draftsman.data`.
+
+
+.. NOTE:: Deprecated as of Draftsman 2.0
 """
 
 # TODO:
