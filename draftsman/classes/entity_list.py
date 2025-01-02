@@ -15,6 +15,7 @@ from draftsman.error import (
 from draftsman.utils import reissue_warnings
 from draftsman.signatures import Connections, DraftsmanBaseModel
 from draftsman.warning import HiddenEntityWarning
+from draftsman import utils
 
 from collections.abc import MutableSequence
 from copy import deepcopy
