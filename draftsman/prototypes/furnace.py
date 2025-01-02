@@ -6,9 +6,10 @@ from draftsman.classes.mixins import (
     BurnerEnergySourceMixin,
     ModulesMixin,
     RequestItemsMixin,
+    DirectionalMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode
+from draftsman.constants import Direction, ValidationMode
 from draftsman.signatures import ItemRequest, uint32
 from draftsman.utils import get_first
 from draftsman.warning import ItemCapacityWarning, ItemLimitationWarning
@@ -28,6 +29,7 @@ class Furnace(
     BurnerEnergySourceMixin,
     ModulesMixin,
     RequestItemsMixin,
+    DirectionalMixin,
     Entity,
 ):
     """
@@ -39,6 +41,7 @@ class Furnace(
         BurnerEnergySourceMixin.Format,
         ModulesMixin.Format,
         RequestItemsMixin.Format,
+        DirectionalMixin.Format,
         Entity.Format,
     ):
         @field_validator("items")
@@ -111,6 +114,7 @@ class Furnace(
         name: Optional[str] = get_first(furnaces),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Optional[Direction] = Direction.NORTH,
         items: Optional[list[ItemRequest]] = [],
         tags: dict[str, Any] = {},
         validate_assignment: Union[
@@ -147,6 +151,7 @@ class Furnace(
             furnaces,
             position=position,
             tile_position=tile_position,
+            direction=direction,
             items=items,
             tags=tags,
             **kwargs
