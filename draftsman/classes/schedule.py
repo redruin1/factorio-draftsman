@@ -115,7 +115,7 @@ class WaitCondition(Exportable):
             "passenger_not_present",
         ],
         compare_type: Literal["and", "or"] = "or",
-        ticks: uint32 = None,
+        ticks: Optional[uint32] = None,
         condition: Condition = None,
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -142,24 +142,27 @@ class WaitCondition(Exportable):
 
         super().__init__()
 
-        self._root = self.Format.model_construct()
-
-        self.type = type
-        self.compare_type = compare_type
         if type == WaitConditionType.TIME_PASSED and ticks is None:
-            self.ticks = 30 * Ticks.SECOND
+            ticks = 30 * Ticks.SECOND
         elif type == WaitConditionType.INACTIVITY and ticks is None:
-            self.ticks = 5 * Ticks.SECOND
-        else:
-            self.ticks = ticks
+            ticks = 5 * Ticks.SECOND
         if type in {
             WaitConditionType.ITEM_COUNT,
             WaitConditionType.FLUID_COUNT,
             WaitConditionType.CIRCUIT_CONDITION,
         }:
-            self.condition = Condition() if condition is None else condition
-        else:
-            self.condition = condition
+            condition = Condition() if condition is None else condition
+
+        self._root = self.Format.model_validate(
+            {
+                "type": type,
+                "compare_type": compare_type,
+                "ticks": ticks,
+                "condition": condition,
+            },
+            strict=False,
+            context={"construction": True, "mode": ValidationMode.NONE},
+        )
 
         self.validate_assignment = validate_assignment
 
@@ -406,36 +409,42 @@ class Schedule(Exportable):
     """
 
     class Format(DraftsmanBaseModel):
-        class Stop(DraftsmanBaseModel):
-            station: str = Field(
-                ..., description="""The name of the station for this particular stop."""
-            )
-            wait_conditions: WaitConditions = Field(
-                [],
-                description="""
-                A list of wait conditions that a train with this schedule must satisfy 
-                in order proceed from the associated 'station' name.""",
-            )
+        class ScheduleSpecification(DraftsmanBaseModel):
+            class Stop(DraftsmanBaseModel):
+                station: str = Field(
+                    ...,
+                    description="""The name of the station for this particular stop.""",
+                )
+                wait_conditions: WaitConditions = Field(
+                    [],
+                    description="""
+                    A list of wait conditions that a train with this schedule must satisfy 
+                    in order proceed from the associated 'station' name.""",
+                )
 
-            @field_validator("wait_conditions", mode="before")
-            @classmethod
-            def instantiate_wait_conditions_list(cls, value: Any):
-                if isinstance(value, list):
-                    return WaitConditions(value)
-                else:
-                    return value
+                @field_validator("wait_conditions", mode="before")
+                @classmethod
+                def instantiate_wait_conditions_list(cls, value: Any):
+                    if isinstance(value, list):
+                        return WaitConditions(value)
+                    else:
+                        return value
 
-            # @field_validator("wait_conditions", mode="after")
-            # @classmethod
-            # def test(cls, value: Any):
-            #     print("test")
-            #     print(value)
-            #     print(type(value))
-            #     return value
+                # @field_validator("wait_conditions", mode="after")
+                # @classmethod
+                # def test(cls, value: Any):
+                #     print("test")
+                #     print(value)
+                #     print(type(value))
+                #     return value
 
-            @field_serializer("wait_conditions")
-            def serialize_wait_conditions(self, value: WaitConditions, _):
-                return value.to_dict()
+                @field_serializer("wait_conditions")
+                def serialize_wait_conditions(self, value: WaitConditions, _):
+                    return value.to_dict()
+
+            records: list[Stop] = Field([], description="""List of regular stops.""")
+
+            # TODO: interrupts
 
         # _locomotives: list[Association.Format] = PrivateAttr()
 
@@ -446,8 +455,8 @@ class Schedule(Exportable):
             has this schedule.
             """,
         )
-        schedule: list[Stop] = Field(
-            [],
+        schedule: ScheduleSpecification = Field(
+            ScheduleSpecification(),
             description="""
             The list of all train stops and their conditions associated with 
             this schedule.
@@ -457,7 +466,7 @@ class Schedule(Exportable):
     def __init__(
         self,
         locomotives: list[Association] = [],
-        schedule: list[Format.Stop] = [],
+        schedule: Format.ScheduleSpecification = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -507,7 +516,7 @@ class Schedule(Exportable):
         return self._root.locomotives
 
     @property
-    def stops(self) -> list[Format.Stop]:
+    def stops(self) -> list[Format.ScheduleSpecification.Stop]:
         """
         A list of dictionaries of the format:
 
@@ -526,7 +535,7 @@ class Schedule(Exportable):
 
         :returns: A ``list`` of ``dict``s in the format specified above.
         """
-        return self._root.schedule
+        return self._root.schedule.records
 
     # =========================================================================
 
@@ -593,7 +602,10 @@ class Schedule(Exportable):
             wait_conditions = WaitConditions([wait_conditions])
 
         self.stops.insert(
-            index, self.Format.Stop(station=name, wait_conditions=wait_conditions)
+            index,
+            self.Format.ScheduleSpecification.Stop(
+                station=name, wait_conditions=wait_conditions
+            ),
         )
 
     def remove_stop(

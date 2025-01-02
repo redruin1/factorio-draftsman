@@ -23,27 +23,11 @@ class TestContainer:
             "wooden-chest",
             tile_position=[15, 3],
             bar=5,
-            connections={
-                "1": {
-                    "red": [
-                        {"entity_id": 2},
-                        {"entity_id": 2, "circuit_id": 1},
-                    ]
-                }
-            },
         )
         assert wooden_chest.to_dict() == {
             "name": "wooden-chest",
             "position": {"x": 15.5, "y": 3.5},
             "bar": 5,
-            "connections": {
-                "1": {
-                    "red": [
-                        {"entity_id": 2},
-                        {"entity_id": 2, "circuit_id": 1},
-                    ]
-                }
-            },
         }
         wooden_chest = Container(
             "wooden-chest", position={"x": 15.5, "y": 1.5}, bar=5, tags={"A": "B"}
@@ -57,9 +41,9 @@ class TestContainer:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Container("wooden-chest", position=[0, 0], invalid_keyword="100").validate().reissue_all()
-        with pytest.warns(UnknownKeywordWarning):
-            Container("wooden-chest", connections={"this is": ["very", "wrong"]}).validate().reissue_all()
+            Container(
+                "wooden-chest", position=[0, 0], invalid_keyword="100"
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Container("this is not a container").validate().reissue_all()
 
@@ -71,8 +55,6 @@ class TestContainer:
             Container("wooden-chest", position=TypeError).validate().reissue_all()
         with pytest.raises(DataFormatError):
             Container("wooden-chest", bar="not even trying").validate().reissue_all()
-        with pytest.raises(DataFormatError):
-            Container("wooden-chest", connections="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for container_name in containers:
@@ -110,47 +92,47 @@ class TestContainer:
         container.bar = 2
         assert container.bar == 2
 
-    def test_set_item_request(self):
-        container = Container("wooden-chest")
+    # def test_set_item_request(self): # TODO: reimplement
+    #     container = Container("wooden-chest")
 
-        container.set_item_request("iron-plate", 50)
-        assert container.items == {"iron-plate": 50}
-        assert container.inventory_slots_occupied == 1
+    #     container.set_item_request("iron-plate", 50)
+    #     assert container.items == {"iron-plate": 50}
+    #     assert container.inventory_slots_occupied == 1
 
-        container.set_item_request("iron-plate", 100)
-        assert container.items == {"iron-plate": 100}
-        assert container.inventory_slots_occupied == 1
+    #     container.set_item_request("iron-plate", 100)
+    #     assert container.items == {"iron-plate": 100}
+    #     assert container.inventory_slots_occupied == 1
 
-        with pytest.warns(ItemCapacityWarning):
-            container.set_item_request("copper-plate", 10000)
+    #     with pytest.warns(ItemCapacityWarning):
+    #         container.set_item_request("copper-plate", 10000)
 
-        assert container.items == {"iron-plate": 100, "copper-plate": 10000}
-        assert container.inventory_slots_occupied == 101
+    #     assert container.items == {"iron-plate": 100, "copper-plate": 10000}
+    #     assert container.inventory_slots_occupied == 101
 
-        # container.set_item_requests(None)
-        container.items = {}
-        assert container.items == {}
-        assert container.inventory_slots_occupied == 0
+    #     # container.set_item_requests(None)
+    #     container.items = {}
+    #     assert container.items == {}
+    #     assert container.inventory_slots_occupied == 0
 
-        with pytest.raises(DataFormatError):
-            container.set_item_request(TypeError, 100)
-        with pytest.warns(UnknownItemWarning):
-            container.set_item_request("unknown", 100)
-        with pytest.raises(DataFormatError):
-            container.set_item_request("iron-plate", TypeError)
-        with pytest.raises(DataFormatError):
-            container.set_item_request("iron-plate", -1)
+    #     with pytest.raises(DataFormatError):
+    #         container.set_item_request(TypeError, 100)
+    #     with pytest.warns(UnknownItemWarning):
+    #         container.set_item_request("unknown", 100)
+    #     with pytest.raises(DataFormatError):
+    #         container.set_item_request("iron-plate", TypeError)
+    #     with pytest.raises(DataFormatError):
+    #         container.set_item_request("iron-plate", -1)
 
-        assert container.items == {"unknown": 100}
-        assert container.inventory_slots_occupied == 0
+    #     assert container.items == {"unknown": 100}
+    #     assert container.inventory_slots_occupied == 0
 
-        with pytest.raises(DataFormatError):
-            container.items = {"incorrect", "format"}
-        assert container.items == {"unknown": 100}
+    #     with pytest.raises(DataFormatError):
+    #         container.items = {"incorrect", "format"}
+    #     assert container.items == {"unknown": 100}
 
     def test_mergable_with(self):
         container1 = Container("wooden-chest")
-        container2 = Container("wooden-chest", bar=10, items={"copper-plate": 100})
+        container2 = Container("wooden-chest", bar=10)
 
         assert container1.mergable_with(container2)
         assert container2.mergable_with(container1)
@@ -160,13 +142,12 @@ class TestContainer:
 
     def test_merge(self):
         container1 = Container("wooden-chest")
-        container2 = Container("wooden-chest", bar=10, items={"copper-plate": 100})
+        container2 = Container("wooden-chest", bar=10)
 
         container1.merge(container2)
         del container2
 
         assert container1.bar == 10
-        assert container1.items == {"copper-plate": 100}
 
     def test_eq(self):
         container1 = Container("wooden-chest")

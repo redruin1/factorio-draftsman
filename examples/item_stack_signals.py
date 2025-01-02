@@ -26,6 +26,7 @@ def main():
     x = 0
     y = 0
     combinator = ConstantCombinator(direction=Direction.SOUTH)
+    current_signal_section = combinator.add_section()
 
     # Iterate over every item in order:
     for item in items.raw:
@@ -35,12 +36,12 @@ def main():
                 continue
         # Write the stack size signal
         stack_size = items.raw[item]["stack_size"]
-        combinator.set_signal(signal_index, item, stack_size)
+        current_signal_section.set_signal(signal_index, item, stack_size)
         signal_index += 1
         # Keep track of how many items we've added in total
         signals_added += 1
         # Once we exceed the number of signals a combinator can hold, place it and reset
-        if signal_index == combinator.item_slot_count:
+        if signal_index == 1000:
             # Add the combinator to the blueprint
             combinator.id = "{}_{}".format(x, y)
             blueprint.entities.append(combinator)

@@ -11,7 +11,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import uint32
+from draftsman.signatures import ItemRequest, uint32
 from draftsman.utils import get_first
 from draftsman.warning import ModuleLimitationWarning
 
@@ -64,7 +64,7 @@ class AssemblingMachine(
             for item in entity.items:
                 # Check to make sure the recipe is within the module's limitations
                 # (If it has any)
-                module = modules.raw.get(item, {})
+                module = modules.raw.get(item["id"]["name"], {})
                 if "limitation" in module:
                     if (  # pragma: no branch
                         entity.recipe is not None
@@ -74,7 +74,7 @@ class AssemblingMachine(
                         warning_list.append(
                             ModuleLimitationWarning(
                                 "Cannot use module '{}' with recipe '{}' ({})".format(
-                                    item, entity.recipe, tooltip
+                                    item["id"]["name"], entity.recipe, tooltip
                                 ),
                             )
                         )
@@ -90,7 +90,7 @@ class AssemblingMachine(
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
         recipe: str = None,
-        items: dict[str, uint32] = {},
+        items: Optional[list[ItemRequest]] = [],
         tags: dict[str, Any] = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]

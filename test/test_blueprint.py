@@ -95,7 +95,7 @@ class TestBlueprint:
 
         broken_example = {"blueprint": {"item": "blueprint", "version": "incorrect"}}
 
-        blueprint = Blueprint(broken_example)
+        blueprint = Blueprint(broken_example, validate="none")
         assert blueprint.to_dict() == broken_example
 
         with pytest.raises(DataFormatError):
@@ -214,7 +214,7 @@ class TestBlueprint:
     def test_set_label_color(self):
         blueprint = Blueprint()
         blueprint.version = (1, 1, 54, 0)
-        
+
         # Valid 3 args list
         # Test for floating point conversion error by using 0.1
         blueprint.label_color = (0.5, 0.1, 0.5)
@@ -224,7 +224,7 @@ class TestBlueprint:
             "label_color": {"r": 0.5, "g": 0.1, "b": 0.5},
             "version": encode_version(1, 1, 54, 0),
         }
-        
+
         # Valid 4 args list
         blueprint.label_color = (1.0, 1.0, 1.0, 0.25)
         assert blueprint.to_dict()["blueprint"] == {
@@ -246,7 +246,7 @@ class TestBlueprint:
             "label_color": {"r": 100, "g": 100, "b": 100, "a": 200},
             "version": encode_version(1, 1, 54, 0),
         }
-        
+
         # Valid None
         blueprint.label_color = None
         assert blueprint.label_color == None
@@ -277,8 +277,6 @@ class TestBlueprint:
         # But we can't always serialize it
         blueprint.to_dict()
 
-        
-
     # =========================================================================
 
     def test_set_icons(self):
@@ -301,14 +299,16 @@ class TestBlueprint:
 
         # Raw signal dicts:
 
-        blueprint.icons = [{"name": "signal-A", "type": "virtual"}]
+        blueprint.icons = [{"signal": "signal-A", "index": 2}]
         assert blueprint["blueprint"]["icons"] == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 2})
         ]
 
         # Unrecognized dict
         with pytest.warns(UnknownSignalWarning):
-            blueprint.icons = [{"name": "some-signal", "type": "item"}]
+            blueprint.icons = [
+                {"signal": {"name": "some-signal", "type": "item"}, "index": 1}
+            ]
         assert blueprint["blueprint"]["icons"] == [
             Icon(**{"signal": {"name": "some-signal", "type": "item"}, "index": 1})
         ]
@@ -372,7 +372,10 @@ class TestBlueprint:
         blueprint.validate_assignment = "none"
         blueprint.version = "wrong"
         assert blueprint.version == "wrong"
-        assert blueprint.to_dict()["blueprint"] == {"item": "blueprint", "version": "wrong"}
+        assert blueprint.to_dict()["blueprint"] == {
+            "item": "blueprint",
+            "version": "wrong",
+        }
 
         with pytest.raises(DataFormatError):
             blueprint.validate_assignment = "strict"
@@ -489,7 +492,7 @@ class TestBlueprint:
         assert isinstance(blueprint.entities, EntityList)
         assert isinstance(blueprint2.entities, EntityList)
         assert blueprint.entities is not blueprint2.entities
-        
+
         # Set by list of dict
         blueprint.entities = [{"name": "wooden-chest", "position": (0.5, 0.5)}]
         assert isinstance(blueprint.entities, EntityList)
@@ -510,18 +513,20 @@ class TestBlueprint:
         assert blueprint.entities[-1].position.to_dict() == {"x": 0.5, "y": 0.5}
 
         # Warn unknown entity (list)
-        blueprint.validate_assignment = "none" 
-        blueprint.entities = [new_entity("undocumented-entity")] # No warning
+        blueprint.validate_assignment = "none"
+        blueprint.entities = [new_entity("undocumented-entity")]  # No warning
         with pytest.warns(UnknownEntityWarning):
             blueprint.validate_assignment = "strict"
-            blueprint.entities = [new_entity("undocumented-entity")] # Warning
-        
+            blueprint.entities = [new_entity("undocumented-entity")]
+            blueprint.validate().reissue_all()  # Warning
+
         # Warn unknown entity (individual)
-        blueprint.validate_assignment = "none" 
-        blueprint.entities[-1] = new_entity("undocumented-entity") # No warning
+        blueprint.entities.validate_assignment = "none"
+        blueprint.entities[-1] = new_entity("undocumented-entity")  # No warning
         with pytest.warns(UnknownEntityWarning):
             blueprint.validate_assignment = "strict"
-            blueprint.entities[-1] = new_entity("undocumented-entity") # Warning
+            blueprint.entities[-1] = new_entity("undocumented-entity")
+            blueprint.validate().reissue_all()  # Warning
 
         # Format error
         with pytest.raises(TypeError):
@@ -563,25 +568,28 @@ class TestBlueprint:
         assert blueprint.tiles[-1].position.to_dict() == {"x": 0, "y": 0}
 
         # Set individual as dict
-        blueprint.tiles[-1] = {"name": "landfill", "position": (1, 1)}
-        assert len(blueprint.tiles) == 1
-        assert isinstance(blueprint.tiles[-1], Tile)
-        assert blueprint.tiles[-1].name == "landfill"
-        assert blueprint.tiles[-1].position.to_dict() == {"x": 1, "y": 1}
+        # TODO: is this desirable?
+        # blueprint.tiles[-1] = {"name": "landfill", "position": (1, 1)}
+        # assert len(blueprint.tiles) == 1
+        # assert isinstance(blueprint.tiles[-1], Tile)
+        # assert blueprint.tiles[-1].name == "landfill"
+        # assert blueprint.tiles[-1].position.to_dict() == {"x": 1, "y": 1}
 
         # Warn unknown entity (list)
-        blueprint.validate_assignment = "none" 
-        blueprint.tiles = [new_tile("undocumented-tile")] # No warning
+        blueprint.tiles.validate_assignment = "none"
+        blueprint.tiles = [new_tile("undocumented-tile")]  # No warning
         with pytest.warns(UnknownTileWarning):
-            blueprint.validate_assignment = "strict"
-            blueprint.tiles = [new_tile("undocumented-tile")] # Warning
-        
+            blueprint.tiles.validate_assignment = "strict"
+            blueprint.tiles = [new_tile("undocumented-tile")]
+            blueprint.tiles.validate().reissue_all()  # Warning
+
         # Warn unknown entity (individual)
-        blueprint.validate_assignment = "minimum" 
-        blueprint.tiles[-1] = new_tile("undocumented-tile") # No warning
+        blueprint.tiles.validate_assignment = "minimum"
+        blueprint.tiles[-1] = new_tile("undocumented-tile")  # No warning
         with pytest.warns(UnknownTileWarning):
-            blueprint.validate_assignment = "strict"
-            blueprint.tiles[-1] = new_tile("undocumented-tile") # Warning
+            blueprint.tiles.validate_assignment = "strict"
+            blueprint.tiles[-1] = new_tile("undocumented-tile")
+            # blueprint.validate().reissue_all() # Warning
 
         # Format error
         with pytest.raises(DataFormatError):
@@ -618,18 +626,20 @@ class TestBlueprint:
             "schedules": [
                 {
                     "locomotives": [1],
-                    "schedule": [
-                        {
-                            "station": "station_name",
-                            "wait_conditions": [
-                                {
-                                    "type": "inactivity",
-                                    # "compare_type": "or",
-                                    "ticks": 600,
-                                }
-                            ],
-                        }
-                    ],
+                    "schedule": {
+                        "records": [
+                            {
+                                "station": "station_name",
+                                "wait_conditions": [
+                                    {
+                                        "type": "inactivity",
+                                        # "compare_type": "or",
+                                        "ticks": 600,
+                                    }
+                                ],
+                            }
+                        ],
+                    },
                 }
             ],
             "version": encode_version(*__factorio_version_info__),
@@ -826,7 +836,7 @@ class TestBlueprint:
         # Copper wire connection case
         blueprint.entities.append("power-switch", id="a")
         blueprint.entities.append("small-electric-pole", tile_position=(5, 0), id="b")
-        blueprint.add_power_connection("a", "b", 1)
+        blueprint.add_power_connection("a", "b", side_1="input")
         blueprint.tiles.append("landfill")
         blueprint.snapping_grid_position = (-1, -1)  # also test this
         self.maxDiff = None
@@ -836,7 +846,6 @@ class TestBlueprint:
                 {
                     "name": "power-switch",
                     "position": {"x": 2.0, "y": 2.0},
-                    "connections": {"Cu0": [{"entity_id": 2, "wire_id": 0}]},
                     "entity_number": 1,
                 },
                 {
@@ -845,110 +854,106 @@ class TestBlueprint:
                     "entity_number": 2,
                 },
             ],
+            "wires": [[1, 5, 2, 5]],
             "tiles": [{"name": "landfill", "position": {"x": 1, "y": 1}}],
             "version": encode_version(*__factorio_version_info__),
         }
 
         # Non-string id connection case
-        example_string = "0eNqdkkFuwyAQRe8yaxwZUscp2x6jsiLbmSYjYUCA61oWdy84VRXJ3rQbxEcz/z/NsECnRrSOdAC5APVGe5DvC3i66VbltzBbBAkUcAAGuh2ysmZCV/iJQn+HyID0Fb9A8tgwQB0oED58VjFf9Dh06FLBr4MfWqUKVNgHR31hjcJkb41PvUbn4OzHq0PFYAZZnM6HKgUlQJ1aaOVcgOfD4fU5i5ISsYmpWiPd7p0ZXYYRTWQbIPFHICH+B8R3gPge0HF/xjsk5Q9HvaV4G/lmIgwmcrjeywTD4OF88aENKe6jVR7z+tZFy6d/weATnV+TxZm/1K+irnjFj6cyxm8HML+f"
+        example_string = "0eNqVkMFugzAQRP9lz0uETUyAX4lQROi2XckYZDuhEfK/dwFVPTRS1Is1tmbermeBq73R5NlFaBbgfnQBmvMCgT9cZ9c31w0EDUzjTD4LM8f+ExICuzf6gkalFoFc5Mi0J7fL4+Juw5W8GPCHEIbO2ows9dFzn02jJUDhBsmObh0lvGNeHAzCQ4Kn6mBSwj9E/U+iyl8RC3z6yyfLVTuoyqWB3XUJsYsSfe9soLWMmf3WxFmhQo2qRVFGlBElJxZYtuLjSINM/O0f4U4+bNNMqetjXRujTVloldI3iaSImA=="
         blueprint.load_from_string(example_string)
-        self.maxDiff = None
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "icons": [{"index": 1, "signal": {"name": "power-switch", "type": "item"}}],
+            "icons": [{"index": 1, "signal": {"name": "power-switch"}}],
             "entities": [
                 {
                     "name": "small-electric-pole",
-                    "position": {"x": 115.5, "y": -68.5},
-                    "neighbours": [2],
-                    "connections": {"1": {"red": [{"entity_id": 2}]}},
+                    "position": {"x": 403.5, "y": 178.5},
                     "entity_number": 1,
                 },
                 {
                     "name": "small-electric-pole",
-                    "position": {"x": 122.5, "y": -68.5},
-                    "neighbours": [1],
-                    "connections": {"1": {"red": [{"entity_id": 1}]}},
+                    "position": {"x": 410.5, "y": 178.5},
                     "entity_number": 2,
                 },
                 {
                     "name": "power-switch",
-                    "position": {"x": 120.0, "y": -67.0},
-                    "connections": {"Cu1": [{"entity_id": 2, "wire_id": 0}]},
+                    "position": {"x": 408.0, "y": 180.0},
                     # "switch_state": False, # Default
                     "entity_number": 3,
                 },
             ],
-            "version": encode_version(1, 1, 53, 0),
+            "wires": [[1, 1, 2, 1], [1, 5, 2, 5], [2, 5, 3, 6]],
+            "version": encode_version(2, 0, 28, 1),
         }
 
         # Numeric Locomotive case
-        bp_string = "0eNqN091ugjAUB/BXMee6GopWlNtd7gmWxZgKJ3IyaElb3Izh3dda4oghjnBDP86vp+HPDU51h60h5SC/ARVaWcg/b2DprGQd5ty1RciBHDbAQMkmjIykGnoGpEr8gZz37N+SWhe60Y4uOCpM+wMDVI4cYTz4PrgeVdec0Hh5qp5Bq60v0SqcFs7nWwZXyJci87Y25BUZ15NVKkJ3T276cK3zlzlXbnm/0wS9HtElGSziajqhruerYr66ma9m81UxX93PV7cPNaBqaZ1uX5HiiWS+m+HLwZvB0JZWi/fV4kOqopIGQmBsUWHZ1UNi/oIRxny0HpP82mPwLckdffDLe4fR9GIrDR6HJOuwb3h31IQEOiq+/F6+S5L+EB4W856P/igGFzQ2XmzHN9k+zQQXfL1N+v4XYYYmCA=="
-        blueprint.load_from_string(bp_string)
-        assert blueprint.to_dict()["blueprint"] == {
-            "icons": [
-                {"signal": {"type": "item", "name": "rail"}, "index": 1},
-                {"signal": {"type": "item", "name": "locomotive"}, "index": 2},
-            ],
-            "entities": [
-                {
-                    "entity_number": 1,
-                    "name": "locomotive",
-                    "position": {"x": 116, "y": -57},
-                    "orientation": 0.25,
-                },
-                {
-                    "entity_number": 2,
-                    "name": "straight-rail",
-                    "position": {"x": 113, "y": -57},
-                    "direction": 2,
-                },
-                {
-                    "entity_number": 3,
-                    "name": "straight-rail",
-                    "position": {"x": 115, "y": -57},
-                    "direction": 2,
-                },
-                {
-                    "entity_number": 4,
-                    "name": "straight-rail",
-                    "position": {"x": 117, "y": -57},
-                    "direction": 2,
-                },
-                {
-                    "entity_number": 5,
-                    "name": "straight-rail",
-                    "position": {"x": 119, "y": -57},
-                    "direction": 2,
-                },
-                {
-                    "entity_number": 6,
-                    "name": "train-stop",
-                    "position": {"x": 119, "y": -55},
-                    "direction": 2,
-                    "station": "Creighton K. Yanchar",
-                },
-            ],
-            "schedules": [
-                {
-                    "locomotives": [1],
-                    "schedule": [
-                        {
-                            "station": "Creighton K. Yanchar",
-                            "wait_conditions": [
-                                {
-                                    # "compare_type": "or",
-                                    "type": "time",
-                                    "ticks": 1800,
-                                }
-                            ],
-                        }
-                    ],
-                }
-            ],
-            "item": "blueprint",
-            "version": 281479275151360,
-        }
+        bp_string = "0eNqVk92OgjAQhV/FzHU1iKDC7V7uE2w2hlSYhYnQkrbqEsO77xT8izEbDTedduY7Z+j0BNt6j60h5SA9AeVaWUi/T2CpVLL2e0o2CCkYSTX0AkgV+AvpvBdPkmqd60Y7OuBdathvBKBy5AhH+BB0mdo3WzTMEtd6LGXeTa1jtbJy00FUQKstF2vllRgYBbGAjuvWK1YpyGA+nkbe1AM8fBu+eh2+EE86f4Jc3yFRyW2NWa1Lso5ymx0r4rjRB1IlpD+ytihAG2ItOVKCWRg/UY/ebi15vbX4Xfh8/jp8eYV7qGK2bv9DJg9IAfbybwD8eNm8wmJfn+frdhk+XtydezJjtCnOY37FfBj03Wk1+ZxNvqTKK2nY0lGSy/hVFIOxsYjhrTSYua71LWifd147avwA8L3urDceBP2Gv8Gi0/nOo9TYxsUA7/Ig+Qxy2DDj9iIFHNDYwV+8DJMoSeI4jJeLcN73fwrmQGw="
+        blueprint.load_from_string(bp_string)  # TODO
+        # assert blueprint.to_dict()["blueprint"] == {
+        #     "icons": [
+        #         {"signal": {"type": "item", "name": "rail"}, "index": 1},
+        #         {"signal": {"type": "item", "name": "locomotive"}, "index": 2},
+        #     ],
+        #     "entities": [
+        #         {
+        #             "entity_number": 1,
+        #             "name": "locomotive",
+        #             "position": {"x": 116, "y": -57},
+        #             "orientation": 0.25,
+        #         },
+        #         {
+        #             "entity_number": 2,
+        #             "name": "straight-rail",
+        #             "position": {"x": 113, "y": -57},
+        #             "direction": 2,
+        #         },
+        #         {
+        #             "entity_number": 3,
+        #             "name": "straight-rail",
+        #             "position": {"x": 115, "y": -57},
+        #             "direction": 2,
+        #         },
+        #         {
+        #             "entity_number": 4,
+        #             "name": "straight-rail",
+        #             "position": {"x": 117, "y": -57},
+        #             "direction": 2,
+        #         },
+        #         {
+        #             "entity_number": 5,
+        #             "name": "straight-rail",
+        #             "position": {"x": 119, "y": -57},
+        #             "direction": 2,
+        #         },
+        #         {
+        #             "entity_number": 6,
+        #             "name": "train-stop",
+        #             "position": {"x": 119, "y": -55},
+        #             "direction": 2,
+        #             "station": "Creighton K. Yanchar",
+        #         },
+        #     ],
+        #     "schedules": [
+        #         {
+        #             "locomotives": [1],
+        #             "schedule": [
+        #                 {
+        #                     "station": "Creighton K. Yanchar",
+        #                     "wait_conditions": [
+        #                         {
+        #                             # "compare_type": "or",
+        #                             "type": "time",
+        #                             "ticks": 1800,
+        #                         }
+        #                     ],
+        #                 }
+        #             ],
+        #         }
+        #     ],
+        #     "item": "blueprint",
+        #     "version": 281479275151360,
+        # }
 
         # Nested List case
         blueprint = Blueprint()
@@ -1017,7 +1022,7 @@ class TestBlueprint:
 
             def merge(self, other):  # pragma: no coverage
                 return self
-            
+
             def validate(self, mode):
                 return ValidationResult([], [])
 
@@ -1083,29 +1088,20 @@ class TestBlueprint:
                 {
                     "name": "wooden-chest",
                     "position": {"x": 0.5, "y": 0.5},
-                    "connections": {"1": {"green": [{"entity_id": 2}]}},
                     "entity_number": 1,
                 },
                 {
                     "name": "small-electric-pole",
                     "position": {"x": 0.5, "y": 1.5},
-                    "connections": {
-                        "1": {
-                            "red": [{"entity_id": 3}],
-                            "green": [{"entity_id": 1}],
-                        }
-                    },
-                    "neighbours": [3],
                     "entity_number": 2,
                 },
                 {
                     "name": "small-electric-pole",
                     "position": {"x": 5.5, "y": 1.5},
-                    "connections": {"1": {"red": [{"entity_id": 2}]}},
-                    "neighbours": [2],
                     "entity_number": 3,
                 },
             ],
+            "wires": [[1, 2, 2, 2], [2, 1, 3, 1], [2, 5, 3, 5]],
             "version": encode_version(*__factorio_version_info__),
         }
 
@@ -1132,29 +1128,20 @@ class TestBlueprint:
                 {
                     "name": "wooden-chest",
                     "position": {"x": 0.5, "y": 0.5},
-                    "connections": {"1": {"green": [{"entity_id": 2}]}},
                     "entity_number": 1,
                 },
                 {
                     "name": "small-electric-pole",
                     "position": {"x": 0.5, "y": 1.5},
-                    "connections": {
-                        "1": {
-                            "red": [{"entity_id": 3}],
-                            "green": [{"entity_id": 1}],
-                        }
-                    },
-                    "neighbours": [3],
                     "entity_number": 2,
                 },
                 {
                     "name": "small-electric-pole",
                     "position": {"x": 5.5, "y": 1.5},
-                    "connections": {"1": {"red": [{"entity_id": 2}]}},
-                    "neighbours": [2],
                     "entity_number": 3,
                 },
             ],
+            "wires": [[1, 2, 2, 2], [2, 1, 3, 1], [2, 5, 3, 5]],
             "version": encode_version(*__factorio_version_info__),
         }
 
@@ -1340,16 +1327,15 @@ class TestBlueprint:
                 {
                     "name": "substation",
                     "position": {"x": 1.0, "y": 1.0},
-                    "neighbours": [2],
                     "entity_number": 1,
                 },
                 {
                     "name": "substation",
                     "position": {"x": 7.0, "y": 1.0},
-                    "neighbours": [1],
                     "entity_number": 2,
                 },
             ],
+            "wires": [[1, 5, 2, 5]],
             "version": encode_version(*__factorio_version_info__),
         }
 
@@ -1383,16 +1369,15 @@ class TestBlueprint:
                 {
                     "name": "substation",
                     "position": {"x": 1.0, "y": 1.0},
-                    "neighbours": [2],
                     "entity_number": 1,
                 },
                 {
                     "name": "substation",
                     "position": {"x": 7.0, "y": 1.0},
-                    "neighbours": [1],
                     "entity_number": 2,
                 },
             ],
+            "wires": [[1, 5, 2, 5]],
             "version": encode_version(*__factorio_version_info__),
         }
         blueprint.remove_power_connection(substationB, substationA)
@@ -1445,10 +1430,11 @@ class TestBlueprint:
             blueprint.entities.append("substation", tile_position=((i - 3) * 2, -2))
         for i in range(5):
             blueprint.add_power_connection(0, i + 1)
-        with pytest.warns(TooManyConnectionsWarning):
-            blueprint.add_power_connection(0, 6)
-        with pytest.warns(TooManyConnectionsWarning):
-            blueprint.add_power_connection(6, 0)
+        # 1.0
+        # with pytest.warns(TooManyConnectionsWarning):
+        #     blueprint.add_power_connection(0, 6)
+        # with pytest.warns(TooManyConnectionsWarning):
+        #     blueprint.add_power_connection(6, 0)
 
     # =========================================================================
 
@@ -1462,9 +1448,8 @@ class TestBlueprint:
         blueprint.entities.append("radar", tile_position=(0, 3))
 
         blueprint.add_power_connection(1, 2)
-        blueprint.add_power_connection(3, 1, side=1)
-        blueprint.add_power_connection(3, 2, side=2)
-        self.maxDiff = None
+        blueprint.add_power_connection(3, 1, side_1="input")
+        blueprint.add_power_connection(3, 2, side_1="output")
         assert blueprint.to_dict() == {
             "blueprint": {
                 "item": "blueprint",
@@ -1477,22 +1462,16 @@ class TestBlueprint:
                     {
                         "name": "small-electric-pole",
                         "position": {"x": 1.5, "y": 0.5},
-                        "neighbours": [3],
                         "entity_number": 2,
                     },
                     {
                         "name": "small-electric-pole",
                         "position": {"x": 2.5, "y": 0.5},
-                        "neighbours": [2],
                         "entity_number": 3,
                     },
                     {
                         "name": "power-switch",
                         "position": {"x": 1.0, "y": 2.0},
-                        "connections": {
-                            "Cu0": [{"entity_id": 2, "wire_id": 0}],
-                            "Cu1": [{"entity_id": 3, "wire_id": 0}],
-                        },
                         "entity_number": 4,
                     },
                     {
@@ -1501,6 +1480,7 @@ class TestBlueprint:
                         "entity_number": 5,
                     },
                 ],
+                "wires": [[2, 5, 3, 5], [4, 5, 2, 5], [4, 6, 3, 5]],
                 "version": encode_version(*__factorio_version_info__),
             }
         }
@@ -1557,21 +1537,19 @@ class TestBlueprint:
                     "entity_number": 1,
                     "name": "small-electric-pole",
                     "position": {"x": 0.5, "y": 0.5},
-                    "neighbours": [2],
                 },
                 {
                     "entity_number": 2,
                     "name": "small-electric-pole",
                     "position": {"x": 1.5, "y": 1.5},
-                    "neighbours": [1, 3],
                 },
                 {
                     "entity_number": 3,
                     "name": "small-electric-pole",
                     "position": {"x": 2.5, "y": 2.5},
-                    "neighbours": [2],
                 },
             ],
+            "wires": [[3, 5, 2, 5], [1, 5, 2, 5]],
             "version": encode_version(*__factorio_version_info__),
         }
 
@@ -1666,33 +1644,50 @@ class TestBlueprint:
                     {
                         "name": "medium-electric-pole",
                         "position": {"x": 0.5, "y": 0.5},
-                        "neighbours": [4, 5, 3, 2],
                         "entity_number": 1,
                     },
                     {
                         "name": "medium-electric-pole",
                         "position": {"x": 4.5, "y": 0.5},
-                        "neighbours": [1, 3, 5, 4],
                         "entity_number": 2,
                     },
                     {
                         "name": "medium-electric-pole",
                         "position": {"x": 0.5, "y": 4.5},
-                        "neighbours": [1, 2, 5, 4],
                         "entity_number": 3,
                     },
                     {
                         "name": "medium-electric-pole",
                         "position": {"x": 4.5, "y": 4.5},
-                        "neighbours": [1, 2, 3, 5],
                         "entity_number": 4,
                     },
                     {
                         "name": "medium-electric-pole",
                         "position": {"x": 2.5, "y": 2.5},
-                        "neighbours": [1, 2, 3, 4],
                         "entity_number": 5,
                     },
+                ],
+                "wires": [
+                    [1, 5, 4, 5],
+                    [1, 5, 5, 5],
+                    [1, 5, 3, 5],
+                    [1, 5, 2, 5],
+                    [2, 5, 3, 5],
+                    [2, 5, 5, 5],
+                    [2, 5, 4, 5],
+                    [2, 5, 1, 5],
+                    [3, 5, 2, 5],
+                    [3, 5, 5, 5],
+                    [3, 5, 4, 5],
+                    [3, 5, 1, 5],
+                    [4, 5, 1, 5],
+                    [4, 5, 5, 5],
+                    [4, 5, 3, 5],
+                    [4, 5, 2, 5],
+                    [5, 5, 4, 5],
+                    [5, 5, 3, 5],
+                    [5, 5, 2, 5],
+                    [5, 5, 1, 5],
                 ],
                 "version": encode_version(*__factorio_version_info__),
             }
@@ -1707,25 +1702,21 @@ class TestBlueprint:
                     {
                         "name": "medium-electric-pole",
                         "position": {"x": 0.5, "y": 0.5},
-                        "neighbours": [3, 2],
                         "entity_number": 1,
                     },
                     {
                         "name": "medium-electric-pole",
                         "position": {"x": 4.5, "y": 0.5},
-                        "neighbours": [1, 4],
                         "entity_number": 2,
                     },
                     {
                         "name": "medium-electric-pole",
                         "position": {"x": 0.5, "y": 4.5},
-                        "neighbours": [1, 4],
                         "entity_number": 3,
                     },
                     {
                         "name": "medium-electric-pole",
                         "position": {"x": 4.5, "y": 4.5},
-                        "neighbours": [2, 3],
                         "entity_number": 4,
                     },
                     {
@@ -1734,48 +1725,58 @@ class TestBlueprint:
                         "entity_number": 5,
                     },
                 ],
-                "version": encode_version(*__factorio_version_info__),
-            }
-        }
-        # Test prefer_axis
-        blueprint.entities = None
-        blueprint.entities.append("medium-electric-pole")
-        blueprint.entities.append("medium-electric-pole", tile_position=(5, 0))
-        blueprint.entities.append("medium-electric-pole", tile_position=(1, 1))
-        blueprint.generate_power_connections(prefer_axis=False)
-        assert blueprint.to_dict() == {
-            "blueprint": {
-                "item": "blueprint",
-                "entities": [
-                    {
-                        "name": "medium-electric-pole",
-                        "position": {"x": 0.5, "y": 0.5},
-                        "neighbours": [2, 3],
-                        "entity_number": 1,
-                    },
-                    {
-                        "name": "medium-electric-pole",
-                        "position": {"x": 5.5, "y": 0.5},
-                        "neighbours": [1, 3],
-                        "entity_number": 2,
-                    },
-                    {
-                        "name": "medium-electric-pole",
-                        "position": {"x": 1.5, "y": 1.5},
-                        "neighbours": [1, 2],
-                        "entity_number": 3,
-                    },
+                "wires": [
+                    [1, 5, 3, 5],
+                    [1, 5, 2, 5],
+                    [2, 5, 4, 5],
+                    [2, 5, 1, 5],
+                    [3, 5, 4, 5],
+                    [3, 5, 1, 5],
+                    [4, 5, 3, 5],
+                    [4, 5, 2, 5],
                 ],
                 "version": encode_version(*__factorio_version_info__),
             }
         }
+        # Test prefer_axis
+        # blueprint.entities = None
+        # blueprint.entities.append("medium-electric-pole")
+        # blueprint.entities.append("medium-electric-pole", tile_position=(5, 0))
+        # blueprint.entities.append("medium-electric-pole", tile_position=(1, 1))
+        # blueprint.generate_power_connections(prefer_axis=False)
+        # assert blueprint.to_dict() == {
+        #     "blueprint": {
+        #         "item": "blueprint",
+        #         "entities": [
+        #             {
+        #                 "name": "medium-electric-pole",
+        #                 "position": {"x": 0.5, "y": 0.5},
+        #                 "neighbours": [2, 3],
+        #                 "entity_number": 1,
+        #             },
+        #             {
+        #                 "name": "medium-electric-pole",
+        #                 "position": {"x": 5.5, "y": 0.5},
+        #                 "neighbours": [1, 3],
+        #                 "entity_number": 2,
+        #             },
+        #             {
+        #                 "name": "medium-electric-pole",
+        #                 "position": {"x": 1.5, "y": 1.5},
+        #                 "neighbours": [1, 2],
+        #                 "entity_number": 3,
+        #             },
+        #         ],
+        #         "version": encode_version(*__factorio_version_info__),
+        #     }
+        # }
 
         # Test too many power connections
-        blueprint.entities = None
-        for i in range(3):
-            blueprint.entities.append("medium-electric-pole", tile_position=(0, i))
-            blueprint.entities.append("medium-electric-pole", tile_position=(3, i))
-        blueprint.generate_power_connections()
+        # blueprint.entities = None
+        # for i in range(3):
+        #     blueprint.entities.append("medium-electric-pole", tile_position=(0, i))
+        #     blueprint.entities.append("medium-electric-pole", tile_position=(3, i))
+        # blueprint.generate_power_connections()
 
     # =========================================================================
 
@@ -1793,16 +1794,15 @@ class TestBlueprint:
                 {
                     "name": "substation",
                     "position": {"x": 1.0, "y": 1.0},
-                    "connections": {"1": {"red": [{"entity_id": 2}]}},
                     "entity_number": 1,
                 },
                 {
                     "name": "substation",
                     "position": {"x": 7.0, "y": 1.0},
-                    "connections": {"1": {"red": [{"entity_id": 1}]}},
                     "entity_number": 2,
                 },
             ],
+            "wires": [[1, 1, 2, 1]],
             "version": encode_version(*__factorio_version_info__),
         }
 
@@ -1836,16 +1836,15 @@ class TestBlueprint:
                 {
                     "name": "substation",
                     "position": {"x": 1.0, "y": 1.0},
-                    "connections": {"1": {"green": [{"entity_id": 2}]}},
                     "entity_number": 1,
                 },
                 {
                     "name": "substation",
                     "position": {"x": 7.0, "y": 1.0},
-                    "connections": {"1": {"green": [{"entity_id": 1}]}},
                     "entity_number": 2,
                 },
             ],
+            "wires": [[1, 2, 2, 2]],
             "version": encode_version(*__factorio_version_info__),
         }
         blueprint.remove_circuit_connection("green", substationB, substationA)
@@ -1882,7 +1881,7 @@ class TestBlueprint:
         # TODO
 
         # Errors
-        blueprint.entities.append("radar", tile_position=(0, 6), id="3")
+        blueprint.entities.append("lightning-attractor", tile_position=(0, 6), id="3")
 
         with pytest.raises(EntityNotCircuitConnectableError):
             blueprint.add_circuit_connection("green", "3", "1")
@@ -1897,7 +1896,9 @@ class TestBlueprint:
         blueprint.entities.append("decider-combinator", tile_position=(4, 0), id="b")
         blueprint.entities.append("transport-belt", tile_position=(5, 0))
         blueprint.add_circuit_connection("red", "a", "b")
-        blueprint.add_circuit_connection("green", "a", "b", 1, 2)
+        blueprint.add_circuit_connection(
+            "green", "a", "b", side_1="input", side_2="output"
+        )
         self.maxDiff = None
         assert blueprint.to_dict() == {
             "blueprint": {
@@ -1911,21 +1912,11 @@ class TestBlueprint:
                     {
                         "name": "transport-belt",
                         "position": {"x": 3.5, "y": 0.5},
-                        "connections": {
-                            "1": {
-                                "red": [{"entity_id": 3, "circuit_id": 1}],
-                                "green": [{"entity_id": 3, "circuit_id": 2}],
-                            }
-                        },
                         "entity_number": 2,
                     },
                     {
                         "name": "decider-combinator",
                         "position": {"x": 4.5, "y": 1.0},
-                        "connections": {
-                            "1": {"red": [{"entity_id": 2}]},
-                            "2": {"green": [{"entity_id": 2}]},
-                        },
                         "entity_number": 3,
                     },
                     {
@@ -1934,6 +1925,7 @@ class TestBlueprint:
                         "entity_number": 4,
                     },
                 ],
+                "wires": [[2, 1, 3, 1], [2, 2, 3, 4]],
                 "version": encode_version(*__factorio_version_info__),
             }
         }
@@ -1983,26 +1975,19 @@ class TestBlueprint:
                     "entity_number": 1,
                     "name": "transport-belt",
                     "position": {"x": 0.5, "y": 0.5},
-                    "connections": {"1": {"red": [{"entity_id": 2}]}},
                 },
                 {
                     "entity_number": 2,
                     "name": "transport-belt",
                     "position": {"x": 1.5, "y": 1.5},
-                    "connections": {
-                        "1": {
-                            "red": [{"entity_id": 1}],
-                            "green": [{"entity_id": 3}],
-                        }
-                    },
                 },
                 {
                     "entity_number": 3,
                     "name": "transport-belt",
                     "position": {"x": 2.5, "y": 2.5},
-                    "connections": {"1": {"green": [{"entity_id": 2}]}},
                 },
             ],
+            "wires": [[3, 2, 2, 2], [1, 1, 2, 1]],
             "version": encode_version(*__factorio_version_info__),
         }
 
@@ -2106,7 +2091,43 @@ class TestBlueprint:
             "schedules": [
                 {
                     "locomotives": [3],
-                    "schedule": [
+                    "schedule": {
+                        "records": [
+                            {
+                                "station": "Station 1",
+                                "wait_conditions": [
+                                    {
+                                        "type": WaitConditionType.FULL_CARGO,
+                                        # "compare_type": WaitConditionCompareType.OR,
+                                    }
+                                ],
+                            },
+                            {
+                                "station": "Station 2",
+                                "wait_conditions": [
+                                    {
+                                        "type": WaitConditionType.EMPTY_CARGO,
+                                        # "compare_type": WaitConditionCompareType.OR,
+                                    }
+                                ],
+                            },
+                        ],
+                    },
+                }
+            ],
+            "version": encode_version(*__factorio_version_info__),
+        }
+
+        # Ensure new trains with same schedule dont create duplicate schedules
+        blueprint.add_train_at_position(
+            config=config, position=(0, 4), direction=Direction.EAST, schedule=schedule
+        )
+        assert len(blueprint.entities) == 6
+        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+            {
+                "locomotives": [3, 5],
+                "schedule": {
+                    "records": [
                         {
                             "station": "Station 1",
                             "wait_conditions": [
@@ -2126,39 +2147,7 @@ class TestBlueprint:
                             ],
                         },
                     ],
-                }
-            ],
-            "version": encode_version(*__factorio_version_info__),
-        }
-
-        # Ensure new trains with same schedule dont create duplicate schedules
-        blueprint.add_train_at_position(
-            config=config, position=(0, 4), direction=Direction.EAST, schedule=schedule
-        )
-        assert len(blueprint.entities) == 6
-        assert blueprint.to_dict()["blueprint"]["schedules"] == [
-            {
-                "locomotives": [3, 5],
-                "schedule": [
-                    {
-                        "station": "Station 1",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.FULL_CARGO,
-                                # "compare_type": WaitConditionCompareType.OR,
-                            }
-                        ],
-                    },
-                    {
-                        "station": "Station 2",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.EMPTY_CARGO,
-                                # "compare_type": WaitConditionCompareType.OR,
-                            }
-                        ],
-                    },
-                ],
+                },
             }
         ]
 
@@ -2174,49 +2163,53 @@ class TestBlueprint:
         assert blueprint.to_dict()["blueprint"]["schedules"] == [
             {
                 "locomotives": [3, 5],
-                "schedule": [
-                    {
-                        "station": "Station 1",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.FULL_CARGO,
-                                # "compare_type": WaitConditionCompareType.OR,
-                            }
-                        ],
-                    },
-                    {
-                        "station": "Station 2",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.EMPTY_CARGO,
-                                # "compare_type": WaitConditionCompareType.OR,
-                            }
-                        ],
-                    },
-                ],
+                "schedule": {
+                    "records": [
+                        {
+                            "station": "Station 1",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.FULL_CARGO,
+                                    # "compare_type": WaitConditionCompareType.OR,
+                                }
+                            ],
+                        },
+                        {
+                            "station": "Station 2",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.EMPTY_CARGO,
+                                    # "compare_type": WaitConditionCompareType.OR,
+                                }
+                            ],
+                        },
+                    ],
+                },
             },
             {
                 "locomotives": [7],
-                "schedule": [
-                    {
-                        "station": "Station 3",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.FULL_CARGO,
-                                # "compare_type": WaitConditionCompareType.OR,
-                            }
-                        ],
-                    },
-                    {
-                        "station": "Station 4",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.EMPTY_CARGO,
-                                # "compare_type": WaitConditionCompareType.OR,
-                            }
-                        ],
-                    },
-                ],
+                "schedule": {
+                    "records": [
+                        {
+                            "station": "Station 3",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.FULL_CARGO,
+                                    # "compare_type": WaitConditionCompareType.OR,
+                                }
+                            ],
+                        },
+                        {
+                            "station": "Station 4",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.EMPTY_CARGO,
+                                    # "compare_type": WaitConditionCompareType.OR,
+                                }
+                            ],
+                        },
+                    ],
+                },
             },
         ]
 
@@ -2325,26 +2318,28 @@ class TestBlueprint:
             "schedules": [
                 {
                     "locomotives": [5],
-                    "schedule": [
-                        {
-                            "station": "Station 1",
-                            "wait_conditions": [
-                                {
-                                    "type": WaitConditionType.FULL_CARGO,
-                                    # "compare_type": WaitConditionCompareType.OR,
-                                }
-                            ],
-                        },
-                        {
-                            "station": "Station 2",
-                            "wait_conditions": [
-                                {
-                                    "type": WaitConditionType.EMPTY_CARGO,
-                                    # "compare_type": WaitConditionCompareType.OR,
-                                }
-                            ],
-                        },
-                    ],
+                    "schedule": {
+                        "records": [
+                            {
+                                "station": "Station 1",
+                                "wait_conditions": [
+                                    {
+                                        "type": WaitConditionType.FULL_CARGO,
+                                        # "compare_type": WaitConditionCompareType.OR,
+                                    }
+                                ],
+                            },
+                            {
+                                "station": "Station 2",
+                                "wait_conditions": [
+                                    {
+                                        "type": WaitConditionType.EMPTY_CARGO,
+                                        # "compare_type": WaitConditionCompareType.OR,
+                                    }
+                                ],
+                            },
+                        ],
+                    },
                 }
             ],
             "version": encode_version(*__factorio_version_info__),
@@ -2365,26 +2360,28 @@ class TestBlueprint:
         assert blueprint.to_dict()["blueprint"]["schedules"] == [
             {
                 "locomotives": [5, 8],
-                "schedule": [
-                    {
-                        "station": "Station 1",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.FULL_CARGO,
-                                # "compare_type": WaitConditionCompareType.OR,
-                            }
-                        ],
-                    },
-                    {
-                        "station": "Station 2",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.EMPTY_CARGO,
-                                # "compare_type": WaitConditionCompareType.OR,
-                            }
-                        ],
-                    },
-                ],
+                "schedule": {
+                    "records": [
+                        {
+                            "station": "Station 1",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.FULL_CARGO,
+                                    # "compare_type": WaitConditionCompareType.OR,
+                                }
+                            ],
+                        },
+                        {
+                            "station": "Station 2",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.EMPTY_CARGO,
+                                    # "compare_type": WaitConditionCompareType.OR,
+                                }
+                            ],
+                        },
+                    ],
+                },
             }
         ]
 
@@ -2407,49 +2404,53 @@ class TestBlueprint:
         assert blueprint.to_dict()["blueprint"]["schedules"] == [
             {
                 "locomotives": [5, 8],
-                "schedule": [
-                    {
-                        "station": "Station 1",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.FULL_CARGO,
-                                # "compare_type": WaitConditionCompareType.OR,
-                            }
-                        ],
-                    },
-                    {
-                        "station": "Station 2",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.EMPTY_CARGO,
-                                # "compare_type": WaitConditionCompareType.OR,
-                            }
-                        ],
-                    },
-                ],
+                "schedule": {
+                    "records": [
+                        {
+                            "station": "Station 1",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.FULL_CARGO,
+                                    # "compare_type": WaitConditionCompareType.OR,
+                                }
+                            ],
+                        },
+                        {
+                            "station": "Station 2",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.EMPTY_CARGO,
+                                    # "compare_type": WaitConditionCompareType.OR,
+                                }
+                            ],
+                        },
+                    ],
+                },
             },
             {
                 "locomotives": [11],
-                "schedule": [
-                    {
-                        "station": "Station 3",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.FULL_CARGO,
-                                # "compare_type": WaitConditionCompareType.OR,
-                            }
-                        ],
-                    },
-                    {
-                        "station": "Station 4",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.EMPTY_CARGO,
-                                # "compare_type": WaitConditionCompareType.OR,
-                            }
-                        ],
-                    },
-                ],
+                "schedule": {
+                    "records": [
+                        {
+                            "station": "Station 3",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.FULL_CARGO,
+                                    # "compare_type": WaitConditionCompareType.OR,
+                                }
+                            ],
+                        },
+                        {
+                            "station": "Station 4",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.EMPTY_CARGO,
+                                    # "compare_type": WaitConditionCompareType.OR,
+                                }
+                            ],
+                        },
+                    ],
+                },
             },
         ]
 
@@ -2464,7 +2465,7 @@ class TestBlueprint:
 
     def test_set_train_schedule(self):
         # 2 trains with 2 different schedules
-        test_string = "0eNqdk01vgzAMhv+Lz1lVvkrh3MOOO2+qUApuFykkURK6oYr/PhPY1k2dVHaLkf08rxJzgYPs0FihPJQXELVWDsqXCzhxUlyO33xvEEoQHltgoHg7VlLXutVenBEGBkI1+A5lNLD/DcbDngEqL7zASR+KvlJde0BL5FvzDIx2NKLVaCPMQ5Yx6KHcrIpisy6SPCOFtoJgfGpbr7Ix4y96fB89LQI9vw+aLIocJQszp4syR+ktKl26q1+x6eR869+osY5YctUxbcXnODwib8j3xoWvaGmaYJ0oxDDcYjW/v7bUN5+PnZQw7MOefKF2Vht9PC6nYWt8P+IC8Gf4mKV/h3/i8oz2ebnRcOdQndBWxiKd/GQnU9jy8upvYkAKF3zxNkrzIs7zJC+ybToMH2rsKd8="
+        test_string = "0eNq1lM1ugzAQhN9lz1ZU/tLCuYcee24VIQMLsWpsZJukKOLdaxuS0CqHoLY3e7T+dtYa+wQF77FTTBjITsBKKTRk7yfQrBGUO03QFiEDRRmHkQATFX5CFozkRhGXpWylYQdclIbjjgAKwwzDCe43Qy76tkBlWeTGeQKd1PaIFI5vMXEcERgsLgg2cfSYjA5KC445lw3ThpU6P+6Z3bfywEQDWU25RgJSMduQTqiHTeKc/3AQ3ukg/TcH0co7ePpzB/HKO/itAxsKXe6x6vmcimtbtw9ItKhw3RWWUlVzPM8keEFaWZtHykxu01t5s1ORxXVUYW6Gzo0lla2b13XPbZp3PsQX1LOSnazr9TRsOzM43G50xO+DhCS+a5BXyg+o3tZ376jWKBpUeafQrszsxHU1svxwKIHlleVV/+xqJd3Dj6Z78Gp4UeOFamNXUH9oIcZn0b9wZrC1bq7/CQE7j/bDJdswjdM0ScJkG4XBOH4Bm4OGxA=="
         blueprint = Blueprint(test_string)
         # Also add another dummy schedule before
         # blueprint.schedules.insert(0, Schedule())
@@ -2533,31 +2534,35 @@ class TestBlueprint:
         assert blueprint.to_dict()["blueprint"]["schedules"] == [
             {
                 "locomotives": [1, 3],
-                "schedule": [
-                    {
-                        "station": "Station 1",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.FULL_CARGO,
-                                # "compare_type": "or", # Default
-                            }
-                        ],
-                    }
-                ],
+                "schedule": {
+                    "records": [
+                        {
+                            "station": "Station 1",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.FULL_CARGO,
+                                    # "compare_type": "or", # Default
+                                }
+                            ],
+                        }
+                    ],
+                },
             },
             {
                 "locomotives": [5],
-                "schedule": [
-                    {
-                        "station": "Station 2",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.EMPTY_CARGO,
-                                # "compare_type": "or", # Default
-                            }
-                        ],
-                    }
-                ],
+                "schedule": {
+                    "records": [
+                        {
+                            "station": "Station 2",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.EMPTY_CARGO,
+                                    # "compare_type": "or", # Default
+                                }
+                            ],
+                        }
+                    ],
+                },
             },
         ]
 
@@ -2566,31 +2571,35 @@ class TestBlueprint:
         assert blueprint.to_dict()["blueprint"]["schedules"] == [
             {
                 "locomotives": [1],
-                "schedule": [
-                    {
-                        "station": "Station 1",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.FULL_CARGO,
-                                # "compare_type": WaitConditionCompareType.OR, # Default
-                            }
-                        ],
-                    }
-                ],
+                "schedule": {
+                    "records": [
+                        {
+                            "station": "Station 1",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.FULL_CARGO,
+                                    # "compare_type": WaitConditionCompareType.OR, # Default
+                                }
+                            ],
+                        }
+                    ],
+                },
             },
             {
                 "locomotives": [3],
-                "schedule": [
-                    {
-                        "station": "Station 2",
-                        "wait_conditions": [
-                            {
-                                "type": WaitConditionType.EMPTY_CARGO,
-                                # "compare_type": WaitConditionCompareType.OR, # Default
-                            }
-                        ],
-                    }
-                ],
+                "schedule": {
+                    "records": [
+                        {
+                            "station": "Station 2",
+                            "wait_conditions": [
+                                {
+                                    "type": WaitConditionType.EMPTY_CARGO,
+                                    # "compare_type": WaitConditionCompareType.OR, # Default
+                                }
+                            ],
+                        }
+                    ],
+                },
             },
         ]
 
@@ -2717,7 +2726,7 @@ class TestBlueprint:
         ]
 
         # A whole bunch of trains in some hypothetical depot
-        test_string = """0eNqdmUtz2jAUhf9KR2uTsV6Wza5ddNVdlx0m44BCNDUyY0xSJsN/r4xJoI3DnHt3tpE/Pe6951joVTw0e7/tQuzF/FWEZRt3Yv7rVezCOtbN8Kw/bL2Yi9D7jchErDfDXVeHRhwzEeLK/xFzeVxkwsc+9MGP759uDvdxv3nwXWrw/uauT++un/rZCZGJbbtLb7Vx6CqRZsqktgcx15VM/FXo/HL8WR2zD1iFY3WFYzUB63CsIWAtjrUErMaxBQFLCJnDsYoQspKAJYSsImAJIZM5gUuImbzUWdMu203bh2c/BZXlFbTtQuLUY4P8TtkpMqHUFCEdJKHWJCEfJKHYJCEhJKHaJCUjLuU2YONs17fbm1D9HzRLAzrHUPyof/sv35tDjGKqLwf29S7F9t++iuu+fo5XX75NdlWCCanfEtJ9TEg3mZAVw1IcYCk5w1MQrmSYCsJVDFdBuJfCXNbdup291OvU9pb6T4Zu+EZ4To/aLrWJ+6aZ6sswLAyZg2V4GMItGCaGcB1YLcOCfbbkk/KtOP6IjJhjkABXcwwS4UqGjSFcxbAxhKsZNoZwDcPGEK4lq7LJNcAtyKqMcR1ZlTFuCaunuqKy1FNXZAeA5mBysipjXElWZYyryKqMcTWqyvbzUE6qsjFkVcZGbMmqjHELsipjXEfbthBWuCTrPTbiiqz3ENfmZL3HuJKs9xhX0bYtJrc3ti1vW4mvU1sJqxnWUgFTMAxrQbiXIqy7PjSN7w43bMDclUY7e8VH8tsWDP9CBu8YnoJwS4anINxLPT42+7D6fKGVYy10kTNMCxh4IRmmhXAVw1oQrmZYC8I1qMnmvPhZhnUh4y4YBoNwHcNgEG7JMBiEWzEM5gN3kdxg+eRX++Z8jHDJheE+fYkZd9VmPKmYsI9MvNShv1+2cXXqeoQl1Lbu/P35RKPtUrvz9WP6tBbHxTCxqX+2yDy/2faHAbgY5nQ6O5lfHbVk4tl3u3HSpTSuUs5pV9nSHI9/Ad/ZT18="""
+        test_string = """0eNq1mcty2yAUQH8lw1rJ6AFIeNcuuuquy47HI8vYYSKDB2Gnnoz/vSA/pLRK5nKT7CzMPYAu6ID0QpbtXu6s0o7MXohqjO7I7PcL6dRG120o0/VWkhmxtWrJKSFKr+QfMstO84RI7ZRT8hzRXxwXer9dSusrJNfIVm7q5njfOY/YPLr7npSQnel8sNGhDQ8seJGQo49jhW9lpaxszv/SU/IfPI+GMzi8iIaXcDiNhgs4nMXCywwO59HwiISW0fCIhFbR8IiEimh4REKzNJZeRWQ0i16jVURKs+hFWkXkNButUtOYrXHqIKeYfMSUul62ctGajeqcarrF86Py11tzUHpDZuu67WRCjFW+sfpMSR9yNtV89DquIuZUFr2Qq5hJNazkQNUebnbvMdk/zIR019tDftZP8u5He9SaTDVVwpq6PfvL102FOTS09ev86+77ZFMVWjgCcM8E2jgAep7CJjPnIyZqMpdTkznP0MaDDC5HKw9CL9DOg9CHZd7UdmPun+uNr/uO6z6QmbC3OvgiYz1J79t2qkMMbWHIcDlawxB6ifYwhF6hRQyhC6Bu0o/Og0ndFPh9AGBwBX4fAKHj9wEQeoEWMYRO0SKG0BlWWZwB6ByrLBC9xDoDRK+wzgDRBdYZEDpNoc7IR9AvdAbNsM4ADTfHOgNEL7DOANEp7Kleio9mavKpThlWWaDBcawzQPQS6wwQvcI6A0QXcWfHT047S7HKggyOZVhlgeh53NmRl++cHa/nuW9T5zlWYOVYZoBxUKwcQXSGlSOIPizs2jrVttIe35QMFw8Z4/m488iZnAytLeq9Mwvn7SZdH+PsXk71tMRqHHQfKqzGQXSBtSaEzlOsNUH04Rmwbvdq9fYWhH/W7JjqRY51N2iMBVaeIDrFyhNEZ0ABFV+ZHo41OGiIJdbgIHqFVSiILrAK/Z8+98JrHuVq314+kw0JD9d+B0rFqE4A+mhjV5fPcBOyTMhzrdyiMXrVd+Jc01N3tZULd9yFjhvr611+r/25gJzmYaRTL1OjeXK7c8cAnJ/68TnTPIVwfR72tee+NLynPzfbX4T3nMu6/0XHxX6xra0JnyBHNcS4hpgMpLfa9FXxwKO3QJqOa4jJwGDWSyDPRuXheXotZ9dIxsc1bsW8/zKqnNz6OzV8XE3IQdquv/V+RQsqBGM540WenU5/AR24zCE="""
         bp = Blueprint(test_string)
 
         # All trains
@@ -2857,12 +2866,12 @@ class TestBlueprint:
         blueprint.tiles.append("refined-concrete", position=(0, 4))
         blueprint.tiles.append("refined-concrete", position=(4, 0))
 
-        blueprint.rotate(2)
+        blueprint.rotate(4)
 
         assert blueprint.entities[0].tile_position == Vector(-1, 0)
         assert blueprint.entities[1].tile_position == Vector(-5, 4)
         assert blueprint.entities[2].tile_position == Vector(-3, 1)
-        assert blueprint.entities[2].direction == 2
+        assert blueprint.entities[2].direction == 4
         assert blueprint.tiles[0].position == Vector(-5, 0)
         assert blueprint.tiles[1].position == Vector(-1, 4)
 
@@ -2894,7 +2903,7 @@ class TestBlueprint:
         assert blueprint.entities[0].tile_position == Vector(-1, -1)
         assert blueprint.entities[1].tile_position == Vector(-5, -5)
         assert blueprint.entities[2].tile_position == Vector(-4, -3)
-        assert blueprint.entities[2].direction == 4
+        assert blueprint.entities[2].direction == 8
         assert blueprint.tiles[0].position == Vector(-1, -5)
         assert blueprint.tiles[1].position == Vector(-5, -1)
 

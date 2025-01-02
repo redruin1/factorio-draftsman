@@ -35,7 +35,9 @@ class TestSplitter:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Splitter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5).validate().reissue_all()
+            Splitter(
+                position=[0, 0], direction=Direction.WEST, invalid_keyword=5
+            ).validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
             Splitter("this is not a splitter").validate().reissue_all()

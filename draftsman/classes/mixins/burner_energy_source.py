@@ -196,4 +196,6 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
         none of the keys of ``items`` are known as valid module names. Not
         exported; read only.
         """
-        return [item for item in self.items if item["id"]["name"] in items.all_fuel_items]
+        return [
+            item for item in self.items if item["id"]["name"] in items.all_fuel_items
+        ]

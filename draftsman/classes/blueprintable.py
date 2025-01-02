@@ -29,7 +29,7 @@ from draftsman.utils import (
 from abc import ABCMeta, abstractmethod
 
 import json
-from pydantic import ValidationError
+from pydantic import field_validator, ValidationError
 from typing import Any, Literal, Optional, Sequence, Union
 
 

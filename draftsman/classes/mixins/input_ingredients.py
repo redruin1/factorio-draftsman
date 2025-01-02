@@ -10,40 +10,40 @@ from typing import Optional
 
 class InputIngredientsMixin:
     class Format(BaseModel):
-        @field_validator("items", check_fields=False)
-        @classmethod
-        def ensure_in_allowed_ingredients(
-            cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-        ):
-            """
-            Warn the user if they set a fuel item that is disallowed for this
-            particular entity.
-            """
-            if not info.context or value is None:
-                return value
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
+        # @field_validator("items", check_fields=False)
+        # @classmethod
+        # def ensure_in_allowed_ingredients(
+        #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+        # ):
+        #     """
+        #     Warn the user if they set a fuel item that is disallowed for this
+        #     particular entity.
+        #     """
+        #     if not info.context or value is None:
+        #         return value
+        #     if info.context["mode"] <= ValidationMode.MINIMUM:
+        #         return value
 
-            entity: "InputIngredientsMixin" = info.context["object"]
-            warning_list: list = info.context["warning_list"]
+        #     entity: "InputIngredientsMixin" = info.context["object"]
+        #     warning_list: list = info.context["warning_list"]
 
-            if entity.allowed_input_ingredients is None:  # entity not recognized
-                return value
+        #     if entity.allowed_input_ingredients is None:  # entity not recognized
+        #         return value
 
-            for item in entity.items:
-                # Skip these cases so we can issue better warnings elsewhere
-                if item in entity.allowed_modules:
-                    continue
-                if item not in entity.allowed_input_ingredients:
-                    warning_list.append(
-                        ItemLimitationWarning(
-                            "Cannot request item '{}' to '{}'; this recipe cannot consume it".format(
-                                item, entity.name
-                            )
-                        )
-                    )
+        #     for item in entity.items:
+        #         # Skip these cases so we can issue better warnings elsewhere
+        #         if item in entity.allowed_modules:
+        #             continue
+        #         if item not in entity.allowed_input_ingredients:
+        #             warning_list.append(
+        #                 ItemLimitationWarning(
+        #                     "Cannot request item '{}' to '{}'; this recipe cannot consume it".format(
+        #                         item, entity.name
+        #                     )
+        #                 )
+        #             )
 
-            return value
+        #     return value
 
         # @field_validator("items", check_fields=False)
         # @classmethod
@@ -100,5 +100,7 @@ class InputIngredientsMixin:
         exported; read only.
         """
         return {
-            k: v for k, v in self.items.items() if k in self.allowed_input_ingredients
+            item
+            for item in self.items
+            if item["id"]["name"] in self.allowed_input_ingredients
         }

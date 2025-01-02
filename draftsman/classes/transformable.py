@@ -76,7 +76,7 @@ class Transformable:
         pressing 'r' with a blueprint selected.
 
         ``angle`` is specified in terms of Direction enum, meaning that a
-        rotation of 2 is 90 degrees clockwise.
+        rotation of 4 is 90 degrees clockwise.
 
         Because eight-way rotatable entities exist in a weird gray area, this
         function behaves like the feature in-game and only rotates on 90 degree
@@ -89,16 +89,16 @@ class Transformable:
             value.
         """
         # TODO: handle different origin locations
-        angle = angle % 8
+        angle = angle % 16
 
-        if angle % 2 == 1:
-            raise RotationError("Blueprints cannot be rotated by an odd number")
+        if angle % 4 != 0:
+            raise RotationError("Blueprints cannot be rotated by a non-multiple of 4")
 
         matrices = {
             0: [1, 0, 0, 1],
-            2: [0, 1, -1, 0],
-            4: [-1, 0, 0, -1],
-            6: [0, -1, 1, 0],
+            4: [0, 1, -1, 0],
+            8: [-1, 0, 0, -1],
+            12: [0, -1, 1, 0],
         }
         matrix = matrices[angle]
 
@@ -192,9 +192,9 @@ class Transformable:
             # Alter the direction
             if entity.rotatable:
                 if direction == "horizontal":
-                    entity.direction += ((-2 * (entity.direction - 4)) % 8) % 8
+                    entity.direction += ((-2 * (entity.direction - 8)) % 16) % 16
                 else:  # direction == "vertical":
-                    entity.direction += (((-2 * entity.direction) % 8) - 4) % 8
+                    entity.direction += (((-2 * entity.direction) % 16) - 8) % 16
 
             # Alter (both) the position(s)
             entity.position = (pos.x * matrix[0], pos.y * matrix[1])

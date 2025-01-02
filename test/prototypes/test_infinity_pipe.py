@@ -38,7 +38,9 @@ class TestInfinityPipe:
         with pytest.warns(UnknownKeywordWarning):
             InfinityPipe(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            InfinityPipe(infinity_settings={"clearly": "wrong"}).validate().reissue_all()
+            InfinityPipe(
+                infinity_settings={"clearly": "wrong"}
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             InfinityPipe("this is not an infinity pipe").validate().reissue_all()
 

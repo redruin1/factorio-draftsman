@@ -1,7 +1,7 @@
 # fluid_wagon.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import OrientationMixin
+from draftsman.classes.mixins import EquipmentGridMixin, OrientationMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Orientation, ValidationMode
 from draftsman.utils import get_first
@@ -18,7 +18,7 @@ class FluidWagon(OrientationMixin, Entity):
     A train wagon that holds a fluid as cargo.
     """
 
-    class Format(OrientationMixin.Format, Entity.Format):
+    class Format(EquipmentGridMixin.Format, OrientationMixin.Format, Entity.Format):
         model_config = ConfigDict(title="FluidWagon")
 
     def __init__(
@@ -27,6 +27,8 @@ class FluidWagon(OrientationMixin, Entity):
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         orientation: Orientation = Orientation.NORTH,
+        enable_logistics_while_moving: Optional[bool] = True,
+        grid: list[Format.EquipmentComponent] = [],
         tags: dict[str, Any] = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -43,6 +45,8 @@ class FluidWagon(OrientationMixin, Entity):
             position=position,
             tile_position=tile_position,
             orientation=orientation,
+            enable_logistics_while_moving=enable_logistics_while_moving,
+            grid=grid,
             tags=tags,
             **kwargs
         )

@@ -60,7 +60,9 @@ class TestRailSignal:
 
         # Warnings:
         with pytest.warns(UnknownKeywordWarning):
-            RailSignal("rail-signal", invalid_keyword="whatever").validate().reissue_all()
+            RailSignal(
+                "rail-signal", invalid_keyword="whatever"
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             RailSignal("this is not a rail signal").validate().reissue_all()
 

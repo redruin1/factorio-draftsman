@@ -59,7 +59,9 @@ class TestRailChainSignal:
 
         # Warnings:
         with pytest.warns(UnknownKeywordWarning):
-            RailChainSignal("rail-chain-signal", invalid_keyword="whatever").validate().reissue_all()
+            RailChainSignal(
+                "rail-chain-signal", invalid_keyword="whatever"
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             RailChainSignal("this is not a rail chain signal").validate().reissue_all()
 

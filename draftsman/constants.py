@@ -150,13 +150,21 @@ class Direction(IntEnum):
         mapping = {
             # fmt: off
             Direction.NORTH:     Vector(0, -1),
+            Direction.NORTHNORTHEAST: Vector(0, 0),
             Direction.NORTHEAST: Vector(srt2, -srt2),
+            Direction.EASTNORTHEAST: Vector(0, 0),
             Direction.EAST:      Vector(1, 0),
+            Direction.EASTSOUTHEAST: Vector(0, 0),
             Direction.SOUTHEAST: Vector(srt2, srt2),
+            Direction.SOUTHSOUTHEAST: Vector(0, 0),
             Direction.SOUTH:     Vector(0, 1),
+            Direction.SOUTHSOUTHWEST: Vector(0, 0),
             Direction.SOUTHWEST: Vector(-srt2, srt2),
+            Direction.WESTSOUTHWEST: Vector(0, 0),
             Direction.WEST:      Vector(-1, 0),
+            Direction.WESTNORTHWEST: Vector(0, 0),
             Direction.NORTHWEST: Vector(-srt2, -srt2),
+            Direction.NORTHNORTHWEST: Vector(0, 0)
             # fmt: on
         }
         return mapping[self] * magnitude
@@ -395,7 +403,7 @@ class Orientation(float):
         """
         return Orientation((self._value_ + 0.5) % 1.0)
 
-    def to_direction(self, eight_way: bool = False) -> Direction:
+    def to_direction(self, sixteen_way: bool = False) -> Direction:
         """
         Converts the orientation to a :py:class:`Direction` instance. If the
         orientation is imprecise, the orientation will be rounded to either the
@@ -404,20 +412,20 @@ class Orientation(float):
         .. doctest:: [constants]
 
             >>> example = Orientation(1.0 / 3.0)
-            >>> example.to_direction(eight_way=False)
+            >>> example.to_direction(sixteen_way=False)
             <Direction.EAST: 2>
-            >>> example.to_direction(eight_way=True)
+            >>> example.to_direction(sixteen_way=True)
             <Direction.SOUTHEAST: 3>
 
-        :param eight_way: Whether to round to the closest four-way direction or
-            eight-way direction.
+        :param sixteen_way: Whether to round to the closest four-way direction or
+            sixteen-way direction.
 
         :returns: A new :py:class:`Direction` object.
         """
-        if eight_way:
-            return Direction(round(self._value_ * 8))
+        if sixteen_way:
+            return Direction(round(self._value_ * 16))
         else:
-            return Direction(round(self._value_ * 4) * 2)
+            return Direction(round(self._value_ * 4) * 4)
 
     def to_vector(self, magnitude=1) -> Vector:
         """

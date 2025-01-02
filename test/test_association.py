@@ -45,14 +45,29 @@ class TestAssociation:
 
         blueprint.entities.append("wooden-chest")
         blueprint.entities.append("wooden-chest", tile_position=(1, 0))
+
+        assert (
+            weakref.getweakrefcount(blueprint.entities[0]) == 1
+        )  # 1 from the association held by position/tile_position
+        assert (
+            weakref.getweakrefcount(blueprint.entities[1]) == 1
+        )  # (which is cursed, but)
+
         blueprint.add_circuit_connection("red", 0, 1)
+
+        # print(weakref.getweakrefs(blueprint.entities[0]))
 
         assert weakref.getweakrefcount(blueprint.entities[0]) == 2
         assert weakref.getweakrefcount(blueprint.entities[1]) == 2
 
         del blueprint.entities[1]
 
-        assert weakref.getweakrefcount(blueprint.entities[0]) == 1
+        # print(weakref.getweakrefs(blueprint.entities[0]))
+        # print(blueprint.wires)
+
+        assert (
+            weakref.getweakrefcount(blueprint.entities[0]) == 2
+        )  # Association in the wire doesn't go away
 
         with pytest.raises(InvalidAssociationError):
             blueprint.to_dict()

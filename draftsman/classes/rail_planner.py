@@ -7,7 +7,7 @@ from draftsman.constants import Direction
 from draftsman.error import DraftsmanError
 from draftsman.data import items
 from draftsman.prototypes.straight_rail import StraightRail
-from draftsman.prototypes.curved_rail import CurvedRail
+from draftsman.prototypes.legacy_curved_rail import LegacyCurvedRail
 
 from typing import Optional, Union
 from typing import cast as typing_cast
@@ -90,7 +90,7 @@ class RailPlanner(Group):
     # =========================================================================
 
     @property
-    def last_rail_added(self) -> Optional[Ref[StraightRail | CurvedRail]]:
+    def last_rail_added(self) -> Optional[Ref[StraightRail | LegacyCurvedRail]]:
         """
         Reference to the last rail entity that was added in the RailPlanner, or
         ``None`` if no entities have been added yet. Used internally, but
@@ -373,7 +373,7 @@ class RailPlanner(Group):
             return
 
         last_rail_added = typing_cast(
-            Union[CurvedRail, StraightRail], self.last_rail_added
+            Union[LegacyCurvedRail, StraightRail], self.last_rail_added
         )
 
         diagonals = {
@@ -607,7 +607,7 @@ class RailPlanner(Group):
             return
 
         last_rail_added = typing_cast(
-            Union[CurvedRail, StraightRail], self.last_rail_added
+            Union[LegacyCurvedRail, StraightRail], self.last_rail_added
         )
 
         if last_rail_added.name == self.curved_rail:

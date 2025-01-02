@@ -9,10 +9,10 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.data.entities import of_type
-from draftsman.signatures import Connections, uint16, uint32
+from draftsman.signatures import ItemRequest, uint16
 from draftsman.utils import get_first
 
-# from draftsman.data.entities import logistic_passive_containers
+from draftsman.data.entities import logistic_passive_containers
 
 from typing import Any, Literal, Optional, Union
 from pydantic import ConfigDict
@@ -36,12 +36,11 @@ class LogisticPassiveContainer(
 
     def __init__(
         self,
-        name: Optional[str] = get_first(of_type["logistic-container"]),
+        name: Optional[str] = get_first(logistic_passive_containers),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         bar: uint16 = None,
-        items: dict[str, uint32] = {},  # TODO: ItemID
-        connections: Connections = {},
+        items: Optional[list[ItemRequest]] = {},
         tags: dict[str, Any] = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -50,12 +49,11 @@ class LogisticPassiveContainer(
     ):
         super().__init__(
             name,
-            of_type["logistic-container"],
+            logistic_passive_containers,
             position=position,
             tile_position=tile_position,
             bar=bar,
             items=items,
-            connections=connections,
             tags=tags,
             **kwargs
         )

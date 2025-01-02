@@ -67,7 +67,6 @@ class PowerSwitch(
         name: Optional[str] = get_first(power_switches),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        connections: Connections = {},
         control_behavior: Format.ControlBehavior = {},
         switch_state: bool = False,
         tags: dict[str, Any] = {},
@@ -81,7 +80,6 @@ class PowerSwitch(
             power_switches,
             position=position,
             tile_position=tile_position,
-            connections=connections,
             control_behavior=control_behavior,
             tags=tags,
             **kwargs

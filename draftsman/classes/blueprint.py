@@ -162,40 +162,40 @@ def _normalize_internal_structure(
         entities_out.append(result)
         entities_out[i]["entity_number"] = i + 1
 
-    for entity in entities_out:
-        if "connections" in entity:  # Wire connections
-            connections = entity["connections"]
-            for side in connections:
-                if side in {"1", "2"}:
-                    for color in connections[side]:
-                        connection_points = connections[side][color]
-                        for point in connection_points:
-                            old = point["entity_id"]
-                            # if isinstance(old, int):
-                            #     continue
-                            if old() is None:  # pragma: no coverage
-                                _throw_invalid_association(entity)
-                            else:  # Association
-                                point["entity_id"] = flattened_entities.index(old()) + 1
+    # for entity in entities_out:
+    #     if "connections" in entity:  # Wire connections
+    #         connections = entity["connections"]
+    #         for side in connections:
+    #             if side in {"1", "2"}:
+    #                 for color in connections[side]:
+    #                     connection_points = connections[side][color]
+    #                     for point in connection_points:
+    #                         old = point["entity_id"]
+    #                         # if isinstance(old, int):
+    #                         #     continue
+    #                         if old() is None:  # pragma: no coverage
+    #                             _throw_invalid_association(entity)
+    #                         else:  # Association
+    #                             point["entity_id"] = flattened_entities.index(old()) + 1
 
-                elif side in {"Cu0", "Cu1"}:  # pragma: no branch
-                    connection_points = connections[side]
-                    for point in connection_points:
-                        old = point["entity_id"]
-                        # if isinstance(old, int):
-                        #     continue
-                        if old() is None:  # pragma: no coverage
-                            _throw_invalid_association(entity)
-                        else:  # Association
-                            point["entity_id"] = flattened_entities.index(old()) + 1
+    #             elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+    #                 connection_points = connections[side]
+    #                 for point in connection_points:
+    #                     old = point["entity_id"]
+    #                     # if isinstance(old, int):
+    #                     #     continue
+    #                     if old() is None:  # pragma: no coverage
+    #                         _throw_invalid_association(entity)
+    #                     else:  # Association
+    #                         point["entity_id"] = flattened_entities.index(old()) + 1
 
-        if "neighbours" in entity:  # Power pole connections
-            neighbours = entity["neighbours"]
-            for i, neighbour in enumerate(neighbours):
-                if neighbour() is None:  # pragma: no coverage
-                    _throw_invalid_association(entity)
-                else:  # Association
-                    neighbours[i] = flattened_entities.index(neighbour()) + 1
+    #     if "neighbours" in entity:  # Power pole connections
+    #         neighbours = entity["neighbours"]
+    #         for i, neighbour in enumerate(neighbours):
+    #             if neighbour() is None:  # pragma: no coverage
+    #                 _throw_invalid_association(entity)
+    #             else:  # Association
+    #                 neighbours[i] = flattened_entities.index(neighbour()) + 1
 
     input_root["entities"] = entities_out
 
@@ -236,18 +236,41 @@ def _normalize_internal_structure(
 
     input_root["schedules"] = schedules_out
 
+    # Wires
+    def flatten_wires(entities_in):
+        wires_out = []
+        for entity in entities_in:
+            if isinstance(entity, EntityCollection):
+                wires_out.extend(entity.wires)
+                wires_out.extend(flatten_wires(entity.entities))
+            else:
+                pass
+        return wires_out
+
+    flattened_wires = []
+    flattened_wires.extend(wires_in)
+    flattened_wires.extend(flatten_wires(entities_in))
+
     wires_out = []
-    for wire in wires_in:
+    for wire in flattened_wires:
         entity_1 = wire[0]
+        if entity_1() is None or entity_1() not in flattened_entities:
+            raise InvalidAssociationError(wire)
         entity_2 = wire[2]
-        wires_out.append(
-            [
-                flattened_entities.index(entity_1()) + 1,
-                wire[1],
-                flattened_entities.index(entity_2()) + 1,
-                wire[3],
-            ]
-        )
+        if entity_2() is None or entity_2() not in flattened_entities:
+            raise InvalidAssociationError(wire)
+
+        # Check to see if this wire already exists in the output, and neglect
+        # adding it if so
+        # TODO: this should happen earlier... somewhere...
+        new_wire = [
+            flattened_entities.index(entity_1()) + 1,
+            wire[1],
+            flattened_entities.index(entity_2()) + 1,
+            wire[3],
+        ]
+        if new_wire not in wires_out:
+            wires_out.append(new_wire)
 
     input_root["wires"] = wires_out
 
@@ -371,6 +394,21 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                 both power and circuit connections.
                 """,
             )
+            stock_connections: Optional[list[dict]] = []  # TODO
+
+            @field_validator("icons", mode="before")
+            @classmethod
+            def init_icons_from_list(cls, value: Any):
+                if isinstance(value, (tuple, list)):
+                    result = []
+                    for i, elem in enumerate(value):
+                        if isinstance(elem, str):
+                            result.append({"signal": elem, "index": i + 1})
+                        else:
+                            result.append(elem)
+                    return result
+                else:
+                    return value
 
             @field_serializer("snap_to_grid", when_used="unless-none")
             def serialize_snapping_grid(self, _):
@@ -467,7 +505,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         entities: Union[EntityList, list[EntityLike]] = [],
         tiles: Union[TileList, list[Tile]] = [],
         schedules: Union[ScheduleList, list[Schedule]] = [],
-        wires: list[list[int]] = [],
+        wires: Optional[list[list[int]]] = None,
+        stock_connections: Optional[list[dict]] = None,  # TODO
         index: Optional[uint16] = None,
         validate: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -534,7 +573,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         # )
         self._root._schedules = ScheduleList(schedules)
 
-        self._root._wires = wires
+        self._root._wires = [] if wires is None else wires
+
+        self.stock_connections = [] if stock_connections is None else stock_connections
 
         self.index = index
 
@@ -579,6 +620,16 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                 if isinstance(locomotive, int):
                     entity: Entity = self.entities[locomotive - 1]
                     schedule.locomotives[i] = Association(entity)
+
+        # Change all wire numbers to use Associations
+        for i, wire in enumerate(self.wires):
+            if isinstance(wire[0], int):
+                entity1 = self.entities[wire[0] - 1]
+                wire[0] = Association(entity1)
+            if isinstance(wire[2], int):
+                entity2 = self.entities[wire[2] - 1]
+                wire[2] = Association(entity2)
+            # self.wires[i] = [Association(entity1), wire[1], Association(entity2), wire[3]]
 
         if validate:
             self.validate(mode=validate).reissue_all()
@@ -883,6 +934,50 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     # =========================================================================
 
     @property
+    def wires(self) -> list[list[int]]:
+        """
+        A list of the wire connections in this blueprint.
+
+        Wires are specified as a list of 4 integers; the first pair of numbers
+        represents the first entity, and the second pair represents the second
+        entity. The first number of each pair represents the ``entity_number``
+        of the corresponding entity in the list, and the second number indicates
+        what type of connection it is.
+
+        TODO: more detail
+
+        :getter: Gets the wires of the Blueprint.
+        :setter: Sets the wires of the Blueprint. Defaults to an empty list if
+            set to ``None``.
+        """
+        return self._root._wires
+
+    @wires.setter
+    def wires(self, value: list[list[int]]) -> None:
+        if value is None:
+            self._root._wires = []
+        else:
+            self._root._wires = value
+
+    # =========================================================================
+
+    @property
+    def stock_connections(self) -> list[dict]:
+        """
+        TODO
+        """
+        return self._root.blueprint.stock_connections
+
+    @stock_connections.setter
+    def stock_connections(self, value: Optional[list[dict]]) -> None:
+        if value is None:
+            self._root.blueprint.stock_connections = []
+        else:
+            self._root.blueprint.stock_connections = value
+
+    # =========================================================================
+
+    @property
     def double_grid_aligned(self) -> bool:
         """
         Whether or not the blueprint is aligned with the double grid, which is
@@ -975,7 +1070,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             self.entities,
             self.tiles,
             self.schedules,
-            self._root._wires,
+            self.wires,
         )
 
         # # Construct a model with the flattened data, not running any validation

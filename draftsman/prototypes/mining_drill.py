@@ -74,7 +74,6 @@ class MiningDrill(
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
         items: Optional[list[ItemRequest]] = [],  # TODO: ItemID
-        connections: Connections = {},
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate_assignment: Union[
@@ -93,7 +92,6 @@ class MiningDrill(
             tile_position=tile_position,
             direction=direction,
             items=items,
-            connections=connections,
             control_behavior=control_behavior,
             tags=tags,
             **kwargs

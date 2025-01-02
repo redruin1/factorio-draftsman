@@ -3,6 +3,7 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
+    ArtilleryAutoTargetMixin,
     RequestItemsMixin,
     ReadAmmoMixin,
     CircuitConditionMixin,
@@ -26,6 +27,7 @@ from typing import Any, Literal, Optional, Union
 
 
 class ArtilleryTurret(
+    ArtilleryAutoTargetMixin,
     RequestItemsMixin,
     ReadAmmoMixin,
     CircuitConditionMixin,
@@ -42,6 +44,7 @@ class ArtilleryTurret(
     """
 
     class Format(
+        ArtilleryAutoTargetMixin.Format,
         RequestItemsMixin.Format,
         ReadAmmoMixin.Format,
         CircuitConditionMixin.Format,
@@ -63,14 +66,6 @@ class ArtilleryTurret(
 
         control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        artillery_auto_targeting: Optional[bool] = Field(
-            True,
-            description="""
-            Whether or not this turret automatically targets enemy structures 
-            in its range.
-            """,
-        )
-
         model_config = ConfigDict(title="ArtilleryTurret")
 
     def __init__(
@@ -79,7 +74,7 @@ class ArtilleryTurret(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
-        connections: Connections = {},
+        artillery_auto_targeting: Optional[bool] = True,
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate_assignment: Union[
@@ -94,36 +89,13 @@ class ArtilleryTurret(
             position=position,
             tile_position=tile_position,
             direction=direction,
-            connections=connections,
+            artillery_auto_targeting=artillery_auto_targeting,
             control_behavior=control_behavior,
             tags=tags,
             **kwargs
         )
 
         self.validate_assignment = validate_assignment
-
-    # =========================================================================
-
-    @property
-    def auto_target(self) -> bool:
-        """
-        TODO
-        """
-        return self._root.artillery_auto_targeting
-
-    @auto_target.setter
-    def auto_target(self, value: Optional[bool]) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                self.Format,
-                self._root,
-                "artillery_auto_targeting",
-                value,
-            )
-            self.control_behavior.artillery_auto_targeting = result
-        else:
-            self.control_behavior.artillery_auto_targeting = value
 
     # =========================================================================
 

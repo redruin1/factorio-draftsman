@@ -144,7 +144,9 @@ class TestConstants:
     def test_orientation_to_direction(self):
         assert Orientation.NORTH.to_direction() == Direction.NORTH
         assert Orientation.NORTHEAST.to_direction() == Direction.NORTH
-        assert Orientation.NORTHEAST.to_direction(eight_way=True) == Direction.NORTHEAST
+        assert (
+            Orientation.NORTHEAST.to_direction(sixteen_way=True) == Direction.NORTHEAST
+        )
 
     def test_orientation_add(self):
         assert Orientation(0.75) + Orientation(0.5) == Orientation(0.25)
@@ -246,12 +248,12 @@ class TestUtils:
     def test_version_tuple_to_string(self):
         assert utils.version_tuple_to_string((1, 15, 2, 3)) == "1.15.2.3"
 
-    def test_get_signal_type(self):
+    def test_get_signal_types(self):
         assert signals.get_signal_types("signal-anything") == {"virtual"}
         assert signals.get_signal_types("water") == {"fluid"}
         assert signals.get_signal_types("wooden-chest") == {"item", "recipe", "entity"}
         with pytest.raises(InvalidSignalError):
-            signals.get_signal_type("incorrect")
+            signals.get_signal_types("incorrect")
 
     def test_signal_dict(self):
         assert signals.signal_dict("signal-anything") == {

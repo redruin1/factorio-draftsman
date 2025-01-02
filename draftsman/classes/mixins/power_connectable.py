@@ -14,23 +14,23 @@ class PowerConnectableMixin(object):
     """
 
     class Format(BaseModel):
-        neighbours: Optional[list[Association.Format]] = Field(
-            [],
-            description="""
-            The 'entity_number's of each neighbouring power pole that this power
-            pole is connected to. Does NOT include power switch copper 
-            connections; see 'connections' key for that.
-            """,
-        )
+        # 1.0
+        # neighbours: Optional[list[Association.Format]] = Field(
+        #     [],
+        #     description="""
+        #     The 'entity_number's of each neighbouring power pole that this power
+        #     pole is connected to. Does NOT include power switch copper
+        #     connections; see 'connections' key for that.
+        #     """,
+        # )
+        pass
 
     def __init__(self, name: str, similar_entities: list[str], **kwargs):
         self._root: __class__.Format
 
         super(PowerConnectableMixin, self).__init__(name, similar_entities, **kwargs)
 
-        self._power_connectable = True
-
-        self.neighbours = kwargs.get("neighbours", [])
+        # self.neighbours = kwargs.get("neighbours", [])
 
     # =========================================================================
 
@@ -53,99 +53,99 @@ class PowerConnectableMixin(object):
 
     # =========================================================================
 
-    @property
-    def neighbours(self) -> list:
-        """
-        The power pole neighbours that this entity connects to.
+    # @property
+    # def neighbours(self) -> list:
+    #     """
+    #     The power pole neighbours that this entity connects to.
 
-        ``neighbours`` is traditionally specified as a list of ``ints``, each
-        one representing the index of the entity in the parent blueprint that
-        this Entity connects to, in 1-indexed notation. For example, if
-        ``entity.neighbours == [1, 2]``, then ``entity`` would have power wires
-        to ``blueprint.entities[0]`` and ``blueprint.entities[1]``.
+    #     ``neighbours`` is traditionally specified as a list of ``ints``, each
+    #     one representing the index of the entity in the parent blueprint that
+    #     this Entity connects to, in 1-indexed notation. For example, if
+    #     ``entity.neighbours == [1, 2]``, then ``entity`` would have power wires
+    #     to ``blueprint.entities[0]`` and ``blueprint.entities[1]``.
 
-        Draftsman implements a more sophisticated neighbours format, where
-        entities themselves (or rather, references to them) are used as the
-        entries of the ``neighbours`` list. This makes connections independent
-        of their location in the parent blueprint, so you can specify power
-        connections even before you've placed all the entities in one. Draftsman
-        uses this format when making connections, but is still compatible with
-        simple integers.
+    #     Draftsman implements a more sophisticated neighbours format, where
+    #     entities themselves (or rather, references to them) are used as the
+    #     entries of the ``neighbours`` list. This makes connections independent
+    #     of their location in the parent blueprint, so you can specify power
+    #     connections even before you've placed all the entities in one. Draftsman
+    #     uses this format when making connections, but is still compatible with
+    #     simple integers.
 
-        .. WARNING::
+    #     .. WARNING::
 
-            Int-based neighbours lists are fragile; if you want to preserve
-            connections in integer format, you have to preserve entity order.
-            Any new entities must be added to the end. Keep this in mind when
-            importing an already-made blueprint string with connections already
-            made.
+    #         Int-based neighbours lists are fragile; if you want to preserve
+    #         connections in integer format, you have to preserve entity order.
+    #         Any new entities must be added to the end. Keep this in mind when
+    #         importing an already-made blueprint string with connections already
+    #         made.
 
-        .. NOTE::
+    #     .. NOTE::
 
-            Power switch wire connections are abnormal; they are not treated as
-            neighbours and instead as special copper circuit connections.
-            Inspect an Entity's ``connections`` attribute if you're looking for
-            those wires.
+    #         Power switch wire connections are abnormal; they are not treated as
+    #         neighbours and instead as special copper circuit connections.
+    #         Inspect an Entity's ``connections`` attribute if you're looking for
+    #         those wires.
 
-        :getter: Gets the neighbours of the Entity.
-        :setter: Sets the neighbours of the Entity. Defaults to an empty list if
-            set to ``None``.
+    #     :getter: Gets the neighbours of the Entity.
+    #     :setter: Sets the neighbours of the Entity. Defaults to an empty list if
+    #         set to ``None``.
 
-        :exception DataFormatError: If set to anything that does not match the
-            specification above.
-        """
-        return self._root.neighbours
+    #     :exception DataFormatError: If set to anything that does not match the
+    #         specification above.
+    #     """
+    #     return self._root.neighbours
 
-    @neighbours.setter
-    def neighbours(self, value: list[Union[int, Association]]):
-        if value is None:
-            self._root.neighbours = []
-        else:
-            self._root.neighbours = value
-
-    # =========================================================================
-
-    def merge(self, other: Format):
-        super().merge(other)
-
-        # Power Neighbours (union of the two sets, not exceeding 5 connections)
-        # Iterate over every association in other (the to-be deleted entity)
-        for association in other.neighbours:
-            # Keep track of whether or not this association was added to self
-            association_added = False
-
-            # Make sure we don't add the same association multiple times
-            if association not in self.neighbours:
-                # Also make sure we don't exceed 5 connections
-                if len(self.neighbours) < 5:
-                    self.neighbours.append(association)
-                    association_added = True
-
-            # However, entities that used to point to `other` still do,
-            # which causes problems since `other` is usually to be deleted
-            # after merging
-            # So we now we find the entity that other used to point to and
-            # iterate over it's neighbours:
-            associated_entity = association()
-            for i, old_association in enumerate(associated_entity.neighbours):
-                # If the association used to point to `other`, make it point
-                # to `self`
-                if old_association == Association(other):
-                    # Only do so, however, if this association is not
-                    # already in the set of neighbours and we added the
-                    # connection before, and if we actually even merged the
-                    # connection in the first place
-                    if (
-                        Association(self) not in associated_entity.neighbours
-                        and association_added
-                    ):
-                        associated_entity.neighbours[i] = Association(self)
-                    else:
-                        # Otherwise, the association points to an entity
-                        # that will likely become invalid, so we remove it
-                        associated_entity.neighbours.remove(old_association)
+    # @neighbours.setter
+    # def neighbours(self, value: list[Union[int, Association]]):
+    #     if value is None:
+    #         self._root.neighbours = []
+    #     else:
+    #         self._root.neighbours = value
 
     # =========================================================================
 
-    def __eq__(self, other) -> bool:
-        return super().__eq__(other) and self.neighbours == other.neighbours
+    # def merge(self, other: Format):
+    #     super().merge(other)
+
+    #     # Power Neighbours (union of the two sets, not exceeding 5 connections)
+    #     # Iterate over every association in other (the to-be deleted entity)
+    #     for association in other.neighbours:
+    #         # Keep track of whether or not this association was added to self
+    #         association_added = False
+
+    #         # Make sure we don't add the same association multiple times
+    #         if association not in self.neighbours:
+    #             # Also make sure we don't exceed 5 connections
+    #             if len(self.neighbours) < 5:
+    #                 self.neighbours.append(association)
+    #                 association_added = True
+
+    #         # However, entities that used to point to `other` still do,
+    #         # which causes problems since `other` is usually to be deleted
+    #         # after merging
+    #         # So we now we find the entity that other used to point to and
+    #         # iterate over it's neighbours:
+    #         associated_entity = association()
+    #         for i, old_association in enumerate(associated_entity.neighbours):
+    #             # If the association used to point to `other`, make it point
+    #             # to `self`
+    #             if old_association == Association(other):
+    #                 # Only do so, however, if this association is not
+    #                 # already in the set of neighbours and we added the
+    #                 # connection before, and if we actually even merged the
+    #                 # connection in the first place
+    #                 if (
+    #                     Association(self) not in associated_entity.neighbours
+    #                     and association_added
+    #                 ):
+    #                     associated_entity.neighbours[i] = Association(self)
+    #                 else:
+    #                     # Otherwise, the association points to an entity
+    #                     # that will likely become invalid, so we remove it
+    #                     associated_entity.neighbours.remove(old_association)
+
+    # =========================================================================
+
+    # def __eq__(self, other) -> bool:
+    #     return super().__eq__(other) and self.neighbours == other.neighbours

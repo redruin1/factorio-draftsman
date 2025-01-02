@@ -998,8 +998,8 @@ def extract_entities(
 
     def add_entities(prototype_name: str):
         if prototype_name not in data.raw:
-            # TODO: handle the case where it's not available, ideally just
-            # passing an empty list
+            # If not present, then typically it means its not present in this version
+            # of the game; thus return an empty list
             entities["of_type"][prototype_name] = []
             return
         for name, contents in convert_table_to_dict(data.raw[prototype_name]).items():
@@ -1061,7 +1061,35 @@ def extract_entities(
     add_entities("loader")
     add_entities("loader-1x1")
     add_entities("locomotive")
-    add_entities("logistic-container")
+
+    # add_entities("logistic-container")
+    entities["of_type"]["logistic-container-passive"] = []
+    entities["of_type"]["logistic-container-active"] = []
+    entities["of_type"]["logistic-container-storage"] = []
+    entities["of_type"]["logistic-container-buffer"] = []
+    entities["of_type"]["logistic-container-request"] = []
+    logi_containers = convert_table_to_dict(data.raw["logistic-container"])
+    for container_name, container in logi_containers.items():
+        if not categorize_entity(container_name, container):
+            continue
+        add_entity(**container, target=(unordered_entities_raw, entities["of_type"]))
+        container_type = container["logistic_mode"]
+        if container_type == "passive-provider":
+            # entities["logistic-container-passive"].append(container)
+            entities["of_type"]["logistic-container-passive"].append(container_name)
+        elif container_type == "active-provider":
+            # entities["logistic-container-active"].append(container)
+            entities["of_type"]["logistic-container-active"].append(container_name)
+        elif container_type == "storage":
+            # entities["logistic-container-storage"].append(container)
+            entities["of_type"]["logistic-container-storage"].append(container_name)
+        elif container_type == "buffer":
+            # entities["logistic-container-buffer"].append(container)
+            entities["of_type"]["logistic-container-buffer"].append(container_name)
+        elif container_type == "requester":
+            # entities["logistic-container-request"].append(container)
+            entities["of_type"]["logistic-container-request"].append(container_name)
+
     add_entities("market")
     add_entities("mining-drill")
     add_entities("offshore-pump")

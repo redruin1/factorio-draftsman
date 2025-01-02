@@ -23,7 +23,9 @@ class TestFluidWagon:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            FluidWagon("fluid-wagon", unused_keyword="whatever").validate().reissue_all()
+            FluidWagon(
+                "fluid-wagon", unused_keyword="whatever"
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             FluidWagon("this is not a fluid wagon").validate().reissue_all()
         # Warn if the locomotive is not on a rail (close enough to one?)

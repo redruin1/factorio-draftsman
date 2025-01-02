@@ -10,6 +10,7 @@ import pytest
 if len(player_ports) == 0:
     pytest.skip("No player ports to test", allow_module_level=True)
 
+
 class TestPlayerPort:
     def test_contstructor_init(self):
         port = PlayerPort()

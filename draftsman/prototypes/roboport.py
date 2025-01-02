@@ -77,7 +77,6 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
         name: Optional[str] = get_first(roboports),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        connections: Connections = {},
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate_assignment: Union[
@@ -96,7 +95,6 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
             roboports,
             position=position,
             tile_position=tile_position,
-            connections=connections,
             control_behavior=control_behavior,
             tags=tags,
             **kwargs

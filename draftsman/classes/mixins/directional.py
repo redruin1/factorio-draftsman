@@ -106,13 +106,23 @@ class DirectionalMixin:
                 # TODO: would probably be better to do this in env.py, but how?
                 if super().collision_set:
                     _rotated_collision_sets[name] = {}
-                    for i in {0, 2, 4, 6}:
+                    for i in {
+                        Direction.NORTH,
+                        Direction.EAST,
+                        Direction.SOUTH,
+                        Direction.WEST,
+                    }:
                         _rotated_collision_sets[name][i] = super().collision_set.rotate(
                             i
                         )
                 else:
                     _rotated_collision_sets[name] = {}
-                    for i in {0, 2, 4, 6}:
+                    for i in {
+                        Direction.NORTH,
+                        Direction.EAST,
+                        Direction.SOUTH,
+                        Direction.WEST,
+                    }:
                         _rotated_collision_sets[name][i] = None
                 # self._collision_set_rotation = _rotated_collision_sets[self.name]
 

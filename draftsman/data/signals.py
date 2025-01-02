@@ -64,7 +64,10 @@ def add_signal(name: str, type: str):
         raise ValueError("Signal type must be one of {}".format(permitted_types))
 
     raw[name] = {"name": name, "type": type}
-    type_of[name].add(type)
+    try:
+        type_of[name].add(type)
+    except KeyError:
+        type_of[name] = {type}
     # TODO: sorting
     if type == "virtual":
         virtual.append(name)

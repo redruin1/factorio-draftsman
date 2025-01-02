@@ -37,7 +37,6 @@ class TestInserter:
                 "circuit_read_hand_contents": True,
                 "circuit_hand_read_mode": InserterReadMode.PULSE,
             },
-            connections={"1": {"green": [{"entity_id": 2, "circuit_id": 1}]}},
         )
         assert inserter.to_dict() == {
             "name": "inserter",
@@ -57,7 +56,6 @@ class TestInserter:
                 "circuit_read_hand_contents": True,
                 "circuit_hand_read_mode": InserterReadMode.PULSE,
             },
-            "connections": {"1": {"green": [{"entity_id": 2, "circuit_id": 1}]}},
         }
 
         inserter = Inserter(
@@ -79,7 +77,9 @@ class TestInserter:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Inserter(position=[0, 0], direction=Direction.WEST, invalid_keyword=5).validate().reissue_all()
+            Inserter(
+                position=[0, 0], direction=Direction.WEST, invalid_keyword=5
+            ).validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
             Inserter(
                 "inserter", control_behavior={"this is": ["also", "very", "wrong"]}
@@ -99,10 +99,9 @@ class TestInserter:
             Inserter("inserter", direction="incorrect").validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            Inserter("inserter", override_stack_size="incorrect").validate().reissue_all()
-
-        with pytest.raises(DataFormatError):
-            Inserter("inserter", connections="incorrect").validate().reissue_all()
+            Inserter(
+                "inserter", override_stack_size="incorrect"
+            ).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
             Inserter("inserter", control_behavior="incorrect").validate().reissue_all()
@@ -304,9 +303,7 @@ class TestInserter:
         assert inserter.to_dict() == {
             "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {
-                "stack_control_input_signal": {"name": "unknown"}
-            },
+            "control_behavior": {"stack_control_input_signal": {"name": "unknown"}},
         }
 
         with pytest.raises(DataFormatError):

@@ -63,7 +63,6 @@ class TransportBelt(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
-        connections: Connections = {},
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate_assignment: Union[
@@ -81,7 +80,6 @@ class TransportBelt(
             position=position,
             tile_position=tile_position,
             direction=direction,
-            connections=connections,
             control_behavior=control_behavior,
             tags=tags,
             **kwargs

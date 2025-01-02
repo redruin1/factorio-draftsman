@@ -9,7 +9,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
-from draftsman.signatures import uint32
+from draftsman.signatures import ItemRequest, uint32
 from draftsman.utils import get_first
 from draftsman.warning import ItemCapacityWarning, ItemLimitationWarning
 
@@ -73,36 +73,36 @@ class Furnace(
 
             return value
 
-        @field_validator("items")
-        @classmethod
-        def ensure_input_ingredients_dont_exceed_stack_size(
-            cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-        ):
-            """
-            Warns if the amount of a particular item requested exceeds 1 stack
-            of that item, indicating that some items will be returned when
-            placed.
-            """
-            if not info.context or value is None:
-                return value
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
+        # @field_validator("items") # TODO: reimplement
+        # @classmethod
+        # def ensure_input_ingredients_dont_exceed_stack_size(
+        #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+        # ):
+        #     """
+        #     Warns if the amount of a particular item requested exceeds 1 stack
+        #     of that item, indicating that some items will be returned when
+        #     placed.
+        #     """
+        #     if not info.context or value is None:
+        #         return value
+        #     if info.context["mode"] <= ValidationMode.MINIMUM:
+        #         return value
 
-            entity: "Furnace" = info.context["object"]
-            warning_list: list = info.context["warning_list"]
+        #     entity: "Furnace" = info.context["object"]
+        #     warning_list: list = info.context["warning_list"]
 
-            for item, count in entity.ingredient_items.items():
-                stack_size = items.raw[item]["stack_size"]
-                if count > stack_size:
-                    warning_list.append(
-                        ItemCapacityWarning(
-                            "Cannot request more than {} of '{}' to a '{}'; will not fit in ingredient inputs".format(
-                                stack_size, item, entity.name
-                            )
-                        )
-                    )
+        #     for item in entity.ingredient_items:
+        #         stack_size = items.raw[item["id"]["name"]]["stack_size"]
+        #         if count > stack_size:
+        #             warning_list.append(
+        #                 ItemCapacityWarning(
+        #                     "Cannot request more than {} of '{}' to a '{}'; will not fit in ingredient inputs".format(
+        #                         stack_size, item, entity.name
+        #                     )
+        #                 )
+        #             )
 
-            return value
+        #     return value
 
         model_config = ConfigDict(title="Furnace")
 
@@ -111,7 +111,7 @@ class Furnace(
         name: Optional[str] = get_first(furnaces),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        items: dict[str, uint32] = {},  # TODO: ItemID
+        items: Optional[list[ItemRequest]] = [],
         tags: dict[str, Any] = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -135,7 +135,9 @@ class Furnace(
                 for recipe_name in total_recipes:
                     # TODO: what about expensive mode?
                     _valid_input_ingredients[name].update(
-                        recipes.get_recipe_ingredients(recipe_name)
+                        recipes.get_recipe_ingredients(
+                            recipe_name, "normal"
+                        )  # TODO: handle quality
                     )
             else:
                 _valid_input_ingredients[name] = None
@@ -187,7 +189,9 @@ class Furnace(
         return set(
             item
             for recipe_name in total_recipes
-            for item in recipes.get_recipe_ingredients(recipe_name)
+            for item in recipes.get_recipe_ingredients(
+                recipe_name, "normal"
+            )  # TODO: how to handle qualities?
         )
 
     # =========================================================================

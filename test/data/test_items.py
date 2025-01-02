@@ -79,11 +79,11 @@ class TestItemsData:
     def test_get_stack_size(self):
         assert items.get_stack_size("artillery-shell") == 1
         assert items.get_stack_size("nuclear-fuel") == 1
-        assert items.get_stack_size("rocket-fuel") == 10
+        assert items.get_stack_size("rocket-fuel") == 20
         assert items.get_stack_size("iron-ore") == 50
         assert items.get_stack_size("iron-plate") == 100
         assert items.get_stack_size("electronic-circuit") == 200
-        assert items.get_stack_size("space-science-pack") == 2000
+        assert items.get_stack_size("space-science-pack") == 200
 
         # TODO: should this raise an error instead?
         assert items.get_stack_size("unknown!") == None

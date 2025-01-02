@@ -1,5 +1,6 @@
 # __init__.py
 
+from draftsman.classes.mixins.artillery_auto_target import ArtilleryAutoTargetMixin
 from draftsman.classes.mixins.burner_energy_source import BurnerEnergySourceMixin
 from draftsman.classes.mixins.circuit_condition import CircuitConditionMixin
 from draftsman.classes.mixins.circuit_connectable import CircuitConnectableMixin

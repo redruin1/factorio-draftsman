@@ -88,6 +88,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         position: Union[Vector, PrimitiveVector] = (0, 0),
         entities: Union[list[EntityLike], EntityList] = [],
         schedules: Union[list[Schedule], ScheduleList] = [],
+        wires: Optional[list[list[int]]] = None,
         string: str = None,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -108,7 +109,7 @@ class Group(Transformable, EntityCollection, EntityLike):
             string, and all child entities retain their specified positions as
             set.
         :param entities: A list of entities to contain within this Group.
-        :param schedules: A list of schedules to associate with this group.
+        :param schedules: A list of schedules to associate with this Group.
         """
         super().__init__()  # EntityLike
 
@@ -133,9 +134,11 @@ class Group(Transformable, EntityCollection, EntityLike):
         if string is not None:
             self.load_from_string(string)
         else:
-            # TODO: this needs to be setup() in order to properly convert associations
-            self.entities = entities
-            self.schedules = schedules
+            self.setup(
+                entities=entities,
+                schedules=schedules,
+                wires=[] if wires is None else wires,
+            )
 
         # TODO: the position of this shouldn't matter, but in practice it does,
         # investigate
@@ -200,12 +203,16 @@ class Group(Transformable, EntityCollection, EntityLike):
             for i, locomotive in enumerate(schedule.locomotives):
                 schedule.locomotives[i] = Association(self.entities[locomotive - 1])
 
+        # TODO: wires
+
     @reissue_warnings
     def setup(self, **kwargs) -> None:  # TODO: kwargs
         """
         Sets up a Group using a blueprint JSON dict. Currently only reads the
         ``"entities"`` and ``"schedules"`` keys and loads them into
         :py:attr:`Group.entities` and :py:attr:`Group.schedules`.
+
+        TODO: update
         """
         if "entities" in kwargs:
             self._entities = EntityList(self, kwargs.pop("entities"))
@@ -216,6 +223,9 @@ class Group(Transformable, EntityCollection, EntityLike):
             self._schedules = ScheduleList(kwargs.pop("schedules"))
         else:
             self._schedules = ScheduleList()
+
+        if "wires" in kwargs:
+            self._wires = kwargs.pop("wires")
 
     # =========================================================================
 
@@ -476,6 +486,22 @@ class Group(Transformable, EntityCollection, EntityLike):
 
     # =========================================================================
 
+    @property
+    def wires(self) -> list[list[int]]:
+        """
+        TODO
+        """
+        return self._wires
+
+    @wires.setter
+    def wires(self, value: list[list[int]]) -> None:
+        if value is None:
+            self._wires = []
+        else:
+            self._wires = value
+
+    # =========================================================================
+
     def get(self) -> list[EntityLike]:
         """
         Gets all the child-most ``Entity`` instances in this ``Group`` and
@@ -595,5 +621,13 @@ class Group(Transformable, EntityCollection, EntityLike):
             for j, locomotive in enumerate(schedule.locomotives):
                 # Replace the old one with the copied one
                 result.schedules[i].locomotives[j] = Association(memo[id(locomotive())])
+
+        # Wires
+        for i, old_wire in enumerate(self.wires):
+            # Replace the old one with the copied one
+            old_entity_1: Association = old_wire[0]
+            old_entity_2: Association = old_wire[2]
+            result.wires[i][0] = Association(memo[id(old_entity_1())])
+            result.wires[i][2] = Association(memo[id(old_entity_2())])
 
         return result

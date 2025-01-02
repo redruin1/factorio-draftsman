@@ -41,7 +41,9 @@ class TestInfinityContainer:
         with pytest.warns(UnknownKeywordWarning):
             InfinityContainer(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            InfinityContainer("this is not an infinity container").validate().reissue_all()
+            InfinityContainer(
+                "this is not an infinity container"
+            ).validate().reissue_all()
 
     def test_set_infinity_settings(self):
         container = InfinityContainer()
@@ -190,7 +192,6 @@ class TestInfinityContainer:
         container1 = InfinityContainer("infinity-chest")
         container2 = InfinityContainer(
             "infinity-chest",
-            items={"copper-plate": 100},
             infinity_settings={
                 "remove_unfiltered_items": True,
                 "filters": [
@@ -202,7 +203,6 @@ class TestInfinityContainer:
         container1.merge(container2)
         del container2
 
-        assert container1.items == {"copper-plate": 100}
         assert (
             container1.infinity_settings
             == InfinityContainer.Format.InfinitySettings(

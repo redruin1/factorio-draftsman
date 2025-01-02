@@ -21,7 +21,9 @@ class TestReactor:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Reactor("nuclear-reactor", unused_keyword="whatever").validate().reissue_all()
+            Reactor(
+                "nuclear-reactor", unused_keyword="whatever"
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Reactor("this is not a reactor").validate().reissue_all()
 
@@ -32,13 +34,15 @@ class TestReactor:
 
         reactor.set_item_request("uranium-fuel-cell", 50)
         assert reactor.items == [
-            ItemRequest(**{
-                "id": "uranium-fuel-cell",
-                "items": {
-                    "in_inventory": [{"inventory": 1, "stack": 0, "count": 50}],
-                    "grid_count": 0
+            ItemRequest(
+                **{
+                    "id": "uranium-fuel-cell",
+                    "items": {
+                        "in_inventory": [{"inventory": 1, "stack": 0, "count": 50}],
+                        "grid_count": 0,
+                    },
                 }
-            })
+            )
         ]
 
         # TODO: reimplment
@@ -55,20 +59,26 @@ class TestReactor:
         # ]
 
         with pytest.warns(FuelLimitationWarning):
-            reactor.items = [{
-                "id": {"name": "coal"},
-                "items": {
-                    "in_inventory": [{"inventory": 1, "stack": 0, "count": 50}],
-                    "grid_count": 0
+            reactor.items = [
+                {
+                    "id": {"name": "coal"},
+                    "items": {
+                        "in_inventory": [{"inventory": 1, "stack": 0, "count": 50}],
+                        "grid_count": 0,
+                    },
                 }
-            }]
-        assert reactor.items == [ItemRequest(**{
-            "id": {"name": "coal"},
-            "items": {
-                "in_inventory": [{"inventory": 1, "stack": 0, "count": 50}],
-                "grid_count": 0
-            }
-        })]
+            ]
+        assert reactor.items == [
+            ItemRequest(
+                **{
+                    "id": {"name": "coal"},
+                    "items": {
+                        "in_inventory": [{"inventory": 1, "stack": 0, "count": 50}],
+                        "grid_count": 0,
+                    },
+                }
+            )
+        ]
 
         # with pytest.warns(ItemLimitationWarning): # TODO: reimplement
         #     reactor.items = reactor.items = [{

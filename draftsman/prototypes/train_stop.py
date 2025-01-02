@@ -14,7 +14,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID, uint32
+from draftsman.signatures import DraftsmanBaseModel, SignalID, uint32
 from draftsman.utils import get_first
 
 from draftsman.data.entities import train_stops
@@ -140,7 +140,6 @@ class TrainStop(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
-        connections: Connections = {},
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate_assignment: Union[
@@ -161,7 +160,6 @@ class TrainStop(
             position=position,
             tile_position=tile_position,
             direction=direction,
-            connections=connections,
             control_behavior=control_behavior,
             tags=tags,
             **kwargs

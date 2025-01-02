@@ -8,7 +8,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
-from draftsman.signatures import Connections, uint16, uint32
+from draftsman.signatures import ItemRequest, uint16, uint32
 from draftsman.utils import get_first
 
 from draftsman.data.entities import containers
@@ -36,8 +36,7 @@ class Container(InventoryMixin, RequestItemsMixin, CircuitConnectableMixin, Enti
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         bar: uint16 = None,
-        items: dict[str, uint32] = {},  # TODO: ItemID
-        connections: Connections = {},
+        items: Optional[list[ItemRequest]] = [],  # TODO: ItemID
         tags: dict[str, Any] = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -55,7 +54,6 @@ class Container(InventoryMixin, RequestItemsMixin, CircuitConnectableMixin, Enti
             tile_position=tile_position,
             bar=bar,
             items=items,
-            connections=connections,
             tags=tags,
             **kwargs
         )

@@ -2,13 +2,14 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
+    EquipmentGridMixin,
     RequestItemsMixin,
     InventoryFilterMixin,
     OrientationMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Orientation, ValidationMode
-from draftsman.signatures import uint32
+from draftsman.signatures import ItemRequest
 from draftsman.utils import get_first
 
 from draftsman.data.entities import cargo_wagons
@@ -17,12 +18,19 @@ from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
 
-class CargoWagon(RequestItemsMixin, InventoryFilterMixin, OrientationMixin, Entity):
+class CargoWagon(
+    EquipmentGridMixin,
+    RequestItemsMixin,
+    InventoryFilterMixin,
+    OrientationMixin,
+    Entity,
+):
     """
     A train wagon that holds items as cargo.
     """
 
     class Format(
+        EquipmentGridMixin.Format,
         RequestItemsMixin.Format,
         InventoryFilterMixin.Format,
         OrientationMixin.Format,
@@ -36,7 +44,9 @@ class CargoWagon(RequestItemsMixin, InventoryFilterMixin, OrientationMixin, Enti
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         orientation: Orientation = Orientation.NORTH,
-        items: dict[str, uint32] = {},  # TODO: ItemID
+        enable_logistics_while_moving: Optional[bool] = True,
+        grid: list[Format.EquipmentComponent] = [],
+        items: Optional[list[ItemRequest]] = [],  # TODO: ItemID
         inventory: Format.InventoryFilters = {},
         tags: dict[str, Any] = {},
         validate_assignment: Union[
@@ -50,6 +60,8 @@ class CargoWagon(RequestItemsMixin, InventoryFilterMixin, OrientationMixin, Enti
             position=position,
             tile_position=tile_position,
             orientation=orientation,
+            enable_logistics_while_moving=enable_logistics_while_moving,
+            grid=grid,
             items=items,
             inventory=inventory,
             tags=tags,

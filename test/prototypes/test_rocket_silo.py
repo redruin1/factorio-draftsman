@@ -11,15 +11,14 @@ import pytest
 
 class TestRocketSilo:
     def test_constructor_init(self):
-        silo = RocketSilo(transitional_request_index=12, control_behavior={
-            "read_items_mode": SiloReadMode.READ_ORBITAL_REQUESTS
-        })
+        silo = RocketSilo(
+            transitional_request_index=12,
+            control_behavior={"read_items_mode": SiloReadMode.READ_ORBITAL_REQUESTS},
+        )
         assert silo.to_dict() == {
             "name": "rocket-silo",
             "position": {"x": 4.5, "y": 4.5},
-            "control_behavior": {
-                "read_items_mode": 2
-            },
+            "control_behavior": {"read_items_mode": 2},
             "recipe": "rocket-part",
             "transitional_request_index": 12,
         }
@@ -56,7 +55,9 @@ class TestRocketSilo:
 
     def test_merge(self):
         silo1 = RocketSilo("rocket-silo")
-        silo2 = RocketSilo("rocket-silo", transitional_request_index=10, tags={"some": "stuff"})
+        silo2 = RocketSilo(
+            "rocket-silo", transitional_request_index=10, tags={"some": "stuff"}
+        )
 
         silo1.merge(silo2)
         del silo2

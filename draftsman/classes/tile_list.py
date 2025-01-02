@@ -10,7 +10,7 @@ from draftsman.signatures import DraftsmanBaseModel
 
 from collections.abc import MutableSequence
 from copy import deepcopy
-from pydantic import ValidationError
+from pydantic import ConfigDict, ValidationError
 from typing import (
     Any,
     Callable,
@@ -35,6 +35,8 @@ class TileList(Exportable, MutableSequence):
         _root: List[Tile.Format]  # TODO: TileLike?
 
         root: List[Any]  # TODO: there should be a way to validate this
+
+        model_config = ConfigDict(revalidate_instances="always")
 
     def __init__(
         self,
@@ -175,6 +177,11 @@ class TileList(Exportable, MutableSequence):
 
         output.warning_list += context["warning_list"]
 
+        for tile in self:
+            result = tile.validate(mode=mode, force=force)
+            output.error_list += result.error_list
+            output.warning_list += result.warning_list
+
         return output
 
     def union(self, other: "TileList") -> "TileList":
@@ -245,7 +252,7 @@ class TileList(Exportable, MutableSequence):
         self.spatial_map.remove(self._root[idx])
 
         if self.validate_assignment:
-            # value.validate(mode=self.validate_assignment).reissue_all()
+            value.validate(mode=self.validate_assignment).reissue_all()
             self.spatial_map.validate_insert(value, merge=False)
 
         self.spatial_map.add(value, merge=False)

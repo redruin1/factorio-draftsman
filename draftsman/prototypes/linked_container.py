@@ -5,7 +5,7 @@ from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import InventoryMixin, RequestItemsMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
-from draftsman.signatures import uint16, uint32
+from draftsman.signatures import ItemRequest, uint16, uint32
 from draftsman.utils import get_first
 
 from draftsman.data.entities import linked_containers
@@ -50,7 +50,7 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         bar: uint16 = None,
         link_id: uint32 = 0,
-        items: dict[str, uint32] = {},  # TODO: ItemID
+        items: Optional[list[ItemRequest]] = [],
         tags: dict[str, Any] = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]

@@ -11,18 +11,16 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import LogisticModeOfOperation, ValidationMode
-from draftsman.data.entities import of_type
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
-    Connections,
     DraftsmanBaseModel,
+    ItemRequest,
     RequestFilter,
     uint16,
-    uint32,
 )
 from draftsman.utils import get_first
 
-# from draftsman.data.entities import logistic_buffer_containers
+from draftsman.data.entities import logistic_buffer_containers
 
 from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
@@ -59,13 +57,12 @@ class LogisticBufferContainer(
 
     def __init__(
         self,
-        name: Optional[str] = get_first(of_type["logistic-container"]),
+        name: Optional[str] = get_first(logistic_buffer_containers),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         bar: uint16 = None,
         request_filters: list[RequestFilter] = [],
-        items: dict[str, uint32] = {},  # TODO: ItemID
-        connections: Connections = {},
+        items: Optional[list[ItemRequest]] = {},
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate_assignment: Union[
@@ -79,13 +76,12 @@ class LogisticBufferContainer(
 
         super(LogisticBufferContainer, self).__init__(
             name,
-            of_type["logistic-container"],
+            logistic_buffer_containers,
             position=position,
             tile_position=tile_position,
             bar=bar,
             request_filters=request_filters,
             items=items,
-            connections=connections,
             control_behavior=control_behavior,
             tags=tags,
             **kwargs

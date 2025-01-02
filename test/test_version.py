@@ -2,6 +2,7 @@
 
 import draftsman
 
+
 class TestVersion:
     def test_versions(self):
         assert draftsman.__version__ == "2.0.0"

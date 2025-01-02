@@ -1,6 +1,7 @@
 # radar.py
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.mixins import CircuitConnectableMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.utils import get_first
@@ -11,12 +12,12 @@ from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
 
-class Radar(Entity):
+class Radar(CircuitConnectableMixin, Entity):
     """
     An entity that scans neighbouring chunks periodically.
     """
 
-    class Format(Entity.Format):
+    class Format(CircuitConnectableMixin.Format, Entity.Format):
         model_config = ConfigDict(title="Radar")
 
     def __init__(

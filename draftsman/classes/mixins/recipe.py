@@ -28,8 +28,8 @@ class RecipeMixin:
         recipe: Optional[str] = Field(
             None, description="""The name of the entity's selected recipe."""
         )
-        recipe_quality: Literal[
-            "normal", "uncommon", "rare", "epic", "legendary"
+        recipe_quality: Optional[
+            Literal["normal", "uncommon", "rare", "epic", "legendary"]
         ] = Field(
             "normal", description="""The specified quality of the selected recipe."""
         )
@@ -99,11 +99,11 @@ class RecipeMixin:
             # TODO: display all items that don't fit with the current recipe in
             # one warnings
             for item in entity.items:
-                if item not in entity.allowed_items:
+                if item["id"]["name"] not in entity.allowed_items:
                     warning_list.append(
                         ItemLimitationWarning(
                             "Item '{}' is not used with the current recipe ({})".format(
-                                item, entity.recipe
+                                item["id"]["name"], entity.recipe
                             ),
                         )
                     )

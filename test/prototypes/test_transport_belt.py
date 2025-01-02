@@ -16,7 +16,6 @@ class TestTransportBelt:
             "fast-transport-belt",
             tile_position=[0, 0],
             direction=Direction.EAST,
-            connections={"1": {"green": [{"entity_id": 1}]}},
             control_behavior={
                 "circuit_enabled": True,
                 "circuit_condition": {
@@ -42,7 +41,6 @@ class TestTransportBelt:
             "name": "fast-transport-belt",
             "direction": Direction.EAST,
             "position": {"x": 0.5, "y": 0.5},
-            "connections": {"1": {"green": [{"entity_id": 1}]}},
             "control_behavior": {
                 "circuit_enabled": True,
                 "circuit_condition": {
@@ -87,10 +85,6 @@ class TestTransportBelt:
             belt.validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            belt = TransportBelt("transport-belt", connections=["very", "wrong"])
-            belt.validate().reissue_all()
-
-        with pytest.raises(DataFormatError):
             belt = TransportBelt(
                 "transport-belt",
                 control_behavior=["also", "very", "wrong"],
@@ -99,7 +93,7 @@ class TestTransportBelt:
 
     def test_set_circuit_enabled(self):
         belt = TransportBelt("transport-belt")
-        assert belt.circuit_enabled == False # Default
+        assert belt.circuit_enabled == False  # Default
         assert belt.to_dict() == {
             "name": "transport-belt",
             "position": {"x": 0.5, "y": 0.5},

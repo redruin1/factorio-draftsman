@@ -41,8 +41,6 @@ class TestMiningDrill:
         with pytest.raises(DataFormatError):
             MiningDrill(items="incorrect").validate().reissue_all()
         with pytest.raises(DataFormatError):
-            MiningDrill(connections="incorrect").validate().reissue_all()
-        with pytest.raises(DataFormatError):
             MiningDrill(control_behavior="incorrect").validate().reissue_all()
 
     def test_set_item_request(self):
@@ -62,7 +60,7 @@ class TestMiningDrill:
                                 "count": 3,
                             }
                         ]
-                    }
+                    },
                 }
             ],
         }
@@ -169,8 +167,18 @@ class TestMiningDrill:
         drill2 = MiningDrill(
             "electric-mining-drill",
             items=[
-                {"id": {"name": "productivity-module"}, "items": {"in_inventory": [{"inventory": 1, "stack": 0, "count": 1}]}},
-                {"id": {"name": "productivity-module-2"}, "items": {"in_inventory": [{"inventory": 1, "stack": 1, "count": 1}]}}
+                {
+                    "id": {"name": "productivity-module"},
+                    "items": {
+                        "in_inventory": [{"inventory": 1, "stack": 0, "count": 1}]
+                    },
+                },
+                {
+                    "id": {"name": "productivity-module-2"},
+                    "items": {
+                        "in_inventory": [{"inventory": 1, "stack": 1, "count": 1}]
+                    },
+                },
             ],
             tags={"some": "stuff"},
         )
@@ -179,8 +187,22 @@ class TestMiningDrill:
         del drill2
 
         assert drill1.items == [
-            ItemRequest(**{"id": "productivity-module", "items": {"in_inventory": [{"inventory": 1, "stack": 0, "count": 1}]}}),
-            ItemRequest(**{"id": "productivity-module-2", "items": {"in_inventory": [{"inventory": 1, "stack": 1, "count": 1}]}})
+            ItemRequest(
+                **{
+                    "id": "productivity-module",
+                    "items": {
+                        "in_inventory": [{"inventory": 1, "stack": 0, "count": 1}]
+                    },
+                }
+            ),
+            ItemRequest(
+                **{
+                    "id": "productivity-module-2",
+                    "items": {
+                        "in_inventory": [{"inventory": 1, "stack": 1, "count": 1}]
+                    },
+                }
+            ),
         ]
         assert drill1.tags == {"some": "stuff"}
 

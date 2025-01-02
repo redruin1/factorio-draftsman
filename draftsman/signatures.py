@@ -495,29 +495,29 @@ class Icon(DraftsmanBaseModel):
         ..., description="""Numerical index of the icon, 1-based."""
     )  # TODO: is it numerical order which determines appearance, or order in parent list?
 
-    # @classmethod
-    # def resolve_shorthand(cls, value):
-    #     try:
-    #         result = []
-    #         for i, signal in enumerate(value):
-    #             if isinstance(signal, str)
-    #                 result.append({"index": i + 1, "signal": signal})
-    #             else:
-    #                 result.append(signal)
-    #         return result
-    #     except Exception:
-    #         return value
+    @classmethod
+    def resolve_shorthand(cls, value):
+        try:
+            result = []
+            for i, signal in enumerate(value):
+                if isinstance(signal, str):
+                    result.append({"index": i + 1, "signal": signal})
+                else:
+                    result.append(signal)
+            return result
+        except Exception:
+            return value
 
-    #     if isinstance(value, Sequence):
-    #         result = [None] * len(value)
-    #         for i, signal in enumerate(value):
-    #             if isinstance(signal, str):
-    #                 result[i] = signal_dict(signal)
-    #             else:
-    #                 result[i] = signal
-    #         return result
-    #     else:
-    #         return value
+        # if isinstance(value, Sequence):
+        #     result = [None] * len(value)
+        #     for i, signal in enumerate(value):
+        #         if isinstance(signal, str):
+        #             result[i] = signal_dict(signal)
+        #         else:
+        #             result[i] = signal
+        #     return result
+        # else:
+        #     return value
 
 
 def normalize_icons(value: Any):
@@ -699,7 +699,9 @@ class NetworkSpecification(DraftsmanBaseModel):
             return value
 
 
-class Condition(DraftsmanBaseModel):
+class Condition(
+    DraftsmanBaseModel
+):  # TODO: split into SimpleCondition (no circuit network selection) and CombinatorCondition (circuit network selection)
     first_signal: Optional[SignalID] = Field(
         None,
         description="""
@@ -1265,7 +1267,6 @@ class QualityFilter(DraftsmanBaseModel):
             return conversions[input]
         else:
             return input
-
 
 
 class ItemSpecification(DraftsmanBaseModel):

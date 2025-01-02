@@ -241,9 +241,7 @@ class EntityList(Exportable, MutableSequence):
         # Convert to new Entity if constructed via string keyword
         new = False
         if isinstance(name, str):
-            print(kwargs)
             entitylike = new_entity(name, **kwargs)
-            print("new entity: ", entitylike)
             if entitylike is None:
                 return
             new = True
@@ -528,9 +526,9 @@ class EntityList(Exportable, MutableSequence):
         self.spatial_map.recursive_remove(self._root[idx])
 
         # Check for overlapping entities
-        validate = self._parent.validate_assignment
-        if validate:  # self.validate_assignment
-            value.validate(mode=validate).reissue_all()
+        # validate = self._parent.validate_assignment
+        if self.validate_assignment:
+            value.validate(mode=self.validate_assignment).reissue_all()
             self.spatial_map.validate_insert(value, False)
 
         # Add the new entity and its children

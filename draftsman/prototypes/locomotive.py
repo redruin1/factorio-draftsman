@@ -1,7 +1,12 @@
 # locomotive.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import RequestItemsMixin, ColorMixin, OrientationMixin
+from draftsman.classes.mixins import (
+    EquipmentGridMixin,
+    RequestItemsMixin,
+    ColorMixin,
+    OrientationMixin,
+)
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Orientation, ValidationMode
 from draftsman.signatures import ItemRequest
@@ -13,12 +18,15 @@ from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
 
-class Locomotive(RequestItemsMixin, ColorMixin, OrientationMixin, Entity):
+class Locomotive(
+    EquipmentGridMixin, RequestItemsMixin, ColorMixin, OrientationMixin, Entity
+):
     """
     A train car that moves other wagons around using a fuel.
     """
 
     class Format(
+        EquipmentGridMixin.Format,
         RequestItemsMixin.Format,
         ColorMixin.Format,
         OrientationMixin.Format,
@@ -32,6 +40,8 @@ class Locomotive(RequestItemsMixin, ColorMixin, OrientationMixin, Entity):
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         orientation: Orientation = Orientation.NORTH,
+        enable_logistics_while_moving: Optional[bool] = True,
+        grid: list[Format.EquipmentComponent] = [],
         items: Optional[list[ItemRequest]] = [],
         tags: dict[str, Any] = {},
         validate_assignment: Union[
@@ -45,6 +55,8 @@ class Locomotive(RequestItemsMixin, ColorMixin, OrientationMixin, Entity):
             position=position,
             tile_position=tile_position,
             orientation=orientation,
+            enable_logistics_while_moving=enable_logistics_while_moving,
+            grid=grid,
             items=items,
             tags=tags,
             **kwargs

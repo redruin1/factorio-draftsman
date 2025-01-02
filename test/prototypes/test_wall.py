@@ -200,7 +200,6 @@ class TestWall:
         # Import from correct dictionary
         wall = Wall(
             "stone-wall",
-            connections={"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
             control_behavior={
                 "circuit_open_gate": True,
                 "circuit_condition": {
@@ -217,7 +216,6 @@ class TestWall:
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
-            "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
             "control_behavior": {
                 # "circuit_open_gate": True, # Default
                 "circuit_condition": {
@@ -235,7 +233,6 @@ class TestWall:
         with pytest.raises(DataFormatError):
             wall = Wall(
                 "stone-wall",
-                connections="incorrect",
                 control_behavior="incorrect",
             )
             wall.validate(mode=vm.STRICT).reissue_all()
@@ -265,7 +262,6 @@ class TestWall:
         # Import from correct dictionary
         wall = Wall(
             "stone-wall",
-            connections={"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
             control_behavior={
                 "circuit_open_gate": True,
                 "circuit_condition": {
@@ -282,7 +278,6 @@ class TestWall:
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
-            "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
             "control_behavior": {
                 # "circuit_open_gate": True, # Default
                 "circuit_condition": {
@@ -300,7 +295,6 @@ class TestWall:
         with pytest.raises(DataFormatError):
             wall = Wall(
                 "stone-wall",
-                connections="incorrect",
                 control_behavior="incorrect",
             )
             wall.validate(mode=vm.PEDANTIC).reissue_all()

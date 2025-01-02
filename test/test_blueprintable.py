@@ -73,74 +73,100 @@ class TestBlueprintUtils:
 
         # Test description key
         blueprintable = get_blueprintable_from_string(
-            "0eNqllNuOozAMhl8lytWuBCOgnMqr7FRVAJdaCglKwnQ6Fe8+Tumy2i6jbTWICxLb/+fYxBdeyxEGg8rx6sJbsI3BwaFWvOInYPaoR9myDhw7CaNQdZaJWo+O/ZBwcMxpZrA7up/Vq3pVIRvVoE9goGU1iEYrdkJ3ZEqzXrejBLvm4/e+9r6zwOEAjWMGGsA3MFcXYS30tQSzeJEZB+ABR4q1vPp14RY7JaQ/pDuTqeLooCcPJXq/mjF8ohDVwjuv4mkXcFAOHcKscF2c92rsazDksMSCpJQMNiEoMN05pGKCOYjGJzBoi3M5L5xUwzzfBvxMH2WZEqwe6Txmb/GDhOJoeabgH17yJ1fswoU5aLnKKaLfnIQ4CqhL1Dfjj7LZrchvnpPPv5ZPgnQNkD4HSMvn8s/uW7miWcYv2U212L5k04pM/oBMUf4tE1z/JevtdgBow/n3DTfUtDVG8Qgj+m+q5QMyefS9VLcPMNJvliOOFsjtJtOYCXvRHFH5qDVkdled3Qz1eS7zLOBS1EBXnpMgjSqwfs8PjatUUsZpsU2KLKc3LafpExROpg4="
+            "0eNrNlNtugzAMht/F16Eqh4TDq1RVxcFl0SCgBNqxinefCxtdByrrXRFChNjf79jGF0iKFmstVQPRBWRaKQPR7gJG5iourt9UXCJEkGBMm9AzkCrDD4jsfs8AVSMbiaPPsOgOqi0T1GTAfnyxwLTRMrVQoc47i9RQH+MUgUFdGSIQmaSI6oqAQUfObkhSSXs8oj4Y+UkYeztdPZupOZNaInNrUqyrYlHFH1U8u19guU+x/Ics7ylWED5icfanGnMA5xv+jXA3fAki/gEJ7iBU8gbLscYy+9UTpkbMrLLK2gItF26GZKcOUp1IutLd6HhbUWOYJk7fIRoKubhD3dXTPQ/fXw9fiLUcBOsQX7xuDsL18IMXLqG9neKPjcEyKaTKrTJO36S6BjE/TWjfV5Qmz1nqYezsHMaZy/ie7ejJPHrbj4e4pmcabgxOqM2A5MIJvTDk3OHCdehH+wIapKEo"
         )
         assert blueprintable.to_dict() == {
             "blueprint": {
-                "item": "blueprint",
-                "label": "lint test",
-                "description": "we should get warnings about (left to right):\n\n- unpowered beacon with no modules\n- unpowered beacon\n- beacon with no modules\n- beacon with no effect receivers\n- assembler with no recipe",
-                "icons": [{"index": 1, "signal": {"name": "beacon", "type": "item"}}],
+                "icons": [{"signal": {"name": "beacon"}, "index": 1}],
                 "entities": [
                     {
                         "entity_number": 1,
                         "name": "electric-energy-interface",
-                        "position": {"x": -669.0, "y": -884.0},
-                        # "buffer_size": 10000000000, # Default
+                        "position": {"x": 368, "y": 139},
+                        # "buffer_size": 10000000000 # Default
                     },
                     {
                         "entity_number": 2,
                         "name": "big-electric-pole",
-                        "position": {"x": -670.0, "y": -882.0},
-                        "neighbours": [3],
+                        "position": {"x": 367, "y": 141},
                     },
                     {
                         "entity_number": 3,
                         "name": "big-electric-pole",
-                        "position": {"x": -660.0, "y": -882.0},
-                        "neighbours": [2, 4],
+                        "position": {"x": 377, "y": 141},
                     },
                     {
                         "entity_number": 4,
                         "name": "big-electric-pole",
-                        "position": {"x": -648.0, "y": -882.0},
-                        "neighbours": [3],
+                        "position": {"x": 389, "y": 141},
                     },
                     {
                         "entity_number": 5,
                         "name": "beacon",
-                        "position": {"x": -681.5, "y": -879.5},
+                        "position": {"x": 355.5, "y": 143.5},
                     },
                     {
                         "entity_number": 6,
                         "name": "beacon",
-                        "position": {"x": -678.5, "y": -879.5},
-                        "items": {"speed-module-3": 2},
+                        "position": {"x": 358.5, "y": 143.5},
+                        "items": [
+                            {
+                                "id": {"name": "speed-module-3"},
+                                "items": {
+                                    "in_inventory": [
+                                        {"inventory": 1, "stack": 0},
+                                        {"inventory": 1, "stack": 1},
+                                    ]
+                                },
+                            }
+                        ],
                     },
                     {
                         "entity_number": 7,
                         "name": "beacon",
-                        "position": {"x": -670.5, "y": -879.5},
+                        "position": {"x": 366.5, "y": 143.5},
                     },
                     {
                         "entity_number": 8,
                         "name": "beacon",
-                        "position": {"x": -660.5, "y": -879.5},
-                        "items": {"speed-module-3": 2},
+                        "position": {"x": 376.5, "y": 143.5},
+                        "items": [
+                            {
+                                "id": {"name": "speed-module-3"},
+                                "items": {
+                                    "in_inventory": [
+                                        {"inventory": 1, "stack": 0},
+                                        {"inventory": 1, "stack": 1},
+                                    ]
+                                },
+                            }
+                        ],
                     },
                     {
                         "entity_number": 9,
                         "name": "beacon",
-                        "position": {"x": -648.5, "y": -879.5},
-                        "items": {"speed-module-3": 2},
+                        "position": {"x": 388.5, "y": 143.5},
+                        "items": [
+                            {
+                                "id": {"name": "speed-module-3"},
+                                "items": {
+                                    "in_inventory": [
+                                        {"inventory": 1, "stack": 0},
+                                        {"inventory": 1, "stack": 1},
+                                    ]
+                                },
+                            }
+                        ],
                     },
                     {
                         "entity_number": 10,
                         "name": "assembling-machine-3",
-                        "position": {"x": -645.5, "y": -879.5},
+                        "position": {"x": 391.5, "y": 143.5},
                     },
                 ],
-                "version": 281479275675648,
+                "wires": [[2, 5, 3, 5], [3, 5, 4, 5]],
+                "item": "blueprint",
+                "version": 562949955256321,
             }
         }
 

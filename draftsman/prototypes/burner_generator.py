@@ -8,7 +8,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import uint32
+from draftsman.signatures import ItemRequest, uint32
 from draftsman.utils import get_first
 from draftsman.warning import ItemLimitationWarning
 
@@ -72,7 +72,7 @@ class BurnerGenerator(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
-        items: dict[str, uint32] = {},  # TODO: ItemID
+        items: Optional[list[ItemRequest]] = [],  # TODO: ItemID
         tags: dict[str, Any] = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]

@@ -84,7 +84,12 @@ try:
         loaders: list[str] = of_type["loader"]
         loaders_1x1: list[str] = of_type["loader-1x1"]
         locomotives: list[str] = of_type["locomotive"]
-        logistic_containers: list[str] = of_type["logistic-container"]
+        # logistic_containers: list[str] = of_type["logistic-container"]
+        logistic_passive_containers: list[str] = of_type["logistic-container-passive"]
+        logistic_active_containers: list[str] = of_type["logistic-container-active"]
+        logistic_storage_containers: list[str] = of_type["logistic-container-storage"]
+        logistic_buffer_containers: list[str] = of_type["logistic-container-buffer"]
+        logistic_request_containers: list[str] = of_type["logistic-container-request"]
         markets: list[str] = of_type["market"]
         mining_drills: list[str] = of_type["mining-drill"]
         offshore_pumps: list[str] = of_type["offshore-pump"]
@@ -117,12 +122,6 @@ try:
         underground_belts: list[str] = of_type["underground-belt"]
         underground_pipes: list[str] = of_type["pipe-to-ground"]
         walls: list[str] = of_type["wall"]
-
-        # logistic_passive_containers: list[str] = of_type["logistic_passive_containers"]
-        # logistic_active_containers: list[str] = of_type["logistic_active_containers"]
-        # logistic_storage_containers: list[str] = of_type["logistic_storage_containers"]
-        # logistic_buffer_containers: list[str] = of_type["logistic_buffer_containers"]
-        # logistic_request_containers: list[str] = of_type["logistic_request_containers"]
 
 
 except FileNotFoundError:

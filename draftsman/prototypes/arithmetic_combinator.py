@@ -10,24 +10,20 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.error import DataFormatError, InvalidSignalError, DraftsmanError
-from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID, int32
+from draftsman.signatures import (
+    DraftsmanBaseModel,
+    NetworkSpecification,
+    SignalID,
+    int32,
+)
 from draftsman.utils import get_first, reissue_warnings
 from draftsman.warning import PureVirtualDisallowedWarning, SignalConfigurationWarning
 
 from draftsman.data.entities import arithmetic_combinators
 
-
 from pydantic import ConfigDict, Field, ValidationInfo, field_validator, model_validator
 from typing import Any, Literal, Optional, Union
 from typing_extensions import TypedDict
-
-
-class SignalNetworkSpec(
-    TypedDict
-):  # TODO: make this a DraftsmanBaseModel and move to signatures
-    red: bool
-    green: bool
 
 
 class ArithmeticCombinator(
@@ -65,11 +61,8 @@ class ArithmeticCombinator(
                     takes precedence.
                     """,
                 )
-                first_signal_networks: Optional[SignalNetworkSpec] = Field(
-                    {
-                        "red": True,
-                        "green": True,
-                    },
+                first_signal_networks: Optional[NetworkSpecification] = Field(
+                    NetworkSpecification(),
                     description="""
                     Which input wire networks to pull from when evaluating the 
                     value of the first signal.
@@ -97,11 +90,8 @@ class ArithmeticCombinator(
                     takes precedence.
                     """,
                 )
-                second_signal_networks: Optional[SignalNetworkSpec] = Field(
-                    {
-                        "red": True,
-                        "green": True,
-                    },
+                second_signal_networks: Optional[NetworkSpecification] = Field(
+                    NetworkSpecification(),
                     description="""
                     Which input wire networks to pull from when evaluating the 
                     value of the second signal.
@@ -153,33 +143,33 @@ class ArithmeticCombinator(
 
                     return self
 
-                @model_validator(mode="after")
-                def prohibit_2_each_signals(self, info: ValidationInfo):
-                    if not info.context:
-                        return self
-                    if info.context["mode"] <= ValidationMode.MINIMUM:
-                        return self
+                # @model_validator(mode="after") # 1.0
+                # def prohibit_2_each_signals(self, info: ValidationInfo):
+                #     if not info.context:
+                #         return self
+                #     if info.context["mode"] <= ValidationMode.MINIMUM:
+                #         return self
 
-                    # This check only applies to Factorio 1.X
-                    if info.context["environment_version"] >= (2, 0):
-                        return self
+                #     # This check only applies to Factorio 1.X
+                #     if info.context["environment_version"] >= (2, 0):
+                #         return self
 
-                    warning_list: list = info.context["warning_list"]
+                #     warning_list: list = info.context["warning_list"]
 
-                    # Ensure that "signal-each" does not occupy both first and
-                    # second signal slots
-                    if self.first_signal is not None and self.second_signal is not None:
-                        if (
-                            self.first_signal.name == "signal-each"
-                            and self.second_signal.name == "signal-each"
-                        ):
-                            warning_list.append(
-                                SignalConfigurationWarning(
-                                    "Cannot have 'signal-each' occupy both the first and second slots of an arithmetic combinator"
-                                )
-                            )
+                #     # Ensure that "signal-each" does not occupy both first and
+                #     # second signal slots
+                #     if self.first_signal is not None and self.second_signal is not None:
+                #         if (
+                #             self.first_signal.name == "signal-each"
+                #             and self.second_signal.name == "signal-each"
+                #         ):
+                #             warning_list.append(
+                #                 SignalConfigurationWarning(
+                #                     "Cannot have 'signal-each' occupy both the first and second slots of an arithmetic combinator"
+                #                 )
+                #             )
 
-                    return self
+                #     return self
 
                 @model_validator(mode="after")
                 def ensure_proper_each_configuration(self, info: ValidationInfo):
@@ -236,7 +226,6 @@ class ArithmeticCombinator(
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Optional[Direction] = Direction.NORTH,
         player_description: Optional[str] = None,
-        connections: Connections = {},
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate_assignment: Union[
@@ -257,7 +246,6 @@ class ArithmeticCombinator(
             tile_position=tile_position,
             direction=direction,
             player_description=player_description,
-            connections=connections,
             control_behavior=control_behavior,
             tags=tags,
             **kwargs

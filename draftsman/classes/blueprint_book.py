@@ -260,6 +260,9 @@ class BlueprintBook(Blueprintable):
         self,
         blueprint_book: Optional[Union[str, dict]] = None,
         index: Optional[uint16] = None,
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -281,6 +284,7 @@ class BlueprintBook(Blueprintable):
             index=index,
             blueprints=[],
             active_index=0,
+            validate=validate,
         )
 
         self.validate_assignment = validate_assignment
@@ -296,6 +300,9 @@ class BlueprintBook(Blueprintable):
         active_index: Optional[uint16] = 0,
         blueprints: Union[BlueprintableList, list[Blueprintable], list[dict]] = [],
         index: Optional[uint16] = None,
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
         **kwargs
     ):
         # self._root = {}
@@ -334,6 +341,9 @@ class BlueprintBook(Blueprintable):
         # A bit scuffed, but
         for kwarg, value in kwargs.items():
             self._root[kwarg] = value
+
+        if validate:
+            self.validate(mode=validate).reissue_all()
 
     # =========================================================================
     # BlueprintBook properties

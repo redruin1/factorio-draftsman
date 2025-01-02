@@ -39,53 +39,53 @@ class TestLab:
             "agricultural-science-pack",
             "electromagnetic-science-pack",
             "cryogenic-science-pack",
-            "promethium-science-pack"
+            "promethium-science-pack",
         ]
 
-    def test_set_item_request(self):
-        lab = Lab("lab")
+    # def test_set_item_request(self): # TODO: reimplement
+    #     lab = Lab("lab")
 
-        lab.set_item_request("productivity-module-3", 2)
-        assert lab.items == {"productivity-module-3": 2}
-        assert lab.module_slots_occupied == 2
+    #     lab.set_item_request("productivity-module-3", 2)
+    #     assert lab.items == {"productivity-module-3": 2}
+    #     assert lab.module_slots_occupied == 2
 
-        # Warnings
-        with pytest.warns(ModuleCapacityWarning):
-            lab.set_item_request("speed-module-2", 2)
-        assert lab.items == {"productivity-module-3": 2, "speed-module-2": 2}
-        assert lab.module_slots_occupied == 4
+    #     # Warnings
+    #     with pytest.warns(ModuleCapacityWarning):
+    #         lab.set_item_request("speed-module-2", 2)
+    #     assert lab.items == {"productivity-module-3": 2, "speed-module-2": 2}
+    #     assert lab.module_slots_occupied == 4
 
-        lab.set_item_request("speed-module-2", None)
-        assert lab.items == {"productivity-module-3": 2}
+    #     lab.set_item_request("speed-module-2", None)
+    #     assert lab.items == {"productivity-module-3": 2}
 
-        lab.set_item_request("automation-science-pack", 10)
-        assert lab.items == {"productivity-module-3": 2, "automation-science-pack": 10}
-        assert lab.module_slots_occupied == 2
+    #     lab.set_item_request("automation-science-pack", 10)
+    #     assert lab.items == {"productivity-module-3": 2, "automation-science-pack": 10}
+    #     assert lab.module_slots_occupied == 2
 
-        # Warnings
-        with pytest.warns(ItemLimitationWarning):
-            lab.set_item_request("iron-plate", 100)
-        assert lab.items == {
-            "productivity-module-3": 2,
-            "automation-science-pack": 10,
-            "iron-plate": 100,
-        }
+    #     # Warnings
+    #     with pytest.warns(ItemLimitationWarning):
+    #         lab.set_item_request("iron-plate", 100)
+    #     assert lab.items == {
+    #         "productivity-module-3": 2,
+    #         "automation-science-pack": 10,
+    #         "iron-plate": 100,
+    #     }
 
-        # Errors
-        lab.items = {}
-        assert lab.module_slots_occupied == 0
+    #     # Errors
+    #     lab.items = {}
+    #     assert lab.module_slots_occupied == 0
 
-        with pytest.raises(DataFormatError):
-            lab.set_item_request(TypeError, 100)
-        with pytest.warns(UnknownItemWarning):
-            lab.set_item_request("unknown", 100)
-        with pytest.raises(DataFormatError):
-            lab.set_item_request("logistic-science-pack", TypeError)
-        with pytest.raises(DataFormatError):
-            lab.set_item_request("logistic-science-pack", -1)
+    #     with pytest.raises(DataFormatError):
+    #         lab.set_item_request(TypeError, 100)
+    #     with pytest.warns(UnknownItemWarning):
+    #         lab.set_item_request("unknown", 100)
+    #     with pytest.raises(DataFormatError):
+    #         lab.set_item_request("logistic-science-pack", TypeError)
+    #     with pytest.raises(DataFormatError):
+    #         lab.set_item_request("logistic-science-pack", -1)
 
-        assert lab.items == {"unknown": 100}
-        assert lab.module_slots_occupied == 0
+    #     assert lab.items == {"unknown": 100}
+    #     assert lab.module_slots_occupied == 0
 
     def test_mergable_with(self):
         lab1 = Lab("lab")

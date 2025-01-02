@@ -55,15 +55,19 @@ from draftsman.prototypes.inserter import Inserter, inserters
 from draftsman.prototypes.lab import Lab, labs
 from draftsman.prototypes.lamp import Lamp, lamps
 from draftsman.prototypes.land_mine import LandMine, land_mines
-from draftsman.prototypes.legacy_straight_rail import LegacyStraightRail, legacy_straight_rails
 from draftsman.prototypes.legacy_curved_rail import LegacyCurvedRail, legacy_curved_rails
+from draftsman.prototypes.legacy_straight_rail import LegacyStraightRail, legacy_straight_rails
 from draftsman.prototypes.lightning_attractor import LightningAttractor, lightning_attractors
 from draftsman.prototypes.linked_belt import LinkedBelt, linked_belts
 from draftsman.prototypes.linked_container import LinkedContainer, linked_containers
 from draftsman.prototypes.loader import Loader, loaders
 # from draftsman.prototypes.loader_1x1 import Loader1x1, loaders_1x1
 from draftsman.prototypes.locomotive import Locomotive, locomotives
-from draftsman.prototypes.logistic_container import LogisticContainer, logistic_containers
+from draftsman.prototypes.logistic_active_container import LogisticActiveContainer, logistic_active_containers
+from draftsman.prototypes.logistic_buffer_container import LogisticBufferContainer, logistic_buffer_containers
+from draftsman.prototypes.logistic_passive_container import LogisticPassiveContainer, logistic_passive_containers
+from draftsman.prototypes.logistic_request_container import LogisticRequestContainer, logistic_request_containers
+from draftsman.prototypes.logistic_storage_container import LogisticStorageContainer, logistic_storage_containers
 from draftsman.prototypes.mining_drill import MiningDrill, mining_drills
 from draftsman.prototypes.offshore_pump import OffshorePump, offshore_pumps
 from draftsman.prototypes.pipe import Pipe, pipes
@@ -91,16 +95,9 @@ from draftsman.prototypes.straight_rail import StraightRail, straight_rails
 from draftsman.prototypes.thruster import Thruster, thrusters
 from draftsman.prototypes.train_stop import TrainStop, train_stops
 from draftsman.prototypes.transport_belt import TransportBelt, transport_belts
-from draftsman.prototypes.turret import Turret, turrets
 from draftsman.prototypes.underground_belt import UndergroundBelt, underground_belts
 from draftsman.prototypes.underground_pipe import UndergroundPipe, underground_pipes
 from draftsman.prototypes.wall import Wall, walls
-# TODO debate
-# from draftsman.prototypes.logistic_passive_container import LogisticPassiveContainer
-# from draftsman.prototypes.logistic_active_container import LogisticActiveContainer
-# from draftsman.prototypes.logistic_storage_container import LogisticStorageContainer
-# from draftsman.prototypes.logistic_buffer_container import LogisticBufferContainer
-# from draftsman.prototypes.logistic_request_container import LogisticRequestContainer
 # fmt: on
 
 from typing import Literal
@@ -128,128 +125,176 @@ def new_entity(name: str, **kwargs):
         :py:class:`.Entity` if `name` could not be deduced under the current
         Factorio environment.
     """
-    if name in of_type["container"]:
-        return Container(name, **kwargs)
-    if name in of_type["storage-tank"]:
-        return StorageTank(name, **kwargs)
-    if name in of_type["transport-belt"]:
-        return TransportBelt(name, **kwargs)
-    if name in of_type["underground-belt"]:
-        return UndergroundBelt(name, **kwargs)
-    if name in of_type["splitter"]:
-        return Splitter(name, **kwargs)
-    if name in of_type["inserter"]:
-        return Inserter(name, **kwargs)
-    if name in of_type["loader"]:
-        return Loader(name, **kwargs)
-    if name in of_type["electric-pole"]:
-        return ElectricPole(name, **kwargs)
-    if name in of_type["pipe"]:
-        return Pipe(name, **kwargs)
-    if name in of_type["pipe-to-ground"]:
-        return UndergroundPipe(name, **kwargs)
-    if name in of_type["pump"]:
-        return Pump(name, **kwargs)
-    if name in of_type["legacy-straight-rail"]:
-        return LegacyStraightRail(name, **kwargs)
-    if name in of_type["legacy-curved-rail"]:
-        return LegacyCurvedRail(name, **kwargs)
-    if name in of_type["train-stop"]:
-        return TrainStop(name, **kwargs)
-    if name in of_type["rail-signal"]:
-        return RailSignal(name, **kwargs)
-    if name in of_type["rail-chain-signal"]:
-        return RailChainSignal(name, **kwargs)
-    if name in of_type["locomotive"]:
-        return Locomotive(name, **kwargs)
-    if name in of_type["cargo-wagon"]:
-        return CargoWagon(name, **kwargs)
-    if name in of_type["fluid-wagon"]:
-        return FluidWagon(name, **kwargs)
-    if name in of_type["artillery-wagon"]:
-        return ArtilleryWagon(name, **kwargs)
-    if name in of_type["logistic-container"]:
-        return LogisticContainer(name, **kwargs)
-    if name in of_type["roboport"]:
-        return Roboport(name, **kwargs)
-    if name in of_type["lamp"]:
-        return Lamp(name, **kwargs)
-    if name in of_type["arithmetic-combinator"]:
-        return ArithmeticCombinator(name, **kwargs)
-    if name in of_type["decider-combinator"]:
-        return DeciderCombinator(name, **kwargs)
-    if name in of_type["selector-combinator"]:
-        return SelectorCombinator(name, **kwargs)
-    if name in of_type["constant-combinator"]:
-        return ConstantCombinator(name, **kwargs)
-    if name in of_type["power-switch"]:
-        return PowerSwitch(name, **kwargs)
-    if name in of_type["programmable-speaker"]:
-        return ProgrammableSpeaker(name, **kwargs)
-    if name in of_type["boiler"]:
-        return Boiler(name, **kwargs)
-    if name in of_type["generator"]:
-        return Generator(name, **kwargs)
-    if name in of_type["solar-panel"]:
-        return SolarPanel(name, **kwargs)
     if name in of_type["accumulator"]:
         return Accumulator(name, **kwargs)
-    if name in of_type["reactor"]:
-        return Reactor(name, **kwargs)
-    if name in of_type["heat-pipe"]:
-        return HeatPipe(name, **kwargs)
-    if name in of_type["mining-drill"]:
-        return MiningDrill(name, **kwargs)
-    if name in of_type["offshore-pump"]:
-        return OffshorePump(name, **kwargs)
-    if name in of_type["furnace"]:
-        return Furnace(name, **kwargs)
+    if name in of_type["agricultural-tower"]:
+        return AgriculturalTower(name, **kwargs)
+    if name in of_type["ammo-turret"]:
+        return AmmoTurret(name, **kwargs)
+    if name in of_type["arithmetic-combinator"]:
+        return ArithmeticCombinator(name, **kwargs)
+    if name in of_type["artillery-turret"]:
+        return ArtilleryTurret(name, **kwargs)
+    if name in of_type["artillery-wagon"]:
+        return ArtilleryWagon(name, **kwargs)
     if name in of_type["assembling-machine"]:
         return AssemblingMachine(name, **kwargs)
-    if name in of_type["lab"]:
-        return Lab(name, **kwargs)
     if name in of_type["beacon"]:
         return Beacon(name, **kwargs)
-    if name in of_type["rocket-silo"]:
-        return RocketSilo(name, **kwargs)
-    if name in of_type["land-mine"]:
-        return LandMine(name, **kwargs)
-    if name in of_type["wall"]:
-        return Wall(name, **kwargs)
-    if name in of_type["gate"]:
-        return Gate(name, **kwargs)
-    if name in of_type["turret"]:
-        return Turret(name, **kwargs)
-    if name in of_type["ammo-turret"]:
-        return Turret(name, **kwargs)  # TODO: AmmoTurret
-    if name in of_type["electric-turret"]:
-        return Turret(name, **kwargs)  # TODO: ElectricTurret
-    if name in of_type["fluid-turret"]:
-        return Turret(name, **kwargs)  # TODO: FluidTurret
-    if name in of_type["artillery-turret"]:
-        return Turret(name, **kwargs)  # TODO: ArtilleryTurret
-    if name in of_type["radar"]:
-        return Radar(name, **kwargs)
-    if name in of_type["simple-entity-with-owner"]:
-        return SimpleEntityWithOwner(name, **kwargs)
-    if name in of_type["simple-entity-with-force"]:
-        return SimpleEntityWithForce(name, **kwargs)
+    if name in of_type["boiler"]:
+        return Boiler(name, **kwargs)
+    if name in of_type["burner-generator"]:
+        return BurnerGenerator(name, **kwargs)
+    if name in of_type["car"]:
+        return Car(name, **kwargs)
+    if name in of_type["cargo-bay"]:
+        return CargoBay(name, **kwargs)
+    if name in of_type["cargo-landing-pad"]:
+        return CargoLandingPad(name, **kwargs)
+    if name in of_type["cargo-wagon"]:
+        return CargoWagon(name, **kwargs)
+    if name in of_type["constant-combinator"]:
+        return ConstantCombinator(name, **kwargs)
+    if name in of_type["container"]:
+        return Container(name, **kwargs)
+    if name in of_type["curved-rail-a"]:
+        return CurvedRailA(name, **kwargs)
+    if name in of_type["curved-rail-b"]:
+        return CurvedRailB(name, **kwargs)
+    if name in of_type["decider-combinator"]:
+        return DeciderCombinator(name, **kwargs)
+    if name in of_type["display-panel"]:
+        return DisplayPanel(name, **kwargs)
     if name in of_type["electric-energy-interface"]:
         return ElectricEnergyInterface(name, **kwargs)
-    if name in of_type["linked-container"]:
-        return LinkedContainer(name, **kwargs)
+    if name in of_type["electric-pole"]:
+        return ElectricPole(name, **kwargs)
+    if name in of_type["electric-turret"]:
+        return ElectricTurret(name, **kwargs)
+    if name in of_type["elevated-curved-rail-a"]:
+        return ElevatedCurvedRailA(name, **kwargs)
+    if name in of_type["elevated-curved-rail-b"]:
+        return ElevatedCurvedRailB(name, **kwargs)
+    if name in of_type["elevated-half-diagonal-rail"]:
+        return ElevatedHalfDiagonalRail(name, **kwargs)
+    if name in of_type["elevated-straight-rail"]:
+        return ElevatedStraightRail(name, **kwargs)
+    if name in of_type["fluid-turret"]:
+        return FluidTurret(name, **kwargs)
+    if name in of_type["fluid-wagon"]:
+        return FluidWagon(name, **kwargs)
+    if name in of_type["furnace"]:
+        return Furnace(name, **kwargs)
+    if name in of_type["fusion-generator"]:
+        return FusionGenerator(name, **kwargs)
+    if name in of_type["fusion-reactor"]:
+        return FusionReactor(name, **kwargs)
+    if name in of_type["gate"]:
+        return Gate(name, **kwargs)
+    if name in of_type["generator"]:
+        return Generator(name, **kwargs)
+    if name in of_type["half-diagonal-rail"]:
+        return HalfDiagonalRail(name, **kwargs)
     if name in of_type["heat-interface"]:
         return HeatInterface(name, **kwargs)
-    if name in of_type["linked-belt"]:
-        return LinkedBelt(name, **kwargs)
+    if name in of_type["heat-pipe"]:
+        return HeatPipe(name, **kwargs)
     if name in of_type["infinity-container"]:
         return InfinityContainer(name, **kwargs)
     if name in of_type["infinity-pipe"]:
         return InfinityPipe(name, **kwargs)
-    if name in of_type["burner-generator"]:
-        return BurnerGenerator(name, **kwargs)
+    if name in of_type["inserter"]:
+        return Inserter(name, **kwargs)
+    if name in of_type["lab"]:
+        return Lab(name, **kwargs)
+    if name in of_type["lamp"]:
+        return Lamp(name, **kwargs)
+    if name in of_type["land-mine"]:
+        return LandMine(name, **kwargs)
+    if name in of_type["legacy-curved-rail"]:
+        return LegacyCurvedRail(name, **kwargs)
+    if name in of_type["legacy-straight-rail"]:
+        return LegacyStraightRail(name, **kwargs)
+    if name in of_type["lightning-attractor"]:
+        return LightningAttractor(name, **kwargs)
+    if name in of_type["linked-belt"]:
+        return LinkedBelt(name, **kwargs)
+    if name in of_type["linked-container"]:
+        return LinkedContainer(name, **kwargs)
+    if name in of_type["loader"]:
+        return Loader(name, **kwargs)
+    if name in of_type["locomotive"]:
+        return Locomotive(name, **kwargs)
+    if name in of_type["logistic-container-active"]:
+        return LogisticActiveContainer(name, **kwargs)
+    if name in of_type["logistic-container-buffer"]:
+        return LogisticBufferContainer(name, **kwargs)
+    if name in of_type["logistic-container-passive"]:
+        return LogisticPassiveContainer(name, **kwargs)
+    if name in of_type["logistic-container-request"]:
+        return LogisticRequestContainer(name, **kwargs)
+    if name in of_type["logistic-container-storage"]:
+        return LogisticStorageContainer(name, **kwargs)
+    if name in of_type["mining-drill"]:
+        return MiningDrill(name, **kwargs)
+    if name in of_type["offshore-pump"]:
+        return OffshorePump(name, **kwargs)
+    if name in of_type["pipe"]:
+        return Pipe(name, **kwargs)
     if name in of_type["player-port"]:
         return PlayerPort(name, **kwargs)
+    if name in of_type["power-switch"]:
+        return PowerSwitch(name, **kwargs)
+    if name in of_type["programmable-speaker"]:
+        return ProgrammableSpeaker(name, **kwargs)
+    if name in of_type["pump"]:
+        return Pump(name, **kwargs)
+    if name in of_type["radar"]:
+        return Radar(name, **kwargs)
+    if name in of_type["rail-chain-signal"]:
+        return RailChainSignal(name, **kwargs)
+    if name in of_type["rail-ramp"]:
+        return RailRamp(name, **kwargs)
+    if name in of_type["rail-signal"]:
+        return RailSignal(name, **kwargs)
+    if name in of_type["rail-support"]:
+        return RailSupport(name, **kwargs)
+    if name in of_type["reactor"]:
+        return Reactor(name, **kwargs)
+    if name in of_type["roboport"]:
+        return Roboport(name, **kwargs)
+    if name in of_type["rocket-silo"]:
+        return RocketSilo(name, **kwargs)
+    if name in of_type["selector-combinator"]:
+        return SelectorCombinator(name, **kwargs)
+    if name in of_type["simple-entity-with-force"]:
+        return SimpleEntityWithForce(name, **kwargs)
+    if name in of_type["simple-entity-with-owner"]:
+        return SimpleEntityWithOwner(name, **kwargs)
+    if name in of_type["solar-panel"]:
+        return SolarPanel(name, **kwargs)
+    if name in of_type["space-platform-hub"]:
+        return SpacePlatformHub(name, **kwargs)
+    if name in of_type["spider-vehicle"]:
+        return SpiderVehicle(name, **kwargs)
+    if name in of_type["splitter"]:
+        return Splitter(name, **kwargs)
+    if name in of_type["storage-tank"]:
+        return StorageTank(name, **kwargs)
+    if name in of_type["straight-rail"]:
+        return StraightRail(name, **kwargs)
+    if name in of_type["thruster"]:
+        return Thruster(name, **kwargs)
+    if name in of_type["train-stop"]:
+        return TrainStop(name, **kwargs)
+    if name in of_type["transport-belt"]:
+        return TransportBelt(name, **kwargs)
+    if name in of_type["underground-belt"]:
+        return UndergroundBelt(name, **kwargs)
+    if name in of_type["pipe-to-ground"]:
+        return UndergroundPipe(name, **kwargs)
+    if name in of_type["wall"]:
+        return Wall(name, **kwargs)
 
     # At this point, the name is unrecognized by the current environment.
     # We want Draftsman to at least try to parse it and serialize it, if not

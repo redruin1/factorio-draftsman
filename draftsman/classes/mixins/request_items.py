@@ -159,8 +159,6 @@ class RequestItemsMixin:
         # TODO: inefficient
         new_items = deepcopy(self.items)
 
-        print(new_items)
-
         if count == 0:
             # new_items.pop(item, None)
             new_items = [i_item for i_item in new_items if i_item["id"]["name"] != item]
@@ -174,7 +172,6 @@ class RequestItemsMixin:
                 ),
                 None,
             )
-            print("existing_spec:", existing_spec)
             if existing_spec is None:
                 # If not, add a new item entry
                 if slot is None:
@@ -212,8 +209,6 @@ class RequestItemsMixin:
                 else:
                     # If so, simply modify the count
                     existing_slot["count"] = count
-
-        print(new_items)
 
         try:
             original_items = self._root.items

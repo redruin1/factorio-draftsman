@@ -63,7 +63,9 @@ class TestUndergroundBelt:
             underground_belt.validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            underground_belt = UndergroundBelt("underground-belt", direction="incorrect")
+            underground_belt = UndergroundBelt(
+                "underground-belt", direction="incorrect"
+            )
             underground_belt.validate().reissue_all()
 
         with pytest.raises(DataFormatError):

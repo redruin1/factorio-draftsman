@@ -40,7 +40,9 @@ class TestElectricEnergyInterface:
             ElectricEnergyInterface(unused_keyword="whatever").validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            ElectricEnergyInterface("this is not an electric energy interface").validate().reissue_all()
+            ElectricEnergyInterface(
+                "this is not an electric energy interface"
+            ).validate().reissue_all()
 
     def test_set_buffer_size(self):
         interface = ElectricEnergyInterface()

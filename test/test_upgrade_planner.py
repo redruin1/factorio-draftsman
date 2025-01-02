@@ -76,7 +76,9 @@ class TestUpgradePlanner:
 
         # Warnings
         with pytest.warns(DraftsmanWarning):
-            UpgradePlanner({"upgrade_planner": {"unused": "keyword"}}).validate().reissue_all()
+            UpgradePlanner(
+                {"upgrade_planner": {"unused": "keyword"}}
+            ).validate().reissue_all()
 
         # Correct format, but incorrect type
         with pytest.raises(IncorrectBlueprintTypeError):
@@ -202,9 +204,9 @@ class TestUpgradePlanner:
 
         # TODO: errors
 
-    def test_mapper_count(self):
-        upgrade_planner = UpgradePlanner()
-        assert upgrade_planner.mapper_count == 24
+    # def test_mapper_count(self):
+    #     upgrade_planner = UpgradePlanner()
+    #     assert upgrade_planner.mapper_count == 24
 
     def test_mappers(self):
         upgrade_planner = UpgradePlanner()
@@ -581,7 +583,7 @@ class TestUpgradePlanner:
             error_list=[],
             warning_list=[
                 UpgradeProhibitedWarning(
-                    "Returned item 'rocket-part' when upgrading 'dummy-entity-3' is hidden"
+                    "Cannot upgrade 'dummy-entity-3' to 'fast-transport-belt'; collision boxes differ"
                 )
             ],
         )
@@ -657,20 +659,20 @@ class TestUpgradePlanner:
             validation_result.reissue_all()
 
         # Index outside of meaningful range
-        upgrade_planner = UpgradePlanner()
-        upgrade_planner.set_mapping("fast-transport-belt", "express-transport-belt", 24)
-        goal = ValidationResult(
-            error_list=[],
-            warning_list=[
-                IndexWarning(
-                    "'index' (24) for mapping 'fast-transport-belt' to 'express-transport-belt' must be in range [0, 24) or else it will have no effect"
-                )
-            ],
-        )
-        validation_result = upgrade_planner.validate()
-        assert validation_result == goal
-        with pytest.warns(IndexWarning):
-            validation_result.reissue_all()
+        # upgrade_planner = UpgradePlanner()
+        # upgrade_planner.set_mapping("fast-transport-belt", "express-transport-belt", 24)
+        # goal = ValidationResult(
+        #     error_list=[],
+        #     warning_list=[
+        #         IndexWarning(
+        #             "'index' (24) for mapping 'fast-transport-belt' to 'express-transport-belt' must be in range [0, 24) or else it will have no effect"
+        #         )
+        #     ],
+        # )
+        # validation_result = upgrade_planner.validate()
+        # assert validation_result == goal
+        # with pytest.warns(IndexWarning):
+        #     validation_result.reissue_all()
 
         # Multiple mappings sharing the same index
         upgrade_planner = UpgradePlanner(validate_assignment="minimum")

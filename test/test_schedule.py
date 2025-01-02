@@ -47,6 +47,7 @@ class TestWaitCondition:
             "circuit",
             condition=("signal-A", "!=", "signal-B"),
         )
+        assert isinstance(w.condition, Condition)
         assert w.to_dict() == {
             "type": "circuit",
             # "compare_type": "or", # Default
@@ -262,7 +263,7 @@ class TestWaitCondition:
         w = WaitCondition("item_count", condition=("signal-A", "=", "signal-B"))
         assert (
             repr(w)
-            == "<WaitCondition>{type=<WaitConditionType.ITEM_COUNT: 'item_count'> compare_type=<WaitConditionCompareType.OR: 'or'> ticks=None condition=Condition(first_signal=SignalID(name='signal-A', type='virtual'), comparator='=', constant=0, second_signal=SignalID(name='signal-B', type='virtual'))}"
+            == "<WaitCondition>{type=<WaitConditionType.ITEM_COUNT: 'item_count'> compare_type=<WaitConditionCompareType.OR: 'or'> ticks=None condition=Condition(first_signal=SignalID(name='signal-A', type='virtual', quality='normal'), first_signal_networks=NetworkSpecification(red=True, green=True), comparator='=', constant=0, second_signal=SignalID(name='signal-B', type='virtual', quality='normal'), second_signal_networks=NetworkSpecification(red=True, green=True))}"
         )
 
 
@@ -316,11 +317,15 @@ class TestSchedule:
 
         # WaitConditions objects
         s = Schedule(
-            schedule=[{"station": "some name", "wait_conditions": WaitConditions([])}]
+            schedule={
+                "records": [
+                    {"station": "some name", "wait_conditions": WaitConditions([])}
+                ]
+            }
         )
         assert s.locomotives == []
         assert s.stops == [
-            Schedule.Format.Stop(
+            Schedule.Format.ScheduleSpecification.Stop(
                 **{"station": "some name", "wait_conditions": WaitConditions([])}
             )
         ]
@@ -384,7 +389,7 @@ class TestSchedule:
         s.insert_stop(0, "Station A")
         assert len(s.stops) == 1
         assert s.stops == [
-            Schedule.Format.Stop(
+            Schedule.Format.ScheduleSpecification.Stop(
                 **{"station": "Station A", "wait_conditions": WaitConditions()}
             )
         ]
@@ -396,10 +401,10 @@ class TestSchedule:
         s.insert_stop(1, "Station B", full_cargo)
         assert len(s.stops) == 2
         assert s.stops == [
-            Schedule.Format.Stop(
+            Schedule.Format.ScheduleSpecification.Stop(
                 **{"station": "Station A", "wait_conditions": WaitConditions()}
             ),
-            Schedule.Format.Stop(
+            Schedule.Format.ScheduleSpecification.Stop(
                 **{
                     "station": "Station B",
                     "wait_conditions": WaitConditions([WaitCondition("full")]),
@@ -411,16 +416,16 @@ class TestSchedule:
         s.insert_stop(2, "Station C", full_cargo & inactivity)
         assert len(s.stops) == 3
         assert s.stops == [
-            Schedule.Format.Stop(
+            Schedule.Format.ScheduleSpecification.Stop(
                 **{"station": "Station A", "wait_conditions": WaitConditions()}
             ),
-            Schedule.Format.Stop(
+            Schedule.Format.ScheduleSpecification.Stop(
                 **{
                     "station": "Station B",
                     "wait_conditions": WaitConditions([WaitCondition("full")]),
                 }
             ),
-            Schedule.Format.Stop(
+            Schedule.Format.ScheduleSpecification.Stop(
                 **{
                     "station": "Station C",
                     "wait_conditions": WaitConditions(
@@ -444,16 +449,16 @@ class TestSchedule:
         s.append_stop("Station A", wait_conditions=inactivity)
         assert len(s.stops) == 3
         assert s.stops == [
-            Schedule.Format.Stop(
+            Schedule.Format.ScheduleSpecification.Stop(
                 **{"station": "Station A", "wait_conditions": WaitConditions()}
             ),
-            Schedule.Format.Stop(
+            Schedule.Format.ScheduleSpecification.Stop(
                 **{
                     "station": "Station A",
                     "wait_conditions": WaitConditions([full_cargo]),
                 }
             ),
-            Schedule.Format.Stop(
+            Schedule.Format.ScheduleSpecification.Stop(
                 **{
                     "station": "Station A",
                     "wait_conditions": WaitConditions([inactivity]),
@@ -465,13 +470,13 @@ class TestSchedule:
         s.remove_stop("Station A")
         assert len(s.stops) == 2
         assert s.stops == [
-            Schedule.Format.Stop(
+            Schedule.Format.ScheduleSpecification.Stop(
                 **{
                     "station": "Station A",
                     "wait_conditions": WaitConditions([full_cargo]),
                 }
             ),
-            Schedule.Format.Stop(
+            Schedule.Format.ScheduleSpecification.Stop(
                 **{
                     "station": "Station A",
                     "wait_conditions": WaitConditions([inactivity]),
@@ -480,7 +485,7 @@ class TestSchedule:
         ]
         s.remove_stop("Station A")
         assert s.stops == [
-            Schedule.Format.Stop(
+            Schedule.Format.ScheduleSpecification.Stop(
                 **{
                     "station": "Station A",
                     "wait_conditions": WaitConditions([inactivity]),

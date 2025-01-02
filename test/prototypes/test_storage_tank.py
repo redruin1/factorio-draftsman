@@ -15,27 +15,11 @@ class TestStorageTank:
             "storage-tank",
             tile_position=[15, 3],
             direction=Direction.NORTH,
-            connections={
-                "1": {
-                    "red": [
-                        {"entity_id": 2},
-                        {"entity_id": 2, "circuit_id": 1},
-                    ]
-                }
-            },
         )
         assert storage_tank.to_dict() == {
             "name": "storage-tank",
             "position": {"x": 16.5, "y": 4.5},
             # "direction": 0, # not here because 0 is the default direction
-            "connections": {
-                "1": {
-                    "red": [
-                        {"entity_id": 2},
-                        {"entity_id": 2, "circuit_id": 1},
-                    ]
-                }
-            },
         }
         storage_tank = StorageTank(
             "storage-tank",
@@ -51,8 +35,9 @@ class TestStorageTank:
         }
         # Warnings
         with pytest.warns(DraftsmanWarning):
-            StorageTank(position=[0, 0], direction=Direction.WEST, invalid_keyword=5) \
-                .validate().reissue_all()
+            StorageTank(
+                position=[0, 0], direction=Direction.WEST, invalid_keyword=5
+            ).validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
             StorageTank("this is not a storage tank").validate().reissue_all()
@@ -67,9 +52,6 @@ class TestStorageTank:
 
         with pytest.raises(DataFormatError):
             StorageTank("storage-tank", direction="incorrect").validate().reissue_all()
-            
-        with pytest.raises(DataFormatError):
-            StorageTank("storage-tank", connections=["very", "wrong"]).validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for storage_tank_name in storage_tanks:

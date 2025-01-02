@@ -125,7 +125,7 @@ class TestBlueprintBook:
             "blueprint_book": {
                 # "active_index": 0,
                 "item": "blueprint-book",
-                "icons": [{"index": 1, "signal": {"name": "wood", "type": "item"}}],
+                "icons": [{"index": 1, "signal": {"name": "wood"}}],
                 "version": encode_version(1, 1, 59, 0),
             }
         }
@@ -320,11 +320,11 @@ class TestBlueprintBook:
         }
 
         # Incorrect Signal Name
-        with pytest.raises(InvalidSignalError):
+        with pytest.raises(DataFormatError):
             blueprint_book.set_icons("wrong!")
 
         # Incorrect Signal Type
-        with pytest.raises(InvalidSignalError):
+        with pytest.raises(DataFormatError):
             blueprint_book.set_icons(123456, "uh-oh")
 
     def test_set_active_index(self):

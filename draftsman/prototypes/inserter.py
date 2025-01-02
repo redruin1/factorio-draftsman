@@ -79,7 +79,6 @@ class Inserter(
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
         override_stack_size: uint8 = None,
-        connections: Connections = {},
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate_assignment: Union[
@@ -94,7 +93,6 @@ class Inserter(
             tile_position=tile_position,
             direction=direction,
             override_stack_size=override_stack_size,
-            connections=connections,
             control_behavior=control_behavior,
             tags=tags,
             **kwargs

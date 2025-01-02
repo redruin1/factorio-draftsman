@@ -20,17 +20,22 @@ class TestArtilleryWagon:
             "name": "artillery-wagon",
             "position": {"x": 1.0, "y": 1.0},
             "orientation": 0.75,
+            "enable_logistics_while_moving": False,
         }
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            ArtilleryWagon("artillery-wagon", unused_keyword="whatever").validate().reissue_all()
+            ArtilleryWagon(
+                "artillery-wagon", unused_keyword="whatever"
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             ArtilleryWagon("this is not an artillery wagon").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            ArtilleryWagon("artillery-wagon", orientation="wrong").validate().reissue_all()
+            ArtilleryWagon(
+                "artillery-wagon", orientation="wrong"
+            ).validate().reissue_all()
 
     def test_mergable_with(self):
         wagon1 = ArtilleryWagon("artillery-wagon")

@@ -79,7 +79,9 @@ class TestCargoWagon:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            CargoWagon("cargo-wagon", unused_keyword="whatever").validate().reissue_all()
+            CargoWagon(
+                "cargo-wagon", unused_keyword="whatever"
+            ).validate().reissue_all()
         # Warn if the cargo wagon is not on a rail (close enough to one?)
         # TODO (Complex)
         with pytest.warns(UnknownEntityWarning):

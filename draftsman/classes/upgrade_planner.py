@@ -164,7 +164,7 @@ def check_valid_upgrade_pair(
             ]
 
     # Cannot upgrade rolling stock (train cars)
-    if from_entity["type"] in {
+    if "type" in from_entity and from_entity["type"] in {
         "locomotive",
         "cargo-wagon",
         "fluid-wagon",
@@ -327,19 +327,20 @@ class UpgradePlanner(Blueprintable):
                         if reasons is not None:
                             warning_list.extend(reasons)
 
-                        # If the index is greater than mapper_count, then the mapping will
-                        # be redundant
-                        if not mapper["index"] < upgrade_planner.mapper_count:
-                            warning_list.append(
-                                IndexWarning(
-                                    "'index' ({}) for mapping '{}' to '{}' must be in range [0, {}) or else it will have no effect".format(
-                                        mapper["index"],
-                                        mapper["from"]["name"],
-                                        mapper["to"]["name"],
-                                        upgrade_planner.mapper_count,
-                                    )
-                                )
-                            )
+                        # 1.0
+                        # # If the index is greater than mapper_count, then the mapping will
+                        # # be redundant
+                        # if not mapper["index"] < upgrade_planner.mapper_count:
+                        #     warning_list.append(
+                        #         IndexWarning(
+                        #             "'index' ({}) for mapping '{}' to '{}' must be in range [0, {}) or else it will have no effect".format(
+                        #                 mapper["index"],
+                        #                 mapper["from"]["name"],
+                        #                 mapper["to"]["name"],
+                        #                 upgrade_planner.mapper_count,
+                        #             )
+                        #         )
+                        #     )
 
                         # Keep track of entries that occupy the same index (only the last
                         # mapping is used)
@@ -545,12 +546,12 @@ class UpgradePlanner(Blueprintable):
 
     # =========================================================================
 
-    @property
-    def mapper_count(self) -> uint8:
-        """
-        The total number of unique mappings that this entity can have. Read only.
-        """
-        return items.raw[self.item]["mapper_count"]
+    # @property
+    # def mapper_count(self) -> uint8: # TODO: maximum extent 1000?
+    #     """
+    #     The total number of unique mappings that this entity can have. Read only.
+    #     """
+    #     # return items.raw[self.item]["mapper_count"] # TODO: this was removed in 1.0?
 
     # =========================================================================
 

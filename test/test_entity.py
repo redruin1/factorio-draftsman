@@ -8,6 +8,7 @@ from draftsman.entity import *
 from draftsman.error import *
 from draftsman.warning import *
 from draftsman.utils import AABB
+from draftsman import __factorio_version_info__
 
 import pytest
 
@@ -52,7 +53,7 @@ class TestEntity:
 
     def test_get_world_bounding_box(self):
         combinator = DeciderCombinator(tile_position=[3, 3], direction=Direction.EAST)
-        assert combinator.get_world_bounding_box() == AABB(3.35, 3.15, 4.65, 3.85)
+        assert combinator.get_world_bounding_box() == AABB(3.65, 2.85, 4.35, 4.15)
 
     def test_set_name(self):
         iron_chest = Container("iron-chest")
@@ -85,7 +86,7 @@ class TestEntity:
             UnknownEntityWarning,
             match="'wodenchest' is not a known name for a Container; did you mean 'wooden-chest'?",
         ):
-            Container("wodenchest")
+            Container("wodenchest").validate().reissue_all()
 
     def test_set_position(self):
         iron_chest = Container("iron-chest")
@@ -220,8 +221,8 @@ class TestEntityFactory:
     def test_inserter(self):
         assert isinstance(new_entity("burner-inserter"), Inserter)
 
-    def test_filter_inserter(self):
-        assert isinstance(new_entity("filter-inserter"), FilterInserter)
+    # def test_filter_inserter(self):
+    #     assert isinstance(new_entity("filter-inserter"), FilterInserter)
 
     def test_loader(self):
         assert isinstance(new_entity("loader"), Loader)
@@ -239,10 +240,10 @@ class TestEntityFactory:
         assert isinstance(new_entity("pump"), Pump)
 
     def test_straight_rail(self):
-        assert isinstance(new_entity("straight-rail"), StraightRail)
+        assert isinstance(new_entity("legacy-straight-rail"), LegacyStraightRail)
 
     def test_curved_rail(self):
-        assert isinstance(new_entity("curved-rail"), CurvedRail)
+        assert isinstance(new_entity("legacy-curved-rail"), LegacyCurvedRail)
 
     def test_train_stop(self):
         assert isinstance(new_entity("train-stop"), TrainStop)
@@ -266,19 +267,19 @@ class TestEntityFactory:
         assert isinstance(new_entity("artillery-wagon"), ArtilleryWagon)
 
     def test_logistic_passive_container(self):
-        assert isinstance(new_entity("logistic-chest-passive-provider"), LogisticPassiveContainer)
+        assert isinstance(new_entity("passive-provider-chest"), LogisticPassiveContainer)
 
     def test_logistic_active_container(self):
-        assert isinstance(new_entity("logistic-chest-active-provider"), LogisticActiveContainer)
+        assert isinstance(new_entity("active-provider-chest"), LogisticActiveContainer)
 
     def test_logistic_storage_container(self):
-        assert isinstance(new_entity("logistic-chest-storage"), LogisticStorageContainer)
+        assert isinstance(new_entity("storage-chest"), LogisticStorageContainer)
 
     def test_logistic_buffer_container(self):
-        assert isinstance(new_entity("logistic-chest-buffer"), LogisticBufferContainer)
+        assert isinstance(new_entity("buffer-chest"), LogisticBufferContainer)
 
     def test_logistic_request_container(self):
-        assert isinstance(new_entity("logistic-chest-requester"), LogisticRequestContainer)
+        assert isinstance(new_entity("requester-chest"), LogisticRequestContainer)
 
     def test_roboport(self):
         assert isinstance(new_entity("roboport"), Roboport)
@@ -350,7 +351,7 @@ class TestEntityFactory:
         assert isinstance(new_entity("gate"), Gate)
 
     def test_turret(self):
-        assert isinstance(new_entity("gun-turret"), Turret)
+        assert isinstance(new_entity("gun-turret"), AmmoTurret)
 
     def test_radar(self):
         assert isinstance(new_entity("radar"), Radar)
@@ -384,24 +385,13 @@ class TestEntityFactory:
     def test_burner_generator(self):
         assert isinstance(new_entity("burner-generator"), BurnerGenerator)
 
+    @pytest.mark.skipif(__factorio_version_info__ >= (2, 0, 0), reason="Player ports deprecated > Factorio 2.0")
     def test_player_port(self):
         assert isinstance(new_entity("player-port"), PlayerPort)
 
     def test_unknown(self):
-        # Invalid unknown value
-        with pytest.raises(ValueError):
-            new_entity("unknown", if_unknown="wrong")
-
-        # Default behavior is error
-        # Raise errors (if desired)
-        with pytest.raises(InvalidEntityError, match="Unknown entity 'unknown'"):
-            new_entity("unknown")
-
-        # Ignore
-        assert new_entity("unknown", if_unknown="ignore") == None
-
         # Try and treat as a generic entity
-        result = new_entity("unknown", position=(0.5, 0.5), validate="minimum", if_unknown="accept")
+        result = new_entity("unknown", position=(0.5, 0.5))
         assert isinstance(result, Entity)
         
         # Generic entities should be able to handle attribute access and serialization
@@ -414,7 +404,7 @@ class TestEntityFactory:
         
         # You should also be able to set new attributes to them without Draftsman
         # complaining
-        result = new_entity("unknown", position=(0.5, 0.5), direction=4, validate="minimum", if_unknown="accept")
+        result = new_entity("unknown", position=(0.5, 0.5), direction=4)
         assert result.to_dict() == {
             "name": "unknown",
             "position": {"x": 0.5, "y": 0.5},

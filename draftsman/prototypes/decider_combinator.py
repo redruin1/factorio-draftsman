@@ -470,7 +470,6 @@ class DeciderCombinator(
         tile_position: Union[Vector, PrimitiveVector, None] = (0, 0),
         direction: Optional[Direction] = Direction.NORTH,
         player_description: Optional[str] = None,
-        connections: Connections = {},
         control_behavior: Optional[Format.ControlBehavior] = None,
         tags: dict[str, Any] = {},
         validate_assignment: Union[
@@ -491,7 +490,6 @@ class DeciderCombinator(
             tile_position=tile_position,
             direction=direction,
             player_description=player_description,
-            connections=connections,
             control_behavior={} if control_behavior is None else control_behavior,
             tags=tags,
             **kwargs

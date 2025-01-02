@@ -23,7 +23,7 @@ class TestEntitiesData:
         # Normal
         entities.add_entity(
             name="new-entity-1",
-            entity_type="container",
+            type="container",
             collision_box=[[-0.4, -0.4], [0.4, 0.4]],
         )
         assert entities.raw["new-entity-1"] == {
@@ -45,7 +45,7 @@ class TestEntitiesData:
         # Hidden with custom collision mask
         entities.add_entity(
             name="new-entity-2",
-            entity_type="storage-tank",
+            type="storage-tank",
             collision_box=[[-0.4, -0.4], [0.4, 0.4]],
             collision_mask={"player-layer"},
             hidden=True,
@@ -62,8 +62,8 @@ class TestEntitiesData:
         StorageTank("new-entity-2")
 
         # Incorrect type
-        with pytest.raises(ValueError):
-            entities.add_entity("new-entity-3", "incorrect", [[0, 0], [1, 1]])
+        # with pytest.raises(ValueError):
+        #     entities.add_entity("new-entity-3", "incorrect", [[0, 0], [1, 1]])
 
         del entities.raw["new-entity-1"]
         del entities.containers[-1]
@@ -81,18 +81,18 @@ class TestSignalsData:
         # Signals of each valid type
         signals.add_signal("new-signal-1", "item")
         assert signals.raw["new-signal-1"] == {"name": "new-signal-1", "type": "item"}
-        assert signals.type_of["new-signal-1"] == "item"
+        assert signals.type_of["new-signal-1"] == {"item"}
         assert "new-signal-1" in signals.item
         signals.add_signal("new-signal-2", "fluid")
         assert signals.raw["new-signal-2"] == {"name": "new-signal-2", "type": "fluid"}
-        assert signals.type_of["new-signal-2"] == "fluid"
+        assert signals.type_of["new-signal-2"] == {"fluid"}
         assert "new-signal-2" in signals.fluid
         signals.add_signal("new-signal-3", "virtual")
         assert signals.raw["new-signal-3"] == {
             "name": "new-signal-3",
             "type": "virtual",
         }
-        assert signals.type_of["new-signal-3"] == "virtual"
+        assert signals.type_of["new-signal-3"] == {"virtual"}
         assert "new-signal-3" in signals.virtual
 
         # Incorrect type

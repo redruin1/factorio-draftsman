@@ -32,7 +32,6 @@ class StorageTank(CircuitConnectableMixin, DirectionalMixin, Entity):
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
-        connections: Connections = {},
         tags: dict[str, Any] = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -49,7 +48,6 @@ class StorageTank(CircuitConnectableMixin, DirectionalMixin, Entity):
             position=position,
             tile_position=tile_position,
             direction=direction,
-            connections=connections,
             tags=tags,
             **kwargs,
         )

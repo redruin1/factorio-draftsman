@@ -135,7 +135,9 @@ class TestProgrammableSpeakerTesting:
         with pytest.warns(UnknownKeywordWarning):
             ProgrammableSpeaker(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            ProgrammableSpeaker(control_behavior={"unused_key": "something"}).validate().reissue_all()
+            ProgrammableSpeaker(
+                control_behavior={"unused_key": "something"}
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             ProgrammableSpeaker("not a programmable speaker").validate().reissue_all()
 

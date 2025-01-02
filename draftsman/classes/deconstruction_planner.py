@@ -264,8 +264,6 @@ class DeconstructionPlanner(Blueprintable):
         """
         self._root: __class__.Format
 
-        print(deconstruction_planner)
-
         super().__init__(
             root_item="deconstruction_planner",
             root_format=DeconstructionPlanner.Format.DeconstructionPlannerObject,

@@ -18,7 +18,9 @@ class TestOffshorePump:
         with pytest.warns(UnknownKeywordWarning):
             OffshorePump(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            OffshorePump(control_behavior={"unused_key": "something"}).validate().reissue_all()
+            OffshorePump(
+                control_behavior={"unused_key": "something"}
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             OffshorePump("not a heat pipe").validate().reissue_all()
 
@@ -56,7 +58,7 @@ class TestOffshorePump:
             "control_behavior": {
                 "circuit_condition": {
                     "first_signal": {
-                        "name": "iron-ore", 
+                        "name": "iron-ore",
                         # "type": "item" # Default
                     },
                     "comparator": ">",
@@ -79,12 +81,12 @@ class TestOffshorePump:
             "control_behavior": {
                 "circuit_condition": {
                     "first_signal": {
-                        "name": "iron-ore", 
+                        "name": "iron-ore",
                         # "type": "item"
                     },
                     "comparator": "≥",
                     "second_signal": {
-                        "name": "copper-ore", 
+                        "name": "copper-ore",
                         # "type": "item"
                     },
                 }

@@ -23,7 +23,9 @@ class TestPowerSwitch:
         with pytest.warns(UnknownKeywordWarning):
             PowerSwitch(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            PowerSwitch(control_behavior={"unused_key": "something"}).validate().reissue_all()
+            PowerSwitch(
+                control_behavior={"unused_key": "something"}
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             PowerSwitch("this is not a power switch").validate().reissue_all()
 
@@ -76,83 +78,71 @@ class TestPowerSwitch:
 
         # Test power switch connections
         group_left = Group("left")
-        print(group_left)
         group_left.entities.append("small-electric-pole", tile_position=(-2, 0))
-        print(group_left.entities[-1])
         group_left.entities.append("power-switch")
-        group_left.add_power_connection(0, 1, side=1)
+        group_left.add_power_connection(0, 1, side_2="input")
+        print("left wires:", group_left.wires)
 
         group_right = Group("right")
         group_right.entities.append("power-switch")
         group_right.entities.append("small-electric-pole", tile_position=(4, 0))
-        group_right.add_power_connection(0, 1, side=2)
+        group_right.add_power_connection(0, 1, side_1="output")
+        print("right wires:", group_right.wires)
 
         blueprint = Blueprint()
         blueprint.entities.append(group_left)
-        with pytest.raises(ValueError):
-            blueprint.entities.append(group_right, merge=True)
+        print("added left wires:", blueprint.entities[0].wires)
+        blueprint.entities.append(group_right, merge=True)
+        print("added right wires:", blueprint.entities[1].wires)
 
-        # TODO
-        # self.maxDiff = None
-        # self.assertEqual(len(blueprint.entities), 2)
-        # self.assertEqual(len(blueprint.entities[0].entities), 2)
-        # self.assertEqual(len(blueprint.entities[1].entities), 1)
-        # self.assertEqual(
-        #     blueprint.to_dict()["blueprint"]["entities"],
-        #     [
-        #         {
-        #             "entity_number": 1,
-        #             "name": "small-electric-pole",
-        #             "position": {"x": -1.5, "y": 0.5},
-        #         },
-        #         {
-        #             "entity_number": 2,
-        #             "name": "power-switch",
-        #             "position": {"x": 1.0, "y": 1.0},
-        #             "connections": {
-        #                 "Cu0": [{"entity_id": 1, "wire_id": 0}],
-        #                 "Cu1": [{"entity_id": 3, "wire_id": 0}]
-        #             }
-        #         },
-        #         {
-        #             "entity_number": 3,
-        #             "name": "small-electric-pole",
-        #             "position": {"x": 4.5, "y": 0.5},
-        #         }
-        #     ]
-        # )
+        assert len(blueprint.entities) == 2
+        assert len(blueprint.entities[0].entities) == 2
+        assert len(blueprint.entities[1].entities) == 1
+        assert blueprint.to_dict()["blueprint"]["entities"] == [
+            {
+                "entity_number": 1,
+                "name": "small-electric-pole",
+                "position": {"x": -1.5, "y": 0.5},
+            },
+            {
+                "entity_number": 2,
+                "name": "power-switch",
+                "position": {"x": 1.0, "y": 1.0},
+            },
+            {
+                "entity_number": 3,
+                "name": "small-electric-pole",
+                "position": {"x": 4.5, "y": 0.5},
+            },
+        ]
+        assert blueprint.to_dict()["blueprint"]["wires"] == [[1, 5, 2, 5], [2, 6, 3, 5]]
 
-        # # Test self overlapping
-        # group = Group()
-        # group.entities.append("small-electric-pole", tile_position=(-2, 0))
-        # group.entities.append("power-switch")
-        # group.add_power_connection(0, 1, side=1)
+        # Test self overlapping
+        group = Group()
+        group.entities.append("small-electric-pole", tile_position=(-2, 0))
+        group.entities.append("power-switch")
+        group.add_power_connection(0, 1, side_2="input")
 
-        # blueprint = Blueprint()
-        # blueprint.entities.append(group)
-        # blueprint.entities.append(group, merge=True)
+        blueprint = Blueprint()
+        blueprint.entities.append(group)
+        blueprint.entities.append(group, merge=True)
 
-        # self.assertEqual(len(blueprint.entities), 2)
-        # self.assertEqual(len(blueprint.entities[0].entities), 2)
-        # self.assertEqual(len(blueprint.entities[1].entities), 0)
-        # self.assertEqual(
-        #     blueprint.to_dict()["blueprint"]["entities"],
-        #     [
-        #         {
-        #             "entity_number": 1,
-        #             "name": "small-electric-pole",
-        #             "position": {"x": -1.5, "y": 0.5},
-        #         },
-        #         {
-        #             "entity_number": 2,
-        #             "name": "power-switch",
-        #             "position": {"x": 1.0, "y": 1.0},
-        #             "connections": {
-        #                 "Cu0": [{"entity_id": 1, "wire_id": 0}],
-        #             }
-        #         },
-        #     ]
-        # )
+        assert len(blueprint.entities) == 2
+        assert len(blueprint.entities[0].entities) == 2
+        assert len(blueprint.entities[1].entities) == 0
+        assert blueprint.to_dict()["blueprint"]["entities"] == [
+            {
+                "entity_number": 1,
+                "name": "small-electric-pole",
+                "position": {"x": -1.5, "y": 0.5},
+            },
+            {
+                "entity_number": 2,
+                "name": "power-switch",
+                "position": {"x": 1.0, "y": 1.0},
+            },
+        ]
+        assert blueprint.to_dict()["blueprint"]["wires"] == [[1, 5, 2, 5]]
 
     def test_eq(self):
         switch1 = PowerSwitch("power-switch")
