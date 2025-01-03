@@ -3,6 +3,9 @@
 ## 2.0.1
 * Merge RosieBaish's pull request:
     * Add logic to allow mods with different special characters
+* Merge Gavinp's pull request:
+    * Add test for creating items with position
+* Fix #121
 
 ## 2.0.0
 * Updated `factorio-data` to version `2.0.28` (latest)
