@@ -904,6 +904,27 @@ class FilterEntry(DraftsmanBaseModel):
     #     return result
 
 
+class ItemFilter(DraftsmanBaseModel):
+    index: int64 = Field(
+        ..., description="""Numeric index of a filter entry, 1-based."""
+    )
+    name: ItemName = Field(..., description="""Name of the item to filter.""")
+    quality: Optional[
+        Literal[
+            "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
+        ]
+    ] = Field(
+        "any",
+        description="""
+        Quality flag of the signal. If unspecified, this value is effectively 
+        equal to 'any' quality level.
+        """,
+    )
+    comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
+        None, description="Comparison operator when deducing the quality type."
+    )
+
+
 def ensure_bar_less_than_inventory_size(
     cls, value: Optional[uint16], info: ValidationInfo
 ):

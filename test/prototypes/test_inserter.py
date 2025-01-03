@@ -106,6 +106,39 @@ class TestInserter:
         with pytest.raises(DataFormatError):
             Inserter("inserter", control_behavior="incorrect").validate().reissue_all()
 
+    def test_set_spoil_priority(self):
+        inserter = Inserter("stack-inserter")
+        assert inserter.spoil_priority == None
+
+        inserter.spoil_priority = "spoiled-first"
+        assert inserter.spoil_priority == "spoiled-first"
+        assert inserter.to_dict() == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "spoil_priority": "spoiled-first",
+        }
+
+        inserter.spoil_priority = "fresh-first"
+        assert inserter.spoil_priority == "fresh-first"
+        assert inserter.to_dict() == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "spoil_priority": "fresh-first",
+        }
+
+        with pytest.raises(DataFormatError):
+            inserter.spoil_priority = "incorrect"
+
+        inserter.validate_assignment = "none"
+        assert inserter.validate_assignment == ValidationMode.NONE
+        inserter.spoil_priority = "incorrect"
+        assert inserter.spoil_priority == "incorrect"
+        assert inserter.to_dict() == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "spoil_priority": "incorrect"
+        }
+
     def test_set_read_contents(self):
         inserter = Inserter("inserter")
         assert inserter.read_hand_contents == None
@@ -183,45 +216,78 @@ class TestInserter:
             "control_behavior": {"circuit_hand_read_mode": "incorrect"},
         }
 
-    def test_mode_of_operation(self):
-        inserter = Inserter("inserter")
-        assert inserter.mode_of_operation == None
+    # 1.0
+    # def test_mode_of_operation(self):
+    #     inserter = Inserter("inserter")
+    #     assert inserter.mode_of_operation == None
+    #     assert inserter.to_dict() == {
+    #         "name": "inserter",
+    #         "position": {"x": 0.5, "y": 0.5},
+    #     }
+
+    #     # Set int
+    #     inserter.mode_of_operation = 0
+    #     assert inserter.mode_of_operation == InserterModeOfOperation.ENABLE_DISABLE
+    #     assert inserter.to_dict() == {
+    #         "name": "inserter",
+    #         "position": {"x": 0.5, "y": 0.5},
+    #         "control_behavior": {"circuit_mode_of_operation": 0},
+    #     }
+
+    #     # Set enum
+    #     inserter.mode_of_operation = InserterModeOfOperation.READ_HAND_CONTENTS
+    #     assert inserter.mode_of_operation == InserterModeOfOperation.READ_HAND_CONTENTS
+    #     assert inserter.to_dict() == {
+    #         "name": "inserter",
+    #         "position": {"x": 0.5, "y": 0.5},
+    #         "control_behavior": {"circuit_mode_of_operation": 2},
+    #     }
+
+    #     # Set int out of enum range
+    #     with pytest.raises(DataFormatError):
+    #         inserter.mode_of_operation = 5
+
+    #     # Turn off validation
+    #     inserter.validate_assignment = "none"
+    #     assert inserter.validate_assignment == ValidationMode.NONE
+    #     inserter.mode_of_operation = 5
+    #     assert inserter.mode_of_operation == 5
+    #     assert inserter.to_dict() == {
+    #         "name": "inserter",
+    #         "position": {"x": 0.5, "y": 0.5},
+    #         "control_behavior": {"circuit_mode_of_operation": 5},
+    #     }
+
+    def test_set_circuit_filters(self):
+        inserter = Inserter("stack-inserter")
+        assert inserter.circuit_set_filters == False
+
+        inserter.circuit_set_filters = True
+        assert inserter.circuit_set_filters == True
         assert inserter.to_dict() == {
-            "name": "inserter",
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {"circuit_set_filters": True},
+        }
+
+        inserter.circuit_set_filters = False
+        assert inserter.circuit_set_filters == False
+        assert inserter.to_dict() == {
+            "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},
         }
 
-        # Set int
-        inserter.mode_of_operation = 0
-        assert inserter.mode_of_operation == InserterModeOfOperation.ENABLE_DISABLE
-        assert inserter.to_dict() == {
-            "name": "inserter",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_mode_of_operation": 0},
-        }
-
-        # Set enum
-        inserter.mode_of_operation = InserterModeOfOperation.READ_HAND_CONTENTS
-        assert inserter.mode_of_operation == InserterModeOfOperation.READ_HAND_CONTENTS
-        assert inserter.to_dict() == {
-            "name": "inserter",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_mode_of_operation": 2},
-        }
-
-        # Set int out of enum range
         with pytest.raises(DataFormatError):
-            inserter.mode_of_operation = 5
+            inserter.circuit_set_filters = "incorrect"
 
-        # Turn off validation
         inserter.validate_assignment = "none"
         assert inserter.validate_assignment == ValidationMode.NONE
-        inserter.mode_of_operation = 5
-        assert inserter.mode_of_operation == 5
+        inserter.circuit_set_filters = "incorrect"
+        assert inserter.circuit_set_filters == "incorrect"
         assert inserter.to_dict() == {
-            "name": "inserter",
+            "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_mode_of_operation": 5},
+            "control_behavior": {"circuit_set_filters": "incorrect"},
         }
 
     def test_set_circuit_stack_size_enabled(self):

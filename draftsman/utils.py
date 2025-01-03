@@ -14,6 +14,7 @@ import base64
 import json
 import math
 from functools import wraps
+
 # import six
 from thefuzz import process
 from typing import Optional, Union, TYPE_CHECKING

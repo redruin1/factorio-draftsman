@@ -3,7 +3,7 @@
 from draftsman.constants import Orientation, ValidationMode
 from draftsman.entity import CargoWagon, cargo_wagons, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import FilterEntry
+from draftsman.signatures import ItemFilter
 from draftsman.warning import (
     BarWarning,
     UnknownEntityWarning,
@@ -144,9 +144,9 @@ class TestCargoWagon:
         # Shorthand format
         wagon.filters = ["iron-ore", "copper-ore", "iron-ore"]
         assert wagon.filters == [
-            FilterEntry(**{"index": 1, "name": "iron-ore"}),
-            FilterEntry(**{"index": 2, "name": "copper-ore"}),
-            FilterEntry(**{"index": 3, "name": "iron-ore"}),
+            ItemFilter(**{"index": 1, "name": "iron-ore"}),
+            ItemFilter(**{"index": 2, "name": "copper-ore"}),
+            ItemFilter(**{"index": 3, "name": "iron-ore"}),
         ]
         assert wagon.to_dict() == {
             "name": "cargo-wagon",
@@ -167,9 +167,9 @@ class TestCargoWagon:
             {"index": 3, "name": "iron-ore"},
         ]
         assert wagon.filters == [
-            FilterEntry(**{"index": 1, "name": "iron-ore"}),
-            FilterEntry(**{"index": 2, "name": "copper-ore"}),
-            FilterEntry(**{"index": 3, "name": "iron-ore"}),
+            ItemFilter(**{"index": 1, "name": "iron-ore"}),
+            ItemFilter(**{"index": 2, "name": "copper-ore"}),
+            ItemFilter(**{"index": 3, "name": "iron-ore"}),
         ]
         assert wagon.to_dict() == {
             "name": "cargo-wagon",
@@ -186,13 +186,13 @@ class TestCargoWagon:
         with pytest.warns(UnknownItemWarning):
             wagon.filters = ["unknown"]
         assert wagon.filters == [
-            FilterEntry(**{"index": 1, "name": "unknown"}),
+            ItemFilter(**{"index": 1, "name": "unknown"}),
         ]
 
         with pytest.raises(DataFormatError):
             wagon.filters = "incorrect"
         assert wagon.filters == [
-            FilterEntry(**{"index": 1, "name": "unknown"}),
+            ItemFilter(**{"index": 1, "name": "unknown"}),
         ]
 
         wagon.validate_assignment = "none"
@@ -211,13 +211,13 @@ class TestCargoWagon:
 
         wagon.set_inventory_filter(0, "wooden-chest")
         assert wagon.filters == [
-            FilterEntry(**{"index": 1, "name": "wooden-chest"}),
+            ItemFilter(**{"index": 1, "name": "wooden-chest"}),
         ]
 
         # Replace existing
         wagon.set_inventory_filter(0, "iron-chest")
         assert wagon.filters == [
-            FilterEntry(**{"index": 1, "name": "iron-chest"}),
+            ItemFilter(**{"index": 1, "name": "iron-chest"}),
         ]
 
         # Remove existing
@@ -237,9 +237,9 @@ class TestCargoWagon:
         data = ["iron-ore", "copper-ore", "coal"]
         wagon.set_inventory_filters(data)
         assert wagon.filters == [
-            FilterEntry(**{"index": 1, "name": "iron-ore"}),
-            FilterEntry(**{"index": 2, "name": "copper-ore"}),
-            FilterEntry(**{"index": 3, "name": "coal"}),
+            ItemFilter(**{"index": 1, "name": "iron-ore"}),
+            ItemFilter(**{"index": 2, "name": "copper-ore"}),
+            ItemFilter(**{"index": 3, "name": "coal"}),
         ]
 
         # Longhand
@@ -250,9 +250,9 @@ class TestCargoWagon:
         ]
         wagon.set_inventory_filters(data)
         assert wagon.filters == [
-            FilterEntry(**{"index": 1, "name": "iron-ore"}),
-            FilterEntry(**{"index": 2, "name": "copper-ore"}),
-            FilterEntry(**{"index": 3, "name": "coal"}),
+            ItemFilter(**{"index": 1, "name": "iron-ore"}),
+            ItemFilter(**{"index": 2, "name": "copper-ore"}),
+            ItemFilter(**{"index": 3, "name": "coal"}),
         ]
 
         wagon.set_inventory_filters(None)
@@ -340,7 +340,7 @@ class TestCargoWagon:
         assert wagon1.tags == {"some": "stuff"}
         assert wagon1.bar == 1
         assert wagon1.inventory["filters"] == [
-            FilterEntry(**{"index": 1, "name": "transport-belt"})
+            ItemFilter(**{"index": 1, "name": "transport-belt"})
         ]
 
     def test_eq(self):

@@ -3,10 +3,10 @@
 from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.data import items, entities
 from draftsman.error import InvalidItemError, DataFormatError
-from draftsman.signatures import DraftsmanBaseModel, FilterEntry, ItemName, int64
+from draftsman.signatures import DraftsmanBaseModel, ItemFilter, ItemName, int64
 
 from pydantic import Field, ValidationError, ValidationInfo, field_validator
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 
 class FiltersMixin:
@@ -15,7 +15,13 @@ class FiltersMixin:
     """
 
     class Format(DraftsmanBaseModel):
-        filters: Optional[list[FilterEntry]] = Field(
+        use_filters: Optional[bool] = Field(
+            False,
+            description="""
+            Whether or not this inserter should use filters
+            """,
+        )
+        filters: Optional[list[ItemFilter]] = Field(
             [],
             description="""
             Any item filters that this inserter or loader has.
@@ -57,15 +63,38 @@ class FiltersMixin:
             "filter_count", 0
         )
 
+    # =========================================================================
+
     @property
-    def filters(self) -> Optional[list[FilterEntry]]:
+    def use_filters(self) -> Optional[bool]:
+        """
+        Whether or not this inserter should use filters at all. Overrided by
+        ``circuit_set_filters``, if present.
+        """
+        return self._root.use_filters
+
+    @use_filters.setter
+    def use_filters(self, value: Optional[list[ItemFilter]]):
+        test_replace_me(
+            self,
+            type(self).Format,
+            self._root,
+            "use_filters",
+            value,
+            self.validate_assignment,
+        )
+
+    # =========================================================================
+
+    @property
+    def filters(self) -> Optional[list[ItemFilter]]:
         """
         TODO
         """
         return self._root.filters
 
     @filters.setter
-    def filters(self, value: Optional[list[FilterEntry]]):
+    def filters(self, value: Optional[list[ItemFilter]]):
         test_replace_me(
             self,
             type(self).Format,
@@ -84,7 +113,15 @@ class FiltersMixin:
 
     # =========================================================================
 
-    def set_item_filter(self, index: int64, item: ItemName):
+    def set_item_filter(
+        self,
+        index: int64,
+        item: ItemName,
+        quality: Literal[
+            "normal", "uncommon", "rare", "epic", "legendary", "any"
+        ] = "normal",
+        comparator: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "=",
+    ):
         """
         Sets one of the item filters of the Entity. `index` in this function is
         in 0-based notation.
@@ -98,7 +135,9 @@ class FiltersMixin:
         """
         if item is not None:
             try:
-                new_entry = FilterEntry(index=index, name=item)
+                new_entry = ItemFilter(
+                    index=index, name=item, quality=quality, comparator=comparator
+                )
                 new_entry.index += 1
             except ValidationError as e:
                 raise DataFormatError(e) from None
@@ -124,7 +163,7 @@ class FiltersMixin:
         )
         self.filters = result
 
-    def set_item_filters(self, *filters: Optional[list[FilterEntry]]):
+    def set_item_filters(self, *filters: Optional[list[ItemFilter]]):
         """
         Sets all of the item filters of the Entity.
 

@@ -262,8 +262,8 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
             # Try a case insensitive alphanumeric only comparison,
             # and succeed if we get exactly one hit.
             dirs = list(topdirs)
-            simplified_dirs = [re.sub(r'[^a-zA-Z0-9]', '', s).lower() for s in dirs]
-            simplified_foldername = re.sub(r'[^a-zA-Z0-9]', '', folder_name).lower()
+            simplified_dirs = [re.sub(r"[^a-zA-Z0-9]", "", s).lower() for s in dirs]
+            simplified_foldername = re.sub(r"[^a-zA-Z0-9]", "", folder_name).lower()
             if simplified_dirs.count(simplified_foldername) == 1:
                 # we want the original folder, so get the index.
                 index = simplified_dirs.index(simplified_foldername)
@@ -273,7 +273,9 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
                 # Why do I always get the short end of the stick!?
                 raise IncorrectModFormatError(
                     "Mod archive '{}' has more than one internal folder, and "
-                    "none of the internal folders match it's external name".format(mod_name)
+                    "none of the internal folders match it's external name".format(
+                        mod_name
+                    )
                 )
 
         try:

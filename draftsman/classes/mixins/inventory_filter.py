@@ -9,7 +9,7 @@ from draftsman.error import (
 )
 from draftsman.signatures import (
     DraftsmanBaseModel,
-    FilterEntry,
+    ItemFilter,
     ItemName,
     int64,
     uint16,
@@ -24,7 +24,7 @@ from pydantic import (
     validate_call,
     field_validator,
 )
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from typing import TYPE_CHECKING
 
@@ -39,7 +39,7 @@ class InventoryFilterMixin:
 
     class Format(BaseModel):
         class InventoryFilters(DraftsmanBaseModel):
-            filters: Optional[list[FilterEntry]] = Field(
+            filters: Optional[list[ItemFilter]] = Field(
                 None,
                 description="""
                 Any reserved item filter slots in the container's inventory.
@@ -163,14 +163,14 @@ class InventoryFilterMixin:
     # =========================================================================
 
     @property
-    def filters(self) -> Optional[list[FilterEntry]]:
+    def filters(self) -> Optional[list[ItemFilter]]:
         """
         TODO
         """
         return self.inventory.filters
 
     @filters.setter
-    def filters(self, value: Optional[list[FilterEntry]]):
+    def filters(self, value: Optional[list[ItemFilter]]):
         test_replace_me(
             self,
             type(self).Format.InventoryFilters,
@@ -233,7 +233,15 @@ class InventoryFilterMixin:
 
     # =========================================================================
 
-    def set_inventory_filter(self, index: int64, item: Optional[ItemName]):
+    def set_inventory_filter(
+        self,
+        index: int64,
+        item: Optional[ItemName],
+        quality: Literal[
+            "normal", "uncommon", "rare", "epic", "legendary", "any"
+        ] = "normal",
+        comparator: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "=",
+    ):
         """
         Sets the item filter at a particular index. If ``item`` is set to
         ``None``, the item filter at that location is removed.
@@ -249,7 +257,7 @@ class InventoryFilterMixin:
         """
         if item is not None:
             try:
-                new_entry = FilterEntry(index=index, name=item)
+                new_entry = ItemFilter(index=index, name=item)
                 new_entry.index += 1
             except ValidationError as e:
                 raise DataFormatError(e) from None
