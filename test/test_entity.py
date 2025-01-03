@@ -51,9 +51,12 @@ class TestEntity:
         with pytest.raises(DataFormatError):
             container.tags = "incorrect"
 
+    # @pytest.mark.xfail(reason="issue 134 https://github.com/redruin1/factorio-draftsman/issues/134")
     def test_get_world_bounding_box(self):
         combinator = DeciderCombinator(tile_position=[3, 3], direction=Direction.EAST)
-        assert combinator.get_world_bounding_box() == AABB(3.65, 2.85, 4.35, 4.15)
+        assert combinator.get_world_bounding_box() == AABB(3.35, 3.15, 4.65, 3.85)
+        recycler = new_entity('recycler',tile_position=[3, 3], direction=Direction.EAST)
+        assert recycler.get_world_bounding_box() == AABB(3,3, 3.3, 6.7, 4.7)
 
     def test_set_name(self):
         iron_chest = Container("iron-chest")
