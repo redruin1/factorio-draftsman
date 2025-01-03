@@ -1,6 +1,7 @@
 # inserter.py
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     StackSizeMixin,
     CircuitReadHandMixin,
@@ -14,12 +15,12 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import Connections, DraftsmanBaseModel, uint8
+from draftsman.signatures import DraftsmanBaseModel, uint8
 from draftsman.utils import get_first
 
 from draftsman.data.entities import inserters
 
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
@@ -70,6 +71,15 @@ class Inserter(
 
         control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
+        pickup_position: Optional[list[float]] = Field(
+            None,
+            description="""The pickup position to use."""
+        )
+        drop_position: Optional[list[float]] = Field(
+            None,
+            description="""Teh drop position to use."""
+        )
+
         model_config = ConfigDict(title="Inserter")
 
     def __init__(
@@ -78,6 +88,8 @@ class Inserter(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
+        pickup_position: Optional[list[float]] = None,
+        drop_position: Optional[list[float]] = None,
         override_stack_size: uint8 = None,
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
@@ -98,7 +110,60 @@ class Inserter(
             **kwargs
         )
 
+        self.pickup_position = pickup_position
+        self.drop_position = drop_position
+
         self.validate_assignment = validate_assignment
+
+    # =========================================================================
+
+    @property
+    def pickup_position(self) -> Optional[list[float]]:
+        """
+        The pickup position of the inserter.
+
+        TODO
+        """
+        return self._root.pickup_position
+    
+    @pickup_position.setter
+    def pickup_position(self, value: Optional[list[float]]) -> None:
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format,
+                self._root,
+                "pickup_position",
+                value,
+            )
+            self._root.pickup_position = result
+        else:
+            self._root.pickup_position = value
+
+    # =========================================================================
+
+    @property
+    def drop_position(self) -> Optional[list[float]]:
+        """
+        The pickup position of the inserter.
+
+        TODO
+        """
+        return self._root.drop_position
+    
+    @drop_position.setter
+    def drop_position(self, value: Optional[list[float]]) -> None:
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format,
+                self._root,
+                "drop_position",
+                value,
+            )
+            self._root.drop_position = result
+        else:
+            self._root.drop_position = value
 
     # =========================================================================
 

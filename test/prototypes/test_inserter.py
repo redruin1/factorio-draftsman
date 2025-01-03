@@ -319,6 +319,29 @@ class TestInserter:
             "control_behavior": {"stack_control_input_signal": ["very", "wrong"]},
         }
 
+    def test_custom_hand_positions(self):
+        inserter = Inserter("stack-inserter")
+
+        inserter.pickup_position = [0, -2]
+        assert inserter.pickup_position == [0, -2]
+        inserter.drop_position = [0, 2]
+        assert inserter.drop_position == [0, 2]
+        assert inserter.to_dict() == {
+            "name": "stack-inserter",
+            "position": {
+                "x": 0.5,
+                "y": 0.5
+            },
+            "pickup_position": [
+                0.0,
+                -2.0
+            ],
+            "drop_position": [
+                0.0,
+                2.0
+            ],
+        }
+
     def test_power_and_circuit_flags(self):
         for name in inserters:
             inserter = Inserter(name)
