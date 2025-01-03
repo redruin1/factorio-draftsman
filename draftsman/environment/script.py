@@ -182,9 +182,10 @@ def main():
 
     args: DraftsmanCommandArgs = parser.parse_args(namespace=DraftsmanCommandArgs())
 
-    if args.operation == "version":
+    if not args.operation:
+        parser.print_help()
+    elif args.operation == "version":
         print("Draftsman {}".format(__version__))
-
     elif args.operation == "factorio-version":
         if args.desired_version is None:
             # Grab and populate the repo, making sure its a git repo we expect
