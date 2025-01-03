@@ -259,12 +259,22 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
             # If there's multiple, but one matches exactly, use that
             mod_folder = folder_name
         else:
-            # Otherwise, who knows! Fix your mods or update the wiki!
-            # Why do I always get the short end of the stick!?
-            raise IncorrectModFormatError(
-                "Mod archive '{}' has more than one internal folder, and "
-                "none of the internal folders match it's external name".format(mod_name)
-            )
+            # Try a case insensitive alphanumeric only comparison,
+            # and succeed if we get exactly one hit.
+            dirs = list(topdirs)
+            simplified_dirs = [re.sub(r'[^a-zA-Z0-9]', '', s).lower() for s in dirs]
+            simplified_foldername = re.sub(r'[^a-zA-Z0-9]', '', folder_name).lower()
+            if simplified_dirs.count(simplified_foldername) == 1:
+                # we want the original folder, so get the index.
+                index = simplified_dirs.index(simplified_foldername)
+                mod_folder = dirs[index]
+            else:
+                # Otherwise, who knows! Fix your mods or update the wiki!
+                # Why do I always get the short end of the stick!?
+                raise IncorrectModFormatError(
+                    "Mod archive '{}' has more than one internal folder, and "
+                    "none of the internal folders match it's external name".format(mod_name)
+                )
 
         try:
             # Zipfiles don't like backslashes on Windows, so we manually

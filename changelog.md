@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.1
+* Merge RosieBaish's pull request:
+    * Add logic to allow mods with different special characters
+
 ## 2.0.0
 * Updated `factorio-data` to version `2.0.28` (latest)
 * Updated `compatibility/defines.lua` to `2.0.28` (latest)
