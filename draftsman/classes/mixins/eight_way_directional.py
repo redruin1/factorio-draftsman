@@ -1,14 +1,19 @@
 # eight_way_directional.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-from draftsman import signatures
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import Direction
-from draftsman.error import DraftsmanError
+from draftsman.signatures import IntPosition, uint8
 
-from schema import SchemaError
-from typing import Union
+from pydantic import (
+    BaseModel,
+    Field,
+    PrivateAttr,
+    ValidationInfo,
+    ValidatorFunctionWrapHandler,
+    field_serializer,
+    field_validator,
+)
+from typing import Any, Optional
 
 from typing import TYPE_CHECKING
 
@@ -16,7 +21,10 @@ if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
-class EightWayDirectionalMixin(object):
+_rotated_collision_sets = {}
+
+
+class EightWayDirectionalMixin:
     """
     Allows the Entity to be rotated in the 8 cardinal directions and diagonals.
     Sets the ``rotatable`` attribute to ``True``.
@@ -26,42 +34,63 @@ class EightWayDirectionalMixin(object):
         :py:class:`~.mixins.directional.DirectionalMixin`
     """
 
-    _exports = {
-        "direction": {
-            "format": "int",
-            "description": "The direction this entity is facing",
-            "required": lambda x: x != 0,
-        }
-    }
+    class Format(BaseModel):
+        direction: Optional[Direction] = Field(
+            Direction.NORTH,
+            ge=0,
+            lt=256,
+            description="""
+            The grid-aligned direction this entity is facing. Direction can only
+            be one of 8 distinct directions (cardinal directions and diagonals),
+            which differs from 'orientation' which is used for RollingStock.
+            """,
+        )
 
-    def __init__(self, name, similar_entities, tile_position=[0, 0], **kwargs):
-        # type: (str, list[str], Union[list, dict], **dict) -> None
-        super(EightWayDirectionalMixin, self).__init__(name, similar_entities, **kwargs)
+    def __init__(
+        self,
+        name: str,
+        similar_entities: list[str],
+        tile_position: IntPosition = (0, 0),
+        **kwargs
+    ):
+        self._root: __class__.Format
 
-        self._rotatable = True
+        super().__init__(name, similar_entities, **kwargs)
+
+        # If 'None' was passed to position, treat that as the same as omission
+        # We do this because we want to be able to annotate `position` in each
+        # entity's __init__ signature and indicate that it's optional
+        if "position" in kwargs and kwargs["position"] is None:
+            del kwargs["position"]
 
         # Keep track of the entities width and height regardless of rotation
-        self._static_tile_width = self.tile_width
-        self._static_tile_height = self.tile_height
-        self._static_collision_set = self.collision_set
+        self._static_tile_width = self._tile_width
+        self._static_tile_height = self._tile_height
+        # self._static_collision_set = self.collision_set
 
         if not hasattr(self, "_overwritten_collision_set"):
             self._collision_set_rotation = {}
             if hasattr(self, "_disable_collision_set_rotation"):  # pragma: no branch
                 # Set every collision orientation to the single collision_set
-                for i in range(8):
-                    self._collision_set_rotation[i] = self.collision_set
+                # for i in range(8):
+                #     self._collision_set_rotation[i] = self.collision_set
+                try:
+                    self._collision_set_rotation = _rotated_collision_sets[self.name]
+                except KeyError:
+                    # Cache it so we only need one
+                    # TODO: would probably be better to do this in env.py, but how?
+                    _rotated_collision_sets[self.name] = {}
+                    for i in range(8):
+                        _rotated_collision_sets[self.name][i] = self.collision_set
+
+                    self._collision_set_rotation = _rotated_collision_sets[self.name]
             # else:
             #     # Automatically generate a set of rotated collision sets for every
             #     # orientation
             #     for i in range(8):
             #         self._collision_set_rotation[i] = self._collision_set.rotate(i)
 
-        self.direction = 0
-        if "direction" in kwargs:
-            self.direction = kwargs["direction"]
-            self.unused_args.pop("direction")
-        # self._add_export("direction", lambda x: x != 0, lambda k, v: (k, int(v)))
+        self.direction = kwargs.get("direction", Direction.NORTH)
 
         # Technically redundant, but we reset the position if the direction has
         # changed to reflect its changes
@@ -73,8 +102,23 @@ class EightWayDirectionalMixin(object):
     # =========================================================================
 
     @property
-    def direction(self):
-        # type: () -> Direction
+    def rotatable(self) -> bool:
+        return True
+
+    # =========================================================================
+
+    @property
+    def square(self) -> bool:
+        """
+        Whether or not the tile width of this entity matches it's tile height.
+        Not exported; read only.
+        """
+        return self._tile_width == self._tile_height
+
+    # =========================================================================
+
+    @property
+    def direction(self) -> Direction:
         """
         The direction that the Entity is facing. An Entity's "front" is usually
         the direction of it's outputs, if it has any.
@@ -86,7 +130,6 @@ class EightWayDirectionalMixin(object):
         :getter: Gets the direction that the Entity is facing.
         :setter: Sets the direction of the Entity. Defaults to ``Direction.NORTH``
             if set to ``None``.
-        :type: :py:data:`~draftsman.constants.Direction`
 
         :exception DraftsmanError: If the direction is set while inside an
             Collection, :ref:`which is forbidden.
@@ -94,40 +137,50 @@ class EightWayDirectionalMixin(object):
         :exception ValueError: If set to anything other than a ``Direction``, or
             its equivalent ``int``.
         """
-        return self._direction
+        return self._root.direction
 
     @direction.setter
-    def direction(self, value):
-        # type: (Direction) -> None
-        if self.parent:
-            raise DraftsmanError(
-                "Cannot set direction of entity while it's in another object"
+    def direction(self, value: Direction):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "direction", value
             )
-
-        if value is None:
-            self._direction = Direction(0)  # Default Direction
+            self._root.direction = result
         else:
-            self._direction = Direction(value)
+            self._root.direction = value
 
-        # if self._direction in {2, 3, 6, 7}:
-        #     self._tile_width = self.static_tile_height
-        #     self._tile_height = self.static_tile_width
-        #     self._collision_box[0] = [
-        #         self.static_collision_box[0][1],
-        #         self.static_collision_box[0][0],
-        #     ]
-        #     self._collision_box[1] = [
-        #         self.static_collision_box[1][1],
-        #         self.static_collision_box[1][0],
-        #     ]
+        # if self.parent:
+        #     raise DraftsmanError(
+        #         "Cannot set direction of entity while it's in another object"
+        #     )
+
+        # if value is None:
+        #     self._root["direction"] = Direction(0)  # Default Direction
         # else:
-        #     self._tile_width = self.static_tile_width
-        #     self._tile_height = self.static_tile_height
-        #     self._collision_box = self.static_collision_box
+        #     self._root["direction"] = Direction(value)
 
-        self._collision_set = self._collision_set_rotation[self._direction]
-        # TODO: do this a little more reliably
-        if self._direction in {2, 3, 6, 7}:
+        # if self._root.direction in {2, 3, 6, 7}:
+        #     self._tile_width = self._static_tile_height
+        #     self._tile_height = self._static_tile_width
+        # self._collision_box[0] = [
+        #     self.static_collision_box[0][1],
+        #     self.static_collision_box[0][0],
+        # ]
+        # self._collision_box[1] = [
+        #     self.static_collision_box[1][1],
+        #     self.static_collision_box[1][0],
+        # ]
+        # else:
+        #     self._tile_width = self._static_tile_width
+        #     self._tile_height = self._static_tile_height
+        # self._collision_box = self.static_collision_box
+
+        # self._collision_set = self._collision_set_rotation.get(
+        #     self._root.direction, None
+        # )
+
+        # TODO: overwrite tile_width/height properties instead
+        if self._root.direction in {2, 3, 6, 7}:
             self._tile_width = self._static_tile_height
             self._tile_height = self._static_tile_width
         else:
@@ -135,11 +188,16 @@ class EightWayDirectionalMixin(object):
             self._tile_height = self._static_tile_height
 
         # Reset the grid/absolute positions in case the direction changed
-        self.tile_position = (self.tile_position.x, self.tile_position.y)
+        # self.tile_position = (self.tile_position.x, self.tile_position.y)
+        self.tile_position = self.tile_position
 
     # =========================================================================
 
-    def mergable_with(self, other):
-        # type: (Entity) -> bool
-        base_mergable = super(EightWayDirectionalMixin, self).mergable_with(other)
+    def mergable_with(self, other: "EightWayDirectionalMixin") -> bool:
+        base_mergable = super().mergable_with(other)
         return base_mergable and self.direction == other.direction
+
+    # =========================================================================
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.direction == other.direction

@@ -1,12 +1,13 @@
 # logistic_condition.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
+from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.signatures import Condition, SignalID, int32
 
-from typing import Union
+from pydantic import BaseModel, Field
+from typing import Literal, Optional, Union
 
 
-class LogisticConditionMixin(object):  # (ControlBehaviorMixin)
+class LogisticConditionMixin:  # (ControlBehaviorMixin)
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
 
@@ -14,11 +15,27 @@ class LogisticConditionMixin(object):  # (ControlBehaviorMixin)
     amount of some item in the logistic network exceeds some constant.
     """
 
-    _exports = {}
+    class ControlFormat(BaseModel):
+        connect_to_logistic_network: Optional[bool] = Field(
+            False,
+            description="""
+            Whether or not this entity will be controlled from the associated 
+            logistic condition.
+            """,
+        )
+        logistic_condition: Optional[Condition] = Field(
+            Condition(first_signal=None, comparator="<", constant=0),
+            description="""
+            The logistic condition that must be passed in order for this entity
+            to function, if 'connect_to_logistic_network' is true.
+            """,
+        )
+
+    class Format(BaseModel):
+        pass
 
     @property
-    def connect_to_logistic_network(self):
-        # type: () -> str
+    def connect_to_logistic_network(self) -> bool:
         """
         Whether or not this entity should use it's logistic network condition to
         control its operation (if it has one).
@@ -27,26 +44,34 @@ class LogisticConditionMixin(object):  # (ControlBehaviorMixin)
             if not set.
         :setter: Sets the value of ``connect_to_logistic_network``. Removes the
             key if set to ``None``.
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.
         """
-        return self.control_behavior.get("connect_to_logistic_network", None)
+        return self.control_behavior.connect_to_logistic_network
 
     @connect_to_logistic_network.setter
-    def connect_to_logistic_network(self, value):
-        if value is None:
-            self.control_behavior.pop("connect_to_logistic_network", None)
-        elif isinstance(value, bool):
-            self.control_behavior["connect_to_logistic_network"] = value
+    def connect_to_logistic_network(self, value: bool):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "connect_to_logistic_network",
+                value,
+            )
+            self.control_behavior.connect_to_logistic_network = result
         else:
-            raise TypeError("'connect_to_logistic_network' must be a bool or None")
+            self.control_behavior.connect_to_logistic_network = value
 
     # =========================================================================
 
-    def set_logistic_condition(self, a=None, cmp="<", b=0):
-        # type: (str, str, Union[str, int]) -> None
+    def set_logistic_condition(
+        self,
+        a: Union[SignalID, None] = None,
+        cmp: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "<",
+        b: Union[SignalID, int32] = 0,
+    ):
         """
         Sets the logistic condition of the Entity.
 
@@ -73,9 +98,8 @@ class LogisticConditionMixin(object):  # (ControlBehaviorMixin)
         self._set_condition("logistic_condition", a, cmp, b)
 
     def remove_logistic_condition(self):
-        # type: () -> None
         """
         Removes the logistic condition of the Entity. Does nothing if the Entity
         has no logistic condition to remove.
         """
-        self.control_behavior.pop("logistic_condition", None)
+        self.control_behavior.logistic_condition = None

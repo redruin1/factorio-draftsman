@@ -1,37 +1,36 @@
 # train_stop.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     ColorMixin,
     CircuitConditionMixin,
-    EnableDisableMixin,
+    CircuitEnableMixin,
     LogisticConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DoubleGridAlignedMixin,
     DirectionalMixin,
 )
-from draftsman.error import DataFormatError
-from draftsman import signatures
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
+from draftsman.signatures import DraftsmanBaseModel, SignalID, uint32
+from draftsman.utils import get_first
 
 from draftsman.data.entities import train_stops
-from draftsman.data.signals import signal_dict
 
-from schema import SchemaError
-import six
-from typing import Union
-import warnings
+from pydantic import (
+    ConfigDict,
+    Field,
+)
+from typing import Any, Literal, Optional, Union
 
 
 class TrainStop(
     ColorMixin,
     CircuitConditionMixin,
     LogisticConditionMixin,
-    EnableDisableMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DoubleGridAlignedMixin,
@@ -42,294 +41,386 @@ class TrainStop(
     A stop for making train schedules for locomotives.
     """
 
-    # fmt: on
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **DoubleGridAlignedMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    #     **EnableDisableMixin._exports,
-    #     **LogisticConditionMixin._exports,
-    #     **CircuitConditionMixin._exports,
-    #     **ColorMixin._exports,
-    #     "station": {
-    #         "format": "str",
-    #         "description": "The name for this station",
-    #         "required": lambda x: x is not None,
-    #     },
-    #     "manual_trains_limit": {
-    #         "format": "int",
-    #         "description": "Manual train limit for this stop (overwritten by logistics or circuit condition)",
-    #         "required": lambda x: x is not None,
-    #     },
-    # }
-    # fmt: on
-
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(DirectionalMixin._exports)
-    _exports.update(DoubleGridAlignedMixin._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(ControlBehaviorMixin._exports)
-    _exports.update(EnableDisableMixin._exports)
-    _exports.update(LogisticConditionMixin._exports)
-    _exports.update(CircuitConditionMixin._exports)
-    _exports.update(ColorMixin._exports)
-    _exports.update(
-        {
-            "station": {
-                "format": "str",
-                "description": "The name for this station",
-                "required": lambda x: x is not None,
-            },
-            "manual_trains_limit": {
-                "format": "int",
-                "description": "Manual train limit for this stop (overwritten by logistics or circuit condition)",
-                "required": lambda x: x is not None,
-            },
-        }
-    )
-
-    def __init__(self, name=train_stops[0], similar_entities=train_stops, **kwargs):
-        # type: (str, list[str], **dict) -> None
-        super(TrainStop, self).__init__(name, similar_entities, **kwargs)
-
-        self.station = None
-        if "station" in kwargs:
-            self.station = kwargs["station"]
-            self.unused_args.pop("station")
-        # self._add_export("station", lambda x: x is not None)
-
-        self.manual_trains_limit = None
-        if "manual_trains_limit" in kwargs:
-            self.manual_trains_limit = kwargs["manual_trains_limit"]
-            self.unused_args.pop("manual_trains_limit")
-        # self._add_export("manual_trains_limit", lambda x: x is not None)
-
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
+    class Format(
+        ColorMixin.Format,
+        CircuitConditionMixin.Format,
+        LogisticConditionMixin.Format,
+        CircuitEnableMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        DoubleGridAlignedMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(
+            CircuitConditionMixin.ControlFormat,
+            LogisticConditionMixin.ControlFormat,
+            CircuitEnableMixin.ControlFormat,
+            DraftsmanBaseModel,
+        ):
+            send_to_train: Optional[bool] = Field(
+                True,
+                description="""
+                Whether or not to send any connected circuit network's signals
+                to the stopped train.
+                """,
+            )
+            set_trains_limit: Optional[bool] = Field(
+                False,
+                description="""
+                Whether or not to limit the amount of trains that can use this
+                stop dynamically via a circuit signal.
+                """,
+            )
+            trains_limit_signal: Optional[SignalID] = Field(
+                SignalID(name="signal-L", type="virtual"),
+                description="""
+                The input signal to read to limit the number of trains that can 
+                use this stop at any one time. Overrides 'manual_trains_limit' 
+                if 'set_trains_limit' is true.
+                """,
+            )
+            read_from_train: Optional[bool] = Field(
+                False,
+                description="""
+                Whether or not to read the contents of the stopped train and 
+                broadcast it to the circuit network.
+                """,
+            )
+            read_stopped_train: Optional[bool] = Field(
+                False,
+                description="""
+                Whether or not to read the unique ID of the stopped train and 
+                broadcast it to the circuit network.
+                """,
+            )
+            train_stopped_signal: Optional[SignalID] = Field(
+                SignalID(name="signal-T", type="virtual"),
+                description="""
+                The output signal which holds the unique ID of the stopped train,
+                if 'read_stopped_train' is true.
+                """,
+            )
+            read_trains_count: Optional[bool] = Field(
+                False,
+                description="""
+                Whether or not to read the trains heading to this train stop,
+                including the train that is currently stopped (if any are).
+                """,
+            )
+            trains_count_signal: Optional[SignalID] = Field(
+                SignalID(name="signal-C", type="virtual"),
+                description="""
+                The output signal which emits the current number of trains 
+                heading to this stop, if 'read_trains_count' is true.
+                """,
             )
 
-    # =========================================================================
+        control_behavior: ControlBehavior | None = ControlBehavior()
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = signatures.TRAIN_STOP_CONTROL_BEHAVIOR.validate(
-                value
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        station: Optional[str] = Field(
+            None,
+            description="""
+            The name of this particular train stop.
+            """,
+        )
+        manual_trains_limit: Optional[uint32] = Field(  # TODO: dimension
+            None,
+            description="""
+            The maximum amount of trains that can be scheduled to this stop, 
+            unless overridden by the circuit network if enabled.
+            """,
+        )
+
+        model_config = ConfigDict(title="TrainStop")
+
+    def __init__(
+        self,
+        name: Optional[str] = get_first(train_stops),
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        control_behavior: Format.ControlBehavior = {},
+        tags: dict[str, Any] = {},
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
+
+        self._root: __class__.Format
+        self.control_behavior: __class__.Format.ControlBehavior
+
+        super(TrainStop, self).__init__(
+            name,
+            train_stops,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            control_behavior=control_behavior,
+            tags=tags,
+            **kwargs
+        )
+
+        self.station = kwargs.get("station", None)
+        self.manual_trains_limit = kwargs.get("manual_trains_limit", None)
+
+        self.validate_assignment = validate_assignment
 
     # =========================================================================
 
     @property
-    def station(self):
-        # type: () -> str
+    def double_grid_aligned(self) -> bool:
+        return True
+
+    # =========================================================================
+
+    @property
+    def station(self) -> Optional[str]:
         """
         The name of this station.
+        TODO more
         """
-        return self._station
+        return self._root.station
 
     @station.setter
-    def station(self, value):
-        # type: (str) -> None
-        if value is None:
-            self._station = value
-        elif isinstance(value, six.string_types):
-            self._station = six.text_type(value)
+    def station(self, value: Optional[str]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "station", value
+            )
+            self._root.station = result
         else:
-            raise TypeError("'station' must be a str or None")
+            self._root.station = value
 
     # =========================================================================
 
     @property
-    def manual_trains_limit(self):
-        # type: () -> int
+    def manual_trains_limit(self) -> Optional[uint32]:
         """
         A limit to the amount of trains that can use this stop. Overridden by
         the circuit signal set train limit (if present).
         """
-        return self._manual_trains_limit
+        return self._root.manual_trains_limit
 
     @manual_trains_limit.setter
-    def manual_trains_limit(self, value):
-        # type: (int) -> None
-        if value is None or isinstance(value, int):
-            self._manual_trains_limit = value
+    def manual_trains_limit(self, value: Optional[uint32]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "manual_trains_limit", value
+            )
+            self._root.manual_trains_limit = result
         else:
-            raise TypeError("'manual_trains_limit' must be an int or None")
+            self._root.manual_trains_limit = value
 
     # =========================================================================
 
     @property
-    def read_from_train(self):
-        # type: () -> bool
+    def send_to_train(self) -> Optional[bool]:
+        """
+        Whether or not to send the contents of any connected circuit network to
+        the train to determine it's schedule.
+        """
+        return self.control_behavior.send_to_train
+
+    @send_to_train.setter
+    def send_to_train(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "send_to_train",
+                value,
+            )
+            self.control_behavior.send_to_train = result
+        else:
+            self.control_behavior.send_to_train = value
+
+    # =========================================================================
+
+    @property
+    def read_from_train(self) -> Optional[bool]:
         """
         Whether or not to read the train's contents when stopped at this train
         stop.
         """
-        return self.control_behavior.get("read_from_train", None)
+        return self.control_behavior.read_from_train
 
     @read_from_train.setter
-    def read_from_train(self, value):
-        # type: (bool) -> None
-        if value is None:
-            self.control_behavior.pop("read_from_train", None)
-        elif isinstance(value, bool):
-            self.control_behavior["read_from_train"] = value
+    def read_from_train(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "read_from_train",
+                value,
+            )
+            self.control_behavior.read_from_train = result
         else:
-            raise TypeError("'read_from_train' must be a bool or None")
+            self.control_behavior.read_from_train = value
 
     # =========================================================================
 
     @property
-    def read_stopped_train(self):
-        # type: () -> bool
+    def read_stopped_train(self) -> Optional[bool]:
         """
         Whether or not to read a unique number associated with the train
         currently stopped at the station.
         """
-        return self.control_behavior.get("read_stopped_train", None)
+        return self.control_behavior.read_stopped_train
 
     @read_stopped_train.setter
-    def read_stopped_train(self, value):
-        # type: (bool) -> None
-        if value is None:
-            self.control_behavior.pop("read_stopped_train", None)
-        elif isinstance(value, bool):
-            self.control_behavior["read_stopped_train"] = value
+    def read_stopped_train(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "read_stopped_train",
+                value,
+            )
+            self.control_behavior.read_stopped_train = result
         else:
-            raise TypeError("'read_stopped_train' must be a bool or None")
+            self.control_behavior.read_stopped_train = value
 
     # =========================================================================
 
     @property
-    def train_stopped_signal(self):
-        # type: () -> dict
+    def train_stopped_signal(self) -> Optional[SignalID]:
         """
         What signal to output the unique train ID if a train is currently
         stopped at a station.
         """
-        return self.control_behavior.get("train_stopped_signal", None)
+        return self.control_behavior.train_stopped_signal
 
     @train_stopped_signal.setter
-    def train_stopped_signal(self, value):
-        # type: (Union[str, dict]) -> None
-        if value is None:
-            self.control_behavior.pop("train_stopped_signal", None)
-        elif isinstance(value, six.string_types):
-            value = six.text_type(value)
-            self.control_behavior["train_stopped_signal"] = signal_dict(value)
-        else:  # dict or other
-            try:
-                value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["train_stopped_signal"] = value
-            except SchemaError:
-                raise TypeError("Incorrectly formatted SignalID")
+    def train_stopped_signal(self, value: Union[str, SignalID, None]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "train_stopped_signal",
+                value,
+            )
+            self.control_behavior.train_stopped_signal = result
+        else:
+            self.control_behavior.train_stopped_signal = value
 
     # =========================================================================
 
     @property
-    def signal_limits_trains(self):
-        # type: () -> bool
+    def signal_limits_trains(self) -> Optional[bool]:
         """
         Whether or not an external signal should limit the number of trains that
         can use this stop.
         """
-        return self.control_behavior.get("set_trains_limit", None)
+        return self.control_behavior.set_trains_limit
 
     @signal_limits_trains.setter
-    def signal_limits_trains(self, value):
-        # type: (bool) -> None
-        if value is None:
-            self.control_behavior.pop("set_trains_limit", None)
-        elif isinstance(value, bool):
-            self.control_behavior["set_trains_limit"] = value
+    def signal_limits_trains(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "set_trains_limit",
+                value,
+            )
+            self.control_behavior.set_trains_limit = result
         else:
-            raise TypeError("'set_trains_limit' must be a bool or None")
+            self.control_behavior.set_trains_limit = value
 
     # =========================================================================
 
     @property
-    def trains_limit_signal(self):
-        # type: () -> dict
+    def trains_limit_signal(self) -> Optional[SignalID]:
         """
         What signal to read to limit the number of trains that can use this stop.
         """
-        return self.control_behavior.get("trains_limit_signal", None)
+        return self.control_behavior.trains_limit_signal
 
     @trains_limit_signal.setter
-    def trains_limit_signal(self, value):
-        # type: (Union[str, dict]) -> None
-        if value is None:
-            self.control_behavior.pop("trains_limit_signal", None)
-        elif isinstance(value, six.string_types):
-            value = six.text_type(value)
-            self.control_behavior["trains_limit_signal"] = signal_dict(value)
-        else:  # dict or other
-            try:
-                value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["trains_limit_signal"] = value
-            except SchemaError:
-                raise TypeError("Incorrectly formatted SignalID")
+    def trains_limit_signal(self, value: Union[str, SignalID, None]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "trains_limit_signal",
+                value,
+            )
+            self.control_behavior.trains_limit_signal = result
+        else:
+            self.control_behavior.trains_limit_signal = value
 
     # =========================================================================
 
     @property
-    def read_trains_count(self):
-        # type: () -> bool
+    def read_trains_count(self) -> Optional[bool]:
         """
         Whether or not to read the number of trains that currently use this stop.
         """
-        return self.control_behavior.get("read_trains_count", None)
+        return self.control_behavior.read_trains_count
 
     @read_trains_count.setter
-    def read_trains_count(self, value):
-        # type: (bool) -> None
-        if value is None:
-            self.control_behavior.pop("read_trains_count", None)
-        elif isinstance(value, bool):
-            self.control_behavior["read_trains_count"] = value
+    def read_trains_count(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "read_trains_count",
+                value,
+            )
+            self.control_behavior.read_trains_count = result
         else:
-            raise TypeError("'read_trains_count' must be a bool or None")
+            self.control_behavior.read_trains_count = value
 
     # =========================================================================
 
     @property
-    def trains_count_signal(self):
-        # type: () -> dict
+    def trains_count_signal(self) -> Optional[SignalID]:
         """
         What signal to use to output the current number of trains that use this
         stop.
         """
-        return self.control_behavior.get("trains_count_signal", None)
+        return self.control_behavior.trains_count_signal
 
     @trains_count_signal.setter
-    def trains_count_signal(self, value):
-        # type: (Union[str, dict]) -> None
-        if value is None:
-            self.control_behavior.pop("trains_count_signal", None)
-        elif isinstance(value, six.string_types):
-            value = six.text_type(value)
-            self.control_behavior["trains_count_signal"] = signal_dict(value)
-        else:  # dict or other
-            try:
-                value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["trains_count_signal"] = value
-            except SchemaError:
-                raise TypeError("Incorrectly formatted SignalID")
+    def trains_count_signal(self, value: Union[str, SignalID, None]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "trains_count_signal",
+                value,
+            )
+            self.control_behavior.trains_count_signal = result
+        else:
+            self.control_behavior.trains_count_signal = value
 
     # =========================================================================
 
-    def merge(self, other):
-        # type: (TrainStop) -> None
+    def merge(self, other: "TrainStop"):
         super(TrainStop, self).merge(other)
 
         self.station = other.station
         self.manual_trains_limit = other.manual_trains_limit
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other: "TrainStop") -> bool:
+        return (
+            super().__eq__(other)
+            and self.station == other.station
+            and self.manual_trains_limit == other.manual_trains_limit
+        )

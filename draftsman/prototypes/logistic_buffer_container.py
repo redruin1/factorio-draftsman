@@ -1,7 +1,4 @@
 # logistic_buffer_container.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
@@ -12,16 +9,21 @@ from draftsman.classes.mixins import (
     RequestFiltersMixin,
     InventoryMixin,
 )
-from draftsman.constants import LogisticModeOfOperation
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import LogisticModeOfOperation, ValidationMode
 from draftsman.error import DataFormatError
-from draftsman import signatures
-from draftsman.warning import DraftsmanWarning
+from draftsman.signatures import (
+    DraftsmanBaseModel,
+    ItemRequest,
+    RequestFilter,
+    uint16,
+)
+from draftsman.utils import get_first
 
 from draftsman.data.entities import logistic_buffer_containers
 
-from schema import SchemaError
-import six
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Optional, Union
 
 
 class LogisticBufferContainer(
@@ -37,51 +39,56 @@ class LogisticBufferContainer(
     A logistics container that requests items on a secondary priority.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **RequestFiltersMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    #     **LogisticModeOfOperationMixin._exports,
-    #     **RequestItemsMixin._exports,
-    #     **InventoryMixin._exports,
-    # }
-    # fmt: on
+    class Format(
+        InventoryMixin.Format,
+        RequestItemsMixin.Format,
+        LogisticModeOfOperationMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        RequestFiltersMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(LogisticModeOfOperationMixin.Format, DraftsmanBaseModel):
+            pass
 
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(RequestFiltersMixin._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(ControlBehaviorMixin._exports)
-    _exports.update(LogisticModeOfOperationMixin._exports)
-    _exports.update(RequestItemsMixin._exports)
-    _exports.update(InventoryMixin._exports)
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-    def __init__(self, name=logistic_buffer_containers[0], **kwargs):
-        # type: (str, **dict) -> None
-        # Set the mode of operation type for this entity
-        self._mode_of_operation_type = LogisticModeOfOperation
+        model_config = ConfigDict(title="LogisticBufferContainer")
+
+    def __init__(
+        self,
+        name: Optional[str] = get_first(logistic_buffer_containers),
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        bar: uint16 = None,
+        request_filters: list[RequestFilter] = [],
+        items: Optional[list[ItemRequest]] = {},
+        control_behavior: Format.ControlBehavior = {},
+        tags: dict[str, Any] = {},
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
 
         super(LogisticBufferContainer, self).__init__(
-            name, logistic_buffer_containers, **kwargs
+            name,
+            logistic_buffer_containers,
+            position=position,
+            tile_position=tile_position,
+            bar=bar,
+            request_filters=request_filters,
+            items=items,
+            control_behavior=control_behavior,
+            tags=tags,
+            **kwargs
         )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self.validate_assignment = validate_assignment
 
     # =========================================================================
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = (
-                signatures.LOGISTIC_BUFFER_CONTROL_BEHAVIOR.validate(value)
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    __hash__ = Entity.__hash__

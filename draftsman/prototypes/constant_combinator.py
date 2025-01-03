@@ -1,150 +1,331 @@
 # constant_combinator.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
+    PlayerDescriptionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
 )
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
+from draftsman.data.signals import get_signal_types
 from draftsman.error import DataFormatError
-import draftsman.signatures as signatures
-from draftsman.warning import DraftsmanWarning
+from draftsman.signatures import (
+    Connections,
+    DraftsmanBaseModel,
+    SignalFilter,
+    SignalID,
+    int32,
+    int64,
+    uint32,
+)
+from draftsman.utils import get_first
+from draftsman.warning import PureVirtualDisallowedWarning  # TODO
 
 from draftsman.data.entities import constant_combinators
 from draftsman.data import entities
-from draftsman.data import signals
 
-from schema import SchemaError
-import six
-import warnings
+from pydantic import ConfigDict, Field, ValidationError, field_validator
+from typing import Any, Literal, Optional, Union
 
 
 class ConstantCombinator(
-    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
+    PlayerDescriptionMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    DirectionalMixin,
+    Entity,
 ):
     """
     A combinator that holds a number of constant signals that can be output to
     the circuit network.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    # }
-    # fmt: on
+    class Format(
+        PlayerDescriptionMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format,
+    ):
+        # 1.1 Control behavior:
+        # class ControlBehavior(DraftsmanBaseModel):
+        #     filters: Optional[list[SignalFilter]] = Field(
+        #         [],
+        #         description="""
+        #         The set of constant signals that are emitted when this
+        #         combinator is turned on.
+        #         """,
+        #     )
+        #     is_on: Optional[bool] = Field(
+        #         True,
+        #         description="""
+        #         Whether or not this constant combinator is toggled on or off.
+        #         """,
+        #     )
 
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(DirectionalMixin._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(ControlBehaviorMixin._exports)
+        #     @field_validator("filters", mode="before")
+        #     @classmethod
+        #     def normalize_input(cls, value: Any):
+        #         if isinstance(value, list):
+        #             for i, entry in enumerate(value):
+        #                 if isinstance(entry, tuple):
+        #                     value[i] = {
+        #                         "index": i + 1,
+        #                         "signal": entry[0],
+        #                         "count": entry[1],
+        #                     }
 
-    def __init__(self, name=constant_combinators[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(ConstantCombinator, self).__init__(name, constant_combinators, **kwargs)
+        #         return value
 
-        self._item_slot_count = entities.raw[self.name]["item_slot_count"]
+        class ControlBehavior(DraftsmanBaseModel):
+            class Sections(DraftsmanBaseModel):
+                class Section(DraftsmanBaseModel):
+                    index: uint32
+                    filters: Optional[list[SignalFilter]] = []
+                    group: Optional[str] = Field(
+                        None,
+                        description="Name of this particular signal section group.",
+                    )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
+                    def set_signal(
+                        self,
+                        index: int64,
+                        name: Union[str, None],
+                        count: int32 = 0,
+                        quality: Literal[
+                            "normal",
+                            "uncommon",
+                            "rare",
+                            "epic",
+                            "legendary",
+                            "quality-unknown",
+                            "any",
+                        ] = "normal",
+                        type: Optional[str] = None,
+                    ) -> None:
+                        try:
+                            new_entry = SignalFilter(
+                                index=index,
+                                name=name,
+                                type=type,
+                                quality=quality,
+                                comparator="=",
+                                count=count,
+                            )
+                            new_entry.index += 1
+                        except ValidationError as e:
+                            raise DataFormatError(e) from None
+
+                        new_filters = [] if self.filters is None else self.filters
+
+                        # Check to see if filters already contains an entry with the same index
+                        existing_index = None
+                        for i, signal_filter in enumerate(new_filters):
+                            if (
+                                index + 1 == signal_filter["index"]
+                            ):  # Index already exists in the list
+                                if name is None:  # Delete the entry
+                                    del new_filters[i]
+                                else:
+                                    new_filters[i] = new_entry
+                                existing_index = i
+                                break
+
+                        if existing_index is None:
+                            new_filters.append(new_entry)
+
+                    def get_signal(self, index):
+                        """
+                        Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
+                        if it exists.
+
+                        :param index: The index of the signal to analyze.
+
+                        :returns: A ``dict`` that conforms to :py:data:`.SIGNAL_FILTER`, or
+                            ``None`` if nothing was found at that index.
+                        """
+                        if not self.filters:
+                            return None
+
+                        return next(
+                            (
+                                item
+                                for item in self.filters
+                                if item["index"] == index + 1
+                            ),
+                            None,
+                        )
+
+                    @field_validator("filters", mode="before")
+                    @classmethod
+                    def normalize_input(cls, value: Any):
+                        if isinstance(value, list):
+                            for i, entry in enumerate(value):
+                                if isinstance(entry, tuple):
+                                    value[i] = {
+                                        "index": i + 1,
+                                        "name": entry[0],
+                                        "type": next(iter(get_signal_types(entry[0]))),
+                                        "comparator": "=",
+                                        "count": entry[1],
+                                        "max_count": entry[1],
+                                    }
+
+                        return value
+
+                sections: Optional[list[Section]] = Field([], description="""TODO""")
+
+                def __getitem__(self, key):
+                    # Custom getitem for this thing specfically
+                    # return self.sections[key]
+                    if isinstance(key, str):
+                        return next(
+                            section for section in self.sections if section.group == key
+                        )
+                    else:
+                        return self.sections[key]
+
+            sections: Optional[Sections] = Field(
+                Sections(),
+                description="""
+                The signal sections specified in this combinator (or elsewhere?)
+                """,
             )
 
-    # =========================================================================
-
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = (
-                signatures.CONSTANT_COMBINATOR_CONTROL_BEHAVIOR.validate(value)
+            is_on: Optional[bool] = Field(
+                True,
+                description="""
+                Whether or not this constant combinator is toggled on or off.
+                """,
             )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+
+        model_config = ConfigDict(title="ConstantCombinator")
+
+    def __init__(
+        self,
+        name: Optional[str] = get_first(constant_combinators),
+        position: Union[Vector, PrimitiveVector, None] = None,
+        tile_position: Union[Vector, PrimitiveVector, None] = (0, 0),
+        direction: Optional[Direction] = Direction.NORTH,
+        player_description: Optional[str] = None,
+        connections: Optional[Connections] = None,
+        control_behavior: Optional[Format.ControlBehavior] = None,
+        tags: Optional[dict[str, Any]] = None,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
+
+        self._root: __class__.Format
+        self.control_behavior: __class__.Format.ControlBehavior
+
+        super().__init__(
+            name,
+            constant_combinators,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            player_description=player_description,
+            connections={} if connections is None else connections,
+            control_behavior={} if control_behavior is None else control_behavior,
+            tags={} if tags is None else tags,
+            **kwargs
+        )
+
+        self.validate_assignment = validate_assignment
 
     # =========================================================================
 
     @property
-    def item_slot_count(self):
-        # type: () -> int
+    def item_slot_count(self) -> uint32:
         """
         The total number of signal slots that this ``ConstantCombinator`` can
         hold. Equivalent to ``"item_slot_count"`` from Factorio's ``data.raw``.
+        Returns ``None`` if the entity's name is not recognized by Draftsman.
         Not exported; read only.
 
-        :type: ``int``
+        Note: Deprecated in Factorio 2.0; each combinator signal section can
+        hold up to 1000 signals, and a combinator can as many signal sections as
+        desired.
         """
-        return self._item_slot_count
+        return entities.raw.get(self.name, {"item_slot_count": None})["item_slot_count"]
 
     # =========================================================================
 
+    # @property
+    # def signals(self) -> Optional[list[SignalFilter]]:
+    #     """
+    #     The list of signals that this :py:class:`.ConstantCombinator` currently
+    #     holds. Aliases ``control_behavior["filter"]``. Can be set to one of two
+    #     formats:
+
+    #     .. code-block:: python
+
+    #         [{"index": int, "signal": SIGNAL_ID, "count": int}, ...]
+    #         # Or
+    #         [(signal_name, signal_value), (str, int), ...]
+
+    #     If the data is set to the latter, it is converted to the former.
+
+    #     Raises :py:class:`.DraftsmanWarning` if a signal is set to one of the
+    #     pure virtual signals ("signal-everything", "signal-anything", or
+    #     "signal-each").
+
+    #     :getter: Gets the signals of the combinators, or an empty list if not
+    #         set.
+    #     :setter: Sets the signals of the combinators. Removes the key if set to
+    #         ``None``.
+
+    #     :exception DataFormatError: If set to anything that does not match the
+    #         format specified above.
+    #     """
+    #     return self.control_behavior.sections.filters
+
+    # @signals.setter
+    # def signals(self, value: Optional[list[SignalFilter]]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior,
+    #             self.control_behavior,
+    #             "filters",
+    #             value,
+    #         )
+    #         self.control_behavior.sections.filters = result
+    #     else:
+    #         self.control_behavior.sections.filters = value
+
     @property
-    def signals(self):
-        # type: () -> list
-        """
-        The list of signals that this :py:class:`.ConstantCombinator` currently
-        holds. Aliases ``control_behavior["filter"]``. Can be set to one of two
-        formats:
+    def sections(self) -> Optional[list[Format.ControlBehavior.Sections.Section]]:
+        return self.control_behavior.sections.sections
 
-        .. code-block:: python
-
-            [{"index": int, "signal": SIGNAL_ID, "count": int}, ...]
-            # Or
-            [(signal_name, signal_value), (str, int), ...]
-
-        If the data is set to the latter, it is converted to the former.
-
-        Raises :py:class:`.DraftsmanWarning` if a signal is set to one of the
-        pure virtual signals ("signal-everything", "signal-anything", or
-        "signal-each").
-
-        :getter: Gets the signals of the combinators, or an empty list if not
-            set.
-        :setter: Sets the signals of the combinators. Removes the key if set to
-            ``None``.
-        :type: :py:data:`.SIGNAL_FILTERS`
-
-        :exception DataFormatError: If set to anything that does not match the
-            format specified above.
-        """
-        return self.control_behavior.get("filters", [])
-
-    @signals.setter
-    def signals(self, value):
-        # type: (list) -> None
-        if value is None:
-            self.control_behavior.pop("filters", None)
+    @sections.setter
+    def sections(self, value: Optional[list[Format.ControlBehavior.Sections.Section]]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior.Sections,
+                self.control_behavior.sections,
+                "sections",
+                value,
+            )
+            self.control_behavior.sections.sections = result
         else:
-            try:
-                value = signatures.SIGNAL_FILTERS.validate(value)
-                # Check for pure virtual signals
-                # APPARENTLY this is allowed, but because this is not "endorsed"
-                # by Factorio we issue warnings if we find one
-                for filter in value:
-                    if filter["signal"]["name"] in signals.pure_virtual:
-                        warnings.warn(
-                            "Set signal in index {} to '{}'; is this intentional?".format(
-                                filter["index"], filter["signal"]["name"]
-                            ),
-                            DraftsmanWarning,
-                            stacklevel=2,
-                        )
-                self.control_behavior["filters"] = value
-            except SchemaError as e:
-                six.raise_from(DataFormatError(e), None)
+            self.control_behavior.sections.sections = value
 
     # =========================================================================
 
     @property
-    def is_on(self):
+    def is_on(self) -> Optional[bool]:
         """
         Whether or not this Constant combinator is "on" and currently outputting
         it's contents to connected wires. Default state is enabled.
@@ -153,109 +334,121 @@ class ConstantCombinator(
             not set.
         :setter: Sets whether or not this combinator is enabled. Removes the key
             if set to ``None``.
-        :type: ``bool``
         """
-        return self.control_behavior.get("is_on", None)
+        return self.control_behavior.is_on
 
     @is_on.setter
-    def is_on(self, value):
-        if value is None:
-            self.control_behavior.pop("is_on", None)
-        elif isinstance(value, bool):
-            self.control_behavior["is_on"] = value
+    def is_on(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "is_on",
+                value,
+            )
+            self.control_behavior.is_on = result
         else:
-            raise TypeError("'is_on' must be a bool or None")
+            self.control_behavior.is_on = value
 
     # =========================================================================
 
-    def set_signal(self, index, signal, count=0):
-        # type: (int, str, int) -> None
+    def add_section(
+        self,
+        group: Union[str, None] = None,
+        index: Optional[int] = None,  # TODO: integer size
+        active: bool = True,
+    ) -> "ConstantCombinator.Format.ControlBehavior.Sections.Section":
         """
-        Set the signal of the ``ConstantCombinator`` at a particular index with
-        a particular value.
+        Adds a new section to the constant combinator.
 
-        :param index: The index of the signal.
-        :param signal: The name of the signal.
-        :param count: The value of the signal.
+        NOTE:: Beware of giving sections the same or existing names! If a named
+            group already exists within a save, then that group will take
+            precedence over a newly added group.
 
-        :exception TypeError: If ``index`` is not an ``int``, if ``name`` is not
-            a ``str``, or if ``count`` is not an ``int``.
+        :param group: The name to give this group. The group will have no name
+            if omitted.
+        :param index: The index at which to insert the filter group. Defaults to
+            the end if omitted.
+        :param active: Whether or not this particular group is contributing its
+            contents to the output in this specific combinator.
+
+        :returns: A reference to the :class:`.Section` just added.
         """
-        # Check validity before modifying self
-        try:
-            index = signatures.INTEGER.validate(index)
-            signal = signatures.SIGNAL_ID_OR_NONE.validate(signal)
-            # signal = signals.signal_dict(signal) if signal is not None else None
-            count = signatures.INTEGER.validate(count)
-        except SchemaError as e:
-            six.raise_from(TypeError(e), None)
+        section = {"active": active}
+        if group is not None:
+            section["group"] = group
+        if index is not None:
+            section["index"] = index + 1
+        else:
+            section["index"] = len(self.sections) + 1
+        section = self.Format.ControlBehavior.Sections.Section(**section)
+        self.sections.append(section)
+        return self.sections[-1]
 
-        if not 0 <= index < self.item_slot_count:
-            raise IndexError(
-                "Signal 'index' ({}) must be in the range [0, {})".format(
-                    index, self.item_slot_count
-                )
-            )
+    # =========================================================================
 
-        if "filters" not in self.control_behavior:
-            self.control_behavior["filters"] = []
-
-        # Check to see if filters already contains an entry with the same index
-        for i, filter in enumerate(self.control_behavior["filters"]):
-            if index + 1 == filter["index"]:  # Index already exists in the list
-                if signal is None:  # Delete the entry
-                    del self.control_behavior["filters"][i]
-                else:  # Set the new value
-                    self.control_behavior["filters"][i] = {
-                        "index": index + 1,
-                        "signal": signal,
-                        "count": count,
-                    }
-                return
-
-        # If no entry with the same index was found, create a new one
-        self.control_behavior["filters"].append(
-            {"index": index + 1, "signal": signal, "count": count}
-        )
-
-    def get_signal(self, index):
-        # type: (int) -> dict
-        """
-        Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
-        if it exists.
-
-        :param index: The index of the signal to analyze.
-
-        :returns: A ``dict`` that conforms to :py:data:`.SIGNAL_FILTER`, or
-            ``None`` if nothing was found at that index.
-        """
-        filters = self.control_behavior.get("filters", None)
-        if not filters:
-            return None
-
-        return next((item for item in filters if item["index"] == index + 1), None)
-
-    # def set_signals(self, signals):
-    #     # type: (list) -> None
+    # def set_signal(
+    #     self,
+    #     index: int64,
+    #     name: str,
+    #     count: int32 = 0,
+    #     type: Optional[str] = None,
+    #     quality: Literal["normal", "uncommon", "rare", "epic", "legendary"] = "normal"
+    # ):
     #     """
-    #     Set all the signals of the ``ConstantCombinator``.
+    #     Set the signal of the ``ConstantCombinator`` at a particular index with
+    #     a particular value.
 
-    #     ``signals`` can be specified as one of two formats:
+    #     :param index: The index of the signal.
+    #     :param signal: The name of the signal.
+    #     :param count: The value of the signal.
 
-    #     where the location of each tuple in the parent list is equivalent to the
-    #     ``index`` of the entry in the ``ConstantCombinator``.
-
-    #     :param signals: The signals to set the data to, in the format
-    #         :py:data:`.SIGNAL_FILTERS` specified above.
-
-    #     :exception DataFormatError: If ``signals`` does not match the format
-    #         specified in :py:data:`.SIGNAL_FILTERS`.
+    #     :exception TypeError: If ``index`` is not an ``int``, if ``name`` is not
+    #         a ``str``, or if ``count`` is not an ``int``.
     #     """
-    #     if signals is None:
-    #         self.control_behavior.pop("filters", None)
-    #     else:
-    #         try:
-    #             signals = signatures.SIGNAL_FILTERS.validate(signals)
-    #             self.control_behavior["filters"] = signals
-    #         except SchemaError as e:
-    #             six.raise_from(DataFormatError(e), None)
+
+    #     try:
+    #         new_entry = SignalFilter(index=index, name=name, type=type, quality=quality, comparator="=", count=count)
+    #         new_entry.index += 1
+    #     except ValidationError as e:
+    #         raise DataFormatError(e) from None
+
+    #     section = self.sections[section]
+    #     section.append(new_entry)
+
+    #     new_filters = [] if self.signals is None else self.signals
+
+    #     # # Check to see if filters already contains an entry with the same index
+    #     # existing_index = None
+    #     # for i, signal_filter in enumerate(new_filters):
+    #     #     if index + 1 == signal_filter["index"]:  # Index already exists in the list
+    #     #         if signal is None:  # Delete the entry
+    #     #             del new_filters[i]
+    #     #         else:
+    #     #             new_filters[i] = new_entry
+    #     #         existing_index = i
+    #     #         break
+
+    #     # if existing_index is None:
+    #     #     new_filters.append(new_entry)
+
+    # def get_signal(self, index: int64) -> Optional[SignalFilter]:
+    #     """
+    #     Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
+    #     if it exists.
+
+    #     :param index: The index of the signal to analyze.
+
+    #     :returns: A ``dict`` that conforms to :py:data:`.SIGNAL_FILTER`, or
+    #         ``None`` if nothing was found at that index.
+    #     """
+    #     filters = self.control_behavior.get("filters", None)
+    #     if not filters:
+    #         return None
+
+    #     return next((item for item in filters if item["index"] == index + 1), None)
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

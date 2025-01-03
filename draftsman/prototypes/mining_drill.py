@@ -1,41 +1,37 @@
 # mining_drill.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
+    BurnerEnergySourceMixin,
     ModulesMixin,
     RequestItemsMixin,
     CircuitReadResourceMixin,
     CircuitConditionMixin,
-    EnableDisableMixin,
+    CircuitEnableMixin,
     LogisticConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
 )
-from draftsman.error import DataFormatError
-from draftsman import signatures
-from draftsman import utils
-from draftsman.warning import DraftsmanWarning, ItemLimitationWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
+from draftsman.signatures import Connections, DraftsmanBaseModel, ItemRequest
+from draftsman.utils import get_first
 
 from draftsman.data.entities import mining_drills
-from draftsman.data import modules
-from draftsman.data import items
 
-from schema import SchemaError
-import six
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Optional, Union
 
 
 class MiningDrill(
+    BurnerEnergySourceMixin,
     ModulesMixin,
     RequestItemsMixin,
     CircuitReadResourceMixin,
     CircuitConditionMixin,
     LogisticConditionMixin,
-    EnableDisableMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
@@ -45,72 +41,89 @@ class MiningDrill(
     An entity that extracts resources from the environment.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    #     **EnableDisableMixin._exports,
-    #     **LogisticConditionMixin._exports,
-    #     **CircuitConditionMixin._exports,
-    #     **CircuitReadResourceMixin._exports,
-    #     **RequestItemsMixin._exports,
-    #     **ModulesMixin._exports,
-    # }
-    # fmt: on
+    class Format(
+        BurnerEnergySourceMixin.Format,
+        ModulesMixin.Format,
+        RequestItemsMixin.Format,
+        CircuitReadResourceMixin.Format,
+        CircuitConditionMixin.Format,
+        LogisticConditionMixin.Format,
+        CircuitEnableMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        DirectionalMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(
+            CircuitReadResourceMixin.ControlFormat,
+            CircuitConditionMixin.ControlFormat,
+            LogisticConditionMixin.ControlFormat,
+            CircuitEnableMixin.ControlFormat,
+            DraftsmanBaseModel,
+        ):
+            pass
 
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(DirectionalMixin._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(ControlBehaviorMixin._exports)
-    _exports.update(EnableDisableMixin._exports)
-    _exports.update(LogisticConditionMixin._exports)
-    _exports.update(CircuitConditionMixin._exports)
-    _exports.update(CircuitReadResourceMixin._exports)
-    _exports.update(RequestItemsMixin._exports)
-    _exports.update(ModulesMixin._exports)
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-    def __init__(self, name=mining_drills[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(MiningDrill, self).__init__(name, mining_drills, **kwargs)
+        model_config = ConfigDict(title="MiningDrill")
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+    def __init__(
+        self,
+        name: Optional[str] = get_first(mining_drills),
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        items: Optional[list[ItemRequest]] = [],  # TODO: ItemID
+        control_behavior: Format.ControlBehavior = {},
+        tags: dict[str, Any] = {},
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
+
+        super().__init__(
+            name,
+            mining_drills,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            items=items,
+            control_behavior=control_behavior,
+            tags=tags,
+            **kwargs
+        )
+
+        self.validate_assignment = validate_assignment
 
     # =========================================================================
 
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = signatures.MINING_DRILL_CONTROL_BEHAVIOR.validate(
-                value
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    @property
+    def allowed_items(self) -> Optional[set[str]]:
+        if self.allowed_modules is None:  # Unknown entity
+            return None
+        return self.allowed_modules.union(self.allowed_fuel_items)
+
+    # @reissue_warnings
+    # def set_item_request(self, item: str, count: Optional[uint32]):  # TODO: ItemID
+    #     # Make sure the item exists
+    #     print("MiningDrill")
+    #     print(item, count)
+    #     if item not in items.raw:
+    #         raise InvalidItemError(item)
+
+    #     if item in items.raw and item not in modules.raw:
+    #         warnings.warn(
+    #             "Item '{}' cannot be placed in MiningDrill".format(item),
+    #             ItemLimitationWarning,
+    #             stacklevel=2,
+    #         )
+
+    #     super().set_item_request(item, count)
 
     # =========================================================================
 
-    @utils.reissue_warnings
-    def set_item_request(self, item, amount):
-        # type: (str, int) -> None
-        # Make sure the item exists
-        # if item not in items.raw:
-        #     raise InvalidItemError(item)
-
-        if item in items.raw and item not in modules.raw:
-            warnings.warn(
-                "Item '{}' cannot be placed in MiningDrill".format(item),
-                ItemLimitationWarning,
-                stacklevel=2,
-            )
-
-        # self._handle_module_slots(item, amount)
-
-        super(MiningDrill, self).set_item_request(item, amount)
+    __hash__ = Entity.__hash__

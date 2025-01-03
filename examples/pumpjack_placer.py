@@ -6,23 +6,27 @@ https://factorioprints.com/view/-LbygJLCDgaBJqsMPqUJ
 Can be expanded as much as you dare.
 """
 
-import warnings
+# TODO: speed this thing up, shouldn't take 10+ seconds
+
 from draftsman.blueprintable import Blueprint
+from draftsman.constants import ValidationMode
 from draftsman.warning import OverlappingObjectsWarning
+import warnings
 
 
 def main():
-    blueprint = Blueprint()
+    blueprint = Blueprint(validate_assignment=ValidationMode.NONE)
     blueprint.label = "Huge Pumpjacks"
-    blueprint.icons = ["pumpjack"]
+    blueprint.set_icons("pumpjack")
 
-    # Do this unless you want your stdout flooded with warnings
-    warnings.simplefilter("ignore", OverlappingObjectsWarning)
-
-    dim = 64
-    for y in range(dim):
-        for x in range(dim):
+    dimension = 64
+    for y in range(dimension):
+        for x in range(dimension):
             blueprint.entities.append("pumpjack", position=[x, y])
+
+    # If you want to see all the OverlappingObjectsWarning, do this:
+    # for warning in blueprint.inspect():
+    #    warning.show()
 
     print(blueprint.to_string())
 

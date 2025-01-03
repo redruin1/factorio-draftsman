@@ -22,10 +22,11 @@ train stop every time they are modified. The sub-entities are accessable as
 """
 
 from draftsman.classes.blueprint import Blueprint, EntityList
-from draftsman.classes.entitylike import EntityLike
+from draftsman.classes.entity_like import EntityLike
 
 # from draftsman.classes.entitylist import EntityList
 from draftsman.constants import Direction
+from draftsman.classes.group import Group
 from draftsman.entity import TrainStop, ConstantCombinator, Lamp
 from draftsman.error import MissingModError
 
@@ -47,7 +48,10 @@ class LogisticTrainStop(TrainStop):
         self.input = Lamp("logistic-train-stop-input", id="input")
         self.output = ConstantCombinator("logistic-train-stop-output", id="output")
         # We create an EntityList so that the parent can access via
-        self.entities = EntityList(self, [self.input, self.output])
+        self.entities = EntityList(self)
+        # # We make sure not to copy, since we only want one input and output
+        self.entities.append(self.input, copy=False)
+        self.entities.append(self.output, copy=False)
 
         # We initialize the base, which will call this classes implementations
         # of position, tile_position, and direction
@@ -57,6 +61,7 @@ class LogisticTrainStop(TrainStop):
     def position(self, value):
         # type: (Union[dict, list, tuple]) -> None
         # Concerning syntax, but necessary
+        # Call the parent function, and then resolve input and output
         super(LogisticTrainStop, type(self)).position.fset(self, value)
         self._adjust_sub_entities()
 
@@ -72,8 +77,8 @@ class LogisticTrainStop(TrainStop):
         super(LogisticTrainStop, type(self)).direction.fset(self, value)
         self._adjust_sub_entities()
 
-    def on_entity_insert(self, _):
-        pass
+    def on_entity_insert(self, entitylike, merge):
+        return entitylike
 
     def get(self):
         # type: () -> list[EntityLike]
@@ -81,9 +86,11 @@ class LogisticTrainStop(TrainStop):
         Return a list of the parent train stop, as well as the input and output
         entities.
         """
-        # self.input._id = (self.id, self.input.id)
-        # self.output._id = (self.id, self.output.id)
-        return [super(LogisticTrainStop, self), self.input, self.output]
+        return [
+            super(LogisticTrainStop, self),
+            self.entities["input"],
+            self.entities["output"],
+        ]
 
     def _adjust_sub_entities(self):
         # type: () -> None
@@ -97,21 +104,24 @@ class LogisticTrainStop(TrainStop):
         if not hasattr(self, "direction"):
             return
 
-        input_offset_dict = {0: [1, 0], 2: [1, 1], 4: [0, 1], 6: [0, 0]}
-        output_offset_dict = {0: [0, 0], 2: [1, 0], 4: [1, 1], 6: [0, 1]}
-        stop_position = [self.tile_position["x"], self.tile_position["y"]]
+        input_offset_dict = {
+            Direction.NORTH: (0, -1),
+            Direction.EAST: (0, 0),
+            Direction.SOUTH: (-1, 0),
+            Direction.WEST: (-1, -1),
+        }
+        output_offset_dict = {
+            Direction.NORTH: (-1, -1),
+            Direction.EAST: (0, -1),
+            Direction.SOUTH: (0, 0),
+            Direction.WEST: (-1, 0),
+        }
 
         offset = input_offset_dict[self.direction]
-        self.input.tile_position = (
-            stop_position[0] + offset[0],
-            stop_position[1] + offset[1],
-        )
+        self.input.tile_position = offset
 
         offset = output_offset_dict[self.direction]
-        self.output.tile_position = (
-            stop_position[0] + offset[0],
-            stop_position[1] + offset[1],
-        )
+        self.output.tile_position = offset
         self.output.direction = self.direction
 
 
@@ -120,6 +130,7 @@ def main():
     # so we check to make sure that's met before starting
     if not draftsman.data.mods.mod_list.get("LogisticTrainNetwork", False):
         raise MissingModError("LogisticTrainNetwork")
+        # TODO: we might be able to gerry-mander this without the mod
 
     blueprint = Blueprint()
 
@@ -127,14 +138,13 @@ def main():
     # To illustrate that the base class is also working
     train_stop.id = "ltn_stop"
     train_stop.color = (0, 0, 0)
-    train_stop.station = "test"
+    train_stop.station = "Test Station"
     blueprint.entities.append(train_stop)
 
-    blueprint.entities.append("medium-electric-pole", id="test")
-    blueprint.add_circuit_connection("red", "test", ("ltn_stop", "input"))
-    blueprint.add_circuit_connection("green", "test", ("ltn_stop", "output"))
+    blueprint.entities.append("medium-electric-pole", id="power_pole")
+    blueprint.add_circuit_connection("red", "power_pole", train_stop.input)
+    blueprint.add_circuit_connection("green", "power_pole", ("ltn_stop", "output"))
 
-    print(blueprint)
     print(blueprint.to_string())
 
 

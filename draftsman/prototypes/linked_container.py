@@ -1,17 +1,17 @@
 # linked_container.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import InventoryMixin, RequestItemsMixin
-from draftsman import signatures
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.signatures import ItemRequest, uint16, uint32
+from draftsman.utils import get_first
 
 from draftsman.data.entities import linked_containers
 
-import six
-import warnings
+from pydantic import ConfigDict, Field, field_validator
+from typing import Any, Literal, Optional, Union
 
 
 class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
@@ -20,83 +20,96 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
     with the same ``link_id``.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **RequestItemsMixin._exports,
-    #     **InventoryMixin._exports,
-    #     "link_id": {
-    #         "format": "int32",
-    #         "description": "The current 'channel' that this container uses",
-    #         "required": lambda x: x != 0,
-    #     },
-    # }
-    # fmt: on
+    class Format(
+        InventoryMixin.Format,
+        RequestItemsMixin.Format,
+        Entity.Format,
+    ):
+        link_id: Optional[uint32] = Field(
+            0,
+            description="""
+            A unique integer key that this container will broadcast it's 
+            contents on.
+            """,
+        )
 
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(RequestItemsMixin._exports)
-    _exports.update(InventoryMixin._exports)
-    _exports.update(
-        {
-            "link_id": {
-                "format": "int32",
-                "description": "The current 'channel' that this container uses",
-                "required": lambda x: x != 0,
-            }
-        }
-    )
+        @field_validator("link_id", mode="before")
+        @classmethod
+        def only_use_lowest_bits(cls, value: Any):
+            if isinstance(value, int):
+                return value & 0xFFFFFFFF
+            else:
+                return value
 
-    def __init__(self, name=linked_containers[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(LinkedContainer, self).__init__(name, linked_containers, **kwargs)
+        model_config = ConfigDict(title="LinkedContainer")
 
-        self.link_id = 0
-        if "link_id" in kwargs:
-            self.link_id = kwargs["link_id"]
-            self.unused_args.pop("link_id")
-        # self._add_export("link_id", lambda x: x != 0)
+    def __init__(
+        self,
+        name: Optional[str] = get_first(linked_containers),
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        bar: uint16 = None,
+        link_id: uint32 = 0,
+        items: Optional[list[ItemRequest]] = [],
+        tags: dict[str, Any] = {},
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self._root: __class__.Format
+
+        super().__init__(
+            name,
+            linked_containers,
+            position=position,
+            tile_position=tile_position,
+            bar=bar,
+            items=items,
+            tags=tags,
+            **kwargs
+        )
+
+        self.link_id = link_id
+
+        self.validate_assignment = validate_assignment
 
     # =========================================================================
 
     @property
-    def link_id(self):
-        # type: () -> int
+    def link_id(self) -> Optional[uint32]:
         """
         The linking ID that this ``LinkedContainer`` currently has. Encoded as
         a 32 bit unsigned integer, where a container only links to another with
-        the same ``link_id``. If an integer greater than 32-bits is passed in
+        the same ``link_id``. If an integer greater than 32-bits is passed in,
         only the lowest bits are used.
 
         :getter: Gets the link ID of the ``LinkedContainer``.
         :setter: Sets the link ID of the ``LinkedContainer``.
-        :type: ``int``
 
         :exception TypeError: If set to anything other than an ``int`` or ``None``.
         """
-        return self._link_id
+        return self._root.link_id
 
     @link_id.setter
-    def link_id(self, value):
-        # type: (int) -> None
+    def link_id(self, value: Optional[uint32]):
+        if self.validate_assignment:
+            value = attempt_and_reissue(
+                self, type(self).Format, self._root, "link_id", value
+            )
+
         if value is None:
-            self._link_id = 0
-        elif isinstance(value, six.integer_types):
-            self._link_id = value & 0xFFFFFFFF
+            self._root.link_id = 0
         else:
-            raise TypeError("'link_id' must be an int or None")
+            self._root.link_id = value
 
     # =========================================================================
 
-    def set_link(self, number, enabled):
-        # type: (int, bool) -> None
+    def set_link(self, number: int, enabled: bool):
         """
         Set a single "link point". Corresponds to flipping a single bit in
         ``link_id``.
@@ -117,8 +130,14 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
         else:
             self.link_id &= ~(1 << number)
 
-    def merge(self, other):
-        # type: (LinkedContainer) -> None
+    def merge(self, other: "LinkedContainer"):
         super(LinkedContainer, self).merge(other)
 
         self.link_id = other.link_id
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other: "LinkedContainer") -> bool:
+        return super().__eq__(other) and self.link_id == other.link_id

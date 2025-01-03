@@ -1,10 +1,11 @@
-.. py:module:: draftsman.prototypes.turret
-.. py:currentmodule:: draftsman.prototypes.turret
+.. py:module:: draftsman.prototypes.ammo_turret
+.. py:currentmodule:: draftsman.prototypes.ammo_turret
 
-:py:mod:`~draftsman.prototypes.turret`
-======================================
+:py:mod:`~draftsman.prototypes.ammo_turret`
+===========================================
 
-.. autoclass:: Turret
+.. autoclass:: AmmoTurret
     :members:
+    :exclude-members: Format
     :show-inheritance:
     :inherited-members:

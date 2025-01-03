@@ -1,14 +1,10 @@
 # read_rail_signal.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
+from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.signatures import SignalID
 
-from draftsman.error import DataFormatError
-from draftsman import signatures
-from draftsman.data.signals import signal_dict
-
-from schema import SchemaError
-import six
+from pydantic import BaseModel, Field
+from typing import Optional, Union
 
 from typing import TYPE_CHECKING
 
@@ -16,18 +12,35 @@ if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
-class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
+class ReadRailSignalMixin:  # (ControlBehaviorMixin)
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
 
     Allows the Entity to set red, yellow, and green circuit output signals.
     """
 
-    _exports = {}
+    class ControlFormat(BaseModel):
+        red_output_signal: Optional[SignalID] = Field(
+            SignalID(name="signal-red", type="virtual"),
+            description="""Circuit signal to output when the train signal reads red.""",
+        )
+        yellow_output_signal: Optional[SignalID] = Field(
+            SignalID(name="signal-yellow", type="virtual"),
+            alias="orange_output_signal",
+            description="""Circuit signal to output when the train signal reads yellow/orange.""",
+        )
+        green_output_signal: Optional[SignalID] = Field(
+            SignalID(name="signal-green", type="virtual"),
+            description="""Circuit signal to output when the train signal reads green.""",
+        )
+
+    class Format(BaseModel):
+        pass
+
+    # =========================================================================
 
     @property
-    def red_output_signal(self):
-        # type: () -> dict
+    def red_output_signal(self) -> Optional[SignalID]:
         """
         The red output signal. Sent when the rail signal's state is red.
 
@@ -41,36 +54,32 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
 
         :getter: Gets the red output signal, or ``None`` if not set.
         :setter: Sets the red output signal. Removes the key if set to ``None``.
-        :type: :py:class:`draftsman.signatures.SIGNAL_ID`
 
         :exception InvalidSignalID: If set to a string that is not a valid
             signal name.
         :exception DataFormatError: If set to a dict that does not match the
             dict format specified above.
         """
-        return self.control_behavior.get("red_output_signal", None)
+        return self.control_behavior.red_output_signal
 
     @red_output_signal.setter
-    def red_output_signal(self, value):
-        # type: (str) -> None
-        if value is None:
-            self.control_behavior.pop("red_output_signal", None)
-        elif isinstance(value, six.string_types):
-            # Make sure this is a unicode string
-            value = six.text_type(value)
-            self.control_behavior["red_output_signal"] = signal_dict(value)
-        else:  # dict or other
-            try:
-                value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["red_output_signal"] = value
-            except SchemaError as e:
-                six.raise_from(DataFormatError(e), None)
+    def red_output_signal(self, value: Union[str, SignalID, None]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "red_output_signal",
+                value,
+            )
+            self.control_behavior.red_output_signal = result
+        else:
+            self.control_behavior.red_output_signal = value
 
     # =========================================================================
 
     @property
-    def yellow_output_signal(self):
-        # type: () -> dict
+    def yellow_output_signal(self) -> Optional[SignalID]:
         """
         The yellow output signal. Sent when the rail signal's state is yellow.
 
@@ -84,36 +93,32 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
 
         :getter: Gets the yellow output signal, or ``None`` if not set.
         :setter: Sets the yellow output signal. Removes the key if set to ``None``.
-        :type: :py:class:`draftsman.signatures.SIGNAL_ID`
 
         :exception InvalidSignalID: If set to a string that is not a valid
             signal name.
         :exception DataFormatError: If set to a dict that does not match the
             dict format specified above.
         """
-        return self.control_behavior.get("orange_output_signal", None)
+        return self.control_behavior.yellow_output_signal
 
     @yellow_output_signal.setter
-    def yellow_output_signal(self, value):
-        # type: (str) -> None
-        if value is None:
-            self.control_behavior.pop("orange_output_signal", None)
-        elif isinstance(value, six.string_types):
-            # Make sure this is a unicode string
-            value = six.text_type(value)
-            self.control_behavior["orange_output_signal"] = signal_dict(value)
-        else:  # dict or other
-            try:
-                value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["orange_output_signal"] = value
-            except SchemaError as e:
-                six.raise_from(DataFormatError(e), None)
+    def yellow_output_signal(self, value: Union[str, SignalID, None]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "yellow_output_signal",
+                value,
+            )
+            self.control_behavior.yellow_output_signal = result
+        else:
+            self.control_behavior.yellow_output_signal = value
 
     # =========================================================================
 
     @property
-    def green_output_signal(self):
-        # type: () -> dict
+    def green_output_signal(self) -> Optional[SignalID]:
         """
         The green output signal. Sent when the rail signal's state is green.
 
@@ -127,35 +132,31 @@ class ReadRailSignalMixin(object):  # (ControlBehaviorMixin)
 
         :getter: Gets the green output signal, or ``None`` if not set.
         :setter: Sets the green output signal. Removes the key if set to ``None``.
-        :type: :py:class:`draftsman.signatures.SIGNAL_ID`
 
         :exception InvalidSignalID: If set to a string that is not a valid
             signal name.
         :exception DataFormatError: If set to a dict that does not match the
             dict format specified above.
         """
-        return self.control_behavior["green_output_signal"]
+        return self.control_behavior.green_output_signal
 
     @green_output_signal.setter
-    def green_output_signal(self, value):
-        # type: (str) -> None
-        if value is None:
-            self.control_behavior.pop("green_output_signal", None)
-        elif isinstance(value, six.string_types):
-            # Make sure this is a unicode string
-            value = six.text_type(value)
-            self.control_behavior["green_output_signal"] = signal_dict(value)
-        else:  # dict or other
-            try:
-                value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["green_output_signal"] = value
-            except SchemaError as e:
-                six.raise_from(DataFormatError(e), None)
+    def green_output_signal(self, value: Union[str, SignalID, None]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "green_output_signal",
+                value,
+            )
+            self.control_behavior.green_output_signal = result
+        else:
+            self.control_behavior.green_output_signal = value
 
     # =========================================================================
 
-    def merge(self, other):
-        # type: (Entity) -> None
+    def merge(self, other: "Entity"):
         super(ReadRailSignalMixin, self).merge(other)
 
         self.red_output_signal = other.red_output_signal

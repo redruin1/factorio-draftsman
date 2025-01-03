@@ -1,69 +1,151 @@
 # recipe.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
-
-from draftsman import signatures
-from draftsman.data import recipes, modules
+from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.constants import ValidationMode
+from draftsman.data import modules, recipes
 from draftsman.error import InvalidRecipeError
-from draftsman.warning import ModuleLimitationWarning, ItemLimitationWarning
+from draftsman.signatures import get_suggestion, uint32
+from draftsman.warning import (
+    ItemLimitationWarning,
+    RecipeLimitationWarning,
+    UnknownRecipeWarning,
+)
 
-from schema import SchemaError
-import six
-import warnings
-
-from typing import TYPE_CHECKING
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from typing import TYPE_CHECKING, Literal, Optional
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
-class RecipeMixin(object):
+class RecipeMixin:
     """
     Enables the Entity to have a current recipe it's set to make and a set of
     recipes that it can make.
     """
 
-    _exports = {
-        "recipe": {
-            "format": "str",
-            "description": "The name of the entity's selected recipe",
-            "required": lambda x: x is not None,
-        }
-    }
+    class Format(BaseModel):
+        recipe: Optional[str] = Field(
+            None, description="""The name of the entity's selected recipe."""
+        )
+        recipe_quality: Optional[
+            Literal["normal", "uncommon", "rare", "epic", "legendary"]
+        ] = Field(
+            "normal", description="""The specified quality of the selected recipe."""
+        )
 
-    def __init__(self, name, similar_entities, **kwargs):
-        # type: (str, list[str], **dict) -> None
-        super(RecipeMixin, self).__init__(name, similar_entities, **kwargs)
+        @field_validator("recipe")
+        @classmethod
+        def ensure_recipe_known(cls, value: Optional[str], info: ValidationInfo):
+            if not info.context or value is None:
+                return value
+            if info.context["mode"] <= ValidationMode.MINIMUM:
+                return value
 
-        # List of all recipes that this machine can make
-        self._recipes = recipes.for_machine[self.name]
+            warning_list: list = info.context["warning_list"]
+
+            if value not in recipes.raw:
+                warning_list.append(
+                    UnknownRecipeWarning(
+                        "'{}' is not a known recipe{}".format(
+                            value, get_suggestion(value, recipes.raw.keys(), 1)
+                        )
+                    )
+                )
+
+            return value
+
+        @field_validator("recipe")
+        @classmethod
+        def ensure_recipe_allowed_in_machine(
+            cls, value: Optional[str], info: ValidationInfo
+        ):
+            if not info.context or value is None:
+                return value
+            if info.context["mode"] <= ValidationMode.MINIMUM:
+                return value
+
+            entity: "RecipeMixin" = info.context["object"]
+            warning_list: list = info.context["warning_list"]
+
+            if entity.allowed_recipes is None:  # entity not recognized
+                return value
+
+            if value in recipes.raw and value not in entity.allowed_recipes:
+                warning_list.append(
+                    RecipeLimitationWarning(
+                        "'{}' is not a valid recipe for '{}'; allowed recipes are: {}".format(
+                            value, entity.name, entity.allowed_recipes
+                        )
+                    )
+                )
+
+            return value
+
+        @field_validator("recipe", mode="after")
+        @classmethod
+        def check_items_fit_in_recipe(cls, value: Optional[str], info: ValidationInfo):
+            if not info.context or value is None:
+                return value
+            if info.context["mode"] <= ValidationMode.MINIMUM:
+                return value
+
+            entity: "RecipeMixin" = info.context["object"]
+            if entity.items == {}:
+                return value
+
+            warning_list: list = info.context["warning_list"]
+
+            # TODO: display all items that don't fit with the current recipe in
+            # one warnings
+            for item in entity.items:
+                if item["id"]["name"] not in entity.allowed_items:
+                    warning_list.append(
+                        ItemLimitationWarning(
+                            "Item '{}' is not used with the current recipe ({})".format(
+                                item["id"]["name"], entity.recipe
+                            ),
+                        )
+                    )
+                    break
+
+            return value
+
+    def __init__(self, name: str, similar_entities: list[str], **kwargs):
+        self._root: __class__.Format
+
+        super().__init__(name, similar_entities, **kwargs)
 
         # Recipe that this machine is currently set to
-        self.recipe = None
-        if "recipe" in kwargs:
-            self.recipe = kwargs["recipe"]
-            self.unused_args.pop("recipe")
-        # self._add_export("recipe", lambda x: x is not None)
+        self.recipe = kwargs.get("recipe", None)
+        self.recipe_quality = kwargs.get("recipe_quality", None)
 
     # =========================================================================
 
     @property
-    def recipes(self):
-        # type: () -> list
+    def allowed_recipes(self) -> list[str]:
         """
         A list of all the recipes that this Entity can set itself to assemble.
+        Returns ``None`` if the entity's name is not recognized by Draftsman.
         Not exported; read only.
-
-        :type: ``list[str]``
         """
-        return self._recipes
+        return recipes.for_machine.get(self.name, None)
 
     # =========================================================================
 
     @property
-    def recipe(self):
-        # type: () -> str
+    def allowed_input_ingredients(self):
+        """
+        Returns a ``set`` of all ingredient names that are valid inputs for the
+        currently selected recipe and recipe quality. Returns ``None`` if there
+        is insufficient information to deduce this. Not exported; read only.
+        """
+        return recipes.get_recipe_ingredients(self.recipe, self.recipe_quality)
+
+    # =========================================================================
+
+    @property
+    def recipe(self) -> str:
         """
         The recipe that this Entity is currently set to make.
 
@@ -76,69 +158,59 @@ class RecipeMixin(object):
 
         :getter: Gets the current recipe of the Entity.
         :setter: Sets the current recipe of the Entity.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than a ``str`` or
             ``None``.
         :exception InvalidRecipeError: If set to a string that is not contained
             within this Entity's ``recipes``.
         """
-        return self._recipe
+        return self._root.recipe
 
     @recipe.setter
-    def recipe(self, value):
-        # type: (str) -> None
-        if value is None:
-            self._recipe = None
-            return
-
-        try:
-            value = signatures.STRING.validate(value)
-        except SchemaError as e:
-            six.raise_from(TypeError(e), None)
-
-        if value in self.recipes:
-            self._recipe = value
-        else:
-            raise InvalidRecipeError(
-                "'{}' not in this entity's valid recipes".format(value)
+    def recipe(self, value: str):
+        if self.validate_assignment:
+            self._root.recipe = value  # TODO: FIXME; this is bad practice
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "recipe", value
             )
-
-        # I'm gonna put this here, this technically only applies to
-        # AssemblingMachine but technically this whole mixin only applies to
-        # AssemblingMachine
-        # Later on there might be a reason to split this out but this is
-        # good enough for now
-
-        # Check to make sure the recipe matches the module specification
-        if hasattr(self, "items") and self.items:
-            for item in self.items:
-                # If the item is a module
-                if item in modules.raw:
-                    module = modules.raw[item]
-                    # Check to see if the module is allowed with this recipe
-                    if "limitation" in module:
-                        if self.recipe not in module["limitation"]:
-                            warnings.warn(
-                                "Cannot use module '{}' with new recipe '{}'".format(
-                                    item, self.recipe
-                                ),
-                                ModuleLimitationWarning,
-                                stacklevel=2,
-                            )
-                elif item not in recipes.get_recipe_ingredients(self.recipe):
-                    warnings.warn(
-                        "Item '{}' is not used in the current recipe ({})".format(
-                            item, self.recipe
-                        ),
-                        ItemLimitationWarning,
-                        stacklevel=2,
-                    )
+            self._root.recipe = result
+        else:
+            self._root.recipe = value
 
     # =========================================================================
 
-    def merge(self, other):
-        # type: (Entity) -> None
+    @property
+    def recipe_quality(self) -> Optional[str]:
+        """
+        The quality of the recipe that this Entity is selected to make.
+
+        :getter: Gets the current recipe quality of the Entity.
+        :setter: Sets the current recipe quality of the Entity.
+
+        :exception TypeError: If set to anything other than a ``str`` or
+            ``None``.
+        """
+        return self._root.recipe
+
+    @recipe_quality.setter
+    def recipe_quality(self, value: str):
+        if self.validate_assignment:
+            self._root.recipe_quality = value  # TODO: FIXME; this is bad practice
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "recipe_quality", value
+            )
+            self._root.recipe_quality = result
+        else:
+            self._root.recipe_quality = value
+
+    # =========================================================================
+
+    def merge(self, other: "Entity"):
         self.recipe = other.recipe
 
-        super(RecipeMixin, self).merge(other)
+        super().merge(other)
+
+    # =========================================================================
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.recipe == other.recipe

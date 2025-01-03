@@ -6,5 +6,6 @@
 
 .. autoclass:: TrainStop
     :members:
+    :exclude-members: Format
     :show-inheritance:
     :inherited-members:

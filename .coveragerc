@@ -1,4 +1,8 @@
 # python coverage configuration file
 [run]
+omit = 
+    test/test_*.py 
+    draftsman/env.py 
+    draftsman/environment/*
 branch = True
-command_line = -m unittest discover
+command_line = -m pytest test -Werror -vv

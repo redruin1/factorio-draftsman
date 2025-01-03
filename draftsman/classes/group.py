@@ -1,29 +1,34 @@
 # group.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
+# TODO: needs quite a bit of a rework due to the changed functionality of JSON
+# obejects
+# TODO: add tiles to this bad boy (somehow)
 
 from draftsman.classes.association import Association
-from draftsman.classes.collisionset import CollisionSet
-from draftsman.classes.entitylist import EntityList
 from draftsman.classes.collection import EntityCollection
-from draftsman.classes.entitylike import EntityLike
-from draftsman.classes.spatial_data_structure import SpatialDataStructure
-from draftsman.classes.spatial_hashmap import SpatialHashMap
+from draftsman.classes.collision_set import CollisionSet
+from draftsman.classes.entity_like import EntityLike
+from draftsman.classes.entity_list import EntityList
+from draftsman.classes.exportable import ValidationMode, ValidationResult
+from draftsman.classes.schedule import Schedule
+from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.transformable import Transformable
-from draftsman.classes.vector import Vector
-from draftsman.error import DraftsmanError, IncorrectBlueprintTypeError
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.error import (
+    DraftsmanError,
+    IncorrectBlueprintTypeError,
+)
+from draftsman.signatures import Connections
 from draftsman.utils import (
+    AABB,
+    aabb_to_dimensions,
+    extend_aabb,
+    flatten_entities,
     reissue_warnings,
     string_to_JSON,
-    flatten_entities,
-    aabb_to_dimensions,
-    AABB,
 )
 
 import copy
-from typing import Union
-import six
+from typing import Literal, Optional, Union
 
 
 class Group(Transformable, EntityCollection, EntityLike):
@@ -77,27 +82,50 @@ class Group(Transformable, EntityCollection, EntityLike):
     @reissue_warnings
     def __init__(
         self,
-        id=None,
-        name="group",
-        type="group",
-        position=(0, 0),
-        entities=[],
-        string=None,
+        id: str = None,
+        name: str = "group",
+        type: str = "group",
+        position: Union[Vector, PrimitiveVector] = (0, 0),
+        entities: Union[list[EntityLike], EntityList] = [],
+        schedules: Union[list[Schedule], ScheduleList] = [],
+        wires: Optional[list[list[int]]] = None,
+        string: str = None,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
     ):
-        # type: (str, str, str, Union[dict, list, tuple], list, str) -> None
-        super(Group, self).__init__()  # EntityLike
+        """
+        :param string: A blueprint string to use as the basis for this Group;
+            inherits all entities and schedules and populates the Group with
+            them.
+        :param id: A unique string ID to give the group, for indexing in an
+            :py:class:`.EntityList`.
+        :param name: A string name to give this Group, to allow easier searching.
+        :param type: Similar to ``name``, except this one describes the type or
+            category of the group. Also used to aid in searching/identification.
+        :param position: The position to place this Group at. When resolved,
+            offsets all child entities contained within it by this amount. No
+            translation is performed until resolving into a dict or blueprint
+            string, and all child entities retain their specified positions as
+            set.
+        :param entities: A list of entities to contain within this Group.
+        :param schedules: A list of schedules to associate with this Group.
+        """
+        super().__init__()  # EntityLike
+
+        # TODO: better mixin inheritance
+        self.validate_assignment = validate_assignment
 
         self.id = id
 
         self.name = name
         self.type = type
-        self._entity_map = SpatialHashMap()
 
         # Collision box
         self._collision_set = CollisionSet([])
 
         # Tile dimensions
-        self.tile_width, self.tile_height = 0, 0
+        # self.tile_width, self.tile_height = 0, 0
 
         # Collision mask
         self.collision_mask = None  # empty set()
@@ -106,15 +134,18 @@ class Group(Transformable, EntityCollection, EntityLike):
         if string is not None:
             self.load_from_string(string)
         else:
-            self.entities = entities
+            self.setup(
+                entities=entities,
+                schedules=schedules,
+                wires=[] if wires is None else wires,
+            )
 
         # TODO: the position of this shouldn't matter, but in practice it does,
         # investigate
         self.position = position
 
     @reissue_warnings
-    def load_from_string(self, blueprint_string):
-        # type: (str) -> None
+    def load_from_string(self, blueprint_string: str) -> None:
         """
         Load the Blueprint with the contents of ``blueprint_string``. Raises
         ``draftsman.warning.DraftsmanWarning`` if there are any unrecognized
@@ -131,25 +162,33 @@ class Group(Transformable, EntityCollection, EntityLike):
         # Ensure that the blueprint string actually points to a blueprint
         if "blueprint" not in root:
             raise IncorrectBlueprintTypeError(
-                "Root element of Blueprint string not 'blueprint'"
+                "Entered encoded string must be a blueprint string specifically"
             )
 
         self.setup(**root["blueprint"])
 
         # Convert circuit and power connections to Associations
+        # TODO: write a single function to do this and reuse
         for entity in self.entities:
             if hasattr(entity, "connections"):  # Wire connections
-                connections = entity.connections
-                for side in connections:
+                connections: Connections = entity.connections
+                for side in connections.true_model_fields():
+                    if connections[side] is None:
+                        continue
+
                     if side in {"1", "2"}:
-                        for color in connections[side]:
+                        for color, _ in connections[side]:
                             connection_points = connections[side][color]
+                            if connection_points is None:
+                                continue
                             for point in connection_points:
                                 old = point["entity_id"] - 1
                                 point["entity_id"] = Association(self.entities[old])
 
                     elif side in {"Cu0", "Cu1"}:  # pragma: no branch
                         connection_points = connections[side]
+                        if connection_points is None:
+                            continue  # pragma: no coverage
                         for point in connection_points:
                             old = point["entity_id"] - 1
                             point["entity_id"] = Association(self.entities[old])
@@ -159,23 +198,39 @@ class Group(Transformable, EntityCollection, EntityLike):
                 for i, neighbour in enumerate(neighbours):
                     neighbours[i] = Association(self.entities[neighbour - 1])
 
+        # Change all locomotive numbers to use Associations
+        for schedule in self._schedules:
+            for i, locomotive in enumerate(schedule.locomotives):
+                schedule.locomotives[i] = Association(self.entities[locomotive - 1])
+
+        # TODO: wires
+
     @reissue_warnings
-    def setup(self, **kwargs):
-        # type: (dict) -> None
+    def setup(self, **kwargs) -> None:  # TODO: kwargs
         """
         Sets up a Group using a blueprint JSON dict. Currently only reads the
-        ``"entities"`` key and loads them into ``Group.entities``.
+        ``"entities"`` and ``"schedules"`` keys and loads them into
+        :py:attr:`Group.entities` and :py:attr:`Group.schedules`.
+
+        TODO: update
         """
         if "entities" in kwargs:
             self._entities = EntityList(self, kwargs.pop("entities"))
         else:
             self._entities = EntityList(self)
 
+        if "schedules" in kwargs:
+            self._schedules = ScheduleList(kwargs.pop("schedules"))
+        else:
+            self._schedules = ScheduleList()
+
+        if "wires" in kwargs:
+            self._wires = kwargs.pop("wires")
+
     # =========================================================================
 
     @property
-    def name(self):
-        # type: () -> str
+    def name(self) -> str:
         """
         The name of the Group. Defaults to ``"group"``. Can be specified to any
         string to aid in organization. For example:
@@ -190,25 +245,22 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         :getter: Gets the name of the Group.
         :setter: Sets the name of the Group.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than a ``str``.
         """
         return self._name
 
     @name.setter
-    def name(self, value):
-        # type: (str) -> None
-        if isinstance(value, six.string_types):
-            self._name = six.text_type(value)
+    def name(self, value: str):
+        if isinstance(value, str):
+            self._name = value
         else:
             raise TypeError("'name' must be a str")
 
     # =========================================================================
 
     @property
-    def type(self):
-        # type: () -> str
+    def type(self) -> str:
         """
         The type of the Group. Defaults to ``"group"``. Can be specified to any
         string to aid in organization. For example:
@@ -223,56 +275,50 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         :getter: Gets the type of the Group.
         :setter: Sets the type of the Group.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than a ``str``.
         """
         return self._type
 
     @type.setter
-    def type(self, value):
-        # type: (str) -> None
-        if isinstance(value, six.string_types):
-            self._type = six.text_type(value)
+    def type(self, value: str):
+        if isinstance(value, str):
+            self._type = value
         else:
             raise TypeError("'type' must be a str")
 
     # =========================================================================
 
     @property
-    def id(self):
-        # type: () -> str
+    def id(self) -> Optional[str]:
         """
         The ID of the Group. The most local form of identification between
         Groups.
 
         :getter: Gets the ID of the Group.
         :setter: Sets the ID of the Group.
-        :type: ``str``
 
         :exception TypeError: If set to anything other than a ``str`` or ``None``.
         """
         return self._id
 
     @id.setter
-    def id(self, value):
-        # type: (str) -> None
-        if value is None or isinstance(value, six.string_types):
+    def id(self, value: Optional[str]):
+        if value is None or isinstance(value, str):
             old_id = getattr(self, "id", None)
-            self._id = six.text_type(value) if value is not None else value
+            self._id = value
 
             # Modify parent EntityList key_map
             if self.parent:
-                self.parent.entities.remove_key(old_id)
-                self.parent.entities.set_key(self.id, self)
+                self.parent.entities._remove_key(old_id)
+                self.parent.entities._set_key(self.id, self)
         else:
             raise TypeError("'id' must be a str or None")
 
     # =========================================================================
 
     @property
-    def position(self):
-        # type: () -> dict
+    def position(self) -> Vector:
         """
         The position of the Group. Acts as the origin of all the entities
         contained within, and offsets them on export.
@@ -283,7 +329,6 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         :getter: Gets the position of the Group.
         :setter: Sets the position of the Group.
-        :type: ``dict{"x": float, "y": float}``
 
         :exception IndexError: If the set value does not match the above
             specification.
@@ -294,8 +339,7 @@ class Group(Transformable, EntityCollection, EntityLike):
         return self._position
 
     @position.setter
-    def position(self, value):
-        # type: (Union[list, dict]) -> None
+    def position(self, value: Union[Vector, PrimitiveVector]):
         if self.parent:
             raise DraftsmanError(
                 "Cannot change position of Group while it's inside a Collection"
@@ -313,8 +357,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def global_position(self):
-        # type: () -> dict
+    def global_position(self) -> Vector:
         """
         The "global", or root-most position of the Group. This value is always
         equivalent to :py:attr:`~.Group.position`, unless the group exists
@@ -322,8 +365,6 @@ class Group(Transformable, EntityCollection, EntityLike):
         global position is equivalent to the sum of all parent positions plus
         it's own position. Used when recursing the position of any sub-entity
         contained within the ``Group``. Read only.
-
-        :type: ``dict{"x": float, "y": float}``
         """
         if self.parent and hasattr(self.parent, "global_position"):
             return self.parent.global_position + self.position
@@ -332,28 +373,8 @@ class Group(Transformable, EntityCollection, EntityLike):
 
     # =========================================================================
 
-    # @property
-    # def collision_box(self):
-    #     # type: () -> list
-    #     """
-    #     The union of all the ``collision_box``s of the entities that this Group
-    #     holds. Adding an entity to the Group sets the collision box to the
-    #     minimum bounding box of the Group and the added Entity. If an Entity is
-    #     changed or removed inside the Group, the ``collision_box`` is
-    #     reconstructed from scratch. Read only.
-
-    #     :type: ``[[float, float], [float, float]]``
-    #     """
-    #     return self._collision_box
-
-    # @collision_box.setter
-    # def collision_box(self, value):
-    #     # type: (list) -> None
-    #     self._collision_box = signatures.AABB.validate(value)
-
     @property
-    def collision_set(self):
-        # type: () -> CollisionSet
+    def collision_set(self) -> CollisionSet:
         """
         TODO: is this even a good idea to have in the first place? It seems like
         having this set be the union of all entities it contains would make the
@@ -361,11 +382,12 @@ class Group(Transformable, EntityCollection, EntityLike):
         map for that. The user could specify a custom collision set, but how
         is that supposed to interact with the hashmap? no idea
         """
-        return self._collision_set
+        # For now just return an empty collision set, it's probably better to
+        # have each sub-entity handle their own collisions
+        return CollisionSet([])
 
     # @collision_set.setter
-    # def collision_set(self, value):
-    #     # type: (CollisionSet) -> None
+    # def collision_set(self, value: CollisionSet) -> None:
     #     # TODO: error checking
     #     if value is None:
     #         self._collision_set = CollisionSet([])
@@ -376,8 +398,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def collision_mask(self):
-        # type: () -> set
+    def collision_mask(self) -> set[str]:
         """
         The set of all collision layers that this Entity collides with,
         specified as strings. Defaults to an empty ``set``. Not exported.
@@ -385,15 +406,13 @@ class Group(Transformable, EntityCollection, EntityLike):
         :getter: Gets the collision mask of the Group.
         :setter: Sets the collision mask of the Group, or sets it to an empty
             set if ``None`` was input.
-        :type: ``set{str}``
 
         :exception TypeError: If set to anything other than a `set` or None.
         """
         return self._collision_mask
 
     @collision_mask.setter
-    def collision_mask(self, value):
-        # type: (set) -> None
+    def collision_mask(self, value: Optional[set[str]]):
         if value is None:
             self._collision_mask = set()
         elif isinstance(value, set):
@@ -404,50 +423,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def tile_width(self):
-        # type: () -> int
-        """
-        The width of the Group's ``collision_box``, rounded up to the nearest
-        tile. Read only.
-
-        :type: ``int``
-        """
-        return self._tile_width
-
-    @tile_width.setter
-    def tile_width(self, value):
-        # type: (int) -> None
-        if isinstance(value, six.integer_types):
-            self._tile_width = value
-        else:
-            raise TypeError("'tile_width' must be an int")
-
-    # =========================================================================
-
-    @property
-    def tile_height(self):
-        # type: () -> int
-        """
-        The width of the Group's ``collision_box``, rounded up to the nearest
-        tile. Read only.
-
-        :type: ``int``
-        """
-        return self._tile_height
-
-    @tile_height.setter
-    def tile_height(self, value):
-        # type: (int) -> None
-        if isinstance(value, six.integer_types):
-            self._tile_height = value
-        else:
-            raise TypeError("'tile_height' must be an int")
-
-    # =========================================================================
-
-    @property
-    def double_grid_aligned(self):
-        # type: () -> bool
+    def double_grid_aligned(self) -> bool:
         for entity in self.entities:
             if entity.double_grid_aligned:
                 return True
@@ -456,8 +432,7 @@ class Group(Transformable, EntityCollection, EntityLike):
     # =========================================================================
 
     @property
-    def entities(self):
-        # type: () -> EntityList
+    def entities(self) -> EntityList:
         """
         The list of the Group's entities. Internally the list is a custom
         class named :py:class:`draftsman.classes.EntityList`, which has all the
@@ -469,10 +444,7 @@ class Group(Transformable, EntityCollection, EntityLike):
 
     @entities.setter
     @reissue_warnings
-    def entities(self, value):
-        # type: (Union[list[EntityLike], EntityList]) -> None
-        self._entity_map.clear()
-
+    def entities(self, value: Union[list[EntityLike], EntityList]):
         if value is None:
             self._entities.clear()
         elif isinstance(value, list):
@@ -483,80 +455,54 @@ class Group(Transformable, EntityCollection, EntityLike):
         else:
             raise TypeError("'entities' must be an EntityList, list, or None")
 
-        self.recalculate_area()
+    # =========================================================================
+
+    @property
+    def schedules(self) -> ScheduleList:
+        """
+        A list of the Group's train schedules.
+
+        .. seealso::
+
+            `<https://wiki.factorio.com/Blueprint_string_format#Schedule_object>`_
+
+        :getter: Gets the schedules of the Blueprint.
+        :setter: Sets the schedules of the Blueprint. Defaults to ``[]`` if set
+            to ``None``.
+
+        :exception DataFormatError: If set to anything other than a ``list`` of
+            :py:data:`.SCHEDULE`.
+        """
+        return self._schedules
+
+    @schedules.setter
+    def schedules(self, value: Union[list, ScheduleList]):
+        if value is None:
+            self._schedules = ScheduleList()
+        elif isinstance(value, ScheduleList):
+            self._schedules = value  # TODO: what about reference copying?
+        else:
+            self._schedules = ScheduleList(value)
 
     # =========================================================================
 
     @property
-    def entity_map(self):
-        # type: () -> SpatialDataStructure
+    def wires(self) -> list[list[int]]:
         """
-        An implementation of :py:class:`.SpatialDataStructure` for ``entities``.
-        Not exported; read only.
+        TODO
         """
-        return self._entity_map
+        return self._wires
+
+    @wires.setter
+    def wires(self, value: list[list[int]]) -> None:
+        if value is None:
+            self._wires = []
+        else:
+            self._wires = value
 
     # =========================================================================
 
-    def on_entity_insert(self, entitylike, merge):
-        # type: (EntityLike, bool) -> EntityLike
-        """
-        Callback function for when an ``EntityLike`` is added to this
-        Group's ``entities`` list. Handles the addition of the entity into
-        the  Group's ``SpatialHashMap``, and recalculates it's dimensions.
-        """
-        # Handle overlapping and merging
-        entitylike = self.entity_map.handle_overlapping(entitylike, merge)
-
-        if entitylike is None:  # entire structure was merged
-            return entitylike  # early exit
-
-        # Add to hashmap (as well as any children)
-        self.entity_map.recursive_add(entitylike)
-
-        # Update dimensions
-        # TODO: do we really even want the following
-        self._collision_set.shapes.extend(entitylike.get_world_collision_set().shapes)
-        (
-            self._tile_width,
-            self._tile_height,
-        ) = aabb_to_dimensions(self._collision_set.get_bounding_box())
-
-        return entitylike
-
-    def on_entity_set(self, old_entitylike, new_entitylike):
-        # type: (EntityLike, EntityLike) -> None
-        """
-        Callback function for when an entity is overwritten in a Group's
-        ``entities`` list. Handles the removal of the old ``EntityLike`` from
-        the ``SpatialHashMap`` and adds the new one in it's stead.
-        """
-        # Remove the entity and its children
-        self.entity_map.recursive_remove(old_entitylike)
-
-        # Handle overlapping
-        self.entity_map.handle_overlapping(new_entitylike, False)
-
-        # Add the new entity and its children
-        self.entity_map.recursive_add(new_entitylike)
-
-        self.recalculate_area()
-
-    def on_entity_remove(self, entitylike):
-        # type: (EntityLike) -> None
-        """
-        Callback function for when an entity is removed from a Blueprint's
-        ``entities`` list. Handles the removal of the ``EntityLike`` from the
-        ``SpatialHashMap``.
-        """
-        # Remove the entity and its children
-        self.entity_map.recursive_remove(entitylike)
-
-        self.recalculate_area()
-
-    # =========================================================================
-
-    def get(self):
+    def get(self) -> list[EntityLike]:
         """
         Gets all the child-most ``Entity`` instances in this ``Group`` and
         returns them as a "flattened" 1-dimensional list. Offsets all of their
@@ -567,83 +513,73 @@ class Group(Transformable, EntityCollection, EntityLike):
         """
         return flatten_entities(self.entities)
 
-    def recalculate_area(self):
-        # type: () -> None
-        """
-        Recalculates the dimensions of the area and tile_width and
-        height. Called when an ``EntityLike`` object is altered or removed.
-        """
-        self._collision_set = CollisionSet([])
-        for entity in self.entities:
-            self._collision_set.shapes += entity.get_world_collision_set().shapes
-
-        self._tile_width, self._tile_height = aabb_to_dimensions(
-            self._collision_set.get_bounding_box()
-        )
-
-    # def get_area(self):
-    #     # type: () -> AABB
+    # def recalculate_area(self):
     #     """
-    #     Gets the area that this ``Group`` takes up, or the minimum AABB.
-    #     TODO
+    #     Recalculates the dimensions of the area and tile_width and
+    #     height. Called when an ``EntityLike`` object is altered or removed.
     #     """
-    #     collision_box = (
-    #         [[0, 0], [0, 0]] if self.collision_box is None else self.collision_box
+    #     self._collision_set = CollisionSet([])
+    #     for entity in self.entities:
+    #         self._collision_set.shapes += entity.get_world_collision_set().shapes
+
+    #     self._tile_width, self._tile_height = aabb_to_dimensions(
+    #         self._collision_set.get_bounding_box()
     #     )
-    #     return [
-    #         [
-    #             collision_box[0][0] + self.position["x"],
-    #             collision_box[0][1] + self.position["y"],
-    #         ],
-    #         [
-    #             collision_box[1][0] + self.position["x"],
-    #             collision_box[1][1] + self.position["y"],
-    #         ],
-    #     ]
 
-    # def get_world_collision_set(self):
-    #     # type: () -> CollisionSet
-    #     """
-    #     TODO
-    #     """
-    #     return self.
-
-    def get_world_bounding_box(self):
-        # type: () -> AABB
+    def get_world_bounding_box(self) -> Optional[AABB]:
         """
         TODO
         """
-        # bounding_box = AABB(0, 0, 0, 0)
-        # if self.collision_set is None
-        # bounding_box = AABB(0, 0, 0, 0) if self.collision_set is None else self.collision_set.get_bounding_box()
-        bounding_box = self.collision_set.get_bounding_box()
+        area = None
+        for entity in self.entities:
+            area = extend_aabb(area, entity.get_world_bounding_box())
 
-        if bounding_box is not None:
-            bounding_box.top_left[0] += self.global_position.x
-            bounding_box.top_left[1] += self.global_position.y
-            bounding_box.bot_right[0] += self.global_position.x
-            bounding_box.bot_right[1] += self.global_position.y
+        return area
 
-        return bounding_box
+    def get_dimensions(self) -> tuple[int, int]:
+        """
+        TODO
+        """
+        return aabb_to_dimensions(self.get_world_bounding_box())
 
-    def mergable_with(self, other):
-        # type: (Group) -> bool
+    def mergable_with(self, other: "Group") -> bool:
         # For now, we assume that Groups themselves are not mergable
-        # return type(self) == type(other) and self.id == other.id
+        # Note that the entities *inside* groups are perfectly mergable; the
+        # only case where this is important is when two identical groups are
+        # merged on top of one another: currently, both instances of the group
+        # will exist, one of which will be empty
         return False
 
-    def merge(self, other):
-        # type: (Group) -> None
+    def merge(self, other: "Group"):
         # For now, we assume that Groups themselves are not mergable
-        # print("group.merge")
         return  # Do nothing
 
-    def __str__(self):  # pragma: no coverage
-        # type: () -> str
-        return "<Group>" + str(self.entities.data)
+    def validate(  # TODO: inherit this
+        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    ) -> ValidationResult:
+        # Validate regular attributes
+        output = ValidationResult([], [])
 
-    def __deepcopy__(self, memo):
-        # type: (dict) -> Group
+        # Validate recursive attributes
+        output += self.entities.validate(mode=mode, force=force)
+        # output += self.tiles.validate(mode=mode, force=force)
+
+        # if len(output.error_list) == 0:
+        #     # Set the `is_valid` attribute
+        #     # This means that if mode="pedantic", an entity that issues only
+        #     # warnings will still not be considered valid
+        #     super().validate()
+
+        return output
+
+    def __str__(self) -> str:  # pragma: no coverage
+        # TODO: better formatting
+        return "<Group>" + str(self.entities._root)
+
+    def __repr__(self) -> str:  # pragma: no coverage
+        return "<Group>{}".format(self.entities._root)
+
+    def __deepcopy__(self, memo: dict) -> "Group":
         """
         Creates a deepcopy of a :py:class:`.Group` and it's contents. Preserves
         all Entities and Associations within the copied group, *except* for
@@ -657,10 +593,10 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         # Make sure we copy "_entity_map" first so we don't get
         # OverlappingEntitiesWarnings
-        v = getattr(self, "_entity_map")
-        setattr(result, "_entity_map", copy.deepcopy(v, memo))
-        result.entity_map.clear()
-        # Also make sure "_collision_box" is intialized before setting up
+        # v = getattr(self, "_entity_map")
+        # setattr(result, "_entity_map", copy.deepcopy(v, memo))
+        # result.entity_map.clear()
+        # Also make sure "_collision_set" is intialized before setting up
         # "_entities"
         v = getattr(self, "_collision_set")
         setattr(result, "_collision_set", copy.deepcopy(v, memo))
@@ -669,8 +605,8 @@ class Group(Transformable, EntityCollection, EntityLike):
             if k == "_parent":
                 # Reset parent to None
                 setattr(result, k, None)
-            elif k == "_entity_map":
-                continue
+            # elif k == "_entity_map":
+            #     continue
             elif k == "_entities":
                 # Create a copy of EntityList with copied self as new parent so
                 # that `result.entities[0].parent` will be `result`
@@ -678,5 +614,20 @@ class Group(Transformable, EntityCollection, EntityLike):
                 setattr(result, k, copy.deepcopy(v, memo))
             else:
                 setattr(result, k, copy.deepcopy(v, memo))
+
+        # Iterate over each locomotive in each schedule
+        # (which still point to the old locomotives in each list)
+        for i, schedule in enumerate(self.schedules):
+            for j, locomotive in enumerate(schedule.locomotives):
+                # Replace the old one with the copied one
+                result.schedules[i].locomotives[j] = Association(memo[id(locomotive())])
+
+        # Wires
+        for i, old_wire in enumerate(self.wires):
+            # Replace the old one with the copied one
+            old_entity_1: Association = old_wire[0]
+            old_entity_2: Association = old_wire[2]
+            result.wires[i][0] = Association(memo[id(old_entity_1())])
+            result.wires[i][2] = Association(memo[id(old_entity_2())])
 
         return result

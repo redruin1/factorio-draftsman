@@ -1,16 +1,16 @@
 # heat_interface.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.error import InvalidModeError
-import draftsman.signatures as signatures
-from draftsman.warning import DraftsmanWarning, TemperatureRangeWarning
+from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.utils import get_first
+from draftsman.warning import TemperatureRangeWarning
 
 from draftsman.data.entities import heat_interfaces
 
-import warnings
+from pydantic import ConfigDict, Field, ValidationInfo, field_validator
+from typing import Any, Literal, Optional, Union
 
 
 class HeatInterface(Entity):
@@ -18,67 +18,82 @@ class HeatInterface(Entity):
     An entity that interacts with a heat network.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     "temperature": {
-    #         "format": "int[0, 1000]",
-    #         "description": "Temperature of the heat interface in degrees Celcius",
-    #         "required": lambda x: x is not None and x != 0,
-    #     },
-    #     "mode": {
-    #         "format": "'at-least' or 'at-most' or 'exactly' or 'add' or 'remove'",
-    #         "description": "How the interface should affect it's temperature",
-    #         "required": lambda x: x is not None and x != "at-least",
-    #     },
-    # }
-    # fmt: on
+    class Format(Entity.Format):
+        temperature: Optional[float] = Field(
+            0.0,
+            description="""
+            The temperature of this heat interface, in degrees Celsius. Clamped
+            to the range [0, 1000] on import into Factorio.
+            """,
+        )
+        mode: Optional[
+            Literal["at-least", "at-most", "exactly", "add", "remove"]
+        ] = Field(
+            "at-least",
+            description="""
+            How the interface should affect its connected heat network.
+            """,
+        )
 
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(
-        {
-            "temperature": {
-                "format": "int[0, 1000]",
-                "description": "Temperature of the heat interface in degrees Celcius",
-                "required": lambda x: x is not None and x != 0,
-            },
-            "mode": {
-                "format": "'at-least' or 'at-most' or 'exactly' or 'add' or 'remove'",
-                "description": "How the interface should affect it's temperature",
-                "required": lambda x: x is not None and x != "at-least",
-            },
-        }
-    )
+        @field_validator("temperature")
+        @classmethod
+        def clamp_temperature(cls, value: Optional[float], info: ValidationInfo):
+            if not info.context or value is None:
+                return value
+            if info.context["mode"] <= ValidationMode.STRICT:
+                return value
 
-    def __init__(self, name=heat_interfaces[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(HeatInterface, self).__init__(name, heat_interfaces, **kwargs)
+            warning_list: list = info.context["warning_list"]
 
-        self.temperature = 0
-        if "temperature" in kwargs:
-            self.temperature = kwargs["temperature"]
-            self.unused_args.pop("temperature")
-        # self._add_export("temperature", lambda x: x is not None and x != 0)
+            if not 0.0 <= value <= 1000.0:
+                warning_list.append(
+                    TemperatureRangeWarning(
+                        "Temperature '{}' exceeds allowed range [0.0, 1000.0]; will be clamped to this range on import".format(
+                            value
+                        )
+                    )
+                )
 
-        self.mode = "at-least"
-        if "mode" in kwargs:
-            self.mode = kwargs["mode"]
-            self.unused_args.pop("mode")
-        # self._add_export("mode", lambda x: x is not None and x != "at-least")
+            return value
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        model_config = ConfigDict(title="HeatInterface")
+
+    def __init__(
+        self,
+        name: Optional[str] = get_first(heat_interfaces),
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        temperature: float = 0.0,
+        mode: Literal["at-least", "at-most", "exactly", "add", "remove"] = "at-least",
+        tags: dict[str, Any] = {},
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
+        self._root: __class__.Format
+
+        super().__init__(
+            name,
+            heat_interfaces,
+            position=position,
+            tile_position=tile_position,
+            tags=tags,
+            **kwargs
+        )
+
+        self.temperature = temperature
+        self.mode = mode
+
+        self.validate_assignment = validate_assignment
 
     # =========================================================================
 
     @property
-    def temperature(self):
-        # type: () -> int
+    def temperature(self) -> Optional[float]:
         """
         The temperature of the interface in degrees.
 
@@ -87,35 +102,26 @@ class HeatInterface(Entity):
 
         :getter: Gets the temperature of the interface.
         :setter: Sets the temperature of the interface
-        :type: ``int``
 
         :exception TypeError: If set to anything other than an ``int`` or
             ``None``.
         """
-        return self._temperature
+        return self._root.temperature
 
     @temperature.setter
-    def temperature(self, value):
-        # type: (int) -> None
-        if value is None:
-            self._temperature = value
-        elif isinstance(value, int):
-            if not 0 <= value <= 1000:
-                warnings.warn(
-                    "'temperature' ({}) not in range [0, 1000]; will be clamped"
-                    " on import".format(value),
-                    TemperatureRangeWarning,
-                    stacklevel=2,
-                )
-            self._temperature = value
+    def temperature(self, value: Optional[float]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "temperature", value
+            )
+            self._root.temperature = result
         else:
-            raise TypeError("'temperature' must be an int or None")
+            self._root.temperature = value
 
     # =========================================================================
 
     @property
-    def mode(self):
-        # type: () -> str
+    def mode(self) -> Literal["at-least", "at-most", "exactly", "add", "remove", None]:
         """
         Manner in which to interact with the heat network. Can be one of:
 
@@ -130,26 +136,39 @@ class HeatInterface(Entity):
 
         :getter: Gets the mode of the interface.
         :setter: Sets the mode of the interface.
-        :type: ``str``
 
         :exception InvalidModeError: If set to anything other than one of the
             valid strings above or ``None``.
         """
-        return self._mode
+        return self._root.mode
 
     @mode.setter
-    def mode(self, value):
-        # type: (str) -> None
-        if value in {"at-least", "at-most", "exactly", "add", "remove", None}:
-            self._mode = value
+    def mode(
+        self, value: Literal["at-least", "at-most", "exactly", "add", "remove", None]
+    ):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "mode", value
+            )
+            self._root.mode = result
         else:
-            raise InvalidModeError(value)
+            self._root.mode = value
 
     # =========================================================================
 
-    def merge(self, other):
-        # type: (HeatInterface) -> None
-        super(HeatInterface, self).merge(other)
+    def merge(self, other: "HeatInterface"):
+        super().merge(other)
 
         self.temperature = other.temperature
         self.mode = other.mode
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return (
+            super().__eq__(other)
+            and self.temperature == other.temperature
+            and self.mode == other.mode
+        )

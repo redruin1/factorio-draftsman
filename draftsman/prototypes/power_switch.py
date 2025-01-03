@@ -1,26 +1,25 @@
 # power_switch.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     CircuitConditionMixin,
     LogisticConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     PowerConnectableMixin,
-    DirectionalMixin,
+    # DirectionalMixin,
 )
-from draftsman.error import DataFormatError
-from draftsman import signatures
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.data import entities
+from draftsman.signatures import Connections, DraftsmanBaseModel
+from draftsman.utils import get_first
 
 from draftsman.data.entities import power_switches
 
-from schema import SchemaError
-import six
-import warnings
+from pydantic import ConfigDict, Field
+from typing import Any, Literal, Optional, Union
 
 
 class PowerSwitch(
@@ -29,107 +28,126 @@ class PowerSwitch(
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     PowerConnectableMixin,
-    DirectionalMixin,
+    # DirectionalMixin,
     Entity,
 ):
     """
-    An entity that connects or disconnects a power network. Can be controlled
-    manually or with a circuit condition or a logistic condition.
+    An entity that connects or disconnects a power network.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **PowerConnectableMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    #     **LogisticConditionMixin._exports,
-    #     **CircuitConditionMixin._exports,
-    #     "switch_state": {
-    #         "format": "bool",
-    #         "description": "The 'default' state of the switch (overridden by logistic or circuit conditions)",
-    #         "required": lambda x: x is not None,
-    #     },
-    # }
-    # fmt: on
+    class Format(
+        CircuitConditionMixin.Format,
+        LogisticConditionMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        PowerConnectableMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(
+            CircuitConditionMixin.ControlFormat,
+            LogisticConditionMixin.ControlFormat,
+            DraftsmanBaseModel,
+        ):
+            pass
 
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(DirectionalMixin._exports)
-    _exports.update(PowerConnectableMixin._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(ControlBehaviorMixin._exports)
-    _exports.update(LogisticConditionMixin._exports)
-    _exports.update(CircuitConditionMixin._exports)
-    _exports.update(
-        {
-            "switch_state": {
-                "format": "bool",
-                "description": "The 'default' state of the switch (overridden by logistic or circuit conditions)",
-                "required": lambda x: x is not None,
-            }
-        }
-    )
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-    def __init__(self, name=power_switches[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(PowerSwitch, self).__init__(name, power_switches, **kwargs)
+        switch_state: Optional[bool] = Field(
+            False,
+            description="""
+            The manual override state for this switch, where false is off and
+            true is on. Superceeded by any circuit or logistic condition.
+            """,
+        )
 
-        self._dual_power_connectable = True
+        model_config = ConfigDict(title="PowerSwitch")
 
-        self.switch_state = None
-        if "switch_state" in kwargs:
-            self.switch_state = kwargs["switch_state"]
-            self.unused_args.pop("switch_state")
-        # self._add_export("switch_state", lambda x: x is not None)
+    def __init__(
+        self,
+        name: Optional[str] = get_first(power_switches),
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        control_behavior: Format.ControlBehavior = {},
+        switch_state: bool = False,
+        tags: dict[str, Any] = {},
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        super().__init__(
+            name,
+            power_switches,
+            position=position,
+            tile_position=tile_position,
+            control_behavior=control_behavior,
+            tags=tags,
+            **kwargs
+        )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self.switch_state = switch_state
 
-    # =========================================================================
-
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = signatures.POWER_SWITCH_CONTROL_BEHAVIOR.validate(
-                value
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        self.validate_assignment = validate_assignment
 
     # =========================================================================
 
     @property
-    def switch_state(self):
-        # type: () -> bool
+    def dual_power_connectable(self) -> bool:
+        return True
+
+    # =========================================================================
+
+    @property
+    def maximum_wire_distance(self) -> float:
+        # Power switches use a custom key (for some reason)
+        return entities.raw.get(self.name, {"wire_max_distance": None}).get(
+            "wire_max_distance", 0
+        )
+
+    # =========================================================================
+
+    @property
+    def circuit_wire_max_distance(self) -> float:
+        # Power switches use a custom key (for some reason)
+        return entities.raw.get(self.name, {"wire_max_distance": None}).get(
+            "wire_max_distance", 0
+        )
+
+    # =========================================================================
+
+    @property
+    def switch_state(self) -> Optional[bool]:
         """
         Whether the switch is passing electricity or not. This is a manual
         setting that is overridden by the circuit or logistic condition.
 
         :getter: Gets the value of the switch state.
         :setter: Sets the value of the switch state.
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or ``None``.
         """
-        return self._switch_state
+        return self._root.get("switch_state", None)
 
     @switch_state.setter
-    def switch_state(self, value):
-        # type: (bool) -> None
-        if value is None or isinstance(value, bool):
-            self._switch_state = value
+    def switch_state(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "switch_state", value
+            )
+            self._root["switch_state"] = result
         else:
-            raise TypeError("'switch_state' must be a bool or None")
+            self._root["switch_state"] = value
 
-    def merge(self, other):
-        # type: (PowerSwitch) -> None
-        super(PowerSwitch, self).merge(other)
+    # =========================================================================
+
+    def merge(self, other: "PowerSwitch") -> None:
+        super().merge(other)
 
         self.switch_state = other.switch_state
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__(other) and self.switch_state == other.switch_state

@@ -1,36 +1,39 @@
 # spatial_data_structure.py
-# -*- encoding: utf-8 -*-
+
+from draftsman.classes.spatial_like import SpatialLike
+from draftsman.classes.vector import PrimitiveVector
+from draftsman.utils import AABB
 
 import abc
-import six
-
-from typing import Sequence, TYPE_CHECKING
-
-if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.spatiallike import SpatialLike
-    from draftsman.utils import Point, AABB
+from typing import Optional
 
 
-@six.add_metaclass(abc.ABCMeta)
-class SpatialDataStructure(object):
+class SpatialDataStructure(metaclass=abc.ABCMeta):
     """
     An abstract class used to implement some kind of spatial querying
     accelleration, such as a spatial hash-map or quadtree.
     """
 
     @abc.abstractmethod
-    def add(self, item, merge=False):  # pragma: no coverage
-        # type: (SpatialLike, bool) -> None
+    def add(
+        self, item: SpatialLike, merge: bool = False
+    ) -> Optional[SpatialLike]:  # pragma: no coverage
         """
-        Add a :py:class:`.SpatialLike` instance to the :py:class:`.SpatialHashMap`.
+        Add a :py:class:`.SpatialLike` instance to the :py:class:`.SpatialDataStructure`.
 
-        :param: The object to add.
+        :param item: The object to add.
+        :param merge: Whether or not to attempt to merge the added item with any
+            existing item, if possible.
+
+        :returns: The input SpatialLike if properly added, or ``None`` if the
+            input object was merged.
         """
         pass
 
     @abc.abstractmethod
-    def recursive_add(self, item, merge=False):  # pragma: no coverage
-        # type: (SpatialLike, bool) -> None
+    def recursive_add(
+        self, item: SpatialLike, merge: bool = False
+    ) -> Optional[SpatialLike]:  # pragma: no coverage
         """
         Add the leaf-most entities to the hashmap.
 
@@ -39,12 +42,16 @@ class SpatialDataStructure(object):
         Works with as many nested Groups as desired.
 
         :param item: The object to add, or its children (if it has any).
+        :param merge: Whether or not to attempt to merge the added item(s) with
+            any existing item(s), if possible.
+
+        :returns: The input SpatialLike if properly added, or ``None`` if the
+            input object was merged.
         """
         pass
 
     @abc.abstractmethod
-    def remove(self, item):  # pragma: no coverage
-        # type: (SpatialLike) -> None
+    def remove(self, item: SpatialLike) -> None:  # pragma: no coverage
         """
         Remove the ``SpatialLike`` instance from the ``SpatialHashMap``.
 
@@ -53,8 +60,7 @@ class SpatialDataStructure(object):
         pass
 
     @abc.abstractmethod
-    def recursive_remove(self, item):  # pragma: no coverage
-        # type: (SpatialLike) -> None
+    def recursive_remove(self, item: SpatialLike) -> None:  # pragma: no coverage
         """
         Inverse of :py:meth:`recursive_add`.
 
@@ -63,16 +69,24 @@ class SpatialDataStructure(object):
         pass
 
     @abc.abstractmethod
-    def clear(self):  # pragma: no coverage
-        # type: () -> None
+    def clear(self) -> None:  # pragma: no coverage
         """
         Deletes all entries in the structure.
         """
         pass
 
     @abc.abstractmethod
-    def get_all_entities(self):  # pragma: no coverage
-        # type: () -> list[SpatialLike]
+    def validate_insert(
+        self, item: SpatialLike, merge: bool
+    ) -> None:  # pragma: no coverage
+        """
+        Checks to see if the added object overlaps any other objects currently
+        contained within the map, and issues errors or warnings correspondingly.
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_all_entities(self) -> list[SpatialLike]:  # pragma: no coverage
         """
         Get all the entities in the hash map. Iterates over every cell and
         returns the contents sequentially. Useful if you want to get all the
@@ -83,8 +97,9 @@ class SpatialDataStructure(object):
         pass
 
     @abc.abstractmethod
-    def get_in_radius(self, radius, point, limit=None):  # pragma: no coverage
-        # type: (float, Sequence[float], int) -> list[SpatialLike]
+    def get_in_radius(
+        self, radius: float, point: PrimitiveVector, limit: Optional[int] = None
+    ) -> list[SpatialLike]:  # pragma: no coverage
         """
         Get all the entities whose ``collision_set`` overlaps a circle.
 
@@ -99,8 +114,9 @@ class SpatialDataStructure(object):
         pass
 
     @abc.abstractmethod
-    def get_on_point(self, point, limit=None):  # pragma: no coverage
-        # type: (Point, int) -> list[SpatialLike]
+    def get_on_point(
+        self, point: PrimitiveVector, limit: Optional[int] = None
+    ) -> list[SpatialLike]:  # pragma: no coverage
         """
         Get all the entities whose ``collision_set`` overlaps a point.
 
@@ -114,13 +130,13 @@ class SpatialDataStructure(object):
         pass
 
     @abc.abstractmethod
-    def get_in_area(self, area, limit=None):  # pragma: no coverage
-        # type: (AABB, int) -> list[SpatialLike]
+    def get_in_aabb(
+        self, aabb: AABB, limit: Optional[int] = None
+    ) -> list[SpatialLike]:  # pragma: no coverage
         """
-        Get all the entities whose ``collision_box`` overlaps an area.
+        Get all the entities whose ``collision_set`` overlaps an AABB.
 
-        :param area: The area to examine; specified in the format
-            ``[[float, float], [float, float]]``.
+        :param aabb: The AABB to examine.
         :param limit: A maximum amount of entities to return.
 
         :returns: A ``list`` of all entities that intersect the area. Can be

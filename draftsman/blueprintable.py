@@ -1,48 +1,46 @@
-# blueprint.py
-# -*- encoding: utf-8 -*-
+# blueprintable.py
 
 """
-Alias module. Imports :py:class:`.Blueprint` and :py:class:`.BlueprintBook` 
-under the namespace ``draftsman``.
+Alias module. Imports :py:class:`.Blueprint`, :py:class:`.BlueprintBook`,
+:py:class:`.DeconstructionPlanner`, :py:class:`.UpgradePlanner`, and
+:py:class:`.Group` under the namespace ``draftsman``.
 """
 
 from draftsman import utils
 from draftsman.error import IncorrectBlueprintTypeError
-from typing import Union
 
 
 from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.deconstruction_planner import DeconstructionPlanner
 from draftsman.classes.upgrade_planner import UpgradePlanner
-from draftsman.classes.blueprintbook import BlueprintBook
+from draftsman.classes.blueprint_book import BlueprintBook
+
+from draftsman.classes.group import Group
 
 
 @utils.reissue_warnings
-def get_blueprintable_from_string(blueprintable_string):
-    # type: (str) -> Blueprintable
+def get_blueprintable_from_string(blueprintable_string: str) -> Blueprintable:
     """
-    Returns a :py:class:`.Blueprint` or a :py:class:`.BlueprintBook` depending
-    on the string passed in.
-
     Gets a Blueprintable object based off of the ``blueprint_string``. A
     "Blueprintable object" in this context means either a :py:class:`.Blueprint`,
     :py:class:`.DeconstructionPlanner`, :py:class:`.UpgradePlanner`, or a
     :py:class:`.BlueprintBook`, depending on the particular string you passed in.
-    This function allows you generically accept either export strings of any of
-    the above types and return the appropriate class instance.
+    This function allows you generically accept export strings of any of the
+    above types and return the appropriate class instance.
 
     :param blueprintable_string: The blueprint string to interpret.
 
-    :returns: A ``Blueprint``, ``DeconstructionPlanner``, ``UpgradePlanner``,
-        or ``BlueprintBook`` object.
+    :returns: A :py:class:`.Blueprint`, :py:class:`.BlueprintBook`,
+        :py:class:`.DeconstructionPlanner`, or :py:class:`.UpgradePlanner`
+        object.
 
     :exception MalformedBlueprintStringError: If the ``blueprint_string`` cannot
         be resolved due to an error with the zlib or JSON decompression.
     :exception IncorrectBlueprintTypeError: If the root level of the
         decompressed JSON object is neither ``"blueprint"``,
         ``"deconstruction_planner"``, ``"upgrade_planner"``, nor
-        ``"blueprint_book"``.
+        ``"blueprint_book"``, and thus it's type cannot be deduced.
     """
     blueprintable = utils.string_to_JSON(blueprintable_string)
     if "blueprint" in blueprintable:
@@ -60,12 +58,8 @@ def get_blueprintable_from_string(blueprintable_string):
 
 
 @utils.reissue_warnings
-def get_blueprintable_from_JSON(blueprintable_JSON):
-    # type: (dict) -> Blueprintable
+def get_blueprintable_from_JSON(blueprintable_JSON: dict) -> Blueprintable:
     """
-    Returns a :py:class:`.Blueprint` or a :py:class:`.BlueprintBook` depending
-    on the JSON dictionary passed in.
-
     Gets a Blueprintable object based off of the ``blueprint_JSON``. A
     "Blueprintable object" in this context means either a :py:class:`.Blueprint`,
     :py:class:`.DeconstructionPlanner`, :py:class:`.UpgradePlanner`, or a
@@ -73,17 +67,16 @@ def get_blueprintable_from_JSON(blueprintable_JSON):
     This function allows you generically accept any valid JSON structure of the
     the above types and return the appropriate class instance.
 
-    :param blueprintable_JSON: The blueprint JSON to interpret.
+    :param blueprintable_JSON: The blueprint JSON dict to interpret.
 
-    :returns: A ``Blueprint``, ``DeconstructionPlanner``, ``UpgradePlanner``,
-        or ``BlueprintBook`` object.
+    :returns: A :py:class:`.Blueprint`, :py:class:`.BlueprintBook`,
+        :py:class:`.DeconstructionPlanner`, or :py:class:`.UpgradePlanner`
+        object.
 
-    :exception MalformedBlueprintStringError: If the ``blueprint_string`` cannot
-        be resolved due to an error with the zlib or JSON decompression.
     :exception IncorrectBlueprintTypeError: If the root level of the
         decompressed JSON object is neither ``"blueprint"``,
         ``"deconstruction_planner"``, ``"upgrade_planner"``, nor
-        ``"blueprint_book"``.
+        ``"blueprint_book"``, and thus it's type cannot be deduced.
     """
     if "blueprint" in blueprintable_JSON:
         return Blueprint(blueprintable_JSON)

@@ -6,5 +6,6 @@
 
 .. autoclass:: InfinityContainer
     :members:
+    :exclude-members: Format
     :show-inheritance:
     :inherited-members:

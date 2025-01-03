@@ -6,5 +6,6 @@
 
 .. autoclass:: Lab
     :members:
+    :exclude-members: Format
     :show-inheritance:
     :inherited-members:

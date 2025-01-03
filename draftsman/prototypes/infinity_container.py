@@ -1,74 +1,118 @@
 # infinity_container.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import RequestItemsMixin
-from draftsman.error import DataFormatError, InvalidItemError, InvalidModeError
-import draftsman.signatures as signatures
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
+from draftsman.classes.mixins import RequestItemsMixin, InventoryMixin
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.error import DataFormatError
+from draftsman.signatures import DraftsmanBaseModel, ItemRequest, uint16, uint32
+from draftsman.utils import get_first
 
 from draftsman.data.entities import infinity_containers
 from draftsman.data import items
 
-from schema import SchemaError
-import six
-import warnings
+import copy
+from pydantic import ConfigDict, Field, ValidationError
+from typing import Any, Literal, Optional, Union
 
 
-class InfinityContainer(RequestItemsMixin, Entity):
+class InfinityContainer(RequestItemsMixin, InventoryMixin, Entity):
     """
     An entity used to create an infinite amount of any item.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **RequestItemsMixin._exports,
-    #     "infinity_settings": {
-    #         "format": "TODO",
-    #         "description": "Item filters for infinite spawning/deletion",
-    #         "required": lambda x: len(x) != 0,
-    #     },
-    # }
-    # fmt: on
+    class Format(RequestItemsMixin.Format, InventoryMixin.Format, Entity.Format):
+        class InfinitySettings(DraftsmanBaseModel):
+            class InfinityFilter(DraftsmanBaseModel):
+                index: uint16 = Field(
+                    ...,
+                    description="""
+                    Where in the infinity containers GUI this filter will exist,
+                    1-based.
+                    """,
+                )
+                name: str = Field(  # TODO: ItemID
+                    ...,
+                    description="""
+                    The name of the item to create/remove.
+                    """,
+                )
+                count: Optional[uint32] = Field(
+                    0,
+                    description="""
+                    The amount of this item to keep in the entity, as dicerned
+                    by 'mode'.
+                    """,
+                )
+                mode: Optional[Literal["at-least", "at-most", "exactly"]] = Field(
+                    "at-least",
+                    description="""
+                    What manner in which to create or remove this item from the 
+                    entity. 'at-least' sets 'count' as a lower-bound, 'at-most' 
+                    sets 'count' as an upper-bound, and exactly makes the 
+                    quantity of this item match 'count' exactly.
+                    """,
+                )
 
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(RequestItemsMixin._exports)
-    _exports.update(
-        {
-            "infinity_settings": {
-                "format": "TODO",
-                "description": "Item filters for infinite spawning/deletion",
-                "required": lambda x: len(x) != 0,
-            },
-        }
-    )
-
-    def __init__(self, name=infinity_containers[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(InfinityContainer, self).__init__(name, infinity_containers, **kwargs)
-
-        self.infinity_settings = {}
-        if "infinity_settings" in kwargs:
-            self.infinity_settings = kwargs["infinity_settings"]
-            self.unused_args.pop("infinity_settings")
-        # self._add_export("infinity_settings", lambda x: len(x) != 0)
-
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
+            filters: Optional[list[InfinityFilter]] = Field(
+                [],
+                description="""
+                The list of items to infinitely create or remove from this 
+                entity's inventory.
+                """,
             )
+            remove_unfiltered_items: Optional[bool] = Field(
+                False,
+                description="""
+                Whether or not items not in the 'filters' object will be removed
+                from this entity's inventory.
+                """,
+            )
+
+        infinity_settings: Optional[InfinitySettings] = InfinitySettings()
+
+        model_config = ConfigDict(title="InfinityContainer")
+
+    def __init__(
+        self,
+        name: Optional[str] = get_first(infinity_containers),
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        bar: uint16 = None,
+        items: Optional[list[ItemRequest]] = [],  # TODO: ItemID
+        infinity_settings: Format.InfinitySettings = {},
+        tags: dict[str, Any] = {},
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
+
+        self._root: __class__.Format
+
+        super().__init__(
+            name,
+            infinity_containers,
+            position=position,
+            tile_position=tile_position,
+            bar=bar,
+            items=items,
+            tags=tags,
+            **kwargs
+        )
+
+        self.infinity_settings = infinity_settings
+
+        self.validate_assignment = validate_assignment
 
     # =========================================================================
 
     @property
-    def infinity_settings(self):
-        # type: () -> dict
+    def infinity_settings(self) -> Optional[Format.InfinitySettings]:
         """
         The settings that control the manner in which items are spawned or
         removed.
@@ -76,52 +120,66 @@ class InfinityContainer(RequestItemsMixin, Entity):
         :getter: Gets the ``infinity_settings`` of the ``InfinityContainer``.
         :setter: Sets the ``infinity_settings`` of the ``InfinityContainer``.
             Defaults to an empty ``dict`` if set to ``None``.
-        :type: :py:data:`.INFINITY_CONTAINER`
 
         :exception DataFormatError: If set to anything that does not match the
             :py:data:`.INFINITY_CONTAINER` format.
         """
-        return self._infinity_settings
+        return self._root.infinity_settings
 
     @infinity_settings.setter
-    def infinity_settings(self, value):
-        # type: (dict) -> None
-        try:
-            value = signatures.INFINITY_CONTAINER.validate(value)
-            self._infinity_settings = value
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    def infinity_settings(self, value: Optional[Format.InfinitySettings]):
+        test_replace_me(
+            self,
+            type(self).Format,
+            self._root,
+            "infinity_settings",
+            value,
+            self.validate_assignment,
+        )
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self, type(self).Format, self._root, "infinity_settings", value
+        #     )
+        #     self._root.infinity_settings = result
+        # else:
+        #     self._root.infinity_settings = value
 
     # =========================================================================
 
     @property
-    def remove_unfiltered_items(self):
-        # type: () -> bool
+    def remove_unfiltered_items(self) -> Optional[bool]:
         """
         Whether or not to remove items that exceed the amounts specified in the
         ``InfinityContainer``'s filters.
 
-        :type: ``bool``
-
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.
         """
-        return self.infinity_settings.get("remove_unfiltered_items", None)
+        return self.infinity_settings.remove_unfiltered_items
 
     @remove_unfiltered_items.setter
-    def remove_unfiltered_items(self, value):
-        # type: (bool) -> None
-        if value is None:
-            self.infinity_settings.pop("remove_unfiltered_items", None)
-        elif isinstance(value, bool):
-            self.infinity_settings["remove_unfiltered_items"] = value
+    def remove_unfiltered_items(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.InfinitySettings,
+                self.infinity_settings,
+                "remove_unfiltered_items",
+                value,
+            )
+            self.infinity_settings.remove_unfiltered_items = result
         else:
-            raise TypeError("'remove_unfiltered_items' must be a bool or None")
+            self.infinity_settings.remove_unfiltered_items = value
 
     # =========================================================================
 
-    def set_infinity_filter(self, index, item, mode="at-least", count=None):
-        # type: (int, str, str, int) -> None
+    def set_infinity_filter(
+        self,
+        index: uint16,
+        item: Optional[str],
+        mode: Literal["at-least", "at-most", "exactly", None] = "at-least",
+        count: Optional[uint32] = None,
+    ):
         """
         Sets an infinity filter.
 
@@ -130,86 +188,53 @@ class InfinityContainer(RequestItemsMixin, Entity):
         :param mode: The manner in which to set the filter. Can be one of
             ``"at-least"``, ``"at-most"``, or ``"exactly"``.
         :param count: The amount of the item to request. If set to ``None``, the
-            amount set will default to the stack size of ``name``.
-
-        :exception TypeError: If ``index`` is not an ``int``, if ``name`` is not
-            a ``str``, if ``mode`` is not a ``str``, or if ``count`` is not an
-            ``int``.
-        :exception IndexError: If ``index`` is outside the range ``[0, 1000)``.
-        :exception InvalidItemError: If ``item`` is not a valid item name.
-        :exception InvalidModeError: If ``mode`` is not one of the three values
-            specified above.
+            amount set will default to the stack size of ``name``, if name can
+            be deduced to a valid item. Otherwise ``count`` will default to 0.
         """
-        try:
-            index = signatures.INTEGER.validate(index)
-            item = signatures.STRING_OR_NONE.validate(item)
-            mode = signatures.STRING.validate(mode)
-            count = signatures.INTEGER_OR_NONE.validate(count)
-        except SchemaError as e:
-            six.raise_from(TypeError(e), None)
 
-        if not 0 <= index < 1000:
-            raise IndexError("Filter index {} not in range [0, 1000)")
-        if item is not None and item not in items.raw:
-            raise InvalidItemError(item)
-        if mode not in {"at-least", "at-most", "exactly"}:
-            raise InvalidModeError(mode)
-        if count is None:  # default count to the item's stack size
-            count = 0 if item is None else items.raw[item]["stack_size"]
-        if count < 0:
-            raise ValueError(
-                "Infinity filter count ({}) must be positive".format(count)
-            )
-
-        if "filters" not in self.infinity_settings:
-            self.infinity_settings["filters"] = []
+        index = int(index)
+        if count is None:
+            if item is None:
+                count = 0
+            else:  # default count to the item's stack size
+                count = items.raw.get(item, {}).get("stack_size", 0)
 
         # Check to see if filters already contains an entry with the same index
-        for i, filter in enumerate(self.infinity_settings["filters"]):
-            if index + 1 == filter["index"]:  # Index already exists in the list
+        existing_index = False
+        for i, filter_entry in enumerate(self.infinity_settings["filters"]):
+            if index + 1 == filter_entry["index"]:  # Index already exists in the list
                 if item is None:  # Delete the entry
                     del self.infinity_settings["filters"][i]
+                    return
                 else:  # Set the new value
-                    self.infinity_settings["filters"][i] = {
-                        "index": index + 1,
-                        "name": item,
-                        "count": count,
-                        "mode": mode,
-                    }
-                return
+                    existing_index = i
+                break
 
-        # If no entry with the same index was found
-        self.infinity_settings["filters"].append(
-            {"name": item, "count": count, "mode": mode, "index": index + 1}
-        )
+        try:
+            new_filter = self.Format.InfinitySettings.InfinityFilter(
+                index=index + 1,
+                name=item,
+                count=count,
+                mode=mode,
+            )
+        except ValidationError as e:
+            raise DataFormatError(e) from None
 
-    def set_infinity_filters(self, filters):
-        # type: (list) -> None
-        """
-        Sets all of the infinity filters for the ``InfinityContainer``. Removes
-        the filters if set to ``None``.
-
-        :param filters: The filters to set, specified as :py:data:`.INFINITY_FILTERS`.
-
-        :exception DataFormatError: If set to anything that does not match the
-            :py:data:`.INFINITY_FILTERS` format.
-        """
-        if filters is None:
-            self.infinity_settings.pop("filters", None)
-        else:
-            try:
-                filters = signatures.INFINITY_FILTERS.validate(filters)
-                self.infinity_settings["filters"] = filters
-            except SchemaError as e:
-                six.raise_from(DataFormatError(e), None)
-
-    # def set_item_request(self, item, count):
-    #     # type: (str, int) -> None
-    #     self._handle_inventory_contents(item, count)
-
-    #     super(InfinityContainer, self).set_item_request(item, count)
+        if existing_index is not False:
+            self.infinity_settings["filters"][existing_index] = new_filter
+        else:  # No entry with the same index was found
+            self.infinity_settings["filters"].append(new_filter)
 
     def merge(self, other):
-        super(InfinityContainer, self).merge(other)
+        super().merge(other)
 
-        self.infinity_settings = other.infinity_settings
+        self.infinity_settings = copy.deepcopy(other.infinity_settings)
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other) -> bool:
+        return (
+            super().__eq__(other) and self.infinity_settings == other.infinity_settings
+        )

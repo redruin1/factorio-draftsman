@@ -87,8 +87,8 @@ For more information on what exactly Draftsman is and does, as well as its inten
 For more examples on what exactly you can do with Draftsman, take a look at the [examples folder](https://github.com/redruin1/factorio-draftsman/tree/main/examples).
 
 ### Features
-* Compatible with the latest versions of Python 2 and 3
-* Compatible with the latest versions of Factorio (1.0+)
+* Compatible with all versions of Python >= 3.7
+* Compatible with the latest versions of Factorio (1.0.0+)
 * Compatible with Factorio mods(!)
 * Well documented
 * Intuitive and flexible API
@@ -97,10 +97,11 @@ For more examples on what exactly you can do with Draftsman, take a look at the 
     * Filter entities from blueprints by type, region and other parameters [just like Factorio's own API](https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_entities_filtered)
     * Entities are categorized and organized within `draftsman.data` for easy and flexible iteration
     * Group entities together and manipulate them all as one unit
-* Verbose Errors and Warnings ("Factorio-safety" and "Factorio-correctness")
+* Verbose Errors and Warnings (["Factorio-safety"](TODO) and ["Factorio-correctness"](TODO))
 * Expansive and rigorous test suite
 
 --------------------------------------------------------------------------------
+
 ## Usage
 
 ### Installation:
@@ -123,7 +124,9 @@ Note that testing currently is only *guaranteed* to work with a vanilla install.
 ```
 coverage run
 ```
+
 --------------------------------------------------------------------------------
+
 ### How to use mods with Draftsman:
 
 Determine where your mods are installed; you can either copy the mods you want into the local `site-packages/draftsman/factorio-mods` folder where Draftsman is installed (which it looks in by default), or you can specify an external path with the `-p` or `--path` argument which can point to your Factorio mods folder or anywhere else convenient.
@@ -136,24 +139,18 @@ from draftsman.env import update
 update(verbose=True, path="some/path") # equivalent to 'draftsman-update -v -p some/path'
 ```
 
-Both `mod-info.json` and `mod-settings.dat` are recognized by `draftsman-update`, so you can also just change the settings in either of those and the loading process will adjust as well.
+Both `mod-info.json` and `mod-settings.dat` are recognized by `draftsman-update`, so you can change the settings in either of those and the loading process will adjust as well.
 
-## TODO
-* Add warnings for placement constraints on rails, rail signals and train stops
-* Add constraints on `UpgradePlanner` and `DeconstructionPlanner`
-* `Blueprint.schedules` convenience functions
-* More doctests
-* Add documentation on report and contributing
-* Write test cases for `dump_format`
-* Add plaintext representations of Entity JSON objects for all entities in addition to blueprintables
-* Update modding documentation guide to reflect 2.0 changes
-* Reevaluate the diamond diagrams for inherited `Entity` subclass
-* Figure out exactly what determines if an `Entity` is flip-able or not
-* Maybe add interface so that mods can include files that can be loaded with Draftsman? (this would be neat)
-* Split documentation from docstrings so that each function has a more readable example
-* RailPlanner (specify rail paths via turtle-like commands)
-* Custom `data.raw` extraction and formatting?
-* Maybe integrate defaults for more succinct blueprint strings?
-* Unify entity validation into one monolithic thing
-* Investigate more performant alternatives to `schema` (validir? requires cython, currently we're pure python)
-* Look into Lua (or other language) bindings via backport to C/Cython
+--------------------------------------------------------------------------------
+
+## Contributing
+
+Draftsman is a large and expansive project, intended to be used by as many people as possible. As such, it is a difficult project to maintain by myself. All support is welcome, whether it be finding/fixing bugs, improving mod compatibility, adding features, improving documentation, adding examples, or anything in-between. I maintain a [`TODO.md`](TODO.md) list which contains all the features that I'm currently planning on implementing (eventually, at least).
+
+Bugs are tracked on the issue page; If you have an issue that's affecting you, search here for your issue and create a new one if it's not there.
+
+If you have a feature request that is on the TODO list, or that you firmly believe belongs in Draftsman and you have a working prototype, then the issues page is also the place for that.
+
+If you have a feature request that isn't currently on the TODO list and you believe it might be a good fit for the project, but you're not absolutely sure if it belongs or how it should be implemented into Draftsman, start a [discussion thread here](https://github.com/redruin1/factorio-draftsman/discussions/categories/ideas). If a discussed feature is accepted, it will get added to the TODO list and tracked on the issues page. 
+
+If you want to contribute, read [CONTRIBUTING.md] first, fork the project, and dive in. When you're ready, submit a PR with the changes towards the intended branch, describing what exactly the changes intend to do (linking against any relevant issues if necessary). If all checks pass, you can expect the PR to merged in a (relatively) timely manner and pushed to the next minor or major version.

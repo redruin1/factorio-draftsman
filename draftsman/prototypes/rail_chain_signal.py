@@ -1,27 +1,22 @@
 # rail_chain_signal.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     ReadRailSignalMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     EightWayDirectionalMixin,
 )
-from draftsman.error import DataFormatError
-from draftsman import signatures
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
+from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID
+from draftsman.utils import get_first
 
 from draftsman.data.entities import rail_chain_signals
-from draftsman.data.signals import signal_dict
-from draftsman.data import entities
 
-from schema import SchemaError
-import six
-from typing import Union
-import warnings
+from pydantic import ConfigDict, Field
+from typing import Any, Literal, Optional, Union
 
 
 class RailChainSignal(
@@ -36,62 +31,66 @@ class RailChainSignal(
     forward rail block.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **EightWayDirectionalMixin._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    #     **ReadRailSignalMixin._exports,
-    # }
-    # fmt: on
+    class Format(
+        ReadRailSignalMixin.Format,
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        EightWayDirectionalMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(ReadRailSignalMixin.ControlFormat, DraftsmanBaseModel):
+            blue_output_signal: Optional[SignalID] = Field(
+                SignalID(name="signal-blue", type="virtual"),
+                description="""
+                Circuit signal to output when the train signal reads blue.
+                """,
+            )
 
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(EightWayDirectionalMixin._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(ControlBehaviorMixin._exports)
-    _exports.update(ReadRailSignalMixin._exports)
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-    def __init__(self, name=rail_chain_signals[0], **kwargs):
-        # type: (str, **dict) -> None
+        model_config = ConfigDict(title="RailChainSignal")
+
+    def __init__(
+        self,
+        name: Optional[str] = get_first(rail_chain_signals),
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        control_behavior: Format.ControlBehavior = {},
+        tags: dict[str, Any] = {},
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
+
+        self.control_behavior: __class__.Format.ControlBehavior
 
         # Set a (private) flag to indicate to the constructor to not generate
         # rotations, and rather just use the same collision set regardless of
         # rotation
         self._disable_collision_set_rotation = True
 
-        super(RailChainSignal, self).__init__(name, rail_chain_signals, **kwargs)
+        super().__init__(
+            name,
+            rail_chain_signals,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            control_behavior=control_behavior,
+            tags=tags,
+            **kwargs
+        )
 
-        if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
-            self._collision_mask = set(entities.raw[self.name]["collision_mask"])
-        else:  # pragma: no coverage
-            self._collision_mask = {"floor-layer", "rail-layer", "item-layer"}
-
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
-
-    # =========================================================================
-
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = (
-                signatures.RAIL_CHAIN_SIGNAL_CONTROL_BEHAVIOR.validate(value)
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        self.validate_assignment = validate_assignment
 
     # =========================================================================
 
     @property
-    def blue_output_signal(self):
-        # type: () -> dict
+    def blue_output_signal(self) -> Optional[SignalID]:
         """
         The blue output signal. Sent when the rail signal's state is blue.
 
@@ -105,36 +104,28 @@ class RailChainSignal(
 
         :getter: Gets the blue output signal, or ``None`` if not set.
         :setter: Sets the blue output signal. Removes the key if set to ``None``.
-        :type: :py:class:`draftsman.signatures.SIGNAL_ID`
 
         :exception InvalidSignalID: If set to a string that is not a valid
             signal name.
         :exception DataFormatError: If set to a dict that does not match the
             dict format specified above.
         """
-        return self.control_behavior.get("blue_output_signal", None)
+        return self.control_behavior.blue_output_signal
 
     @blue_output_signal.setter
-    def blue_output_signal(self, value):
-        # type: (Union[str, dict]) -> None
-        if value is None:
-            self.control_behavior.pop("blue_output_signal", None)
-        elif isinstance(value, six.string_types):
-            value = six.text_type(value)
-            self.control_behavior["blue_output_signal"] = signal_dict(value)
-        else:  # dict or other
-            try:
-                value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["blue_output_signal"] = value
-            except SchemaError:
-                raise TypeError("Incorrectly formatted SignalID")
+    def blue_output_signal(self, value: Union[str, SignalID, None]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "blue_output_signal",
+                value,
+            )
+            self.control_behavior.blue_output_signal = result
+        else:
+            self.control_behavior.blue_output_signal = value
 
     # =========================================================================
 
-    # def on_insert(self, parent):
-    #     # Check if the rail_signal is adjacent to a rail
-    #     # This test has to be more sophisticated than just testing for adjacent
-    #     # entities; we also must consider the orientation of signal to ensure
-    #     # it is facing the correct direction (must be on the right side of the
-    #     # track, unless there exists another signal on the opposite side)
-    #     pass
+    __hash__ = Entity.__hash__

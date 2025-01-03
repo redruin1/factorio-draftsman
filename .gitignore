@@ -30,6 +30,7 @@ MANIFEST
 # *.pkl
 .pypirc
 src
+wheelhouse
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -53,6 +54,9 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+
+# Performace outputs
+mprofile_*
 
 # Translations
 *.mo

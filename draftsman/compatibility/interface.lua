@@ -1,10 +1,9 @@
 -- interface.lua
+---@diagnostic disable:lowercase-global
+---@diagnostic disable:undefined-global
 
 -- Rectifies issues loading the Factorio toolchain without the game itself.
 -- All contents are subject to change.
-
----@diagnostic disable:lowercase-global
----@diagnostic disable:undefined-global
 
 -- Meta globals: these are used to keep track of ourselves during the load
 -- process (since we have to do this manually due to reasons)
@@ -140,74 +139,9 @@ end
 -- has taken place, `old_require` is called and executed at the end of the
 -- function.
 local old_require = require
--- function require(module_name)
---     print("\tcurrent_file:", CURRENT_FILE)
---     print("\trequiring:", module_name)
---     local absolute
---     module_name, absolute = normalize_module_name(module_name)
---     print("Normalized module name:", module_name, absolute)
---     CURRENT_FILE = module_name
-
---     --print(package.path)
-
---     -- if not, try again after adding the path to the currently executing file
---     --print("CURRENT_FILE:", CURRENT_FILE)
-
---     local function get_parent(path)
---         local pattern1 = "^(.+)/"
---         local pattern2 = "^(.+)\\"
-
---         if (string.match(path,pattern1) == nil) then
---             return string.match(path,pattern2)
---         else
---             return string.match(path,pattern1)
---         end
---     end
-
---     PARENT_DIR = get_parent(module_name)
---     print("PARENT_DIR:", PARENT_DIR)
---     local added = false
---     if PARENT_DIR then
---         local with_path = PARENT_DIR .. "/?.lua"
---         -- add the mod directory to the path if it's an absolute path
---         if not absolute then with_path = MOD_DIR .. "/" .. with_path end
---         --print("\tWITH_PATH: " .. with_path)
---         lua_add_path(with_path)
---         --print("added path:", with_path)
---         added = true
---     else -- God this whole thing is scuffed
---         if not absolute then with_path = MOD_DIR .. CURRENT_DIR .. "/?.lua" end
---         lua_add_path(with_path)
---         added = true
---     end
-
---     -- Also check to see if mod context has changed
---     local mod_changed = false
---     local match = string.match(module_name, MOD_FOLDER_LOCATION .. "/([%a%d%.-_]+)/.+$")
---     if absolute and match then
---         print(match)
---         print("pushing mod ", match)
---         lua_push_mod(MOD_LIST[match])
---         mod_changed = true
---     end
-
---     result = old_require(module_name)
-
---     if added then
---         lua_remove_path()
---     end
-
---     if mod_changed then
---         --print("popping mod")
---         lua_pop_mod()
---     end
-
---     return result
--- end
-
 function require(module_name)
-    --print("\tcurrent_file:", CURRENT_FILE)
-    --print("\trequiring:", module_name)
+    -- print("\tcurrent_file:", CURRENT_FILE)
+    -- print("\trequiring:", module_name)
 
     local mod_changed = false
     local match, name = module_name:match("(__([%w%-_]+)__)")
@@ -220,9 +154,9 @@ function require(module_name)
     end
 
     local norm_module_name, absolute = normalize_module_name(module_name)
-    --print("Normalized module name:", norm_module_name)
+    -- print("Normalized module name:", norm_module_name)
 
-    CURRENT_FILE = norm_module_name
+    --CURRENT_FILE = norm_module_name
 
     local function get_parent(path)
         local pattern1 = "^(.+)/"
@@ -240,24 +174,29 @@ function require(module_name)
     local path_added = false
     -- TODO: revise this logic to be better
     if PARENT_DIR then
+        -- print("\tabsolute")
         local with_path = PARENT_DIR .. "/?.lua"
         -- add the mod directory to the path if it's an absolute path
         if not absolute then with_path = MOD_DIR .. "/" .. with_path end
-        --print("\tWITH_PATH: " .. with_path)
+        -- print("\tWITH_PATH: " .. with_path)
         lua_add_path(with_path)
-        --print("added path:", with_path)
+        -- print("added path:", with_path)
         path_added = true
     else -- God this whole thing is scuffed
-        --print("\trelative")
+        -- print("\trelative")
+        -- print(CURRENT_DIR)
         -- get directory of current file
         local rel_parent = get_parent(CURRENT_FILE) or ""
-        if not absolute then with_path = MOD_DIR .. rel_parent .. "/?.lua" end -- MOD_DIR .. CURRENT_DIR
+        if not absolute then with_path = rel_parent .. "/?.lua" end -- MOD_DIR .. CURRENT_DIR
         lua_add_path(with_path)
-        --print("added path:", with_path)
+        -- print("added path:", with_path)
         path_added = true
+        CURRENT_FILE = rel_parent .. "/" .. norm_module_name
     end
 
     result = old_require(module_name)
+
+    -- CURRENT_FILE = PARENT_DIR .. "/" .. norm_module_name
 
     if path_added then
         --print("removed path")
@@ -272,12 +211,38 @@ function require(module_name)
     return result
 end
 
--- Menu simulations are not included in `factorio-data`; therefore we look for
--- this path when required and return the dummy values specified earlier above. 
--- This is done before all other searches, though after `normalize_module_name()`
-local menu_simulations_searcher = function(module_name)
+-- Certain files are not included in the `factorio-data` repo for copyright 
+-- reasons. As a result, attempting to load normally will encounter missing 
+-- files, which Factorio itself does not handle. This function intercepts the 
+-- beginning of the `require` process to see if it's (likely) one of these 
+-- missing files, and then substitutes dummy values in their stead.
+
+-- TODO: move this to the last step of the require process; that way you we'll
+-- be able to handle both game cases elegantly, since files will be returned
+-- properly if they exist, and only substituted with dummy values if they dont!
+local missing_file_substitution = function(module_name)
     if module_name == "__base__/menu-simulations/menu-simulations" then
         return (function() return menu_simulations end)
+    end
+
+    local normal_name = normalize_module_name(module_name)
+
+    local is_menu_simulations = string.match(normal_name, "menu%-simulations")
+    local is_graphics = string.match(normal_name, ".*/?graphics/.+")
+    local is_sounds = string.match(normal_name, ".*/?sound/.+")
+
+    -- print(is_menu_simulations)
+    -- print(is_graphics)
+    -- print(is_sounds)
+
+    -- Infer the type of file that Factorio is expecting from the path, and then
+    -- return a value corresponding to that type
+    if is_menu_simulations then
+        return (function() return {} end)
+    elseif is_graphics then
+        return (function() return { width=0, height=0, shift={0, 0}, line_length=0 } end)
+    elseif is_sounds then
+        return (function() return {type="sound", name=module_name} end)
     end
 end
 
@@ -330,13 +295,13 @@ local literal_searcher = function(module_name)
 end
 
 -- search order:
--- 1. menu_simulations (returns some dummy data so that Factorio doesn't complain)
+-- 1. missing_file_substitution (returns dummy data so that Factorio doesn't explode)
 -- 2. archive_searcher (defers to python and searches one of the zip files)
 -- 3. package.preload (returns a copy if already loaded once in this session)
 -- 4. literal_searcher (overwrites file searcher, identical but with some custom behavior)
 -- 5. C lib searcher (unused)
 -- 6. All-in-one searcher (unused)
-table.insert(package.searchers, 1, menu_simulations_searcher)
+table.insert(package.searchers, 1, missing_file_substitution)
 table.insert(package.searchers, 2, archive_searcher)
 package.searchers[4] = literal_searcher
 

@@ -1,48 +1,71 @@
 # locomotive.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import ColorMixin, OrientationMixin
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.mixins import (
+    EquipmentGridMixin,
+    RequestItemsMixin,
+    ColorMixin,
+    OrientationMixin,
+)
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Orientation, ValidationMode
+from draftsman.signatures import ItemRequest
+from draftsman.utils import get_first
 
 from draftsman.data.entities import locomotives
-from draftsman.data import entities
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Optional, Union
 
 
-class Locomotive(ColorMixin, OrientationMixin, Entity):
+class Locomotive(
+    EquipmentGridMixin, RequestItemsMixin, ColorMixin, OrientationMixin, Entity
+):
     """
     A train car that moves other wagons around using a fuel.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **OrientationMixin._exports,
-    #     **ColorMixin._exports
-    # }
-    # fmt: on
+    class Format(
+        EquipmentGridMixin.Format,
+        RequestItemsMixin.Format,
+        ColorMixin.Format,
+        OrientationMixin.Format,
+        Entity.Format,
+    ):
+        model_config = ConfigDict(title="Locomotive")
 
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(OrientationMixin._exports)
-    _exports.update(ColorMixin._exports)
+    def __init__(
+        self,
+        name: Optional[str] = get_first(locomotives),
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        orientation: Orientation = Orientation.NORTH,
+        enable_logistics_while_moving: Optional[bool] = True,
+        grid: list[Format.EquipmentComponent] = [],
+        items: Optional[list[ItemRequest]] = [],
+        tags: dict[str, Any] = {},
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        super().__init__(
+            name,
+            locomotives,
+            position=position,
+            tile_position=tile_position,
+            orientation=orientation,
+            enable_logistics_while_moving=enable_logistics_while_moving,
+            grid=grid,
+            items=items,
+            tags=tags,
+            **kwargs
+        )
 
-    def __init__(self, name=locomotives[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(Locomotive, self).__init__(name, locomotives, **kwargs)
+        self.validate_assignment = validate_assignment
 
-        if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
-            self._collision_mask = set(entities.raw[self.name]["collision_mask"])
-        else:  # pragma: no coverage
-            self._collision_mask = {"train-layer"}
+    # TODO: check if item requests are valid fuel sources or not
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

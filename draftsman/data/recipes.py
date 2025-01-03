@@ -1,14 +1,9 @@
 # recipes.py
-# -*- encoding: utf-8 -*-
 
-import os
 import pickle
+import math
 
-try:  # pragma: no coverage
-    import importlib.resources as pkg_resources  # type: ignore
-except ImportError:  # pragma: no coverage
-    # Try backported to PY<37 `importlib_resources`.
-    import importlib_resources as pkg_resources  # type: ignore
+import importlib.resources as pkg_resources
 
 # from draftsman import data
 from .. import data
@@ -16,13 +11,18 @@ from .. import data
 
 with pkg_resources.open_binary(data, "recipes.pkl") as inp:
     _data = pickle.load(inp)
-    raw = _data[0]
-    categories = _data[1]
-    for_machine = _data[2]
+    raw: dict[str, dict] = _data[0]
+    categories: dict[str, list[str]] = _data[1]
+    for_machine: dict[str, list[str]] = _data[2]
 
 
-def get_recipe_ingredients(recipe_name, expensive=False):
-    # type: (str, bool) -> set[str]
+def add_recipe(name: str, ingredients: list[str], result: str, **kwargs):
+    raise NotImplementedError  # TODO
+
+
+def get_recipe_ingredients(
+    recipe_name: str, recipe_quality: str, expensive: bool = False
+):
     """
     Returns a ``set`` of all item types that ``recipe_name`` requires. Discards
     quantities.
@@ -54,6 +54,8 @@ def get_recipe_ingredients(recipe_name, expensive=False):
         # {'iron-plate', 'copper-cable'}
 
     """
+    if recipe_name is None or recipe_name not in raw:
+        return None
     if "ingredients" in raw[recipe_name]:
         return {
             x[0] if isinstance(x, list) else x["name"]
@@ -65,3 +67,19 @@ def get_recipe_ingredients(recipe_name, expensive=False):
             x[0] if isinstance(x, list) else x["name"]
             for x in raw[recipe_name][cost_type]["ingredients"]
         }
+
+
+def is_usable_on(recipe: dict, surface: dict) -> bool:
+    if "surface_conditions" not in recipe:
+        return True
+
+    for condition in recipe["surface_conditions"]:
+        property_name = condition["property"]
+        if property_name in surface["surface_properties"]:
+            value = surface["surface_properties"][property_name]
+            min_val = condition.get("min", -math.inf)
+            max_val = condition.get("max", math.inf)
+            if not (min_val <= value <= max_val):
+                return False
+
+    return True

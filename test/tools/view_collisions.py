@@ -1,5 +1,10 @@
 # view_collisions.py
 
+"""
+View the collision rectangles and entity positions of an input blueprint string.
+Provides a simple GUI output scaled to the size of the blueprint using TKinter.
+"""
+
 from draftsman.blueprintable import Blueprint
 from draftsman.classes.group import Group
 from draftsman.utils import flatten_entities
@@ -30,7 +35,7 @@ def main():
     canvas = Canvas(root, width=screen_size, height=screen_size, bg="white")
     canvas.pack()
 
-    scale = 1000 / max(blueprint.tile_width, blueprint.tile_height)
+    scale = screen_size / max(blueprint.tile_width, blueprint.tile_height)
 
     grid_size = 1
 

@@ -12,14 +12,15 @@ versions of Factorio prior to 1.0.0 is quite slim, I feel comfortable kicking
 this can down the road.
 """
 
-import logging
-import os.path
-import subprocess
-from git import Repo
-
 from draftsman.data import mods
 from draftsman.env import update
 from draftsman.utils import version_string_to_tuple, version_tuple_to_string
+
+from git import Repo
+import pytest
+
+import logging
+import sys
 
 
 def main():
@@ -27,7 +28,7 @@ def main():
     assert len(mods.mod_list) == 1 and mods.mod_list["base"]
 
     # Get the current repo
-    directory = os.path.dirname(__file__)
+    directory = "D:\\SourceCode\\repos\\Python\\factorio-draftsman\\"  # FIXME: better
     repo = Repo(directory)
 
     # Get a list of all the tags corresponding to each Factorio version, and sort by
@@ -42,41 +43,44 @@ def main():
         tag_list[i] = version_tuple_to_string(tag)
 
     # Iterate over every tag in the list up to 1.0.0 (which is our limit)
-    version_final = tag_list.index("1.0.0")
-    for tag in tag_list[:version_final]:
+    start_version = 0
+    end_version = tag_list.index("1.0.0")
+    output = ""  # because pytest captures stdout, we append our results to a
+    # buffer and print it afterwards
+    failed = False
+    for tag in tag_list[start_version:end_version]:
 
-        print(tag + ": ")
-
-        # Set the head of the repo to match the current tag
-        factorio_data.git.checkout(tag)
-
-        # Update the submodule so that the data inside is correct
-        factorio_data.submodule_update()
+        output += tag + ":\t"
 
         # Try to:
         try:
             # Run draftsman-update
-            update()
-            # Run python -m unittest discover
-            subprocess.run(["python", "-m", "unittest", "discover"])
-            print("\tPASS")
+            update(no_mods=True, factorio_version=tag)
+
+            returncode = pytest.main(["test", "-Werror", "-qq"])
+
+            if returncode == 0:
+                output += "PASS\n"
+            else:
+                output += "FAIL\n"
+                failed = True
         except Exception as e:
             logging.error(exc_info=True)
-            print("\tFAIL")
+            output += "ERROR: {}".format(e)
+            failed = True
+
+        if failed:
+            break
+
+    print("Returning to version {}...".format(tag_list[0]))
+
+    # After testing, reset the submodule's head back to latest
+    update(no_mods=True, factorio_version=tag_list[0])
 
     print("\n", "=" * 100, "\n")
 
-    # After testing, reset the submodule's head back to the version right before
-    # latest
-    # TODO: might be better to just record what version the submodule was at
-    # before and set it to that afterward
-    factorio_data.git.checkout(tag_list[1])
-
-    # Update the submodule so that the data inside is correct
-    factorio_data.submodule_update()
-
-    # Update the module back to the original version
-    update()
+    print("Result:")
+    print(output)
 
 
 if __name__ == "__main__":

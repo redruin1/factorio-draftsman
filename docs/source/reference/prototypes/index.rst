@@ -5,13 +5,14 @@
 ===============================
 
 "Prototypes" are instances of Entities that exist within Factorio.
-This includes Containers, TrainStops, TransportBelts, Splitters, and everything else.
+This includes things like :py:class:`.Container`, :py:class:`.TrainStop`, :py:class:`.TransportBelt`, :py:class:`.Splitter`, and everything else.
 
 .. seealso::
 
     `<https://wiki.factorio.com/Prototype/EntityWithOwner>`_
 
 .. toctree::
+    :maxdepth: 1
 
     accumulator.rst
     arithmetic_combinator.rst

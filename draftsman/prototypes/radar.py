@@ -1,37 +1,47 @@
 # radar.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.mixins import CircuitConnectableMixin
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.utils import get_first
 
 from draftsman.data.entities import radars
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Optional, Union
 
 
-class Radar(Entity):
+class Radar(CircuitConnectableMixin, Entity):
     """
     An entity that scans neighbouring chunks periodically.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports
-    # }
-    # fmt: on
+    class Format(CircuitConnectableMixin.Format, Entity.Format):
+        model_config = ConfigDict(title="Radar")
 
-    _exports = {}
-    _exports.update(Entity._exports)
+    def __init__(
+        self,
+        name: Optional[str] = get_first(radars),
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        tags: dict[str, Any] = {},
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        super().__init__(
+            name,
+            radars,
+            position=position,
+            tile_position=tile_position,
+            tags=tags,
+            **kwargs
+        )
 
-    def __init__(self, name=radars[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(Radar, self).__init__(name, radars, **kwargs)
+        self.validate_assignment = validate_assignment
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

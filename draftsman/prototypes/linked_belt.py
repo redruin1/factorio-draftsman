@@ -1,25 +1,18 @@
 # linked_belt.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
-from draftsman.error import DraftsmanError
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
+from draftsman.utils import get_first
 
 from draftsman.data.entities import linked_belts
-from draftsman.data import entities
 
-import warnings
-
-try:  # pragma: no coverage
-    default_linked_belt = linked_belts[0]
-except IndexError:  # pragma: no coverage
-    default_linked_belt = None
+from pydantic import ConfigDict
+from typing import Any, Literal, Union
 
 
-class LinkedBelt(DirectionalMixin, Entity):
+class LinkedBelt(DirectionalMixin, Entity):  # TODO: finish
     """
     A belt object that can transfer items over any distance, regardless of
     constraint, as long as the two are paired together.
@@ -30,39 +23,36 @@ class LinkedBelt(DirectionalMixin, Entity):
         entity, as I can't seem to figure out the example one in the game.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports
-    # }
-    # fmt: on
+    class Format(DirectionalMixin.Format, Entity.Format):
+        model_config = ConfigDict(title="LinkedBelt")
 
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(DirectionalMixin._exports)
+    def __init__(
+        self,
+        name: str = get_first(linked_belts),
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        tags: dict[str, Any] = {},
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
+        super().__init__(
+            name,
+            linked_belts,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            tags=tags,
+            **kwargs
+        )
 
-    def __init__(self, name=default_linked_belt, **kwargs):
-        # type: (str, **dict) -> None
-        if len(linked_belts) == 0:  # pragma: no coverage
-            raise DraftsmanError(
-                "There is no LinkedBelt to create; check your Factorio version"
-            )
+        self.validate_assignment = validate_assignment
 
-        super(LinkedBelt, self).__init__(name, linked_belts, **kwargs)
+    # =========================================================================
 
-        if "collision_mask" in entities.raw[self.name]:  # pragma: no coverage
-            self._collision_mask = set(entities.raw[self.name]["collision_mask"])
-        else:  # pragma: no coverage
-            self._collision_mask = {
-                "object-layer",
-                "item-layer",
-                "transport-belt-layer",
-                "water-tile",
-            }
-
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+    __hash__ = Entity.__hash__

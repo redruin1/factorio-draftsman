@@ -1,20 +1,18 @@
 # accumulator.py
-# -*- encoding: utf-8 -*-
 
-from __future__ import unicode_literals
 
-from draftsman import signatures
 from draftsman.classes.entity import Entity
+from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMixin
-from draftsman.error import DataFormatError
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID
+from draftsman.utils import get_first
 
 from draftsman.data.entities import accumulators
-from draftsman.data.signals import signal_dict
 
-from schema import SchemaError
-import six
-import warnings
+from pydantic import ConfigDict, Field
+from typing import Any, Literal, Optional, Union
 
 
 class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
@@ -22,76 +20,88 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     An entity that stores electricity for periods of high demand.
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **CircuitConnectableMixin._exports,
-    #     **ControlBehaviorMixin._exports,
-    # }
-    # fmt: on
+    class Format(
+        ControlBehaviorMixin.Format,
+        CircuitConnectableMixin.Format,
+        Entity.Format,
+    ):
+        class ControlBehavior(DraftsmanBaseModel):
+            output_signal: Optional[SignalID] = Field(
+                SignalID(name="signal-A", type="virtual"),
+                description="""
+                The output signal to broadcast this accumulators charge level as
+                to any connected circuit network. The output value is as a 
+                percentage, where '0' is empty and '100' is full.""",
+            )
 
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(CircuitConnectableMixin._exports)
-    _exports.update(ControlBehaviorMixin._exports)
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-    def __init__(self, name=accumulators[0], **kwargs):
-        # type: (str, **dict) -> None
+        model_config = ConfigDict(title="Accumulator")
+
+    def __init__(
+        self,
+        name: Optional[str] = get_first(accumulators),
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        control_behavior: Format.ControlBehavior = {},
+        tags: dict[str, Any] = {},
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
         """
         TODO
         """
 
-        super(Accumulator, self).__init__(name, accumulators, **kwargs)
+        self.control_behavior: __class__.Format.ControlBehavior
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        super().__init__(
+            name,
+            accumulators,
+            position=position,
+            tile_position=tile_position,
+            control_behavior=control_behavior,
+            tags=tags,
+            **kwargs
+        )
 
-    # =========================================================================
-
-    @ControlBehaviorMixin.control_behavior.setter
-    def control_behavior(self, value):
-        # type: (dict) -> None
-        try:
-            self._control_behavior = signatures.ACCUMULATOR_CONTROL_BEHAVIOR.validate(
-                value
-            )
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+        self.validate_assignment = validate_assignment
 
     # =========================================================================
 
     @property
-    def output_signal(self):
-        # type: () -> dict
+    def output_signal(self) -> Optional[SignalID]:
         """
         The signal used to output this accumulator's charge level, if set.
 
         :getter: Gets the output signal, or ``None`` if not set.
         :setter: Sets the output signal. Removes the key if set to ``None``.
-        :type: :py:data:`.SIGNAL_ID`
 
         :exception InvalidSignalError: If set to a string not recognized as a valid
             signal name.
         :exception DataFormatError: If set to a ``dict`` that does not comply
             with the :py:data:`.SIGNAL_ID` format.
         """
-        return self.control_behavior.get("output_signal", None)
+        return self.control_behavior.output_signal
 
     @output_signal.setter
-    def output_signal(self, value):
-        # type: (str) -> None
-        if value is None:
-            self.control_behavior.pop("output_signal", None)
-        elif isinstance(value, six.string_types):
-            value = six.text_type(value)
-            self.control_behavior["output_signal"] = signal_dict(value)
-        else:  # dict or other
-            try:
-                value = signatures.SIGNAL_ID.validate(value)
-                self.control_behavior["output_signal"] = value
-            except SchemaError as e:
-                six.raise_from(DataFormatError(e), None)
+    def output_signal(self, value: Union[str, SignalID, None]):  # TODO: SignalName
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                type(self).Format.ControlBehavior,
+                self.control_behavior,
+                "output_signal",
+                value,
+            )
+            self.control_behavior.output_signal = result
+        else:
+            self.control_behavior.output_signal = value
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+    def __eq__(self, other: "Accumulator") -> bool:
+        return super().__eq__(other) and self.output_signal == other.output_signal

@@ -1,7 +1,4 @@
 # blueprint.py
-# -*- encoding: utf-8 -*-
-
-# TODO: convert to Vectors
 
 """
 .. code-block:: python
@@ -81,37 +78,201 @@
     }
 """
 
-
-from __future__ import unicode_literals
-
 from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.association import Association
 from draftsman.classes.blueprintable import Blueprintable
-from draftsman.classes.entitylike import EntityLike
-from draftsman.classes.entitylist import EntityList
-from draftsman.classes.tilelist import TileList
+from draftsman.classes.entity_like import EntityLike
+from draftsman.classes.entity_list import EntityList
+from draftsman.classes.exportable import ValidationResult, attempt_and_reissue
+from draftsman.classes.tile_list import TileList
 from draftsman.classes.transformable import Transformable
 from draftsman.classes.collection import EntityCollection, TileCollection
+from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.spatial_hashmap import SpatialHashMap
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
 from draftsman.error import (
     DraftsmanError,
     UnreasonablySizedBlueprintError,
     DataFormatError,
     InvalidAssociationError,
 )
-from draftsman import signatures
+from draftsman.signatures import (
+    Color,
+    Connections,
+    DraftsmanBaseModel,
+    Icon,
+    IntPosition,
+    uint16,
+    uint64,
+)
+from draftsman.entity import Entity
 from draftsman.tile import Tile
-from draftsman import utils
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.schedule import Schedule
+from draftsman.utils import (
+    AABB,
+    aabb_to_dimensions,
+    encode_version,
+    extend_aabb,
+    flatten_entities,
+    reissue_warnings,
+)
 
 from builtins import int
 import copy
-import math
-from schema import SchemaError
-import six
-from typing import Sequence, Union
-import warnings
+from typing import Any, Literal, Optional, Sequence, Union
+from pydantic import (
+    ConfigDict,
+    Field,
+    PrivateAttr,
+    ValidationError,
+    ValidationInfo,
+    field_validator,
+    field_serializer,
+    model_validator,
+)
+
+
+def _normalize_internal_structure(
+    input_root, entities_in, tiles_in, schedules_in, wires_in
+):
+    # TODO make this a member of blueprint?
+    def _throw_invalid_association(entity):
+        raise InvalidAssociationError(
+            "'{}' at {} is connected to an entity that no longer exists".format(
+                entity["name"], entity["position"]
+            )
+        )
+
+    # Entities
+    flattened_entities = flatten_entities(entities_in)
+    entities_out = []
+    for i, entity in enumerate(flattened_entities):
+        # Get a copy of the dict representation of the Entity
+        # (At this point, Associations are not copied and still point to original)
+        # result = entity.to_dict() # copy.deepcopy?
+        # result = copy.deepcopy(entity.to_dict())
+        result = entity.to_dict()
+        if not isinstance(result, dict):
+            raise DraftsmanError(
+                "{}.to_dict() must return a dict".format(type(entity).__name__)
+            )
+        # Add this to the output's entities and set it's entity_number
+        entities_out.append(result)
+        entities_out[i]["entity_number"] = i + 1
+
+    # for entity in entities_out:
+    #     if "connections" in entity:  # Wire connections
+    #         connections = entity["connections"]
+    #         for side in connections:
+    #             if side in {"1", "2"}:
+    #                 for color in connections[side]:
+    #                     connection_points = connections[side][color]
+    #                     for point in connection_points:
+    #                         old = point["entity_id"]
+    #                         # if isinstance(old, int):
+    #                         #     continue
+    #                         if old() is None:  # pragma: no coverage
+    #                             _throw_invalid_association(entity)
+    #                         else:  # Association
+    #                             point["entity_id"] = flattened_entities.index(old()) + 1
+
+    #             elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+    #                 connection_points = connections[side]
+    #                 for point in connection_points:
+    #                     old = point["entity_id"]
+    #                     # if isinstance(old, int):
+    #                     #     continue
+    #                     if old() is None:  # pragma: no coverage
+    #                         _throw_invalid_association(entity)
+    #                     else:  # Association
+    #                         point["entity_id"] = flattened_entities.index(old()) + 1
+
+    #     if "neighbours" in entity:  # Power pole connections
+    #         neighbours = entity["neighbours"]
+    #         for i, neighbour in enumerate(neighbours):
+    #             if neighbour() is None:  # pragma: no coverage
+    #                 _throw_invalid_association(entity)
+    #             else:  # Association
+    #                 neighbours[i] = flattened_entities.index(neighbour()) + 1
+
+    input_root["entities"] = entities_out
+
+    # Tiles (TODO: should also be flattened)
+
+    tiles_out = []
+    for tile in tiles_in:
+        tiles_out.append(tile.to_dict())
+
+    input_root["tiles"] = tiles_out
+
+    # Schedules (TODO: should also be flattened)
+
+    # We also need to process any schedules that any subgroup might have, so
+    # we recursively traverse the nested entitylike tree and append each
+    # schedule to the output list
+    # TODO: re-add the following
+    # def recurse_schedules(entitylike_list):
+    #     for entitylike in entitylike_list:
+    #         if hasattr(entitylike, "schedules"):  # if a group
+    #             # Add the schedules of this group
+    #             out_dict["schedules"] += copy.deepcopy(entitylike.schedules)
+    #             # Check through this groups entities to see if they have
+    #             # schedules:
+    #             recurse_schedules(entitylike.entities)
+
+    schedules_out = []
+    for schedule in schedules_in:
+        schedules_out.append(schedule.to_dict())
+
+    # Change all locomotive associations to use number
+    for schedule in schedules_out:
+        for i, locomotive in enumerate(schedule["locomotives"]):
+            if locomotive() is None:  # pragma: no coverage
+                _throw_invalid_association(locomotive)
+            else:  # Association
+                schedule["locomotives"][i] = flattened_entities.index(locomotive()) + 1
+
+    input_root["schedules"] = schedules_out
+
+    # Wires
+    def flatten_wires(entities_in):
+        wires_out = []
+        for entity in entities_in:
+            if isinstance(entity, EntityCollection):
+                wires_out.extend(entity.wires)
+                wires_out.extend(flatten_wires(entity.entities))
+            else:
+                pass
+        return wires_out
+
+    flattened_wires = []
+    flattened_wires.extend(wires_in)
+    flattened_wires.extend(flatten_wires(entities_in))
+
+    wires_out = []
+    for wire in flattened_wires:
+        entity_1 = wire[0]
+        if entity_1() is None or entity_1() not in flattened_entities:
+            raise InvalidAssociationError(wire)
+        entity_2 = wire[2]
+        if entity_2() is None or entity_2() not in flattened_entities:
+            raise InvalidAssociationError(wire)
+
+        # Check to see if this wire already exists in the output, and neglect
+        # adding it if so
+        # TODO: this should happen earlier... somewhere...
+        new_wire = [
+            flattened_entities.index(entity_1()) + 1,
+            wire[1],
+            flattened_entities.index(entity_2()) + 1,
+            wire[3],
+        ]
+        if new_wire not in wires_out:
+            wires_out.append(new_wire)
+
+    input_root["wires"] = wires_out
 
 
 class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
@@ -122,12 +283,188 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     """
 
     # =========================================================================
+    # Format
+    # =========================================================================
+
+    class Format(DraftsmanBaseModel):
+        # Private Internals (Not exported)
+        _entities: EntityList = PrivateAttr()
+        _tiles: TileList = PrivateAttr()
+        _schedules: ScheduleList = PrivateAttr()
+        _wires: list[tuple[Association, int, Association, int]] = PrivateAttr()
+
+        class BlueprintObject(DraftsmanBaseModel):
+            # Private Internals (Not exported)
+            _snap_to_grid: Vector = PrivateAttr(Vector(0, 0))
+            _snapping_grid_position: Vector = PrivateAttr(Vector(0, 0))
+            _position_relative_to_grid: Vector = PrivateAttr(Vector(0, 0))
+
+            item: Literal["blueprint"] = Field(
+                ...,
+                description="""
+                The item that this BlueprintItem object is associated with. 
+                Always equivalent to 'blueprint'.
+                """,
+            )
+            label: Optional[str] = Field(
+                None,
+                description="""
+                A string title for this Blueprint.
+                """,
+            )
+            label_color: Optional[Color] = Field(
+                None,
+                description="""
+                The color to draw the label of this blueprint with, if 'label'
+                is present. Defaults to white if omitted.
+                """,
+            )
+            description: Optional[str] = Field(
+                None,
+                description="""
+                A string description given to this Blueprint.
+                """,
+            )
+            icons: Optional[list[Icon]] = Field(
+                None,
+                description="""
+                A set of signal pictures to associate with this Blueprint.
+                """,
+                max_length=4,
+            )
+            version: Optional[uint64] = Field(
+                None,
+                description="""
+                What version of Factorio this UpgradePlanner was made 
+                in/intended for. Specified as 4 unsigned 16-bit numbers combined, 
+                representing the major version, the minor version, the patch 
+                number, and the internal development version respectively. The 
+                most significant digits correspond to the major version, and the 
+                least to the development number. 
+                """,
+            )
+
+            snap_to_grid: Optional[IntPosition] = Field(
+                IntPosition(x=1, y=1),
+                alias="snap-to-grid",
+                description="""
+                The dimension of a square grid to snap this blueprint to, if
+                present.
+                """,
+            )
+            absolute_snapping: Optional[bool] = Field(
+                True,
+                alias="absolute-snapping",
+                description="""
+                Whether or not 'snap-to-grid' is relative to the global map
+                coordinates, or to the position of the first blueprint built.
+                """,
+            )
+            position_relative_to_grid: Optional[IntPosition] = Field(
+                IntPosition(x=0, y=0),
+                alias="position-relative-to-grid",
+                description="""
+                Any positional offset that the snapping grid has if 
+                'absolute-snapping' is true.
+                """,
+            )
+
+            entities: Optional[list[dict]] = Field(
+                [],
+                description="""
+                The list of all entities contained in the blueprint.
+                """,
+            )
+            tiles: Optional[list[dict]] = Field(
+                [],
+                description="""
+                The list of all tiles contained in the blueprint.
+                """,
+            )
+            schedules: Optional[list[dict]] = Field(
+                [],
+                description="""
+                The list of all schedules contained in the blueprint.
+                """,
+            )
+            wires: Optional[list[list[int]]] = Field(
+                [],
+                description="""
+                (2.0) The definitions of all wires in the blueprint, including
+                both power and circuit connections.
+                """,
+            )
+            stock_connections: Optional[list[dict]] = []  # TODO
+
+            @field_validator("icons", mode="before")
+            @classmethod
+            def init_icons_from_list(cls, value: Any):
+                if isinstance(value, (tuple, list)):
+                    result = []
+                    for i, elem in enumerate(value):
+                        if isinstance(elem, str):
+                            result.append({"signal": elem, "index": i + 1})
+                        else:
+                            result.append(elem)
+                    return result
+                else:
+                    return value
+
+            @field_serializer("snap_to_grid", when_used="unless-none")
+            def serialize_snapping_grid(self, _):
+                return self._snap_to_grid.to_dict()
+
+            @field_serializer("position_relative_to_grid", when_used="unless-none")
+            def serialize_position_relative(self, _):
+                return self._position_relative_to_grid.to_dict()
+
+        blueprint: BlueprintObject
+        index: Optional[uint16] = Field(
+            None,
+            description="""
+            The index of the blueprint inside a parent BlueprintBook's blueprint
+            list. Only meaningful when this object is inside a BlueprintBook.
+            """,
+        )
+
+        @model_validator(mode="after")
+        def check_if_unreasonable_size(self, info: ValidationInfo):
+            if not info.context:  # pragma: no coverage
+                return self
+            if info.context["mode"] <= ValidationMode.MINIMUM:
+                return self
+
+            blueprint: Blueprint = info.context["object"]
+
+            # Check the blueprint for unreasonable size
+            tile_width, tile_height = blueprint.get_dimensions()
+            if tile_width > 10000 or tile_height > 10000:
+                raise UnreasonablySizedBlueprintError(
+                    "Current blueprint dimensions ({}, {}) exceeds the maximum size permitted by Factorio (10000, 10000)".format(
+                        tile_width, tile_height
+                    )
+                )
+
+            return self
+
+        model_config = ConfigDict(title="Blueprint")
+
+    # =========================================================================
     # Constructors
     # =========================================================================
 
-    @utils.reissue_warnings
-    def __init__(self, blueprint=None):
-        # type: (Union[str, dict]) -> None
+    @reissue_warnings
+    def __init__(
+        self,
+        blueprint: Union[str, dict] = None,
+        index: Optional[uint16] = None,
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+    ):
         """
         Creates a ``Blueprint`` class. Will load the data from ``blueprint`` if
         provided, and otherwise initializes itself with defaults. ``blueprint``
@@ -137,120 +474,172 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         :param blueprint_string: Either a Factorio-format blueprint string or a
             ``dict`` object with the desired keys in the correct format.
         """
-        super(Blueprint, self).__init__(
-            root_item="blueprint", item="blueprint", init_data=blueprint
+        self._root: __class__.Format
+
+        super().__init__(
+            root_item="blueprint",
+            root_format=Blueprint.Format.BlueprintObject,
+            item="blueprint",
+            init_data=blueprint,
+            index=index,
+            validate=validate,
+            entities=[],
+            tiles=[],
+            schedules=[],
         )
 
-    @utils.reissue_warnings
-    def setup(self, **kwargs):
-        self._root = {}
+        self.validate_assignment = validate_assignment
+
+    @reissue_warnings
+    def setup(
+        self,
+        label: Optional[str] = None,
+        label_color: Optional[Color] = None,
+        description: Optional[str] = None,
+        icons: Optional[list[Icon]] = None,
+        version: Optional[uint64] = __factorio_version_info__,
+        snapping_grid_size: Union[Vector, PrimitiveVector, None] = None,
+        snapping_grid_position: Union[Vector, PrimitiveVector, None] = None,
+        absolute_snapping: Optional[bool] = True,
+        position_relative_to_grid: Union[Vector, PrimitiveVector, None] = None,
+        entities: Union[EntityList, list[EntityLike]] = [],
+        tiles: Union[TileList, list[Tile]] = [],
+        schedules: Union[ScheduleList, list[Schedule]] = [],
+        wires: Optional[list[list[int]]] = None,
+        stock_connections: Optional[list[dict]] = None,  # TODO
+        index: Optional[uint16] = None,
+        validate: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs,
+    ):
+        # self._root.blueprint = Blueprint.Format.BlueprintObject(item="blueprint")
 
         # Item (type identifier)
-        self._root["item"] = "blueprint"
         kwargs.pop("item", None)
 
         ### METADATA ###
-        self.label = kwargs.pop("label", None)
-        self.label_color = kwargs.pop("label_color", None)
-        self.description = kwargs.pop("description", None)
-        self.icons = kwargs.pop("icons", None)
+        self.label = label
+        self.label_color = label_color
+        self.description = description
+        self.icons = icons
 
-        if "version" in kwargs:
-            self.version = kwargs.pop("version")
-        else:
-            self.version = utils.encode_version(*__factorio_version_info__)
+        self.version = version
 
         # Snapping grid parameters
-        # Handle their true keys, as well as the Pythonic attribute label
+        # Handle their true keys, as well as the Draftsman attribute label
+        # self._root[self._root_item]["snap-to-grid"] = Vector(0, 0) # TODO: move
         if "snap-to-grid" in kwargs:
             self.snapping_grid_size = kwargs.pop("snap-to-grid")
-        elif "snapping_grid_size" in kwargs:
-            self.snapping_grid_size = kwargs.pop("snapping_grid_size")
-
-        if "snapping_grid_position" in kwargs:
-            self.snapping_grid_position = kwargs.pop("snapping_grid_position")
         else:
-            self.snapping_grid_position = None
+            self.snapping_grid_size = snapping_grid_size
+
+        # self._root[self._root_item]["snapping_grid_position"] = Vector(0, 0) # TODO: move
+        self.snapping_grid_position = snapping_grid_position
 
         if "absolute-snapping" in kwargs:
             self.absolute_snapping = kwargs.pop("absolute-snapping")
-        elif "absolute_snapping" in kwargs:
-            self.absolute_snapping = kwargs.pop("absolute_snapping")
+        else:
+            self.absolute_snapping = absolute_snapping
 
+        # self._root[self._root_item]["position-relative-to-grid"] = Vector(0, 0) # TODO: move
         if "position-relative-to-grid" in kwargs:
             self.position_relative_to_grid = kwargs.pop("position-relative-to-grid")
-        elif "position_relative_to_grid" in kwargs:
-            self.position_relative_to_grid = kwargs.pop("position_relative_to_grid")
-
-        ### INTERNAL ###
-        self._area = None
-        self._tile_width = 0
-        self._tile_height = 0
+        else:
+            self.position_relative_to_grid = position_relative_to_grid
 
         ### DATA ###
-        # Create spatial hashing objects to make spatial queries much quicker
-        self._tile_map = SpatialHashMap()
-        self._entity_map = SpatialHashMap()
 
         # Data lists
-        if "entities" in kwargs:
-            self._root["entities"] = EntityList(self, kwargs.pop("entities"))
-        else:
-            self._root["entities"] = EntityList(self)
+        # self._root[self._root_item]["entities"] = EntityList(
+        #     self, entities
+        # )
+        self._root._entities = EntityList(
+            self,
+            entities,
+        )
 
-        if "tiles" in kwargs:
-            self._root["tiles"] = TileList(self, kwargs.pop("tiles"))
-        else:
-            self._root["tiles"] = TileList(self)
+        # if "tiles" in kwargs:
+        # self._root[self._root_item]["tiles"] = TileList(
+        #     self, tiles
+        # )
+        self._root._tiles = TileList(
+            self,
+            tiles,
+        )
 
-        if "schedules" in kwargs:
-            self._root["schedules"] = kwargs.pop("schedules")
-        else:
-            self._root["schedules"] = []
+        # self._root[self._root_item]["schedules"] = ScheduleList(
+        #     schedules
+        # )
+        self._root._schedules = ScheduleList(schedules)
 
-        # Issue warnings for any keyword not recognized by Blueprint
-        for unused_arg in kwargs:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self._root._wires = [] if wires is None else wires
 
+        self.stock_connections = [] if stock_connections is None else stock_connections
+
+        self.index = index
+
+        # A bit scuffed, but
+        for kwarg, value in kwargs.items():
+            self._root[kwarg] = value
+
+        # 1.0 code
         # Convert circuit and power connections to Associations
-        for entity in self.entities:
-            if hasattr(entity, "connections"):  # Wire connections
-                connections = entity.connections
-                for side in connections:
-                    if side in {"1", "2"}:
-                        for color in connections[side]:
-                            connection_points = connections[side][color]
-                            for point in connection_points:
-                                old = point["entity_id"] - 1
-                                point["entity_id"] = Association(self.entities[old])
+        # for entity in self.entities:
+        #     if hasattr(entity, "connections"):  # Wire connections
+        #         connections: Connections = entity.connections
+        #         for side in connections.true_model_fields():
+        #             if connections[side] is None:
+        #                 continue
 
-                    elif side in {"Cu0", "Cu1"}:  # pragma: no branch
-                        connection_points = connections[side]
-                        for point in connection_points:
-                            old = point["entity_id"] - 1
-                            point["entity_id"] = Association(self.entities[old])
+        #             if side in {"1", "2"}:
+        #                 for color, _ in connections[side]:  # TODO fix
+        #                     connection_points = connections[side][color]
+        #                     if connection_points is None:
+        #                         continue
+        #                     for point in connection_points:
+        #                         old = point["entity_id"] - 1
+        #                         point["entity_id"] = Association(self.entities[old])
 
-            if hasattr(entity, "neighbours"):  # Power pole connections
-                neighbours = entity.neighbours
-                for i, neighbour in enumerate(neighbours):
-                    neighbours[i] = Association(self.entities[neighbour - 1])
+        #             elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+        #                 connection_points = connections[side]
+        #                 if connection_points is None:
+        #                     continue  # pragma: no coverage
+        #                 for point in connection_points:
+        #                     old = point["entity_id"] - 1
+        #                     point["entity_id"] = Association(self.entities[old])
+
+        #     if hasattr(entity, "neighbours"):  # Power pole connections
+        #         neighbours = entity.neighbours
+        #         for i, neighbour in enumerate(neighbours):
+        #             neighbours[i] = Association(self.entities[neighbour - 1])
 
         # Change all locomotive numbers to use Associations
         for schedule in self.schedules:
-            for i, locomotive in enumerate(schedule["locomotives"]):
-                schedule["locomotives"][i] = Association(self.entities[locomotive - 1])
+            for i, locomotive in enumerate(schedule.locomotives):
+                if isinstance(locomotive, int):
+                    entity: Entity = self.entities[locomotive - 1]
+                    schedule.locomotives[i] = Association(entity)
+
+        # Change all wire numbers to use Associations
+        for i, wire in enumerate(self.wires):
+            if isinstance(wire[0], int):
+                entity1 = self.entities[wire[0] - 1]
+                wire[0] = Association(entity1)
+            if isinstance(wire[2], int):
+                entity2 = self.entities[wire[2] - 1]
+                wire[2] = Association(entity2)
+            # self.wires[i] = [Association(entity1), wire[1], Association(entity2), wire[3]]
+
+        if validate:
+            self.validate(mode=validate).reissue_all()
 
     # =========================================================================
     # Blueprint properties
     # =========================================================================
 
     @property
-    def label_color(self):
-        # type: () -> dict
+    def label_color(self) -> Optional[Color]:
         """
         The color of the Blueprint's label.
 
@@ -267,7 +656,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
         :getter: Gets the color of the label, or ``None`` if not set.
         :setter: Sets the label color of the ``Blueprint``.
-        :type: ``dict{"r": number, "g": number, "b": number, Optional("a"): number}``
 
         :exception DataFormatError: If the input ``label_color`` does not match
             the above specification.
@@ -280,25 +668,27 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             print(blueprint.label_color)
             # {'r': 127.0, 'g': 127.0, 'b': 127.0}
         """
-        return self._root.get("label_color", None)
+        return self._root[self._root_item].get("label_color", None)
 
     @label_color.setter
-    def label_color(self, value):
-        # type: (dict) -> None
-        if value is None:
-            self._root.pop("label_color", None)
-            return
-
-        try:
-            self._root["label_color"] = signatures.COLOR.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+    def label_color(self, value: Optional[Color]):
+        # TODO: normalization
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                self.Format.BlueprintObject,
+                self._root.blueprint,
+                "label_color",
+                value,
+            )
+            self._root[self._root_item]["label_color"] = result
+        else:
+            self._root[self._root_item]["label_color"] = value
 
     # =========================================================================
 
     @property
-    def snapping_grid_size(self):
-        # type: () -> dict
+    def snapping_grid_size(self) -> Optional[Vector]:
         """
         Sets the size of the snapping grid to use. The presence of this entry
         determines whether or not the Blueprint will have a snapping grid or
@@ -310,33 +700,32 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         :getter: Gets the size of the snapping grid, or ``None`` if not set.
         :setter: Sets the size of the snapping grid. Removes the attribute if
             set to ``None``
-        :type: ``dict{"x": int, "y": int}``
         """
-        return self._root.get("snap-to-grid", None)
+        # return self._root[self._root_item].get("snap-to-grid", None)
+        return self._root.blueprint._snap_to_grid
 
     @snapping_grid_size.setter
-    def snapping_grid_size(self, value):
-        # type: (Union[dict, Sequence]) -> None
+    def snapping_grid_size(self, value: Union[Vector, PrimitiveVector, None]):
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self,
+        #         self.Format.BlueprintObject,
+        #         self._root.blueprint,
+        #         "snapping_grid_size",
+        #         value
+        #     )
+        #     self._root[self._root_item]["snapping_grid_size"] = result
+        # else:
+        #     self._root[self._root_item]["snapping_grid_size"] = value
         if value is None:
-            self._root.pop("snap-to-grid", None)
-            return
-
-        try:
-            self._root["snap-to-grid"] = {
-                "x": math.floor(value["x"]),
-                "y": math.floor(value["y"]),
-            }
-        except TypeError:
-            self._root["snap-to-grid"] = {
-                "x": math.floor(value[0]),
-                "y": math.floor(value[1]),
-            }
+            self._root.blueprint._snap_to_grid.update_from_other((0, 0), int)
+        else:
+            self._root.blueprint._snap_to_grid.update_from_other(value, int)
 
     # =========================================================================
 
     @property
-    def snapping_grid_position(self):
-        # type: () -> list
+    def snapping_grid_position(self) -> Vector:
         """
         Sets the position of the snapping grid. Offsets all of the
         positions of the entities by this amount, effectively acting as a
@@ -350,33 +739,25 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             set.
         :setter: Sets the offset amount of the snapping grid. Removes the
             attribute if set to ``None``.
-        :type: ``dict{"x": int, "y": int}``
         """
-        return self._snapping_grid_position
+        # return self._root[self._root_item].get("snapping_grid_position", None)
+        return self._root.blueprint._snapping_grid_position
 
     @snapping_grid_position.setter
-    def snapping_grid_position(self, value):
-        # type: (Union[dict, Sequence]) -> None
+    def snapping_grid_position(self, value: Union[Vector, PrimitiveVector, None]):
+        # if value is None:
+        #     self._root[self._root_item]["snapping_grid_position"].update_from_other((0, 0), int)
+        # else:
+        #     self._root[self._root_item]["snapping_grid_position"].update_from_other(value, int)
         if value is None:
-            self._snapping_grid_position = value
-            return
-
-        try:
-            self._snapping_grid_position = {
-                "x": math.floor(value["x"]),
-                "y": math.floor(value["y"]),
-            }
-        except TypeError:
-            self._snapping_grid_position = {
-                "x": math.floor(value[0]),
-                "y": math.floor(value[1]),
-            }
+            self._root.blueprint._snapping_grid_position.update_from_other((0, 0), int)
+        else:
+            self._root.blueprint._snapping_grid_position.update_from_other(value, int)
 
     # =========================================================================
 
     @property
-    def absolute_snapping(self):
-        # type: () -> bool
+    def absolute_snapping(self) -> Optional[bool]:
         """
         Whether or not the blueprint uses absolute positioning or relative
         positioning for the snapping grid. On import, a value of ``None`` is
@@ -386,61 +767,64 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             or ``None`` if not set.
         :setter: Sets whether or not to use absolute-snapping. Removes the
             attribute if set to ``None``.
-        :type: ``bool``
 
         :exception TypeError: If set to anything other than a ``bool`` or
             ``None``.
         """
-        return self._root.get("absolute-snapping", None)
+        return self._root[self._root_item].get("absolute-snapping", None)
 
     @absolute_snapping.setter
-    def absolute_snapping(self, value):
-        # type: (bool) -> None
-        if value is None:
-            self._root.pop("absolute-snapping", None)
-        elif isinstance(value, bool):
-            self._root["absolute-snapping"] = value
+    def absolute_snapping(self, value: Optional[bool]):
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self,
+                self.Format.BlueprintObject,
+                self._root.blueprint,
+                "absolute_snapping",
+                value,
+            )
+            self._root[self._root_item]["absolute_snapping"] = result
         else:
-            raise TypeError("'absolute_snapping' must be a bool or None")
+            self._root[self._root_item]["absolute_snapping"] = value
 
     # =========================================================================
 
     @property
-    def position_relative_to_grid(self):
-        # type: () -> dict
+    def position_relative_to_grid(self) -> Optional[Vector]:
         """
         The absolute position of the snapping grid in the world. Only used if
         ``absolute_snapping`` is set to ``True`` or ``None``.
 
-        :getter: Gets the absolute grid-position offset, or ``None`` if not set.
-        :setter: Sets the a
-        :type: ``dict{"x": int, "y": int}``
+        :getter: Gets the absolute grid-position offset.
+        :setter: Sets the absolute grid-position offset. Is given a value of
+            ``(0, 0)`` if set to ``None``
         """
-        return self._root.get("position-relative-to-grid", None)
+        # return self._root[self._root_item]["position-relative-to-grid"]
+        return self._root.blueprint._position_relative_to_grid
 
     @position_relative_to_grid.setter
-    def position_relative_to_grid(self, value):
-        # type: (Union[dict, Sequence]) -> None
+    def position_relative_to_grid(self, value: Union[Vector, PrimitiveVector, None]):
+        # if value is None:
+        #     self._root[self._root_item]["position-relative-to-grid"].update_from_other(
+        #         (0, 0), int
+        #     )
+        # else:
+        #     self._root[self._root_item]["position-relative-to-grid"].update_from_other(
+        #         value, int
+        #     )
         if value is None:
-            self._root.pop("position-relative-to-grid", None)
-            return
-
-        try:
-            self._root["position-relative-to-grid"] = {
-                "x": math.floor(value["x"]),
-                "y": math.floor(value["y"]),
-            }
-        except TypeError:
-            self._root["position-relative-to-grid"] = {
-                "x": math.floor(value[0]),
-                "y": math.floor(value[1]),
-            }
+            self._root.blueprint._position_relative_to_grid.update_from_other(
+                (0, 0), int
+            )
+        else:
+            self._root.blueprint._position_relative_to_grid.update_from_other(
+                value, int
+            )
 
     # =========================================================================
 
     @property
-    def entities(self):
-        # type: () -> EntityList
+    def entities(self) -> EntityList:
         """
         The list of the Blueprint's entities. Internally the list is a custom
         class named :py:class:`.EntityList`, which has all the normal properties
@@ -448,134 +832,33 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         on ``EntityList``, check out this writeup
         :ref:`here <handbook.blueprints.blueprint_differences>`.
 
-        .. NOTE ::
-
-            Currently, assigning to this always triggers a deep copy. To avoid
-            this, use :py:meth:`.EntityList.append()` or
-            :py:meth:`EntityList.extend()` instead.
+        :getter: Gets the EntityList object associated with this blueprint.
+        :setter: Sets the EntityList object associated with this blueprint. If
+            a regular list is passed in, it is converted to an EntityList, and
+            setting to ``None`` clears the list.
         """
-        return self._root["entities"]
+        # return self._root[self._root_item]["entities"]
+        return self._root._entities
 
     @entities.setter
-    def entities(self, value):
-        # type: (list[EntityLike]) -> None
-        self._entity_map.clear()
-
+    @reissue_warnings
+    def entities(self, value: Union[EntityList, list[EntityLike], None]):
         if value is None:
-            self._root["entities"].clear()
-        elif isinstance(value, list):
-            self._root["entities"] = EntityList(self, value)
+            # self._root[self._root_item]["entities"].clear()
+            self._root._entities.clear()
         elif isinstance(value, EntityList):
-            # TODO: this is kinda wasteful, especially in the cases where we do
-            # blueprint.entities += [...]
-            # However, there's no way to distinguish the above case from a raw
-            # set, which is troublesome because entity lists in that case must
-            # be copied to avoid maximum confusion for everyone involved
-            self._root["entities"] = EntityList(self, value.data)
+            # Just don't ask
+            # self._root["entities"] = copy.deepcopy(value, memo={"new_parent": self})
+            # self._root[self._root_item]["entities"] = EntityList(self, value._root)
+            self._root._entities = EntityList(self, value._root)
         else:
-            raise TypeError("'entities' must be an EntityList, list, or None")
-
-        self.recalculate_area()
-
-    def on_entity_insert(self, entitylike, merge):
-        # type: (EntityLike, bool) -> EntityLike
-        """
-        Callback function for when an :py:class:`.EntityLike` is added to this
-        Blueprint's :py:attr:`entities` list. Handles the addition of the entity
-        into :py:attr:`entity_map`, and recalculates it's dimensions.
-
-        :raises UnreasonablySizedBlueprintError: If inserting the new entity
-            causes the blueprint to exceed 10,000 x 10,000 tiles in dimension.
-        """
-        # Here we issue warnings for overlapping entities, modify existing
-        # entities if merging is enabled and delete excess entities in entitylike
-        entitylike = self.entity_map.handle_overlapping(entitylike, merge)
-
-        if entitylike is None:  # the entity has been entirely merged
-            return entitylike  # early exit
-
-        # Issue entity-specific warnings/errors if any exist for this entitylike
-        entitylike.on_insert(self)
-
-        # If no errors, add this to hashmap (as well as any of it's children)
-        self.entity_map.recursive_add(entitylike)
-
-        # Update dimensions of Blueprint
-        self._area = utils.extend_aabb(self._area, entitylike.get_world_bounding_box())
-        (
-            self._tile_width,
-            self._tile_height,
-        ) = utils.aabb_to_dimensions(self._area)
-        # Check the blueprint for unreasonable size
-        if self._tile_width > 10000 or self._tile_height > 10000:
-            raise UnreasonablySizedBlueprintError(
-                "Current blueprint dimensions ({}, {}) exceeds the maximum size"
-                " (10,000 x 10,000)".format(self._tile_width, self._tile_height)
-            )
-
-        return entitylike
-
-    def on_entity_set(self, old_entitylike, new_entitylike):
-        # type: (EntityLike, EntityLike) -> None
-        """
-        Callback function for when an :py:class:`.EntityLike` is overwritten in
-        a Blueprint's :py:attr:`entities` list. Handles the removal of the old
-        ``EntityLike`` from :py:attr:`entity_map` and adds the new one in it's
-        stead.
-        """
-        # Remove the entity and its children
-        self.entity_map.recursive_remove(old_entitylike)
-
-        # Perform any remove checks on per entity basis
-        old_entitylike.on_remove(self)
-
-        # Check for overlapping entities
-        self.entity_map.handle_overlapping(new_entitylike, False)
-
-        # Issue entity-specific warnings/errors if any exist for this entitylike
-        new_entitylike.on_insert(self)
-
-        # Add the new entity and its children
-        self.entity_map.recursive_add(new_entitylike)
-
-        # Disdain
-        # self.recalculate_area()
-
-    def on_entity_remove(self, entitylike):
-        # type: (EntityLike) -> None
-        """
-        Callback function for when an :py:class:`.EntityLike` is removed from a
-        Blueprint's :py:attr:`entities` list. Handles the removal of the
-        ``EntityLike`` from :py:attr:`entity_map`.
-        """
-        # Handle entity specific
-        entitylike.on_remove(self)
-
-        # Remove the entity and its children
-        self.entity_map.recursive_remove(entitylike)
-
-        # Perform any remove checks on per entity basis
-        entitylike.on_remove(self)
-
-        # This sucks lmao
-        # self.recalculate_area()
+            # self._root[self._root_item]["entities"] = EntityList(self, value)
+            self._root._entities = EntityList(self, value)
 
     # =========================================================================
 
     @property
-    def entity_map(self):
-        # type: () -> SpatialDataStructure
-        """
-        An implementation of :py:class:`.SpatialDataStructure` for ``entities``.
-        Not exported; read only.
-        """
-        return self._entity_map
-
-    # =========================================================================
-
-    @property
-    def tiles(self):
-        # type: () -> TileList
+    def tiles(self) -> TileList:
         """
         The list of the Blueprint's tiles. Internally the list is a custom
         class named :py:class:`~.TileList`, which has all the normal properties
@@ -595,193 +878,112 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             blueprint.tiles = None
             assert len(blueprint.tiles) == 0
         """
-        return self._root["tiles"]
+        # return self._root[self._root_item]["tiles"]
+        return self._root._tiles
 
     @tiles.setter
-    def tiles(self, value):
-        # type: (list[Tile]) -> None
-        self.tile_map.clear()
-
+    @reissue_warnings
+    def tiles(self, value: Union[TileList, list[Tile], None]):
         if value is None:
-            self._root["tiles"] = TileList(self)
-        elif isinstance(value, list):
-            self._root["tiles"] = TileList(self, value)
+            # self._root[self._root_item]["tiles"].clear()
+            self._root._tiles.clear()
         elif isinstance(value, TileList):
-            self._root["tiles"] = copy.deepcopy(value)
+            # self._root[self._root_item]["tiles"] = TileList(self, value._root)
+            self._root._tiles = TileList(self, value._root)
         else:
-            raise TypeError("'tiles' must be a TileList, list, or None")
-
-        self.recalculate_area()
-
-    def on_tile_insert(self, tile, merge):
-        # type: (Tile, bool) -> None
-        """
-        Callback function for when a :py:class:`.Tile` is added to this
-        Blueprint's :py:attr:`tiles` list. Handles the addition of the tile
-        into :py:attr:`tile_map`, and recalculates it's dimensions.
-
-        :raises UnreasonablySizedBlueprintError: If inserting the new tile
-            causes the blueprint to exceed 10,000 x 10,000 tiles in dimension.
-        """
-        # Handle overlapping and merging
-        tile = self.tile_map.handle_overlapping(tile, merge)
-
-        if tile is None:  # Tile was merged
-            return tile  # early exit
-
-        # Add to tile map
-        self.tile_map.add(tile)
-
-        # Update dimensions
-        self._area = utils.extend_aabb(self._area, tile.get_world_bounding_box())
-        (
-            self._tile_width,
-            self._tile_height,
-        ) = utils.aabb_to_dimensions(self.area)
-
-        # Check the blueprint for unreasonable size
-        if self._tile_width > 10000 or self._tile_height > 10000:
-            raise UnreasonablySizedBlueprintError(
-                "Current blueprint dimensions ({}, {}) exceeds the maximum size"
-                " (10,000 x 10,000)".format(self._tile_width, self._tile_height)
-            )
-
-        return tile
-
-    def on_tile_set(self, old_tile, new_tile):
-        # type: (Tile, Tile) -> None
-        """
-        Callback function for when a :py:class:`.Tile` is overwritten in a
-        Blueprint's :py:attr:`tiles` list. Handles the removal of the old ``Tile``
-        from :py:attr:`tile_map` and adds the new one in it's stead.
-        """
-        self.tile_map.remove(old_tile)
-        self.tile_map.handle_overlapping(new_tile, False)
-        self.tile_map.add(new_tile)
-
-        # Unfortunately, this can't be here because we need to recalculate after
-        # modifying the base list, which happens *after* this function finishes
-        # self.recalculate_area() # TODO
-
-    def on_tile_remove(self, tile):
-        # type: (Tile) -> None
-        """
-        Callback function for when a :py:class:`.Tile` is removed from a
-        Blueprint's :py:attr:`tiles` list. Handles the removal of the ``Tile``
-        from the :py:attr:`tile_map`.
-        """
-        self.tile_map.remove(tile)
-
-        # Disdain...
-        # self.recalculate_area() # TODO
+            # self._root[self._root_item]["tiles"] = TileList(self, value)
+            self._root._tiles = TileList(self, value)
 
     # =========================================================================
 
     @property
-    def tile_map(self):
-        # type: () -> SpatialDataStructure
-        """
-        An implementation of :py:class:`.SpatialDataStructure` for ``tiles``.
-        Not exported; read only.
-        """
-        return self._tile_map
-
-    # =========================================================================
-
-    @property
-    def schedules(self):
-        # type: () -> list
+    def schedules(self) -> ScheduleList:
         """
         A list of the Blueprint's train schedules.
-
-        .. NOTE::
-
-            Currently there is no framework around creating schedules by script;
-            It can still be done by manipulating the contents of this list, but
-            an easier way to manipulate trains and their schedules is still
-            under development.
 
         .. seealso::
 
             `<https://wiki.factorio.com/Blueprint_string_format#Schedule_object>`_
 
         :getter: Gets the schedules of the Blueprint.
-        :setter: Sets the schedules of the Blueprint. Defaults to ``[]`` if set
-            to ``None``.
-        :type: ``list[SCHEDULE]``
+        :setter: Sets the schedules of the Blueprint. Defaults to an empty
+            :py:class:`.ScheduleList` if set to ``None``.
 
-        :exception DataFormatError: If set to anything other than a ``list`` of
-            :py:data:`.SCHEDULE`.
+        :exception ValueError: If set to anything other than a ``list`` of
+            :py:class:`.Schedule` or .
         """
-        return self._root["schedules"]
+        # return self._root[self._root_item]["schedules"]
+        return self._root._schedules
 
     @schedules.setter
-    def schedules(self, value):
-        # type: (list) -> None
+    @reissue_warnings
+    def schedules(self, value: Union[ScheduleList, list[Schedule], None]):
+        # TODO: this needs to be more complex. What about associations already
+        # set to one blueprint being copied over to another? Should probably
+        # wipe the locomotives of each schedule when doing so
         if value is None:
-            self._root["schedules"] = []
-            return
-        try:
-            self._root["schedules"] = signatures.SCHEDULES.validate(value)
-        except SchemaError as e:
-            six.raise_from(DataFormatError(e), None)
+            # self._root[self._root_item]["schedules"] = ScheduleList()
+            self._root._schedules.clear()
+        elif isinstance(value, ScheduleList):
+            # self._root[self._root_item]["schedules"] = value
+            self._root._schedules = value
+        else:
+            # self._root[self._root_item]["schedules"] = ScheduleList(value)
+            self._root._schedules = ScheduleList(value)
 
     # =========================================================================
 
     @property
-    def area(self):
-        # type: () -> list[list[float]]
+    def wires(self) -> list[list[int]]:
         """
-        The Axis-aligned Bounding Box of the Blueprint's dimensions. Not
-        exported; for user aid. Read only.
+        A list of the wire connections in this blueprint.
 
-        Stored internally as a list of two lists, where the first one represents
-        the top-left corner (minimum) and the second the bottom-right corner
-        (maximum). This attribute is updated every time an Entity or Tile is
-        changed inside the Blueprint.
+        Wires are specified as a list of 4 integers; the first pair of numbers
+        represents the first entity, and the second pair represents the second
+        entity. The first number of each pair represents the ``entity_number``
+        of the corresponding entity in the list, and the second number indicates
+        what type of connection it is.
 
-        :type: ``list[list[float, float], list[float, float]]``
+        TODO: more detail
+
+        :getter: Gets the wires of the Blueprint.
+        :setter: Sets the wires of the Blueprint. Defaults to an empty list if
+            set to ``None``.
         """
-        return self._area
+        return self._root._wires
+
+    @wires.setter
+    def wires(self, value: list[list[int]]) -> None:
+        if value is None:
+            self._root._wires = []
+        else:
+            self._root._wires = value
 
     # =========================================================================
 
     @property
-    def tile_width(self):
-        # type: () -> int
+    def stock_connections(self) -> list[dict]:
         """
-        The width of the Blueprint's ``area``, rounded up to the nearest tile.
-        Read only.
+        TODO
+        """
+        return self._root.blueprint.stock_connections
 
-        :type: ``int``
-        """
-        return self._tile_width
+    @stock_connections.setter
+    def stock_connections(self, value: Optional[list[dict]]) -> None:
+        if value is None:
+            self._root.blueprint.stock_connections = []
+        else:
+            self._root.blueprint.stock_connections = value
 
     # =========================================================================
 
     @property
-    def tile_height(self):
-        # type: () -> int
-        """
-        The width of the Blueprint's ``area``, rounded up to the nearest tile.
-        Read only.
-
-        :type: ``int``
-        """
-        return self._tile_height
-
-    # =========================================================================
-
-    @property
-    def double_grid_aligned(self):
-        # type: () -> bool
+    def double_grid_aligned(self) -> bool:
         """
         Whether or not the blueprint is aligned with the double grid, which is
         the grid that rail entities use, like rails and train-stops. If the
         blueprint has any entities that are double-grid-aligned, the Blueprint
         is considered double-grid-aligned. Read only.
-
-        :type: ``bool``
         """
         for entity in self.entities:
             if entity.double_grid_aligned:
@@ -793,178 +995,212 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     # Utility functions
     # =========================================================================
 
-    def recalculate_area(self):
-        # type: () -> None
+    def get_world_bounding_box(self) -> Optional[AABB]:
         """
-        Recalculates the ``area``, ``tile_width``, and ``tile_height``. Called
-        automatically when an EntityLike or Tile object is altered or removed.
-        Can be called by the end user, though it shouldn't be neccessary.
+        Calculates the minimum AABB which encompasses all entities and tiles
+        within this blueprint. If the blueprint is empty of entities or tiles,
+        or if all of the entities contained within it have no known dimension,
+        then this function returns ``None``.
+
+        :returns: The smallest :py:class:`.AABB` which encompasses all entities
+            and tiles currently contained.
         """
-        self._area = None
+        area = None
         for entity in self.entities:
-            self._area = utils.extend_aabb(self._area, entity.get_world_bounding_box())
+            area = extend_aabb(area, entity.get_world_bounding_box())
 
         for tile in self.tiles:
-            self._area = utils.extend_aabb(self._area, tile.get_world_bounding_box())
+            area = extend_aabb(area, tile.get_world_bounding_box())
 
-        self._tile_width, self._tile_height = utils.aabb_to_dimensions(self._area)
+        return area
 
-        # Check the blueprint for unreasonable size
-        if self.tile_width > 10000 or self.tile_height > 10000:
-            raise UnreasonablySizedBlueprintError(
-                "Current blueprint dimensions ({}, {}) exceeds the maximum size"
-                " (10,000 x 10,000)".format(self.tile_width, self.tile_height)
-            )
-
-    def to_dict(self):
-        # type: () -> dict
+    def get_dimensions(self) -> tuple[int, int]:
         """
-        Returns the blueprint as a dictionary. Intended for getting the
-        precursor to a Factorio blueprint string before encoding and compression
-        takes place.
+        Calculates the maximum extents of the blueprint along the x and y axis
+        in tiles. Returns ``(0, 0)`` if the blueprint's world bounding box is
+        ``None``.
 
-        :returns: The ``dict`` representation of the Blueprint.
+        :returns: A 2-length tuple with the maximum tile width as the first
+            entry and the maximum tile height as the second entry.
         """
-        # Create a new dict to return without modifying the original Blueprint
-        # (We exclude "entities" and "tiles" because these objects are not
-        # copyable for space and recursion depth reasons)
-        out_dict = {
-            x: self._root[x] for x in self._root if x not in {"entities", "tiles"}
-        }
+        return aabb_to_dimensions(self.get_world_bounding_box())
 
-        # This associates each entity with a numeric index, which we use later
-        flattened_list = utils.flatten_entities(self._root["entities"])
+    def validate(
+        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    ) -> ValidationResult:
+        # Validate regular attributes
+        output = super().validate(mode=mode, force=force)
 
-        # Convert all Entities into dicts
-        out_dict["entities"] = []
-        i = 0
-        for entity in flattened_list:
-            # Get a copy of the dict representation of the Entity
-            # (At this point, Associations are not copied and still point to original)
-            result = copy.deepcopy(entity.to_dict())
-            if not isinstance(result, dict):
-                raise DraftsmanError(
-                    "{}.to_dict() must return a dict".format(type(entity).__name__)
-                )
-            # Add this to the output's entities and set it's entity_number
-            out_dict["entities"].append(result)
-            out_dict["entities"][i]["entity_number"] = i + 1
-            i += 1
+        # Validate recursive attributes
+        output += self.entities.validate(mode=mode, force=force)
+        output += self.tiles.validate(mode=mode, force=force)
 
-        # Convert all tiles into dicts
-        # Maybe handle TileLike?
-        out_dict["tiles"] = []
-        for tile in self.tiles:
-            out_dict["tiles"].append(copy.deepcopy(tile.to_dict()))
+        # if len(output.error_list) == 0:
+        #     # Set the `is_valid` attribute
+        #     # This means that if mode="pedantic", an entity that issues only
+        #     # warnings will still not be considered valid
+        #     super().validate()
 
-        # Convert all schedules into dicts
-        # TODO
+        return output
 
-        # Offset coordinate objects by snapping grid
-        if self.snapping_grid_position is not None:
-            # Offset Entities
-            for entity in out_dict["entities"]:
-                entity["position"]["x"] -= self.snapping_grid_position["x"]
-                entity["position"]["y"] -= self.snapping_grid_position["y"]
-            # Offset Tiles
-            for tile in out_dict["tiles"]:
-                tile["position"]["x"] -= self.snapping_grid_position["x"]
-                tile["position"]["y"] -= self.snapping_grid_position["y"]
+    def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
+        # Create a copy of root, since we don't want to clobber the original
+        # data when creating a dict representation
+        # We skip copying the special lists because we have to handle their
+        # conversion specifically and carefully
+        # root_copy = {
+        #     self._root_item: {
+        #         k: v
+        #         for k, v in self._root[self._root_item].items()
+        #         if k not in {"entities", "tiles", "schedules"}
+        #     },
+        # }
+        # if self.index is not None:
+        #     root_copy["index"] = self.index
 
-        def throw_invalid_connection(entity):
-            raise InvalidAssociationError(
-                "'{}' at {} is connected to an entity that no longer exists".format(
-                    entity["name"], entity["position"]
-                )
-            )
+        result = super().to_dict(
+            exclude_none=exclude_none, exclude_defaults=exclude_defaults
+        )
 
-        # Convert all associations to use their integer indices
-        # (This could be nicer)
-        for entity in out_dict["entities"]:
-            if "connections" in entity:  # Wire connections
-                connections = entity["connections"]
-                for side in connections:
-                    if side in {"1", "2"}:
-                        for color in connections[side]:
-                            connection_points = connections[side][color]
-                            for point in connection_points:
-                                old = point["entity_id"]
-                                if old() is None:  # pragma: no coverage
-                                    throw_invalid_connection(entity)
-                                else:  # Association
-                                    point["entity_id"] = flattened_list.index(old()) + 1
+        # We then convert all the entities, tiles, and schedules to
+        # 1-dimensional lists, flattening any Groups that this blueprint
+        # contains, and swapping their Associations into integer indexes
+        _normalize_internal_structure(
+            result[self._root_item],
+            self.entities,
+            self.tiles,
+            self.schedules,
+            self.wires,
+        )
 
-                    elif side in {"Cu0", "Cu1"}:  # pragma: no branch
-                        connection_points = connections[side]
-                        for point in connection_points:
-                            old = point["entity_id"]
-                            if old() is None:  # pragma: no coverage
-                                throw_invalid_connection(entity)
-                            else:  # Association
-                                point["entity_id"] = flattened_list.index(old()) + 1
+        # # Construct a model with the flattened data, not running any validation
+        # # We do a number of submodels manually since model_construct is not
+        # # recursive (woe be upon me)
+        # out_model = Blueprint.Format.model_construct(**root_copy)
+        # out_model.blueprint = Blueprint.Format.BlueprintObject.model_construct(
+        #     **out_model.blueprint
+        # )
+        # if out_model.blueprint.icons is not None:
+        #     out_model.blueprint.icons = Icons.model_construct(out_model.blueprint.icons)
+        # if out_model.blueprint.snap_to_grid is not None:
+        #     out_model.blueprint.snap_to_grid = (
+        #         out_model.blueprint.snap_to_grid.to_dict()
+        #     )
+        # if out_model.blueprint.position_relative_to_grid is not None:
+        #     out_model.blueprint.position_relative_to_grid = (
+        #         out_model.blueprint.position_relative_to_grid.to_dict()
+        #     )
 
-            if "neighbours" in entity:  # Power pole connections
-                neighbours = entity["neighbours"]
-                for i, neighbour in enumerate(neighbours):
-                    if neighbour() is None:  # pragma: no coverage
-                        throw_invalid_connection(entity)
-                    else:  # Association
-                        neighbours[i] = flattened_list.index(neighbour()) + 1
+        # Make sure that snapping_grid_position is respected
+        # if self.snapping_grid_position is not None:
+        # Offset Entities
+        for entity in result["blueprint"]["entities"]:
+            entity["position"]["x"] -= self.snapping_grid_position.x
+            entity["position"]["y"] -= self.snapping_grid_position.y
 
-        # Change all locomotive names to use entity_number
-        for schedule in out_dict["schedules"]:
-            for i, locomotive in enumerate(schedule["locomotives"]):
-                if locomotive() is None:  # pragma: no coverage
-                    throw_invalid_connection(entity)
-                else:  # Association
-                    schedule["locomotives"][i] = flattened_list.index(locomotive()) + 1
+        # Offset Tiles
+        for tile in result["blueprint"]["tiles"]:
+            tile["position"]["x"] -= self.snapping_grid_position.x
+            tile["position"]["y"] -= self.snapping_grid_position.y
 
-        # Delete empty entries to compress as much as possible
-        if len(out_dict["entities"]) == 0:
-            del out_dict["entities"]
-        if len(out_dict["tiles"]) == 0:
-            del out_dict["tiles"]
-        if len(out_dict["schedules"]) == 0:
-            del out_dict["schedules"]
+        # # We then create an output dict
+        # out_dict = out_model.model_dump(
+        #     by_alias=True,
+        #     exclude_none=True,
+        #     exclude_defaults=True,
+        #     warnings=False,  # until `model_construct` is properly recursive
+        # )
 
-        return {"blueprint": out_dict}
+        # print(result)
+        # print(self.snapping_grid_size)
+        # print(self.position_relative_to_grid)
 
-    def __deepcopy__(self, memo):
-        # type: (dict) -> Blueprint
-        """
-        TODO
-        """
+        if "snap-to-grid" in result["blueprint"] and result["blueprint"][
+            "snap-to-grid"
+        ] == {"x": 0, "y": 0}:
+            del result["blueprint"]["snap-to-grid"]
+        if "position-relative-to-grid" in result["blueprint"] and result["blueprint"][
+            "position-relative-to-grid"
+        ] == {"x": 0, "y": 0}:
+            del result["blueprint"]["position-relative-to-grid"]
+
+        if len(result["blueprint"]["entities"]) == 0:
+            del result["blueprint"]["entities"]
+        if len(result["blueprint"]["tiles"]) == 0:
+            del result["blueprint"]["tiles"]
+        if len(result["blueprint"]["schedules"]) == 0:
+            del result["blueprint"]["schedules"]
+        if len(result["blueprint"]["wires"]) == 0:
+            del result["blueprint"]["wires"]
+
+        return result
+
+    # =========================================================================
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Blueprint):
+            return NotImplemented
+
+        return (
+            self.label == other.label
+            and self.label_color == other.label_color
+            and self.description == other.description
+            and self.icons == other.icons
+            and self.version == other.version
+            and self.snapping_grid_size == other.snapping_grid_size
+            and self.snapping_grid_position == other.snapping_grid_position
+            and self.absolute_snapping == other.absolute_snapping
+            and self.position_relative_to_grid == other.position_relative_to_grid
+            and self.entities == other.entities
+            and self.tiles == other.tiles
+            and self.schedules == other.schedules
+        )
+
+    def __deepcopy__(self, memo: dict) -> "Blueprint":
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
 
         # Make sure we copy "_entity_hashmap" first so we don't get
         # OverlappingEntitiesWarnings
-        v = getattr(self, "_entity_map")
-        setattr(result, "_entity_map", copy.deepcopy(v, memo))
-        result.entity_map.clear()
+        # v = getattr(self, "_entity_map")
+        # setattr(result, "_entity_map", copy.deepcopy(v, memo))
+        # result.entity_map.clear()
 
-        # We copy everything else, save for the 'root' dictionary, because
-        # deepcopying those depend on some of the other attributes, so we load
-        # those first
-        for k, v in self.__dict__.items():
-            if k == "_entity_map" or k == "_root":
-                continue
-            else:
-                setattr(result, k, copy.deepcopy(v, memo))
+        # # We copy everything else, save for the 'root' dictionary, because
+        # # deepcopying those depend on some of the other attributes, so we load
+        # # those first
+        # for k, v in self.__dict__.items():
+        #     if k == "_entity_map" or k == "_root":
+        #         continue
+        #     else:
+        #         setattr(result, k, copy.deepcopy(v, memo))
 
         # Finally we can copy the root (most notably EntityList)
-        v = getattr(self, "_root")
-        copied_dict = {}
-        for rk, rv in v.items():
-            if rk == "entities":
-                # Create a copy of EntityList with copied self as new
-                # parent so that `result.entities[0].parent` will be
-                # `result`
-                memo["new_parent"] = result  # This is hacky, but fugg it
-                copied_dict[rk] = copy.deepcopy(rv, memo)
-            else:
-                copied_dict[rk] = copy.deepcopy(rv, memo)
-        setattr(result, "_root", copied_dict)
+        # root = getattr(self, "_root")
+        # copied_dict = {}
+        # copied_dict["blueprint"] = {}
+        # for rk, rv in root["blueprint"].model_fields.items():
+        #     if rk == "entities":
+        #         # Create a copy of EntityList with copied self as new
+        #         # parent so that `result.entities[0].parent` will be
+        #         # `result`
+        #         memo["new_parent"] = result  # This is hacky, but fugg it
+        #         copied_dict["blueprint"][rk] = copy.deepcopy(rv, memo)
+        #     else:
+        #         copied_dict["blueprint"][rk] = copy.deepcopy(rv, memo)
+        # # Dont forget index (if present)
+        # if "index" in root:
+        #     copied_dict["index"] = copy.deepcopy(root["index"], memo)
+
+        # setattr(result, "_root", copied_dict)
+
+        root = getattr(self, "_root")
+
+        memo["new_parent"] = result
+        root_copy = copy.deepcopy(root, memo)
+
+        setattr(result, "_root", root_copy)
+        setattr(result, "_root_item", self._root_item)
 
         return result

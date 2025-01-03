@@ -1,12 +1,14 @@
 # player_port.py
 
 from draftsman.classes.entity import Entity
-from draftsman.warning import DraftsmanWarning
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import ValidationMode
+from draftsman.utils import get_first
 
-from draftsman.data import entities
 from draftsman.data.entities import player_ports
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Optional, Union
 
 
 class PlayerPort(Entity):
@@ -14,16 +16,31 @@ class PlayerPort(Entity):
     A constructable respawn point typically used in scenarios.
     """
 
-    _exports = {}
-    _exports.update(Entity._exports)
+    class Format(Entity.Format):
+        model_config = ConfigDict(title="PlayerPort")
 
-    def __init__(self, name=player_ports[0], **kwargs):
-        # type: (str, **dict) -> None
-        super(PlayerPort, self).__init__(name, player_ports, **kwargs)
+    def __init__(
+        self,
+        name: Optional[str] = get_first(player_ports),
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        tags: dict[str, Any] = {},
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
+        """
+        TODO
+        """
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        super().__init__(
+            name,
+            player_ports,
+            position=position,
+            tile_position=tile_position,
+            tags=tags,
+            **kwargs
+        )
+
+        self.validate_assignment = validate_assignment

@@ -4,21 +4,15 @@
 Manages the Factorio environment. Primarily holds :py:func:`draftsman.env.update()`,
 which runs through the Factorio data lifecycle and updates the data in 
 :py:mod:`draftsman.data`.
+
+
+.. NOTE:: Deprecated as of Draftsman 2.0
 """
 
 # TODO:
-# * Make sure everything uses OrderedDict for backwards compatability
 # * Treat `core` and `base` as mods to unify their loading
 # * In a similar vein, `normalize_module_names()` could also be simplified if
 #   they were in mods list
-
-from __future__ import print_function
-
-# Python 2 compat
-try:
-    FileNotFoundError
-except NameError:
-    FileNotFoundError = IOError
 
 from draftsman.error import (
     MissingModError,
@@ -26,13 +20,12 @@ from draftsman.error import (
     IncorrectModVersionError,
     IncorrectModFormatError,
 )
-from draftsman.utils import decode_version, version_string_to_tuple
+from draftsman.classes.collision_set import CollisionSet
+from draftsman.utils import decode_version, version_string_to_tuple, AABB
 from draftsman._factorio_version import __factorio_version_info__
 
-try:
-    import lupa.lua52 as lupa
-except ImportError:
-    import lupa
+from git import Repo
+import lupa.lua52 as lupa  # Lupa 2.0 is now required (for simplicities sake)
 
 import argparse
 from collections import OrderedDict
@@ -42,6 +35,7 @@ import os
 import pickle
 import re
 import struct
+from typing import Optional, TypedDict, Union
 import zipfile
 
 
@@ -107,7 +101,7 @@ class Mod(object):
 # =============================================================================
 
 
-def file_to_string(filepath):
+def file_to_string(filepath: str) -> str:
     """
     Simply grabs a file's contents and returns it as a string. Ensures that the
     returned string is stripped of special unicode characters that Lupa dislikes.
@@ -117,8 +111,7 @@ def file_to_string(filepath):
         return file.read()
 
 
-def archive_to_string(archive, filepath):
-    # type: (zipfile.ZipFile, str) -> None
+def archive_to_string(archive: zipfile.ZipFile, filepath: str) -> str:
     """
     Simply grabs a file with the specified name from an archive and returns it
     as a string. Ensures that the returned string is stripped of special
@@ -130,11 +123,22 @@ def archive_to_string(archive, filepath):
         return formatted_file.read()
 
 
-def get_mod_settings(location):
+ModSettings = TypedDict(
+    "ModSettings", {"startup": dict, "runtime-global": dict, "runtime-per-user": dict}
+)
+
+
+def get_mod_settings(location: str) -> ModSettings:
     """
     Reads `mod_settings.dat` and stores it as an easy-to-read dict. Would be
     trivial to implement an editor with this function. (Well, assuming you write
     a function to export back to a ``.dat`` file)
+
+    :param location: The path to the directory where 'mod-settings.dat' is
+        located.
+
+    :returns: A dictionary with 3 keys: ``"startup"``, ``"runtime-global"``, and
+        ``"runtime-per-user"``, which contain all of their respective settings.
     """
     # Property Tree Enum
     PropertyTreeType = {
@@ -147,54 +151,42 @@ def get_mod_settings(location):
     }
 
     def get_string(binary_stream):
-        # print("String")
         string_absent = bool(
             # int.from_bytes(binary_stream.read(1), "little", signed=False)
             struct.unpack("<?", binary_stream.read(1))[0]
         )
-        # print("string absent?", string_absent)
         if string_absent:
             return None
         # handle the Space Optimized length
-        # length = int.from_bytes(binary_stream.read(1), "little", signed=False)
         length = struct.unpack("<B", binary_stream.read(1))[0]
         if length == 255:  # length is actually longer
-            # length = int.from_bytes(binary_stream.read(4), "little", signed=False)
             length = struct.unpack("<I", binary_stream.read(4))[0]
-        # print(length)
         return binary_stream.read(length).decode()
 
     def get_data(binary_stream):
         data_type = struct.unpack("<B", binary_stream.read(1))[0]
-        # print("data_type:", data_type)
         binary_stream.read(1)  # any type flag, largely internal, ignore
         if data_type == PropertyTreeType["None"]:
-            # print("None")
             return None
         elif data_type == PropertyTreeType["Bool"]:
-            # print("Bool")
             return bool(struct.unpack("<?", binary_stream.read(1))[0])
         elif data_type == PropertyTreeType["Number"]:
-            # print("Number")
             value = struct.unpack("d", binary_stream.read(8))[0]
             return value
         elif data_type == PropertyTreeType["String"]:
             return get_string(binary_stream)
         elif data_type == PropertyTreeType["List"]:
-            # print("List")
             length = struct.unpack("<I", binary_stream.read(4))
             out = list()
             for i in range(length):
                 out.append(get_data(binary_stream))
             return out
         elif data_type == PropertyTreeType["Dictionary"]:
-            # print("Dict")
             length = struct.unpack("<I", binary_stream.read(4))[0]
             out = dict()
             for i in range(length):
                 name = get_string(binary_stream)
                 value = get_data(binary_stream)
-                # print(name, value)
                 out[name] = value
             return out
 
@@ -202,23 +194,26 @@ def get_mod_settings(location):
     with open(
         os.path.join(location, "mod-settings.dat"), mode="rb"
     ) as mod_settings_dat:
-        # header
-        # version_num = int.from_bytes(mod_settings_dat.read(8), "little")
+        # Header
         version_num = struct.unpack("<Q", mod_settings_dat.read(8))[0]
-        # print(version_num)
-        version = decode_version(version_num)
-        # print(version)
-        # header_flag = bool(int.from_bytes(mod_settings_dat.read(1), "little", signed=False))
+        version = decode_version(version_num)[::-1]  # Reversed, for some reason
         header_flag = bool(struct.unpack("<?", mod_settings_dat.read(1))[0])
-        # print(header_flag)
-        # assert version[::-1] >= __factorio_version_info__ and not header_flag
+        # It might be nice to print out the version for additional context, but
+        # this doesn't seem to prohibit loading (as far as I know)
+        # print(version)
+        # However, we do ensure that the header flag is 0, as we are dealing
+        # with a malformed input otherwise
+        assert (
+            not header_flag
+        ), "mod-settings.dat header did not end with 0 byte, malformed input"
         mod_settings = get_data(mod_settings_dat)
 
     return mod_settings
 
 
-def python_require(mod, mod_folder, module_name, package_path):
-    # type: (Mod, str, str, str) -> str
+def python_require(
+    mod: Mod, mod_folder: str, module_name: str, package_path: str
+) -> tuple[Optional[str], str]:
     """
     Function called from Lua that checks for a file in a ``zipfile`` archive,
     and returns the contents of the file if found.
@@ -230,6 +225,8 @@ def python_require(mod, mod_folder, module_name, package_path):
 
     # No sense searching the archive if the mod is not one to begin with; we
     # relay this information back to the Lua require function
+    if not mod:
+        return None, "\n\tNo mod specified"
     if not mod.archive:
         return None, "\n\tCurrent mod ({}) is not an archive".format(mod.name)
 
@@ -260,8 +257,7 @@ def python_require(mod, mod_folder, module_name, package_path):
     return None, "no file '{}' found in '{}' archive".format(module_name, mod.name)
 
 
-def load_stage(lua, mod_list, mod, stage):
-    # type: (lupa.LuaRuntime, list[Mod], Mod, str) -> None
+def load_stage(lua: lupa.LuaRuntime, mod_list: list[Mod], mod: Mod, stage: str) -> None:
     """
     Load a stage of the Factorio data lifecycle. Sets meta information and loads
     and executes the file string in the ``lua`` context.
@@ -279,22 +275,18 @@ def load_stage(lua, mod_list, mod, stage):
     lua.execute(mod.data[stage])
 
 
-def convert_table_to_dict(table):
+def convert_table_to_dict(table) -> Union[dict, list]:
     """
     Converts a Lua table to a Python dict. Correctly handles nesting, and
     interprets Lua arrays as lists.
     """
     out = dict(table)
-    # print(out)
     is_list = True
     for key in out:
-        # print(key)
         if not isinstance(key, int):
             is_list = False
 
         if lupa.lua_type(out[key]) == "table":
-            # print(out[key])
-            # out[key] = convert_table_to_dict(out[key])
             out[key] = convert_table_to_dict(out[key])
             # check if its actually a dict and not a list
 
@@ -542,6 +534,90 @@ def get_items(lua):
     return sorted_items, sorted_subgroups, sorted_groups
 
 
+def get_default_collision_mask(entity_type):
+    """
+    Determine the default collision mask based on the string entity type.
+
+    :param entity_type: A string containing what type of entity we're getting
+        a collision mask for. (e.g. ``"container"``, ``"gate"``, ``"heat-pipe"``,
+        etc.)
+
+    :returns: A ``set()`` containing the default collision layers for that
+        object.
+    """
+    if entity_type == "gate":
+        return {
+            "item-layer",
+            "object-layer",
+            "player-layer",
+            "water-tile",
+            "train-layer",
+        }
+    elif entity_type == "heat-pipe":
+        return {"object-layer", "floor-layer", "water-tile"}
+    elif entity_type == "land-mine":
+        return {"object-layer", "water-tile"}
+    elif entity_type == "linked-belt":
+        return {
+            "object-layer",
+            "item-layer",
+            "transport-belt-layer",
+            "water-tile",
+        }
+    elif entity_type == "loader":
+        return {
+            "object-layer",
+            "item-layer",
+            "transport-belt-layer",
+            "water-tile",
+        }
+    elif entity_type == "straight-rail" or entity_type == "curved-rail":
+        return {
+            "item-layer",
+            "object-layer",
+            "rail-layer",
+            "floor-layer",
+            "water-tile",
+        }
+    elif entity_type == "rail-signal" or entity_type == "rail-chain-signal":
+        return {"floor-layer", "rail-layer", "item-layer"}
+    elif (
+        entity_type == "locomotive"
+        or entity_type == "cargo-wagon"
+        or entity_type == "fluid-wagon"
+        or entity_type == "artillery-wagon"
+    ):
+        return {"train-layer"}
+    elif entity_type == "splitter":
+        return {
+            "object-layer",
+            "item-layer",
+            "transport-belt-layer",
+            "water-tile",
+        }
+    elif entity_type == "transport-belt":
+        return {
+            "object-layer",
+            "floor-layer",
+            "transport-belt-layer",
+            "water-tile",
+        }
+    elif entity_type == "underground-belt":
+        return {
+            "object-layer",
+            "item-layer",
+            "transport-belt-layer",
+            "water-tile",
+        }
+    else:  # true default
+        return {
+            "item-layer",
+            "object-layer",
+            "player-layer",
+            "water-tile",
+        }
+
+
 # =============================================================================
 
 
@@ -551,6 +627,8 @@ def extract_mods(loaded_mods, data_location, verbose):
     """
     out_mods = {}
     for mod in loaded_mods:
+        if mod == "core":
+            continue
         out_mods[mod] = version_string_to_tuple(loaded_mods[mod].version)
 
     with open(os.path.join(data_location, "mods.pkl"), "wb") as out:
@@ -570,6 +648,7 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     entities = {}
     unordered_entities_raw = {}
     is_flippable = {}
+    collision_sets = {}
 
     def is_entity_flippable(entity):
         """
@@ -645,13 +724,21 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
         return True
 
     def categorize_entity(entity_name, entity):
-        flags = entity.get("flags", {})  # Flags are common, but optional
-        if "not-blueprintable" in flags or "not-deconstructable" in flags:
-            # Ignore this entity from whatever structure we're adding it to
+        flags = entity.get("flags", set())
+        if (
+            "not-blueprintable" in flags or "not-deconstructable" in flags
+        ):  # or "hidden" in flags
             return False
+
+        collision_mask = entity.get("collision_mask", None)
+        if not collision_mask:
+            entity["collision_mask"] = get_default_collision_mask(entity["type"])
+        else:
+            entity["collision_mask"] = set(collision_mask)
 
         # Check if an entity is flippable or not
         is_flippable[entity_name] = is_entity_flippable(entity)
+
         # maybe move this to get_order?
         unordered_entities_raw[entity_name] = entity
         return True
@@ -661,12 +748,16 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
         for entity_name, entity in entity_dict.items():
             if not categorize_entity(entity_name, entity):
                 continue
+
             target_list.append(entity)
+            entities["all"].append(entity)
 
     def sort(target_list):
         sorted_list = get_order(target_list, *sort_tuple)
         for i, x in enumerate(sorted_list):
             target_list[i] = x
+
+    entities["all"] = []
 
     #  Chests
     entities["containers"] = []
@@ -697,11 +788,13 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     for inserter_name, inserter in temp_inserters.items():
         if not categorize_entity(inserter_name, inserter):
             continue
-        # Split
+        unordered_entities_raw[inserter_name] = inserter
         if "filter_count" in inserter:
             entities["filter_inserters"].append(inserter)
         else:
             entities["inserters"].append(inserter)
+
+        entities["all"].append(inserter)
     sort(entities["inserters"])
     sort(entities["filter_inserters"])
 
@@ -732,9 +825,9 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     entities["straight_rails"] = []
     categorize_entities(data.raw["straight-rail"], entities["straight_rails"])
     sort(entities["straight_rails"])
-    entities["curved_rails"] = []
-    categorize_entities(data.raw["curved-rail"], entities["curved_rails"])
-    sort(entities["curved_rails"])
+    # entities["curved_rails"] = []
+    # categorize_entities(data.raw["curved-rail"], entities["curved_rails"])
+    # sort(entities["curved_rails"])
 
     #  Train stops
     entities["train_stops"] = []
@@ -773,7 +866,7 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     for container_name, container in logi_containers.items():
         if not categorize_entity(container_name, container):
             continue
-        # Split
+        unordered_entities_raw[container_name] = container
         container_type = container["logistic_mode"]
         if container_type == "passive-provider":
             entities["logistic_passive_containers"].append(container)
@@ -785,6 +878,8 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
             entities["logistic_buffer_containers"].append(container)
         elif container_type == "requester":
             entities["logistic_request_containers"].append(container)
+
+        entities["all"].append(inserter)
     sort(entities["logistic_passive_containers"])
     sort(entities["logistic_active_containers"])
     sort(entities["logistic_storage_containers"])
@@ -955,7 +1050,7 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
 
     #  Linked belts
     entities["linked_belts"] = []
-    try:
+    try:  # Compatibility for Factorio 1.0
         categorize_entities(data.raw["linked-belt"], entities["linked_belts"])
         sort(entities["linked_belts"])
     except TypeError:
@@ -977,22 +1072,65 @@ def extract_entities(lua, data_location, verbose, sort_tuple):
     sort(entities["burner_generators"])
 
     #  Player Ports
-    entities["player_ports"] = []
-    categorize_entities(data.raw["player-port"], entities["player_ports"])
-    sort(entities["player_ports"])
+    # entities["player_ports"] = []
+    # categorize_entities(data.raw["player-port"], entities["player_ports"])
+    # sort(entities["player_ports"])
+
+    #  List of all entities
+    sort(entities["all"])
 
     raw_order = get_order(unordered_entities_raw, *sort_tuple)
     entities["raw"] = OrderedDict()
     for name in raw_order:
         entities["raw"][name] = unordered_entities_raw[name]
 
+    for name in raw_order:
+        collision_box = entities["raw"][name].get("collision_box", None)
+        if collision_box:
+            collision_sets[name] = CollisionSet(
+                [
+                    AABB(
+                        collision_box[0][0],
+                        collision_box[0][1],
+                        collision_box[1][0],
+                        collision_box[1][1],
+                    )
+                ]
+            )
+        else:
+            collision_sets[name] = CollisionSet([])
+
     entities["flippable"] = is_flippable
+    entities["collision_sets"] = collision_sets
 
     with open(os.path.join(data_location, "entities.pkl"), "wb") as out:
         pickle.dump(entities, out, 2)
 
     if verbose:
         print("Extracted entities...")
+
+
+# =============================================================================
+
+
+def extract_fluids(lua, data_location, verbose, sort_tuple):
+    """
+    Extracts the fluids to ``fluids.pkl`` in :py:mod:`draftsman.data`.
+    """
+    data = lua.globals().data
+
+    unordered_fluids_raw = convert_table_to_dict(data.raw["fluid"])
+    raw_order = get_order(unordered_fluids_raw, *sort_tuple)
+
+    fluids_raw = OrderedDict()
+    for name in raw_order:
+        fluids_raw[name] = unordered_fluids_raw[name]
+
+    with open(os.path.join(data_location, "fluids.pkl"), "wb") as out:
+        pickle.dump((fluids_raw,), out, 2)
+
+    if verbose:
+        print("Extracted fluids...")
 
 
 # =============================================================================
@@ -1040,8 +1178,20 @@ def extract_items(lua, data_location, verbose, sort_tuple):
     Extracts the items to ``items.pkl`` in :py:mod:`draftsman.data`.
     """
     sorted_items, sorted_subgroups, sorted_groups = sort_tuple
+
+    data = lua.globals().data
+
+    # Grab fuel items
+    fuel_categories = convert_table_to_dict(data.raw["fuel-category"])
+
+    fuels = {category: set() for category in fuel_categories}
+
+    for item_name, item in sorted_items.items():
+        if "fuel_category" in item:
+            fuels[item["fuel_category"]].add(item_name)
+
     with open(os.path.join(data_location, "items.pkl"), "wb") as out:
-        items = [sorted_items, sorted_subgroups, sorted_groups]
+        items = [sorted_items, sorted_subgroups, sorted_groups, fuels]
         pickle.dump(items, out, 2)
 
     if verbose:
@@ -1067,13 +1217,14 @@ def extract_modules(lua, data_location, verbose, sort_tuple):
     unsorted_modules_raw = {}
     for module in modules:
         unsorted_modules_raw[module] = modules[module]
-        module_type = modules[module]["category"]
-        out_categories[module_type].append(module)
 
     raw_order = get_order(unsorted_modules_raw, *sort_tuple)
     modules_raw = OrderedDict()
     for name in raw_order:
         modules_raw[name] = unsorted_modules_raw[name]
+        # Create the categories using the (now sorted) modules
+        module_type = unsorted_modules_raw[name]["category"]
+        out_categories[module_type].append(name)
 
     with open(os.path.join(data_location, "modules.pkl"), "wb") as out:
         pickle.dump([modules_raw, out_categories], out, 2)
@@ -1212,6 +1363,7 @@ def extract_tiles(lua, data_location, verbose):
 
     tile_list = []
     for tile in tiles:
+        tiles[tile]["collision_mask"] = set(tiles[tile]["collision_mask"])
         tile_order = tiles[tile].get("order", None)
         tile_list.append((tile_order is None, tile_order, tile))
 
@@ -1234,7 +1386,269 @@ def extract_tiles(lua, data_location, verbose):
 # =============================================================================
 
 
-def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None):
+def register_mod(mod_name, mod_location, mods, factorio_version_info, verbose, report):
+    external_mod_version = None  # Optional (the version indicated by filepath)
+
+    if mod_name.lower().endswith(".zip"):
+        # Zip file
+        m = mod_archive_regex.match(mod_name)
+        if not m:
+            raise IncorrectModFormatError(
+                "Mod archive '{}' does not fit the 'name_version' format".format(
+                    mod_name
+                )
+            )
+        folder_name = m.group(1)
+        mod_name = m.group(2).replace(" ", "")
+        external_mod_version = m.group(3)
+        files = zipfile.ZipFile(mod_location, mode="r")
+
+        # There is no restriction on the name of the internal folder, just
+        # that there is only one at the root of the archive
+        # All the mods I've seen use the same "mod-name_mod-version", but
+        # the wiki says this is not enforced
+        # Hence, we use this scuffed code to actually get a list of all the
+        # root-most directories
+        topdirs = set()
+        for file in files.namelist():
+            basename = None  # guards against UnboundLocalError
+            while file:
+                file, basename = os.path.split(file)
+            topdirs.add(basename)
+
+        # REVISION: sometimes there are multiple folders in a single archive
+        # (even though the wiki says only one); eg: "__MACOSX" in
+        # "Mining Drones Harder" mod (seems to be reserved file when
+        # compressing on Mac)
+        if len(topdirs) == 1:
+            # If there's one folder, use that
+            mod_folder = topdirs.pop()
+        elif folder_name in topdirs:
+            # If there's multiple, but one matches exactly, use that
+            mod_folder = folder_name
+        else:
+            # Otherwise, who knows! Fix your mods or update the wiki!
+            # Why do I always get the short end of the stick!?
+            raise IncorrectModFormatError(
+                "Mod archive '{}' has more than one internal folder, and "
+                "none of the internal folders match it's external name".format(mod_name)
+            )
+
+        try:
+            # Zipfiles don't like backslashes on Windows, so we manually
+            # concatenate
+            mod_info = json.loads(archive_to_string(files, mod_folder + "/info.json"))
+        except KeyError:
+            raise IncorrectModFormatError(
+                "Mod '{}' has no 'info.json' file in its root folder".format(mod_name)
+            )
+
+        mod_version = mod_info["version"]
+        archive = True
+        location = mod_location  # containing_dir + "/" + mod_name
+
+    elif os.path.isdir(mod_location):
+        # Folder
+        m = mod_folder_regex.match(mod_name)
+        if not m:
+            raise IncorrectModFormatError(
+                "Mod folder '{}' does not fit the 'name' or 'name_version' format".format(
+                    mod_name
+                )
+            )
+        mod_name = m.group(1)
+        external_mod_version = m.group(2)
+        try:
+            with open(os.path.join(mod_location, "info.json"), "r") as info_file:
+                mod_info = json.load(info_file)
+        except FileNotFoundError:
+            raise IncorrectModFormatError(
+                "Mod '{}' has no 'info.json' file in its root folder".format(mod_name)
+            )
+
+        mod_folder = mod_location
+        mod_version = mod_info.get("version", "")  # "core" doesn't have version
+        archive = False
+        files = None
+        location = mod_location
+
+    else:  # Regular file
+        return  # Ignore: cannot be considered a mod
+
+    # # First make sure the mod is enabled, and skip if not
+    # # (The mod itself is not guaranteed to be in the enabled_mod_list if we
+    # # added it manually when mod-list.json already exists, so we default to
+    # # True if a particular mod is not found)
+    # if not enabled_mod_list.get(mod_name, True):
+    #     continue
+
+    # Idiot check: assert external version matches internal version
+    # if external_mod_version:
+    #     assert version_string_to_tuple(
+    #         external_mod_version
+    #     ) == version_string_to_tuple(
+    #         mod_version
+    #     ), "{}: External version ({}) does not match internal version ({})".format(
+    #         mod_name, external_mod_version, mod_version
+    #     )
+
+    # Ensure that the mod's factorio version is correct
+    # (Except for in the cases of the "base" and "core" mods, which are exempt)
+    if mod_name not in ("base", "core"):
+        mod_factorio_version = version_string_to_tuple(mod_info["factorio_version"])
+        assert mod_factorio_version <= factorio_version_info
+
+    mod_data = {}
+    if archive:
+        # Attempt to load setting files
+        try:
+            settings = archive_to_string(files, mod_folder + "/settings.lua")
+            mod_data["settings.lua"] = settings
+        except KeyError:
+            pass
+        try:
+            settings = archive_to_string(files, mod_folder + "/settings-updates.lua")
+            mod_data["settings-updates.lua"] = settings
+        except KeyError:
+            pass
+        try:
+            settings = archive_to_string(
+                files, mod_folder + "/settings-final-fixes.lua"
+            )
+            mod_data["settings-final-fixes.lua"] = settings
+        except KeyError:
+            pass
+        # Attempt to load data files
+        try:
+            data = archive_to_string(files, mod_folder + "/data.lua")
+            mod_data["data.lua"] = data
+        except KeyError:
+            pass
+        try:
+            data_updates = archive_to_string(files, mod_folder + "/data-updates.lua")
+            mod_data["data-updates.lua"] = data_updates
+        except KeyError:
+            pass
+        try:
+            data_final_fixes = archive_to_string(
+                files, mod_folder + "/data-final-fixes.lua"
+            )
+            mod_data["data-final-fixes.lua"] = data_final_fixes
+        except KeyError:
+            pass
+    else:  # folder
+        # Attempt to load setting files
+        try:
+            settings = file_to_string(mod_folder + "/settings.lua")
+            mod_data["settings.lua"] = settings
+        except FileNotFoundError:
+            pass
+        try:
+            settings = file_to_string(mod_folder + "/settings-updates.lua")
+            mod_data["settings-updates.lua"] = settings
+        except FileNotFoundError:
+            pass
+        try:
+            settings = file_to_string(mod_folder + "/settings-final-fixes.lua")
+            mod_data["settings-final-fixes.lua"] = settings
+        except FileNotFoundError:
+            pass
+        # Attempt to load data files
+        try:
+            data = file_to_string(mod_folder + "/data.lua")
+            mod_data["data.lua"] = data
+        except FileNotFoundError:
+            pass
+        try:
+            data_updates = file_to_string(mod_folder + "/data-updates.lua")
+            mod_data["data-updates.lua"] = data_updates
+        except FileNotFoundError:
+            pass
+        try:
+            data_final_fixes = file_to_string(mod_folder + "/data-final-fixes.lua")
+            mod_data["data-final-fixes.lua"] = data_final_fixes
+        except FileNotFoundError:
+            pass
+
+    # It's possible that a user might have multiples of the same mod with
+    # different versions (issue #15). This can cause conficts where a
+    # earlier version of the mod is loaded last which causes dependency
+    # errors.
+
+    # To fix this, we explicitly check for mods with a duplicate name, and
+    # we only overwrite it if the latter mod's version is greater than the
+    # existing mod's version.
+
+    # In addition, if there are two versions of the same mod with equivalent
+    # versions, but one is a zip archive and the other is a folder, then the
+    # folder will take precedence over the zip file.
+
+    current_mod = Mod(
+        name=mod_name,
+        internal_folder=mod_folder,
+        version=mod_version,
+        archive=archive,
+        location=location.replace("\\", "/"),  # Make sure forward slashes
+        info=mod_info,
+        files=files,
+        data=mod_data,
+    )
+
+    if verbose or report:
+        # TODO: move this outside
+        # TODO: show more information, like file location and whether it's enabled
+        print("(zip)" if archive else "(dir)", mod_name, mod_version)
+
+    # If a mod with this name already exists
+    if mod_name in mods:
+        # We warn the user, as this can lead to undesired behavior
+        previous_mod = mods[mod_name]
+        print(
+            "WARNING: Duplicate of mod '{}' found (current: {} -> new: {})".format(
+                mod_name, previous_mod.version, current_mod.version
+            )
+        )
+
+        # Skip overwriting this mod if the current one is of a later version
+        # than the current
+        if version_string_to_tuple(previous_mod.version) < version_string_to_tuple(
+            current_mod.version
+        ):
+            print(
+                "\tOverwriting older version ({}) with newer version ({})".format(
+                    previous_mod.version, current_mod.version
+                )
+            )
+        elif version_string_to_tuple(previous_mod.version) > version_string_to_tuple(
+            current_mod.version
+        ):
+            print(
+                "\tSkipping older version ({}) in favor of newer version ({})".format(
+                    current_mod.version, previous_mod.version
+                )
+            )
+            return previous_mod
+        else:  # versions are identical
+            # If the previous mod is a folder, and the new mod is an archive,
+            # defer to the folder
+            if previous_mod.archive and not current_mod.archive:
+                print("\tUsing folder version instead of zip archive")
+            else:
+                print("\tDeferring to folder version instead of zip archive")
+                return previous_mod
+
+    return current_mod
+
+
+def update(
+    verbose=False,
+    game_path=None,
+    mods_path=None,
+    show_logs=False,
+    no_mods=False,
+    report=None,
+    factorio_version=None,
+) -> None:
     """
     Updates the data in the :py:mod:`.draftsman.data` modules.
 
@@ -1242,22 +1656,95 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
     in the same way. Then that data is extracted into the module, updating it's
     contents. Updates and changes made to the ``factorio-data`` folder are also
     reflected in this routine.
+
+    :param verbose: Whether or not to print status updates to stdout.
+    :param game_path: The specific path of the game installation. By default,
+        this value points to the `factorio-data` repo inside of Draftsman, but
+        this repo does not contain any assets. If you own the game and wish to
+        extract these assets, then you can use this path to point directly to
+        wherever your Factorio install is.
+    :param mods_path: The specific path to use when searching for mods. Defaults
+        to the folder `factorio-mods` located in the install directory of
+        Draftsman. A common alternative path to use is your current Factorio
+        install's mod folder, typically in `%APPDATA%/Roaming/Factorio/mods/`.
+    :param show_logs: Whether or not to display logs created by the Factorio
+        load process itself to stdout.
+    :param no_mods: Whether or not to ignore non-official mods when performing
+        the update. Wube developed expansions (mods) such as Quality, Elevated
+        Rails, and Space Age are not omitted with this flag.
+    :param report: If true, prints a list of all mods being used under the
+        current configuration and then exits.
+    :param factorio_version: If true, prints the current Git tag that the
+        currently installed `factorio-data` uses and exits. If specified to a
+        string, this function will treat that as the "target" tag and will
+        attempt to set that tag to the new version. In addition to all known
+        tags, `factorio_version` also reserves the phrase `"latest"`, which
+        is simply a shorthand to the latest released version.
+
+    .. NOTE::
+
+        You'd think that the Git tag used for ``factorio-data`` and the
+        generated value of ``draftsman.__factorio_version__`` would be equivalent;
+        but this is NOT the case. In general the generated ``__factorio_version__``
+        by Draftsman always points 1 version ahead of stable, while the git tag
+        is always the stable version.
     """
+    # TODO: `--report` and `--factorio-version` should really be extricated from
+    # this function, they just don't belong here
+
     # Figure out what directory we're in
     env_dir = os.path.dirname(__file__)
     # Create some quick access folders
-    factorio_data = os.path.join(env_dir, "factorio-data")
+    factorio_data_path = os.path.join(env_dir, "factorio-data")
     data_location = os.path.join(env_dir, "data")
-    if path is None:
+
+    # Check the currently checked out tag for `factorio-data`
+    repo = Repo(factorio_data_path)
+    repo.git.fetch()
+    # https://stackoverflow.com/a/32524783/8167625
+    current_tag = next(
+        (tag for tag in repo.tags if tag.commit == repo.head.commit), None
+    )
+
+    if verbose or type(factorio_version) is bool:
+        print("Current Factorio version: {}".format(current_tag.name))
+
+    if type(factorio_version) is bool:
+        return
+
+    # We want to handle the case where the user specifies the string "latest":
+    if factorio_version == "latest":
+        factorio_version = sorted(repo.tags, key=lambda t: t.commit.committed_datetime)[
+            -1
+        ]
+    # If no preferred version was provided, we adopt the current version
+    elif factorio_version is None:
+        factorio_version = current_tag.name
+
+    # Checkout a different version of `factorio-data` if necessary
+    if factorio_version != current_tag.name:
+        if verbose:
+            print(
+                "Different Factorio version requested ({}) -> ({})".format(
+                    current_tag, factorio_version
+                )
+            )
+
+        repo.git.checkout(factorio_version)
+
+        if verbose:
+            print("Changed to Factorio version {}\n".format(factorio_version))
+
+    if mods_path is None:
         factorio_mods_folder = os.path.join(env_dir, "factorio-mods")
     else:
-        factorio_mods_folder = path
+        factorio_mods_folder = mods_path
 
     if verbose:
         print("Reading mods from:", factorio_mods_folder)
 
     # Get the info from factorio-data and treat it as the "base" mod
-    with open(os.path.join(factorio_data, "base", "info.json")) as base_info_file:
+    with open(os.path.join(factorio_data_path, "base", "info.json")) as base_info_file:
         base_info = json.load(base_info_file)
         factorio_version = base_info["version"]
         # Normalize it to 4 numbers to make our versioning lives easier
@@ -1273,54 +1760,14 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
             "__factorio_version_info__ = {}\n".format(str(factorio_version_info))
         )
 
-    # Dictionary of mods
-    mods: dict[str, Mod] = {}
-
-    # Add "base" and "core" mods
-    # Core mod is somewhat special, and not loaded in the standard lifecycle
-    # Instead, it is loaded first thing and its functions are reused throughout
-    core_mod = Mod(
-        name="core",
-        internal_folder=None,
-        version=factorio_version,
-        archive=False,
-        location=os.path.join(
-            factorio_data, "core"
-        ),  # "./draftsman/factorio-data/core",
-        info=None,
-        files=None,
-        data={
-            "data.lua": file_to_string(
-                os.path.join(factorio_data, "core", "data.lua")
-            )  # file_to_string("draftsman/factorio-data/core/data.lua")
-        },
-    )
-    mods["base"] = Mod(
-        name="base",
-        internal_folder=None,
-        version=factorio_version,
-        archive=False,
-        location=os.path.join(
-            factorio_data, "base"
-        ),  # "./draftsman/factorio-data/base",
-        info=None,
-        files=None,
-        data={
-            "data.lua": file_to_string(
-                os.path.join(factorio_data, "base", "data.lua")
-            ),  # file_to_string("draftsman/factorio-data/base/data.lua"),
-            "data-updates.lua": file_to_string(
-                os.path.join(factorio_data, "base", "data-updates.lua")
-            ),  # file_to_string("draftsman/factorio-data/base/data-updates.lua")
-        },
-    )
-
     # This shouldn't need to be done, but lets create the factorio-mod folder if
     # it doesn't exist in case the user deletes the whole thing accidently
-    if path is None and not os.path.isdir(factorio_mods_folder):
+    if mods_path is None and not os.path.isdir(factorio_mods_folder):
         os.mkdir(factorio_mods_folder)
 
     # Check that our path actually exists (in case it was user specified)
+    if not os.path.isdir(factorio_data_path):
+        raise OSError("Directory '{}' not found".format(factorio_data_path))
     if not os.path.isdir(factorio_mods_folder):
         raise OSError("Directory '{}' not found".format(factorio_mods_folder))
 
@@ -1334,308 +1781,79 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
                     mod["enabled"] and not no_mods
                 )
     except FileNotFoundError:  # If no such file is found
-        # Every mod is enabled by default, unless `no_mods` is True
-        enabled_mod_list["base"] = True
-        for mod_obj in os.listdir(factorio_mods_folder):
-            if mod_obj.lower().endswith(".zip"):
-                mod_name = mod_archive_regex.match(mod_obj).group(1).replace(" ", "")
-                enabled_mod_list[mod_name] = not no_mods
-            elif os.path.isdir(os.path.join(factorio_mods_folder, mod_obj)):
-                mod_name = mod_obj
-                enabled_mod_list[mod_name] = not no_mods
+        pass  # Every mod is enabled by default, unless `no_mods` is True
+        # enabled_mod_list["base"] = True
+        # for mod_obj in os.listdir(factorio_mods_folder):
+        #     if mod_obj.lower().endswith(".zip"):
+        #         mod_name = mod_archive_regex.match(mod_obj).group(1).replace(" ", "")
+        #         enabled_mod_list[mod_name] = not no_mods
+        #     elif os.path.isdir(os.path.join(factorio_mods_folder, mod_obj)):
+        #         mod_name = mod_obj
+        #         enabled_mod_list[mod_name] = not no_mods
 
     if verbose:
         print("\nDiscovering mods...\n")
 
-    # Preload all the mods and their versions
-    for mod_obj in os.listdir(factorio_mods_folder):
-        # mod_location = os.path.join(factorio_mods, mod_obj)
-        mod_location = factorio_mods_folder + "/" + mod_obj
-        external_mod_version = None  # Optional (the version indicated by filepath)
+    # Dictionary of "mods". In factorio parlance, a Mod is a collection of files
+    # associated with one another, meaning that base-game components like `base`
+    # and `core` are also considered "mods".
+    mods: dict[str, Mod] = {}
 
-        if mod_obj.lower().endswith(".zip"):
-            # Zip file
-            m = mod_archive_regex.match(mod_obj)
-            if not m:
-                raise IncorrectModFormatError(
-                    "Mod archive '{}' does not fit the 'name_version' format".format(
-                        mod_obj
-                    )
-                )
-            folder_name = m.group(1)
-            mod_name = m.group(2).replace(" ", "")
-            external_mod_version = m.group(3)
-            files = zipfile.ZipFile(mod_location, mode="r")
-
-            # There is no restriction on the name of the internal folder, just
-            # that there is only one at the root of the archive
-            # All the mods I've seen use the same "mod-name_mod-version", but
-            # the wiki says this is not enforced
-            # Hence, we use this scuffed code to actually get a list of all the
-            # root-most directories
-            topdirs = set()
-            for file in files.namelist():
-                basename = None  # guards against UnboundLocalError
-                while file:
-                    file, basename = os.path.split(file)
-                topdirs.add(basename)
-
-            # REVISION: sometimes there are multiple folders in a single archive
-            # (even though the wiki says only one); eg: "__MACOSX" in
-            # "Mining Drones Harder" mod (seems to be reserved file when
-            # compressing on Mac)
-            if len(topdirs) == 1:
-                # If there's one folder, use that
-                mod_folder = topdirs.pop()
-            elif folder_name in topdirs:
-                # If there's multiple, but one matches exactly, use that
-                mod_folder = folder_name
-            else:
-                # Otherwise, who knows! Fix your mods or update the wiki!
-                # Why do I always get the short end of the stick!?
-                raise IncorrectModFormatError(
-                    "Mod archive '{}' has more than one internal folder, and "
-                    "none of the internal folders match it's external name".format(
-                        mod_name
-                    )
-                )
-
-            try:
-                # Zipfiles don't like backslashes, so we manually concatenate
-                mod_info = json.loads(
-                    archive_to_string(files, mod_folder + "/info.json")
-                )
-            except KeyError:
-                raise IncorrectModFormatError(
-                    "Mod '{}' has no 'info.json' file in its root folder".format(
-                        mod_name
-                    )
-                )
-
-            mod_version = mod_info["version"]
-            archive = True
-            location = factorio_mods_folder + "/" + mod_name
-
-        elif os.path.isdir(mod_location):
-            # Folder
-            print("folder", mod_obj)
-            # TODO: assert mod folder name matches either "name" or
-            # "name_version" format
-            m = mod_folder_regex.match(mod_obj)
-            if not m:
-                raise IncorrectModFormatError(
-                    "Mod folder '{}' does not fit the 'name' or 'name_version' format".format(
-                        mod_obj
-                    )
-                )
-            mod_name = m.group(1)
-            external_mod_version = m.group(2)
-            try:
-                with open(os.path.join(mod_location, "info.json"), "r") as info_file:
-                    mod_info = json.load(info_file)
-            except FileNotFoundError:
-                raise IncorrectModFormatError(
-                    "Mod '{}' has no 'info.json' file in its root folder".format(
-                        mod_name
-                    )
-                )
-
-            mod_folder = mod_location
-            mod_version = mod_info["version"]
-            archive = False
-            files = None
-            location = mod_location
-
-        else:  # Regular file
-            continue  # Ignore: cannot be considered a mod
-
-        # First make sure the mod is enabled, and skip if not
-        # (The mod itself is not guaranteed to be in the enabled_mod_list if we
-        # added it manually when mod-list.json already exists, so we default to
-        # True if a particular mod is not found)
-        if not enabled_mod_list.get(mod_name, True):
+    # Because of this lack of distinction, we traverse the game-data folder and
+    # treat every folder inside of it as a mod:
+    for game_obj in os.listdir(factorio_data_path):
+        location = factorio_data_path + "/" + game_obj  # TODO: better
+        if not os.path.isdir(location):
             continue
 
-        # Idiot check: assert external version matches internal version
-        # if external_mod_version:
-        #     assert version_string_to_tuple(
-        #         external_mod_version
-        #     ) == version_string_to_tuple(
-        #         mod_version
-        #     ), "{}: External version ({}) does not match internal version ({})".format(
-        #         mod_name, external_mod_version, mod_version
-        #     )
+        # First make sure the mod is enabled, and skip if not
+        if not enabled_mod_list.get(game_obj, True):
+            continue
 
-        # Ensure that the mod's factorio version is correct
-        mod_factorio_version = version_string_to_tuple(mod_info["factorio_version"])
-        assert mod_factorio_version <= factorio_version_info
-
-        mod_data = {}
-        if archive:
-            # Attempt to load setting files
-            try:
-                settings = archive_to_string(files, mod_folder + "/settings.lua")
-                mod_data["settings.lua"] = settings
-            except KeyError:
-                pass
-            try:
-                settings = archive_to_string(
-                    files, mod_folder + "/settings-updates.lua"
-                )
-                mod_data["settings-updates.lua"] = settings
-            except KeyError:
-                pass
-            try:
-                settings = archive_to_string(
-                    files, mod_folder + "/settings-final-fixes.lua"
-                )
-                mod_data["settings-final-fixes.lua"] = settings
-            except KeyError:
-                pass
-            # Attempt to load data files
-            try:
-                data = archive_to_string(files, mod_folder + "/data.lua")
-                mod_data["data.lua"] = data
-            except KeyError:
-                pass
-            try:
-                data_updates = archive_to_string(
-                    files, mod_folder + "/data-updates.lua"
-                )
-                mod_data["data-updates.lua"] = data_updates
-            except KeyError:
-                pass
-            try:
-                data_final_fixes = archive_to_string(
-                    files, mod_folder + "/data-final-fixes.lua"
-                )
-                mod_data["data-final-fixes.lua"] = data_final_fixes
-            except KeyError:
-                pass
-        else:  # folder
-            # Attempt to load setting files
-            try:
-                settings = file_to_string(mod_folder + "/settings.lua")
-                mod_data["settings.lua"] = settings
-            except FileNotFoundError:
-                pass
-            try:
-                settings = file_to_string(mod_folder + "/settings-updates.lua")
-                mod_data["settings-updates.lua"] = settings
-            except FileNotFoundError:
-                pass
-            try:
-                settings = file_to_string(mod_folder + "/settings-final-fixes.lua")
-                mod_data["settings-final-fixes.lua"] = settings
-            except FileNotFoundError:
-                pass
-            # Attempt to load data files
-            try:
-                data = file_to_string(mod_folder + "/data.lua")
-                mod_data["data.lua"] = data
-            except FileNotFoundError:
-                pass
-            try:
-                data_updates = file_to_string(mod_folder + "/data-updates.lua")
-                mod_data["data-updates.lua"] = data_updates
-            except FileNotFoundError:
-                pass
-            try:
-                data_final_fixes = file_to_string(mod_folder + "/data-final-fixes.lua")
-                mod_data["data-final-fixes.lua"] = data_final_fixes
-            except FileNotFoundError:
-                pass
-
-        # It's possible that a user might have multiples of the same mod with
-        # different versions (issue #15). This can cause conficts where a
-        # earlier version of the mod is loaded last which causes dependency
-        # errors.
-
-        # To fix this, we explicitly check for mods with a duplicate name, and
-        # we only overwrite it if the latter mod's version is greater than the
-        # existing mod's version.
-
-        # In addition, if there are two versions of the same mod with equivalent
-        # versions, but one is a zip archive and the other is a folder, then the
-        # folder will take precedence over the zip file.
-
-        current_mod = Mod(
-            name=mod_name,
-            internal_folder=mod_folder,
-            version=mod_version,
-            archive=archive,
-            location=location.replace("\\", "/"),  # Make sure forward slashes
-            info=mod_info,
-            files=files,
-            data=mod_data,
+        # Add the mod to the list of mods
+        mods[game_obj] = register_mod(
+            game_obj, location, mods, factorio_version_info, verbose, report
         )
 
-        if verbose or report:
-            print("(zip)" if archive else "(dir)", mod_name, mod_version)
+    # After that, we can register all of the regular mods, if present
+    for mod_obj in os.listdir(factorio_mods_folder):
+        location = factorio_mods_folder + "/" + mod_obj  # TODO: better
 
-        # If a mod with this name already exists
-        if mod_name in mods:
-            # We warn the user, as this can lead to undesired behavior
-            previous_mod = mods[mod_name]
-            print(
-                "WARNING: Duplicate of mod '{}' found (current: {} -> new: {})".format(
-                    mod_name, previous_mod.version, current_mod.version
-                )
-            )
+        # First make sure the mod is enabled, and skip if not
+        if not enabled_mod_list.get(mod_obj, not no_mods):
+            continue
 
-            # Skip overwriting this mod if the current one is of a later version
-            # than the current
-            if version_string_to_tuple(previous_mod.version) < version_string_to_tuple(
-                current_mod.version
-            ):
-                print(
-                    "\tOverwriting older version ({}) with newer version ({})".format(
-                        previous_mod.version, current_mod.version
-                    )
-                )
-            elif version_string_to_tuple(
-                previous_mod.version
-            ) > version_string_to_tuple(current_mod.version):
-                print(
-                    "\tSkipping older version ({}) in favor of newer version ({})".format(
-                        current_mod.version, previous_mod.version
-                    )
-                )
-                continue
-            else:  # versions are identical
-                # If the previous mod is a folder, and the new mod is an archive,
-                # defer to the folder
-                if previous_mod.archive and not current_mod.archive:
-                    print("\tUsing folder version instead of zip archive")
-                else:
-                    print("\tDeferring to folder version instead of zip archive")
-                    continue
-
-        # Add/Overwrite the mod to the list
-        mods[mod_name] = current_mod
+        # Add the mod to the list of mods
+        mods[mod_obj] = register_mod(
+            mod_obj, location, mods, factorio_version_info, verbose, report
+        )
 
     if report:
-        # TODO: add some extra features, like piping output to a file instead of
-        # stdout, as well as some formatting things
+        # TODO: reimplement properly
+        # if len(mods) == 1: # just the base mod
+        #     print("No mods found at '{}'.".format(factorio_mods_folder))
         return
 
     # Create the dependency tree
     if verbose:
         print("\nDetermining dependency tree...\n")
-
     for mod_name, mod in mods.items():
-        if mod_name == "base" or mod_name == "core":
-            continue  # clunky, but works for now
+        # Core has no dependecies, so determining it's tree is redundant
+        if mod_name == "core":
+            continue
+        # Base depends on core, though the game does not tell us this
+        elif mod_name == "base":
+            mod_dependencies = ["core"]
+        # All other mod names. A user mod may not be specified with dependencies;
+        # in this case, we make the mod dependent on the current Factorio base:
+        else:
+            print(mod_name, mod)
+            mod_dependencies = mod.info.get("dependencies", ["base"])
 
         if verbose:
             print(mod_name, mod.version)
             print("archive?", mod.archive)
             print("dependencies:")
-
-        # A mod might not be specified with dependencies, however.
-        # From deduction of load order it seems all mods require base with or
-        # without specification, so we default to this to mimic Factorio
-        mod_dependencies = mod.info.get("dependencies", ["base"])
 
         for dependency in mod_dependencies:
             # remove whitespace for consistency
@@ -1665,18 +1883,19 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
                 raise MissingModError(dep_name)
 
             # Ensure the mod's version is correct
-            if version is not None:
-                assert op in ["==", ">=", "<=", ">", "<"], "incorrect operation"
-                actual_version_tuple = version_string_to_tuple(mods[dep_name].version)
-                target_version_tuple = version_string_to_tuple(version)
-                expr = str(actual_version_tuple) + op + str(target_version_tuple)
-                # print(expr)
-                if not eval(expr):
-                    raise IncorrectModVersionError(
-                        "mod '{}' version {} not {} {}".format(
-                            mod_name, actual_version_tuple, op, target_version_tuple
-                        )
-                    )
+            # TODO: re-implement (#51)
+            # if version is not None:
+            #     assert op in ["==", ">=", "<=", ">", "<"], "incorrect operation"
+            #     actual_version_tuple = version_string_to_tuple(mods[dep_name].version)
+            #     target_version_tuple = version_string_to_tuple(version)
+            #     expr = str(actual_version_tuple) + op + str(target_version_tuple)
+            #     # print(expr)
+            #     if not eval(expr):
+            #         raise IncorrectModVersionError(
+            #             "mod '{}' version {} not {} {}".format(
+            #                 mod_name, actual_version_tuple, op, target_version_tuple
+            #             )
+            #         )
 
             if flag == "~":
                 # The mod is needed and considered a dependency, but we don't
@@ -1700,19 +1919,89 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
 
     # First we load `defines.lua` in this context, which is a set of constant
     # values used by the game. We do this first because these can be used at any
-    # point in any of the subsequent steps
+    # point in any of the subsequent steps.
     # This is not included in `factorio-data` and has to be manually extracted
-    # (See compatibility/defines.lua for more info)
+    # (See compatibility/defines.lua for more info).
     lua.execute(file_to_string(os.path.join(env_dir, "compatibility", "defines.lua")))
+
+    # "interface.lua" houses a number of patching functions used to emulate
+    # Factorio's internal load process.
+    # Primarily, it updates the require function to now handle python_require,
+    # and fixes a few small discrepancies that Factorio's environment has.
+    lua.execute(file_to_string(os.path.join(env_dir, "compatibility", "interface.lua")))
+
+    # For ease of access, we setup some aliases and variables between the two
+    # contexts:
+
+    # Register logging status within Lua context
+    lua.globals().LOG_ENABLED = show_logs
+
+    # Record where to look for mod folders
+    lua.globals().MOD_FOLDER_LOCATION = factorio_mods_folder
+
+    # Adds path to Lua `package.path`.
+    lua_add_path = lua.globals()["lua_add_path"]
+    # Set Lua `package.path` to a specific value.
+    lua_set_path = lua.globals()["lua_set_path"]
+    # Unload all cached files. Lua attempts to save time when requiring files
+    # by only loading each file once, and reusing the file when requiring with
+    # the same name. This can lead to problems when two mods have the same name
+    # for a file, where Lua will load the incorrect one and create issues.
+    # To counteract this, we completly unload all files with this function,
+    # which is called at the end of every load stage.
+    lua_unload_cache = lua.globals()["lua_unload_cache"]
+    # In order to properly search archives, we need to keep track of which file
+    # and mod we're currently in. Due to a number of reasons, this needs to be
+    # done manually; this function empties the stack of mods that we've
+    # traversed through in preparation for loading the next mod's stage.
+    lua_wipe_mods = lua.globals()["lua_wipe_mods"]
+
+    # Register `python_require` in lua context.
+    # This function is in charge of reading a required file from a zip archive
+    # and providing the source to Lua's `require` function.
+    lua.globals().python_require = python_require
 
     # Factorio utility functions
     lua.execute(
-        file_to_string(os.path.join(factorio_data, "core", "lualib", "util.lua"))
+        file_to_string(os.path.join(factorio_data_path, "core", "lualib", "util.lua"))
     )
-    # Factorio `data:extend` function
+
+    # Because Lupa can't handle byte-order marks in input files, we can't rely
+    # on Lua itself to load raw files using require unmodified
+    # We can try to strip the byte-order mark on the Lua side of things, but
+    # frankly I trust Python here way more than I trust Lua to handle file
+    # formatting
+    # So instead, we open a correctly encoded file on the python side of things
+    # and then pass a file handle to Lua instead (which Lua reads from and
+    # unloads)
+    def python_get_file(filepath):
+        try:
+            return open(filepath, mode="r", encoding="utf-8-sig")
+        except Exception as e:  # Exceptions in Lua are evil, so we don't do that
+            return None, repr(e)
+
+    lua.globals().python_get_file = python_get_file
+
+    # TODO: FIXME
+    # Set meta stuff
+    lua.globals().MOD_LIST = mods
+    # lua.globals().MOD = mod
+    lua.globals().MOD_DIR = mods["core"].location
+    lua.globals().lua_push_mod(mods["core"])
+    lua.globals().CURRENT_FILE = mods["core"].location + "/lualib/dataloader.lua"
+
+    # # Factorio `data:extend` function
     lua.execute(
-        file_to_string(os.path.join(factorio_data, "core", "lualib", "dataloader.lua"))
+        file_to_string(
+            os.path.join(factorio_data_path, "core", "lualib", "dataloader.lua")
+        )
     )
+
+    # print(mods["core"].internal_folder)
+    # lua.globals().CURRENT_FILE = os.path.join(factorio_data_path, "core", "lualib", "util.lua")
+    # lua.globals().CURRENT_MOD
+    # lua.globals().MOD_DIR = os.path.join(factorio_data_path, "core")
+    # load_stage(lua, mods, mods["core"], "data.lua")
 
     # Construct and send the mods table to the Lua instance in `interface.lua`
     python_mods = {}
@@ -1731,56 +2020,6 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
     """
     )
 
-    # Register `python_require` in lua context
-    # This function is in charge of reading a required file from a zip archive
-    # and providing the source to Lua's `require` function
-    lua.globals().python_require = python_require
-
-    # Because Lupa can't handle byte-order marks in input files, we can't rely
-    # on Lua itself to load raw files using require unmodified
-    # We can try to strip the byte-order mark on the Lua side of things, but
-    # frankly I trust Python here way more than I trust Lua to handle file
-    # formatting
-    # So instead, we open a correctly encoded file on the python side of things
-    # and then pass a file handle to Lua instead (which Lua reads from and
-    # unloads)
-    def python_get_file(filepath):
-        try:
-            return open(filepath, mode="r", encoding="utf-8-sig")
-        except Exception as e:  # Exceptions in Lua are evil, so we don't do that
-            return None, repr(e)
-
-    lua.globals().python_get_file = python_get_file
-
-    # Register logging status within Lua context
-    lua.globals().LOG_ENABLED = show_logs
-
-    # Register more compatability changes and define helper functions
-    # Primarily, updates the require function to now handle python_require, and
-    # fixes a few small discrepancies that Factorio's environment has
-    lua.execute(file_to_string(os.path.join(env_dir, "compatibility", "interface.lua")))
-
-    # Record where to look for mod folders
-    lua.globals().MOD_FOLDER_LOCATION = factorio_mods_folder
-
-    # Create aliases to the Lua functions for ease of access
-    # Add path to Lua `package.path`
-    lua_add_path = lua.globals()["lua_add_path"]
-    # Set Lua `package.path` to a value
-    lua_set_path = lua.globals()["lua_set_path"]
-    # Unload all cached files. Lua attempts to save time when requiring files
-    # by only loading each file once, and reusing the file when requiring with
-    # the same name. This can lead to problems when two mods have the same name
-    # for a file, where Lua will load the incorrect one and create issues.
-    # To counteract this, we completly unload all files with this function,
-    # which is called at the end of every load stage.
-    lua_unload_cache = lua.globals()["lua_unload_cache"]
-    # In order to properly search archives, we need to keep track of which file
-    # and mod we're currently in. Due to a number of reasons, this needs to be
-    # done manually; this function empties the stack of mods that we've
-    # traversed through in preparation for loading the next mod's stage.
-    lua_wipe_mods = lua.globals()["lua_wipe_mods"]
-
     # Add Draftsman's root folder to Lua (to access the `compatibility` folder)
     root_path = os.path.join(env_dir, "?.lua")
     lua_add_path(root_path)
@@ -1789,9 +2028,9 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
     # This should probably be part of the main load process in case more than
     # "data.lua" is added to the core module, but core is kinda special and
     # would have to be integrated into the load order as a unique case anyway
-    lualib_path = os.path.join(factorio_data, "core", "lualib", "?.lua")
+    lualib_path = os.path.join(factorio_data_path, "core", "lualib", "?.lua")
     lua_add_path(lualib_path)
-    load_stage(lua, mods, core_mod, "data.lua")
+    # load_stage(lua, mods, core_mod, "data.lua")
 
     # We also add a special path, which is just the entire module
     # (This is used for absolute paths in archives, so we add it once here)
@@ -1828,8 +2067,8 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
     # to the global 'settings' table: We emulate that here in 'settings.lua':
     lua.execute(file_to_string(os.path.join(env_dir, "compatibility", "settings.lua")))
 
-    # If there is a mod settings file present, we overwrite the defaults we just
-    # initialized if they're present
+    # If there is a mod settings file present, we overwrite the current values
+    # with those
     try:
         user_settings = get_mod_settings(factorio_mods_folder)
         # If so, Overwrite the 'value' key for all the settings present
@@ -1880,6 +2119,7 @@ def update(verbose=False, path=None, show_logs=False, no_mods=False, report=None
     items = get_items(lua)
 
     extract_entities(lua, data_location, verbose, items)
+    extract_fluids(lua, data_location, verbose, items)
     extract_instruments(lua, data_location, verbose)
     extract_items(lua, data_location, verbose, items)
     extract_modules(lua, data_location, verbose, items)
@@ -1940,6 +2180,13 @@ def main():
         const=True,
         help="Outputs a list of mods at '--path' as well as their configurations",
     )
+    parser.add_argument(
+        "--factorio-version",
+        nargs="?",
+        default=None,
+        const=True,
+        help="Displays the current Factorio version, or sets a particular Factorio version",
+    )
     args = parser.parse_args()
     if args.lua_version:
         print(
@@ -1950,8 +2197,9 @@ def main():
     else:
         update(
             verbose=args.verbose,
-            path=args.path,
+            mods_path=args.path,
             show_logs=args.log,
             no_mods=args.no_mods,
             report=args.report,
+            factorio_version=args.factorio_version,
         )

@@ -1,63 +1,114 @@
 # signals.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman import data
-from draftsman.error import InvalidSignalError
+from draftsman.data import entities, modules
+from draftsman.error import InvalidSignalError, InvalidMapperError
 
 import pickle
-import six
 
-try:  # pragma: no coverage
-    import importlib.resources as pkg_resources  # type: ignore
-except ImportError:  # pragma: no coverage
-    # Try backported to PY<37 `importlib_resources`.
-    import importlib_resources as pkg_resources  # type: ignore
+import importlib.resources as pkg_resources
 
 
 with pkg_resources.open_binary(data, "signals.pkl") as inp:
     _data = pickle.load(inp)
-    raw = _data[0]
-    type_of = _data[1]
-    item = _data[2]
-    fluid = _data[3]
-    virtual = _data[4]
-    pure_virtual = ["signal-everything", "signal-anything", "signal-each"]
+
+    raw: dict[str, dict] = _data["raw"]
+
+    # Look up table for a particular signal's type
+    type_of: dict[str, set[str]] = _data["type_of"]
+
+    # Lists of signal names organized by their type for easy iteration
+    virtual: list[str] = _data["virtual"]
+    item: list[str] = _data["item"]
+    fluid: list[str] = _data["fluid"]
+    recipe: list[str] = _data["recipe"]
+    entity: list[str] = _data["entity"]
+    space_location: list[str] = _data["space-location"]
+    asteroid_chunk: list[str] = _data["asteroid-chunk"]
+    quality: list[str] = _data["quality"]
+    # hidden: list[str] = _data["hidden"]
+    pure_virtual: list[str] = ["signal-everything", "signal-anything", "signal-each"]
 
 
-def get_signal_type(signal_name):
-    # type: (str) -> str
+def add_signal(name: str, type: str):
     """
-    Returns the type of the signal based on its ID string.
+    Temporarily adds a signal to :py:mod:`draftsman.data.signals`. This allows
+    the user to specify custom signals so that Draftsman can deduce their type
+    without having to manually specify each time or install a corresponding mod.
+    More specifically, it populates :py:data:`raw` and :py:data:`type_of` with
+    the correct values, and adds the name to either :py:data:`.item`,
+    :py:data:`.fluid`, or :py:data:`.virtual` depending on ``type``.
 
-    SignalID objects in blueprints require a ``"type"`` field when specifying
-    them. However, this information is redundant most of the time, as the type
-    for any signal is always the same, making writing it out arduous. This
-    function conveniently gets the signal type from the signal's name.
+    Note that this is not intended as a replacement for generating proper signal
+    data using ``draftsman-update``; instead it offers a fast mechanism for
+    emulating a custom signal and being able to only specify it by it's string
+    shorthand, instead of it's full ``{"name": ..., "type": ...}`` format.
+
+    :raises ValueError: If ``type`` is not set to one of ``"item"``, ``"fluid"``
+        or ``"virtual"``.
+
+    :param name: The in-game string ID of the signal.
+    :param type: The signal-dict type of the signal.
+    """
+    permitted_types = {
+        "item",
+        "fluid",
+        "recipe",
+        "entity",
+        "space-location",
+        "asteroid-chunk",
+        "quality",
+        "virtual",
+    }
+    if type not in permitted_types:
+        raise ValueError("Signal type must be one of {}".format(permitted_types))
+
+    raw[name] = {"name": name, "type": type}
+    try:
+        type_of[name].add(type)
+    except KeyError:
+        type_of[name] = {type}
+    # TODO: sorting
+    if type == "virtual":
+        virtual.append(name)
+    elif type == "item":
+        item.append(name)
+    elif type == "fluid":
+        fluid.append(name)
+    elif type == "recipe":
+        recipe.append(name)
+    elif type == "entity":
+        entity.append(name)
+    elif type == "space-location":
+        space_location.append(name)
+    elif type == "asteroid-chunk":
+        asteroid_chunk.append(name)
+    elif type == "quality":
+        quality.append(name)
+
+
+def get_signal_types(signal_name: str) -> set[str]:
+    """
+    Returns the set of types that a given signal can have based on its ID string.
+
+    Typically, signals can only be selected with a single type, but the game
+    distinguishes between signals of different types in the circuit network.
+    This means that you can have multiple different versions of the "same"
+    signal, with the only difference being their type. For example,
+    ``transport-belt`` can have a type of ``"item"``, ``"recipe"``, or ``"entity"``.
 
     :param signal_name: The name of the signal.
-    :returns: ``"item"``, ``"fluid"``, or ``"virtual"``
+    :returns: A set of strings that this signal's type can be.
     :exception InvalidSignalError: If the signal name is not contained within
-        :py:mod:`draftsman.data.signals`.
+        :py:mod:`draftsman.data.signals`, and thus it's types cannot be deduced.
     """
-    # if signal_name in signals.virtual:
-    #     return "virtual"
-    # elif signal_name in signals.fluid:
-    #     return "fluid"
-    # elif signal_name in signals.item:
-    #     return "item"
-    # else:
-    #     raise InvalidSignalError("'{}'".format(str(signal_name)))
-
     try:
-        return six.text_type(type_of[signal_name])
+        return type_of[signal_name]
     except KeyError:
         raise InvalidSignalError("'{}'".format(signal_name))
 
 
-def signal_dict(signal_name):
-    # type: (str) -> dict
+def signal_dict(signal: str) -> dict:
     """
     Creates a SignalID ``dict`` from the given signal name.
 
@@ -66,5 +117,42 @@ def signal_dict(signal_name):
     :param signal_name: The name of the signal.
 
     :returns: A dict with the ``"name"`` and ``"type"`` keys set.
+    :exception InvalidSignalError: If the signal name is not contained within
+        :py:mod:`draftsman.data.signals`, and thus it's type cannot be deduced.
     """
-    return {"name": six.text_type(signal_name), "type": get_signal_type(signal_name)}
+    if signal is None or isinstance(signal, dict):
+        return signal
+    else:
+        if "item" in get_signal_types(signal):
+            return {"name": str(signal), "type": "item"}
+        else:
+            return {"name": str(signal), "type": next(iter(get_signal_types(signal)))}
+
+
+def get_mapper_type(mapper_name: str) -> str:
+    """
+    TODO
+    """
+    # TODO: actually check that this is the case (particularly with modded entities/items)
+    if mapper_name in modules.raw:  # TODO: should probably change
+        return "item"
+    elif mapper_name in entities.raw:  # TODO: should probably change
+        return "entity"
+    else:
+        raise InvalidMapperError("'{}'".format(mapper_name))
+
+
+def mapper_dict(mapper: str) -> dict:
+    """
+    Creates a MappingID ``dict`` from  the given mapping name.
+
+    Uses :py:func:`get_mapping_type` to get the type for the dictionary.
+
+    :param signal_name: The name of the signal.
+
+    :returns: A dict with the ``"name"`` and ``"type"`` keys set.
+    """
+    if mapper is None or isinstance(mapper, dict):
+        return mapper
+    else:
+        return {"name": str(mapper), "type": get_mapper_type(mapper)}

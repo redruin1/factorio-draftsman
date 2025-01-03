@@ -1,14 +1,14 @@
 # transformable.py
-# -*- encoding: utf-8 -*-
 
 from draftsman.error import RotationError, FlippingError
 from draftsman.classes.vector import Vector
-from draftsman.warning import RailAlignmentWarning, FlippingWarning
+from draftsman.warning import GridAlignmentWarning, FlippingWarning
 
+from typing import Literal
 import warnings
 
 
-class Transformable(object):
+class Transformable:
     """
     Implements a number of functions that allow the parent class to spatially
     transform its ``entities`` and ``tiles`` lists. All of the following methods
@@ -16,8 +16,7 @@ class Transformable(object):
     every entity and tile are modified each time they are called.
     """
 
-    def translate(self, x, y):
-        # type: (int, int) -> None
+    def translate(self, x: int, y: int) -> None:
         """
         Translates all entities and tiles in the blueprint by ``x`` and ``y``.
         Raises :py:class:`~draftsman.warning.RailAlignmentWarning` if the
@@ -29,19 +28,20 @@ class Transformable(object):
         """
         # Warn if attempting to translate by an odd amount when containing
         # double-grid-aligned entities
+        # TODO: should this be here?
         if self.double_grid_aligned and (x % 2 == 1 or y % 2 == 1):
             warnings.warn(
                 "Attempting to translate an odd number of tiles when this "
                 "Transformable contains double grid-aligned entities; Their "
                 "positions will be cast to the nearest grid square on export",
-                RailAlignmentWarning,
+                GridAlignmentWarning,
                 stacklevel=2,
             )
 
         # Entities
         for entity in self.entities:
             # Remove from map
-            self.entity_map.remove(entity)
+            self.entities.spatial_map.remove(entity)
 
             entity._parent = None
 
@@ -52,45 +52,36 @@ class Transformable(object):
             entity._parent = self
 
             # Re-add to map
-            self.entity_map.add(entity)
+            self.entities.spatial_map.add(entity)
 
         # Tiles
-        if hasattr(self, "tiles"):
+        if hasattr(self, "tiles"):  # TODO: remove
             for tile in self.tiles:
                 # Remove from map
-                self.tile_map.remove(tile)
+                self.tiles.spatial_map.remove(tile)
 
                 tile._parent = None
 
                 # Change entity position
-                # tile.position["x"] += x
-                # tile.position["y"] += y
                 tile.position += Vector(x, y)
 
                 tile._parent = self
 
                 # Re-add to map
-                self.tile_map.add(tile)
+                self.tiles.spatial_map.add(tile)
 
-        self.recalculate_area()
-
-    def rotate(self, angle):
-        # type: (int) -> None
+    def rotate(self, angle: int):
         """
         Rotate the blueprint by ``angle``, if possible. Operates the same as
         pressing 'r' with a blueprint selected.
 
         ``angle`` is specified in terms of Direction enum, meaning that a
-        rotation of 2 is 90 degrees clockwise.
+        rotation of 4 is 90 degrees clockwise.
 
         Because eight-way rotatable entities exist in a weird gray area, this
         function behaves like the feature in-game and only rotates on 90 degree
         intervals. Attempting to rotate the blueprint an odd amount raises
         an :py:class:`~draftsman.error.RotationError`.
-
-        .. WARNING::
-
-            **This function is currently under active development.**
 
         :param angle: The angle to rotate the blueprint by.
 
@@ -98,23 +89,23 @@ class Transformable(object):
             value.
         """
         # TODO: handle different origin locations
-        angle = angle % 8
+        angle = angle % 16
 
-        if angle % 2 == 1:
-            raise RotationError("Blueprints cannot be rotated by an odd number")
+        if angle % 4 != 0:
+            raise RotationError("Blueprints cannot be rotated by a non-multiple of 4")
 
         matrices = {
             0: [1, 0, 0, 1],
-            2: [0, 1, -1, 0],
-            4: [-1, 0, 0, -1],
-            6: [0, -1, 1, 0],
+            4: [0, 1, -1, 0],
+            8: [-1, 0, 0, -1],
+            12: [0, -1, 1, 0],
         }
         matrix = matrices[angle]
 
         # Entities
         for entity in self.entities:
             # Remove from map
-            self.entity_map.remove(entity)
+            self.entities.spatial_map.remove(entity)
 
             entity._parent = None
 
@@ -134,13 +125,13 @@ class Transformable(object):
             entity._parent = self
 
             # Re-add to map
-            self.entity_map.add(entity)
+            self.entities.spatial_map.add(entity)
 
         # Tiles
         if hasattr(self, "tiles"):
             for tile in self.tiles:
                 # Remove from map
-                self.tile_map.remove(tile)
+                self.tiles.spatial_map.remove(tile)
 
                 tile._parent = None
 
@@ -157,19 +148,12 @@ class Transformable(object):
                 tile._parent = self
 
                 # Re-add to map
-                self.tile_map.add(tile)
+                self.tiles.spatial_map.add(tile)
 
-        self.recalculate_area()
-
-    def flip(self, direction="horizontal"):
-        # type: (str) -> None
+    def flip(self, direction: Literal["horizontal", "vertical"] = "horizontal") -> None:
         """
         Flip the blueprint across an axis, if possible. Flipping is done over
         the x or y axis, depeding on the input ``direction``.
-
-        .. WARNING::
-
-            **This function is currently under active development.**
 
         :param direction: The direction to flip by; either ``"horizontal"`` or
             ``"vertical"``
@@ -199,7 +183,7 @@ class Transformable(object):
         # Entities
         for entity in self.entities:
             # Remove from map
-            self.entity_map.remove(entity)
+            self.entities.spatial_map.remove(entity)
 
             entity._parent = None
 
@@ -208,9 +192,9 @@ class Transformable(object):
             # Alter the direction
             if entity.rotatable:
                 if direction == "horizontal":
-                    entity.direction += ((-2 * (entity.direction - 4)) % 8) % 8
+                    entity.direction += ((-2 * (entity.direction - 8)) % 16) % 16
                 else:  # direction == "vertical":
-                    entity.direction += (((-2 * entity.direction) % 8) - 4) % 8
+                    entity.direction += (((-2 * entity.direction) % 16) - 8) % 16
 
             # Alter (both) the position(s)
             entity.position = (pos.x * matrix[0], pos.y * matrix[1])
@@ -218,13 +202,13 @@ class Transformable(object):
             entity._parent = self
 
             # Re-add to map
-            self.entity_map.add(entity)
+            self.entities.spatial_map.add(entity)
 
         # Tiles
         if hasattr(self, "tiles"):
             for tile in self.tiles:
                 # Remove from map
-                self.tile_map.remove(tile)
+                self.tiles.spatial_map.remove(tile)
 
                 tile._parent = None
 
@@ -237,6 +221,4 @@ class Transformable(object):
                 tile._parent = self
 
                 # Re-add to map
-                self.tile_map.add(tile)
-
-        self.recalculate_area()
+                self.tiles.spatial_map.add(tile)

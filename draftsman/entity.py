@@ -6,81 +6,109 @@ all the prototypes in :py:mod:`draftsman.prototypes`.
 """
 
 from draftsman.classes.entity import Entity
+from draftsman.constants import ValidationMode
 from draftsman.error import InvalidEntityError
-
+from draftsman.data.entities import of_type
 
 # fmt: off
-from draftsman.prototypes.container import Container, containers
-from draftsman.prototypes.storage_tank import StorageTank, storage_tanks
-from draftsman.prototypes.transport_belt import TransportBelt, transport_belts
-from draftsman.prototypes.underground_belt import UndergroundBelt, underground_belts
-from draftsman.prototypes.splitter import Splitter, splitters
-from draftsman.prototypes.inserter import Inserter, inserters
-from draftsman.prototypes.filter_inserter import FilterInserter, filter_inserters
-from draftsman.prototypes.loader import Loader, loaders
-from draftsman.prototypes.electric_pole import ElectricPole, electric_poles
-from draftsman.prototypes.pipe import Pipe, pipes
-from draftsman.prototypes.underground_pipe import UndergroundPipe, underground_pipes
-from draftsman.prototypes.pump import Pump, pumps
-from draftsman.prototypes.straight_rail import StraightRail, straight_rails
-from draftsman.prototypes.curved_rail import CurvedRail, curved_rails
-from draftsman.prototypes.train_stop import TrainStop, train_stops
-from draftsman.prototypes.rail_signal import RailSignal, rail_signals
-from draftsman.prototypes.rail_chain_signal import RailChainSignal, rail_chain_signals
-from draftsman.prototypes.locomotive import Locomotive, locomotives
-from draftsman.prototypes.cargo_wagon import CargoWagon, cargo_wagons
-from draftsman.prototypes.fluid_wagon import FluidWagon, fluid_wagons
-from draftsman.prototypes.artillery_wagon import ArtilleryWagon, artillery_wagons
-from draftsman.prototypes.logistic_passive_container import LogisticPassiveContainer, logistic_passive_containers
-from draftsman.prototypes.logistic_active_container import LogisticActiveContainer, logistic_active_containers
-from draftsman.prototypes.logistic_storage_container import LogisticStorageContainer, logistic_storage_containers
-from draftsman.prototypes.logistic_buffer_container import LogisticBufferContainer, logistic_buffer_containers
-from draftsman.prototypes.logistic_request_container import LogisticRequestContainer, logistic_request_containers
-from draftsman.prototypes.roboport import Roboport, roboports
-from draftsman.prototypes.lamp import Lamp, lamps
-from draftsman.prototypes.arithmetic_combinator import ArithmeticCombinator, arithmetic_combinators
-from draftsman.prototypes.decider_combinator import DeciderCombinator, decider_combinators
-from draftsman.prototypes.constant_combinator import ConstantCombinator, constant_combinators
-from draftsman.prototypes.power_switch import PowerSwitch, power_switches
-from draftsman.prototypes.programmable_speaker import ProgrammableSpeaker, programmable_speakers
-from draftsman.prototypes.boiler import Boiler, boilers
-from draftsman.prototypes.generator import Generator, generators
-from draftsman.prototypes.solar_panel import SolarPanel, solar_panels
 from draftsman.prototypes.accumulator import Accumulator, accumulators
-from draftsman.prototypes.reactor import Reactor, reactors
-from draftsman.prototypes.heat_pipe import HeatPipe, heat_pipes
-from draftsman.prototypes.mining_drill import MiningDrill, mining_drills
-from draftsman.prototypes.offshore_pump import OffshorePump, offshore_pumps
-from draftsman.prototypes.furnace import Furnace, furnaces
+from draftsman.prototypes.agricultural_tower import AgriculturalTower, agricultural_towers
+from draftsman.prototypes.ammo_turret import AmmoTurret, ammo_turrets
+from draftsman.prototypes.arithmetic_combinator import ArithmeticCombinator, arithmetic_combinators
+from draftsman.prototypes.artillery_turret import ArtilleryTurret, artillery_turrets
+from draftsman.prototypes.artillery_wagon import ArtilleryWagon, artillery_wagons
 from draftsman.prototypes.assembling_machine import AssemblingMachine, assembling_machines
-from draftsman.prototypes.lab import Lab, labs
+from draftsman.prototypes.asteroid_collector import AsteroidCollector, asteroid_collectors
 from draftsman.prototypes.beacon import Beacon, beacons
-from draftsman.prototypes.rocket_silo import RocketSilo, rocket_silos
-from draftsman.prototypes.land_mine import LandMine, land_mines
-from draftsman.prototypes.wall import Wall, walls
-from draftsman.prototypes.gate import Gate, gates
-from draftsman.prototypes.turret import Turret, turrets
-from draftsman.prototypes.radar import Radar, radars
-from draftsman.prototypes.simple_entity_with_owner import SimpleEntityWithOwner, simple_entities_with_owner
-from draftsman.prototypes.simple_entity_with_force import SimpleEntityWithForce, simple_entities_with_force
+from draftsman.prototypes.boiler import Boiler, boilers
+from draftsman.prototypes.burner_generator import BurnerGenerator, burner_generators
+from draftsman.prototypes.car import Car, cars
+from draftsman.prototypes.cargo_bay import CargoBay, cargo_bays
+from draftsman.prototypes.cargo_landing_pad import CargoLandingPad, cargo_landing_pads
+from draftsman.prototypes.cargo_wagon import CargoWagon, cargo_wagons
+from draftsman.prototypes.constant_combinator import ConstantCombinator, constant_combinators
+from draftsman.prototypes.container import Container, containers
+from draftsman.prototypes.curved_rail_a import CurvedRailA, curved_rails_a
+from draftsman.prototypes.curved_rail_b import CurvedRailB, curved_rails_b
+from draftsman.prototypes.decider_combinator import DeciderCombinator, decider_combinators
+from draftsman.prototypes.display_panel import DisplayPanel, display_panels
 from draftsman.prototypes.electric_energy_interface import ElectricEnergyInterface, electric_energy_interfaces
-from draftsman.prototypes.linked_container import LinkedContainer, linked_containers
+from draftsman.prototypes.electric_pole import ElectricPole, electric_poles
+from draftsman.prototypes.electric_turret import ElectricTurret, electric_turrets
+from draftsman.prototypes.elevated_curved_rail_a import ElevatedCurvedRailA, elevated_curved_rails_a
+from draftsman.prototypes.elevated_curved_rail_b import ElevatedCurvedRailB, elevated_curved_rails_b
+from draftsman.prototypes.elevated_half_diagonal_rail import ElevatedHalfDiagonalRail, elevated_half_diagonal_rails
+from draftsman.prototypes.elevated_straight_rail import ElevatedStraightRail, elevated_straight_rails
+from draftsman.prototypes.fluid_turret import FluidTurret, fluid_turrets
+from draftsman.prototypes.fluid_wagon import FluidWagon, fluid_wagons
+from draftsman.prototypes.furnace import Furnace, furnaces
+from draftsman.prototypes.fusion_generator import FusionGenerator, fusion_generators
+from draftsman.prototypes.fusion_reactor import FusionReactor, fusion_reactors
+from draftsman.prototypes.gate import Gate, gates
+from draftsman.prototypes.generator import Generator, generators
+from draftsman.prototypes.half_diagonal_rail import HalfDiagonalRail, half_diagonal_rails
 from draftsman.prototypes.heat_interface import HeatInterface, heat_interfaces
-from draftsman.prototypes.linked_belt import LinkedBelt, linked_belts
+from draftsman.prototypes.heat_pipe import HeatPipe, heat_pipes
 from draftsman.prototypes.infinity_container import InfinityContainer, infinity_containers
 from draftsman.prototypes.infinity_pipe import InfinityPipe, infinity_pipes
-from draftsman.prototypes.burner_generator import BurnerGenerator, burner_generators
+from draftsman.prototypes.inserter import Inserter, inserters
+from draftsman.prototypes.lab import Lab, labs
+from draftsman.prototypes.lamp import Lamp, lamps
+from draftsman.prototypes.land_mine import LandMine, land_mines
+from draftsman.prototypes.legacy_curved_rail import LegacyCurvedRail, legacy_curved_rails
+from draftsman.prototypes.legacy_straight_rail import LegacyStraightRail, legacy_straight_rails
+from draftsman.prototypes.lightning_attractor import LightningAttractor, lightning_attractors
+from draftsman.prototypes.linked_belt import LinkedBelt, linked_belts
+from draftsman.prototypes.linked_container import LinkedContainer, linked_containers
+from draftsman.prototypes.loader import Loader, loaders
+# from draftsman.prototypes.loader_1x1 import Loader1x1, loaders_1x1
+from draftsman.prototypes.locomotive import Locomotive, locomotives
+from draftsman.prototypes.logistic_active_container import LogisticActiveContainer, logistic_active_containers
+from draftsman.prototypes.logistic_buffer_container import LogisticBufferContainer, logistic_buffer_containers
+from draftsman.prototypes.logistic_passive_container import LogisticPassiveContainer, logistic_passive_containers
+from draftsman.prototypes.logistic_request_container import LogisticRequestContainer, logistic_request_containers
+from draftsman.prototypes.logistic_storage_container import LogisticStorageContainer, logistic_storage_containers
+from draftsman.prototypes.mining_drill import MiningDrill, mining_drills
+from draftsman.prototypes.offshore_pump import OffshorePump, offshore_pumps
+from draftsman.prototypes.pipe import Pipe, pipes
 from draftsman.prototypes.player_port import PlayerPort, player_ports
+from draftsman.prototypes.power_switch import PowerSwitch, power_switches
+from draftsman.prototypes.programmable_speaker import ProgrammableSpeaker, programmable_speakers
+from draftsman.prototypes.pump import Pump, pumps
+from draftsman.prototypes.radar import Radar, radars
+from draftsman.prototypes.rail_chain_signal import RailChainSignal, rail_chain_signals
+from draftsman.prototypes.rail_ramp import RailRamp, rail_ramps
+from draftsman.prototypes.rail_signal import RailSignal, rail_signals
+from draftsman.prototypes.rail_support import RailSupport, rail_supports
+from draftsman.prototypes.reactor import Reactor, reactors
+from draftsman.prototypes.roboport import Roboport, roboports
+from draftsman.prototypes.rocket_silo import RocketSilo, rocket_silos
+from draftsman.prototypes.selector_combinator import SelectorCombinator, selector_combinators
+from draftsman.prototypes.simple_entity_with_force import SimpleEntityWithForce, simple_entities_with_force
+from draftsman.prototypes.simple_entity_with_owner import SimpleEntityWithOwner, simple_entities_with_owner
+from draftsman.prototypes.solar_panel import SolarPanel, solar_panels
+from draftsman.prototypes.space_platform_hub import SpacePlatformHub, space_platform_hubs
+from draftsman.prototypes.spider_vehicle import SpiderVehicle, spider_vehicles
+from draftsman.prototypes.splitter import Splitter, splitters
+from draftsman.prototypes.storage_tank import StorageTank, storage_tanks
+from draftsman.prototypes.straight_rail import StraightRail, straight_rails
+from draftsman.prototypes.thruster import Thruster, thrusters
+from draftsman.prototypes.train_stop import TrainStop, train_stops
+from draftsman.prototypes.transport_belt import TransportBelt, transport_belts
+from draftsman.prototypes.underground_belt import UndergroundBelt, underground_belts
+from draftsman.prototypes.underground_pipe import UndergroundPipe, underground_pipes
+from draftsman.prototypes.wall import Wall, walls
 # fmt: on
 
+from typing import Literal
 
-def new_entity(name, **kwargs):
-    # type: (str, **dict) -> Entity
+
+def new_entity(name: str, **kwargs):
     """
-    Factory function for creating a new ``Entity``. The class used will be based
-    on the entity's name, so ``new_entity("wooden-chest")`` will return a
-    ``Container`` instance. Useful if you know the name of the Entity you want
-    to make, but don't know what type it is.
+    Factory function for creating a new :py:class:`.Entity`. The class used will be
+    based on the entity's name, so ``new_entity("wooden-chest")`` will return a
+    :py:mod:`.Container` instance. Useful if you know the name of the Entity you
+    want to make, but don't know what type it is.
 
     Any additional keyword arguments are passed to the entity's constructor,
     allowing you to specify the entity's position, ID, or any other relevant
@@ -93,130 +121,195 @@ def new_entity(name, **kwargs):
     :param kwargs: A dict of all the keyword arguments to pass to the
         constructor.
 
-    :exception InvalidEntityID: If the name passed in is not recognized as any
-        valid entity name.
+    :returns: A new :py:class:`.Entity` subclass, or an instance of
+        :py:class:`.Entity` if `name` could not be deduced under the current
+        Factorio environment.
     """
-    if name in containers:
-        return Container(name, **kwargs)
-    if name in storage_tanks:
-        return StorageTank(name, **kwargs)
-    if name in transport_belts:
-        return TransportBelt(name, **kwargs)
-    if name in underground_belts:
-        return UndergroundBelt(name, **kwargs)
-    if name in splitters:
-        return Splitter(name, **kwargs)
-    if name in inserters:
-        return Inserter(name, **kwargs)
-    if name in filter_inserters:
-        return FilterInserter(name, **kwargs)
-    if name in loaders:
-        return Loader(name, **kwargs)
-    if name in electric_poles:
-        return ElectricPole(name, **kwargs)
-    if name in pipes:
-        return Pipe(name, **kwargs)
-    if name in underground_pipes:
-        return UndergroundPipe(name, **kwargs)
-    if name in pumps:
-        return Pump(name, **kwargs)
-    if name in straight_rails:
-        return StraightRail(name, **kwargs)
-    if name in curved_rails:
-        return CurvedRail(name, **kwargs)
-    if name in train_stops:
-        return TrainStop(name, **kwargs)
-    if name in rail_signals:
-        return RailSignal(name, **kwargs)
-    if name in rail_chain_signals:
-        return RailChainSignal(name, **kwargs)
-    if name in locomotives:
-        return Locomotive(name, **kwargs)
-    if name in cargo_wagons:
-        return CargoWagon(name, **kwargs)
-    if name in fluid_wagons:
-        return FluidWagon(name, **kwargs)
-    if name in artillery_wagons:
-        return ArtilleryWagon(name, **kwargs)
-    if name in logistic_passive_containers:
-        return LogisticPassiveContainer(name, **kwargs)
-    if name in logistic_active_containers:
-        return LogisticActiveContainer(name, **kwargs)
-    if name in logistic_storage_containers:
-        return LogisticStorageContainer(name, **kwargs)
-    if name in logistic_buffer_containers:
-        return LogisticBufferContainer(name, **kwargs)
-    if name in logistic_request_containers:
-        return LogisticRequestContainer(name, **kwargs)
-    if name in roboports:
-        return Roboport(name, **kwargs)
-    if name in lamps:
-        return Lamp(name, **kwargs)
-    if name in arithmetic_combinators:
-        return ArithmeticCombinator(name, **kwargs)
-    if name in decider_combinators:
-        return DeciderCombinator(name, **kwargs)
-    if name in constant_combinators:
-        return ConstantCombinator(name, **kwargs)
-    if name in power_switches:
-        return PowerSwitch(name, **kwargs)
-    if name in programmable_speakers:
-        return ProgrammableSpeaker(name, **kwargs)
-    if name in boilers:
-        return Boiler(name, **kwargs)
-    if name in generators:
-        return Generator(name, **kwargs)
-    if name in solar_panels:
-        return SolarPanel(name, **kwargs)
-    if name in accumulators:
+    if name in of_type["accumulator"]:
         return Accumulator(name, **kwargs)
-    if name in reactors:
-        return Reactor(name, **kwargs)
-    if name in heat_pipes:
-        return HeatPipe(name, **kwargs)
-    if name in mining_drills:
-        return MiningDrill(name, **kwargs)
-    if name in offshore_pumps:
-        return OffshorePump(name, **kwargs)
-    if name in furnaces:
-        return Furnace(name, **kwargs)
-    if name in assembling_machines:
+    if name in of_type["agricultural-tower"]:
+        return AgriculturalTower(name, **kwargs)
+    if name in of_type["ammo-turret"]:
+        return AmmoTurret(name, **kwargs)
+    if name in of_type["arithmetic-combinator"]:
+        return ArithmeticCombinator(name, **kwargs)
+    if name in of_type["artillery-turret"]:
+        return ArtilleryTurret(name, **kwargs)
+    if name in of_type["artillery-wagon"]:
+        return ArtilleryWagon(name, **kwargs)
+    if name in of_type["assembling-machine"]:
         return AssemblingMachine(name, **kwargs)
-    if name in labs:
-        return Lab(name, **kwargs)
-    if name in beacons:
+    if name in of_type["beacon"]:
         return Beacon(name, **kwargs)
-    if name in rocket_silos:
-        return RocketSilo(name, **kwargs)
-    if name in land_mines:
-        return LandMine(name, **kwargs)
-    if name in walls:
-        return Wall(name, **kwargs)
-    if name in gates:
-        return Gate(name, **kwargs)
-    if name in turrets:
-        return Turret(name, **kwargs)
-    if name in radars:
-        return Radar(name, **kwargs)
-    if name in simple_entities_with_owner:
-        return SimpleEntityWithOwner(name, **kwargs)
-    if name in simple_entities_with_force:
-        return SimpleEntityWithForce(name, **kwargs)
-    if name in electric_energy_interfaces:
-        return ElectricEnergyInterface(name, **kwargs)
-    if name in linked_containers:
-        return LinkedContainer(name, **kwargs)
-    if name in heat_interfaces:
-        return HeatInterface(name, **kwargs)
-    if name in linked_belts:
-        return LinkedBelt(name, **kwargs)
-    if name in infinity_containers:
-        return InfinityContainer(name, **kwargs)
-    if name in infinity_pipes:
-        return InfinityPipe(name, **kwargs)
-    if name in burner_generators:
+    if name in of_type["boiler"]:
+        return Boiler(name, **kwargs)
+    if name in of_type["burner-generator"]:
         return BurnerGenerator(name, **kwargs)
-    if name in player_ports:
+    if name in of_type["car"]:
+        return Car(name, **kwargs)
+    if name in of_type["cargo-bay"]:
+        return CargoBay(name, **kwargs)
+    if name in of_type["cargo-landing-pad"]:
+        return CargoLandingPad(name, **kwargs)
+    if name in of_type["cargo-wagon"]:
+        return CargoWagon(name, **kwargs)
+    if name in of_type["constant-combinator"]:
+        return ConstantCombinator(name, **kwargs)
+    if name in of_type["container"]:
+        return Container(name, **kwargs)
+    if name in of_type["curved-rail-a"]:
+        return CurvedRailA(name, **kwargs)
+    if name in of_type["curved-rail-b"]:
+        return CurvedRailB(name, **kwargs)
+    if name in of_type["decider-combinator"]:
+        return DeciderCombinator(name, **kwargs)
+    if name in of_type["display-panel"]:
+        return DisplayPanel(name, **kwargs)
+    if name in of_type["electric-energy-interface"]:
+        return ElectricEnergyInterface(name, **kwargs)
+    if name in of_type["electric-pole"]:
+        return ElectricPole(name, **kwargs)
+    if name in of_type["electric-turret"]:
+        return ElectricTurret(name, **kwargs)
+    if name in of_type["elevated-curved-rail-a"]:
+        return ElevatedCurvedRailA(name, **kwargs)
+    if name in of_type["elevated-curved-rail-b"]:
+        return ElevatedCurvedRailB(name, **kwargs)
+    if name in of_type["elevated-half-diagonal-rail"]:
+        return ElevatedHalfDiagonalRail(name, **kwargs)
+    if name in of_type["elevated-straight-rail"]:
+        return ElevatedStraightRail(name, **kwargs)
+    if name in of_type["fluid-turret"]:
+        return FluidTurret(name, **kwargs)
+    if name in of_type["fluid-wagon"]:
+        return FluidWagon(name, **kwargs)
+    if name in of_type["furnace"]:
+        return Furnace(name, **kwargs)
+    if name in of_type["fusion-generator"]:
+        return FusionGenerator(name, **kwargs)
+    if name in of_type["fusion-reactor"]:
+        return FusionReactor(name, **kwargs)
+    if name in of_type["gate"]:
+        return Gate(name, **kwargs)
+    if name in of_type["generator"]:
+        return Generator(name, **kwargs)
+    if name in of_type["half-diagonal-rail"]:
+        return HalfDiagonalRail(name, **kwargs)
+    if name in of_type["heat-interface"]:
+        return HeatInterface(name, **kwargs)
+    if name in of_type["heat-pipe"]:
+        return HeatPipe(name, **kwargs)
+    if name in of_type["infinity-container"]:
+        return InfinityContainer(name, **kwargs)
+    if name in of_type["infinity-pipe"]:
+        return InfinityPipe(name, **kwargs)
+    if name in of_type["inserter"]:
+        return Inserter(name, **kwargs)
+    if name in of_type["lab"]:
+        return Lab(name, **kwargs)
+    if name in of_type["lamp"]:
+        return Lamp(name, **kwargs)
+    if name in of_type["land-mine"]:
+        return LandMine(name, **kwargs)
+    if name in of_type["legacy-curved-rail"]:
+        return LegacyCurvedRail(name, **kwargs)
+    if name in of_type["legacy-straight-rail"]:
+        return LegacyStraightRail(name, **kwargs)
+    if name in of_type["lightning-attractor"]:
+        return LightningAttractor(name, **kwargs)
+    if name in of_type["linked-belt"]:
+        return LinkedBelt(name, **kwargs)
+    if name in of_type["linked-container"]:
+        return LinkedContainer(name, **kwargs)
+    if name in of_type["loader"]:
+        return Loader(name, **kwargs)
+    if name in of_type["locomotive"]:
+        return Locomotive(name, **kwargs)
+    if name in of_type["logistic-container-active"]:
+        return LogisticActiveContainer(name, **kwargs)
+    if name in of_type["logistic-container-buffer"]:
+        return LogisticBufferContainer(name, **kwargs)
+    if name in of_type["logistic-container-passive"]:
+        return LogisticPassiveContainer(name, **kwargs)
+    if name in of_type["logistic-container-request"]:
+        return LogisticRequestContainer(name, **kwargs)
+    if name in of_type["logistic-container-storage"]:
+        return LogisticStorageContainer(name, **kwargs)
+    if name in of_type["mining-drill"]:
+        return MiningDrill(name, **kwargs)
+    if name in of_type["offshore-pump"]:
+        return OffshorePump(name, **kwargs)
+    if name in of_type["pipe"]:
+        return Pipe(name, **kwargs)
+    if name in of_type["player-port"]:
         return PlayerPort(name, **kwargs)
+    if name in of_type["power-switch"]:
+        return PowerSwitch(name, **kwargs)
+    if name in of_type["programmable-speaker"]:
+        return ProgrammableSpeaker(name, **kwargs)
+    if name in of_type["pump"]:
+        return Pump(name, **kwargs)
+    if name in of_type["radar"]:
+        return Radar(name, **kwargs)
+    if name in of_type["rail-chain-signal"]:
+        return RailChainSignal(name, **kwargs)
+    if name in of_type["rail-ramp"]:
+        return RailRamp(name, **kwargs)
+    if name in of_type["rail-signal"]:
+        return RailSignal(name, **kwargs)
+    if name in of_type["rail-support"]:
+        return RailSupport(name, **kwargs)
+    if name in of_type["reactor"]:
+        return Reactor(name, **kwargs)
+    if name in of_type["roboport"]:
+        return Roboport(name, **kwargs)
+    if name in of_type["rocket-silo"]:
+        return RocketSilo(name, **kwargs)
+    if name in of_type["selector-combinator"]:
+        return SelectorCombinator(name, **kwargs)
+    if name in of_type["simple-entity-with-force"]:
+        return SimpleEntityWithForce(name, **kwargs)
+    if name in of_type["simple-entity-with-owner"]:
+        return SimpleEntityWithOwner(name, **kwargs)
+    if name in of_type["solar-panel"]:
+        return SolarPanel(name, **kwargs)
+    if name in of_type["space-platform-hub"]:
+        return SpacePlatformHub(name, **kwargs)
+    if name in of_type["spider-vehicle"]:
+        return SpiderVehicle(name, **kwargs)
+    if name in of_type["splitter"]:
+        return Splitter(name, **kwargs)
+    if name in of_type["storage-tank"]:
+        return StorageTank(name, **kwargs)
+    if name in of_type["straight-rail"]:
+        return StraightRail(name, **kwargs)
+    if name in of_type["thruster"]:
+        return Thruster(name, **kwargs)
+    if name in of_type["train-stop"]:
+        return TrainStop(name, **kwargs)
+    if name in of_type["transport-belt"]:
+        return TransportBelt(name, **kwargs)
+    if name in of_type["underground-belt"]:
+        return UndergroundBelt(name, **kwargs)
+    if name in of_type["pipe-to-ground"]:
+        return UndergroundPipe(name, **kwargs)
+    if name in of_type["wall"]:
+        return Wall(name, **kwargs)
 
-    raise InvalidEntityError("'{}'".format(name))
+    # At this point, the name is unrecognized by the current environment.
+    # We want Draftsman to at least try to parse it and serialize it, if not
+    # entirely validate it. Thus, we construct a generic instance of `Entity`
+    # and return that.
+    result = Entity(name, similar_entities=None, **kwargs)
+
+    # Mark this class as unknown format, so some validation checks are
+    # omitted
+    # TODO: is this necessary?
+    result._unknown = True
+
+    # Of course, since entity is normally a base class, we have to do a
+    # little magic to make it behave similar to all other classes
+    validate_assignment = kwargs.get("validate_assignment", ValidationMode.STRICT)
+    result.validate_assignment = validate_assignment
+
+    return result

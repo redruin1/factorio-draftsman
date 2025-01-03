@@ -1,15 +1,17 @@
 # boiler.py
-# -*- encoding: utf-8 -*-
-
-from __future__ import unicode_literals
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import RequestItemsMixin, DirectionalMixin
+from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.constants import Direction, ValidationMode
+from draftsman.signatures import ItemRequest
+from draftsman.utils import get_first
 from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import boilers
 
-import warnings
+from pydantic import ConfigDict
+from typing import Any, Literal, Optional, Union
 
 
 class Boiler(RequestItemsMixin, DirectionalMixin, Entity):
@@ -18,30 +20,41 @@ class Boiler(RequestItemsMixin, DirectionalMixin, Entity):
     fluid (usually steam).
     """
 
-    # fmt: off
-    # _exports = {
-    #     **Entity._exports,
-    #     **DirectionalMixin._exports,
-    #     **RequestItemsMixin._exports,
-    # }
-    # fmt: on
+    class Format(RequestItemsMixin.Format, DirectionalMixin.Format, Entity.Format):
+        model_config = ConfigDict(title="Boiler")
 
-    _exports = {}
-    _exports.update(Entity._exports)
-    _exports.update(DirectionalMixin._exports)
-    _exports.update(RequestItemsMixin._exports)
-
-    def __init__(self, name=boilers[0], **kwargs):
-        # type: (str, **dict) -> None
+    def __init__(
+        self,
+        name: Optional[str] = get_first(boilers),
+        position: Union[Vector, PrimitiveVector] = None,
+        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+        direction: Direction = Direction.NORTH,
+        items: Optional[list[ItemRequest]] = [],  # TODO: ItemID
+        tags: dict[str, Any] = {},
+        validate_assignment: Union[
+            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+        ] = ValidationMode.STRICT,
+        **kwargs
+    ):
         """
         TODO
         """
 
-        super(Boiler, self).__init__(name, boilers, **kwargs)
+        super().__init__(
+            name,
+            boilers,
+            position=position,
+            tile_position=tile_position,
+            direction=direction,
+            items=items,
+            tags=tags,
+            **kwargs
+        )
 
-        for unused_arg in self.unused_args:
-            warnings.warn(
-                "{} has no attribute '{}'".format(type(self), unused_arg),
-                DraftsmanWarning,
-                stacklevel=2,
-            )
+        self.validate_assignment = validate_assignment
+
+    # TODO: ensure fuel requests to this entity match it's allowed fuel categories
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
