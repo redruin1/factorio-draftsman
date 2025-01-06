@@ -90,7 +90,7 @@ class TestAABB:
 
     def test_rotate(self):
         aabb = utils.AABB(0, 0, 1, 1)
-        rotated_aabb = aabb.rotate(2)
+        rotated_aabb = aabb.rotate(4)
         assert round(abs(rotated_aabb.top_left[0] - -1), 7) == 0
         assert round(abs(rotated_aabb.top_left[1] - 0), 7) == 0
         assert round(abs(rotated_aabb.bot_right[0] - 0), 7) == 0
