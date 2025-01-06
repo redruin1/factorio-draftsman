@@ -199,14 +199,14 @@ class AABB(Shape):
         :param amt: The amount to rotate, expressed as an increments of 45
             degrees.
         """
-        if amt % 2 != 0:
-            raise ValueError("Cannot rotate an AABB by 45 degree increments")
+        if amt % 4 != 0:
+            raise ValueError("Cannot rotate an AABB by anything other than 90 degree increments")
 
         # TODO: do this routine with a lookup table instead of float math and
         # min/max
 
-        rot_top_left = rotate_point(self.top_left, math.radians(amt * 45))
-        rot_bot_right = rotate_point(self.bot_right, math.radians(amt * 45))
+        rot_top_left = rotate_point(self.top_left, math.radians(amt * 22.5))
+        rot_bot_right = rotate_point(self.bot_right, math.radians(amt * 22.5))
 
         # top_left = Vector(
         #     min(rot_top_left.x, rot_bot_right.x), min(rot_top_left.y, rot_bot_right.y)
@@ -350,10 +350,10 @@ class Rectangle(Shape):
             degrees.
         """
         return Rectangle(
-            rotate_point(self.position, math.radians(amt * 45)),
+            rotate_point(self.position, math.radians(amt * 22.5)),
             self.width,
             self.height,
-            self.angle + amt * 45,
+            self.angle + amt * 22.5,
         )
 
     def __eq__(self, other: "Rectangle") -> bool:

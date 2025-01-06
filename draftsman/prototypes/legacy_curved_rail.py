@@ -24,12 +24,12 @@ _right_turn = CollisionSet(
 _collision_set_rotation = {}
 _collision_set_rotation[Direction.NORTH] = _left_turn
 _collision_set_rotation[Direction.NORTHEAST] = _right_turn
-_collision_set_rotation[Direction.EAST] = _left_turn.rotate(2)
-_collision_set_rotation[Direction.SOUTHEAST] = _right_turn.rotate(2)
-_collision_set_rotation[Direction.SOUTH] = _left_turn.rotate(4)
-_collision_set_rotation[Direction.SOUTHWEST] = _right_turn.rotate(4)
-_collision_set_rotation[Direction.WEST] = _left_turn.rotate(6)
-_collision_set_rotation[Direction.NORTHWEST] = _right_turn.rotate(6)
+_collision_set_rotation[Direction.EAST] = _left_turn.rotate(4)
+_collision_set_rotation[Direction.SOUTHEAST] = _right_turn.rotate(4)
+_collision_set_rotation[Direction.SOUTH] = _left_turn.rotate(8)
+_collision_set_rotation[Direction.SOUTHWEST] = _right_turn.rotate(8)
+_collision_set_rotation[Direction.WEST] = _left_turn.rotate(12)
+_collision_set_rotation[Direction.NORTHWEST] = _right_turn.rotate(12)
 
 _left_turn = CollisionSet(
     [AABB(0.25, 1.8, 1.75, 3.9), Rectangle((-0.375, -0.7175), 1.4, 5.45, -35)]
@@ -40,12 +40,12 @@ _right_turn = CollisionSet(
 _collision_set_rotation = {}
 _collision_set_rotation[Direction.NORTH] = _left_turn
 _collision_set_rotation[Direction.NORTHEAST] = _right_turn
-_collision_set_rotation[Direction.EAST] = _left_turn.rotate(2)
-_collision_set_rotation[Direction.SOUTHEAST] = _right_turn.rotate(2)
-_collision_set_rotation[Direction.SOUTH] = _left_turn.rotate(4)
-_collision_set_rotation[Direction.SOUTHWEST] = _right_turn.rotate(4)
-_collision_set_rotation[Direction.WEST] = _left_turn.rotate(6)
-_collision_set_rotation[Direction.NORTHWEST] = _right_turn.rotate(6)
+_collision_set_rotation[Direction.EAST] = _left_turn.rotate(4)
+_collision_set_rotation[Direction.SOUTHEAST] = _right_turn.rotate(4)
+_collision_set_rotation[Direction.SOUTH] = _left_turn.rotate(8)
+_collision_set_rotation[Direction.SOUTHWEST] = _right_turn.rotate(8)
+_collision_set_rotation[Direction.WEST] = _left_turn.rotate(12)
+_collision_set_rotation[Direction.NORTHWEST] = _right_turn.rotate(12)
 
 
 class LegacyCurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
