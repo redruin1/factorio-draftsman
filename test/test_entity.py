@@ -56,7 +56,7 @@ class TestEntity:
         combinator = DeciderCombinator(tile_position=[3, 3], direction=Direction.EAST)
         assert combinator.get_world_bounding_box() == AABB(3.35, 3.15, 4.65, 3.85)
         recycler = new_entity('recycler',tile_position=[3, 3], direction=Direction.EAST)
-        assert recycler.get_world_bounding_box() == AABB(3,3, 3.3, 6.7, 4.7)
+        assert recycler.get_world_bounding_box() == AABB(3.3, 3.3, 6.7, 4.7)
 
     def test_set_name(self):
         iron_chest = Container("iron-chest")
