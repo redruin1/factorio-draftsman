@@ -1,10 +1,13 @@
 # Changelog
 
 ## 2.0.1
+* Updated `factorio-data` to version `2.0.29` (latest)
 * Merge RosieBaish's pull request:
     * Add logic to allow mods with different special characters
-* Merge Gavinp's pull request:
+* Merge Gavinp's pull requests:
     * Add test for creating items with position
+    * Add test for recycler `get_world_bounding_box()`
+    * `draftsman` now prints usage/help on empty args.
 * Fix #121
 
 ## 2.0.0
