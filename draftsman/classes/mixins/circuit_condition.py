@@ -15,7 +15,7 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
     """
 
     class ControlFormat(BaseModel):
-        circuit_enabled: Optional[bool] = Field(
+        circuit_condition_enabled: Optional[bool] = Field(
             False,
             description="""
             Whether or not the entity is controlled by the specified circuit

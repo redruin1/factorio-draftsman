@@ -34,7 +34,7 @@ class Beacon(ModulesMixin, RequestItemsMixin, Entity):
         name: Optional[str] = get_first(beacons),
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        items: list[ItemRequest] = [],
+        items: Optional[list[ItemRequest]] = [],
         tags: dict[str, Any] = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]

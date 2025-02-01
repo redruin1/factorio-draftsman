@@ -125,8 +125,8 @@ class InventoryMixin:
     @property
     def bar(self) -> uint16:
         """
-        The limiting bar of the inventory. Used to prevent a the final-most
-        slots in the inventory from accepting items.
+        The limiting bar of the inventory. Used to prevent the final-most
+        slots in the inventory from accepting new items.
 
         Raises :py:class:`~draftsman.warning.IndexWarning` if the set value
         exceeds the Entity's ``inventory_size`` attribute.

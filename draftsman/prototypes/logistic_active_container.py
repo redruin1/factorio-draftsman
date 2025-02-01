@@ -3,6 +3,9 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     RequestItemsMixin,
+    LogisticModeOfOperationMixin,
+    CircuitConditionMixin,
+    ControlBehaviorMixin,
     CircuitConnectableMixin,
     InventoryMixin,
 )
@@ -19,7 +22,13 @@ from typing import Any, Literal, Optional, Union
 
 
 class LogisticActiveContainer(
-    InventoryMixin, RequestItemsMixin, CircuitConnectableMixin, Entity
+    InventoryMixin, 
+    RequestItemsMixin,
+    LogisticModeOfOperationMixin,
+    CircuitConditionMixin,
+    ControlBehaviorMixin, 
+    CircuitConnectableMixin, 
+    Entity
 ):
     """
     A logistics container that immediately provides it's contents to the
@@ -29,9 +38,17 @@ class LogisticActiveContainer(
     class Format(
         InventoryMixin.Format,
         RequestItemsMixin.Format,
+        LogisticModeOfOperationMixin.Format,
+        CircuitConditionMixin.Format,
+        ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
         Entity.Format,
     ):
+        class ControlBehavior(LogisticModeOfOperationMixin.ControlFormat, CircuitConditionMixin.ControlFormat):
+            pass
+
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+
         model_config = ConfigDict(title="LogisticActiveContainer")
 
     def __init__(

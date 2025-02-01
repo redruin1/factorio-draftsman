@@ -3,6 +3,9 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     RequestItemsMixin,
+    LogisticModeOfOperationMixin,
+    CircuitConditionMixin,
+    ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
     InventoryMixin,
@@ -21,6 +24,9 @@ from pydantic import ConfigDict
 class LogisticStorageContainer(
     InventoryMixin,
     RequestItemsMixin,
+    LogisticModeOfOperationMixin,
+    CircuitConditionMixin,
+    ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
     Entity,
@@ -33,10 +39,21 @@ class LogisticStorageContainer(
     class Format(
         InventoryMixin.Format,
         RequestItemsMixin.Format,
+        LogisticModeOfOperationMixin.Format,
+        CircuitConditionMixin.Format,
+        ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
         RequestFiltersMixin.Format,
         Entity.Format,
     ):
+        class ControlBehavior(
+            LogisticModeOfOperationMixin.ControlFormat, 
+            CircuitConditionMixin.ControlFormat
+        ):
+            pass
+
+        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+
         model_config = ConfigDict(title="LogisticStorageContainer")
 
     def __init__(
@@ -46,7 +63,8 @@ class LogisticStorageContainer(
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         bar: Optional[uint16] = None,
         request_filters: list[RequestFilter] = [],
-        items: Optional[list[ItemRequest]] = {},
+        items: Optional[list[ItemRequest]] = [],
+        control_behavior: Optional[Format.ControlBehavior] = {},
         tags: dict[str, Any] = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -65,6 +83,7 @@ class LogisticStorageContainer(
             bar=bar,
             request_filters=request_filters,
             items=items,
+            control_behavior=control_behavior,
             tags=tags,
             **kwargs
         )

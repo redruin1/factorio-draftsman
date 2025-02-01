@@ -5,6 +5,7 @@ from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     RequestItemsMixin,
     LogisticModeOfOperationMixin,
+    CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
@@ -15,7 +16,6 @@ from draftsman.constants import ValidationMode
 from draftsman.signatures import (
     DraftsmanBaseModel,
     ItemRequest,
-    RequestFilter,
     uint16,
 )
 from draftsman.utils import get_first
@@ -30,6 +30,7 @@ class LogisticRequestContainer(
     InventoryMixin,
     RequestItemsMixin,
     LogisticModeOfOperationMixin,
+    CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
@@ -43,24 +44,33 @@ class LogisticRequestContainer(
         InventoryMixin.Format,
         RequestItemsMixin.Format,
         LogisticModeOfOperationMixin.Format,
+        CircuitConditionMixin.Format,
         ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
         RequestFiltersMixin.Format,
         Entity.Format,
     ):
         class ControlBehavior(
-            LogisticModeOfOperationMixin.ControlFormat, DraftsmanBaseModel
+            LogisticModeOfOperationMixin.ControlFormat, 
+            CircuitConditionMixin.ControlFormat,
+            DraftsmanBaseModel
         ):
-            pass
+            circuit_condition_enabled: Optional[bool] = Field(
+                False,
+                description="""Whether the condition is enabled."""
+            )
 
         control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        request_from_buffers: Optional[bool] = Field(
-            False,
-            description="""
-            Whether or not this requester chest will pull from buffer chests.
-            """,
-        )
+        class LogisticsRequestFilters(RequestFiltersMixin.Format.RequestFilters):
+            request_from_buffers: Optional[bool] = Field(
+                False, # Different default
+                description="""
+                Whether or not this requester chest will pull from buffer chests.
+                """,
+            )
+
+        request_filters: Optional[LogisticsRequestFilters] = LogisticsRequestFilters()
 
         model_config = ConfigDict(title="LogisticRequestContainer")
 
@@ -70,10 +80,9 @@ class LogisticRequestContainer(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         bar: uint16 = None,
-        request_filters: list[RequestFilter] = [],
-        items: Optional[list[ItemRequest]] = {},
+        request_filters: Optional[RequestFiltersMixin.Format.RequestFilters] = {},
+        items: Optional[list[ItemRequest]] = [],
         control_behavior: Format.ControlBehavior = {},
-        request_from_buffers: bool = False,
         tags: dict[str, Any] = {},
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
@@ -95,33 +104,74 @@ class LogisticRequestContainer(
             **kwargs
         )
 
-        self.request_from_buffers = request_from_buffers
-
         self.validate_assignment = validate_assignment
 
     # =========================================================================
 
-    @property
-    def request_from_buffers(self) -> Optional[bool]:
-        """
-        Whether or not this requester can request from buffer chests.
+    # @property
+    # def sections(self) -> Optional[list[Format.ControlBehavior.Sections.Section]]:
+    #     """
+    #     TODO
+    #     """
+    #     return self._root.request_filters.sections
 
-        :getter: Gets whether or not to recieve from buffers.
-        :setter: Sets whether or not to recieve from buffers.
+    # @sections.setter
+    # def sections(self, value: Optional[list[Format.ControlBehavior.Sections.Section]]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior.Sections,
+    #             self.control_behavior.sections,
+    #             "sections",
+    #             value,
+    #         )
+    #         self.control_behavior.sections.sections = result
+    #     else:
+    #         self.control_behavior.sections.sections = value
 
-        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
-        """
-        return self._root.request_from_buffers
+    # # =========================================================================
 
-    @request_from_buffers.setter
-    def request_from_buffers(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "request_from_buffers", value
-            )
-            self._root.request_from_buffers = result
-        else:
-            self._root.request_from_buffers = value
+    # @property
+    # def trash_not_requested(self) -> Optional[bool]:
+    #     """
+    #     Whether or not this requester should trash any item that is in it's 
+    #     inventory, but not currently requested by its filters.
+    #     """
+    #     return self._root.request_filters.trash_not_requested
+    
+    # @trash_not_requested.setter
+    # def trash_not_requested(self, value: Optional[bool]) -> None:
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, type(self).Format.RequestFilters, self._root, "trash_not_requested", value
+    #         )
+    #         self._root.request_filters.request_from_buffers = result
+    #     else:
+    #         self._root.request_filters.request_from_buffers = value
+
+    # # =========================================================================
+
+    # @property
+    # def request_from_buffers(self) -> Optional[bool]:
+    #     """
+    #     Whether or not this requester can request from buffer chests.
+
+    #     :getter: Gets whether or not to recieve from buffers.
+    #     :setter: Sets whether or not to recieve from buffers.
+
+    #     :exception TypeError: If set to anything other than a ``bool`` or ``None``.
+    #     """
+    #     return self._root.request_filters.request_from_buffers
+
+    # @request_from_buffers.setter
+    # def request_from_buffers(self, value: Optional[bool]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, type(self).Format.RequestFilters, self._root, "request_from_buffers", value
+    #         )
+    #         self._root.request_filters.request_from_buffers = result
+    #     else:
+    #         self._root.request_filters.request_from_buffers = value
 
     # =========================================================================
 

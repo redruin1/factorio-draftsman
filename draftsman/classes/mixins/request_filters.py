@@ -38,7 +38,7 @@ class RequestFiltersMixin:
                 description="""Master switch to enable/disble logistics requests to this spidertron.""",
             )
 
-        request_filters: RequestFilters = RequestFilters()
+        request_filters: Optional[RequestFilters] = RequestFilters()
 
         # request_filters: Optional[list[RequestFilter]] = Field(
         #     [],
@@ -211,7 +211,7 @@ class RequestFiltersMixin:
             )
             self.request_filters.request_from_buffers = result
         else:
-            self.request_filters.request_from_buffers = value
+            self.request_filters["request_from_buffers"] = value
 
     # =========================================================================
 
@@ -268,7 +268,7 @@ class RequestFiltersMixin:
         active: bool = True,
     ) -> Section:
         """
-        Adds a new section to the constant combinator.
+        Adds a new section of request/signal entries to the entity.
 
         NOTE:: Beware of giving sections the same or existing names! If a named
             group already exists within a save, then that group will take

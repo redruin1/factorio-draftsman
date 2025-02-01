@@ -19,7 +19,7 @@ class CircuitEnableMixin:  # (ControlBehaviorMixin)
             False,
             description="""
             Whether or not this machine will be toggled by some circuit 
-            condition. Many machines reuse this parameter name, but others have
+            network. Many machines reuse this parameter name, but others have
             unique ones specific to their types.
             """,  # TODO: examples of different keys
         )

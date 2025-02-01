@@ -4,6 +4,7 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     RequestItemsMixin,
     LogisticModeOfOperationMixin,
+    CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
@@ -15,7 +16,6 @@ from draftsman.error import DataFormatError
 from draftsman.signatures import (
     DraftsmanBaseModel,
     ItemRequest,
-    RequestFilter,
     uint16,
 )
 from draftsman.utils import get_first
@@ -30,6 +30,7 @@ class LogisticBufferContainer(
     InventoryMixin,
     RequestItemsMixin,
     LogisticModeOfOperationMixin,
+    CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
@@ -43,12 +44,17 @@ class LogisticBufferContainer(
         InventoryMixin.Format,
         RequestItemsMixin.Format,
         LogisticModeOfOperationMixin.Format,
+        CircuitConditionMixin.Format,
         ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
         RequestFiltersMixin.Format,
         Entity.Format,
     ):
-        class ControlBehavior(LogisticModeOfOperationMixin.Format, DraftsmanBaseModel):
+        class ControlBehavior(
+            LogisticModeOfOperationMixin.ControlFormat,
+            CircuitConditionMixin.ControlFormat,
+            DraftsmanBaseModel
+        ):
             pass
 
         control_behavior: Optional[ControlBehavior] = ControlBehavior()
@@ -61,8 +67,8 @@ class LogisticBufferContainer(
         position: Union[Vector, PrimitiveVector] = None,
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         bar: uint16 = None,
-        request_filters: list[RequestFilter] = [],
-        items: Optional[list[ItemRequest]] = {},
+        request_filters: Optional[RequestFiltersMixin.Format.RequestFilters] = {},
+        items: Optional[list[ItemRequest]] = [],
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate_assignment: Union[
