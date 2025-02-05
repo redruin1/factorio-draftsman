@@ -3,6 +3,8 @@
 ## 2.0.1
 * Updated `factorio-data` to version `2.0.33` (latest)
 * Finished implementing features for `LogisticsContainer`s
+* `quality` is now an accessable and modifiable attribute of `Entity`s
+* Made `Container.inventory_size` proportional to the entity's `quality`
 * Merge RosieBaish's pull request:
     * Add logic to allow mods with different special characters
 * Merge Gavinp's pull requests:

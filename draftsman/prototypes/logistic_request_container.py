@@ -108,76 +108,9 @@ class LogisticRequestContainer(
 
     # =========================================================================
 
-    # @property
-    # def sections(self) -> Optional[list[Format.ControlBehavior.Sections.Section]]:
-    #     """
-    #     TODO
-    #     """
-    #     return self._root.request_filters.sections
-
-    # @sections.setter
-    # def sections(self, value: Optional[list[Format.ControlBehavior.Sections.Section]]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior.Sections,
-    #             self.control_behavior.sections,
-    #             "sections",
-    #             value,
-    #         )
-    #         self.control_behavior.sections.sections = result
-    #     else:
-    #         self.control_behavior.sections.sections = value
-
-    # # =========================================================================
-
-    # @property
-    # def trash_not_requested(self) -> Optional[bool]:
-    #     """
-    #     Whether or not this requester should trash any item that is in it's 
-    #     inventory, but not currently requested by its filters.
-    #     """
-    #     return self._root.request_filters.trash_not_requested
-    
-    # @trash_not_requested.setter
-    # def trash_not_requested(self, value: Optional[bool]) -> None:
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self, type(self).Format.RequestFilters, self._root, "trash_not_requested", value
-    #         )
-    #         self._root.request_filters.request_from_buffers = result
-    #     else:
-    #         self._root.request_filters.request_from_buffers = value
-
-    # # =========================================================================
-
-    # @property
-    # def request_from_buffers(self) -> Optional[bool]:
-    #     """
-    #     Whether or not this requester can request from buffer chests.
-
-    #     :getter: Gets whether or not to recieve from buffers.
-    #     :setter: Sets whether or not to recieve from buffers.
-
-    #     :exception TypeError: If set to anything other than a ``bool`` or ``None``.
-    #     """
-    #     return self._root.request_filters.request_from_buffers
-
-    # @request_from_buffers.setter
-    # def request_from_buffers(self, value: Optional[bool]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self, type(self).Format.RequestFilters, self._root, "request_from_buffers", value
-    #         )
-    #         self._root.request_filters.request_from_buffers = result
-    #     else:
-    #         self._root.request_filters.request_from_buffers = value
-
-    # =========================================================================
-
     __hash__ = Entity.__hash__
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: "LogisticRequestContainer") -> bool:
         return (
             super().__eq__(other)
             and self.request_from_buffers == other.request_from_buffers

@@ -272,7 +272,7 @@ class ConstantCombinator(
             section["index"] = index + 1
         else:
             section["index"] = len(self.sections) + 1
-        section = self.Format.ControlBehavior.Sections.Section(**section)
+        section = Sections.Section(**section)
         self.sections.append(section)
         return self.sections[-1]
 

@@ -139,11 +139,6 @@ class RequestFiltersMixin:
     #     )
     #     self._root.request_filters = result
 
-    # def merge(self, other: "Entity"):
-    #     super().merge(other)
-
-    #     self.request_filters = other.request_filters
-
     # =========================================================================
 
     @property
@@ -166,6 +161,15 @@ class RequestFiltersMixin:
             self._root.request_filters = result
         else:
             self._root.request_filters = value
+        # print(self.validate_assignment)
+        # result = attempt_and_reissue(
+        #     self,
+        #     type(self).Format,
+        #     self._root,
+        #     "request_filters",
+        #     value
+        # )
+        # self._root.request_filters = result
 
     # =========================================================================
 
@@ -197,7 +201,7 @@ class RequestFiltersMixin:
         """
         TODO
         """
-        return self.request_filters.request_from_buffers
+        return self.request_filters["request_from_buffers"]
 
     @request_from_buffers.setter
     def request_from_buffers(self, value: Optional[bool]) -> None:
@@ -293,6 +297,23 @@ class RequestFiltersMixin:
         section = Section(**section)
         self.sections.append(section)
         return self.sections[-1]
+
+    # =========================================================================
+
+    def merge(self, other: "Entity"):
+        super().merge(other)
+
+        self.request_filters = other.request_filters
+
+    # =========================================================================
+
+    def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict: # TODO: FIXME
+        result = super().to_dict(
+            exclude_none=exclude_none, exclude_defaults=exclude_defaults
+        )
+        if "request_filters" in result and result["request_filters"] == {}:
+            del result["request_filters"]
+        return result
 
     # =========================================================================
 

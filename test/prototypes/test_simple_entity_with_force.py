@@ -24,6 +24,7 @@ class TestSimpleEntityWithForce:
         assert entity.variation == 1
         assert entity.to_dict(exclude_defaults=False) == {
             "name": "simple-entity-with-force",
+            "quality": "normal", # Default
             "position": {"x": 0.5, "y": 0.5},
             "direction": Direction.NORTH,  # Default
             "variation": 1,  # Default
@@ -34,6 +35,7 @@ class TestSimpleEntityWithForce:
         assert entity.variation == None
         assert entity.to_dict(exclude_defaults=False) == {
             "name": "simple-entity-with-force",
+            "quality": "normal", # Default
             "position": {"x": 0.5, "y": 0.5},
             "direction": Direction.NORTH,  # Default
             "tags": {},  # Default

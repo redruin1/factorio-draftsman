@@ -108,6 +108,14 @@ class Entity(Exportable, EntityLike):
             The internal ID of the entity.
             """,
         )
+        quality: Literal["normal", "uncommon", "rare", "epic", "legendary"] = Field( # TODO: determine these automatically
+            "normal",
+            description="""
+            The quality of the entity. Defaults to 'normal' when not specified,
+            or when quality is not present in the save being imported to /
+            exported from.
+            """
+        )
         position: FloatPosition = Field(
             ...,
             description="""
@@ -188,6 +196,7 @@ class Entity(Exportable, EntityLike):
         self,
         name: Optional[str],
         similar_entities: list[str],
+        quality: Optional[str] = "normal",
         tile_position: IntPosition = (0, 0),
         id: str = None,
         validate: Union[
@@ -256,7 +265,7 @@ class Entity(Exportable, EntityLike):
         #     **{"position": {"x": 0, "y": 0}, "entity_number": 0, **kwargs}
         # )
         self._root = type(self).Format.model_validate(
-            {"name": name, "position": {"x": 0, "y": 0}, "entity_number": 0, **kwargs},
+            {"name": name, "quality": quality, "position": {"x": 0, "y": 0}, "entity_number": 0, **kwargs},
             strict=False,
             context={"construction": True, "mode": ValidationMode.NONE},
         )
@@ -275,6 +284,9 @@ class Entity(Exportable, EntityLike):
 
         # Name
         self.name = name
+
+        # Quality
+        self.quality = quality
 
         # ID (used in Blueprints and Groups)
         self.id = id
@@ -402,6 +414,26 @@ class Entity(Exportable, EntityLike):
         else:
             raise TypeError("'id' must be a str or None")
 
+    # =========================================================================
+
+    @property
+    def quality(self) -> str: # TODO: literals
+        """
+        The quality of this entity. Can modify certain other attributes of the
+        entity in (usually) positive ways.
+        """
+        return self._root.quality
+    
+    @quality.setter
+    def quality(self, value: str) -> None: # TODO: literals
+        if self.validate_assignment:
+            result = attempt_and_reissue(
+                self, type(self).Format, self._root, "quality", value
+            )
+            self._root.quality = result
+        else:
+            self._root.quality = value
+    
     # =========================================================================
 
     @property

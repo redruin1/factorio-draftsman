@@ -47,8 +47,12 @@ class InventoryMixin:
                 return bar
 
             warning_list: list = info.context["warning_list"]
-            entity = info.context["object"]
-            if not entity.inventory_bar_enabled:
+            entity: InventoryMixin = info.context["object"]
+
+            # Make sure to check that it's `False`; this attribute can return
+            # `None` if it doesn't recognize the entity, and in that case we
+            # don't want to issue a warning at all
+            if entity.inventory_bar_enabled is False:
                 warning_list.append(BarWarning("This entity does not have bar control"))
 
             return bar
@@ -72,19 +76,7 @@ class InventoryMixin:
     # =========================================================================
 
     @property
-    def inventory_size(self) -> uint16:
-        """
-        The number of inventory slots that this Entity has. Equivalent to the
-        ``"inventory_size"`` key in Factorio's ``data.raw``. Returns ``None`` if
-        this entity's name is not recognized by Draftsman. Not exported; read
-        only.
-        """
-        return entities.raw.get(self.name, {}).get("inventory_size", None)
-
-    # =========================================================================
-
-    @property
-    def inventory_bar_enabled(self) -> bool:
+    def inventory_bar_enabled(self) -> Optional[bool]:
         """
         Whether or not this Entity has its inventory limiting bar enabled.
         Equivalent to the ``"enable_inventory_bar"`` key in Factorio's
@@ -94,6 +86,39 @@ class InventoryMixin:
         return entities.raw.get(self.name, {"enable_inventory_bar": None}).get(
             "enable_inventory_bar", True
         )
+    
+    # =========================================================================
+
+    @property
+    def quality_affects_inventory_size(self) -> Optional[bool]:
+        """
+        Whether or not the quality of this entity modifies its inventory size.
+        Not exported; read only.
+        """
+        return entities.raw.get(self.name, {"quality_affects_inventory_size": None}).get("quality_affects_inventory_size", True)
+
+    # =========================================================================
+
+    @property
+    def inventory_size(self) -> uint16:
+        """
+        The number of inventory slots that this Entity has. Equivalent to the
+        ``"inventory_size"`` key in Factorio's ``data.raw``. Returns ``None`` if
+        this entity's name is not recognized by Draftsman. Not exported; read
+        only.
+        """
+        inventory_size = entities.raw.get(self.name, {}).get("inventory_size", None)
+        if inventory_size is None or not self.quality_affects_inventory_size:
+            return inventory_size
+        else:
+            mutlipliers = { # TODO: grab this dynamically
+                "normal": 1.0, 
+                "uncommon": 1.3, 
+                "rare": 1.6, 
+                "epic": 1.9, 
+                "legendary": 2.5
+            }
+            return math.floor(inventory_size * mutlipliers[self.quality])
 
     # =========================================================================
 

@@ -29,6 +29,7 @@ class TestElectricEnergyInterface:
         }
         assert interface.to_dict(exclude_defaults=False) == {
             "name": "electric-energy-interface",
+            "quality": "normal",
             "position": {"x": 1.0, "y": 1.0},
             "buffer_size": 10000,
             "power_production": 10000,
