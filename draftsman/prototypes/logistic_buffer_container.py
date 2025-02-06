@@ -53,7 +53,7 @@ class LogisticBufferContainer(
         class ControlBehavior(
             LogisticModeOfOperationMixin.ControlFormat,
             CircuitConditionMixin.ControlFormat,
-            DraftsmanBaseModel
+            DraftsmanBaseModel,
         ):
             pass
 
@@ -94,7 +94,7 @@ class LogisticBufferContainer(
         )
 
         self.validate_assignment = validate_assignment
-    
+
     # =========================================================================
 
     __hash__ = Entity.__hash__

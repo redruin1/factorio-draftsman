@@ -256,7 +256,7 @@ class Inserter(
     @property
     def circuit_set_filters(self) -> Optional[bool]:
         """
-        Whether or not the inserter should have its filters determined via 
+        Whether or not the inserter should have its filters determined via
         signals on connected circuit networks.
 
         TODO

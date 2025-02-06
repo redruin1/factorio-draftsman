@@ -22,7 +22,10 @@ from draftsman.signatures import (
 from draftsman.warning import UnknownEntityWarning
 from draftsman import utils, __factorio_version_info__
 
+from draftsman.data.planets import get_surface_properties
+
 import copy
+import math
 from pydantic import (
     ConfigDict,
     Field,
@@ -108,13 +111,15 @@ class Entity(Exportable, EntityLike):
             The internal ID of the entity.
             """,
         )
-        quality: Literal["normal", "uncommon", "rare", "epic", "legendary"] = Field( # TODO: determine these automatically
+        quality: Literal[
+            "normal", "uncommon", "rare", "epic", "legendary"
+        ] = Field(  # TODO: determine these automatically
             "normal",
             description="""
             The quality of the entity. Defaults to 'normal' when not specified,
             or when quality is not present in the save being imported to /
             exported from.
-            """
+            """,
         )
         position: FloatPosition = Field(
             ...,
@@ -265,7 +270,13 @@ class Entity(Exportable, EntityLike):
         #     **{"position": {"x": 0, "y": 0}, "entity_number": 0, **kwargs}
         # )
         self._root = type(self).Format.model_validate(
-            {"name": name, "quality": quality, "position": {"x": 0, "y": 0}, "entity_number": 0, **kwargs},
+            {
+                "name": name,
+                "quality": quality,
+                "position": {"x": 0, "y": 0},
+                "entity_number": 0,
+                **kwargs,
+            },
             strict=False,
             context={"construction": True, "mode": ValidationMode.NONE},
         )
@@ -417,15 +428,15 @@ class Entity(Exportable, EntityLike):
     # =========================================================================
 
     @property
-    def quality(self) -> str: # TODO: literals
+    def quality(self) -> str:  # TODO: literals
         """
         The quality of this entity. Can modify certain other attributes of the
         entity in (usually) positive ways.
         """
         return self._root.quality
-    
+
     @quality.setter
-    def quality(self, value: str) -> None: # TODO: literals
+    def quality(self, value: str) -> None:  # TODO: literals
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self, type(self).Format, self._root, "quality", value
@@ -433,7 +444,7 @@ class Entity(Exportable, EntityLike):
             self._root.quality = result
         else:
             self._root.quality = value
-    
+
     # =========================================================================
 
     @property
@@ -634,6 +645,20 @@ class Entity(Exportable, EntityLike):
     # =========================================================================
 
     @property
+    def surface_conditions(self) -> Optional[dict]:
+        """
+        Gets the dictionary of surface constraints which apply when placing this
+        entity. If this entity has no constraints whatsoever, an empty
+        dictionary is returned. If this entity is unrecognized by Draftsman,
+        `None` is returned. Not exported; read only.
+        """
+        return entities.raw.get(self.name, {"surface_conditions": None}).get(
+            "surface_conditions", {}
+        )
+
+    # =========================================================================
+
+    @property
     def tags(self) -> Optional[dict[str, Any]]:
         """
         Tags associated with this Entity. Commonly used by mods to add custom
@@ -659,6 +684,18 @@ class Entity(Exportable, EntityLike):
             self._root.tags = value
 
     # =========================================================================
+
+    def is_placable_on(self, surface_name: str) -> True:
+        """
+        Check to see if this entity is placable on a particular planet/surface.
+        `surface_name` must be the name of a registered surface in `data.planets`.
+        If the `surface_properties` of this entity are unknown, then this
+        function always returns `True`.
+        """
+        surface_properties = get_surface_properties(surface_name)
+        return utils.passes_surface_conditions(
+            self.surface_conditions, surface_properties
+        )
 
     def validate(
         self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False

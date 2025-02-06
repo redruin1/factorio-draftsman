@@ -86,7 +86,7 @@ class InventoryMixin:
         return entities.raw.get(self.name, {"enable_inventory_bar": None}).get(
             "enable_inventory_bar", True
         )
-    
+
     # =========================================================================
 
     @property
@@ -95,7 +95,9 @@ class InventoryMixin:
         Whether or not the quality of this entity modifies its inventory size.
         Not exported; read only.
         """
-        return entities.raw.get(self.name, {"quality_affects_inventory_size": None}).get("quality_affects_inventory_size", True)
+        return entities.raw.get(
+            self.name, {"quality_affects_inventory_size": None}
+        ).get("quality_affects_inventory_size", True)
 
     # =========================================================================
 
@@ -111,12 +113,12 @@ class InventoryMixin:
         if inventory_size is None or not self.quality_affects_inventory_size:
             return inventory_size
         else:
-            mutlipliers = { # TODO: grab this dynamically
-                "normal": 1.0, 
-                "uncommon": 1.3, 
-                "rare": 1.6, 
-                "epic": 1.9, 
-                "legendary": 2.5
+            mutlipliers = {  # TODO: grab this dynamically
+                "normal": 1.0,
+                "uncommon": 1.3,
+                "rare": 1.6,
+                "epic": 1.9,
+                "legendary": 2.5,
             }
             return math.floor(inventory_size * mutlipliers[self.quality])
 

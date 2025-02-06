@@ -1,7 +1,6 @@
 # TODO
 
 ### Finish implementing stub classes
-* `LogisticContainer`
 * `SelectorCombinator`
 
 ### Remove classes:

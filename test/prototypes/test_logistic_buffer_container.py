@@ -63,24 +63,34 @@ class TestLogisticBufferContainer:
                 "buffer-chest", position=[0, 0], invalid_keyword="100"
             ).validate().reissue_all()
         with pytest.warns(UnknownKeywordWarning):
-            LogisticBufferContainer(control_behavior={"unused_key": "something"}).validate().reissue_all()
+            LogisticBufferContainer(
+                control_behavior={"unused_key": "something"}
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            LogisticBufferContainer("this is not a buffer chest").validate().reissue_all()
+            LogisticBufferContainer(
+                "this is not a buffer chest"
+            ).validate().reissue_all()
 
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             LogisticBufferContainer("buffer-chest", id=25).validate().reissue_all()
         with pytest.raises(TypeError):
-            LogisticBufferContainer("buffer-chest", position=TypeError).validate().reissue_all()
+            LogisticBufferContainer(
+                "buffer-chest", position=TypeError
+            ).validate().reissue_all()
         with pytest.raises(DataFormatError):
-            LogisticBufferContainer("buffer-chest", bar="not even trying").validate().reissue_all()
+            LogisticBufferContainer(
+                "buffer-chest", bar="not even trying"
+            ).validate().reissue_all()
         with pytest.raises(DataFormatError):
             LogisticBufferContainer(
                 "buffer-chest", request_filters=["very", "wrong"]
             ).validate().reissue_all()
         with pytest.raises(DataFormatError):
-            LogisticBufferContainer("buffer-chest", control_behavior="incorrect").validate().reissue_all()
+            LogisticBufferContainer(
+                "buffer-chest", control_behavior="incorrect"
+            ).validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in logistic_buffer_containers:
@@ -90,14 +100,16 @@ class TestLogisticBufferContainer:
             assert container.circuit_connectable == True
             assert container.dual_circuit_connectable == False
 
-    @pytest.mark.skipif("quality" not in mods.mod_list, reason="Quality mod not enabled")
+    @pytest.mark.skipif(
+        "quality" not in mods.mod_list, reason="Quality mod not enabled"
+    )
     def test_quality_inventory_size(self):
         qualities = {
             "normal": 48,
             "uncommon": 62,
             "rare": 76,
             "epic": 91,
-            "legendary": 120
+            "legendary": 120,
         }
         for quality, size in qualities.items():
             chest = LogisticBufferContainer("buffer-chest", quality=quality)
@@ -125,7 +137,16 @@ class TestLogisticBufferContainer:
         container2 = LogisticBufferContainer(
             "buffer-chest",
             bar=10,
-            request_filters={"sections": [{"index":1, "filters": [{"name": "utility-science-pack", "index": 1, "count": 10}]}]},
+            request_filters={
+                "sections": [
+                    {
+                        "index": 1,
+                        "filters": [
+                            {"name": "utility-science-pack", "index": 1, "count": 10}
+                        ],
+                    }
+                ]
+            },
             tags={"some": "stuff"},
         )
         container2.validate().reissue_all()
@@ -138,7 +159,9 @@ class TestLogisticBufferContainer:
             sections=[
                 {
                     "index": 1,
-                    "filters": [{"name": "utility-science-pack", "index": 1, "count": 10}]
+                    "filters": [
+                        {"name": "utility-science-pack", "index": 1, "count": 10}
+                    ],
                 }
             ]
         )

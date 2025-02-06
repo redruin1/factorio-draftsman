@@ -16,6 +16,7 @@ from draftsman.signatures import (
     Connections,
     DraftsmanBaseModel,
     Sections,
+    Section,
     uint32,
 )
 from draftsman.utils import get_first
@@ -195,11 +196,11 @@ class ConstantCombinator(
     #         self.control_behavior.sections.filters = value
 
     @property
-    def sections(self) -> Optional[list[Sections.Section]]:
+    def sections(self) -> Optional[list[Section]]:
         return self.control_behavior.sections.sections
 
     @sections.setter
-    def sections(self, value: Optional[list[Sections.Section]]):
+    def sections(self, value: Optional[list[Section]]):
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self,

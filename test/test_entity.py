@@ -55,7 +55,9 @@ class TestEntity:
     def test_get_world_bounding_box(self):
         combinator = DeciderCombinator(tile_position=[3, 3], direction=Direction.EAST)
         assert combinator.get_world_bounding_box() == AABB(3.35, 3.15, 4.65, 3.85)
-        recycler = new_entity('recycler',tile_position=[3, 3], direction=Direction.EAST)
+        recycler = new_entity(
+            "recycler", tile_position=[3, 3], direction=Direction.EAST
+        )
         assert recycler.get_world_bounding_box() == AABB(3.3, 3.3, 6.7, 4.7)
 
     def test_set_name(self):
@@ -92,18 +94,28 @@ class TestEntity:
             Container("wodenchest").validate().reissue_all()
 
     def test_create_with_position(self):
-        iron_chest = new_entity('iron-chest', tile_position=(3, 3))
+        iron_chest = new_entity("iron-chest", tile_position=(3, 3))
         assert iron_chest.position.x == 3.5 and iron_chest.position.y == 3.5
 
-        active_provider_chest = new_entity('active-provider-chest', tile_position=(10, 10))
-        assert active_provider_chest.position.x == 10.5 and active_provider_chest.position.y == 10.5
+        active_provider_chest = new_entity(
+            "active-provider-chest", tile_position=(10, 10)
+        )
+        assert (
+            active_provider_chest.position.x == 10.5
+            and active_provider_chest.position.y == 10.5
+        )
 
     def test_create_with_position(self):
-        iron_chest = new_entity('iron-chest', tile_position=(3,3))
+        iron_chest = new_entity("iron-chest", tile_position=(3, 3))
         assert iron_chest.position.x == 3.5 and iron_chest.position.y == 3.5
 
-        active_provider_chest = new_entity('active-provider-chest', tile_position=(10,10))
-        assert active_provider_chest.position.x == 10.5 and active_provider_chest.position.y == 10.5
+        active_provider_chest = new_entity(
+            "active-provider-chest", tile_position=(10, 10)
+        )
+        assert (
+            active_provider_chest.position.x == 10.5
+            and active_provider_chest.position.y == 10.5
+        )
 
     def test_set_position(self):
         iron_chest = Container("iron-chest")

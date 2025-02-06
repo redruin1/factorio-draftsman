@@ -51,20 +51,19 @@ class LogisticRequestContainer(
         Entity.Format,
     ):
         class ControlBehavior(
-            LogisticModeOfOperationMixin.ControlFormat, 
+            LogisticModeOfOperationMixin.ControlFormat,
             CircuitConditionMixin.ControlFormat,
-            DraftsmanBaseModel
+            DraftsmanBaseModel,
         ):
             circuit_condition_enabled: Optional[bool] = Field(
-                False,
-                description="""Whether the condition is enabled."""
+                False, description="""Whether the condition is enabled."""
             )
 
         control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
         class LogisticsRequestFilters(RequestFiltersMixin.Format.RequestFilters):
             request_from_buffers: Optional[bool] = Field(
-                False, # Different default
+                False,  # Different default
                 description="""
                 Whether or not this requester chest will pull from buffer chests.
                 """,
@@ -110,8 +109,8 @@ class LogisticRequestContainer(
 
     __hash__ = Entity.__hash__
 
-    def __eq__(self, other: "LogisticRequestContainer") -> bool:
-        return (
-            super().__eq__(other)
-            and self.request_from_buffers == other.request_from_buffers
-        )
+    # def __eq__(self, other: "LogisticRequestContainer") -> bool:
+    #     return (
+    #         super().__eq__(other)
+    #         and self.request_from_buffers == other.request_from_buffers
+    #     )

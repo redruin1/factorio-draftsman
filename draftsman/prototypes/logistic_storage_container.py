@@ -47,8 +47,8 @@ class LogisticStorageContainer(
         Entity.Format,
     ):
         class ControlBehavior(
-            LogisticModeOfOperationMixin.ControlFormat, 
-            CircuitConditionMixin.ControlFormat
+            LogisticModeOfOperationMixin.ControlFormat,
+            CircuitConditionMixin.ControlFormat,
         ):
             pass
 

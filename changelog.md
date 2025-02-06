@@ -2,8 +2,12 @@
 
 ## 2.0.1
 * Updated `factorio-data` to version `2.0.33` (latest)
+* Added `planets.get_surface_properties()` which grabs a dict of surface properties with valid defaults
+* Added `Entity.surface_conditions`, which maps directly to the Factorio API `surface_conditions`
+* Added `Entity.is_placeable_on()`, which returns false if an entity's `surface_conditions` prohibit their construction on a planet
+* Added `utils.passes_surface_conditions()`, which acts as the abstract backend which runs `Entity.is_placable_on()` and `recipes.is_usable_on()`
 * Finished implementing features for `LogisticsContainer`s
-* `quality` is now an accessable and modifiable attribute of `Entity`s
+* `quality` is now an accessible and modifiable attribute of `Entity`s
 * Made `Container.inventory_size` proportional to the entity's `quality`
 * Merge RosieBaish's pull request:
     * Add logic to allow mods with different special characters

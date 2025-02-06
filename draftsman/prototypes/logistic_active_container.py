@@ -22,13 +22,13 @@ from typing import Any, Literal, Optional, Union
 
 
 class LogisticActiveContainer(
-    InventoryMixin, 
+    InventoryMixin,
     RequestItemsMixin,
     LogisticModeOfOperationMixin,
     CircuitConditionMixin,
-    ControlBehaviorMixin, 
-    CircuitConnectableMixin, 
-    Entity
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    Entity,
 ):
     """
     A logistics container that immediately provides it's contents to the
@@ -44,7 +44,10 @@ class LogisticActiveContainer(
         CircuitConnectableMixin.Format,
         Entity.Format,
     ):
-        class ControlBehavior(LogisticModeOfOperationMixin.ControlFormat, CircuitConditionMixin.ControlFormat):
+        class ControlBehavior(
+            LogisticModeOfOperationMixin.ControlFormat,
+            CircuitConditionMixin.ControlFormat,
+        ):
             pass
 
         control_behavior: Optional[ControlBehavior] = ControlBehavior()

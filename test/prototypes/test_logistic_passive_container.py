@@ -47,12 +47,16 @@ class TestLogisticPassiveContainer:
                 invalid_keyword="100",
             ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            LogisticPassiveContainer("this is not a logistics passive chest").validate().reissue_all()
+            LogisticPassiveContainer(
+                "this is not a logistics passive chest"
+            ).validate().reissue_all()
 
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            LogisticPassiveContainer("passive-provider-chest", id=25).validate().reissue_all()
+            LogisticPassiveContainer(
+                "passive-provider-chest", id=25
+            ).validate().reissue_all()
         with pytest.raises(TypeError):
             LogisticPassiveContainer(
                 "passive-provider-chest", position=TypeError
@@ -70,14 +74,16 @@ class TestLogisticPassiveContainer:
             assert container.circuit_connectable == True
             assert container.dual_circuit_connectable == False
 
-    @pytest.mark.skipif("quality" not in mods.mod_list, reason="Quality mod not enabled")
+    @pytest.mark.skipif(
+        "quality" not in mods.mod_list, reason="Quality mod not enabled"
+    )
     def test_quality_inventory_size(self):
         qualities = {
             "normal": 48,
             "uncommon": 62,
             "rare": 76,
             "epic": 91,
-            "legendary": 120
+            "legendary": 120,
         }
         for quality, size in qualities.items():
             chest = LogisticPassiveContainer("passive-provider-chest", quality=quality)

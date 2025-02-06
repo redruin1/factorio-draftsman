@@ -8,6 +8,9 @@ import importlib.resources as pkg_resources
 # from draftsman import data
 from .. import data
 
+from draftsman.data.planets import get_surface_properties
+from draftsman.utils import passes_surface_conditions
+
 
 with pkg_resources.open_binary(data, "recipes.pkl") as inp:
     _data = pickle.load(inp)
@@ -69,17 +72,13 @@ def get_recipe_ingredients(
         }
 
 
-def is_usable_on(recipe: dict, surface: dict) -> bool:
+def is_usable_on(recipe_name: str, surface_name: str) -> bool:
+    """
+    Determines whether
+    """
+    recipe = raw[recipe_name]
     if "surface_conditions" not in recipe:
         return True
 
-    for condition in recipe["surface_conditions"]:
-        property_name = condition["property"]
-        if property_name in surface["surface_properties"]:
-            value = surface["surface_properties"][property_name]
-            min_val = condition.get("min", -math.inf)
-            max_val = condition.get("max", math.inf)
-            if not (min_val <= value <= max_val):
-                return False
-
-    return True
+    surface_properties = get_surface_properties(surface_name)
+    return passes_surface_conditions(recipe["surface_conditions"], surface_properties)

@@ -25,6 +25,8 @@ def attempt_and_reissue(
         "environment_version": __factorio_version_info__,
         **kwargs,
     }
+    if object.validate_assignment == ValidationMode.NONE:
+        context["construction"] = True
     try:
         result = format_model.__pydantic_validator__.validate_assignment(
             target,

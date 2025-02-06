@@ -150,26 +150,25 @@ class RequestFiltersMixin:
 
     @request_filters.setter
     def request_filters(self, value: Optional[Format.RequestFilters]) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format,
-                self._root,
-                "request_filters",
-                value,
-            )
-            self._root.request_filters = result
-        else:
-            self._root.request_filters = value
-        # print(self.validate_assignment)
-        # result = attempt_and_reissue(
-        #     self,
-        #     type(self).Format,
-        #     self._root,
-        #     "request_filters",
-        #     value
-        # )
-        # self._root.request_filters = result
+        # if self.validate_assignment:
+        #     result = attempt_and_reissue(
+        #         self,
+        #         type(self).Format,
+        #         self._root,
+        #         "request_filters",
+        #         value,
+        #     )
+        #     self._root.request_filters = result
+        # else:
+        #     self._root.request_filters = value
+        result = attempt_and_reissue(
+            self,
+            type(self).Format,
+            self._root,
+            "request_filters",
+            value
+        )
+        self._root.request_filters = result
 
     # =========================================================================
 
@@ -307,13 +306,15 @@ class RequestFiltersMixin:
 
     # =========================================================================
 
-    def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict: # TODO: FIXME
-        result = super().to_dict(
-            exclude_none=exclude_none, exclude_defaults=exclude_defaults
-        )
-        if "request_filters" in result and result["request_filters"] == {}:
-            del result["request_filters"]
-        return result
+    # def to_dict(
+    #     self, exclude_none: bool = True, exclude_defaults: bool = True
+    # ) -> dict:  # TODO: FIXME
+    #     result = super().to_dict(
+    #         exclude_none=exclude_none, exclude_defaults=exclude_defaults
+    #     )
+    #     if "request_filters" in result and result["request_filters"] == {}:
+    #         del result["request_filters"]
+    #     return result
 
     # =========================================================================
 

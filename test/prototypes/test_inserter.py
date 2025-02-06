@@ -136,7 +136,7 @@ class TestInserter:
         assert inserter.to_dict() == {
             "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},
-            "spoil_priority": "incorrect"
+            "spoil_priority": "incorrect",
         }
 
     def test_set_read_contents(self):
@@ -394,18 +394,9 @@ class TestInserter:
         assert inserter.drop_position == [0, 2]
         assert inserter.to_dict() == {
             "name": "stack-inserter",
-            "position": {
-                "x": 0.5,
-                "y": 0.5
-            },
-            "pickup_position": [
-                0.0,
-                -2.0
-            ],
-            "drop_position": [
-                0.0,
-                2.0
-            ],
+            "position": {"x": 0.5, "y": 0.5},
+            "pickup_position": [0.0, -2.0],
+            "drop_position": [0.0, 2.0],
         }
 
     def test_power_and_circuit_flags(self):

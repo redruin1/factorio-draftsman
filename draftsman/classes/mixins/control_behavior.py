@@ -97,7 +97,9 @@ class ControlBehaviorMixin:
 
     # =========================================================================
 
-    def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict: # TODO: FIXME
+    def to_dict(
+        self, exclude_none: bool = True, exclude_defaults: bool = True
+    ) -> dict:  # TODO: FIXME
         result = super().to_dict(
             exclude_none=exclude_none, exclude_defaults=exclude_defaults
         )

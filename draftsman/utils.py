@@ -200,7 +200,9 @@ class AABB(Shape):
             degrees.
         """
         if amt % 4 != 0:
-            raise ValueError("Cannot rotate an AABB by anything other than 90 degree increments")
+            raise ValueError(
+                "Cannot rotate an AABB by anything other than 90 degree increments"
+            )
 
         # TODO: do this routine with a lookup table instead of float math and
         # min/max
@@ -875,6 +877,27 @@ def parse_energy(energy_string: str) -> int:
         digits_string = energy_string[:-1]
 
     return round(int(digits_string) * multiplier)
+
+
+def passes_surface_conditions(conditions: list[dict], properties: dict) -> bool:
+    """
+    Checks to see if a set of surface conditions passes a set of surface
+    properties. Used when checking whether an entity or a recipe is valid on a
+    particular planet.
+    """
+    if conditions is None:
+        return True
+
+    for condition in conditions:
+        property_name = condition["property"]
+        if property_name in properties:
+            value = properties[property_name]
+            min_val = condition.get("min", -math.inf)
+            max_val = condition.get("max", math.inf)
+            if not (min_val <= value <= max_val):
+                return False
+
+    return True
 
 
 # def ignore_traceback(func):

@@ -49,7 +49,6 @@ def main():
     # buffer and print it afterwards
     failed = False
     for tag in tag_list[start_version:end_version]:
-
         output += tag + ":\t"
 
         # Try to:

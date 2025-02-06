@@ -17,7 +17,7 @@ import pytest
 class TestContainer:
     def test_constructor_init(self):
         active_chest = LogisticActiveContainer(
-            "active-provider-chest", #"logistic-chest-active-provider",
+            "active-provider-chest",  # "logistic-chest-active-provider",
             tile_position={"x": 15, "y": 3},
             bar=5,
             connections={
@@ -65,12 +65,16 @@ class TestContainer:
                 connections={"this is": ["very", "wrong"]},
             ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
-            LogisticActiveContainer("this is not an active provider chest").validate().reissue_all()
+            LogisticActiveContainer(
+                "this is not an active provider chest"
+            ).validate().reissue_all()
 
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            LogisticActiveContainer("active-provider-chest", id=25).validate().reissue_all()
+            LogisticActiveContainer(
+                "active-provider-chest", id=25
+            ).validate().reissue_all()
 
         with pytest.raises(TypeError):
             LogisticActiveContainer(
@@ -90,14 +94,16 @@ class TestContainer:
             assert container.circuit_connectable == True
             assert container.dual_circuit_connectable == False
 
-    @pytest.mark.skipif("quality" not in mods.mod_list, reason="Quality mod not enabled")
+    @pytest.mark.skipif(
+        "quality" not in mods.mod_list, reason="Quality mod not enabled"
+    )
     def test_quality_inventory_size(self):
         qualities = {
             "normal": 48,
             "uncommon": 62,
             "rare": 76,
             "epic": 91,
-            "legendary": 120
+            "legendary": 120,
         }
         for quality, size in qualities.items():
             chest = LogisticActiveContainer("active-provider-chest", quality=quality)
