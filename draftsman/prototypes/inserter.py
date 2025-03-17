@@ -141,8 +141,8 @@ class Inserter(
             **kwargs
         )
 
-        self.pickup_position = pickup_position
-        self.drop_position = drop_position
+        self.pickup_position = pickup_position  # TODO: defaults
+        self.drop_position = drop_position  # TODO: defaults
 
         self.filter_mode = filter_mode
 

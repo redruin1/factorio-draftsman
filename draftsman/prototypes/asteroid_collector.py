@@ -12,13 +12,13 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode, Direction
-from draftsman.signatures import DraftsmanBaseModel, ChunkID
+from draftsman.signatures import DraftsmanBaseModel, AsteroidChunkID
 from draftsman.utils import get_first
 
 from draftsman.data.entities import asteroid_collectors
 
 from pydantic import ConfigDict, Field, field_validator
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Optional, Sequence, Union
 
 
 class AsteroidCollector(
@@ -65,7 +65,7 @@ class AsteroidCollector(
             None, alias="result-inventory", description="TODO"
         )
 
-        chunk_filter: Optional[list[ChunkID]] = Field(
+        chunk_filter: Optional[list[AsteroidChunkID]] = Field(
             [],
             alias="chunk-filter",
             description="""
@@ -76,8 +76,10 @@ class AsteroidCollector(
 
         @field_validator("chunk_filter", mode="before")
         @classmethod
-        def convert_from_str(cls, value: Any):
-            try:
+        def convert_from_sequence_of_strings(cls, value: Any):
+            if isinstance(value, Sequence) and not isinstance(
+                value, (str, bytes)
+            ):  # TODO: FIXME
                 result = []
                 for i, elem in enumerate(value):
                     if isinstance(elem, str):
@@ -85,7 +87,7 @@ class AsteroidCollector(
                     else:
                         result.append(elem)
                 return result
-            except:
+            else:
                 return value
 
         model_config = ConfigDict(title="AsteroidCollector")
@@ -97,7 +99,7 @@ class AsteroidCollector(
         tile_position: Union[Vector, PrimitiveVector] = (0, 0),
         direction: Direction = Direction.NORTH,
         result_inventory=None,
-        chunk_filter: list[ChunkID] = [],
+        chunk_filter: list[AsteroidChunkID] = [],
         control_behavior: Format.ControlBehavior = {},
         tags: dict[str, Any] = {},
         validate_assignment: Union[
@@ -123,9 +125,10 @@ class AsteroidCollector(
         )
 
         # self.result_inventory = result_inventory
-        self.chunk_filter = chunk_filter
 
         self.validate_assignment = validate_assignment
+
+        self.chunk_filter = chunk_filter  # TODO: fix
 
     # =========================================================================
 
@@ -134,19 +137,19 @@ class AsteroidCollector(
         """
         TODO
         """
-        return self._root.result_inventory
+        return self._root.result_inventory  # pragma: no coverage
 
     # =========================================================================
 
     @property
-    def chunk_filter(self) -> Optional[list[ChunkID]]:
+    def chunk_filter(self) -> Optional[list[AsteroidChunkID]]:
         """
         TODO
         """
         return self._root.chunk_filter
 
     @chunk_filter.setter
-    def chunk_filter(self, value: Optional[list[ChunkID]]) -> None:
+    def chunk_filter(self, value: Optional[list[AsteroidChunkID]]) -> None:
         if self.validate_assignment:
             result = attempt_and_reissue(
                 self, type(self).Format, self._root, "chunk_filter", value
@@ -214,3 +217,7 @@ class AsteroidCollector(
             self.control_behavior.include_hands = result
         else:
             self.control_behavior.include_hands = value
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

@@ -58,9 +58,7 @@ def get_modules_from_effects(allowed_effects: set[str], recipe: str = None) -> s
     if allowed_effects is None:
         return None
     output = set()
-    print(allowed_effects, "\n")
     for module_name, module in raw.items():
-        print(module_name, set(module["effect"]))
         if recipe is not None:
             # Skip adding this module if the recipe provided does not fit within
             # this module's limitations

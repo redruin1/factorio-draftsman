@@ -407,8 +407,8 @@ class TestConstantCombinator:  # TODO: reimplement
 
         assert cc1 == cc2
 
-        cc1.add_section()
-        cc1.sections[-1].set_signal(0, "signal-check", 100)
+        section = cc1.add_section()
+        section.set_signal(0, "signal-check", 100)
 
         assert cc1 != cc2
 

@@ -484,7 +484,7 @@ class TargetID(DraftsmanBaseModel):
     name: str = Field(..., description="TODO")  # TODO: TargetName?
 
 
-class ChunkID(DraftsmanBaseModel):
+class AsteroidChunkID(DraftsmanBaseModel):
     index: uint32 = Field(..., description="TODO")  # TODO: size
     name: str = Field(..., description="TODO")  # TODO: ChunkName?
 
@@ -1109,7 +1109,7 @@ class SignalFilter(DraftsmanBaseModel):
         """,
     )
     comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
-        None, description="Comparison operator when deducing the quality type."
+        "=", description="Comparison operator when deducing the quality type."
     )
     count: int32 = Field(
         ...,
@@ -1254,22 +1254,34 @@ class Section(DraftsmanBaseModel):
     @field_validator("filters", mode="before")
     @classmethod
     def normalize_input(cls, value: Any):
-        print("testing...")
         if isinstance(value, list):
             for i, entry in enumerate(value):
                 if isinstance(entry, tuple):
+                    # TODO: perhaps it would be better to modify the format so
+                    # you must specify the signal type... or maybe not...
+                    signal_types = get_signal_types(entry[0])
+                    filter_type = (
+                        "item" if "item" in signal_types else next(iter(signal_types))
+                    )
                     value[i] = {
                         "index": i + 1,
                         "name": entry[0],
-                        "type": next(iter(get_signal_types(entry[0]))),
+                        "type": filter_type,
                         "comparator": "=",
                         "count": entry[1],
-                        "max_count": entry[1],
                     }
 
         return value
-    
+
     model_config = ConfigDict(validate_assignment=True)
+
+
+# class SignalSection(Section):
+#     filters: Optional[list[SignalFilter]] = []
+
+
+# class RequestSection(Section):
+#     filters: Optional[list[RequestFilter]] = []
 
 
 class QualityFilter(DraftsmanBaseModel):
@@ -1415,7 +1427,7 @@ class Sections(DraftsmanBaseModel):
     #                     }
 
     #         return value
-        
+
     #     model_config = ConfigDict(validate_assignment=True)
 
     sections: Optional[list[Section]] = Field([], description="""TODO""")

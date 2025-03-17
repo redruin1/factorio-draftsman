@@ -1,14 +1,16 @@
 # Changelog
 
 ## 2.0.1
-* Updated `factorio-data` to version `2.0.33` (latest)
+* Updated `factorio-data` to version `2.0.41` (latest)
 * Added `planets.get_surface_properties()` which grabs a dict of surface properties with valid defaults
 * Added `Entity.surface_conditions`, which maps directly to the Factorio API `surface_conditions`
 * Added `Entity.is_placeable_on()`, which returns false if an entity's `surface_conditions` prohibit their construction on a planet
 * Added `utils.passes_surface_conditions()`, which acts as the abstract backend which runs `Entity.is_placable_on()` and `recipes.is_usable_on()`
+* Added testing for `Asteroid Collector`
 * Finished implementing features for `LogisticsContainer`s
 * `quality` is now an accessible and modifiable attribute of `Entity`s
 * Made `Container.inventory_size` proportional to the entity's `quality`
+    * *(note that all quality modifiers are not yet available)*
 * Merge RosieBaish's pull request:
     * Add logic to allow mods with different special characters
 * Merge Gavinp's pull requests:
@@ -17,6 +19,7 @@
     * `draftsman` now prints usage/help on empty args.
 * Fixed #142 (Logistics containers not importing properly)
 * Fixed #121 (Support for Bob's Inserters)
+* Fixed #151 (Severe Performance degradation when using `add_circuit_connection`)
 
 ## 2.0.0
 * Updated `factorio-data` to version `2.0.28` (latest)

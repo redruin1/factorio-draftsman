@@ -249,7 +249,7 @@ class ConstantCombinator(
         group: Union[str, None] = None,
         index: Optional[int] = None,  # TODO: integer size
         active: bool = True,
-    ) -> "ConstantCombinator.Format.ControlBehavior.Sections.Section":
+    ) -> Section:
         """
         Adds a new section to the constant combinator.
 
@@ -273,7 +273,7 @@ class ConstantCombinator(
             section["index"] = index + 1
         else:
             section["index"] = len(self.sections) + 1
-        section = Sections.Section(**section)
+        section = Section(**section)
         self.sections.append(section)
         return self.sections[-1]
 

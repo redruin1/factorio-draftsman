@@ -1,7 +1,7 @@
 # python coverage configuration file
 [run]
 omit = 
-    test/test_*.py 
+    test/**
     draftsman/env.py 
     draftsman/environment/*
 branch = True

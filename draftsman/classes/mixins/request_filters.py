@@ -162,11 +162,7 @@ class RequestFiltersMixin:
         # else:
         #     self._root.request_filters = value
         result = attempt_and_reissue(
-            self,
-            type(self).Format,
-            self._root,
-            "request_filters",
-            value
+            self, type(self).Format, self._root, "request_filters", value
         )
         self._root.request_filters = result
 

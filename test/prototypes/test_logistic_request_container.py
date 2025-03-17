@@ -8,7 +8,7 @@ from draftsman.entity import (
     Container,
 )
 from draftsman.error import DataFormatError
-from draftsman.signatures import RequestFilter
+from draftsman.signatures import SignalFilter, Section
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownItemWarning,
@@ -47,13 +47,23 @@ class TestLogisticRequestContainer:
         }
 
         request_chest = LogisticRequestContainer(
-            request_from_buffers=True, request_filters=[("iron-ore", 100)]
+            request_filters={
+                "sections": [{"index": 1, "filters": [("iron-ore", 100)]}],
+                "request_from_buffers": True,
+            }
         )
         assert request_chest.to_dict() == {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
-            "request_from_buffers": True,
-            "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
+            "request_filters": {
+                "sections": [
+                    {
+                        "index": 1,
+                        "filters": [{"index": 1, "name": "iron-ore", "count": 100}],
+                    }
+                ],
+                "request_from_buffers": True,
+            },
         }
 
         request_chest = LogisticRequestContainer(
@@ -94,11 +104,7 @@ class TestLogisticRequestContainer:
         with pytest.raises(DataFormatError):
             LogisticRequestContainer(
                 "requester-chest",
-                request_filters={"this is": ["very", "wrong"]},
-            ).validate().reissue_all()
-        with pytest.raises(DataFormatError):
-            LogisticRequestContainer(
-                "requester-chest", request_from_buffers="invalid"
+                request_filters=["very", "wrong"],
             ).validate().reissue_all()
         with pytest.raises(DataFormatError):
             LogisticRequestContainer(
@@ -180,21 +186,21 @@ class TestLogisticRequestContainer:
             ("coal", 300),
         ]
         assert container.sections[-1].filters == [
-            RequestFilter(index=1, name="iron-ore", count=100),
-            RequestFilter(index=2, name="copper-ore", count=200),
-            RequestFilter(index=3, name="coal", count=300),
+            SignalFilter(index=1, name="iron-ore", count=100),
+            SignalFilter(index=2, name="copper-ore", count=200),
+            SignalFilter(index=3, name="coal", count=300),
         ]
 
         # Longhand
-        container.request_filters = [
+        section.filters = [
             {"index": 1, "name": "iron-ore", "count": 100},
             {"index": 2, "name": "copper-ore", "count": 200},
             {"index": 3, "name": "coal", "count": 300},
         ]
-        assert container.request_filters == [
-            RequestFilter(index=1, name="iron-ore", count=100),
-            RequestFilter(index=2, name="copper-ore", count=200),
-            RequestFilter(index=3, name="coal", count=300),
+        assert container.sections[-1].filters == [
+            SignalFilter(index=1, name="iron-ore", count=100),
+            SignalFilter(index=2, name="copper-ore", count=200),
+            SignalFilter(index=3, name="coal", count=300),
         ]
 
     # def test_set_request_filter(self): # TODO: reimplement
@@ -300,7 +306,7 @@ class TestLogisticRequestContainer:
         assert container.to_dict() == {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
-            "request_filters": {"request_from_buffers": True}
+            "request_filters": {"request_from_buffers": True},
         }
 
         with pytest.raises(DataFormatError):
@@ -314,7 +320,7 @@ class TestLogisticRequestContainer:
         assert container.to_dict() == {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
-            "request_filters": {"request_from_buffers": "incorrect"}
+            "request_filters": {"request_from_buffers": "incorrect"},
         }
 
     def test_mergable_with(self):
@@ -356,15 +362,18 @@ class TestLogisticRequestContainer:
         del container2
 
         assert container1.bar == 10
-        assert container1.request_filters == LogisticRequestContainer.Format.LogisticsRequestFilters(
-            sections=[
-                {
-                    "index": 1,
-                    "filters": [
-                        {"name": "utility-science-pack", "index": 1, "count": 10}
-                    ],
-                }
-            ]
+        assert (
+            container1.request_filters
+            == LogisticRequestContainer.Format.LogisticsRequestFilters(
+                sections=[
+                    {
+                        "index": 1,
+                        "filters": [
+                            {"name": "utility-science-pack", "index": 1, "count": 10}
+                        ],
+                    }
+                ]
+            )
         )
         assert container1.tags == {"some": "stuff"}
 

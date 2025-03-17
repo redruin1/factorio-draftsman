@@ -795,19 +795,25 @@ class EntityCollection(metaclass=ABCMeta):
         # if not isinstance(location_2, tuple):
         #     location_2 = (location_2, "input")
 
-        if not isinstance(entity_1, EntityLike):
+        if isinstance(entity_1, EntityLike):
+            if entity_1 not in self.entities:
+                raise InvalidAssociationError(
+                    "entity_1 ({}) not contained within this collection".format(
+                        entity_1
+                    )
+                )
+        else:
             entity_1 = self.entities[entity_1]
-        if not isinstance(entity_2, EntityLike):
-            entity_2 = self.entities[entity_2]
 
-        if entity_1 not in self.entities:
-            raise InvalidAssociationError(
-                "entity_1 ({}) not contained within this collection".format(entity_1)
-            )
-        if entity_2 not in self.entities:
-            raise InvalidAssociationError(
-                "entity_2 ({}) not contained within this collection".format(entity_2)
-            )
+        if isinstance(entity_2, EntityLike):
+            if entity_2 not in self.entities:
+                raise InvalidAssociationError(
+                    "entity_2 ({}) not contained within this collection".format(
+                        entity_2
+                    )
+                )
+        else:
+            entity_2 = self.entities[entity_2]
 
         if color not in {"red", "green"}:
             raise InvalidWireTypeError(color)

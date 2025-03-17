@@ -7,10 +7,11 @@ from typing import Hashable
 import pytest
 
 # For compatibility with versions of Factorio post 2.0
-if len(player_ports) == 0:
-    pytest.skip("No player ports to test", allow_module_level=True)
+# if len(player_ports) == 0:
+#     pytest.skip("No player ports to test", allow_module_level=True)
 
 
+@pytest.mark.skipif(len(player_ports) == 0, reason="No player ports to test")
 class TestPlayerPort:
     def test_contstructor_init(self):
         port = PlayerPort()
