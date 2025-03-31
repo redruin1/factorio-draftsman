@@ -1,12 +1,17 @@
 # exportable.py
 from draftsman import __factorio_version_info__
 from draftsman.constants import ValidationMode
+from draftsman.serialization import draftsman_converters
 
 from draftsman.error import DataFormatError
+
+import attrs
+import cattrs
 
 from abc import ABCMeta, abstractmethod
 from pydantic import BaseModel, ValidationError
 from typing import Any, List, Literal, Union
+from typing_extensions import Self
 import warnings
 import pprint  # TODO: think about
 
@@ -187,6 +192,7 @@ class ValidationResult:
         )
 
 
+@attrs.define
 class Exportable(metaclass=ABCMeta):
     """
     An abstract base class representing an object that has a form within a JSON
@@ -194,22 +200,21 @@ class Exportable(metaclass=ABCMeta):
     themselves. Posesses a ``_root`` dictionary which contains it's contents, as
     well as validation utilities.
     """
+    # _is_valid: bool = attrs.field(default=False, init=False)
+    validation: ValidationMode = attrs.field(default=ValidationMode.NONE, repr=False, metadata={"omit": True, "location": None})
 
-    class Format(BaseModel):
-        pass
+    # def __init__(self):
+    #     self._root: __class__.Format
+    #     # TODO: hopefully put _root initialization here
+    #     self._is_valid = False
+    #     # Validation assignment is set to "none" on construction since we might
+    #     # not want to validate at this point; validation is performed at the end
+    #     # of construction in the child-most class, if desired
+    #     self._validate_assignment = ValidationMode.NONE
 
-    def __init__(self):
-        self._root: __class__.Format
-        # TODO: hopefully put _root initialization here
-        self._is_valid = False
-        # Validation assignment is set to "none" on construction since we might
-        # not want to validate at this point; validation is performed at the end
-        # of construction in the child-most class, if desired
-        self._validate_assignment = ValidationMode.NONE
-
-        # TODO: make this a static class property instead of an instance variable
-        # (more writing but less memory)
-        self._unknown = False
+    #     # TODO: make this a static class property instead of an instance variable
+    #     # (more writing but less memory)
+    #     self._unknown = False
 
     # =========================================================================
 
@@ -236,34 +241,34 @@ class Exportable(metaclass=ABCMeta):
 
     # =========================================================================
 
-    @property
-    def validate_assignment(
-        self,
-    ) -> Union[ValidationMode, Literal["none", "minimum", "strict", "pedantic"]]:
-        """
-        Toggleable flag that indicates whether assignments to this object should
-        be validated, and how. Can be set in the constructor of the entity or
-        changed at any point during runtime. Note that this is on a per-entity
-        basis, so multiple instances of otherwise identical entities can have
-        different validation configurations.
+    # @property
+    # def validate_assignment(
+    #     self,
+    # ) -> Union[ValidationMode, Literal["none", "minimum", "strict", "pedantic"]]:
+    #     """
+    #     Toggleable flag that indicates whether assignments to this object should
+    #     be validated, and how. Can be set in the constructor of the entity or
+    #     changed at any point during runtime. Note that this is on a per-entity
+    #     basis, so multiple instances of otherwise identical entities can have
+    #     different validation configurations.
 
-        .. NOTE ::
+    #     .. NOTE ::
 
-            Item-assignment (``entity["field"] = obj``) is *never* validated,
-            regardless of this parameter. This is mostly a side effect of how
-            things work behind the scenes, but it can be used to explicitly
-            indicate a "raw" modification that is guaranteed to be cheap and
-            will never trigger validation by itself.
+    #         Item-assignment (``entity["field"] = obj``) is *never* validated,
+    #         regardless of this parameter. This is mostly a side effect of how
+    #         things work behind the scenes, but it can be used to explicitly
+    #         indicate a "raw" modification that is guaranteed to be cheap and
+    #         will never trigger validation by itself.
 
-        :getter: Gets the assignment mode.
-        :setter: Sets the assignment mode. Raises a :py:class:`.DataFormatError`
-            if set to an invalid value.
-        """
-        return self._validate_assignment
+    #     :getter: Gets the assignment mode.
+    #     :setter: Sets the assignment mode. Raises a :py:class:`.DataFormatError`
+    #         if set to an invalid value.
+    #     """
+    #     return self._validate_assignment
 
-    @validate_assignment.setter
-    def validate_assignment(self, value):
-        self._validate_assignment = ValidationMode(value)
+    # @validate_assignment.setter
+    # def validate_assignment(self, value):
+    #     self._validate_assignment = ValidationMode(value)
 
     # =========================================================================
 
@@ -276,11 +281,10 @@ class Exportable(metaclass=ABCMeta):
         disabled, only issuing errors/warnings for issues that Draftsman has
         sufficient information to diagnose.
         """
-        return self._unknown
+        return True
 
     # =========================================================================
 
-    @abstractmethod
     def validate(self, mode: ValidationMode, force: bool) -> ValidationResult:
         """
         Validates the called object against it's known format.
@@ -311,45 +315,65 @@ class Exportable(metaclass=ABCMeta):
         :returns: A :py:class:`ValidationResult` object containing the
             corresponding errors and warnings.
         """
-        # NOTE: Subsequent objects must implement this method and then call this
-        # parent method to cache successful validity
-        # super().__setattr__("_is_valid", True)
-        pass  # pragma: no coverage
-
-    def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
-        return self._root.model_dump(
-            # Some attributes are reserved words ('type', 'from', etc.); this
-            # resolves that issue
-            by_alias=True,
-            # Trim if values are None
-            exclude_none=exclude_none,
-            # Trim if values are defaults
-            exclude_defaults=exclude_defaults,
-            # Ignore warnings because we might export a model where the keys are
-            # intentionally incorrect
-            # Plus there are things like Associations with which we want to
-            # preserve when returning this object so that a parent object can
-            # handle them
-            warnings=False,
-        )
+        # TODO: instead, capture all attributes and manually run all validators,
+        # while collecting exceptions into a report object to return
+        attrs.validate(self)
+        return ValidationResult([], []) # FIXME
 
     @classmethod
-    def json_schema(cls) -> dict:
-        """
-        Returns a JSON schema object that correctly validates this object. This
-        schema can be used with any compliant JSON schema validation library to
-        check if a given blueprint string will import into Factorio.
+    def from_dict(cls, d: dict, version: tuple[int, ...] = __factorio_version_info__) -> Self:
+        # import inspect
+        # print(inspect.getsource(draftsman_converters.get(version, False, False).get_structure_hook(cls)))
+        return draftsman_converters.get(version, False, False).structure(d, cls)
 
-        .. seealso::
+    def to_dict(self, version: tuple[int, ...] = __factorio_version_info__, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
+        converter = draftsman_converters.get(version, exclude_none, exclude_defaults)
+        # print(converter)
+        # print(converter.omit_if_default)
+        # import inspect
+        # print(inspect.getsource(converter.get_unstructure_hook(type(self))))
+        # print(getattr(attrs.fields(type(self)), "always_on").default)
+        # defaults = {field.name: field.default for field in attrs.fields(type(self))}
+        # print(defaults)
+        # print(getattr(self, "color"))
+        # return {
+        #     k: v for k, v in converter.unstructure(self, type(self)).items()
+        #     if not ((v is None and exclude_none) or (getattr(self, k) == defaults[k] and exclude_defaults))
+        # }
+        return converter.unstructure(self, type(self))
+        # return self._root.model_dump(
+        #     # Some attributes are reserved words ('type', 'from', etc.); this
+        #     # resolves that issue
+        #     by_alias=True,
+        #     # Trim if values are None
+        #     exclude_none=exclude_none,
+        #     # Trim if values are defaults
+        #     exclude_defaults=exclude_defaults,
+        #     # Ignore warnings because we might export a model where the keys are
+        #     # intentionally incorrect
+        #     # Plus there are things like Associations with which we want to
+        #     # preserve when returning this object so that a parent object can
+        #     # handle them
+        #     warnings=False,
+        # )
 
-            https://json-schema.org/
+    # @classmethod
+    # def json_schema(cls) -> dict:
+    #     """
+    #     Returns a JSON schema object that correctly validates this object. This
+    #     schema can be used with any compliant JSON schema validation library to
+    #     check if a given blueprint string will import into Factorio.
 
-        :returns: A modern, JSON-schema compliant dictionary with appropriate
-            types, ranges, allowed/excluded values, as well as titles and
-            descriptions.
-        """
-        # TODO: should this be tested?
-        return cls.Format.model_json_schema(by_alias=True)
+    #     .. seealso::
+
+    #         https://json-schema.org/
+
+    #     :returns: A modern, JSON-schema compliant dictionary with appropriate
+    #         types, ranges, allowed/excluded values, as well as titles and
+    #         descriptions.
+    #     """
+    #     # TODO: should this be tested?
+    #     return cls.Format.model_json_schema(by_alias=True)
 
     # TODO
     # @classmethod
@@ -369,11 +393,11 @@ class Exportable(metaclass=ABCMeta):
     #     super().__setattr__("_is_valid", False)
     #     super().__setattr__(name, value)
 
-    def __setitem__(self, key: str, value: Any):
-        self._root[key] = value
+    # def __setitem__(self, key: str, value: Any):
+    #     self._root[key] = value
 
-    def __getitem__(self, key: str) -> Any:
-        return self._root[key]
+    # def __getitem__(self, key: str) -> Any:
+    #     return self._root[key]
 
-    def __contains__(self, item: str) -> bool:
-        return item in self._root
+    # def __contains__(self, item: str) -> bool:
+    #     return item in self._root

@@ -4,6 +4,8 @@
 TODO
 """
 
+from draftsman.serialization import draftsman_converters
+
 from typing import Union, Callable
 
 PrimitiveVector = tuple[Union[int, float], Union[int, float]]
@@ -185,3 +187,5 @@ class Vector(object):
 
     def __repr__(self) -> str:  # pragma: no coverage
         return "<Vector>({}, {})".format(self._data[0], self._data[1])
+    
+draftsman_converters.register_unstructure_hook(Vector, lambda v: v.to_dict())

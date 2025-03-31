@@ -7,7 +7,7 @@
 
 from draftsman import __file__ as draftsman_root_file
 from draftsman.classes.collision_set import CollisionSet
-from draftsman.data.entities import add_entity
+from draftsman.data.entities import get_default_collision_mask, add_entity
 from draftsman.environment.mod_list import (
     Dependency,
     Mod,
@@ -33,90 +33,6 @@ import json
 import os
 import pickle
 from typing import Union
-
-
-def get_default_collision_mask(entity_type):
-    """
-    Determine the default collision mask based on the string entity type.
-
-    :param entity_type: A string containing what type of entity we're getting
-        a collision mask for. (e.g. ``"container"``, ``"gate"``, ``"heat-pipe"``,
-        etc.)
-
-    :returns: A ``set()`` containing the default collision layers for that
-        object.
-    """
-    if entity_type == "gate":
-        return {
-            "item-layer",
-            "object-layer",
-            "player-layer",
-            "water-tile",
-            "train-layer",
-        }
-    elif entity_type == "heat-pipe":
-        return {"object-layer", "floor-layer", "water-tile"}
-    elif entity_type == "land-mine":
-        return {"object-layer", "water-tile"}
-    elif entity_type == "linked-belt":
-        return {
-            "object-layer",
-            "item-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    elif entity_type == "loader":
-        return {
-            "object-layer",
-            "item-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    elif entity_type == "straight-rail" or entity_type == "curved-rail":
-        return {
-            "item-layer",
-            "object-layer",
-            "rail-layer",
-            "floor-layer",
-            "water-tile",
-        }
-    elif entity_type == "rail-signal" or entity_type == "rail-chain-signal":
-        return {"floor-layer", "rail-layer", "item-layer"}
-    elif (
-        entity_type == "locomotive"
-        or entity_type == "cargo-wagon"
-        or entity_type == "fluid-wagon"
-        or entity_type == "artillery-wagon"
-    ):
-        return {"train-layer"}
-    elif entity_type == "splitter":
-        return {
-            "object-layer",
-            "item-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    elif entity_type == "transport-belt":
-        return {
-            "object-layer",
-            "floor-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    elif entity_type == "underground-belt":
-        return {
-            "object-layer",
-            "item-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    else:  # true default
-        return {
-            "item-layer",
-            "object-layer",
-            "player-layer",
-            "water-tile",
-        }
 
 
 def get_order(objects_to_sort, sort_objects, sort_subgroups, sort_groups):

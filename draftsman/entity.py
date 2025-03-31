@@ -125,6 +125,7 @@ def new_entity(name: str, **kwargs):
         :py:class:`.Entity` if `name` could not be deduced under the current
         Factorio environment.
     """
+    # TODO: this would be better as a dict
     if name in of_type["accumulator"]:
         return Accumulator(name, **kwargs)
     if name in of_type["agricultural-tower"]:
@@ -310,6 +311,6 @@ def new_entity(name: str, **kwargs):
     # Of course, since entity is normally a base class, we have to do a
     # little magic to make it behave similar to all other classes
     validate_assignment = kwargs.get("validate_assignment", ValidationMode.STRICT)
-    result.validate_assignment = validate_assignment
+    result.validation = validate_assignment
 
     return result

@@ -26,13 +26,16 @@ from draftsman.utils import (
     version_tuple_to_string,
 )
 
+import attrs
+import cattrs
+
 from abc import ABCMeta, abstractmethod
 
 import json
 from pydantic import field_validator, ValidationError
 from typing import Any, Literal, Optional, Sequence, Union
 
-
+@attrs.define(slots=False)
 class Blueprintable(Exportable, metaclass=ABCMeta):
     """
     An abstract base class representing "blueprint-like" objects, such as
@@ -66,7 +69,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
         # We don't this to be active when constructing, so we it to NONE now and
         # to whatever it should be later in the child-most subclass
-        self.validate_assignment = ValidationMode.NONE
+        self.validation = ValidationMode.NONE
 
         self._root_item = root_item
         # self._root_format = (root_format,)
@@ -230,7 +233,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             self._root[self._root_item],
             "label",
             value,
-            self.validate_assignment,
+            self.validation,
         )
         # if self.validate_assignment:
         #     result = attempt_and_reissue(
@@ -259,7 +262,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     @description.setter
     def description(self, value: Optional[str]):
-        if self.validate_assignment:
+        if self.validation:
             result = attempt_and_reissue(
                 self,
                 self._root_format,
@@ -315,7 +318,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             self._root[self._root_item],
             "icons",
             value,
-            self.validate_assignment,
+            self.validation,
         )
         # if self.validate_assignment:
         #     print("validated")
@@ -396,7 +399,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     @version.setter
     def version(self, value: Union[uint64, Sequence[uint16]]):
         value = normalize_version(value)
-        if self.validate_assignment:
+        if self.validation:
             result = attempt_and_reissue(
                 self, self._root_format, self._root[self._root_item], "version", value
             )
@@ -425,7 +428,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     @index.setter
     def index(self, value: Optional[uint16]):
-        if self.validate_assignment:
+        if self.validation:
             result = attempt_and_reissue(self, self.Format, self._root, "index", value)
             self._root["index"] = result
         else:

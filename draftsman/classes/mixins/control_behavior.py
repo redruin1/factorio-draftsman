@@ -9,6 +9,7 @@ from draftsman.signatures import (
     int32,
 )
 
+import attrs
 from pydantic import (
     ValidationInfo,
     ValidationError,
@@ -19,6 +20,7 @@ from pydantic import (
 from typing import Any, Literal, Union
 
 
+@attrs.define
 class ControlBehaviorMixin:
     """
     Enables the entity to specify control behavior.
@@ -52,10 +54,10 @@ class ControlBehaviorMixin:
         # `control_behavior: AbstractField` or something
         pass
 
-    def __init__(self, name: str, similar_entities: list[str], **kwargs):
-        self._root: __class__.Format
+    # def __init__(self, name: str, similar_entities: list[str], **kwargs):
+    #     self._root: __class__.Format
 
-        super().__init__(name, similar_entities, **kwargs)
+    #     super().__init__(name, similar_entities, **kwargs)
 
         # Have to do a bit of forward-lookahead to grab the correct control_behavior
         # self.control_behavior = kwargs.get(
@@ -64,29 +66,29 @@ class ControlBehaviorMixin:
 
     # =========================================================================
 
-    @property
-    def control_behavior(self):
-        """
-        The ``control_behavior`` of the Entity.
+    # @property
+    # def control_behavior(self):
+    #     """
+    #     The ``control_behavior`` of the Entity.
 
-        :getter: Gets the ``control_behavior``.
-        :setter: Sets the ``control_behavior``. Gets set to an empty ``dict`` if
-            set to ``None``.
+    #     :getter: Gets the ``control_behavior``.
+    #     :setter: Sets the ``control_behavior``. Gets set to an empty ``dict`` if
+    #         set to ``None``.
 
-        :exception DataFormatError: If set to anything that does not match the
-            ``CONTROL_BEHAVIOR`` signature.
-        """
-        return self._root.control_behavior
+    #     :exception DataFormatError: If set to anything that does not match the
+    #         ``CONTROL_BEHAVIOR`` signature.
+    #     """
+    #     return self._root.control_behavior
 
-    @control_behavior.setter
-    def control_behavior(self, value):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "control_behavior", value
-            )
-            self._root.control_behavior = result
-        else:
-            self._root.control_behavior = value
+    # @control_behavior.setter
+    # def control_behavior(self, value):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, type(self).Format, self._root, "control_behavior", value
+    #         )
+    #         self._root.control_behavior = result
+    #     else:
+    #         self._root.control_behavior = value
 
     # =========================================================================
 
@@ -97,19 +99,19 @@ class ControlBehaviorMixin:
 
     # =========================================================================
 
-    def to_dict(
-        self, exclude_none: bool = True, exclude_defaults: bool = True
-    ) -> dict:  # TODO: FIXME
-        result = super().to_dict(
-            exclude_none=exclude_none, exclude_defaults=exclude_defaults
-        )
-        if "control_behavior" in result and result["control_behavior"] == {}:
-            del result["control_behavior"]
-        return result
+    # def to_dict(
+    #     self, exclude_none: bool = True, exclude_defaults: bool = True
+    # ) -> dict:  # TODO: FIXME
+    #     result = super().to_dict(
+    #         exclude_none=exclude_none, exclude_defaults=exclude_defaults
+    #     )
+    #     if "control_behavior" in result and result["control_behavior"] == {}:
+    #         del result["control_behavior"]
+    #     return result
 
     # =========================================================================
 
-    @validate_call
+    # @validate_call
     def _set_condition(
         self,
         condition_name: str,

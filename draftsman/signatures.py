@@ -38,6 +38,7 @@ from draftsman.warning import (
 
 from typing_extensions import Annotated
 
+import attrs
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -581,6 +582,27 @@ def normalize_color(value: Any):
 #             return result
 #         else:
 #             return value
+
+
+@attrs.define(slots=False)
+class AttrsColor:
+    r: float = attrs.field(validator=[attrs.validators.ge(0), attrs.validators.le(255)])
+    g: float = attrs.field(validator=[attrs.validators.ge(0), attrs.validators.le(255)])
+    b: float = attrs.field(validator=[attrs.validators.ge(0), attrs.validators.le(255)])
+    a: Optional[float] = attrs.field(default=None, validator=[attrs.validators.ge(0), attrs.validators.le(255)])
+
+    @classmethod
+    def from_sequence(cls, sequence: Sequence) -> "AttrsColor":
+        return cls(*sequence)
+
+    @classmethod
+    def converter(cls, input) -> "AttrsColor":
+        if isinstance(input, AttrsColor):
+            return input
+        elif isinstance(input, list): # TODO: sequence
+            return cls.from_sequence(*input)
+        else:
+            raise TypeError("Explode") # TODO
 
 
 class Color(DraftsmanBaseModel):

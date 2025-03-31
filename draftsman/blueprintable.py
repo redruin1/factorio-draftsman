@@ -16,8 +16,6 @@ from draftsman.classes.deconstruction_planner import DeconstructionPlanner
 from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.classes.blueprint_book import BlueprintBook
 
-from draftsman.classes.group import Group
-
 
 @utils.reissue_warnings
 def get_blueprintable_from_string(blueprintable_string: str) -> Blueprintable:
