@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.0.2
+Fixed #157 (Incompatibility with pydantic>=2.11)
+
 ## 2.0.1
 * Updated `factorio-data` to version `2.0.41` (latest)
 * Added `planets.get_surface_properties()` which grabs a dict of surface properties with valid defaults
