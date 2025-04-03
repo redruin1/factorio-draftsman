@@ -407,13 +407,13 @@ class DeciderCombinator(
                 #         is true.""",
                 #     )
 
-                conditions: list[DeciderCondition] = Field(
+                conditions: list = Field(
                     [],
                     description="""
                     A list of Condition objects specifying when (and what) this
                     decider combinator should output.""",
                 )
-                outputs: list[DeciderOutput] = Field(
+                outputs: list = Field(
                     [],
                     description="""
                     A list of Output objects specifying what signals should be
