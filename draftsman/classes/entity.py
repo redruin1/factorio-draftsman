@@ -348,12 +348,15 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
 
     # =========================================================================
 
-    name: str = attrs.field(validator=attrs.validators.instance_of(str), metadata={"omit": False})
+    name: str = attrs.field(
+        validator=attrs.validators.instance_of(str), metadata={"omit": False}
+    )
     """The name of the entity."""
+
     @name.default
     def get_default_entity(self):
         return utils.get_first(self.similar_entities)
-    
+
     @name.validator
     def ensure_name_recognized(self, attribute, value):
         if self.validation:
@@ -367,7 +370,7 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
                     value,
                     type(self).__name__,
                     get_suggestion(value, self.similar_entities, n=1),
-                )   
+                )
                 warnings.warn(UnknownEntityWarning(msg))
 
     # @property
@@ -436,12 +439,15 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
                 self.parent.entities._set_key(self.id, self)
         self.id = value
 
-    id: Optional[str] = attrs.field(default=None, on_setattr=_set_id, metadata={"omit": True, "location": None})
+    id: Optional[str] = attrs.field(
+        default=None, on_setattr=_set_id, metadata={"omit": True, "location": None}
+    )
     """
     A unique string ID associated with this entity. ID's can be anything,
     though there can only be one entity with a particular ID in an
     EntityCollection. Not exported.
     """
+
     @id.validator
     def ensure_id_correct_type(self, attribute: attrs.Attribute, value: Any):
         if value is not None and not isinstance(value, str):
@@ -488,12 +494,13 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
 
     # =========================================================================
 
-    quality: Literal["normal", "uncommon", "rare", "epic", "legendary"] = attrs.field(default="normal", validator=attrs.validators.instance_of(str)) # TODO: literal validator
+    quality: Literal["normal", "uncommon", "rare", "epic", "legendary"] = attrs.field(
+        default="normal", validator=attrs.validators.instance_of(str)
+    )  # TODO: literal validator
     """
     The quality of this entity. Can modify certain other attributes of the
     entity in (usually) positive ways.
     """
-
 
     # @property
     # def quality(self) -> str:  # TODO: literals
@@ -515,14 +522,16 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
 
     # =========================================================================
 
-    def _set_position(self, attribute, value):
+    def _set_position(self, _: attrs.Attribute, value: Any):
         self.position.update_from_other(value, float)
         self.tile_position.update(
             round(self.position.x - self.tile_width / 2),
             round(self.position.y - self.tile_height / 2),
         )
 
-    position: _PosVector = attrs.field(converter=Vector.from_other, on_setattr=_set_position, metadata={"omit": False})
+    position: _PosVector = attrs.field(
+        converter=Vector.from_other, on_setattr=_set_position, metadata={"omit": False}
+    )
     """
     The "canonical" position of the Entity, or the one that Factorio uses.
     Positions of most entities are located at their center, which can either
@@ -546,7 +555,7 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
         inside a EntityCollection, :ref:`which is forbidden.
         <handbook.blueprints.forbidden_entity_attributes>`
     """
-    
+
     @position.default
     def get_default_position(self):
         """
@@ -607,7 +616,9 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
         )
         return self.tile_position
 
-    tile_position: _TileVector = attrs.field(converter=Vector.from_other, on_setattr=_set_tile_position)
+    tile_position: _TileVector = attrs.field(
+        converter=Vector.from_other, on_setattr=_set_tile_position
+    )
     """
     The tile-position of the Entity. The tile position is the position
     according the the LuaSurface tile grid, and is the top left corner of
@@ -636,7 +647,11 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
         Populate the internal _TileVector with a reference to the instantiated
         entity.
         """
-        return _TileVector(self.position.x - self.tile_width / 2, self.position.y - self.tile_height / 2, self)
+        return _TileVector(
+            self.position.x - self.tile_width / 2,
+            self.position.y - self.tile_height / 2,
+            self,
+        )
 
     # @property
     # def tile_position(self) -> Vector:
@@ -756,7 +771,7 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
 
     # =========================================================================
 
-    @property # Cache?
+    @property  # Cache?
     def tile_height(self) -> int:
         if "tile_height" in entities.raw.get(self.name, {}):
             return entities.raw[self.name]["tile_height"]
@@ -827,7 +842,7 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
     @tags.validator
     def ensure_tags_correct_type(self, attribute: attrs.Attribute, value: Any):
         if value is not None and not isinstance(value, dict):
-            raise ValueError("Explode") # TODO
+            raise ValueError("Explode")  # TODO
 
     # @property
     # def tags(self) -> Optional[dict[str, Any]]:
@@ -964,11 +979,12 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
     #     # Get me out of here
     #     return result
 
+
 # draftsman_converters[(1, 0)].register_unstructure_hook(
-#     Entity, 
+#     Entity,
 #     cattrs.gen.make_dict_unstructure_fn(
-#         Entity, 
-#         draftsman_converters[(1, 0)], 
+#         Entity,
+#         draftsman_converters[(1, 0)],
 #         _cattrs_omit_if_default=True,
 #         name=cattrs.gen.override(omit_if_default=False),
 #         position=cattrs.gen.override(omit_if_default=False),
@@ -976,10 +992,10 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
 #     )
 # )
 # draftsman_converters[(2, 0)].register_unstructure_hook(
-#     Entity, 
+#     Entity,
 #     cattrs.gen.make_dict_unstructure_fn(
-#         Entity, 
-#         draftsman_converters[(2, 0)], 
+#         Entity,
+#         draftsman_converters[(2, 0)],
 #         _cattrs_omit_if_default=True,
 #         name=cattrs.gen.override(omit_if_default=False),
 #         position=cattrs.gen.override(omit_if_default=False),

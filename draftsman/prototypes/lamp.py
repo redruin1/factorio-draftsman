@@ -24,7 +24,11 @@ from typing import Any, Literal, Optional, Union
 
 @attrs.define(slots=False)
 class Lamp(
-    ColorMixin, CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, Entity
+    ColorMixin,
+    CircuitConditionMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    Entity,
 ):
     """
     An entity that illuminates an area.
@@ -58,7 +62,7 @@ class Lamp(
         # color: Optional[Color] = Field(
         #     Color(r=1, g=1, b=1, a=1),
         #     description="""
-        #     The constant color of the lamp. Superceeded by any dynamic value 
+        #     The constant color of the lamp. Superceeded by any dynamic value
         #     given to the lamp, if configured as such.
         #     """,
         # )
@@ -69,15 +73,15 @@ class Lamp(
 
         model_config = ConfigDict(title="Lamp")
 
-    @attrs.define
-    class ControlBehavior: # TODO: inherit ConditionMixins
-        circuit_enabled: bool = attrs.field(default=False, validator=attrs.validators.instance_of(bool))
+    # @attrs.define
+    # class ControlBehavior: # TODO: inherit ConditionMixins
+    #     circuit_enabled: bool = attrs.field(default=False, validator=attrs.validators.instance_of(bool))
 
-        connect_to_logistics_network: bool = attrs.field(default=False, validator=attrs.validators.instance_of(bool))
+    #     connect_to_logistics_network: bool = attrs.field(default=False, validator=attrs.validators.instance_of(bool))
 
-        use_colors: bool = attrs.field(default=False, validator=attrs.validators.instance_of(bool))
+    #     use_colors: bool = attrs.field(default=False, validator=attrs.validators.instance_of(bool))
 
-        color_mode: LampColorMode = attrs.field(default=LampColorMode.COLOR_MAPPING, converter=LampColorMode, validator=attrs.validators.instance_of(LampColorMode))
+    #     color_mode: LampColorMode = attrs.field(default=LampColorMode.COLOR_MAPPING, converter=LampColorMode, validator=attrs.validators.instance_of(LampColorMode))
 
     @property
     def similar_entities(self) -> list:
@@ -124,9 +128,9 @@ class Lamp(
     # =========================================================================
 
     use_colors: Optional[bool] = attrs.field(
-        default=False, 
-        validator=attrs.validators.instance_of(bool), 
-        metadata={"location": ("control_behavior", "use_colors")}
+        default=False,
+        validator=attrs.validators.instance_of(bool),
+        metadata={"location": ("control_behavior", "use_colors")},
     )
     """
     Whether or not this entity should use color signals to determine it's
@@ -158,10 +162,10 @@ class Lamp(
     # =========================================================================
 
     color_mode: Optional[LampColorMode] = attrs.field(
-        default=LampColorMode.COLOR_MAPPING, 
-        converter=LampColorMode, 
+        default=LampColorMode.COLOR_MAPPING,
+        converter=LampColorMode,
         validator=attrs.validators.instance_of(LampColorMode),
-        metadata={"location": ("control_behavior", "color_mode")}
+        metadata={"location": ("control_behavior", "color_mode")},
     )
     """
     In what way to interpret signals given to the lamp if `use_colors` is 
@@ -171,7 +175,7 @@ class Lamp(
     # @property
     # def color_mode(self) -> Optional[LampColorMode]:
     #     """
-    #     In what way to interpret signals given to the lamp if `use_colors` is 
+    #     In what way to interpret signals given to the lamp if `use_colors` is
     #     ``True``.
     #     """
     #     return self.control_behavior.color_mode
@@ -182,7 +186,9 @@ class Lamp(
 
     # =========================================================================
 
-    always_on: Optional[bool] = attrs.field(default=False, validator=attrs.validators.instance_of(bool))
+    always_on: Optional[bool] = attrs.field(
+        default=False, validator=attrs.validators.instance_of(bool)
+    )
     """
     Whether or not this entity should always be active, regardless of the
     current day-night cycle. This option is superceeded by any condition
@@ -209,7 +215,11 @@ class Lamp(
 
     # =========================================================================
 
-    color: Optional[AttrsColor] = attrs.field(default=AttrsColor(r=1.0, g=1.0, b=191/255, a=1.0), converter=AttrsColor.converter, validator=attrs.validators.instance_of(AttrsColor))
+    color: Optional[AttrsColor] = attrs.field(
+        default=AttrsColor(r=1.0, g=1.0, b=191 / 255, a=1.0),
+        converter=AttrsColor.converter,
+        validator=attrs.validators.instance_of(AttrsColor),
+    )
     """
     What (static) color should this lamp have. Setting the lamp's color via
     ``use_colors`` and ``color_mode`` overrides this value if both are present.
@@ -230,11 +240,12 @@ class Lamp(
 
     # __hash__ = Entity.__hash__
 
+
 # draftsman_converters.register_unstructure_hook(
-#     Lamp, 
+#     Lamp,
 #     cattrs.gen.make_dict_unstructure_fn(
-#         Lamp, 
-#         draftsman_converters[(1, 0)], 
+#         Lamp,
+#         draftsman_converters[(1, 0)],
 #         _cattrs_omit_if_default=True,
 #         name=cattrs.gen.override(omit_if_default=False),
 #         position=cattrs.gen.override(omit_if_default=False),
@@ -242,15 +253,15 @@ class Lamp(
 #     )
 # )
 # a = cattrs.gen.make_dict_unstructure_fn(
-#         Lamp, 
-#         draftsman_converters[(2, 0)], 
+#         Lamp,
+#         draftsman_converters[(2, 0)],
 #         _cattrs_omit_if_default=False,
 #         name=cattrs.gen.override(omit_if_default=False),
 #         position=cattrs.gen.override(omit_if_default=False),
 #         id=cattrs.gen.override(omit=True)
 #     )
 # draftsman_converters[(2, 0)].register_unstructure_hook(
-#     Lamp, 
+#     Lamp,
 #     a
 # )
 

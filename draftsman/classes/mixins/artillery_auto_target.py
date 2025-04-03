@@ -2,10 +2,12 @@
 
 from draftsman.classes.exportable import attempt_and_reissue
 
+import attrs
 from pydantic import BaseModel, Field
 from typing import Optional
 
 
+@attrs.define
 class ArtilleryAutoTargetMixin:
     """
     Gives the entity the "artillery_auto_targeting" parameter. Used by artillery

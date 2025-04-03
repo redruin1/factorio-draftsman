@@ -59,10 +59,10 @@ class ControlBehaviorMixin:
 
     #     super().__init__(name, similar_entities, **kwargs)
 
-        # Have to do a bit of forward-lookahead to grab the correct control_behavior
-        # self.control_behavior = kwargs.get(
-        #     "control_behavior", type(self).Format.ControlBehavior()
-        # )
+    # Have to do a bit of forward-lookahead to grab the correct control_behavior
+    # self.control_behavior = kwargs.get(
+    #     "control_behavior", type(self).Format.ControlBehavior()
+    # )
 
     # =========================================================================
 

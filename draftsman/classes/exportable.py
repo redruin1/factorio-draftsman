@@ -200,8 +200,14 @@ class Exportable(metaclass=ABCMeta):
     themselves. Posesses a ``_root`` dictionary which contains it's contents, as
     well as validation utilities.
     """
+
     # _is_valid: bool = attrs.field(default=False, init=False)
-    validation: ValidationMode = attrs.field(default=ValidationMode.NONE, repr=False, metadata={"omit": True, "location": None})
+    validation: ValidationMode = attrs.field(
+        default=ValidationMode.NONE,
+        repr=False,
+        eq=False,
+        metadata={"omit": True, "location": None},
+    )
 
     # def __init__(self):
     #     self._root: __class__.Format
@@ -318,15 +324,22 @@ class Exportable(metaclass=ABCMeta):
         # TODO: instead, capture all attributes and manually run all validators,
         # while collecting exceptions into a report object to return
         attrs.validate(self)
-        return ValidationResult([], []) # FIXME
+        return ValidationResult([], [])  # FIXME
 
     @classmethod
-    def from_dict(cls, d: dict, version: tuple[int, ...] = __factorio_version_info__) -> Self:
+    def from_dict(
+        cls, d: dict, version: tuple[int, ...] = __factorio_version_info__
+    ) -> Self:
         # import inspect
         # print(inspect.getsource(draftsman_converters.get(version, False, False).get_structure_hook(cls)))
         return draftsman_converters.get(version, False, False).structure(d, cls)
 
-    def to_dict(self, version: tuple[int, ...] = __factorio_version_info__, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
+    def to_dict(
+        self,
+        version: tuple[int, ...] = __factorio_version_info__,
+        exclude_none: bool = True,
+        exclude_defaults: bool = True,
+    ) -> dict:
         converter = draftsman_converters.get(version, exclude_none, exclude_defaults)
         # print(converter)
         # print(converter.omit_if_default)

@@ -57,6 +57,7 @@ from pydantic_core import CoreSchema
 from textwrap import dedent
 from thefuzz import process
 from typing import Any, Literal, Optional, Sequence, Union
+import warnings
 
 
 # TODO: might make sense to move this into another file, so other files can use
@@ -480,6 +481,74 @@ class SignalID(DraftsmanBaseModel):
     #         return {"name": self["name"], "type": self["type"]}
 
 
+@attrs.define
+class AttrsSignalID:
+    name: Optional[SignalName] = attrs.field()  # TODO: validators
+    """
+    Name of the signal. If omitted, the signal is treated as no signal and 
+    removed on import/export cycle.
+    """
+    type: Literal[
+        "virtual",
+        "item",
+        "fluid",
+        "recipe",
+        "entity",
+        "space-location",
+        "asteroid-chunk",
+        "quality",
+    ] = attrs.field(
+        default="item"
+    )  # TODO: validators, name-specific default
+    """
+    Category of the signal.
+    """
+    quality: Optional[
+        Literal[
+            "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
+        ]
+    ] = attrs.field(
+        default="normal"
+    )  # TODO: validators
+    """
+    Quality flag of the signal.
+    """
+
+    @classmethod
+    def converter(cls, input):
+        """
+        Attempt to convert an input string name into a dict representation.
+        Raises a ValueError if unable to determine the type of a signal's name,
+        likely if the signal is misspelled or used in a modded configuration
+        that differs from Draftsman's current one.
+        """
+        if isinstance(input, str):
+            try:
+                return signal_dict(input)
+            except InvalidSignalError as e:
+                raise ValueError(
+                    "Unknown signal name {}; either specify the full dictionary, or update your environment".format(
+                        e
+                    )
+                ) from None
+        else:
+            return input
+
+    # TODO: check type matches name
+    @type.validator
+    def check_type_matches_name(self, attribute, value):
+        if self.name in signals.raw:
+            expected_types = get_signal_types(self.name)
+            if value not in expected_types:
+                warnings.warn(
+                    MalformedSignalWarning(
+                        "Known signal '{}' was given a mismatching type (expected one of {}, found '{}')".format(
+                            self.name, expected_types, value
+                        )
+                    )
+                )
+
+
 class TargetID(DraftsmanBaseModel):
     index: uint32 = Field(..., description="TODO")  # TODO: size
     name: str = Field(..., description="TODO")  # TODO: TargetName?
@@ -589,7 +658,14 @@ class AttrsColor:
     r: float = attrs.field(validator=[attrs.validators.ge(0), attrs.validators.le(255)])
     g: float = attrs.field(validator=[attrs.validators.ge(0), attrs.validators.le(255)])
     b: float = attrs.field(validator=[attrs.validators.ge(0), attrs.validators.le(255)])
-    a: Optional[float] = attrs.field(default=None, validator=[attrs.validators.ge(0), attrs.validators.le(255)])
+    a: Optional[float] = attrs.field(default=None)
+
+    @a.validator
+    def _(self, attribute: attrs.Attribute, value: Any):
+        if value is None:
+            return
+        if not (0 <= value <= 255):
+            raise ValueError("value {} outside of range [0, 255]".format(value))
 
     @classmethod
     def from_sequence(cls, sequence: Sequence) -> "AttrsColor":
@@ -599,10 +675,12 @@ class AttrsColor:
     def converter(cls, input) -> "AttrsColor":
         if isinstance(input, AttrsColor):
             return input
-        elif isinstance(input, list): # TODO: sequence
+        elif isinstance(input, list):  # TODO: sequence
             return cls.from_sequence(*input)
+        elif isinstance(input, dict):
+            return cls(**input)
         else:
-            raise TypeError("Explode") # TODO
+            raise TypeError("Explode")  # TODO
 
 
 class Color(DraftsmanBaseModel):

@@ -42,7 +42,11 @@ class ColorMixin:
 
     # =========================================================================
 
-    color: Optional[AttrsColor] = attrs.field(default=AttrsColor(r=1.0, g=1.0, b=1.0, a=1.0), converter=AttrsColor.converter, validator=attrs.validators.instance_of(AttrsColor))
+    color: Optional[AttrsColor] = attrs.field(
+        default=AttrsColor(r=1.0, g=1.0, b=1.0, a=1.0),
+        converter=AttrsColor.converter,
+        validator=attrs.validators.instance_of(AttrsColor),
+    )
     """
     The color of the Entity.
 
@@ -63,7 +67,6 @@ class ColorMixin:
     :exception DataFormatError: If the set ``color`` does not match the
         above specification.
     """
-
 
     # @property
     # def color(self) -> Color:
