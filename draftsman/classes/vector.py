@@ -13,10 +13,11 @@ PrimitiveIntVector = tuple[int, int]
 PrimitiveFloatVector = tuple[float, float]
 
 
-class Vector(object):
+class Vector:
     """
     A simple 2d vector class, used to aid in developent and user experience.
     """
+    __slots__ = ("_data")
 
     def __init__(self, x: Union[float, int], y: Union[float, int]):
         """
@@ -189,4 +190,5 @@ class Vector(object):
         return "<Vector>({}, {})".format(self._data[0], self._data[1])
 
 
+draftsman_converters.register_structure_hook(Vector, lambda d, _: Vector.from_other(d))
 draftsman_converters.register_unstructure_hook(Vector, lambda v: v.to_dict())

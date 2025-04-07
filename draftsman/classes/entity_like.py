@@ -7,6 +7,7 @@ from typing import Optional, Union
 
 from draftsman.classes.spatial_like import SpatialLike
 
+import attrs
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
@@ -32,14 +33,18 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     * `collision_mask`
     """
 
-    def __init__(self) -> None:
-        # Parent reference (Internal)
-        # Overwritten if the EntityLike is placed inside a Blueprint or Group
-        self._parent = None
+    # def __init__(self) -> None:
+    #     # Parent reference (Internal)
+    #     # Overwritten if the EntityLike is placed inside a Blueprint or Group
+    #     self._parent = None
 
     # =========================================================================
     # Properties
     # =========================================================================
+
+    _parent = attrs.field(
+        default=None, init=False, repr=False, metadata={"omit": True}
+    )  # FIXME: I would like to annotate this, but cattrs cannot find the location of `EntityCollection`
 
     @property
     def parent(self) -> "EntityCollection":
@@ -129,6 +134,12 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
 
     @property
     @abstractmethod
+    def similar_entities(self) -> list[str]: # pragma: no coverage
+        
+        pass
+
+    @property
+    @abstractmethod
     def name(self) -> str:  # pragma: no coverage
         pass
 
@@ -198,30 +209,30 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
         """
         return self
 
-    def __deepcopy__(self, memo: dict) -> "EntityLike":
-        """
-        We override the default deepcopy method so that we don't get infinite
-        recursion when attempting to copy it's 'parent' attribute. We instead
-        set it to ``None`` because we don't want entities to have a parent if
-        they are not in an :py:class:`.EntityCollection`.
+    # def __deepcopy__(self, memo: dict) -> "EntityLike":
+    #     """
+    #     We override the default deepcopy method so that we don't get infinite
+    #     recursion when attempting to copy it's 'parent' attribute. We instead
+    #     set it to ``None`` because we don't want entities to have a parent if
+    #     they are not in an :py:class:`.EntityCollection`.
 
-        This means that if you attempt to deepcopy an Entity that exists within
-        an EntityCollection, that copied entity will *not* be inside of that
-        EntityCollection, and will have to be added manually. If instead the
-        *entire* EntityCollection is deepcopied, then the parent will be the
-        copied EntityCollection and everything *should* remain correct.
+    #     This means that if you attempt to deepcopy an Entity that exists within
+    #     an EntityCollection, that copied entity will *not* be inside of that
+    #     EntityCollection, and will have to be added manually. If instead the
+    #     *entire* EntityCollection is deepcopied, then the parent will be the
+    #     copied EntityCollection and everything *should* remain correct.
 
-        See `here <https://github.com/redruin1/factorio-draftsman/issues/22>`
-        for more information.
+    #     See `here <https://github.com/redruin1/factorio-draftsman/issues/22>`
+    #     for more information.
 
-        :returns: A copy of the EntityLike.
-        """
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            if k == "_parent":
-                setattr(result, k, None)
-            else:
-                setattr(result, k, copy.deepcopy(v, memo))
-        return result
+    #     :returns: A copy of the EntityLike.
+    #     """
+    #     cls = self.__class__
+    #     result = cls.__new__(cls)
+    #     memo[id(self)] = result
+    #     for k, v in self.__dict__.items():
+    #         if k == "_parent":
+    #             setattr(result, k, None)
+    #         else:
+    #             setattr(result, k, copy.deepcopy(v, memo))
+    #     return result

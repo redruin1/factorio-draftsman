@@ -29,7 +29,8 @@ class SpatialLike(metaclass=ABCMeta):
     @abstractmethod
     def global_position(self) -> Vector:  # pragma: no coverage
         """
-        Position of the object, expressed in global space (world space).
+        Position of the object, expressed in global space (world space). The sum
+        position of this object and all of its parent's positions combined.
         """
         pass
 

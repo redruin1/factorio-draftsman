@@ -17,10 +17,12 @@ from draftsman.utils import get_first
 
 from draftsman.data.entities import logistic_passive_containers
 
+import attrs
 from typing import Any, Literal, Optional, Union
 from pydantic import ConfigDict
 
 
+@attrs.define
 class LogisticPassiveContainer(
     InventoryMixin,
     RequestItemsMixin,
@@ -35,52 +37,58 @@ class LogisticPassiveContainer(
     when needed by the network.
     """
 
-    class Format(
-        InventoryMixin.Format,
-        RequestItemsMixin.Format,
-        LogisticModeOfOperationMixin.Format,
-        CircuitConditionMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        Entity.Format,
-    ):
-        class ControlBehavior(
-            LogisticModeOfOperationMixin.ControlFormat,
-            CircuitConditionMixin.ControlFormat,
-        ):
-            pass
+    # class Format(
+    #     InventoryMixin.Format,
+    #     RequestItemsMixin.Format,
+    #     LogisticModeOfOperationMixin.Format,
+    #     CircuitConditionMixin.Format,
+    #     ControlBehaviorMixin.Format,
+    #     CircuitConnectableMixin.Format,
+    #     Entity.Format,
+    # ):
+    #     class ControlBehavior(
+    #         LogisticModeOfOperationMixin.ControlFormat,
+    #         CircuitConditionMixin.ControlFormat,
+    #     ):
+    #         pass
 
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        model_config = ConfigDict(title="LogisticPassiveContainer")
+    #     model_config = ConfigDict(title="LogisticPassiveContainer")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(logistic_passive_containers),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        bar: uint16 = None,
-        items: Optional[list[ItemRequest]] = [],
-        control_behavior: Optional[Format.ControlBehavior] = {},
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        super().__init__(
-            name,
-            logistic_passive_containers,
-            position=position,
-            tile_position=tile_position,
-            bar=bar,
-            items=items,
-            control_behavior=control_behavior,
-            tags=tags,
-            **kwargs
-        )
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(logistic_passive_containers),
+    #     position: Union[Vector, PrimitiveVector] = None,
+    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+    #     bar: uint16 = None,
+    #     items: Optional[list[ItemRequest]] = [],
+    #     control_behavior: Optional[Format.ControlBehavior] = {},
+    #     tags: dict[str, Any] = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     super().__init__(
+    #         name,
+    #         logistic_passive_containers,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         bar=bar,
+    #         items=items,
+    #         control_behavior=control_behavior,
+    #         tags=tags,
+    #         **kwargs
+    #     )
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
+
+    # =========================================================================
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return logistic_passive_containers
 
     # =========================================================================
 

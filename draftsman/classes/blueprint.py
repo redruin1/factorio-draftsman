@@ -91,13 +91,14 @@ from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode
+from draftsman.constants import Direction, LegacyDirection, ValidationMode
 from draftsman.error import (
     DraftsmanError,
     UnreasonablySizedBlueprintError,
     DataFormatError,
     InvalidAssociationError,
 )
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     AttrsColor,
     Color,
@@ -231,11 +232,13 @@ def _normalize_internal_structure(
 
     # Change all locomotive associations to use number
     for schedule in schedules_out:
-        for i, locomotive in enumerate(schedule["locomotives"]):
-            if locomotive() is None:  # pragma: no coverage
-                _throw_invalid_association(locomotive)
-            else:  # Association
-                schedule["locomotives"][i] = flattened_entities.index(locomotive()) + 1
+        # Technically a schedule can have no locomotives:
+        if "locomotives" in schedule:
+            for i, locomotive in enumerate(schedule["locomotives"]):
+                if locomotive() is None:  # pragma: no coverage
+                    _throw_invalid_association(locomotive)
+                else:  # Association
+                    schedule["locomotives"][i] = flattened_entities.index(locomotive()) + 1
 
     input_root["schedules"] = schedules_out
 
@@ -638,6 +641,62 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     #     if validate:
     #         self.validate(mode=validate).reissue_all()
 
+    def __attrs_post_init__(self):
+        # 1.0 code
+        # Convert circuit and power connections to Associations
+        # for entity in self.entities:
+        #     if hasattr(entity, "connections"):  # Wire connections
+        #         connections: Connections = entity.connections
+        #         for side in connections.true_model_fields():
+        #             if connections[side] is None:
+        #                 continue
+
+        #             if side in {"1", "2"}:
+        #                 for color, _ in connections[side]:  # TODO fix
+        #                     connection_points = connections[side][color]
+        #                     if connection_points is None:
+        #                         continue
+        #                     for point in connection_points:
+        #                         old = point["entity_id"] - 1
+        #                         point["entity_id"] = Association(self.entities[old])
+
+        #             elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+        #                 connection_points = connections[side]
+        #                 if connection_points is None:
+        #                     continue  # pragma: no coverage
+        #                 for point in connection_points:
+        #                     old = point["entity_id"] - 1
+        #                     point["entity_id"] = Association(self.entities[old])
+
+        #     if hasattr(entity, "neighbours"):  # Power pole connections
+        #         neighbours = entity.neighbours
+        #         for i, neighbour in enumerate(neighbours):
+        #             neighbours[i] = Association(self.entities[neighbour - 1])
+
+        # Change all locomotive numbers to use Associations
+        for schedule in self.schedules:
+            for i, locomotive in enumerate(schedule.locomotives):
+                if isinstance(locomotive, int):
+                    entity: Entity = self.entities[locomotive - 1]
+                    schedule.locomotives[i] = Association(entity)
+
+        # Change all wire numbers to use Associations
+        # print(self.label)
+        # print(self.entities)
+        # print(self.wires)
+        for i, wire in enumerate(self.wires):
+            # print(wire)
+            if isinstance(wire[0], int):
+                entity1 = self.entities[wire[0] - 1]
+                wire[0] = Association(entity1)
+            if isinstance(wire[2], int):
+                entity2 = self.entities[wire[2] - 1]
+                wire[2] = Association(entity2)
+            # self.wires[i] = [Association(entity1), wire[1], Association(entity2), wire[3]]
+
+        # if self.validation:
+        #     self.validate(mode=self.validation).reissue_all()
+
     # =========================================================================
     # Blueprint properties
     # =========================================================================
@@ -647,94 +706,16 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         return "blueprint"
 
     # =========================================================================
-    
-    @exported_property #(metadata={"omit": False, "location": (lambda cls: cls.root_item.fget(cls), "item")})
-    def item(self) -> Literal["blueprint"]:
-        return "blueprint"
 
-    # =========================================================================
-
-    label_color: Optional[AttrsColor] = attrs.field(
-        default=AttrsColor(1.0, 1.0, 1.0),
-        converter=AttrsColor.converter,
-        validator=attrs.validators.instance_of(AttrsColor),
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "label_color")},
+    item: str = attrs.field(
+        default="blueprint",
+        # TODO: validators
+        metadata={
+            "omit": False,
+            "location": (lambda cls: cls.root_item.fget(cls), "item"),
+        },
     )
-    """
-    The color of the Blueprint's label.
-
-    The ``label_color`` parameter exists in a dict format with the "r", "g",
-    "b", and an optional "a" keys. The color can be specified like that, or
-    it can be specified more succinctly as a sequence of 3-4 numbers,
-    representing the colors in that order.
-
-    The value of each of the numbers (according to Factorio spec) can be
-    either in the range of [0.0, 1.0] or [0, 255]; if all the numbers are
-    <= 1.0, the former range is used, and the latter otherwise. If "a" is
-    omitted, it defaults to 1.0 or 255 when imported, depending on the
-    range of the other numbers.
-
-    :getter: Gets the color of the label, or ``None`` if not set.
-    :setter: Sets the label color of the ``Blueprint``.
-
-    :exception DataFormatError: If the input ``label_color`` does not match
-        the above specification.
-
-    :example:
-
-    .. code-block:: python
-
-        blueprint.label_color = (127, 127, 127)
-        print(blueprint.label_color)
-        # {'r': 127.0, 'g': 127.0, 'b': 127.0}
-    """
-
-    # @property
-    # def label_color(self) -> Optional[Color]:
-    #     """
-    #     The color of the Blueprint's label.
-
-    #     The ``label_color`` parameter exists in a dict format with the "r", "g",
-    #     "b", and an optional "a" keys. The color can be specified like that, or
-    #     it can be specified more succinctly as a sequence of 3-4 numbers,
-    #     representing the colors in that order.
-
-    #     The value of each of the numbers (according to Factorio spec) can be
-    #     either in the range of [0.0, 1.0] or [0, 255]; if all the numbers are
-    #     <= 1.0, the former range is used, and the latter otherwise. If "a" is
-    #     omitted, it defaults to 1.0 or 255 when imported, depending on the
-    #     range of the other numbers.
-
-    #     :getter: Gets the color of the label, or ``None`` if not set.
-    #     :setter: Sets the label color of the ``Blueprint``.
-
-    #     :exception DataFormatError: If the input ``label_color`` does not match
-    #         the above specification.
-
-    #     :example:
-
-    #     .. code-block:: python
-
-    #         blueprint.label_color = (127, 127, 127)
-    #         print(blueprint.label_color)
-    #         # {'r': 127.0, 'g': 127.0, 'b': 127.0}
-    #     """
-    #     return self._root[self._root_item].get("label_color", None)
-
-    # @label_color.setter
-    # def label_color(self, value: Optional[Color]):
-    #     # TODO: normalization
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             self.Format.BlueprintObject,
-    #             self._root.blueprint,
-    #             "label_color",
-    #             value,
-    #         )
-    #         self._root[self._root_item]["label_color"] = result
-    #     else:
-    #         self._root[self._root_item]["label_color"] = value
+    # TODO: description
 
     # =========================================================================
 
@@ -852,7 +833,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     absolute_snapping: bool = attrs.field(
         default=True,
         validator=attrs.validators.instance_of(bool),
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "absolute-snapping")},
+        metadata={
+            "location": (lambda cls: cls.root_item.fget(cls), "absolute-snapping")
+        },
     )
     """
     Whether or not the blueprint uses absolute positioning or relative
@@ -900,7 +883,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         default=Vector(0, 0),
         converter=Vector.from_other,
         validator=attrs.validators.instance_of(Vector),  # TODO: on_setattr
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "position-relative-to-grid")},
+        metadata={
+            "location": (
+                lambda cls: cls.root_item.fget(cls),
+                "position-relative-to-grid",
+            )
+        },
     )
     """
     The absolute position of the snapping grid in the world. Only used if
@@ -1149,9 +1137,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     # =========================================================================
 
-    wires: list[tuple[int, int, int, int]] = attrs.field(
-        factory=list, 
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "wires")}
+    wires: list[list[int, int, int, int]] = attrs.field(
+        factory=list,
+        metadata={"location": (lambda cls: cls.root_item.fget(cls), "wires")},
     )
     """
     A list of the wire connections in this blueprint.
@@ -1199,7 +1187,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     stock_connections: list[dict] = attrs.field(  # TODO: annotations
         factory=list,
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "stock_connections")},
+        metadata={
+            "location": (lambda cls: cls.root_item.fget(cls), "stock_connections")
+        },
     )
     """
     TODO
@@ -1287,97 +1277,104 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     #     return output
 
-    # def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
-    #     # Create a copy of root, since we don't want to clobber the original
-    #     # data when creating a dict representation
-    #     # We skip copying the special lists because we have to handle their
-    #     # conversion specifically and carefully
-    #     # root_copy = {
-    #     #     self._root_item: {
-    #     #         k: v
-    #     #         for k, v in self._root[self._root_item].items()
-    #     #         if k not in {"entities", "tiles", "schedules"}
-    #     #     },
-    #     # }
-    #     # if self.index is not None:
-    #     #     root_copy["index"] = self.index
+    def to_dict(
+        self,
+        version: tuple[int, ...] = __factorio_version_info__,
+        exclude_none: bool = True,
+        exclude_defaults: bool = True,
+    ) -> dict:
+        # Create a copy of root, since we don't want to clobber the original
+        # data when creating a dict representation
+        # We skip copying the special lists because we have to handle their
+        # conversion specifically and carefully
+        # root_copy = {
+        #     self._root_item: {
+        #         k: v
+        #         for k, v in self._root[self._root_item].items()
+        #         if k not in {"entities", "tiles", "schedules"}
+        #     },
+        # }
+        # if self.index is not None:
+        #     root_copy["index"] = self.index
 
-    #     result = super().to_dict(
-    #         exclude_none=exclude_none, exclude_defaults=exclude_defaults
-    #     )
+        result = super().to_dict(
+            version=version,
+            exclude_none=exclude_none,
+            exclude_defaults=exclude_defaults,
+        )
 
-    #     # We then convert all the entities, tiles, and schedules to
-    #     # 1-dimensional lists, flattening any Groups that this blueprint
-    #     # contains, and swapping their Associations into integer indexes
-    #     _normalize_internal_structure(
-    #         result[self._root_item],
-    #         self.entities,
-    #         self.tiles,
-    #         self.schedules,
-    #         self.wires,
-    #     )
+        # We then convert all the entities, tiles, and schedules to
+        # 1-dimensional lists, flattening any Groups that this blueprint
+        # contains, and swapping their Associations into integer indexes
+        _normalize_internal_structure(
+            result[self.root_item],
+            self.entities,
+            self.tiles,
+            self.schedules,
+            self.wires,
+        )
 
-    #     # # Construct a model with the flattened data, not running any validation
-    #     # # We do a number of submodels manually since model_construct is not
-    #     # # recursive (woe be upon me)
-    #     # out_model = Blueprint.Format.model_construct(**root_copy)
-    #     # out_model.blueprint = Blueprint.Format.BlueprintObject.model_construct(
-    #     #     **out_model.blueprint
-    #     # )
-    #     # if out_model.blueprint.icons is not None:
-    #     #     out_model.blueprint.icons = Icons.model_construct(out_model.blueprint.icons)
-    #     # if out_model.blueprint.snap_to_grid is not None:
-    #     #     out_model.blueprint.snap_to_grid = (
-    #     #         out_model.blueprint.snap_to_grid.to_dict()
-    #     #     )
-    #     # if out_model.blueprint.position_relative_to_grid is not None:
-    #     #     out_model.blueprint.position_relative_to_grid = (
-    #     #         out_model.blueprint.position_relative_to_grid.to_dict()
-    #     #     )
+        # # Construct a model with the flattened data, not running any validation
+        # # We do a number of submodels manually since model_construct is not
+        # # recursive (woe be upon me)
+        # out_model = Blueprint.Format.model_construct(**root_copy)
+        # out_model.blueprint = Blueprint.Format.BlueprintObject.model_construct(
+        #     **out_model.blueprint
+        # )
+        # if out_model.blueprint.icons is not None:
+        #     out_model.blueprint.icons = Icons.model_construct(out_model.blueprint.icons)
+        # if out_model.blueprint.snap_to_grid is not None:
+        #     out_model.blueprint.snap_to_grid = (
+        #         out_model.blueprint.snap_to_grid.to_dict()
+        #     )
+        # if out_model.blueprint.position_relative_to_grid is not None:
+        #     out_model.blueprint.position_relative_to_grid = (
+        #         out_model.blueprint.position_relative_to_grid.to_dict()
+        #     )
 
-    #     # Make sure that snapping_grid_position is respected
-    #     # if self.snapping_grid_position is not None:
-    #     # Offset Entities
-    #     for entity in result["blueprint"]["entities"]:
-    #         entity["position"]["x"] -= self.snapping_grid_position.x
-    #         entity["position"]["y"] -= self.snapping_grid_position.y
+        # Make sure that snapping_grid_position is respected
+        # if self.snapping_grid_position is not None:
+        # Offset Entities
+        for entity in result["blueprint"]["entities"]:
+            entity["position"]["x"] -= self.snapping_grid_position.x
+            entity["position"]["y"] -= self.snapping_grid_position.y
 
-    #     # Offset Tiles
-    #     for tile in result["blueprint"]["tiles"]:
-    #         tile["position"]["x"] -= self.snapping_grid_position.x
-    #         tile["position"]["y"] -= self.snapping_grid_position.y
+        # Offset Tiles
+        for tile in result["blueprint"]["tiles"]:
+            tile["position"]["x"] -= self.snapping_grid_position.x
+            tile["position"]["y"] -= self.snapping_grid_position.y
 
-    #     # # We then create an output dict
-    #     # out_dict = out_model.model_dump(
-    #     #     by_alias=True,
-    #     #     exclude_none=True,
-    #     #     exclude_defaults=True,
-    #     #     warnings=False,  # until `model_construct` is properly recursive
-    #     # )
+        # # We then create an output dict
+        # out_dict = out_model.model_dump(
+        #     by_alias=True,
+        #     exclude_none=True,
+        #     exclude_defaults=True,
+        #     warnings=False,  # until `model_construct` is properly recursive
+        # )
 
-    #     # print(result)
-    #     # print(self.snapping_grid_size)
-    #     # print(self.position_relative_to_grid)
+        # print(result)
+        # print(self.snapping_grid_size)
+        # print(self.position_relative_to_grid)
 
-    #     if "snap-to-grid" in result["blueprint"] and result["blueprint"][
-    #         "snap-to-grid"
-    #     ] == {"x": 0, "y": 0}:
-    #         del result["blueprint"]["snap-to-grid"]
-    #     if "position-relative-to-grid" in result["blueprint"] and result["blueprint"][
-    #         "position-relative-to-grid"
-    #     ] == {"x": 0, "y": 0}:
-    #         del result["blueprint"]["position-relative-to-grid"]
+        if "snap-to-grid" in result["blueprint"] and result["blueprint"][
+            "snap-to-grid"
+        ] == {"x": 0, "y": 0}:
+            del result["blueprint"]["snap-to-grid"]
+        if "position-relative-to-grid" in result["blueprint"] and result["blueprint"][
+            "position-relative-to-grid"
+        ] == {"x": 0, "y": 0}:
+            del result["blueprint"]["position-relative-to-grid"]
 
-    #     if len(result["blueprint"]["entities"]) == 0:
-    #         del result["blueprint"]["entities"]
-    #     if len(result["blueprint"]["tiles"]) == 0:
-    #         del result["blueprint"]["tiles"]
-    #     if len(result["blueprint"]["schedules"]) == 0:
-    #         del result["blueprint"]["schedules"]
-    #     if len(result["blueprint"]["wires"]) == 0:
-    #         del result["blueprint"]["wires"]
+        if len(result["blueprint"]["entities"]) == 0:
+            del result["blueprint"]["entities"]
+        if len(result["blueprint"]["tiles"]) == 0:
+            del result["blueprint"]["tiles"]
+        if len(result["blueprint"]["schedules"]) == 0:
+            del result["blueprint"]["schedules"]
+        if len(result["blueprint"]["wires"]) == 0:
+            del result["blueprint"]["wires"]
 
-    #     return result
+        return result
 
     # =========================================================================
 
@@ -1448,3 +1445,145 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         setattr(result, "_root_item", self._root_item)
 
         return result
+
+
+_default_blueprint_hook = draftsman_converters.get((1, 0)).get_structure_hook(Blueprint)
+
+
+def structure_blueprint_1_0(d: dict, _: type) -> Blueprint:
+    """
+    Converts a 1.0 Factorio blueprint string into Draftsman internal form,
+    preferring modern format where possible.
+    """
+    # Swapping old entity names to new ones is not actually "conversion", this 
+    # would instead be "migration"
+    # For example, these entities would exist just fine if we had an old version
+    # of `factorio-data` loaded
+    # In practice, we should just load these objects as generic `Entity` 
+    # instances with all of their data intact, and then the user would call a 
+    # separate function `migrate(version)` which would then swap/remove/update
+    # entities 
+    legacy_entity_conversions = {
+        "curved-rail": "legacy-curved-rail",
+        "straight-rail": "legacy-straight-rail",
+        "logistic-chest-requester": "requester-chest",
+        "logistic-chest-buffer": "buffer-chest",
+        "logistic-chest-storage": "storage-chest",
+        "logistic-chest-active-provider": "active-provider-chest",
+        "logistic-chest-passive-provider": "passive-provider-chest",
+        "filter-inserter": "inserter", # TODO: LegacyFilterInserter(?)
+        "stack-inserter": "bulk-inserter",
+        "stack-filter-inserter": "bulk-inserter",
+    }
+    # TODO: just use defines already...
+    wire_types = {
+        ("1", "red"): 1,
+        ("1", "green"): 2,
+        ("2", "red"): 3,
+        ("2", "green"): 4,
+        "Cu0": 5,
+        "Cu1": 6,
+    }
+    # TODO: modifying in-place might be a bad idea; investigate
+    blueprint_dict = d["blueprint"]
+    # "Backport" the wires list to Factorio 1.0
+    wires = blueprint_dict["wires"] = []
+    # Iterate over every entity with connections
+    if "entities" in blueprint_dict:
+        for entity in blueprint_dict["entities"]:
+            # Convert entities to their modern equivalents
+            if entity["name"] in legacy_entity_conversions:
+                entity["name"] = legacy_entity_conversions[entity["name"]]
+
+            # Swap from old 8-direction to modern 16-direction
+            if "direction" in entity:
+                entity["direction"] = LegacyDirection(entity["direction"]).to_modern()
+
+            # Move connections
+            if "connections" in entity:
+                connections = entity["connections"]
+                for side in {"1", "2"}:
+                    if side not in connections:
+                        continue
+
+                    # print(connections)
+                    # print(connections[side])
+                    for color in connections[side]:
+                        connection_points = connections[side][color]
+
+                        for point in connection_points:
+                            # print("point", point)
+                            # print(wires)
+                            entity_id = point["entity_id"]
+                            circuit_id = str(point.get("circuit_id", 1))
+                            # print(entity_id, circuit_id)
+                            # Make sure we don't add the reverse as a duplicate
+                            if [
+                                entity_id,
+                                wire_types[(circuit_id, color)],
+                                entity["entity_number"],
+                                wire_types[(side, color)],
+                            ] not in wires:
+                                wires.append(
+                                    [
+                                        entity["entity_number"],
+                                        wire_types[(side, color)],
+                                        entity_id,
+                                        wire_types[(circuit_id, color)],
+                                    ]
+                                )
+
+                for side in {"Cu0", "Cu1"}:
+                    if side not in connections:
+                        continue
+                    connection_points = connections[side]
+                    for point in connection_points:
+                        entity_id = point["entity_id"]
+                        circuit_id = point.get("circuit_id", "Cu0")
+                        # Make sure we don't add the reverse as a duplicate
+                        if [
+                            entity_id,
+                            wire_types[circuit_id],
+                            entity["entity_number"],
+                            wire_types[side],
+                        ] not in wires:
+                            wires.append(
+                                [
+                                    entity["entity_number"],
+                                    wire_types[side],
+                                    entity_id,
+                                    wire_types[circuit_id],
+                                ]
+                            )
+
+                del entity["connections"]
+
+            if "neighbours" in entity:
+                for neighbour in entity["neighbours"]:
+                    # Make sure we don't add the reverse as a duplicate
+                    if [
+                        neighbour,
+                        5,
+                        entity["entity_number"],
+                        5,
+                    ] not in wires:
+                        wires.append(
+                            [
+                                entity["entity_number"],
+                                5,
+                                neighbour,
+                                5,
+                            ]
+                        )
+
+                del entity["neighbours"]
+
+    # print("blueprint_dict", blueprint_dict)
+    # import inspect
+    # print(inspect.getsource(_default_blueprint_hook))
+    return _default_blueprint_hook(d, _)
+
+
+draftsman_converters.get((1, 0)).register_structure_hook(
+    Blueprint, structure_blueprint_1_0
+)

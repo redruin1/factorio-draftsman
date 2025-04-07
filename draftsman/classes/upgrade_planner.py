@@ -17,7 +17,10 @@ from draftsman.classes.exportable import (
 from draftsman.constants import ValidationMode
 from draftsman.data import entities, items
 from draftsman.error import DataFormatError
+from draftsman.serialization import finalize_fields
 from draftsman.signatures import (
+    AttrsColor,
+    Color,
     DraftsmanBaseModel,
     Icon,
     Mapper,
@@ -36,6 +39,7 @@ from draftsman.warning import (
     UpgradeProhibitedWarning,
 )
 
+import attrs
 import bisect
 from pydantic import ConfigDict, Field, ValidationInfo, field_validator, model_validator
 from typing import Any, Literal, Optional, Sequence, Union
@@ -214,6 +218,7 @@ def check_valid_upgrade_pair(
     return None
 
 
+@attrs.define(field_transformer=finalize_fields)
 class UpgradePlanner(Blueprintable):
     """
     A :py:class:`.Blueprintable` used to upgrade and downgrade entities and
@@ -224,325 +229,287 @@ class UpgradePlanner(Blueprintable):
     # Format
     # =========================================================================
 
-    class Format(DraftsmanBaseModel):
-        """
-        The full description of UpgradePlanner's formal schema.
-        """
+    # class Format(DraftsmanBaseModel):
+    #     """
+    #     The full description of UpgradePlanner's formal schema.
+    #     """
 
-        class UpgradePlannerObject(DraftsmanBaseModel):
-            item: Literal["upgrade-planner"] = Field(
-                ...,
-                description="""
-                The item that this UpgradeItem object is associated with. Always
-                equivalent to 'upgrade-planner'.
-                """,
-            )
-            label: Optional[str] = Field(
-                None,
-                description="""
-                A string title for this UpgradePlanner.
-                """,
-            )
-            version: Optional[uint64] = Field(
-                None,
-                description="""
-                What version of Factorio this UpgradePlanner was made 
-                in/intended for. Specified as 4 unsigned 16-bit numbers combined, 
-                representing the major version, the minor version, the patch 
-                number, and the internal development version respectively. The 
-                most significant digits correspond to the major version, and the 
-                least to the development number. 
-                """,
-            )
+    #     class UpgradePlannerObject(DraftsmanBaseModel):
+    #         item: Literal["upgrade-planner"] = Field(
+    #             ...,
+    #             description="""
+    #             The item that this UpgradeItem object is associated with. Always
+    #             equivalent to 'upgrade-planner'.
+    #             """,
+    #         )
+    #         label: Optional[str] = Field(
+    #             None,
+    #             description="""
+    #             A string title for this UpgradePlanner.
+    #             """,
+    #         )
+    #         version: Optional[uint64] = Field(
+    #             None,
+    #             description="""
+    #             What version of Factorio this UpgradePlanner was made
+    #             in/intended for. Specified as 4 unsigned 16-bit numbers combined,
+    #             representing the major version, the minor version, the patch
+    #             number, and the internal development version respectively. The
+    #             most significant digits correspond to the major version, and the
+    #             least to the development number.
+    #             """,
+    #         )
 
-            class Settings(DraftsmanBaseModel):
-                """
-                Contains information about the UpgradePlanner, as well as what
-                entities it maps to and from.
-                """
+    #         class Settings(DraftsmanBaseModel):
+    #             """
+    #             Contains information about the UpgradePlanner, as well as what
+    #             entities it maps to and from.
+    #             """
 
-                description: Optional[str] = Field(
-                    None,
-                    description="""
-                    A string description given to this UpgradePlanner.""",
-                )
-                icons: Optional[list[Icon]] = Field(
-                    None,
-                    description="""
-                    A set of signal pictures to associate with this 
-                    UpgradePlanner.
-                    """,
-                    max_length=4,
-                )
-                mappers: Optional[list[Mapper]] = Field(
-                    None,
-                    description="""
-                    The set of mappings from one item/entity to another.
-                    """,
-                )
+    #             description: Optional[str] = Field(
+    #                 None,
+    #                 description="""
+    #                 A string description given to this UpgradePlanner.""",
+    #             )
+    #             icons: Optional[list[Icon]] = Field(
+    #                 None,
+    #                 description="""
+    #                 A set of signal pictures to associate with this
+    #                 UpgradePlanner.
+    #                 """,
+    #                 max_length=4,
+    #             )
+    #             mappers: Optional[list[Mapper]] = Field(
+    #                 None,
+    #                 description="""
+    #                 The set of mappings from one item/entity to another.
+    #                 """,
+    #             )
 
-                @field_validator("icons", mode="before")
-                @classmethod
-                def normalize_icons(cls, value: Any):
-                    return normalize_icons(value)
+    #             @field_validator("icons", mode="before")
+    #             @classmethod
+    #             def normalize_icons(cls, value: Any):
+    #                 return normalize_icons(value)
 
-                @field_validator("mappers", mode="before")
-                @classmethod
-                def normalize_mappers(cls, value: Any):
-                    try:
-                        result = []
-                        for i, mapper in enumerate(value):
-                            if isinstance(mapper, Sequence):
-                                result.append({"index": i})
-                                if mapper[0]:
-                                    result[i]["from"] = mapper[0]
-                                if mapper[1]:
-                                    result[i]["to"] = mapper[1]
-                            else:
-                                result.append(mapper)
-                        return result
-                    except Exception:
-                        return value
+    #             @field_validator("mappers", mode="before")
+    #             @classmethod
+    #             def normalize_mappers(cls, value: Any):
+    #                 try:
+    #                     result = []
+    #                     for i, mapper in enumerate(value):
+    #                         if isinstance(mapper, Sequence):
+    #                             result.append({"index": i})
+    #                             if mapper[0]:
+    #                                 result[i]["from"] = mapper[0]
+    #                             if mapper[1]:
+    #                                 result[i]["to"] = mapper[1]
+    #                         else:
+    #                             result.append(mapper)
+    #                     return result
+    #                 except Exception:
+    #                     return value
 
-                @model_validator(mode="after")
-                def ensure_mappers_valid(self, info: ValidationInfo):
-                    if not info.context or self.mappers is None:
-                        return self
-                    elif info.context["mode"] <= ValidationMode.MINIMUM:
-                        return self
+    #             @model_validator(mode="after")
+    #             def ensure_mappers_valid(self, info: ValidationInfo):
+    #                 if not info.context or self.mappers is None:
+    #                     return self
+    #                 elif info.context["mode"] <= ValidationMode.MINIMUM:
+    #                     return self
 
-                    warning_list: list = info.context["warning_list"]
-                    upgrade_planner: UpgradePlanner = info.context["object"]
+    #                 warning_list: list = info.context["warning_list"]
+    #                 upgrade_planner: UpgradePlanner = info.context["object"]
 
-                    # Keep track to see if multiple entries exist with the same index
-                    occupied_indices = {}
-                    # Check each mapper
-                    for mapper in self.mappers:
-                        # Ensure that "from" and "to" are a valid pair
-                        # We assert that index must exist in each mapper, but both "from"
-                        # and "to" may be omitted
-                        reasons = check_valid_upgrade_pair(
-                            mapper.get("from", None), mapper.get("to", None)
-                        )
-                        if reasons is not None:
-                            warning_list.extend(reasons)
+    #                 # Keep track to see if multiple entries exist with the same index
+    #                 occupied_indices = {}
+    #                 # Check each mapper
+    #                 for mapper in self.mappers:
+    #                     # Ensure that "from" and "to" are a valid pair
+    #                     # We assert that index must exist in each mapper, but both "from"
+    #                     # and "to" may be omitted
+    #                     reasons = check_valid_upgrade_pair(
+    #                         mapper.get("from", None), mapper.get("to", None)
+    #                     )
+    #                     if reasons is not None:
+    #                         warning_list.extend(reasons)
 
-                        # 1.0
-                        # # If the index is greater than mapper_count, then the mapping will
-                        # # be redundant
-                        # if not mapper["index"] < upgrade_planner.mapper_count:
-                        #     warning_list.append(
-                        #         IndexWarning(
-                        #             "'index' ({}) for mapping '{}' to '{}' must be in range [0, {}) or else it will have no effect".format(
-                        #                 mapper["index"],
-                        #                 mapper["from"]["name"],
-                        #                 mapper["to"]["name"],
-                        #                 upgrade_planner.mapper_count,
-                        #             )
-                        #         )
-                        #     )
+    #                     # 1.0
+    #                     # # If the index is greater than mapper_count, then the mapping will
+    #                     # # be redundant
+    #                     # if not mapper["index"] < upgrade_planner.mapper_count:
+    #                     #     warning_list.append(
+    #                     #         IndexWarning(
+    #                     #             "'index' ({}) for mapping '{}' to '{}' must be in range [0, {}) or else it will have no effect".format(
+    #                     #                 mapper["index"],
+    #                     #                 mapper["from"]["name"],
+    #                     #                 mapper["to"]["name"],
+    #                     #                 upgrade_planner.mapper_count,
+    #                     #             )
+    #                     #         )
+    #                     #     )
 
-                        # Keep track of entries that occupy the same index (only the last
-                        # mapping is used)
-                        if mapper["index"] in occupied_indices:
-                            occupied_indices[mapper["index"]]["count"] += 1
-                            occupied_indices[mapper["index"]]["mapper"] = mapper
-                        else:
-                            occupied_indices[mapper["index"]] = {
-                                "count": 0,
-                                "mapper": mapper,
-                            }
+    #                     # Keep track of entries that occupy the same index (only the last
+    #                     # mapping is used)
+    #                     if mapper["index"] in occupied_indices:
+    #                         occupied_indices[mapper["index"]]["count"] += 1
+    #                         occupied_indices[mapper["index"]]["mapper"] = mapper
+    #                     else:
+    #                         occupied_indices[mapper["index"]] = {
+    #                             "count": 0,
+    #                             "mapper": mapper,
+    #                         }
 
-                    # Issue warnings if multiple mappers occupy the same index
-                    for spot in occupied_indices:
-                        entry = occupied_indices[spot]
-                        if entry["count"] > 0:
-                            from_name = entry["mapper"].get("from", None)
-                            from_name = (
-                                from_name["name"]
-                                if from_name is not None
-                                else from_name
-                            )
-                            to_name = entry["mapper"].get("to", None)
-                            to_name = (
-                                to_name["name"] if to_name is not None else to_name
-                            )
-                            warning_list.append(
-                                IndexWarning(
-                                    "Mapping at index {} was overwritten {} time(s); final mapping is '{}' to '{}'".format(
-                                        spot,
-                                        entry["count"],
-                                        from_name,
-                                        to_name,
-                                    )
-                                )
-                            )
+    #                 # Issue warnings if multiple mappers occupy the same index
+    #                 for spot in occupied_indices:
+    #                     entry = occupied_indices[spot]
+    #                     if entry["count"] > 0:
+    #                         from_name = entry["mapper"].get("from", None)
+    #                         from_name = (
+    #                             from_name["name"]
+    #                             if from_name is not None
+    #                             else from_name
+    #                         )
+    #                         to_name = entry["mapper"].get("to", None)
+    #                         to_name = (
+    #                             to_name["name"] if to_name is not None else to_name
+    #                         )
+    #                         warning_list.append(
+    #                             IndexWarning(
+    #                                 "Mapping at index {} was overwritten {} time(s); final mapping is '{}' to '{}'".format(
+    #                                     spot,
+    #                                     entry["count"],
+    #                                     from_name,
+    #                                     to_name,
+    #                                 )
+    #                             )
+    #                         )
 
-                    return self
+    #                 return self
 
-            settings: Optional[Settings] = Settings()
+    #         settings: Optional[Settings] = Settings()
 
-            @field_validator("version", mode="before")
-            @classmethod
-            def normalize_to_int(cls, value: Any):
-                if isinstance(value, Sequence):
-                    return encode_version(*value)
-                return value
+    #         @field_validator("version", mode="before")
+    #         @classmethod
+    #         def normalize_to_int(cls, value: Any):
+    #             if isinstance(value, Sequence):
+    #                 return encode_version(*value)
+    #             return value
 
-        upgrade_planner: UpgradePlannerObject
-        index: Optional[uint16] = Field(
-            None,
-            description="""
-            The index of the blueprint inside a parent BlueprintBook's blueprint
-            list. Only meaningful when this object is inside a BlueprintBook.
-            """,
-        )
+    #     upgrade_planner: UpgradePlannerObject
+    #     index: Optional[uint16] = Field(
+    #         None,
+    #         description="""
+    #         The index of the blueprint inside a parent BlueprintBook's blueprint
+    #         list. Only meaningful when this object is inside a BlueprintBook.
+    #         """,
+    #     )
 
-        model_config = ConfigDict(title="UpgradePlanner")
+    #     model_config = ConfigDict(title="UpgradePlanner")
 
     # =========================================================================
     # Constructors
     # =========================================================================
 
-    @reissue_warnings
-    def __init__(
-        self,
-        upgrade_planner: Union[str, dict, None] = None,
-        index: Optional[uint16] = None,
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-    ):
-        """
-        Constructs a new :py:class:`.UpgradePlanner`.
+    # @reissue_warnings
+    # def __init__(
+    #     self,
+    #     upgrade_planner: Union[str, dict, None] = None,
+    #     index: Optional[uint16] = None,
+    #     validate: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    # ):
+    #     """
+    #     Constructs a new :py:class:`.UpgradePlanner`.
 
-        :param upgrade_planner: Either a dictionary containing all the key
-            attributes to set, or a blueprint string to import.
-        :param index: The index of this blueprintable object in a parent
-            BlueprintBook. Only makes sense if this blueprintable actually
-            exists inside of a BlueprintBook; If omitted, Draftsman will
-            generate this value from the index of this blueprintable in the
-            parent BlueprintBook's :py:attr:`.blueprints` list.
-        :param validate: Whether or not to validate this object after
-            construction, and how strict to be when doing so.
-        :param validate_assignment: Whether or not to validate setting the
-            attributes of this object, and how strict to be when doing so.
-        """
-        self._root: __class__.Format
+    #     :param upgrade_planner: Either a dictionary containing all the key
+    #         attributes to set, or a blueprint string to import.
+    #     :param index: The index of this blueprintable object in a parent
+    #         BlueprintBook. Only makes sense if this blueprintable actually
+    #         exists inside of a BlueprintBook; If omitted, Draftsman will
+    #         generate this value from the index of this blueprintable in the
+    #         parent BlueprintBook's :py:attr:`.blueprints` list.
+    #     :param validate: Whether or not to validate this object after
+    #         construction, and how strict to be when doing so.
+    #     :param validate_assignment: Whether or not to validate setting the
+    #         attributes of this object, and how strict to be when doing so.
+    #     """
+    #     self._root: __class__.Format
 
-        super().__init__(
-            root_item="upgrade_planner",
-            root_format=UpgradePlanner.Format.UpgradePlannerObject,
-            item="upgrade-planner",
-            init_data=upgrade_planner,
-            index=index,
-            validate=validate,
-        )
+    #     super().__init__(
+    #         root_item="upgrade_planner",
+    #         root_format=UpgradePlanner.Format.UpgradePlannerObject,
+    #         item="upgrade-planner",
+    #         init_data=upgrade_planner,
+    #         index=index,
+    #         validate=validate,
+    #     )
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
 
-    @reissue_warnings
-    def setup(
-        self,
-        label: str = None,
-        version: uint64 = __factorio_version_info__,
-        settings: Format.UpgradePlannerObject.Settings = {},
-        index: Optional[uint16] = None,
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        kwargs.pop("item", None)
+    # @reissue_warnings
+    # def setup(
+    #     self,
+    #     label: str = None,
+    #     version: uint64 = __factorio_version_info__,
+    #     settings: Format.UpgradePlannerObject.Settings = {},
+    #     index: Optional[uint16] = None,
+    #     validate: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     kwargs.pop("item", None)
 
-        self.label = label
-        self.version = version
-        # self._root[self._root_item]["settings"] = settings
-        test_replace_me(
-            self,
-            self.Format.UpgradePlannerObject,
-            self._root[self._root_item],
-            "settings",
-            settings,
-            self.validate_assignment,
-        )
+    #     self.label = label
+    #     self.version = version
+    #     # self._root[self._root_item]["settings"] = settings
+    #     test_replace_me(
+    #         self,
+    #         self.Format.UpgradePlannerObject,
+    #         self._root[self._root_item],
+    #         "settings",
+    #         settings,
+    #         self.validate_assignment,
+    #     )
 
-        # self._root[self._root_item]["settings"] = {}
-        # input_settings = kwargs.pop("settings", None)
-        # if input_settings is not None:
-        #     self.mappers = input_settings.pop("mappers", None)
-        #     self.description = input_settings.pop("description", None)
-        #     self.icons = input_settings.pop("icons", None)
+    #     # self._root[self._root_item]["settings"] = {}
+    #     # input_settings = kwargs.pop("settings", None)
+    #     # if input_settings is not None:
+    #     #     self.mappers = input_settings.pop("mappers", None)
+    #     #     self.description = input_settings.pop("description", None)
+    #     #     self.icons = input_settings.pop("icons", None)
 
-        self.index = index
+    #     self.index = index
 
-        # A bit scuffed, but
-        for kwarg, value in kwargs.items():
-            self._root[kwarg] = value
+    #     # A bit scuffed, but
+    #     for kwarg, value in kwargs.items():
+    #         self._root[kwarg] = value
 
-        if validate:
-            self.validate(mode=validate).reissue_all()
+    #     if validate:
+    #         self.validate(mode=validate).reissue_all()
 
     # =========================================================================
     # Properties
     # =========================================================================
 
     @property
-    def description(self) -> Optional[str]:
-        return self._root[self._root_item]["settings"].get("description", None)
-
-    @description.setter
-    def description(self, value: Optional[str]):
-        test_replace_me(
-            self,
-            self.Format.UpgradePlannerObject.Settings,
-            self._root[self._root_item]["settings"],
-            "description",
-            value,
-            self.validate_assignment,
-        )
-        # if self.validate_assignment:
-        #     result = attempt_and_reissue(
-        #         self,
-        #         self.Format.UpgradePlannerObject.Settings,
-        #         self._root[self._root_item]["settings"],
-        #         "description",
-        #         value,
-        #     )
-        #     self._root[self._root_item]["settings"]["description"] = result
-        # else:
-        #     self._root[self._root_item]["settings"]["description"] = value
+    def root_item(self) -> Literal["upgrade_planner"]:
+        return "upgrade_planner"
 
     # =========================================================================
 
-    @property
-    def icons(self) -> Optional[list[Icon]]:
-        return self._root[self._root_item]["settings"].get("icons", None)
-
-    @icons.setter
-    def icons(self, value: Union[list[str], list[Icon], None]):
-        test_replace_me(
-            self,
-            self.Format.UpgradePlannerObject.Settings,
-            self._root[self._root_item]["settings"],
-            "icons",
-            value,
-            self.validate_assignment,
-        )
-        # if self.validate_assignment:
-        #     result = attempt_and_reissue(
-        #         self,
-        #         self.Format.UpgradePlannerObject.Settings,
-        #         self._root[self._root_item]["settings"],
-        #         "icons",
-        #         value,
-        #     )
-        #     self._root[self._root_item]["settings"]["icons"] = result
-        # else:
-        #     self._root[self._root_item]["settings"]["icons"] = value
+    item: str = attrs.field(
+        default="upgrade-planner",
+        # TODO: validators
+        metadata={
+            "omit": False,
+            "location": (lambda cls: cls.root_item.fget(cls), "item"),
+        },
+    )
+    # TODO: description
 
     # =========================================================================
 

@@ -27,6 +27,7 @@ from draftsman.data import signals
 from draftsman.signatures import int32
 from draftsman.utils import reissue_warnings
 
+import attrs
 from pydantic import ConfigDict, Field, ValidationInfo, model_validator, validate_call
 from typing import Any, Literal, Optional, Type, Union
 
@@ -275,6 +276,7 @@ class DeciderOutput(Temp):  # TODO: Exportable
         return self._root.networks
 
 
+@attrs.define
 class DeciderCombinator(
     PlayerDescriptionMixin,
     ControlBehaviorMixin,
@@ -381,121 +383,127 @@ class DeciderCombinator(
 
     #     model_config = ConfigDict(title="DeciderCombinator")
 
-    class Format(
-        PlayerDescriptionMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        DirectionalMixin.Format,
-        Entity.Format,
-    ):
-        class ControlBehavior(DraftsmanBaseModel):
-            class DeciderConditions(DraftsmanBaseModel):
-                # class Output(DraftsmanBaseModel):
-                #     signal: SignalID
-                #     copy_count_from_input: bool = Field(
-                #         True,
-                #         description="""
-                #         Whether or not to copy the value of the selected output
-                #         signal from the input circuit network, or to output the
-                #         selected 'output_signal' with a value of 1.
-                #         """,
-                #     )
-                #     networks: Optional[NetworkSpecification] = Field(
-                #         NetworkSpecification(red=True, green=True),
-                #         description="""
-                #         What wires to pull values from if 'copy_count_from_input'
-                #         is true.""",
-                #     )
+    # class Format(
+    #     PlayerDescriptionMixin.Format,
+    #     ControlBehaviorMixin.Format,
+    #     CircuitConnectableMixin.Format,
+    #     DirectionalMixin.Format,
+    #     Entity.Format,
+    # ):
+    #     class ControlBehavior(DraftsmanBaseModel):
+    #         class DeciderConditions(DraftsmanBaseModel):
+    #             # class Output(DraftsmanBaseModel):
+    #             #     signal: SignalID
+    #             #     copy_count_from_input: bool = Field(
+    #             #         True,
+    #             #         description="""
+    #             #         Whether or not to copy the value of the selected output
+    #             #         signal from the input circuit network, or to output the
+    #             #         selected 'output_signal' with a value of 1.
+    #             #         """,
+    #             #     )
+    #             #     networks: Optional[NetworkSpecification] = Field(
+    #             #         NetworkSpecification(red=True, green=True),
+    #             #         description="""
+    #             #         What wires to pull values from if 'copy_count_from_input'
+    #             #         is true.""",
+    #             #     )
 
-                conditions: list = Field(
-                    [],
-                    description="""
-                    A list of Condition objects specifying when (and what) this
-                    decider combinator should output.""",
-                )
-                outputs: list = Field(
-                    [],
-                    description="""
-                    A list of Output objects specifying what signals should be
-                    passed to the output wire when the conditions evaluate to
-                    true.
-                    """,
-                )
+    #             conditions: list = Field(
+    #                 [],
+    #                 description="""
+    #                 A list of Condition objects specifying when (and what) this
+    #                 decider combinator should output.""",
+    #             )
+    #             outputs: list = Field(
+    #                 [],
+    #                 description="""
+    #                 A list of Output objects specifying what signals should be
+    #                 passed to the output wire when the conditions evaluate to
+    #                 true.
+    #                 """,
+    #             )
 
-                # @model_validator(mode="after")
-                # def ensure_proper_signal_configuration(self, info: ValidationInfo):
-                #     """
-                #     The first signal and output signals can be pure virtual
-                #     signals, but only in a certain configuration as determined
-                #     by `_signal_blacklist`. If the input signal is not a pure
-                #     virtual signal, then the output signal cannot be
-                #     `"signal-anything"` or `"signal-each"`.
-                #     """
-                #     if not info.context or self.output_signal is None:
-                #         return self
-                #     if info.context["mode"] <= ValidationMode.MINIMUM:
-                #         return self
+    #             # @model_validator(mode="after")
+    #             # def ensure_proper_signal_configuration(self, info: ValidationInfo):
+    #             #     """
+    #             #     The first signal and output signals can be pure virtual
+    #             #     signals, but only in a certain configuration as determined
+    #             #     by `_signal_blacklist`. If the input signal is not a pure
+    #             #     virtual signal, then the output signal cannot be
+    #             #     `"signal-anything"` or `"signal-each"`.
+    #             #     """
+    #             #     if not info.context or self.output_signal is None:
+    #             #         return self
+    #             #     if info.context["mode"] <= ValidationMode.MINIMUM:
+    #             #         return self
 
-                #     warning_list: list = info.context["warning_list"]
+    #             #     warning_list: list = info.context["warning_list"]
 
-                #     if self.first_signal is None:
-                #         first_signal_name = None
-                #     else:
-                #         first_signal_name = self.first_signal.name
+    #             #     if self.first_signal is None:
+    #             #         first_signal_name = None
+    #             #     else:
+    #             #         first_signal_name = self.first_signal.name
 
-                #     current_blacklist = _signal_blacklist.get(
-                #         first_signal_name, {"signal-anything", "signal-each"}
-                #     )
-                #     if self.output_signal.name in current_blacklist:
-                #         warning_list.append(
-                #             PureVirtualDisallowedWarning(
-                #                 "'{}' cannot be an output_signal when '{}' is the first operand; 'output_signal' will be removed when imported".format(
-                #                     self.output_signal.name, first_signal_name
-                #                 ),
-                #             )
-                #         )
+    #             #     current_blacklist = _signal_blacklist.get(
+    #             #         first_signal_name, {"signal-anything", "signal-each"}
+    #             #     )
+    #             #     if self.output_signal.name in current_blacklist:
+    #             #         warning_list.append(
+    #             #             PureVirtualDisallowedWarning(
+    #             #                 "'{}' cannot be an output_signal when '{}' is the first operand; 'output_signal' will be removed when imported".format(
+    #             #                     self.output_signal.name, first_signal_name
+    #             #                 ),
+    #             #             )
+    #             #         )
 
-                #     return self
+    #             #     return self
 
-            decider_conditions: Optional[DeciderConditions] = DeciderConditions()
+    #         decider_conditions: Optional[DeciderConditions] = DeciderConditions()
 
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        model_config = ConfigDict(title="DeciderCombinator")
+    #     model_config = ConfigDict(title="DeciderCombinator")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(decider_combinators),
-        position: Union[Vector, PrimitiveVector, None] = None,
-        tile_position: Union[Vector, PrimitiveVector, None] = (0, 0),
-        direction: Optional[Direction] = Direction.NORTH,
-        player_description: Optional[str] = None,
-        control_behavior: Optional[Format.ControlBehavior] = None,
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(decider_combinators),
+    #     position: Union[Vector, PrimitiveVector, None] = None,
+    #     tile_position: Union[Vector, PrimitiveVector, None] = (0, 0),
+    #     direction: Optional[Direction] = Direction.NORTH,
+    #     player_description: Optional[str] = None,
+    #     control_behavior: Optional[Format.ControlBehavior] = None,
+    #     tags: dict[str, Any] = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     """
+    #     TODO
+    #     """
 
-        self.control_behavior: __class__.Format.ControlBehavior
+    #     self.control_behavior: __class__.Format.ControlBehavior
 
-        super().__init__(
-            name,
-            decider_combinators,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            player_description=player_description,
-            control_behavior={} if control_behavior is None else control_behavior,
-            tags=tags,
-            **kwargs
-        )
+    #     super().__init__(
+    #         name,
+    #         decider_combinators,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         direction=direction,
+    #         player_description=player_description,
+    #         control_behavior={} if control_behavior is None else control_behavior,
+    #         tags=tags,
+    #         **kwargs
+    #     )
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
+
+    # =========================================================================
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return decider_combinators
 
     # =========================================================================
 

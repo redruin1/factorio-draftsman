@@ -21,6 +21,7 @@ from draftsman.warning import (
 from draftsman.data.entities import programmable_speakers
 import draftsman.data.instruments as instruments_data
 
+import attrs
 from pydantic import (
     ConfigDict,
     Field,
@@ -30,6 +31,7 @@ from pydantic import (
 from typing import Any, Literal, Optional, Union
 
 
+@attrs.define
 class ProgrammableSpeaker(
     CircuitConditionMixin,
     CircuitEnableMixin,
@@ -330,49 +332,55 @@ class ProgrammableSpeaker(
 
         model_config = ConfigDict(title="ProgrammableSpeaker")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(programmable_speakers),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        control_behavior: Format.ControlBehavior = {},
-        parameters: Format.Parameters = {},
-        alert_parameters: Format.AlertParameters = {},
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
-        self._root: __class__.Format
-        self.control_behavior: __class__.Format.ControlBehavior
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(programmable_speakers),
+    #     position: Union[Vector, PrimitiveVector] = None,
+    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+    #     control_behavior: Format.ControlBehavior = {},
+    #     parameters: Format.Parameters = {},
+    #     alert_parameters: Format.AlertParameters = {},
+    #     tags: dict[str, Any] = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     """
+    #     TODO
+    #     """
+    #     self._root: __class__.Format
+    #     self.control_behavior: __class__.Format.ControlBehavior
 
-        super().__init__(
-            name,
-            programmable_speakers,
-            position=position,
-            tile_position=tile_position,
-            control_behavior=control_behavior,
-            tags=tags,
-            **kwargs
-        )
+    #     super().__init__(
+    #         name,
+    #         programmable_speakers,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         control_behavior=control_behavior,
+    #         tags=tags,
+    #         **kwargs
+    #     )
 
-        # TODO: cache this in a module variable so no redundant data
-        self._instruments = {}
-        # print(instruments_data.raw[self.name][0])
-        for instrument in instruments_data.raw.get(self.name, {}):
-            notes = set()
-            for note in instrument["notes"]:
-                notes.add(note["name"])
-            self._instruments[instrument["name"]] = notes
+    #     # TODO: cache this in a module variable so no redundant data
+    #     self._instruments = {}
+    #     # print(instruments_data.raw[self.name][0])
+    #     for instrument in instruments_data.raw.get(self.name, {}):
+    #         notes = set()
+    #         for note in instrument["notes"]:
+    #             notes.add(note["name"])
+    #         self._instruments[instrument["name"]] = notes
 
-        self.parameters = parameters
-        self.alert_parameters = alert_parameters
+    #     self.parameters = parameters
+    #     self.alert_parameters = alert_parameters
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
+
+    # =========================================================================
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return programmable_speakers
 
     # =========================================================================
 
@@ -842,9 +850,9 @@ class ProgrammableSpeaker(
 
     __hash__ = Entity.__hash__
 
-    def __eq__(self, other) -> bool:
-        return (
-            super().__eq__(other)
-            and self.parameters == other.parameters
-            and self.alert_parameters == other.alert_parameters
-        )
+    # def __eq__(self, other) -> bool:
+    #     return (
+    #         super().__eq__(other)
+    #         and self.parameters == other.parameters
+    #         and self.alert_parameters == other.alert_parameters
+    #     )

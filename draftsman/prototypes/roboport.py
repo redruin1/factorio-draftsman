@@ -13,94 +13,102 @@ from draftsman.utils import get_first
 
 from draftsman.data.entities import roboports
 
+import attrs
 from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
+@attrs.define
 class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     """
     An entity that acts as a node in a logistics network.
     """
 
-    class Format(
-        ControlBehaviorMixin.Format, CircuitConnectableMixin.Format, Entity.Format
-    ):
-        class ControlBehavior(DraftsmanBaseModel):
-            read_logistics: Optional[bool] = Field(
-                True,
-                description="""
-                Whether this roboport will broadcast the contents of the 
-                logistic network it is part of to any connected circuit network.
-                """,
-            )
-            read_robot_stats: Optional[bool] = Field(
-                False,
-                description="""
-                Whether this roboport will broadcast the number of robots in the 
-                logistic network it is part of to any connected circuit network.
-                """,
-            )
-            available_logistic_output_signal: Optional[SignalID] = Field(
-                SignalID(name="signal-X", type="virtual"),
-                description="""
-                The signal to broadcast the number of available logistic robots 
-                on.
-                """,
-            )
-            total_logistic_output_signal: Optional[SignalID] = Field(
-                SignalID(name="signal-Y", type="virtual"),
-                description="""
-                The signal to broadcast the total number of logistic robots on.
-                """,
-            )
-            available_construction_output_signal: Optional[SignalID] = Field(
-                SignalID(name="signal-Z", type="virtual"),
-                description="""
-                The signal to broadcast the number of available construction 
-                robots on.
-                """,
-            )
-            total_construction_output_signal: Optional[SignalID] = Field(
-                SignalID(name="signal-T", type="virtual"),
-                description="""
-                The signal to broadcast the total number of construction robots
-                on.
-                """,
-            )
+    # class Format(
+    #     ControlBehaviorMixin.Format, CircuitConnectableMixin.Format, Entity.Format
+    # ):
+    #     class ControlBehavior(DraftsmanBaseModel):
+    #         read_logistics: Optional[bool] = Field(
+    #             True,
+    #             description="""
+    #             Whether this roboport will broadcast the contents of the 
+    #             logistic network it is part of to any connected circuit network.
+    #             """,
+    #         )
+    #         read_robot_stats: Optional[bool] = Field(
+    #             False,
+    #             description="""
+    #             Whether this roboport will broadcast the number of robots in the 
+    #             logistic network it is part of to any connected circuit network.
+    #             """,
+    #         )
+    #         available_logistic_output_signal: Optional[SignalID] = Field(
+    #             SignalID(name="signal-X", type="virtual"),
+    #             description="""
+    #             The signal to broadcast the number of available logistic robots 
+    #             on.
+    #             """,
+    #         )
+    #         total_logistic_output_signal: Optional[SignalID] = Field(
+    #             SignalID(name="signal-Y", type="virtual"),
+    #             description="""
+    #             The signal to broadcast the total number of logistic robots on.
+    #             """,
+    #         )
+    #         available_construction_output_signal: Optional[SignalID] = Field(
+    #             SignalID(name="signal-Z", type="virtual"),
+    #             description="""
+    #             The signal to broadcast the number of available construction 
+    #             robots on.
+    #             """,
+    #         )
+    #         total_construction_output_signal: Optional[SignalID] = Field(
+    #             SignalID(name="signal-T", type="virtual"),
+    #             description="""
+    #             The signal to broadcast the total number of construction robots
+    #             on.
+    #             """,
+    #         )
 
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        model_config = ConfigDict(title="Roboport")
+    #     model_config = ConfigDict(title="Roboport")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(roboports),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        control_behavior: Format.ControlBehavior = {},
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(roboports),
+    #     position: Union[Vector, PrimitiveVector] = None,
+    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+    #     control_behavior: Format.ControlBehavior = {},
+    #     tags: dict[str, Any] = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     """
+    #     TODO
+    #     """
 
-        self.control_behavior: __class__.Format.ControlBehavior
+    #     self.control_behavior: __class__.Format.ControlBehavior
 
-        super().__init__(
-            name,
-            roboports,
-            position=position,
-            tile_position=tile_position,
-            control_behavior=control_behavior,
-            tags=tags,
-            **kwargs
-        )
+    #     super().__init__(
+    #         name,
+    #         roboports,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         control_behavior=control_behavior,
+    #         tags=tags,
+    #         **kwargs
+    #     )
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
+
+    # =========================================================================
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return roboports
 
     # =========================================================================
 
@@ -292,4 +300,4 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
 
     # =========================================================================
 
-    __hash__ = Entity.__hash__
+    # __hash__ = Entity.__hash__

@@ -171,5 +171,5 @@ class ControlBehaviorMixin:
 
     # =========================================================================
 
-    def __eq__(self, other) -> bool:
-        return super().__eq__(other) and self.control_behavior == other.control_behavior
+    # def __eq__(self, other) -> bool:
+    #     return super().__eq__(other) and self.control_behavior == other.control_behavior

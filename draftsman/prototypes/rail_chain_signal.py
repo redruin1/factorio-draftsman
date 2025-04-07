@@ -15,10 +15,12 @@ from draftsman.utils import get_first
 
 from draftsman.data.entities import rail_chain_signals
 
+import attrs
 from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
+@attrs.define
 class RailChainSignal(
     ReadRailSignalMixin,
     ControlBehaviorMixin,
@@ -31,61 +33,67 @@ class RailChainSignal(
     forward rail block.
     """
 
-    class Format(
-        ReadRailSignalMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        EightWayDirectionalMixin.Format,
-        Entity.Format,
-    ):
-        class ControlBehavior(ReadRailSignalMixin.ControlFormat, DraftsmanBaseModel):
-            blue_output_signal: Optional[SignalID] = Field(
-                SignalID(name="signal-blue", type="virtual"),
-                description="""
-                Circuit signal to output when the train signal reads blue.
-                """,
-            )
+    # class Format(
+    #     ReadRailSignalMixin.Format,
+    #     ControlBehaviorMixin.Format,
+    #     CircuitConnectableMixin.Format,
+    #     EightWayDirectionalMixin.Format,
+    #     Entity.Format,
+    # ):
+    #     class ControlBehavior(ReadRailSignalMixin.ControlFormat, DraftsmanBaseModel):
+    #         blue_output_signal: Optional[SignalID] = Field(
+    #             SignalID(name="signal-blue", type="virtual"),
+    #             description="""
+    #             Circuit signal to output when the train signal reads blue.
+    #             """,
+    #         )
 
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        model_config = ConfigDict(title="RailChainSignal")
+    #     model_config = ConfigDict(title="RailChainSignal")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(rail_chain_signals),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        direction: Direction = Direction.NORTH,
-        control_behavior: Format.ControlBehavior = {},
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(rail_chain_signals),
+    #     position: Union[Vector, PrimitiveVector] = None,
+    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+    #     direction: Direction = Direction.NORTH,
+    #     control_behavior: Format.ControlBehavior = {},
+    #     tags: dict[str, Any] = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     """
+    #     TODO
+    #     """
 
-        self.control_behavior: __class__.Format.ControlBehavior
+    #     self.control_behavior: __class__.Format.ControlBehavior
 
-        # Set a (private) flag to indicate to the constructor to not generate
-        # rotations, and rather just use the same collision set regardless of
-        # rotation
-        self._disable_collision_set_rotation = True
+    #     # Set a (private) flag to indicate to the constructor to not generate
+    #     # rotations, and rather just use the same collision set regardless of
+    #     # rotation
+    #     self._disable_collision_set_rotation = True
 
-        super().__init__(
-            name,
-            rail_chain_signals,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            control_behavior=control_behavior,
-            tags=tags,
-            **kwargs
-        )
+    #     super().__init__(
+    #         name,
+    #         rail_chain_signals,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         direction=direction,
+    #         control_behavior=control_behavior,
+    #         tags=tags,
+    #         **kwargs
+    #     )
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
+
+    # =========================================================================
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return rail_chain_signals
 
     # =========================================================================
 

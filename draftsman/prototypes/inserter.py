@@ -21,10 +21,12 @@ from draftsman.utils import get_first
 
 from draftsman.data.entities import inserters
 
+import attrs
 from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
+@attrs.define
 class Inserter(
     FiltersMixin,
     StackSizeMixin,
@@ -48,107 +50,113 @@ class Inserter(
         :py:class:`~.Inserter` and :py:class:`~.FilterInserter`
     """
 
-    class Format(
-        FiltersMixin.Format,
-        StackSizeMixin.Format,
-        CircuitReadHandMixin.Format,
-        InserterModeOfOperationMixin.Format,
-        CircuitConditionMixin.Format,
-        LogisticConditionMixin.Format,
-        CircuitEnableMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        DirectionalMixin.Format,
-        Entity.Format,
-    ):
-        class ControlBehavior(
-            StackSizeMixin.ControlFormat,
-            CircuitReadHandMixin.ControlFormat,
-            InserterModeOfOperationMixin.ControlFormat,
-            CircuitConditionMixin.ControlFormat,
-            LogisticConditionMixin.ControlFormat,
-            CircuitEnableMixin.ControlFormat,
-            DraftsmanBaseModel,
-        ):
-            circuit_set_filters: Optional[bool] = Field(
-                False,
-                description="""
-                Whether or not inputs from the circuit network should determine 
-                item filters.
-                """,
-            )
+    # class Format(
+    #     FiltersMixin.Format,
+    #     StackSizeMixin.Format,
+    #     CircuitReadHandMixin.Format,
+    #     InserterModeOfOperationMixin.Format,
+    #     CircuitConditionMixin.Format,
+    #     LogisticConditionMixin.Format,
+    #     CircuitEnableMixin.Format,
+    #     ControlBehaviorMixin.Format,
+    #     CircuitConnectableMixin.Format,
+    #     DirectionalMixin.Format,
+    #     Entity.Format,
+    # ):
+    #     class ControlBehavior(
+    #         StackSizeMixin.ControlFormat,
+    #         CircuitReadHandMixin.ControlFormat,
+    #         InserterModeOfOperationMixin.ControlFormat,
+    #         CircuitConditionMixin.ControlFormat,
+    #         LogisticConditionMixin.ControlFormat,
+    #         CircuitEnableMixin.ControlFormat,
+    #         DraftsmanBaseModel,
+    #     ):
+    #         circuit_set_filters: Optional[bool] = Field(
+    #             False,
+    #             description="""
+    #             Whether or not inputs from the circuit network should determine
+    #             item filters.
+    #             """,
+    #         )
 
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        pickup_position: Optional[list[float]] = Field(
-            None,
-            description="""
-            The pickup position to use. Not configurable in vanilla, but 
-            settable via script or mods.
-            """,
-        )
-        drop_position: Optional[list[float]] = Field(
-            None,
-            description="""
-            The drop position to use. Not configurable in vanilla, but settable 
-            via script or mods.
-            """,
-        )
-        filter_mode: Optional[Literal["whitelist", "blacklist"]] = Field(
-            "whitelist",
-            description="""
-            Whether or not to treat the item filters associated with this 
-            inserter as a list of items to allow or a list of items to disallow.
-            """,
-        )
-        spoil_priority: Optional[Literal["spoiled-first", "fresh-first"]] = Field(
-            None,
-            description="""
-            Whether to prefer grabbing the most spoiled or most fresh items from 
-            an inventory.
-            """,
-        )
+    #     pickup_position: Optional[list[float]] = Field(
+    #         None,
+    #         description="""
+    #         The pickup position to use. Not configurable in vanilla, but
+    #         settable via script or mods.
+    #         """,
+    #     )
+    #     drop_position: Optional[list[float]] = Field(
+    #         None,
+    #         description="""
+    #         The drop position to use. Not configurable in vanilla, but settable
+    #         via script or mods.
+    #         """,
+    #     )
+    #     filter_mode: Optional[Literal["whitelist", "blacklist"]] = Field(
+    #         "whitelist",
+    #         description="""
+    #         Whether or not to treat the item filters associated with this
+    #         inserter as a list of items to allow or a list of items to disallow.
+    #         """,
+    #     )
+    #     spoil_priority: Optional[Literal["spoiled-first", "fresh-first"]] = Field(
+    #         None,
+    #         description="""
+    #         Whether to prefer grabbing the most spoiled or most fresh items from
+    #         an inventory.
+    #         """,
+    #     )
 
-        model_config = ConfigDict(title="Inserter")
+    #     model_config = ConfigDict(title="Inserter")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(inserters),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        direction: Direction = Direction.NORTH,
-        pickup_position: Optional[list[float]] = None,
-        drop_position: Optional[list[float]] = None,
-        filter_mode: Literal["whitelist", "blacklist"] = "whitelist",
-        spoil_priority: Literal["spoiled-first", "fresh-first", None] = None,
-        override_stack_size: uint8 = None,
-        control_behavior: Format.ControlBehavior = {},
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        super().__init__(
-            name,
-            inserters,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            override_stack_size=override_stack_size,
-            control_behavior=control_behavior,
-            tags=tags,
-            **kwargs
-        )
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(inserters),
+    #     position: Union[Vector, PrimitiveVector] = None,
+    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+    #     direction: Direction = Direction.NORTH,
+    #     pickup_position: Optional[list[float]] = None,
+    #     drop_position: Optional[list[float]] = None,
+    #     filter_mode: Literal["whitelist", "blacklist"] = "whitelist",
+    #     spoil_priority: Literal["spoiled-first", "fresh-first", None] = None,
+    #     override_stack_size: uint8 = None,
+    #     control_behavior: Format.ControlBehavior = {},
+    #     tags: dict[str, Any] = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     super().__init__(
+    #         name,
+    #         inserters,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         direction=direction,
+    #         override_stack_size=override_stack_size,
+    #         control_behavior=control_behavior,
+    #         tags=tags,
+    #         **kwargs
+    #     )
 
-        self.pickup_position = pickup_position  # TODO: defaults
-        self.drop_position = drop_position  # TODO: defaults
+    #     self.pickup_position = pickup_position  # TODO: defaults
+    #     self.drop_position = drop_position  # TODO: defaults
 
-        self.filter_mode = filter_mode
+    #     self.filter_mode = filter_mode
 
-        self.spoil_priority = spoil_priority
+    #     self.spoil_priority = spoil_priority
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
+
+    # =========================================================================
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return inserters
 
     # =========================================================================
 
@@ -180,7 +188,7 @@ class Inserter(
     @property
     def drop_position(self) -> Optional[list[float]]:
         """
-        The pickup position of the inserter.
+        The drop position of the inserter.
 
         TODO
         """

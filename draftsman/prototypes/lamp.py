@@ -10,7 +10,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode, LampColorMode
-from draftsman.serialization import draftsman_converters
+from draftsman.serialization import draftsman_converters, finalize_fields
 from draftsman.signatures import AttrsColor, Connections, DraftsmanBaseModel
 from draftsman.utils import get_first
 
@@ -22,7 +22,7 @@ from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
-@attrs.define(slots=False)
+@attrs.define # (field_transformer=finalize_fields)
 class Lamp(
     ColorMixin,
     CircuitConditionMixin,
@@ -34,44 +34,44 @@ class Lamp(
     An entity that illuminates an area.
     """
 
-    class Format(
-        CircuitConditionMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        Entity.Format,
-    ):
-        class ControlBehavior(CircuitConditionMixin.ControlFormat, DraftsmanBaseModel):
-            use_colors: Optional[bool] = Field(
-                False,
-                description="""
-                Whether or not the presence of a color signal will affect the
-                light that this lamp emits, if it's circuit condition is met.
-                If multiple colors are passed to the lamp, the color with the
-                first lexographical order is emitted.
-                """,
-            )
-            color_mode: Optional[LampColorMode] = Field(
-                LampColorMode.COLOR_MAPPING,
-                description="""
-                How the lamp should interpret signals when specifying it's color.
-                """,
-            )
+    # class Format(
+    #     CircuitConditionMixin.Format,
+    #     ControlBehaviorMixin.Format,
+    #     CircuitConnectableMixin.Format,
+    #     Entity.Format,
+    # ):
+    #     class ControlBehavior(CircuitConditionMixin.ControlFormat, DraftsmanBaseModel):
+    #         use_colors: Optional[bool] = Field(
+    #             False,
+    #             description="""
+    #             Whether or not the presence of a color signal will affect the
+    #             light that this lamp emits, if it's circuit condition is met.
+    #             If multiple colors are passed to the lamp, the color with the
+    #             first lexographical order is emitted.
+    #             """,
+    #         )
+    #         color_mode: Optional[LampColorMode] = Field(
+    #             LampColorMode.COLOR_MAPPING,
+    #             description="""
+    #             How the lamp should interpret signals when specifying it's color.
+    #             """,
+    #         )
 
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        # color: Optional[Color] = Field(
-        #     Color(r=1, g=1, b=1, a=1),
-        #     description="""
-        #     The constant color of the lamp. Superceeded by any dynamic value
-        #     given to the lamp, if configured as such.
-        #     """,
-        # )
+    #     # color: Optional[Color] = Field(
+    #     #     Color(r=1, g=1, b=1, a=1),
+    #     #     description="""
+    #     #     The constant color of the lamp. Superceeded by any dynamic value
+    #     #     given to the lamp, if configured as such.
+    #     #     """,
+    #     # )
 
-        always_on: Optional[bool] = Field(
-            False, description="""Whether or not this lamp is always on."""
-        )
+    #     always_on: Optional[bool] = Field(
+    #         False, description="""Whether or not this lamp is always on."""
+    #     )
 
-        model_config = ConfigDict(title="Lamp")
+    #     model_config = ConfigDict(title="Lamp")
 
     # @attrs.define
     # class ControlBehavior: # TODO: inherit ConditionMixins

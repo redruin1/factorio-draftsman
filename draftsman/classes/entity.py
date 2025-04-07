@@ -7,12 +7,13 @@ from draftsman.classes.exportable import (
     Exportable,
     ValidationResult,
     attempt_and_reissue,
+    custom_define
 )
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.data import entities
 from draftsman.error import DraftsmanError, DataFormatError
-from draftsman.serialization import MASTER_CONVERTER, draftsman_converters
+from draftsman.serialization import draftsman_converters, regular_structure_factory
 from draftsman.signatures import (
     DraftsmanBaseModel,
     FloatPosition,
@@ -29,6 +30,7 @@ from abc import ABCMeta, abstractmethod
 import attrs
 import cattrs
 import copy
+from functools import wraps
 import math
 from pydantic import (
     ConfigDict,
@@ -88,22 +90,32 @@ class _TileVector(Vector):
         self.entity()._root._position._data[1] = value + self.entity().tile_height / 2
 
 
-@attrs.define
-class Entity(Exportable, EntityLike, metaclass=ABCMeta):
+def strip_entity_number(cls):
+    """
+    Removes "entity_number" from the input signature so that attrs doesn't
+    complain. Editing entity number is better done by moving the location of the
+    entity within the parent "entities" list, as this just makes more intuitive
+    sense (and makes life much simpler).
+    """
+    original_init = cls.__init__
+
+    @wraps(original_init)
+    def new_init(*args, **kwargs):
+        kwargs.pop("entity_number", None)
+        original_init(*args, **kwargs)
+
+    cls.__init__ = new_init
+
+
+# @strip_entity_number
+# @attrs.define(field_transformer=finalize_fields)
+@custom_define(field_order=["name", "id", "position", "tile_position", "quality", "tags", "_parent", "unknown"])
+class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     """
     Entity base-class. Used for all entity types that are specified in Factorio.
     Categorizes entities into "types" based on their class, each of which is
     implemented in :py:mod:`draftsman.prototypes`.
     """
-
-    @property
-    @abstractmethod
-    def similar_entities(self) -> list[str]:
-        """
-        Returns a list of strings representing the names of entities that share
-        the same type.
-        """
-        return []
 
     class Format(DraftsmanBaseModel):
         """
@@ -343,8 +355,39 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
     #     # Entity tags
     #     self.tags = kwargs.get("tags", {})
 
+    def __attrs_pre_init__(self):
+        super(EntityLike).__init__()
+
     def __attrs_post_init__(self):
         self._set_tile_position(None, self.tile_position)
+
+    # =========================================================================
+
+    @property
+    def similar_entities(self) -> list[str]:
+        """
+        Returns a list of strings representing the names of entities that share
+        the same type.
+        """
+        return []
+
+    # =========================================================================
+
+    # entity_number: uint64 = attrs.field(
+    #     validator=attrs.validators.instance_of(uint64),
+    #     metadata={"omit": False}
+    # )
+    # """
+    # The number of the entity in it's parent blueprint, 1-indexed. In practice
+    # this is the index of the dictionary in the blueprint's 'entities' list, but
+    # this is not strictly enforced.
+    # """
+    @property
+    def entity_number(self) -> Optional[uint64]:
+        if self.parent:
+            return self.parent.entities.index(self) + 1
+        else:
+            return None
 
     # =========================================================================
 
@@ -359,19 +402,19 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
 
     @name.validator
     def ensure_name_recognized(self, attribute, value):
-        if self.validation:
-            if value not in entities.raw:
-                msg = "Unknown entity '{}'{}".format(
-                    value, get_suggestion(value, entities.raw.keys(), n=1)
-                )
-                warnings.warn(UnknownEntityWarning(msg))
-            elif value not in self.similar_entities:
-                msg = "'{}' is not a known name for a {}{}".format(
-                    value,
-                    type(self).__name__,
-                    get_suggestion(value, self.similar_entities, n=1),
-                )
-                warnings.warn(UnknownEntityWarning(msg))
+        # if self.validation:
+        if value not in entities.raw:
+            msg = "Unknown entity '{}'{}".format(
+                value, get_suggestion(value, entities.raw.keys(), n=1)
+            )
+            warnings.warn(UnknownEntityWarning(msg))
+        elif value not in self.similar_entities:
+            msg = "'{}' is not a known name for a {}{}".format(
+                value,
+                type(self).__name__,
+                get_suggestion(value, self.similar_entities, n=1),
+            )
+            warnings.warn(UnknownEntityWarning(msg))
 
     # @property
     # def name(self) -> str:
@@ -429,7 +472,7 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
 
     # =========================================================================
 
-    def _set_id(self, attribute: attrs.Attribute, value: Optional[str]):
+    def _set_id(self, _: attrs.Attribute, value: Optional[str]):
         if self.parent:
             if value is None:
                 self.parent.entities._remove_key(self.id)
@@ -449,7 +492,7 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
     """
 
     @id.validator
-    def ensure_id_correct_type(self, attribute: attrs.Attribute, value: Any):
+    def ensure_id_correct_type(self, _: attrs.Attribute, value: Any):
         if value is not None and not isinstance(value, str):
             raise ValueError("TODO")
 
@@ -711,8 +754,8 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
         entity by region. This attribute is always exported, but renamed to
         "position"; read only.
         """
-        if self.parent and hasattr(self.parent, "global_position"):
-            return self.parent.global_position + self.position
+        if self._parent and hasattr(self._parent, "global_position"):
+            return self._parent.global_position + self.position
         else:
             return self.position
 
@@ -980,25 +1023,56 @@ class Entity(Exportable, EntityLike, metaclass=ABCMeta):
     #     return result
 
 
-# draftsman_converters[(1, 0)].register_unstructure_hook(
-#     Entity,
-#     cattrs.gen.make_dict_unstructure_fn(
-#         Entity,
-#         draftsman_converters[(1, 0)],
-#         _cattrs_omit_if_default=True,
-#         name=cattrs.gen.override(omit_if_default=False),
-#         position=cattrs.gen.override(omit_if_default=False),
-#         id=cattrs.gen.override(omit=True)
-#     )
-# )
-# draftsman_converters[(2, 0)].register_unstructure_hook(
-#     Entity,
-#     cattrs.gen.make_dict_unstructure_fn(
-#         Entity,
-#         draftsman_converters[(2, 0)],
-#         _cattrs_omit_if_default=True,
-#         name=cattrs.gen.override(omit_if_default=False),
-#         position=cattrs.gen.override(omit_if_default=False),
-#         id=cattrs.gen.override(omit=True)
-#     )
+def make_entity_structure(cls, converter: cattrs.Converter):
+    parent_structure = regular_structure_factory(cls, converter)
+    attribute_names = {a.name for a in attrs.fields(cls)}
+    import inspect
+    print(cls)
+    print(inspect.getsource(parent_structure))
+    def structure_hook(d: dict, _: type):
+        # Strip "entity_number"
+        d.pop("entity_number", None)
+        # Collapse any attributes we don't recognize into the catch-all dict "unknown"
+        d["unknown"] = {k: d[k] for k in d.keys() - attribute_names}
+        return parent_structure(d, _)
+    return structure_hook
+
+draftsman_converters.register_structure_hook_factory(
+    lambda cls: issubclass(cls, Entity),
+    make_entity_structure
+)
+
+def make_entity_unstructure(cls, converter: cattrs.Converter):
+    parent_unstructure = converter.get_unstructure_hook(cls)
+    import inspect
+    print(cls)
+    print(inspect.getsource(parent_unstructure))
+    def unstructure_hook(inst: Entity):
+        res = parent_unstructure(inst)
+        res.update(inst.unknown)
+        return res
+    return unstructure_hook
+
+draftsman_converters.register_unstructure_hook_factory(
+    lambda cls: issubclass(cls, Entity),
+    make_entity_unstructure
+)
+
+# attrs.field()
+# print({attr.name: attrs.field(default=attr.default, validator=attr.validator, repr=attr.repr, init=attr.init, metadata=attr.metadata, converter=attr.converter, factory=attr.factory, on_setattr=attr.on_setattr) for attr in attrs.fields(Entity)})
+# Entity = attrs.make_class("Entity", attrs={"name": attrs.fields(Entity).name}, class_body={"Format": Entity.Format})
+
+# def strip_entity_number_factory(cls, converter: cattrs.Converter):
+#     default_structure = converter.get_unstructure_hook(cls)
+#     import inspect
+#     print(inspect.getsource(default_structure))
+#     def strip_entity_number(d: dict, type: type):
+#         print("test", d, type)
+#         d.pop("entity_number", None)
+#         return default_structure(d, type)
+#     return strip_entity_number
+
+# draftsman_converters.register_structure_hook_factory(
+#     lambda t: issubclass(t, Entity),
+#     strip_entity_number_factory
 # )

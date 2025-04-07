@@ -7,6 +7,7 @@ from draftsman.utils import Rectangle
 
 from draftsman.data import entities
 
+import attrs
 from pydantic import BaseModel, Field
 from typing import Optional, Union
 
@@ -16,6 +17,7 @@ if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
+@attrs.define(slots=False)
 class OrientationMixin:
     """
     Used in trains and wagons to specify their direction.
@@ -31,31 +33,48 @@ class OrientationMixin:
             """,
         )
 
-    def __init__(self, name: str, similar_entities: list[str], **kwargs):
-        self._root: __class__.Format
+    # def __init__(self, name: str, similar_entities: list[str], **kwargs):
+    #     self._root: __class__.Format
 
-        # Get the (static) property attribute from data.raw
-        # We do this before because we want to overwrite the `collision_set`
-        # property in this class for convenience
-        original = entities.collision_sets.get(name, None)
-        if original is not None:
-            original = original.shapes[0]
-            width = original.bot_right[0] - original.top_left[0]
-            height = original.bot_right[1] - original.top_left[1]
+    #     # Get the (static) property attribute from data.raw
+    #     # We do this before because we want to overwrite the `collision_set`
+    #     # property in this class for convenience
+    #     original = entities.collision_sets.get(name, None)
+    #     if original is not None:
+    #         original = original.shapes[0]
+    #         width = original.bot_right[0] - original.top_left[0]
+    #         height = original.bot_right[1] - original.top_left[1]
 
-            # Make a per-instance copy specific to this rolling stock
-            self._collision_set = CollisionSet([Rectangle((0, 0), width, height, 0)])
-        else:
-            self._collision_set = None
+    #         # Make a per-instance copy specific to this rolling stock
+    #         self._collision_set = CollisionSet([Rectangle((0, 0), width, height, 0)])
+    #     else:
+    #         self._collision_set = None
 
-        super().__init__(name, similar_entities, **kwargs)
+    #     super().__init__(name, similar_entities, **kwargs)
 
-        self.orientation = kwargs.get("orientation", Orientation.NORTH)
+    #     self.orientation = kwargs.get("orientation", Orientation.NORTH)
 
     # =========================================================================
 
+    _collision_set: Optional[CollisionSet] = attrs.field(
+        init=False,
+        repr=False,
+        metadata={"omit": True}
+    )
+    @_collision_set.default
+    def get_default_collision_set(self) -> CollisionSet:
+        original = entities.collision_sets.get(self.name, None)
+        if original is None:
+            return None
+        original = original.shapes[0]
+        # TODO: why are we only grabbing a single rectangle? Shouldn't we be 
+        # grabbing the entire grabbed collision set and rotating it by orientation?
+        width = original.bot_right[0] - original.top_left[0]
+        height = original.bot_right[1] - original.top_left[1]
+        return CollisionSet([Rectangle((0, 0), width, height, 0)])
+
     @property
-    def collision_set(self) -> CollisionSet:
+    def collision_set(self) -> Optional[CollisionSet]:
         return self._collision_set
 
     # =========================================================================
@@ -109,5 +128,5 @@ class OrientationMixin:
 
     # =========================================================================
 
-    def __eq__(self, other) -> bool:
-        return super().__eq__(other) and self.orientation == other.orientation
+    # def __eq__(self, other) -> bool:
+    #     return super().__eq__(other) and self.orientation == other.orientation

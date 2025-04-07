@@ -2,6 +2,7 @@
 
 import attrs
 import cattrs
+from cattrs.gen._shared import find_structure_handler
 
 import functools
 from typing import Any, Callable
@@ -14,11 +15,23 @@ MASTER_CONVERTER_OMIT_NONE_DEFAULTS = cattrs.Converter(omit_if_default=True)
 # TODO: minimize boilerplate here
 
 
-@MASTER_CONVERTER.register_structure_hook_factory(attrs.has)
-def regular_structure_factory(cls):
+# @MASTER_CONVERTER.register_structure_hook_factory(attrs.has)
+def regular_structure_factory(cls, converter):
+    def resolve_location(sd, location):
+        """
+        Try and grab a nested key from a `location` tuple, and return the value
+        if found.
+        """
+        while len(location) > 1:
+            sd = sd[location[0]]
+            location = location[1:]
+        return sd[location[0]]
+
     def structure_hook(d, _):
         res = {}
+        # print("d", d)
         for attr in attrs.fields(cls):
+            # print("attr.name", attr.name)
             attr: attrs.Attribute
             # print(attr)
             if not attr.init:
@@ -26,20 +39,32 @@ def regular_structure_factory(cls):
             location = attr.metadata.get("location", (attr.name,))
             if location is None:
                 continue
-            sd = d
-            while len(location) > 1:
-                sd = sd[location[0]]
-                location = location[1:]
+            # sd = d
+            # while len(location) > 1:
+            #     sd = sd[location[0]]
+            #     location = location[1:]
             # print(sd)
             # Try getting the attribute from the input dict; If it fails, it's
             # either a default or an error which will be caught later
             try:
-                res[attr.name] = sd[location[0]]
+                value = resolve_location(d, location)
             except KeyError:
-                pass
+                continue
+            # If the input object has its own special structuring hook, use that
+            # print("value", value)
+            handler = find_structure_handler(attr, attr.type, converter)
+            if handler is not None:
+                res[attr.name] = handler(value, attr.type)
+            else:
+                res[attr.name] = value
         return cls(**res)
 
     return structure_hook
+
+MASTER_CONVERTER.register_structure_hook_factory(
+    attrs.has,
+    regular_structure_factory
+)
 
 
 @MASTER_CONVERTER.register_unstructure_hook_factory(attrs.has)
@@ -149,6 +174,9 @@ def omit_none_default_unstructure_factory(
             attr: attrs.Attribute
             cattrs_hook = converter.get_unstructure_hook(attr.type)
             value = getattr(inst, attr.name)
+            # print(attr.name)
+            # print(type(inst))
+            # print(value)
             unstructured_value = cattrs_hook(value)
             if attr.metadata.get("omit", None) is False or (
                 value is not None and not is_default(inst, attr, value)
@@ -179,21 +207,38 @@ def omit_none_default_unstructure_factory(
 
 class DraftsmanConverters:
     def __init__(self):
-        self.converters: dict[tuple[tuple, bool, bool], cattrs.Converter] = {}
+        self.converters: dict[
+            tuple[tuple[int, ...]], dict[tuple[bool, bool], cattrs.Converter]
+        ] = {}
 
     def add_version(self, version) -> cattrs.Converter:
-        # (version, exclude_none, exclude_defaults)
-        self.converters[(version, False, False)] = MASTER_CONVERTER.copy()
-        self.converters[(version, True, False)] = MASTER_CONVERTER_OMIT_NONE.copy()
-        self.converters[(version, False, True)] = MASTER_CONVERTER_OMIT_DEFAULTS.copy()
-        self.converters[
-            (version, True, True)
-        ] = MASTER_CONVERTER_OMIT_NONE_DEFAULTS.copy()
-        # return self.converters[version]
+        self.converters[version] = {
+            # (exclude_none, exclude_defaults)
+            (False, False): MASTER_CONVERTER.copy(),
+            (True, False): MASTER_CONVERTER_OMIT_NONE.copy(),
+            (False, True): MASTER_CONVERTER_OMIT_DEFAULTS.copy(),
+            (True, True): MASTER_CONVERTER_OMIT_NONE_DEFAULTS.copy(),
+        }
+
+    def register_structure_hook(self, *args, **kwargs):
+        for version in self.converters.values():
+            for _, converter in version.items():
+                converter.register_structure_hook(*args, **kwargs)
+
+    def register_structure_hook_factory(self, *args, **kwargs):
+        for version in self.converters.values():
+            for _, converter in version.items():
+                converter.register_structure_hook_factory(*args, **kwargs)
 
     def register_unstructure_hook(self, *args, **kwargs):
-        for converter in self.converters.values():
-            converter.register_unstructure_hook(*args, **kwargs)
+        for version in self.converters.values():
+            for _, converter in version.items():
+                converter.register_unstructure_hook(*args, **kwargs)
+
+    def register_unstructure_hook_factory(self, *args, **kwargs):
+        for version in self.converters.values():
+            for _, converter in version.items():
+                converter.register_unstructure_hook_factory(*args, **kwargs)
 
     # @functools.cache
     # def __getitem__(self, item: tuple[int, ...]) -> cattrs.Converter:
@@ -206,13 +251,19 @@ class DraftsmanConverters:
     #     return self.converters[converter_to_use]
 
     @functools.cache
-    def get(self, version: tuple, exclude_none: bool, exclude_defaults: bool):
-        sig = (version, exclude_none, exclude_defaults)
-        if sig not in self.converters:
+    def get(
+        self, version: tuple, exclude_none: bool = False, exclude_defaults: bool = False
+    ):
+        if version not in self.converters:
             # Get the version just "below" the specified version
-            sorted_versions = list(sorted([*self.converters.keys(), sig]))
-            sig = sorted_versions[sorted_versions.index(sig) - 1]
-        return self.converters[sig]
+            sorted_versions = list(sorted([*self.converters.keys(), version]))
+            # print("sorted_versions", sorted_versions)
+            try:
+                version = sorted_versions[sorted_versions.index(version) - 1]
+            except KeyError:
+                raise ValueError("No converter exists for version {}".format(version))
+            # print("selected_version", version)
+        return self.converters[version][(exclude_none, exclude_defaults)]
 
 
 draftsman_converters = DraftsmanConverters()
@@ -223,6 +274,7 @@ draftsman_converters.add_version((2, 0))
 class exported_property(property):
     pass
 
+
 # def exported_property(**kwargs):
 #     def inner(cls):
 #         pass
@@ -230,37 +282,28 @@ class exported_property(property):
 #     result.extra = kwargs
 #     return result
 
+
 def finalize_fields(cls, fields: list[attrs.Attribute]) -> list[attrs.Attribute]:
     """
     Iterate over the "locations" in each field metadata and resolve any lambdas
     to fixed values.
     """
+    # print([field.name for field in fields])
     for index, field in enumerate(fields):
         if field.metadata is not None and "location" in field.metadata:
             if field.metadata["location"] is None:
                 continue
             new_metadata = dict(field.metadata)
-            print(new_metadata)
+            # print(new_metadata)
             l = list(new_metadata["location"])
             for i, item in enumerate(l):
                 if callable(item):
                     l[i] = item(cls)
-            print(l)
             new_metadata["location"] = tuple(l)
-            print(new_metadata)
+            # print(new_metadata)
             fields[index] = field.evolve(metadata=new_metadata)
-    for name, member in cls.__dict__.items():
-        if isinstance(member, exported_property):
-            fields.append(attrs.Attribute(
-                name=name,
-                default=None,
-                validator=None,
-                repr=True,
-                cmp=False,
-                hash=False,
-                init=True,
-                inherited=False,
-            ))
 
-    print(fields)
+    # TODO: something more sophisticated might be necessary
+    # fields.sort(key=lambda attr: attr.name)
+    # print([field.name for field in fields])
     return fields

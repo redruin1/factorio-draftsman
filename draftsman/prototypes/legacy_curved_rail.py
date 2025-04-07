@@ -12,6 +12,7 @@ from draftsman.utils import AABB, Rectangle, get_first
 
 from draftsman.data.entities import legacy_curved_rails
 
+import attrs
 from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
@@ -48,53 +49,60 @@ _collision_set_rotation[Direction.WEST] = _left_turn.rotate(12)
 _collision_set_rotation[Direction.NORTHWEST] = _right_turn.rotate(12)
 
 
+@attrs.define
 class LegacyCurvedRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     """
     An old, 1.0 curved rail entity.
     """
 
-    class Format(
-        DoubleGridAlignedMixin.Format, EightWayDirectionalMixin.Format, Entity.Format
-    ):
-        model_config = ConfigDict(title="LegacyCurvedRail")
+    # class Format(
+    #     DoubleGridAlignedMixin.Format, EightWayDirectionalMixin.Format, Entity.Format
+    # ):
+    #     model_config = ConfigDict(title="LegacyCurvedRail")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(legacy_curved_rails),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        direction: Direction = Direction.NORTH,
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(legacy_curved_rails),
+    #     position: Union[Vector, PrimitiveVector] = None,
+    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+    #     direction: Direction = Direction.NORTH,
+    #     tags: dict[str, Any] = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     """
+    #     TODO
+    #     """
 
-        # This is kinda hacky, but necessary due to Factorio issuing dummy
-        # values for collision boxes. We have to do this before initialization
-        # of the rest of the class because certain things like tile position are
-        # dependent on this information and can be set during initialization
-        # (if we pass in keyword arguments).
+    #     # This is kinda hacky, but necessary due to Factorio issuing dummy
+    #     # values for collision boxes. We have to do this before initialization
+    #     # of the rest of the class because certain things like tile position are
+    #     # dependent on this information and can be set during initialization
+    #     # (if we pass in keyword arguments).
 
-        # We set a (private) flag to ignore the dummy collision box that
-        # Factorio provides
-        self._overwritten_collision_set = True
+    #     # We set a (private) flag to ignore the dummy collision box that
+    #     # Factorio provides
+    #     self._overwritten_collision_set = True
 
-        super().__init__(
-            name,
-            legacy_curved_rails,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            tags=tags,
-            **kwargs
-        )
+    #     super().__init__(
+    #         name,
+    #         legacy_curved_rails,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         direction=direction,
+    #         tags=tags,
+    #         **kwargs
+    #     )
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
+
+    # =========================================================================
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return legacy_curved_rails
 
     # =========================================================================
 

@@ -120,5 +120,5 @@ class ColorMixin:
 
     # =========================================================================
 
-    def __eq__(self, other) -> bool:
-        return super().__eq__(other) and self.color == other.color
+    # def __eq__(self, other) -> bool:
+    #     return super().__eq__(other) and self.color == other.color

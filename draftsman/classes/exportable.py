@@ -4,16 +4,50 @@ from draftsman.constants import ValidationMode
 from draftsman.serialization import draftsman_converters
 
 from draftsman.error import DataFormatError
+from draftsman.warning import UnknownKeywordWarning
 
 import attrs
+from attr._make import _CountingAttr
 import cattrs
 
 from abc import ABCMeta, abstractmethod
 from pydantic import BaseModel, ValidationError
-from typing import Any, List, Literal, Union
+from typing import Any, List, Literal, Optional, Union
 from typing_extensions import Self
 import warnings
 import pprint  # TODO: think about
+
+
+def convert_to_countingattr(attr):
+    """
+    Convert an `Attribute` instance to an equivalent `_CountingAttr` instance.
+    """
+    return attrs.field(**{
+        slot: getattr(attr, slot) 
+        for slot in attr.__slots__ 
+        if slot not in {"name", "eq_key", "order_key", "inherited"}
+    })
+
+def custom_define(field_order: list[str], **kwargs):
+    import inspect
+    def wrapper(cls):
+        these = {}
+        for field_name in field_order:
+            field = getattr(cls, field_name, attrs.field())
+
+            # Grabbing fields from already `@define`d classes return memberdescriptors
+            if inspect.ismemberdescriptor(field):
+                # If so, grab it using attrs plumbing and convert it to _CountingAttr
+                field = getattr(attrs.fields(cls), field_name)
+                field = convert_to_countingattr(field)
+            # If it's not a _CountingAttr, then it must be the default value
+            elif not isinstance(field, _CountingAttr):
+                field = attrs.field(default=field)
+
+            these[field_name] = field
+
+        return attrs.define(cls, these=these, **kwargs)
+    return wrapper
 
 
 def attempt_and_reissue(
@@ -192,7 +226,6 @@ class ValidationResult:
         )
 
 
-@attrs.define
 class Exportable(metaclass=ABCMeta):
     """
     An abstract base class representing an object that has a form within a JSON
@@ -202,12 +235,12 @@ class Exportable(metaclass=ABCMeta):
     """
 
     # _is_valid: bool = attrs.field(default=False, init=False)
-    validation: ValidationMode = attrs.field(
-        default=ValidationMode.NONE,
-        repr=False,
-        eq=False,
-        metadata={"omit": True, "location": None},
-    )
+    # validation: ValidationMode = attrs.field(
+    #     default=ValidationMode.NONE,
+    #     repr=False,
+    #     eq=False,
+    #     metadata={"omit": True, "location": None},
+    # )
 
     # def __init__(self):
     #     self._root: __class__.Format
@@ -278,16 +311,30 @@ class Exportable(metaclass=ABCMeta):
 
     # =========================================================================
 
-    @property
-    def unknown(self) -> bool:
-        """
-        A read-only flag which indicates whether or not Draftsman recognizes
-        this object and thus has a full understanding of it's underlying format.
-        If this flag is ``True``, then most validation for this instance is
-        disabled, only issuing errors/warnings for issues that Draftsman has
-        sufficient information to diagnose.
-        """
-        return True
+    unknown: Optional[dict[Any, Any]] = attrs.field(
+        default=None,
+        metadata={"omit": True}
+    )
+    @unknown.validator
+    def warn_unrecognized_keys(self, attribute, value: Optional[dict]):
+        if value: # is not empty:
+            msg = "'{}' object has no attribute(s) {}; allowed fields are {}".format(
+                type(self).__name__,
+                list(value.keys()),
+                [attr.name for attr in attrs.fields(type(self))]
+            )
+            warnings.warn(UnknownKeywordWarning(msg))
+
+    # @property
+    # def unknown(self) -> bool:
+    #     """
+    #     A read-only flag which indicates whether or not Draftsman recognizes
+    #     this object and thus has a full understanding of it's underlying format.
+    #     If this flag is ``True``, then most validation for this instance is
+    #     disabled, only issuing errors/warnings for issues that Draftsman has
+    #     sufficient information to diagnose.
+    #     """
+    #     return True
 
     # =========================================================================
 
@@ -330,9 +377,17 @@ class Exportable(metaclass=ABCMeta):
     def from_dict(
         cls, d: dict, version: tuple[int, ...] = __factorio_version_info__
     ) -> Self:
+        """
+        TODO
+        """
+        # print("from dict")
+        # print(version)
         # import inspect
-        # print(inspect.getsource(draftsman_converters.get(version, False, False).get_structure_hook(cls)))
-        return draftsman_converters.get(version, False, False).structure(d, cls)
+
+        # print(
+        #     inspect.getsource(draftsman_converters.get(version).get_structure_hook(cls))
+        # )
+        return draftsman_converters.get(version).structure(d, cls)
 
     def to_dict(
         self,
@@ -340,6 +395,9 @@ class Exportable(metaclass=ABCMeta):
         exclude_none: bool = True,
         exclude_defaults: bool = True,
     ) -> dict:
+        """
+        TODO
+        """
         converter = draftsman_converters.get(version, exclude_none, exclude_defaults)
         # print(converter)
         # print(converter.omit_if_default)
@@ -353,7 +411,7 @@ class Exportable(metaclass=ABCMeta):
         #     k: v for k, v in converter.unstructure(self, type(self)).items()
         #     if not ((v is None and exclude_none) or (getattr(self, k) == defaults[k] and exclude_defaults))
         # }
-        return converter.unstructure(self, type(self))
+        return converter.unstructure(self)
         # return self._root.model_dump(
         #     # Some attributes are reserved words ('type', 'from', etc.); this
         #     # resolves that issue

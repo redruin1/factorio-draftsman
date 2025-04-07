@@ -11,8 +11,9 @@ from draftsman.classes.exportable import (
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError, IncorrectBlueprintTypeError
 from draftsman.signatures import (
+    AttrsColor,
     DraftsmanBaseModel,
-    Icon,
+    AttrsIcon,
     normalize_version,
     uint16,
     uint64,
@@ -125,7 +126,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     #             )
     #         )
 
-    @reissue_warnings
     @classmethod
     def from_string(
         cls,
@@ -151,24 +151,30 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         json_dict = string_to_JSON(string)
         # Ensure that the blueprint string actually matches the type of the
         # selected class
-        if cls.root_item not in json_dict:
+        root_item = cls.root_item.fget(cls)
+        if root_item not in json_dict:
             raise IncorrectBlueprintTypeError(
                 "Expected root keyword '{}', found '{}'; input strings must "
                 "match the type of the blueprintable being constructed, or you "
                 "can use "
                 "`draftsman.blueprintable.get_blueprintable_from_string()` to "
                 "generically accept any kind of blueprintable object".format(
-                    cls.root_item, next(iter(json_dict))
+                    root_item, next(iter(json_dict))
                 )
             )
         # Try and get the version from the dictionary, falling back to current
         # environment configuration if not found
-        if "version" in json_dict[cls.root_item]:
-            version = decode_version(json_dict[cls.root_item]["version"])
+        if "version" in json_dict[root_item]:
+            version = decode_version(json_dict[root_item]["version"])
         else:
             version = __factorio_version_info__
 
-        return draftsman_converters.get(version=version).structure(json_dict, cls)
+        # print(version)
+        converter = draftsman_converters.get(version=version)
+        import inspect
+
+        # print(inspect.getsource(converter.get_structure_hook(cls)))
+        return converter.structure(json_dict, cls)
 
         # self.setup(
         #     **root[self._root_item],
@@ -287,6 +293,43 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     # =========================================================================
 
+    label_color: AttrsColor = attrs.field(
+        default=AttrsColor(255, 255, 255, 255),
+        converter=AttrsColor.converter,
+        validator=attrs.validators.instance_of(AttrsColor),
+        metadata={"location": (lambda cls: cls.root_item.fget(cls), "label_color")},
+    )
+    """
+    The color of the Blueprint's label.
+
+    The ``label_color`` parameter exists in a dict format with the "r", "g",
+    "b", and an optional "a" keys. The color can be specified like that, or
+    it can be specified more succinctly as a sequence of 3-4 numbers,
+    representing the colors in that order.
+
+    The value of each of the numbers (according to Factorio spec) can be
+    either in the range of [0.0, 1.0] or [0, 255]; if all the numbers are
+    <= 1.0, the former range is used, and the latter otherwise. If "a" is
+    omitted, it defaults to 1.0 or 255 when imported, depending on the
+    range of the other numbers.
+
+    :getter: Gets the color of the label, or ``None`` if not set.
+    :setter: Sets the label color of the ``Blueprint``.
+
+    :exception DataFormatError: If the input ``label_color`` does not match
+        the above specification.
+
+    :example:
+
+    .. code-block:: python
+
+        blueprint.label_color = (127, 127, 127)
+        print(blueprint.label_color)
+        # {'r': 127.0, 'g': 127.0, 'b': 127.0}
+    """
+
+    # =========================================================================
+
     description: Optional[str] = attrs.field(
         default=None,
         # TODO: validators
@@ -333,8 +376,8 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     # =========================================================================
 
-    icons: Optional[list[Icon]] = attrs.field(
-        default=None,
+    icons: list[AttrsIcon] = attrs.field(
+        factory=list,
         # TODO: TODO: validators + converters
         metadata={"location": (lambda cls: cls.root_item.fget(cls), "icons")},  # FIXME
     )
@@ -442,7 +485,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         """
         new_icons = [None] * len(icon_names)
         for i, icon in enumerate(icon_names):
-            new_icons[i] = Icon(index=i + 1, signal=icon)
+            new_icons[i] = AttrsIcon(index=i + 1, signal=icon)
         self.icons = new_icons
 
     # =========================================================================

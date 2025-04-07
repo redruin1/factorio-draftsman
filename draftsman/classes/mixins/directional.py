@@ -7,13 +7,14 @@ from draftsman.constants import Direction, ValidationMode
 from draftsman.error import DraftsmanError
 from draftsman.warning import DirectionWarning
 
+import attrs
 from pydantic import (
     BaseModel,
     Field,
     ValidationInfo,
     field_validator,
 )
-from typing import Optional
+from typing import Any, Optional
 
 from typing import TYPE_CHECKING
 
@@ -23,6 +24,7 @@ if TYPE_CHECKING:  # pragma: no coverage
 _rotated_collision_sets: dict[str, list[CollisionSet]] = {}
 
 
+@attrs.define(slots=False)
 class DirectionalMixin:
     """
     Allows the Entity to be rotated in the 4 cardinal directions. Sets the
@@ -149,7 +151,9 @@ class DirectionalMixin:
         Whether or not the tile width of this entity matches it's tile height.
         Not exported; read only.
         """
-        return self._tile_width == self._tile_height
+        return (
+            self._tile_width == self._tile_height
+        )  # TODO: should be property accesses
 
     # =========================================================================
 
@@ -166,73 +170,108 @@ class DirectionalMixin:
 
     # =========================================================================
 
-    @property
-    def direction(self) -> Optional[Direction]:
-        """
-        The direction that the Entity is facing. An Entity's "front" is usually
-        the direction of it's outputs, if it has any.
+    def _set_direction(self, _: attrs.Attribute, value: Any):
+        self.direction = value
 
-        For some entities, this attribute may be redundant; for example, the
-        direction value for an :py:class:`.AssemblingMachine` only matters if
-        the machine has a fluid input or output.
+        # TODO: update collision set
 
-        Raises :py:class:`~draftsman.warning.DirectionWarning` if set to a
-        diagonal direction. In that case, the direction will default to the
-        closest valid direction going counter-clockwise. For 8-way rotations,
-        ensure that the Entity inherits :py:class:`.EightwayDirectionalMixin`
-        instead.
-
-        :getter: Gets the direction that the Entity is facing.
-        :setter: Sets the direction of the Entity. Defaults to ``Direction.NORTH``
-            if set to ``None``.
-
-        :exception DraftsmanError: If the direction is set while inside a
-            Collection, and the target entity is both non-square and the
-            particular rotation would change it's apparent tile width and height.
-            See, :ref:`here<handbook.blueprints.forbidden_entity_attributes>`
-            for more info.
-        :exception ValueError: If set to anything other than a ``Direction``, or
-            an equivalent ``int``.
-        """
-        return self._root.direction
-
-    @direction.setter
-    def direction(self, value: Optional[Direction]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "direction", value
-            )
-            self._root.direction = result
-        else:
-            self._root.direction = value
-
-        # Update the collision set
-        # self._collision_set = self._collision_set_rotation.get(
-        #     self._root.direction, None
-        # )
-
-        # Check if the rotation would change the entity's tile width or height
-        if value == Direction.EAST or value == Direction.WEST:
-            new_tile_width = self._static_tile_height
-            new_tile_height = self._static_tile_width
-        else:
-            new_tile_width = self._static_tile_width
-            new_tile_height = self._static_tile_height
-
-        # Actually update tile width and height
-        old_tile_width = self._tile_width
-        old_tile_height = self._tile_height
-        self._tile_width = new_tile_width
-        self._tile_height = new_tile_height
-
-        # Reset the grid/absolute positions in case the width and height are now
-        # different
-        if (
-            not self.square
-            and old_tile_width != new_tile_width
-            and old_tile_height != new_tile_height
-        ):
+        if not self.square:
             self.tile_position = self.tile_position
+
+    direction: Direction = attrs.field(
+        default=Direction.NORTH,
+        converter=Direction,
+        validator=attrs.validators.instance_of(Direction),
+        on_setattr=_set_direction,
+    )
+    """
+    The direction that the Entity is facing. An Entity's "front" is usually
+    the direction of it's outputs, if it has any.
+
+    For some entities, this attribute may be redundant; for example, the
+    direction value for an :py:class:`.AssemblingMachine` only matters if
+    the machine has a fluid input or output.
+
+    Raises :py:class:`~draftsman.warning.DirectionWarning` if set to a
+    diagonal direction. In that case, the direction will default to the
+    closest valid direction going counter-clockwise.
+
+    :exception DraftsmanError: If the direction is set while inside a
+        Collection, and the target entity is both non-square and the
+        particular rotation would change it's apparent tile width and height.
+        See, :ref:`here<handbook.blueprints.forbidden_entity_attributes>`
+        for more info.
+    :exception ValueError: If set to anything other than a ``Direction``, or
+        an equivalent ``int``.
+    """
+
+    # @property
+    # def direction(self) -> Optional[Direction]:
+    #     """
+    #     The direction that the Entity is facing. An Entity's "front" is usually
+    #     the direction of it's outputs, if it has any.
+
+    #     For some entities, this attribute may be redundant; for example, the
+    #     direction value for an :py:class:`.AssemblingMachine` only matters if
+    #     the machine has a fluid input or output.
+
+    #     Raises :py:class:`~draftsman.warning.DirectionWarning` if set to a
+    #     diagonal direction. In that case, the direction will default to the
+    #     closest valid direction going counter-clockwise. For 8-way rotations,
+    #     ensure that the Entity inherits :py:class:`.EightwayDirectionalMixin`
+    #     instead.
+
+    #     :getter: Gets the direction that the Entity is facing.
+    #     :setter: Sets the direction of the Entity. Defaults to ``Direction.NORTH``
+    #         if set to ``None``.
+
+    #     :exception DraftsmanError: If the direction is set while inside a
+    #         Collection, and the target entity is both non-square and the
+    #         particular rotation would change it's apparent tile width and height.
+    #         See, :ref:`here<handbook.blueprints.forbidden_entity_attributes>`
+    #         for more info.
+    #     :exception ValueError: If set to anything other than a ``Direction``, or
+    #         an equivalent ``int``.
+    #     """
+    #     return self._root.direction
+
+    # @direction.setter
+    # def direction(self, value: Optional[Direction]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, type(self).Format, self._root, "direction", value
+    #         )
+    #         self._root.direction = result
+    #     else:
+    #         self._root.direction = value
+
+    #     # Update the collision set
+    #     # self._collision_set = self._collision_set_rotation.get(
+    #     #     self._root.direction, None
+    #     # )
+
+    #     # Check if the rotation would change the entity's tile width or height
+    #     if value == Direction.EAST or value == Direction.WEST:
+    #         new_tile_width = self._static_tile_height
+    #         new_tile_height = self._static_tile_width
+    #     else:
+    #         new_tile_width = self._static_tile_width
+    #         new_tile_height = self._static_tile_height
+
+    #     # Actually update tile width and height
+    #     old_tile_width = self._tile_width
+    #     old_tile_height = self._tile_height
+    #     self._tile_width = new_tile_width
+    #     self._tile_height = new_tile_height
+
+    #     # Reset the grid/absolute positions in case the width and height are now
+    #     # different
+    #     if (
+    #         not self.square
+    #         and old_tile_width != new_tile_width
+    #         and old_tile_height != new_tile_height
+    #     ):
+    #         self.tile_position = self.tile_position
 
     # =========================================================================
 
@@ -242,5 +281,5 @@ class DirectionalMixin:
 
     # =========================================================================
 
-    def __eq__(self, other) -> bool:
-        return super().__eq__(other) and self.direction == other.direction
+    # def __eq__(self, other) -> bool:
+    #     return super().__eq__(other) and self.direction == other.direction

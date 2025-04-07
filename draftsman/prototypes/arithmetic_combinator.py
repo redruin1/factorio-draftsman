@@ -21,11 +21,13 @@ from draftsman.warning import PureVirtualDisallowedWarning, SignalConfigurationW
 
 from draftsman.data.entities import arithmetic_combinators
 
+import attrs
 from pydantic import ConfigDict, Field, ValidationInfo, field_validator, model_validator
 from typing import Any, Literal, Optional, Union
 from typing_extensions import TypedDict
 
 
+@attrs.define
 class ArithmeticCombinator(
     PlayerDescriptionMixin,
     ControlBehaviorMixin,
@@ -38,220 +40,226 @@ class ArithmeticCombinator(
     circuit signals.
     """
 
-    class Format(
-        PlayerDescriptionMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        DirectionalMixin.Format,
-        Entity.Format,
-    ):
-        class ControlBehavior(DraftsmanBaseModel):
-            class ArithmeticConditions(DraftsmanBaseModel):
-                first_constant: Optional[int32] = Field(
-                    None,
-                    description="""
-                    The constant value located in the left slot, if present.
-                    """,
-                )
-                first_signal: Optional[SignalID] = Field(
-                    None,
-                    description="""
-                    The signal type located in the left slot, if present. If
-                    both this key and 'first_constant' are defined, this key
-                    takes precedence.
-                    """,
-                )
-                first_signal_networks: Optional[NetworkSpecification] = Field(
-                    NetworkSpecification(),
-                    description="""
-                    Which input wire networks to pull from when evaluating the 
-                    value of the first signal.
-                    """,
-                )
-                operation: Literal[
-                    "*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR", None
-                ] = Field(
-                    "*",
-                    description="""
-                    The operation to perform on the two operands.
-                    """,
-                )
-                second_constant: Optional[int32] = Field(
-                    0,
-                    description="""
-                    The constant value located in the right slot, if present.
-                    """,
-                )
-                second_signal: Optional[SignalID] = Field(
-                    None,
-                    description="""
-                    The signal type located in the right slot, if present. If
-                    both this key and 'second_constant' are defined, this key
-                    takes precedence.
-                    """,
-                )
-                second_signal_networks: Optional[NetworkSpecification] = Field(
-                    NetworkSpecification(),
-                    description="""
-                    Which input wire networks to pull from when evaluating the 
-                    value of the second signal.
-                    """,
-                )
-                output_signal: Optional[SignalID] = Field(
-                    None,
-                    description="""
-                    The output signal to emit the operation result as. Can be
-                    'signal-each', but only if one of 'first_signal' or 
-                    'second_signal' is also 'signal-each'. No other pure virtual
-                    signals are permitted in arithmetic combinators.
-                    """,
-                )
+    # class Format(
+    #     PlayerDescriptionMixin.Format,
+    #     ControlBehaviorMixin.Format,
+    #     CircuitConnectableMixin.Format,
+    #     DirectionalMixin.Format,
+    #     Entity.Format,
+    # ):
+    #     class ControlBehavior(DraftsmanBaseModel):
+    #         class ArithmeticConditions(DraftsmanBaseModel):
+    #             first_constant: Optional[int32] = Field(
+    #                 None,
+    #                 description="""
+    #                 The constant value located in the left slot, if present.
+    #                 """,
+    #             )
+    #             first_signal: Optional[SignalID] = Field(
+    #                 None,
+    #                 description="""
+    #                 The signal type located in the left slot, if present. If
+    #                 both this key and 'first_constant' are defined, this key
+    #                 takes precedence.
+    #                 """,
+    #             )
+    #             first_signal_networks: Optional[NetworkSpecification] = Field(
+    #                 NetworkSpecification(),
+    #                 description="""
+    #                 Which input wire networks to pull from when evaluating the 
+    #                 value of the first signal.
+    #                 """,
+    #             )
+    #             operation: Literal[
+    #                 "*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR", None
+    #             ] = Field(
+    #                 "*",
+    #                 description="""
+    #                 The operation to perform on the two operands.
+    #                 """,
+    #             )
+    #             second_constant: Optional[int32] = Field(
+    #                 0,
+    #                 description="""
+    #                 The constant value located in the right slot, if present.
+    #                 """,
+    #             )
+    #             second_signal: Optional[SignalID] = Field(
+    #                 None,
+    #                 description="""
+    #                 The signal type located in the right slot, if present. If
+    #                 both this key and 'second_constant' are defined, this key
+    #                 takes precedence.
+    #                 """,
+    #             )
+    #             second_signal_networks: Optional[NetworkSpecification] = Field(
+    #                 NetworkSpecification(),
+    #                 description="""
+    #                 Which input wire networks to pull from when evaluating the 
+    #                 value of the second signal.
+    #                 """,
+    #             )
+    #             output_signal: Optional[SignalID] = Field(
+    #                 None,
+    #                 description="""
+    #                 The output signal to emit the operation result as. Can be
+    #                 'signal-each', but only if one of 'first_signal' or 
+    #                 'second_signal' is also 'signal-each'. No other pure virtual
+    #                 signals are permitted in arithmetic combinators.
+    #                 """,
+    #             )
 
-                @field_validator("operation", mode="before")
-                @classmethod
-                def ensure_upper(cls, value: Optional[str]):
-                    if isinstance(value, str):
-                        return value.upper()
-                    return value
+    #             @field_validator("operation", mode="before")
+    #             @classmethod
+    #             def ensure_upper(cls, value: Optional[str]):
+    #                 if isinstance(value, str):
+    #                     return value.upper()
+    #                 return value
 
-                @model_validator(mode="after")
-                def ensure_no_forbidden_signals(self, info: ValidationInfo):
-                    if not info.context:
-                        return self
-                    if info.context["mode"] <= ValidationMode.MINIMUM:
-                        return self
+    #             @model_validator(mode="after")
+    #             def ensure_no_forbidden_signals(self, info: ValidationInfo):
+    #                 if not info.context:
+    #                     return self
+    #                 if info.context["mode"] <= ValidationMode.MINIMUM:
+    #                     return self
 
-                    warning_list: list = info.context["warning_list"]
+    #                 warning_list: list = info.context["warning_list"]
 
-                    signals = [
-                        self.first_signal,
-                        self.second_signal,
-                        self.output_signal,
-                    ]
-                    signals = [signal for signal in signals if signal is not None]
-                    forbidden_virtual_signals = {"signal-anything", "signal-everything"}
-                    for signal in signals:
-                        if signal.name in forbidden_virtual_signals:
-                            warning_list.append(
-                                PureVirtualDisallowedWarning(
-                                    "signal '{}' is not allowed anywhere in an arithmetic combinator".format(
-                                        signal.name
-                                    )
-                                )
-                            )
-                            break
+    #                 signals = [
+    #                     self.first_signal,
+    #                     self.second_signal,
+    #                     self.output_signal,
+    #                 ]
+    #                 signals = [signal for signal in signals if signal is not None]
+    #                 forbidden_virtual_signals = {"signal-anything", "signal-everything"}
+    #                 for signal in signals:
+    #                     if signal.name in forbidden_virtual_signals:
+    #                         warning_list.append(
+    #                             PureVirtualDisallowedWarning(
+    #                                 "signal '{}' is not allowed anywhere in an arithmetic combinator".format(
+    #                                     signal.name
+    #                                 )
+    #                             )
+    #                         )
+    #                         break
 
-                    return self
+    #                 return self
 
-                # @model_validator(mode="after") # 1.0
-                # def prohibit_2_each_signals(self, info: ValidationInfo):
-                #     if not info.context:
-                #         return self
-                #     if info.context["mode"] <= ValidationMode.MINIMUM:
-                #         return self
+    #             # @model_validator(mode="after") # 1.0
+    #             # def prohibit_2_each_signals(self, info: ValidationInfo):
+    #             #     if not info.context:
+    #             #         return self
+    #             #     if info.context["mode"] <= ValidationMode.MINIMUM:
+    #             #         return self
 
-                #     # This check only applies to Factorio 1.X
-                #     if info.context["environment_version"] >= (2, 0):
-                #         return self
+    #             #     # This check only applies to Factorio 1.X
+    #             #     if info.context["environment_version"] >= (2, 0):
+    #             #         return self
 
-                #     warning_list: list = info.context["warning_list"]
+    #             #     warning_list: list = info.context["warning_list"]
 
-                #     # Ensure that "signal-each" does not occupy both first and
-                #     # second signal slots
-                #     if self.first_signal is not None and self.second_signal is not None:
-                #         if (
-                #             self.first_signal.name == "signal-each"
-                #             and self.second_signal.name == "signal-each"
-                #         ):
-                #             warning_list.append(
-                #                 SignalConfigurationWarning(
-                #                     "Cannot have 'signal-each' occupy both the first and second slots of an arithmetic combinator"
-                #                 )
-                #             )
+    #             #     # Ensure that "signal-each" does not occupy both first and
+    #             #     # second signal slots
+    #             #     if self.first_signal is not None and self.second_signal is not None:
+    #             #         if (
+    #             #             self.first_signal.name == "signal-each"
+    #             #             and self.second_signal.name == "signal-each"
+    #             #         ):
+    #             #             warning_list.append(
+    #             #                 SignalConfigurationWarning(
+    #             #                     "Cannot have 'signal-each' occupy both the first and second slots of an arithmetic combinator"
+    #             #                 )
+    #             #             )
 
-                #     return self
+    #             #     return self
 
-                @model_validator(mode="after")
-                def ensure_proper_each_configuration(self, info: ValidationInfo):
-                    if not info.context:
-                        return self
-                    if info.context["mode"] <= ValidationMode.MINIMUM:
-                        return self
+    #             @model_validator(mode="after")
+    #             def ensure_proper_each_configuration(self, info: ValidationInfo):
+    #                 if not info.context:
+    #                     return self
+    #                 if info.context["mode"] <= ValidationMode.MINIMUM:
+    #                     return self
 
-                    warning_list: list = info.context["warning_list"]
+    #                 warning_list: list = info.context["warning_list"]
 
-                    # TODO: ensure this is only called on validation of the entire
-                    # thing
+    #                 # TODO: ensure this is only called on validation of the entire
+    #                 # thing
 
-                    # Ensure that if the output signal is set to "signal-each",
-                    # one of the input signals must also be "signal-each"
-                    # TODO: write this better
-                    each_in_inputs = False
-                    if (
-                        self.first_signal is not None
-                        and self.first_signal.name == "signal-each"
-                    ):
-                        each_in_inputs = True
-                    elif (
-                        self.second_signal is not None
-                        and self.second_signal.name == "signal-each"
-                    ):
-                        each_in_inputs = True
+    #                 # Ensure that if the output signal is set to "signal-each",
+    #                 # one of the input signals must also be "signal-each"
+    #                 # TODO: write this better
+    #                 each_in_inputs = False
+    #                 if (
+    #                     self.first_signal is not None
+    #                     and self.first_signal.name == "signal-each"
+    #                 ):
+    #                     each_in_inputs = True
+    #                 elif (
+    #                     self.second_signal is not None
+    #                     and self.second_signal.name == "signal-each"
+    #                 ):
+    #                     each_in_inputs = True
 
-                    if self.output_signal is not None:
-                        if (
-                            self.output_signal.name == "signal-each"
-                            and not each_in_inputs
-                        ):
-                            warning_list.append(
-                                SignalConfigurationWarning(
-                                    "Cannot set the output signal to 'signal-each' when neither of the input signals are 'signal-each'"
-                                )
-                            )
+    #                 if self.output_signal is not None:
+    #                     if (
+    #                         self.output_signal.name == "signal-each"
+    #                         and not each_in_inputs
+    #                     ):
+    #                         warning_list.append(
+    #                             SignalConfigurationWarning(
+    #                                 "Cannot set the output signal to 'signal-each' when neither of the input signals are 'signal-each'"
+    #                             )
+    #                         )
 
-                    return self
+    #                 return self
 
-            arithmetic_conditions: Optional[
-                ArithmeticConditions
-            ] = ArithmeticConditions()
+    #         arithmetic_conditions: Optional[
+    #             ArithmeticConditions
+    #         ] = ArithmeticConditions()
 
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        model_config = ConfigDict(title="ArithmeticCombinator")
+    #     model_config = ConfigDict(title="ArithmeticCombinator")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(arithmetic_combinators),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        direction: Optional[Direction] = Direction.NORTH,
-        player_description: Optional[str] = None,
-        control_behavior: Format.ControlBehavior = {},
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(arithmetic_combinators),
+    #     position: Union[Vector, PrimitiveVector] = None,
+    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+    #     direction: Optional[Direction] = Direction.NORTH,
+    #     player_description: Optional[str] = None,
+    #     control_behavior: Format.ControlBehavior = {},
+    #     tags: dict[str, Any] = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     """
+    #     TODO
+    #     """
 
-        self.control_behavior: __class__.Format.ControlBehavior
+    #     self.control_behavior: __class__.Format.ControlBehavior
 
-        super().__init__(
-            name,
-            arithmetic_combinators,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            player_description=player_description,
-            control_behavior=control_behavior,
-            tags=tags,
-            **kwargs
-        )
+    #     super().__init__(
+    #         name,
+    #         arithmetic_combinators,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         direction=direction,
+    #         player_description=player_description,
+    #         control_behavior=control_behavior,
+    #         tags=tags,
+    #         **kwargs
+    #     )
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
+
+    # =========================================================================
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return arithmetic_combinators
 
     # =========================================================================
 

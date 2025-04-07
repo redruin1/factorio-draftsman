@@ -169,6 +169,24 @@ class Direction(IntEnum):
         }
         return mapping[self] * magnitude
 
+    def to_legacy(self) -> "LegacyDirection":
+        """
+        Converts this :py:class:`.Direction` to a :py:class:`.LegacyDirection`.
+        """
+        mapping = {
+            # fmt: off
+            Direction.NORTH:     LegacyDirection.NORTH,
+            Direction.NORTHEAST: LegacyDirection.NORTHEAST,
+            Direction.EAST:      LegacyDirection.EAST,
+            Direction.SOUTHEAST: LegacyDirection.SOUTHEAST,
+            Direction.SOUTH:     LegacyDirection.SOUTH,
+            Direction.SOUTHWEST: LegacyDirection.SOUTHWEST,
+            Direction.WEST:      LegacyDirection.WEST,
+            Direction.NORTHWEST: LegacyDirection.NORTHWEST,
+            # fmt: on
+        }
+        return mapping[self]
+
 
 class LegacyDirection(IntEnum):
     """
@@ -264,14 +282,14 @@ class LegacyDirection(IntEnum):
         """
         mapping = {
             # fmt: off
-            Direction.NORTH:     Orientation.NORTH,
-            Direction.NORTHEAST: Orientation.NORTHEAST,
-            Direction.EAST:      Orientation.EAST,
-            Direction.SOUTHEAST: Orientation.SOUTHEAST,
-            Direction.SOUTH:     Orientation.SOUTH,
-            Direction.SOUTHWEST: Orientation.SOUTHWEST,
-            Direction.WEST:      Orientation.WEST,
-            Direction.NORTHWEST: Orientation.NORTHWEST,
+            LegacyDirection.NORTH:     Orientation.NORTH,
+            LegacyDirection.NORTHEAST: Orientation.NORTHEAST,
+            LegacyDirection.EAST:      Orientation.EAST,
+            LegacyDirection.SOUTHEAST: Orientation.SOUTHEAST,
+            LegacyDirection.SOUTH:     Orientation.SOUTH,
+            LegacyDirection.SOUTHWEST: Orientation.SOUTHWEST,
+            LegacyDirection.WEST:      Orientation.WEST,
+            LegacyDirection.NORTHWEST: Orientation.NORTHWEST,
             # fmt: on
         }
         return mapping[self]
@@ -298,17 +316,35 @@ class LegacyDirection(IntEnum):
         srt2 = 2 ** (-1 / 2)
         mapping = {
             # fmt: off
-            Direction.NORTH:     Vector(0, -1),
-            Direction.NORTHEAST: Vector(srt2, -srt2),
-            Direction.EAST:      Vector(1, 0),
-            Direction.SOUTHEAST: Vector(srt2, srt2),
-            Direction.SOUTH:     Vector(0, 1),
-            Direction.SOUTHWEST: Vector(-srt2, srt2),
-            Direction.WEST:      Vector(-1, 0),
-            Direction.NORTHWEST: Vector(-srt2, -srt2),
+            LegacyDirection.NORTH:     Vector(0, -1),
+            LegacyDirection.NORTHEAST: Vector(srt2, -srt2),
+            LegacyDirection.EAST:      Vector(1, 0),
+            LegacyDirection.SOUTHEAST: Vector(srt2, srt2),
+            LegacyDirection.SOUTH:     Vector(0, 1),
+            LegacyDirection.SOUTHWEST: Vector(-srt2, srt2),
+            LegacyDirection.WEST:      Vector(-1, 0),
+            LegacyDirection.NORTHWEST: Vector(-srt2, -srt2),
             # fmt: on
         }
         return mapping[self] * magnitude
+
+    def to_modern(self) -> Direction:
+        """
+        Converts this :py:class:`.LegactDirection` to a :py:class:`.Direction`.
+        """
+        mapping = {
+            # fmt: off
+            LegacyDirection.NORTH:     Direction.NORTH,
+            LegacyDirection.NORTHEAST: Direction.NORTHEAST,
+            LegacyDirection.EAST:      Direction.EAST,
+            LegacyDirection.SOUTHEAST: Direction.SOUTHEAST,
+            LegacyDirection.SOUTH:     Direction.SOUTH,
+            LegacyDirection.SOUTHWEST: Direction.SOUTHWEST,
+            LegacyDirection.WEST:      Direction.WEST,
+            LegacyDirection.NORTHWEST: Direction.NORTHWEST,
+            # fmt: on
+        }
+        return mapping[self]
 
 
 # class OrientationMeta(type):

@@ -5,18 +5,20 @@ from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.exportable import Exportable, ValidationResult
 from draftsman.classes.spatial_hashmap import SpatialDataStructure, SpatialHashMap
 from draftsman.constants import ValidationMode
-from draftsman.entity import new_entity
+from draftsman.entity import get_class, new_entity
 from draftsman.error import (
     DataFormatError,
     DuplicateIDError,
     InvalidAssociationError,
     InvalidEntityError,
 )
+from draftsman.serialization import draftsman_converters
 from draftsman.utils import reissue_warnings
 from draftsman.signatures import Connections, DraftsmanBaseModel
 from draftsman.warning import HiddenEntityWarning
 from draftsman import utils
 
+import cattrs
 from collections.abc import MutableSequence
 from copy import deepcopy
 from pydantic import (
@@ -71,6 +73,7 @@ class EntityList(Exportable, MutableSequence):
         self,
         parent: "EntityCollection" = None,
         initlist: Optional[list[EntityLike]] = [],
+        copy: bool = True,
         validate_assignment: Union[
             ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
         ] = ValidationMode.STRICT,
@@ -100,9 +103,10 @@ class EntityList(Exportable, MutableSequence):
         if initlist is not None:
             for elem in initlist:
                 if isinstance(elem, EntityLike):
-                    self.append(elem)
+                    self.append(elem, copy=copy)
                 elif isinstance(elem, dict):
                     name = elem.pop("name")
+                    # self.append(new_entity(name, **elem))
                     self.append(name, **elem)
                 else:
                     raise TypeError(
@@ -265,6 +269,7 @@ class EntityList(Exportable, MutableSequence):
             assert inserter is blueprint.entities[0]
             assert blueprint.entities[0].stack_size_override == 1
         """
+        # print(name)
         # Convert to new Entity if constructed via string keyword
         new = False
         if isinstance(name, str):
@@ -301,7 +306,7 @@ class EntityList(Exportable, MutableSequence):
         # Of course, this feature is optional, so if you're going to validate
         # the final blueprintable at the end anyway you can disable this feature
         # and save some overhead
-        if self.validate_assignment:
+        if True:
             # Validate the object itself
             # entitylike.validate(mode=self.validate_assignment).reissue_all()
             # Check for issues regarding placing this entity in the parent object
@@ -800,3 +805,40 @@ class EntityList(Exportable, MutableSequence):
 
         # Reconstruct idx_to_key
         self.idx_to_key = {value: key for key, value in self.key_to_idx.items()}
+
+
+# draftsman_converters.register_structure_hook(
+#     EntityList,
+#     # This does work even though parent is None; this is on_setattr correctly
+#     # handles the cases where we pass a new entity list
+#     # It is inefficient since we construct 2 EntityList objects, but...
+#     lambda d, _type: EntityList(None, d)
+# )
+# draftsman_converters.get((1, 0)).register_structure_hook(
+#     EntityList,
+#     lambda l, _type: EntityList(None, [draftsman_converters.get((1, 0)).structure(elem) for elem in l])
+# )
+# draftsman_converters.get((2, 0)).register_structure_hook(
+#     EntityList,
+#     lambda l, _type: EntityList(None, [new_entity(**elem) for elem in l])
+# )
+
+
+def _entity_list_structure_factory(cls, converter: cattrs.Converter):
+    def structure_hook(l: list, t: type):
+        # print("l", l)
+        return EntityList(
+            None, [converter.structure(elem, get_class(elem)) for elem in l], copy=False
+        )
+
+    return structure_hook
+
+
+draftsman_converters.register_structure_hook_factory(
+    lambda cls: issubclass(cls, EntityList), _entity_list_structure_factory
+)
+
+# draftsman_converters.register_unstructure_hook(
+#     EntityList,
+#     lambda inst: [elem.to_dict(entity_number=i) for i, elem in enumerate(inst)] # TODO: versions
+# )

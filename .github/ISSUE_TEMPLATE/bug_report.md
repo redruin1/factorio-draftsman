@@ -28,8 +28,8 @@ If your issue is related to mod-loading with `draftsman-update`, in addition to 
 2. The error produced by the command (if the command does fail)
 3. The mod list with their versions used with the command
 
-The 3rd item can be created manually, but can generated automatically and quickly by running the command:
+The 3rd item can be created manually, but can also be generated quickly and automatically by running the command:
 ```
-draftsman-update --path mods/that/failed --report
+draftsman list
 ```
 The result can then be (preferably) added alongside the issue body or (if too large for concise viewing) included as a file attachment.

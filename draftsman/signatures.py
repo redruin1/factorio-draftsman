@@ -23,6 +23,7 @@ from draftsman.data.signals import (
 )
 from draftsman.data import entities, fluids, items, signals, tiles
 from draftsman.error import InvalidMapperError, InvalidSignalError, DataFormatError
+from draftsman.serialization import draftsman_converters
 from draftsman.utils import encode_version, get_suggestion
 from draftsman.warning import (
     BarWarning,
@@ -590,6 +591,18 @@ class Icon(DraftsmanBaseModel):
         #     return value
 
 
+@attrs.define
+class AttrsIcon:
+    signal: AttrsSignalID = attrs.field()  # TODO: validators
+    """
+    Which signal icon to display.
+    """
+    index: uint8 = attrs.field()
+    """
+    Numeric index of the icon, 1-based.
+    """
+
+
 def normalize_icons(value: Any):
     if isinstance(value, str):
         return value
@@ -675,8 +688,8 @@ class AttrsColor:
     def converter(cls, input) -> "AttrsColor":
         if isinstance(input, AttrsColor):
             return input
-        elif isinstance(input, list):  # TODO: sequence
-            return cls.from_sequence(*input)
+        elif isinstance(input, (tuple, list)):  # TODO: sequence
+            return cls.from_sequence(input)
         elif isinstance(input, dict):
             return cls(**input)
         else:
@@ -1281,7 +1294,7 @@ class SignalFilter(DraftsmanBaseModel):
 
 
 class Section(DraftsmanBaseModel):
-    index: uint32
+    index: uint32  # TODO: 0-based or 1-based?
     filters: Optional[list[SignalFilter]] = []
     group: Optional[str] = Field(
         None,

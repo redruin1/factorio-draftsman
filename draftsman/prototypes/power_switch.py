@@ -18,10 +18,12 @@ from draftsman.utils import get_first
 
 from draftsman.data.entities import power_switches
 
+import attrs
 from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
+@attrs.define
 class PowerSwitch(
     CircuitConditionMixin,
     LogisticConditionMixin,
@@ -62,32 +64,38 @@ class PowerSwitch(
 
         model_config = ConfigDict(title="PowerSwitch")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(power_switches),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        control_behavior: Format.ControlBehavior = {},
-        switch_state: bool = False,
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        super().__init__(
-            name,
-            power_switches,
-            position=position,
-            tile_position=tile_position,
-            control_behavior=control_behavior,
-            tags=tags,
-            **kwargs
-        )
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(power_switches),
+    #     position: Union[Vector, PrimitiveVector] = None,
+    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+    #     control_behavior: Format.ControlBehavior = {},
+    #     switch_state: bool = False,
+    #     tags: dict[str, Any] = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     super().__init__(
+    #         name,
+    #         power_switches,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         control_behavior=control_behavior,
+    #         tags=tags,
+    #         **kwargs
+    #     )
 
-        self.switch_state = switch_state
+    #     self.switch_state = switch_state
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
+
+    # =========================================================================
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return power_switches
 
     # =========================================================================
 
@@ -149,5 +157,5 @@ class PowerSwitch(
 
     __hash__ = Entity.__hash__
 
-    def __eq__(self, other) -> bool:
-        return super().__eq__(other) and self.switch_state == other.switch_state
+    # def __eq__(self, other) -> bool:
+    #     return super().__eq__(other) and self.switch_state == other.switch_state

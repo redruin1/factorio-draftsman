@@ -30,6 +30,7 @@ from draftsman.warning import UnknownTileWarning
 
 import draftsman.data.tiles as tiles
 
+import attrs
 from pydantic import (
     ConfigDict,
     GetCoreSchemaHandler,
@@ -51,6 +52,7 @@ _TILE_COLLISION_SET = CollisionSet([AABB(0, 0, 1, 1)])
 _TILE_COLLISION_SET = CollisionSet([AABB(0, 0, 1, 1)])
 
 
+@attrs.define
 class Tile(SpatialLike, Exportable):
     """
     Tile class. Used for keeping track of tiles in Blueprints.
@@ -101,50 +103,50 @@ class Tile(SpatialLike, Exportable):
             title="Tile",
         )
 
-    def __init__(
-        self,
-        name: str,
-        position=(0, 0),
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs,
-    ):
-        """
-        Create a new Tile with ``name`` at ``position``. ``position`` defaults
-        to ``(0, 0)``.
+    # def __init__(
+    #     self,
+    #     name: str,
+    #     position=(0, 0),
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs,
+    # ):
+    #     """
+    #     Create a new Tile with ``name`` at ``position``. ``position`` defaults
+    #     to ``(0, 0)``.
 
-        :param name: Name of the Tile to create.
-        :param position: Position of the tile, in grid-coordinates.
+    #     :param name: Name of the Tile to create.
+    #     :param position: Position of the tile, in grid-coordinates.
 
-        :exception InvalidTileError: If the name is not a valid Factorio tile id.
-        :exception IndexError: If the position does not match the correct
-            specification.
-        """
-        self._root: __class__.Format
+    #     :exception InvalidTileError: If the name is not a valid Factorio tile id.
+    #     :exception IndexError: If the position does not match the correct
+    #         specification.
+    #     """
+    #     self._root: __class__.Format
 
-        super().__init__()
+    #     super().__init__()
 
-        # self._root = __class__.Format.model_construct({**kwargs})
-        self._root = type(self).Format.model_validate(
-            {"name": name, "position": {"x": 0, "y": 0}, **kwargs},
-            strict=False,
-            context={"construction": True, "mode": ValidationMode.NONE},
-        )
+    #     # self._root = __class__.Format.model_construct({**kwargs})
+    #     self._root = type(self).Format.model_validate(
+    #         {"name": name, "position": {"x": 0, "y": 0}, **kwargs},
+    #         strict=False,
+    #         context={"construction": True, "mode": ValidationMode.NONE},
+    #     )
 
-        # Setup private attributes
-        self._root._position = Vector(0, 0)
+    #     # Setup private attributes
+    #     self._root._position = Vector(0, 0)
 
-        # Reference to parent blueprint
-        self._parent = None
+    #     # Reference to parent blueprint
+    #     self._parent = None
 
-        # Tile name
-        self.name = name
+    #     # Tile name
+    #     self.name = name
 
-        # Tile positions are in integer grid coordinates
-        self.position = position
+    #     # Tile positions are in integer grid coordinates
+    #     self.position = position
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
 
     # =========================================================================
 
@@ -154,61 +156,91 @@ class Tile(SpatialLike, Exportable):
 
     # =========================================================================
 
-    @property
-    def name(self) -> str:
-        """
-        The name of the Tile.
+    name: str = attrs.field(  # TODO: some annotation like "TileName"
+        # TODO: validators
+        validator=attrs.validators.instance_of(str),
+        metadata={"omit": False},
+    )
+    """
+    The name of the Tile.
 
-        Must be a string representing the name of a valid Factorio tile. If the
-        name is not recognized in :py:data:`.draftsman.data.tiles.raw`, then
-        ``Tile().validate()`` will return errors.
+    Must be a string representing the name of a valid Factorio tile. If the
+    name is not recognized in :py:data:`.draftsman.data.tiles.raw`, then
+    ``Tile().validate()`` will return errors.
+    """
 
-        :getter: Gets the name of the Tile.
-        :setter: Sest the name of the Tile.
+    # @property
+    # def name(self) -> str:
+    #     """
+    #     The name of the Tile.
 
-        :exception InvalidTileError: If the set name is not a valid Factorio
-            tile id.
-        """
-        return self._root.name
+    #     Must be a string representing the name of a valid Factorio tile. If the
+    #     name is not recognized in :py:data:`.draftsman.data.tiles.raw`, then
+    #     ``Tile().validate()`` will return errors.
 
-    @name.setter
-    def name(self, value: str):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "name", value
-            )
-            self._root.name = result
-        else:
-            self._root.name = value
+    #     :getter: Gets the name of the Tile.
+    #     :setter: Sest the name of the Tile.
+
+    #     :exception InvalidTileError: If the set name is not a valid Factorio
+    #         tile id.
+    #     """
+    #     return self._root.name
+
+    # @name.setter
+    # def name(self, value: str):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, type(self).Format, self._root, "name", value
+    #         )
+    #         self._root.name = result
+    #     else:
+    #         self._root.name = value
 
     # =========================================================================
 
-    @property
-    def position(self) -> Vector:
-        """
-        The position of the tile, in tile-grid coordinates.
+    def _set_position(self, _: attrs.Attribute, value: Any):
+        self.position.update_from_other(value, int)
 
-        ``position`` can be specified as a ``dict`` with ``"x"`` and
-        ``"y"`` keys, or more succinctly as a sequence of floats, usually a
-        ``list`` or ``tuple``.
+    position: Vector = attrs.field(
+        default=Vector(0, 0),
+        converter=Vector.from_other,
+        on_setattr=_set_position,
+        metadata={"omit": False},
+    )
+    """
+    The position of the tile, in tile-grid coordinates.
 
-        This property is updated in tandem with ``position``, so using them both
-        interchangeably is both allowed and encouraged.
+    ``position`` can be specified as a ``dict`` with ``"x"`` and
+    ``"y"`` keys, or more succinctly as a sequence of floats, usually a
+    ``list`` or ``tuple``.
+    """
 
-        :getter: Gets the position of the Entity.
-        :setter: Sets the position of the Entity.
+    # @property
+    # def position(self) -> Vector:
+    #     """
+    #     The position of the tile, in tile-grid coordinates.
 
-        :exception IndexError: If the set value does not match the above
-            specification.
-        """
-        return self._root._position
+    #     ``position`` can be specified as a ``dict`` with ``"x"`` and
+    #     ``"y"`` keys, or more succinctly as a sequence of floats, usually a
+    #     ``list`` or ``tuple``.
 
-    @position.setter
-    def position(self, value: Union[PrimitiveVector, Vector]):
-        if self.parent:
-            raise DraftsmanError("Cannot move tile while it's inside a TileCollection")
+    #     This property is updated in tandem with ``position``, so using them both
+    #     interchangeably is both allowed and encouraged.
 
-        self._root._position.update_from_other(value, int)
+    #     :getter: Gets the position of the Entity.
+    #     :setter: Sets the position of the Entity.
+
+    #     :exception IndexError: If the set value does not match the above
+    #         specification.
+    #     """
+    #     return self._root._position
+
+    # @position.setter
+    # def position(self, value: Union[PrimitiveVector, Vector]):
+    #     if self.parent:
+    #         raise DraftsmanError("Cannot move tile while it's inside a TileCollection")
+
+    #     self._root._position.update_from_other(value, int)
 
     # =========================================================================
 
@@ -260,52 +292,52 @@ class Tile(SpatialLike, Exportable):
         """
         pass
 
-    def validate(
-        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
-    ) -> ValidationResult:  # TODO: defer to parent
-        mode = ValidationMode(mode)
+    # def validate(
+    #     self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    # ) -> ValidationResult:  # TODO: defer to parent
+    #     mode = ValidationMode(mode)
 
-        output = ValidationResult([], [])
+    #     output = ValidationResult([], [])
 
-        if (
-            mode is ValidationMode.NONE and not force
-        ):  # or (self.is_valid and not force):
-            return output
+    #     if (
+    #         mode is ValidationMode.NONE and not force
+    #     ):  # or (self.is_valid and not force):
+    #         return output
 
-        context = {
-            "mode": mode,
-            "object": self,
-            "warning_list": [],
-            "assignment": False,
-        }
+    #     context = {
+    #         "mode": mode,
+    #         "object": self,
+    #         "warning_list": [],
+    #         "assignment": False,
+    #     }
 
-        try:
-            self.Format.model_validate(self._root, strict=True, context=context)
-            # Reassign private attributes
-            # result._position = self._root._position
-            # Acquire the newly converted data
-            # self._root = result
-        except ValidationError as e:
-            output.error_list.append(DataFormatError(e))
+    #     try:
+    #         self.Format.model_validate(self._root, strict=True, context=context)
+    #         # Reassign private attributes
+    #         # result._position = self._root._position
+    #         # Acquire the newly converted data
+    #         # self._root = result
+    #     except ValidationError as e:
+    #         output.error_list.append(DataFormatError(e))
 
-        output.warning_list += context["warning_list"]
+    #     output.warning_list += context["warning_list"]
 
-        return output
+    #     return output
 
     # =========================================================================
 
-    def __eq__(self, other):
-        return (
-            isinstance(other, Tile)
-            and self.name == other.name
-            and self.position == other.position
-        )
+    # def __eq__(self, other):
+    #     return (
+    #         isinstance(other, Tile)
+    #         and self.name == other.name
+    #         and self.position == other.position
+    #     )
 
     def __repr__(self) -> str:  # pragma: no coverage
         return "<Tile>{}".format(self.to_dict())
 
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls, _, handler: GetCoreSchemaHandler
-    ) -> CoreSchema:  # pragma: no coverage
-        return core_schema.no_info_after_validator_function(cls, handler(Tile.Format))
+    # @classmethod
+    # def __get_pydantic_core_schema__(
+    #     cls, _, handler: GetCoreSchemaHandler
+    # ) -> CoreSchema:  # pragma: no coverage
+    #     return core_schema.no_info_after_validator_function(cls, handler(Tile.Format))

@@ -6,6 +6,7 @@ from draftsman.constants import ValidationMode
 from draftsman.tile import Tile, new_tile
 from draftsman.data import tiles
 from draftsman.error import DataFormatError, InvalidTileError
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import DraftsmanBaseModel
 
 from collections.abc import MutableSequence
@@ -126,8 +127,8 @@ class TileList(Exportable, MutableSequence):
             raise TypeError("Entry in TileList must be a Tile")
 
         # Handle overlapping and merging
-        if self.validate_assignment:
-            tile.validate(mode=self.validate_assignment).reissue_all()
+        if True:  # TODO: FIXME
+            # tile.validate(mode=self.validate_assignment).reissue_all()
             self.spatial_map.validate_insert(tile, merge=merge)
 
         # Add to tile map
@@ -324,3 +325,12 @@ class TileList(Exportable, MutableSequence):
     #     return core_schema.no_info_after_validator_function(
     #         cls, handler(list[Tile])
     #     )  # TODO: correct annotation
+
+
+draftsman_converters.register_structure_hook(
+    TileList,
+    # This does work even though parent is None; this is on_setattr correctly
+    # handles the cases where we pass a new entity list
+    # It is inefficient since we construct 2 TileList objects, but...
+    lambda d, _type: TileList(None, d),
+)

@@ -9,6 +9,7 @@ from draftsman.utils import AABB, Rectangle, get_first
 
 from draftsman.data.entities import straight_rails
 
+import attrs
 from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
@@ -42,6 +43,7 @@ _collision_set_rotation[Direction.WEST] = _horizontal_collision
 _collision_set_rotation[Direction.NORTHWEST] = _diagonal_collision
 
 
+@attrs.define
 class StraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     """
     An old, 1.0 straight rail entity.
@@ -52,47 +54,53 @@ class StraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     ):
         model_config = ConfigDict(title="StraightRail")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(straight_rails),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        direction: Direction = Direction.NORTH,
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(straight_rails),
+    #     position: Union[Vector, PrimitiveVector] = None,
+    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+    #     direction: Direction = Direction.NORTH,
+    #     tags: dict[str, Any] = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     """
+    #     TODO
+    #     """
 
-        # This is kinda hacky, but necessary due to Factorio issuing dummy
-        # values for collision boxes. We have to do this before initialization
-        # of the rest of the class because certain things like tile position are
-        # dependent on this information and can be set during initialization
-        # (if we pass in arguments in **kwargs).
+    #     # This is kinda hacky, but necessary due to Factorio issuing dummy
+    #     # values for collision boxes. We have to do this before initialization
+    #     # of the rest of the class because certain things like tile position are
+    #     # dependent on this information and can be set during initialization
+    #     # (if we pass in arguments in **kwargs).
 
-        # We set a (private) flag to ignore the dummy collision box that
-        # Factorio provides
-        self._overwritten_collision_set = True
+    #     # We set a (private) flag to ignore the dummy collision box that
+    #     # Factorio provides
+    #     self._overwritten_collision_set = True
 
-        # We then provide a list of all the custom rotations
-        self._collision_set = _vertical_collision
-        self._collision_set_rotation = _collision_set_rotation
+    #     # We then provide a list of all the custom rotations
+    #     self._collision_set = _vertical_collision
+    #     self._collision_set_rotation = _collision_set_rotation
 
-        super().__init__(
-            name,
-            straight_rails,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            tags=tags,
-            **kwargs
-        )
+    #     super().__init__(
+    #         name,
+    #         straight_rails,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         direction=direction,
+    #         tags=tags,
+    #         **kwargs
+    #     )
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
+
+    # =========================================================================
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return straight_rails
 
     # =========================================================================
 

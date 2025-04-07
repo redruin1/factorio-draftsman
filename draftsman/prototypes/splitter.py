@@ -10,6 +10,7 @@ from draftsman.utils import get_first
 
 from draftsman.data.entities import splitters
 
+import attrs
 from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
@@ -19,6 +20,7 @@ except ImportError:  # pragma: no coverage
     from typing_extensions import Literal
 
 
+@attrs.define
 class Splitter(DirectionalMixin, Entity):
     """
     An entity that evenly splits a set of input belts between a set of output
@@ -53,42 +55,48 @@ class Splitter(DirectionalMixin, Entity):
 
         model_config = ConfigDict(title="Splitter")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(splitters),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        direction: Direction = Direction.NORTH,
-        input_priority: Literal["left", "none", "right"] = "none",
-        output_priority: Literal["left", "none", "right"] = "none",
-        filter: str = None,  # TODO: ItemID
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(splitters),
+    #     position: Union[Vector, PrimitiveVector] = None,
+    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+    #     direction: Direction = Direction.NORTH,
+    #     input_priority: Literal["left", "none", "right"] = "none",
+    #     output_priority: Literal["left", "none", "right"] = "none",
+    #     filter: str = None,  # TODO: ItemID
+    #     tags: dict[str, Any] = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     """
+    #     TODO
+    #     """
 
-        self._root: __class__.Format
+    #     self._root: __class__.Format
 
-        super().__init__(
-            name,
-            splitters,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            tags=tags,
-            **kwargs
-        )
+    #     super().__init__(
+    #         name,
+    #         splitters,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         direction=direction,
+    #         tags=tags,
+    #         **kwargs
+    #     )
 
-        self.input_priority = input_priority
-        self.output_priority = output_priority
-        self.filter = filter
+    #     self.input_priority = input_priority
+    #     self.output_priority = output_priority
+    #     self.filter = filter
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
+
+    # =========================================================================
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return splitters
 
     # =========================================================================
 
@@ -183,10 +191,10 @@ class Splitter(DirectionalMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-    def __eq__(self, other) -> bool:
-        return (
-            super().__eq__(other)
-            and self.input_priority == other.input_priority
-            and self.output_priority == other.output_priority
-            and self.filter == other.filter
-        )
+    # def __eq__(self, other) -> bool:
+    #     return (
+    #         super().__eq__(other)
+    #         and self.input_priority == other.input_priority
+    #         and self.output_priority == other.output_priority
+    #         and self.filter == other.filter
+    #     )

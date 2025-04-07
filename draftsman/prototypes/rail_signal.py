@@ -17,10 +17,12 @@ from draftsman.utils import get_first
 
 from draftsman.data.entities import rail_signals
 
+import attrs
 from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
+@attrs.define
 class RailSignal(
     ReadRailSignalMixin,
     CircuitConditionMixin,
@@ -69,94 +71,120 @@ class RailSignal(
 
         model_config = ConfigDict(title="RailSignal")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(rail_signals),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        direction: Direction = Direction.NORTH,
-        control_behavior: Format.ControlBehavior = {},
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(rail_signals),
+    #     position: Union[Vector, PrimitiveVector] = None,
+    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+    #     direction: Direction = Direction.NORTH,
+    #     control_behavior: Format.ControlBehavior = {},
+    #     tags: dict[str, Any] = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     """
+    #     TODO
+    #     """
 
-        self.control_behavior: __class__.Format.ControlBehavior
+    #     self.control_behavior: __class__.Format.ControlBehavior
 
-        # Set a (private) flag to indicate to the constructor to not generate
-        # rotations, and rather just use the same collision set regardless of
-        # rotation
-        self._disable_collision_set_rotation = True
+    #     # Set a (private) flag to indicate to the constructor to not generate
+    #     # rotations, and rather just use the same collision set regardless of
+    #     # rotation
+    #     self._disable_collision_set_rotation = True
 
-        super().__init__(
-            name,
-            rail_signals,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            control_behavior=control_behavior,
-            tags=tags,
-            **kwargs
-        )
+    #     super().__init__(
+    #         name,
+    #         rail_signals,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         direction=direction,
+    #         control_behavior=control_behavior,
+    #         tags=tags,
+    #         **kwargs
+    #     )
 
-        self.validate_assignment = validate_assignment
-
-    # =========================================================================
-
-    @property
-    def enable_disable(self) -> Optional[bool]:
-        return self.control_behavior.circuit_close_signal
-
-    @enable_disable.setter
-    def enable_disable(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "circuit_close_signal",
-                value,
-            )
-            self.control_behavior.circuit_close_signal = result
-        else:
-            self.control_behavior.circuit_close_signal = value
+    #     self.validate_assignment = validate_assignment
 
     # =========================================================================
 
     @property
-    def read_signal(self) -> Optional[bool]:
-        """
-        Whether or not to read the state of the rail signal as their output
-        signals.
-
-        :getter: Gets whether or not to read the signal, or ``None`` if not set.
-        :setter: Sets whether or not to read the signal. Removes the key if set
-            to ``None``.
-
-        :exception DataFormatError: If set to anything other than a ``bool`` or
-            ``None``.
-        """
-        return self.control_behavior.circuit_read_signal
-
-    @read_signal.setter
-    def read_signal(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "circuit_read_signal",
-                value,
-            )
-            self.control_behavior.circuit_read_signal = result
-        else:
-            self.control_behavior.circuit_read_signal = value
+    def similar_entities(self) -> list[str]:
+        return rail_signals
 
     # =========================================================================
 
-    __hash__ = Entity.__hash__
+    enable_disable: bool = attrs.field(
+        default=False,
+        # TODO: validators
+        metadata={"location": ("control_behavior", "circuit_close_signal")},
+    )
+    """
+    Whether or not a connected circuit network should control the state of this
+    rail signal.
+    """
+
+    # @property
+    # def enable_disable(self) -> Optional[bool]:
+    #     return self.control_behavior.circuit_close_signal
+
+    # @enable_disable.setter
+    # def enable_disable(self, value: Optional[bool]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior,
+    #             self.control_behavior,
+    #             "circuit_close_signal",
+    #             value,
+    #         )
+    #         self.control_behavior.circuit_close_signal = result
+    #     else:
+    #         self.control_behavior.circuit_close_signal = value
+
+    # =========================================================================
+
+    read_signal: bool = attrs.field(
+        default=True,
+        # TODO: validators
+        metadata={"location": ("control_behavior", "circuit_read_signal")},
+    )
+    """
+    Whether or not to read the state of the rail signal as their output
+    signals.
+    """
+
+    # @property
+    # def read_signal(self) -> Optional[bool]:
+    #     """
+    #     Whether or not to read the state of the rail signal as their output
+    #     signals.
+
+    #     :getter: Gets whether or not to read the signal, or ``None`` if not set.
+    #     :setter: Sets whether or not to read the signal. Removes the key if set
+    #         to ``None``.
+
+    #     :exception DataFormatError: If set to anything other than a ``bool`` or
+    #         ``None``.
+    #     """
+    #     return self.control_behavior.circuit_read_signal
+
+    # @read_signal.setter
+    # def read_signal(self, value: Optional[bool]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior,
+    #             self.control_behavior,
+    #             "circuit_read_signal",
+    #             value,
+    #         )
+    #         self.control_behavior.circuit_read_signal = result
+    #     else:
+    #         self.control_behavior.circuit_read_signal = value
+
+    # =========================================================================
+
+    # __hash__ = Entity.__hash__

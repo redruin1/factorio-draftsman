@@ -8,7 +8,7 @@ all the prototypes in :py:mod:`draftsman.prototypes`.
 from draftsman.classes.entity import Entity
 from draftsman.constants import ValidationMode
 from draftsman.error import InvalidEntityError
-from draftsman.data.entities import of_type
+from draftsman.data.entities import of_type, raw
 
 # fmt: off
 from draftsman.prototypes.accumulator import Accumulator, accumulators
@@ -125,6 +125,10 @@ def new_entity(name: str, **kwargs):
         :py:class:`.Entity` if `name` could not be deduced under the current
         Factorio environment.
     """
+    # Remove entity_number from an input dict, as it is only meaningful when
+    # exporting
+    # TODO: this should probably be done elsewhere
+    kwargs.pop("entity_number", None)
     # TODO: this would be better as a dict
     if name in of_type["accumulator"]:
         return Accumulator(name, **kwargs)
@@ -191,7 +195,7 @@ def new_entity(name: str, **kwargs):
     if name in of_type["fusion-reactor"]:
         return FusionReactor(name, **kwargs)
     if name in of_type["gate"]:
-        return Gate(name, **kwargs)
+        return Gate.from_dict({"name": name, **kwargs})
     if name in of_type["generator"]:
         return Generator(name, **kwargs)
     if name in of_type["half-diagonal-rail"]:
@@ -227,15 +231,15 @@ def new_entity(name: str, **kwargs):
     if name in of_type["locomotive"]:
         return Locomotive(name, **kwargs)
     if name in of_type["logistic-container-active"]:
-        return LogisticActiveContainer(name, **kwargs)
+        return LogisticActiveContainer.from_dict({"name": name, **kwargs})
     if name in of_type["logistic-container-buffer"]:
-        return LogisticBufferContainer(name, **kwargs)
+        return LogisticBufferContainer.from_dict({"name": name, **kwargs})
     if name in of_type["logistic-container-passive"]:
-        return LogisticPassiveContainer(name, **kwargs)
+        return LogisticPassiveContainer.from_dict({"name": name, **kwargs})
     if name in of_type["logistic-container-request"]:
-        return LogisticRequestContainer(name, **kwargs)
+        return LogisticRequestContainer.from_dict({"name": name, **kwargs})
     if name in of_type["logistic-container-storage"]:
-        return LogisticStorageContainer(name, **kwargs)
+        return LogisticStorageContainer.from_dict({"name": name, **kwargs})
     if name in of_type["mining-drill"]:
         return MiningDrill(name, **kwargs)
     if name in of_type["offshore-pump"]:
@@ -257,7 +261,7 @@ def new_entity(name: str, **kwargs):
     if name in of_type["rail-ramp"]:
         return RailRamp(name, **kwargs)
     if name in of_type["rail-signal"]:
-        return RailSignal(name, **kwargs)
+        return RailSignal.from_dict({"name": name, **kwargs})
     if name in of_type["rail-support"]:
         return RailSupport(name, **kwargs)
     if name in of_type["reactor"]:
@@ -295,7 +299,7 @@ def new_entity(name: str, **kwargs):
     if name in of_type["pipe-to-ground"]:
         return UndergroundPipe(name, **kwargs)
     if name in of_type["wall"]:
-        return Wall(name, **kwargs)
+        return Wall.from_dict({"name": name, **kwargs})
 
     # At this point, the name is unrecognized by the current environment.
     # We want Draftsman to at least try to parse it and serialize it, if not
@@ -314,3 +318,62 @@ def new_entity(name: str, **kwargs):
     result.validation = validate_assignment
 
     return result
+
+
+def get_class(d: dict):
+    """
+    Returns the Draftsman class that the input entity JSON dict would be
+    resolved to if imported with ``from_dict()``.
+    """
+    # If input entity is entirely unknown, just return the base class
+    if d["name"] not in raw:
+        return Entity
+    # d_type = (raw[d["name"]]["type"], raw[d["name"]].get("logistic_mode"))
+    d_type = raw[d["name"]]["type"]
+    if d_type == "logistic-container":
+        d_type = (d_type, raw[d["name"]]["logistic_mode"])
+    type_mappings = {
+        "accumulator": Accumulator,
+        "agricultural-tower": AgriculturalTower,
+        "ammo-turret": AmmoTurret,
+        "arithmetic-combinator": ArithmeticCombinator,
+        "artillery-turret": ArtilleryTurret,
+        "artillery-wagon": ArtilleryWagon,
+        "cargo-wagon": CargoWagon,
+        "constant-combinator": ConstantCombinator,
+        "container": Container,
+        "decider-combinator": DeciderCombinator,
+        "electric-pole": ElectricPole,
+        "electric-turret": ElectricTurret,
+        "fluid-turret": FluidTurret,
+        "fluid-wagon": FluidWagon,
+        "gate": Gate,
+        "inserter": Inserter,
+        "lamp": Lamp,
+        "landmine": LandMine,
+        "legacy-curved-rail": LegacyCurvedRail,
+        "legacy-straight-rail": LegacyStraightRail,
+        "locomotive": Locomotive,
+        ("logistic-container", "active-provider"): LogisticActiveContainer,
+        ("logistic-container", "buffer"): LogisticBufferContainer,
+        ("logistic-container", "passive-provider"): LogisticPassiveContainer,
+        ("logistic-container", "requester"): LogisticRequestContainer,
+        ("logistic-container", "storage"): LogisticStorageContainer,
+        "pipe": Pipe,
+        "power-switch": PowerSwitch,
+        "programmable-speaker": ProgrammableSpeaker,
+        "pump": Pump,
+        "solar-panel": SolarPanel,
+        "storage-tank": StorageTank,
+        "radar": Radar,
+        "rail-chain-signal": RailChainSignal,
+        "rail-signal": RailSignal,
+        "roboport": Roboport,
+        "splitter": Splitter,
+        "train-stop": TrainStop,
+        "transport-belt": TransportBelt,
+        "underground-belt": UndergroundBelt,
+        "pipe-to-ground": UndergroundPipe,
+        "wall": Wall,
+    }
+    return type_mappings.get(d_type, Entity)

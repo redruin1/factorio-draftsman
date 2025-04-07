@@ -25,10 +25,12 @@ from draftsman.warning import PureVirtualDisallowedWarning  # TODO
 from draftsman.data.entities import constant_combinators
 from draftsman.data import entities
 
+import attrs
 from pydantic import ConfigDict, Field, ValidationError, field_validator
 from typing import Any, Literal, Optional, Union
 
 
+@attrs.define
 class ConstantCombinator(
     PlayerDescriptionMixin,
     ControlBehaviorMixin,
@@ -41,98 +43,104 @@ class ConstantCombinator(
     the circuit network.
     """
 
-    class Format(
-        PlayerDescriptionMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        DirectionalMixin.Format,
-        Entity.Format,
-    ):
-        # 1.1 Control behavior:
-        # class ControlBehavior(DraftsmanBaseModel):
-        #     filters: Optional[list[SignalFilter]] = Field(
-        #         [],
-        #         description="""
-        #         The set of constant signals that are emitted when this
-        #         combinator is turned on.
-        #         """,
-        #     )
-        #     is_on: Optional[bool] = Field(
-        #         True,
-        #         description="""
-        #         Whether or not this constant combinator is toggled on or off.
-        #         """,
-        #     )
+    # class Format(
+    #     PlayerDescriptionMixin.Format,
+    #     ControlBehaviorMixin.Format,
+    #     CircuitConnectableMixin.Format,
+    #     DirectionalMixin.Format,
+    #     Entity.Format,
+    # ):
+    #     # 1.1 Control behavior:
+    #     # class ControlBehavior(DraftsmanBaseModel):
+    #     #     filters: Optional[list[SignalFilter]] = Field(
+    #     #         [],
+    #     #         description="""
+    #     #         The set of constant signals that are emitted when this
+    #     #         combinator is turned on.
+    #     #         """,
+    #     #     )
+    #     #     is_on: Optional[bool] = Field(
+    #     #         True,
+    #     #         description="""
+    #     #         Whether or not this constant combinator is toggled on or off.
+    #     #         """,
+    #     #     )
 
-        #     @field_validator("filters", mode="before")
-        #     @classmethod
-        #     def normalize_input(cls, value: Any):
-        #         if isinstance(value, list):
-        #             for i, entry in enumerate(value):
-        #                 if isinstance(entry, tuple):
-        #                     value[i] = {
-        #                         "index": i + 1,
-        #                         "signal": entry[0],
-        #                         "count": entry[1],
-        #                     }
+    #     #     @field_validator("filters", mode="before")
+    #     #     @classmethod
+    #     #     def normalize_input(cls, value: Any):
+    #     #         if isinstance(value, list):
+    #     #             for i, entry in enumerate(value):
+    #     #                 if isinstance(entry, tuple):
+    #     #                     value[i] = {
+    #     #                         "index": i + 1,
+    #     #                         "signal": entry[0],
+    #     #                         "count": entry[1],
+    #     #                     }
 
-        #         return value
+    #     #         return value
 
-        class ControlBehavior(DraftsmanBaseModel):
-            sections: Optional[Sections] = Field(
-                Sections(),
-                description="""
-                The signal sections specified in this combinator (or elsewhere?)
-                """,
-            )
+    #     class ControlBehavior(DraftsmanBaseModel):
+    #         sections: Optional[Sections] = Field(
+    #             Sections(),
+    #             description="""
+    #             The signal sections specified in this combinator (or elsewhere?)
+    #             """,
+    #         )
 
-            is_on: Optional[bool] = Field(
-                True,
-                description="""
-                Whether or not this constant combinator is toggled on or off.
-                """,
-            )
+    #         is_on: Optional[bool] = Field(
+    #             True,
+    #             description="""
+    #             Whether or not this constant combinator is toggled on or off.
+    #             """,
+    #         )
 
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        model_config = ConfigDict(title="ConstantCombinator")
+    #     model_config = ConfigDict(title="ConstantCombinator")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(constant_combinators),
-        position: Union[Vector, PrimitiveVector, None] = None,
-        tile_position: Union[Vector, PrimitiveVector, None] = (0, 0),
-        direction: Optional[Direction] = Direction.NORTH,
-        player_description: Optional[str] = None,
-        connections: Optional[Connections] = None,
-        control_behavior: Optional[Format.ControlBehavior] = None,
-        tags: Optional[dict[str, Any]] = None,
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(constant_combinators),
+    #     position: Union[Vector, PrimitiveVector, None] = None,
+    #     tile_position: Union[Vector, PrimitiveVector, None] = (0, 0),
+    #     direction: Optional[Direction] = Direction.NORTH,
+    #     player_description: Optional[str] = None,
+    #     connections: Optional[Connections] = None,
+    #     control_behavior: Optional[Format.ControlBehavior] = None,
+    #     tags: Optional[dict[str, Any]] = None,
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     """
+    #     TODO
+    #     """
 
-        self._root: __class__.Format
-        self.control_behavior: __class__.Format.ControlBehavior
+    #     self._root: __class__.Format
+    #     self.control_behavior: __class__.Format.ControlBehavior
 
-        super().__init__(
-            name,
-            constant_combinators,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            player_description=player_description,
-            connections={} if connections is None else connections,
-            control_behavior={} if control_behavior is None else control_behavior,
-            tags={} if tags is None else tags,
-            **kwargs
-        )
+    #     super().__init__(
+    #         name,
+    #         constant_combinators,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         direction=direction,
+    #         player_description=player_description,
+    #         connections={} if connections is None else connections,
+    #         control_behavior={} if control_behavior is None else control_behavior,
+    #         tags={} if tags is None else tags,
+    #         **kwargs
+    #     )
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
+
+    # =========================================================================
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return constant_combinators
 
     # =========================================================================
 
