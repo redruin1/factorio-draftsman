@@ -1,12 +1,14 @@
 # circuit_condition.py
 
 from draftsman.classes.exportable import attempt_and_reissue
-from draftsman.signatures import Condition, SignalID, int32
+from draftsman.signatures import Condition, AttrsSimpleCondition, AttrsSignalID, int32
 
+import attrs
 from pydantic import BaseModel, Field
 from typing import Literal, Optional, Union
 
 
+@attrs.define(slots=False)
 class CircuitConditionMixin:  # (ControlBehaviorMixin)
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
@@ -35,44 +37,67 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
 
     # =========================================================================
 
-    @property
-    def circuit_enabled(self) -> Optional[bool]:
-        """
-        Whether or not the machine enables its operation based on a circuit
-        condition. Only used on entities that have multiple operation states,
-        including (but not limited to) a inserters, belts, train-stops,
-        power-switches, etc.
+    circuit_enabled: bool = attrs.field(
+        default=False,
+        validator=attrs.validators.instance_of(bool),
+        metadata={"location": ("control_behavior", "circuit_enabled")}
+    )
+    """
+    Whether or not the entity is controlled by the specified circuit
+    condition, if present.
+    """
 
-        :getter: Gets the value of ``circuit_enabled``, or ``None`` if not set.
-        :setter: Sets the value of ``circuit_enabled``. Removes the attribute if
-            set to ``None``.
+    # @property
+    # def circuit_enabled(self) -> Optional[bool]:
+    #     """
+    #     Whether or not the machine enables its operation based on a circuit
+    #     condition. Only used on entities that have multiple operation states,
+    #     including (but not limited to) a inserters, belts, train-stops,
+    #     power-switches, etc.
 
-        :exception TypeError: If set to anything other than a ``bool`` or
-            ``None``.
-        """
-        return self.control_behavior.circuit_enabled
+    #     :getter: Gets the value of ``circuit_enabled``, or ``None`` if not set.
+    #     :setter: Sets the value of ``circuit_enabled``. Removes the attribute if
+    #         set to ``None``.
 
-    @circuit_enabled.setter
-    def circuit_enabled(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "circuit_enabled",
-                value,
-            )
-            self.control_behavior.circuit_enabled = result
-        else:
-            self.control_behavior.circuit_enabled = value
+    #     :exception TypeError: If set to anything other than a ``bool`` or
+    #         ``None``.
+    #     """
+    #     return self.control_behavior.circuit_enabled
+
+    # @circuit_enabled.setter
+    # def circuit_enabled(self, value: Optional[bool]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior,
+    #             self.control_behavior,
+    #             "circuit_enabled",
+    #             value,
+    #         )
+    #         self.control_behavior.circuit_enabled = result
+    #     else:
+    #         self.control_behavior.circuit_enabled = value
+
+    # =========================================================================
+
+    circuit_condition: AttrsSimpleCondition = attrs.field(
+        default=AttrsSimpleCondition(first_signal=None, comparator="<", constant=0),
+        converter=AttrsSimpleCondition.converter,
+        validator=attrs.validators.instance_of(AttrsSimpleCondition),
+        metadata={"location": ("control_behavior", "circuit_condition")}
+    )
+    """
+    The circuit condition that must be passed in order for this entity
+    to function, if configured to do so.
+    """
 
     # =========================================================================
 
     def set_circuit_condition(
         self,
-        a: Union[SignalID, None] = None,
-        cmp: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "<",
-        b: Union[SignalID, int32] = 0,
+        first_operand: Union[AttrsSignalID, None] = None,
+        comparator: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "<",
+        second_operand: Union[AttrsSignalID, int32] = 0,
     ):
         """
         Sets the circuit condition of the Entity.
@@ -95,7 +120,7 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
             ``cmp`` is not a valid operation, or if ``b`` is neither a valid
             signal name nor a constant.
         """
-        self._set_condition("circuit_condition", a, cmp, b)
+        self._set_condition("circuit_condition", first_operand, comparator, second_operand)
 
     def remove_circuit_condition(self):
         """

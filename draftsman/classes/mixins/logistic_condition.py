@@ -3,10 +3,12 @@
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.signatures import Condition, SignalID, int32
 
+import attrs
 from pydantic import BaseModel, Field
 from typing import Literal, Optional, Union
 
 
+@attrs.define(slots=False)
 class LogisticConditionMixin:  # (ControlBehaviorMixin)
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
@@ -34,35 +36,43 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
     class Format(BaseModel):
         pass
 
-    @property
-    def connect_to_logistic_network(self) -> bool:
-        """
-        Whether or not this entity should use it's logistic network condition to
-        control its operation (if it has one).
+    # =========================================================================
 
-        :getter: Gets the value of ``connect_to_logistic_network``, or ``None``
-            if not set.
-        :setter: Sets the value of ``connect_to_logistic_network``. Removes the
-            key if set to ``None``.
+    connect_to_logistic_network: bool = attrs.field(
+        default=False,
+        validator=attrs.validators.instance_of(bool),
+        metadata={"location": ("control_behavior", "connect_to_logistic_network")}
+    )
 
-        :exception TypeError: If set to anything other than a ``bool`` or
-            ``None``.
-        """
-        return self.control_behavior.connect_to_logistic_network
+    # @property
+    # def connect_to_logistic_network(self) -> bool:
+    #     """
+    #     Whether or not this entity should use it's logistic network condition to
+    #     control its operation (if it has one).
 
-    @connect_to_logistic_network.setter
-    def connect_to_logistic_network(self, value: bool):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "connect_to_logistic_network",
-                value,
-            )
-            self.control_behavior.connect_to_logistic_network = result
-        else:
-            self.control_behavior.connect_to_logistic_network = value
+    #     :getter: Gets the value of ``connect_to_logistic_network``, or ``None``
+    #         if not set.
+    #     :setter: Sets the value of ``connect_to_logistic_network``. Removes the
+    #         key if set to ``None``.
+
+    #     :exception TypeError: If set to anything other than a ``bool`` or
+    #         ``None``.
+    #     """
+    #     return self.control_behavior.connect_to_logistic_network
+
+    # @connect_to_logistic_network.setter
+    # def connect_to_logistic_network(self, value: bool):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior,
+    #             self.control_behavior,
+    #             "connect_to_logistic_network",
+    #             value,
+    #         )
+    #         self.control_behavior.connect_to_logistic_network = result
+    #     else:
+    #         self.control_behavior.connect_to_logistic_network = value
 
     # =========================================================================
 

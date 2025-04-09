@@ -321,7 +321,7 @@ class Exportable(metaclass=ABCMeta):
             msg = "'{}' object has no attribute(s) {}; allowed fields are {}".format(
                 type(self).__name__,
                 list(value.keys()),
-                [attr.name for attr in attrs.fields(type(self))]
+                [attr.name for attr in attrs.fields(type(self))] # TODO: remove '_parent'
             )
             warnings.warn(UnknownKeywordWarning(msg))
 

@@ -4,13 +4,14 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     ColorMixin,
+    LogisticConditionMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode, LampColorMode
-from draftsman.serialization import draftsman_converters, finalize_fields
+from draftsman.serialization import MASTER_CONVERTER_OMIT_NONE_DEFAULTS, draftsman_converters, finalize_fields
 from draftsman.signatures import AttrsColor, Connections, DraftsmanBaseModel
 from draftsman.utils import get_first
 
@@ -25,6 +26,7 @@ from typing import Any, Literal, Optional, Union
 @attrs.define # (field_transformer=finalize_fields)
 class Lamp(
     ColorMixin,
+    LogisticConditionMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
@@ -264,6 +266,281 @@ class Lamp(
 #     Lamp,
 #     a
 # )
+
+
+# class CircuitConditionMixin:
+#     class ControlBehavior:
+#         circuit_enabled = pass
+def merge(a, b):
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                merge(a[key], b[key])
+            else: #elif a[key] != b[key]:
+                a[key] = b[key]
+                # raise Exception('Conflict at ' + '.'.join(str(key)))
+        else:
+            a[key] = b[key]
+    return a
+
+entity_fields = Entity.__attrs_attrs__ #attrs.fields(Entity)
+# entity_format = {
+#     "entity_number": None,
+#     "name": entity_fields.name,
+#     "position": entity_fields.position,
+#     "tags": entity_fields.tags
+# }
+
+lamp_fields = Lamp.__attrs_attrs__ #attrs.fields(Lamp)
+# lamp_format = merge(dict(entity_format), {
+#     "control_behavior": {
+#         "circuit_enabled": lamp_fields.circuit_enabled,
+#         "circuit_condition": lamp_fields.circuit_condition,
+#         "connect_to_logistic_network": lamp_fields.connect_to_logistic_network,
+#         # "logistic_condition": lamp_fields.logistic_condition,
+#         "use_colors": lamp_fields.use_colors,
+#         "color_mode": lamp_fields.color_mode
+#     },
+#     "always_on": lamp_fields.always_on,
+#     "color": lamp_fields.color,
+# })
+
+import copy
+def resolve_schema(schema):
+    """Reduce a schema so that it contains no references to other schemas."""
+    resolved_schema = copy.deepcopy(schema)# TODO: does this deepcopy?
+
+    if "$ref" in resolved_schema:
+        print(resolved_schema["$ref"])
+        resolved_schema = merge(resolve_schema(schemas[schema["$ref"]]), resolved_schema)
+        # print(resolved_schema)
+        del resolved_schema["$ref"]
+    if "allOf" in resolved_schema:
+        for subschema in resolved_schema["allOf"]:
+            # print(subschema)
+            # print(resolve_schema(subschema))
+            resolved_schema = merge(resolve_schema(subschema), resolved_schema)
+        del resolved_schema["allOf"]
+    if "properties" in resolved_schema:
+        for property_name, property in resolved_schema["properties"].items():
+            print(property_name, property)
+            resolved_subschema = resolved_schema["properties"][property_name]
+            resolved_schema["properties"][property_name] = merge(resolve_schema(property), resolved_subschema)
+    # if "items" in schema:
+        # TODO
+
+    print("resolved schema:", resolved_schema)
+
+    return resolved_schema
+
+schemas = {}
+def add_schema(schema):
+    if "$id" not in schema:
+        raise ValueError("invalid schema!")
+    resolved_schema = resolve_schema(schema) 
+    schemas[schema["$id"]] = resolved_schema
+
+add_schema({
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "factorio:color",
+    "type": "object",
+    "properties": {
+        "r": {
+            "type": "number"
+        },
+        "g": {
+            "type": "number"
+        },
+        "b": {
+            "type": "number"
+        },
+        "a": {
+            "type": "number",
+            "default": 1.0
+        }
+    },
+    "requiredProperties": ["r", "g", "b"]
+})
+
+add_schema({
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "factorio:position",
+    "type": "object",
+    "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+    },
+    "requiredProperties": ["x", "y"]
+})
+
+add_schema({
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "factorio:entity_v2.0",
+    "version": (2, 0),
+    "type": "object",
+    "properties": {
+        "entity_number": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMaximum": 2^64,
+            "location": None # strip entity number on import
+        },
+        "name": {
+            "type": "string",
+            "location": entity_fields.name
+        },
+        "position": {
+            "$ref": "factorio:position",
+            "location": entity_fields.position
+        },
+        "tags": {
+            "type": "object",
+            "location": entity_fields.tags
+        }
+    }
+})
+
+add_schema({
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "factorio:circuit_condition",
+    "properties": {
+        "control_behavior": {
+            "type": "object",
+            "properties": {
+                "circuit_enabled": {
+                    "type": "boolean",
+                    "default": "false",
+                    "location": lamp_fields.circuit_enabled
+                },
+                # "circuit_condition": {
+
+                # }
+            }
+        }
+    }
+})
+
+add_schema({
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "factorio:logistic_condition",
+    "properties": {
+        "control_behavior": {
+            "type": "object",
+            "properties": {
+                "connect_to_logistic_network": {
+                    "type": "boolean",
+                    "default": "false",
+                    "location": lamp_fields.connect_to_logistic_network
+                }
+            }
+        }   
+    }
+})
+
+add_schema({
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "factorio:lamp_v2.0",
+    "$ref": "factorio:entity_v2.0",
+    "allOf": [
+        { "$ref": "factorio:circuit_condition" },
+        { "$ref": "factorio:logistic_condition" }
+    ],
+    "version": (2, 0),
+    "type": "object",
+    "properties": {
+        "control_behavior": {
+            "properties": {
+                "use_colors": {
+                    "type": "boolean",
+                    "default": "true",
+                    "location": lamp_fields.use_colors
+                },
+                "color_mode": {
+                    "type": "integer",
+                    "enum": [LampColorMode.COLOR_MAPPING, LampColorMode.COMPONENTS, LampColorMode.PACKED_RGB],
+                    "default": LampColorMode.COLOR_MAPPING,
+                    "location": lamp_fields.color_mode
+                }
+            }
+        },
+        "always_on": {
+            "type": "boolean",
+            "default": "false",
+            "location": lamp_fields.always_on
+        },
+        "color": {
+            "$ref": "factorio:color",
+            "default": {"r": 255, "g": 255, "b": 191, "a": 255},
+            "location": lamp_fields.color
+        }
+    }
+})
+
+def make_structure_function(cls, format_dict):
+    def traverse_format(format: dict, input: dict):
+        print("format:", format)
+        print("d:", input)
+        res = {}
+        if "properties" in format:
+            for property_name, property in format["properties"].items():
+                print("\t", property_name, property)
+                # location = property["location"]
+                if "location" in property and property["location"] is None:
+                    input.pop(property_name)
+                    continue
+                if property_name in input:
+                    print(property)
+                    # If "location" is detected, set the attribute and avoid
+                    # travelling deeper into the tree
+                    if "location" in property:
+                        res[property["location"].name] = input[property_name]
+                        input.pop(property_name)
+                    elif property["type"] == "object":
+                        res.update(traverse_format(property, input[property_name]))
+                        # If the result dict becomes empty after traversal, delete it
+                        if not input[property_name]:
+                            input.pop(property_name)
+                    # else:
+                    #     res[property["location"].name] = input[property_name]
+                    #     input.pop(property_name)
+        print("d exit:", input)
+        return res
+
+    def structure_hook(d: dict, t: type):
+        res = traverse_format(format_dict, d)
+
+        print("test")
+        print(res)
+        print(d)
+
+        # If there's anything left in d, that is our unknown keys
+        if len(d) != 0:
+            res["unknown"] = d
+
+        return cls(**res)
+
+    return structure_hook
+
+draftsman_converters.register_structure_hook(
+    Lamp,
+    make_structure_function(Lamp, schemas["factorio:lamp_v2.0"])
+)
+
+parent_hook = MASTER_CONVERTER_OMIT_NONE_DEFAULTS.get_unstructure_hook(Lamp)
+def make_unstructure_function(cls, format_dict):
+    def unstructure_hook(inst):
+        res = parent_hook(inst)
+        print("res", res)
+        merge(res, inst.unknown)
+        res.pop("unknown", None)
+        print("res after merge", res)
+        return res
+    return unstructure_hook
+
+draftsman_converters.register_unstructure_hook(
+    Lamp,
+    make_unstructure_function(Lamp, schemas["factorio:lamp_v2.0"])
+)
 
 # @draftsman_converters[(1, 0)].register_structure_hook
 # def structure_lamp(d: dict, t: type) -> Lamp:

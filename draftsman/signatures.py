@@ -812,6 +812,33 @@ class NetworkSpecification(DraftsmanBaseModel):
             return value
 
 
+@attrs.define
+class AttrsSimpleCondition:
+    first_signal: Optional[AttrsSignalID] = attrs.field(
+        default=None,
+        # TODO: validators
+    )
+    comparator: Literal[">", "<", "=", "≥", "≤", "≠"] = attrs.field(
+        default="<"
+        # TODO: validators
+    )
+    constant: int32 = attrs.field(
+        default=0
+    )
+    second_signal: Optional[AttrsSignalID] = attrs.field(
+        default=None
+    )
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, cls):
+            return value
+        elif isinstance(value, dict):
+            return cls(**value)
+        else:
+            return value
+
+
 class Condition(
     DraftsmanBaseModel
 ):  # TODO: split into SimpleCondition (no circuit network selection) and CombinatorCondition (circuit network selection)

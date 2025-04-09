@@ -968,6 +968,14 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
 
     #     return output
 
+    def to_dict(self, version = __factorio_version_info__, exclude_none = True, exclude_defaults = True, entity_number: Optional[int] = None):
+        res = {}
+        if entity_number is not None:
+            res["entity_number"] = entity_number
+        res.update(super().to_dict(version, exclude_none, exclude_defaults))
+        return res
+    
+
     def mergable_with(self, other: "Entity") -> bool:
         return (
             type(self) == type(other)
@@ -1033,7 +1041,7 @@ def make_entity_structure(cls, converter: cattrs.Converter):
         # Strip "entity_number"
         d.pop("entity_number", None)
         # Collapse any attributes we don't recognize into the catch-all dict "unknown"
-        d["unknown"] = {k: d[k] for k in d.keys() - attribute_names}
+        # d["unknown"] = {k: d[k] for k in d.keys() - attribute_names}
         return parent_structure(d, _)
     return structure_hook
 
@@ -1042,21 +1050,21 @@ draftsman_converters.register_structure_hook_factory(
     make_entity_structure
 )
 
-def make_entity_unstructure(cls, converter: cattrs.Converter):
-    parent_unstructure = converter.get_unstructure_hook(cls)
-    import inspect
-    print(cls)
-    print(inspect.getsource(parent_unstructure))
-    def unstructure_hook(inst: Entity):
-        res = parent_unstructure(inst)
-        res.update(inst.unknown)
-        return res
-    return unstructure_hook
+# def make_entity_unstructure(cls, converter: cattrs.Converter):
+#     parent_unstructure = converter.get_unstructure_hook(cls)
+#     import inspect
+#     print(cls)
+#     print(inspect.getsource(parent_unstructure))
+#     def unstructure_hook(inst: Entity):
+#         res = parent_unstructure(inst)
+#         res.update(inst.unknown)
+#         return res
+#     return unstructure_hook
 
-draftsman_converters.register_unstructure_hook_factory(
-    lambda cls: issubclass(cls, Entity),
-    make_entity_unstructure
-)
+# draftsman_converters.register_unstructure_hook_factory(
+#     lambda cls: issubclass(cls, Entity),
+#     make_entity_unstructure
+# )
 
 # attrs.field()
 # print({attr.name: attrs.field(default=attr.default, validator=attr.validator, repr=attr.repr, init=attr.init, metadata=attr.metadata, converter=attr.converter, factory=attr.factory, on_setattr=attr.on_setattr) for attr in attrs.fields(Entity)})

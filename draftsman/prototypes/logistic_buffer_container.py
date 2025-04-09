@@ -126,7 +126,7 @@ def make_structure_hook(cls, converter: cattrs.Converter):
     return structure_hook
 
 
-draftsman_converters.get((1, 0)).register_structure_hook(
+draftsman_converters.get((1, 0)).register_structure_hook_factory(
     lambda cls: isinstance(cls, LogisticBufferContainer), 
     make_structure_hook
 )
