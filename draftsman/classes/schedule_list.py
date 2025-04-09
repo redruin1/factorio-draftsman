@@ -94,7 +94,7 @@ class ScheduleList(MutableSequence):
         return core_schema.no_info_after_validator_function(
             cls, handler(list[Schedule.Format])
         )  # pragma: no coverage
-    
+
 
 def _schedule_list_structure_factory(cls, converter: cattrs.Converter):
     def structure_hook(l: list, t: type):

@@ -134,8 +134,7 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def similar_entities(self) -> list[str]: # pragma: no coverage
-        
+    def similar_entities(self) -> list[str]:  # pragma: no coverage
         pass
 
     @property

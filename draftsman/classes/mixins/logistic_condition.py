@@ -41,7 +41,7 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
     connect_to_logistic_network: bool = attrs.field(
         default=False,
         validator=attrs.validators.instance_of(bool),
-        metadata={"location": ("control_behavior", "connect_to_logistic_network")}
+        metadata={"location": ("control_behavior", "connect_to_logistic_network")},
     )
 
     # @property

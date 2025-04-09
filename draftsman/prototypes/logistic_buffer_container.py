@@ -111,9 +111,8 @@ class LogisticBufferContainer(
 
 
 def make_structure_hook(cls, converter: cattrs.Converter):
-    parent_hook = converter.get_structure_hook(
-        LogisticBufferContainer
-    )
+    parent_hook = converter.get_structure_hook(LogisticBufferContainer)
+
     def structure_hook(d: dict, type: type):
         # print(d)
         if "request_filters" in d:
@@ -123,10 +122,10 @@ def make_structure_hook(cls, converter: cattrs.Converter):
         # TODO: what about request_from_buffers?
         # print(d)
         return parent_hook(d, type)
+
     return structure_hook
 
 
 draftsman_converters.get((1, 0)).register_structure_hook_factory(
-    lambda cls: isinstance(cls, LogisticBufferContainer), 
-    make_structure_hook
+    lambda cls: isinstance(cls, LogisticBufferContainer), make_structure_hook
 )

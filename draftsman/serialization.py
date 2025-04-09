@@ -61,10 +61,8 @@ def regular_structure_factory(cls, converter):
 
     return structure_hook
 
-MASTER_CONVERTER.register_structure_hook_factory(
-    attrs.has,
-    regular_structure_factory
-)
+
+MASTER_CONVERTER.register_structure_hook_factory(attrs.has, regular_structure_factory)
 
 
 @MASTER_CONVERTER.register_unstructure_hook_factory(attrs.has)

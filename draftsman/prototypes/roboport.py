@@ -31,21 +31,21 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     #         read_logistics: Optional[bool] = Field(
     #             True,
     #             description="""
-    #             Whether this roboport will broadcast the contents of the 
+    #             Whether this roboport will broadcast the contents of the
     #             logistic network it is part of to any connected circuit network.
     #             """,
     #         )
     #         read_robot_stats: Optional[bool] = Field(
     #             False,
     #             description="""
-    #             Whether this roboport will broadcast the number of robots in the 
+    #             Whether this roboport will broadcast the number of robots in the
     #             logistic network it is part of to any connected circuit network.
     #             """,
     #         )
     #         available_logistic_output_signal: Optional[SignalID] = Field(
     #             SignalID(name="signal-X", type="virtual"),
     #             description="""
-    #             The signal to broadcast the number of available logistic robots 
+    #             The signal to broadcast the number of available logistic robots
     #             on.
     #             """,
     #         )
@@ -58,7 +58,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     #         available_construction_output_signal: Optional[SignalID] = Field(
     #             SignalID(name="signal-Z", type="virtual"),
     #             description="""
-    #             The signal to broadcast the number of available construction 
+    #             The signal to broadcast the number of available construction
     #             robots on.
     #             """,
     #         )

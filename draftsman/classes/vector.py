@@ -17,7 +17,8 @@ class Vector:
     """
     A simple 2d vector class, used to aid in developent and user experience.
     """
-    __slots__ = ("_data")
+
+    __slots__ = "_data"
 
     def __init__(self, x: Union[float, int], y: Union[float, int]):
         """

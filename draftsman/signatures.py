@@ -822,12 +822,8 @@ class AttrsSimpleCondition:
         default="<"
         # TODO: validators
     )
-    constant: int32 = attrs.field(
-        default=0
-    )
-    second_signal: Optional[AttrsSignalID] = attrs.field(
-        default=None
-    )
+    constant: int32 = attrs.field(default=0)
+    second_signal: Optional[AttrsSignalID] = attrs.field(default=None)
 
     @classmethod
     def converter(cls, value):

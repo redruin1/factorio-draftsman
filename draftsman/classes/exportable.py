@@ -1,6 +1,7 @@
 # exportable.py
 from draftsman import __factorio_version_info__
 from draftsman.constants import ValidationMode
+from draftsman.schemas import get_schema
 from draftsman.serialization import draftsman_converters
 
 from draftsman.error import DataFormatError
@@ -16,20 +17,25 @@ from typing import Any, List, Literal, Optional, Union
 from typing_extensions import Self
 import warnings
 import pprint  # TODO: think about
+import attrs_jsonschema
 
 
 def convert_to_countingattr(attr):
     """
     Convert an `Attribute` instance to an equivalent `_CountingAttr` instance.
     """
-    return attrs.field(**{
-        slot: getattr(attr, slot) 
-        for slot in attr.__slots__ 
-        if slot not in {"name", "eq_key", "order_key", "inherited"}
-    })
+    return attrs.field(
+        **{
+            slot: getattr(attr, slot)
+            for slot in attr.__slots__
+            if slot not in {"name", "eq_key", "order_key", "inherited"}
+        }
+    )
+
 
 def custom_define(field_order: list[str], **kwargs):
     import inspect
+
     def wrapper(cls):
         these = {}
         for field_name in field_order:
@@ -47,6 +53,7 @@ def custom_define(field_order: list[str], **kwargs):
             these[field_name] = field
 
         return attrs.define(cls, these=these, **kwargs)
+
     return wrapper
 
 
@@ -312,16 +319,18 @@ class Exportable(metaclass=ABCMeta):
     # =========================================================================
 
     unknown: Optional[dict[Any, Any]] = attrs.field(
-        default=None,
-        metadata={"omit": True}
+        default=None, metadata={"omit": True}
     )
+
     @unknown.validator
     def warn_unrecognized_keys(self, attribute, value: Optional[dict]):
-        if value: # is not empty:
+        if value:  # is not empty:
             msg = "'{}' object has no attribute(s) {}; allowed fields are {}".format(
                 type(self).__name__,
                 list(value.keys()),
-                [attr.name for attr in attrs.fields(type(self))] # TODO: remove '_parent'
+                [
+                    attr.name for attr in attrs.fields(type(self))
+                ],  # TODO: remove '_parent'
             )
             warnings.warn(UnknownKeywordWarning(msg))
 
@@ -428,23 +437,34 @@ class Exportable(metaclass=ABCMeta):
         #     warnings=False,
         # )
 
-    # @classmethod
-    # def json_schema(cls) -> dict:
-    #     """
-    #     Returns a JSON schema object that correctly validates this object. This
-    #     schema can be used with any compliant JSON schema validation library to
-    #     check if a given blueprint string will import into Factorio.
+    @classmethod
+    def json_schema(
+        cls, version: tuple[int, ...] = __factorio_version_info__
+    ) -> dict[str, Any]:
+        """
+        Returns a JSON schema object that correctly validates this object. This
+        schema can be used with any compliant JSON schema validation library to
+        check if a given blueprint dict will import into Factorio as an
+        additional layer of validation.
 
-    #     .. seealso::
+        :param version: The Factorio version for which you would like the schema
+            to validate. Diff-ing these schemas between versions allows you to
+            view changes in the blueprint format across time.
 
-    #         https://json-schema.org/
+        .. seealso::
 
-    #     :returns: A modern, JSON-schema compliant dictionary with appropriate
-    #         types, ranges, allowed/excluded values, as well as titles and
-    #         descriptions.
-    #     """
-    #     # TODO: should this be tested?
-    #     return cls.Format.model_json_schema(by_alias=True)
+            https://json-schema.org/
+
+        :returns: A modern, JSON-schema compliant dictionary with appropriate
+            types, ranges, allowed/excluded values, as well as titles and
+            descriptions.
+        """
+        # TODO: should this be tested?
+        # TODO: should this schema be "resolved", meaning all references are
+        # flattened out? If not, how should somebody actually use the urls
+        # in practice, since they're all locally hosted?
+        # return cls.Format.model_json_schema(by_alias=True)
+        return get_schema(cls, version=version)
 
     # TODO
     # @classmethod

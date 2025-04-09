@@ -11,7 +11,17 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode, LampColorMode
-from draftsman.serialization import MASTER_CONVERTER_OMIT_NONE_DEFAULTS, draftsman_converters, finalize_fields
+from draftsman.schemas import (
+    schemas,
+    add_schema,
+    make_structure_from_JSON_schema,
+    make_unstructure_from_JSON_schema,
+)
+from draftsman.serialization import (
+    MASTER_CONVERTER_OMIT_NONE_DEFAULTS,
+    draftsman_converters,
+    finalize_fields,
+)
 from draftsman.signatures import AttrsColor, Connections, DraftsmanBaseModel
 from draftsman.utils import get_first
 
@@ -23,7 +33,7 @@ from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
-@attrs.define # (field_transformer=finalize_fields)
+@attrs.define  # (field_transformer=finalize_fields)
 class Lamp(
     ColorMixin,
     LogisticConditionMixin,
@@ -271,19 +281,8 @@ class Lamp(
 # class CircuitConditionMixin:
 #     class ControlBehavior:
 #         circuit_enabled = pass
-def merge(a, b):
-    for key in b:
-        if key in a:
-            if isinstance(a[key], dict) and isinstance(b[key], dict):
-                merge(a[key], b[key])
-            else: #elif a[key] != b[key]:
-                a[key] = b[key]
-                # raise Exception('Conflict at ' + '.'.join(str(key)))
-        else:
-            a[key] = b[key]
-    return a
 
-entity_fields = Entity.__attrs_attrs__ #attrs.fields(Entity)
+entity_fields = Entity.__attrs_attrs__  # attrs.fields(Entity)
 # entity_format = {
 #     "entity_number": None,
 #     "name": entity_fields.name,
@@ -291,7 +290,7 @@ entity_fields = Entity.__attrs_attrs__ #attrs.fields(Entity)
 #     "tags": entity_fields.tags
 # }
 
-lamp_fields = Lamp.__attrs_attrs__ #attrs.fields(Lamp)
+lamp_fields = Lamp.__attrs_attrs__  # attrs.fields(Lamp)
 # lamp_format = merge(dict(entity_format), {
 #     "control_behavior": {
 #         "circuit_enabled": lamp_fields.circuit_enabled,
@@ -305,176 +304,116 @@ lamp_fields = Lamp.__attrs_attrs__ #attrs.fields(Lamp)
 #     "color": lamp_fields.color,
 # })
 
-import copy
-def resolve_schema(schema):
-    """Reduce a schema so that it contains no references to other schemas."""
-    resolved_schema = copy.deepcopy(schema)# TODO: does this deepcopy?
-
-    if "$ref" in resolved_schema:
-        print(resolved_schema["$ref"])
-        resolved_schema = merge(resolve_schema(schemas[schema["$ref"]]), resolved_schema)
-        # print(resolved_schema)
-        del resolved_schema["$ref"]
-    if "allOf" in resolved_schema:
-        for subschema in resolved_schema["allOf"]:
-            # print(subschema)
-            # print(resolve_schema(subschema))
-            resolved_schema = merge(resolve_schema(subschema), resolved_schema)
-        del resolved_schema["allOf"]
-    if "properties" in resolved_schema:
-        for property_name, property in resolved_schema["properties"].items():
-            print(property_name, property)
-            resolved_subschema = resolved_schema["properties"][property_name]
-            resolved_schema["properties"][property_name] = merge(resolve_schema(property), resolved_subschema)
-    # if "items" in schema:
-        # TODO
-
-    print("resolved schema:", resolved_schema)
-
-    return resolved_schema
-
-schemas = {}
-def add_schema(schema):
-    if "$id" not in schema:
-        raise ValueError("invalid schema!")
-    resolved_schema = resolve_schema(schema) 
-    schemas[schema["$id"]] = resolved_schema
-
-add_schema({
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "factorio:color",
-    "type": "object",
-    "properties": {
-        "r": {
-            "type": "number"
+add_schema(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "factorio:entity_v2.0",
+        "version": (2, 0),
+        "type": "object",
+        "properties": {
+            "entity_number": {
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMaximum": 2 ^ 64,
+                "location": None,  # strip entity number on import
+            },
+            "name": {"type": "string", "location": entity_fields.name},
+            "position": {
+                "$ref": "factorio:position",
+                "location": entity_fields.position,
+            },
+            "tags": {"type": "object", "location": entity_fields.tags},
         },
-        "g": {
-            "type": "number"
-        },
-        "b": {
-            "type": "number"
-        },
-        "a": {
-            "type": "number",
-            "default": 1.0
-        }
     },
-    "requiredProperties": ["r", "g", "b"]
-})
+    Entity
+)
 
-add_schema({
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "factorio:position",
-    "type": "object",
-    "properties": {
-        "x": { "type": "number" },
-        "y": { "type": "number" }
+add_schema(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "factorio:circuit_condition",
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "circuit_enabled": {
+                        "type": "boolean",
+                        "default": "false",
+                        "location": lamp_fields.circuit_enabled,
+                    },
+                    # "circuit_condition": {
+                    # }
+                },
+            }
+        },
+    }
+)
+
+add_schema(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "factorio:logistic_condition",
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "connect_to_logistic_network": {
+                        "type": "boolean",
+                        "default": "false",
+                        "location": lamp_fields.connect_to_logistic_network,
+                    }
+                },
+            }
+        },
+    }
+)
+
+add_schema(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "factorio:lamp_v2.0",
+        "$ref": "factorio:entity_v2.0",
+        "allOf": [
+            {"$ref": "factorio:circuit_condition"},
+            {"$ref": "factorio:logistic_condition"},
+        ],
+        "version": (2, 0),
+        "type": "object",
+        "properties": {
+            "control_behavior": {
+                "properties": {
+                    "use_colors": {
+                        "type": "boolean",
+                        "default": "true",
+                        "location": lamp_fields.use_colors,
+                    },
+                    "color_mode": {
+                        "type": "integer",
+                        "enum": [
+                            LampColorMode.COLOR_MAPPING,
+                            LampColorMode.COMPONENTS,
+                            LampColorMode.PACKED_RGB,
+                        ],
+                        "default": LampColorMode.COLOR_MAPPING,
+                        "location": lamp_fields.color_mode,
+                    },
+                }
+            },
+            "always_on": {
+                "type": "boolean",
+                "default": "false",
+                "location": lamp_fields.always_on,
+            },
+            "color": {
+                "$ref": "factorio:color",
+                "default": {"r": 255, "g": 255, "b": 191, "a": 255},
+                "location": lamp_fields.color,
+            },
+        },
     },
-    "requiredProperties": ["x", "y"]
-})
+    Lamp,
+)
 
-add_schema({
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "factorio:entity_v2.0",
-    "version": (2, 0),
-    "type": "object",
-    "properties": {
-        "entity_number": {
-            "type": "integer",
-            "minimum": 0,
-            "exclusiveMaximum": 2^64,
-            "location": None # strip entity number on import
-        },
-        "name": {
-            "type": "string",
-            "location": entity_fields.name
-        },
-        "position": {
-            "$ref": "factorio:position",
-            "location": entity_fields.position
-        },
-        "tags": {
-            "type": "object",
-            "location": entity_fields.tags
-        }
-    }
-})
-
-add_schema({
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "factorio:circuit_condition",
-    "properties": {
-        "control_behavior": {
-            "type": "object",
-            "properties": {
-                "circuit_enabled": {
-                    "type": "boolean",
-                    "default": "false",
-                    "location": lamp_fields.circuit_enabled
-                },
-                # "circuit_condition": {
-
-                # }
-            }
-        }
-    }
-})
-
-add_schema({
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "factorio:logistic_condition",
-    "properties": {
-        "control_behavior": {
-            "type": "object",
-            "properties": {
-                "connect_to_logistic_network": {
-                    "type": "boolean",
-                    "default": "false",
-                    "location": lamp_fields.connect_to_logistic_network
-                }
-            }
-        }   
-    }
-})
-
-add_schema({
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "factorio:lamp_v2.0",
-    "$ref": "factorio:entity_v2.0",
-    "allOf": [
-        { "$ref": "factorio:circuit_condition" },
-        { "$ref": "factorio:logistic_condition" }
-    ],
-    "version": (2, 0),
-    "type": "object",
-    "properties": {
-        "control_behavior": {
-            "properties": {
-                "use_colors": {
-                    "type": "boolean",
-                    "default": "true",
-                    "location": lamp_fields.use_colors
-                },
-                "color_mode": {
-                    "type": "integer",
-                    "enum": [LampColorMode.COLOR_MAPPING, LampColorMode.COMPONENTS, LampColorMode.PACKED_RGB],
-                    "default": LampColorMode.COLOR_MAPPING,
-                    "location": lamp_fields.color_mode
-                }
-            }
-        },
-        "always_on": {
-            "type": "boolean",
-            "default": "false",
-            "location": lamp_fields.always_on
-        },
-        "color": {
-            "$ref": "factorio:color",
-            "default": {"r": 255, "g": 255, "b": 191, "a": 255},
-            "location": lamp_fields.color
-        }
-    }
-})
 
 def make_structure_function(cls, format_dict):
     def traverse_format(format: dict, input: dict):
@@ -521,43 +460,11 @@ def make_structure_function(cls, format_dict):
 
     return structure_hook
 
-draftsman_converters.register_structure_hook(
-    Lamp,
-    make_structure_function(Lamp, schemas["factorio:lamp_v2.0"])
-)
 
-parent_hook = MASTER_CONVERTER_OMIT_NONE_DEFAULTS.get_unstructure_hook(Lamp)
-def make_unstructure_function(cls, format_dict):
-    def unstructure_hook(inst):
-        res = parent_hook(inst)
-        print("res", res)
-        merge(res, inst.unknown)
-        res.pop("unknown", None)
-        print("res after merge", res)
-        return res
-    return unstructure_hook
+draftsman_converters.register_structure_hook(
+    Lamp, make_structure_from_JSON_schema(Lamp, schemas["factorio:lamp_v2.0"])
+)
 
 draftsman_converters.register_unstructure_hook(
-    Lamp,
-    make_unstructure_function(Lamp, schemas["factorio:lamp_v2.0"])
+    Lamp, make_unstructure_from_JSON_schema(Lamp, schemas["factorio:lamp_v2.0"])
 )
-
-# @draftsman_converters[(1, 0)].register_structure_hook
-# def structure_lamp(d: dict, t: type) -> Lamp:
-#     print("a", d)
-#     d.pop("entity_number")
-#     return Lamp(
-#         **d
-#     )
-
-# def unstructure_lamp(input: Lamp) -> dict:
-#     return {}
-
-# draftsman_converters[(1, 0)].register_structure_hook(
-#     Lamp,
-#     structure_lamp
-# )
-# draftsman_converters[(2, 0)].register_structure_hook(
-#     Lamp,
-#     structure_lamp
-# )

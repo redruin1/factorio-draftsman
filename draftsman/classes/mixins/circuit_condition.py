@@ -40,7 +40,7 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
     circuit_enabled: bool = attrs.field(
         default=False,
         validator=attrs.validators.instance_of(bool),
-        metadata={"location": ("control_behavior", "circuit_enabled")}
+        metadata={"location": ("control_behavior", "circuit_enabled")},
     )
     """
     Whether or not the entity is controlled by the specified circuit
@@ -84,7 +84,7 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
         default=AttrsSimpleCondition(first_signal=None, comparator="<", constant=0),
         converter=AttrsSimpleCondition.converter,
         validator=attrs.validators.instance_of(AttrsSimpleCondition),
-        metadata={"location": ("control_behavior", "circuit_condition")}
+        metadata={"location": ("control_behavior", "circuit_condition")},
     )
     """
     The circuit condition that must be passed in order for this entity
@@ -120,7 +120,9 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
             ``cmp`` is not a valid operation, or if ``b`` is neither a valid
             signal name nor a constant.
         """
-        self._set_condition("circuit_condition", first_operand, comparator, second_operand)
+        self._set_condition(
+            "circuit_condition", first_operand, comparator, second_operand
+        )
 
     def remove_circuit_condition(self):
         """

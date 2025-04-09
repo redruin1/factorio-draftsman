@@ -57,17 +57,16 @@ class OrientationMixin:
     # =========================================================================
 
     _collision_set: Optional[CollisionSet] = attrs.field(
-        init=False,
-        repr=False,
-        metadata={"omit": True}
+        init=False, repr=False, metadata={"omit": True}
     )
+
     @_collision_set.default
     def get_default_collision_set(self) -> CollisionSet:
         original = entities.collision_sets.get(self.name, None)
         if original is None:
             return None
         original = original.shapes[0]
-        # TODO: why are we only grabbing a single rectangle? Shouldn't we be 
+        # TODO: why are we only grabbing a single rectangle? Shouldn't we be
         # grabbing the entire grabbed collision set and rotating it by orientation?
         width = original.bot_right[0] - original.top_left[0]
         height = original.bot_right[1] - original.top_left[1]

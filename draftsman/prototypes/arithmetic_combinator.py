@@ -66,7 +66,7 @@ class ArithmeticCombinator(
     #             first_signal_networks: Optional[NetworkSpecification] = Field(
     #                 NetworkSpecification(),
     #                 description="""
-    #                 Which input wire networks to pull from when evaluating the 
+    #                 Which input wire networks to pull from when evaluating the
     #                 value of the first signal.
     #                 """,
     #             )
@@ -95,7 +95,7 @@ class ArithmeticCombinator(
     #             second_signal_networks: Optional[NetworkSpecification] = Field(
     #                 NetworkSpecification(),
     #                 description="""
-    #                 Which input wire networks to pull from when evaluating the 
+    #                 Which input wire networks to pull from when evaluating the
     #                 value of the second signal.
     #                 """,
     #             )
@@ -103,7 +103,7 @@ class ArithmeticCombinator(
     #                 None,
     #                 description="""
     #                 The output signal to emit the operation result as. Can be
-    #                 'signal-each', but only if one of 'first_signal' or 
+    #                 'signal-each', but only if one of 'first_signal' or
     #                 'second_signal' is also 'signal-each'. No other pure virtual
     #                 signals are permitted in arithmetic combinators.
     #                 """,

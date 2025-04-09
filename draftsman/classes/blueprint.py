@@ -238,7 +238,9 @@ def _normalize_internal_structure(
                 if locomotive() is None:  # pragma: no coverage
                     _throw_invalid_association(locomotive)
                 else:  # Association
-                    schedule["locomotives"][i] = flattened_entities.index(locomotive()) + 1
+                    schedule["locomotives"][i] = (
+                        flattened_entities.index(locomotive()) + 1
+                    )
 
     input_root["schedules"] = schedules_out
 
@@ -1455,14 +1457,14 @@ def structure_blueprint_1_0(d: dict, _: type) -> Blueprint:
     Converts a 1.0 Factorio blueprint string into Draftsman internal form,
     preferring modern format where possible.
     """
-    # Swapping old entity names to new ones is not actually "conversion", this 
+    # Swapping old entity names to new ones is not actually "conversion", this
     # would instead be "migration"
     # For example, these entities would exist just fine if we had an old version
     # of `factorio-data` loaded
-    # In practice, we should just load these objects as generic `Entity` 
-    # instances with all of their data intact, and then the user would call a 
+    # In practice, we should just load these objects as generic `Entity`
+    # instances with all of their data intact, and then the user would call a
     # separate function `migrate(version)` which would then swap/remove/update
-    # entities 
+    # entities
     legacy_entity_conversions = {
         "curved-rail": "legacy-curved-rail",
         "straight-rail": "legacy-straight-rail",
@@ -1471,7 +1473,7 @@ def structure_blueprint_1_0(d: dict, _: type) -> Blueprint:
         "logistic-chest-storage": "storage-chest",
         "logistic-chest-active-provider": "active-provider-chest",
         "logistic-chest-passive-provider": "passive-provider-chest",
-        "filter-inserter": "inserter", # TODO: LegacyFilterInserter(?)
+        "filter-inserter": "inserter",  # TODO: LegacyFilterInserter(?)
         "stack-inserter": "bulk-inserter",
         "stack-filter-inserter": "bulk-inserter",
     }

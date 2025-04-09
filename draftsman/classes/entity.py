@@ -7,7 +7,7 @@ from draftsman.classes.exportable import (
     Exportable,
     ValidationResult,
     attempt_and_reissue,
-    custom_define
+    custom_define,
 )
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
@@ -109,7 +109,18 @@ def strip_entity_number(cls):
 
 # @strip_entity_number
 # @attrs.define(field_transformer=finalize_fields)
-@custom_define(field_order=["name", "id", "position", "tile_position", "quality", "tags", "_parent", "unknown"])
+@custom_define(
+    field_order=[
+        "name",
+        "id",
+        "position",
+        "tile_position",
+        "quality",
+        "tags",
+        "_parent",
+        "unknown",
+    ]
+)
 class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     """
     Entity base-class. Used for all entity types that are specified in Factorio.
@@ -968,13 +979,18 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
 
     #     return output
 
-    def to_dict(self, version = __factorio_version_info__, exclude_none = True, exclude_defaults = True, entity_number: Optional[int] = None):
+    def to_dict(
+        self,
+        version=__factorio_version_info__,
+        exclude_none=True,
+        exclude_defaults=True,
+        entity_number: Optional[int] = None,
+    ):
         res = {}
         if entity_number is not None:
             res["entity_number"] = entity_number
         res.update(super().to_dict(version, exclude_none, exclude_defaults))
         return res
-    
 
     def mergable_with(self, other: "Entity") -> bool:
         return (
@@ -1035,19 +1051,22 @@ def make_entity_structure(cls, converter: cattrs.Converter):
     parent_structure = regular_structure_factory(cls, converter)
     attribute_names = {a.name for a in attrs.fields(cls)}
     import inspect
+
     print(cls)
     print(inspect.getsource(parent_structure))
+
     def structure_hook(d: dict, _: type):
         # Strip "entity_number"
         d.pop("entity_number", None)
         # Collapse any attributes we don't recognize into the catch-all dict "unknown"
         # d["unknown"] = {k: d[k] for k in d.keys() - attribute_names}
         return parent_structure(d, _)
+
     return structure_hook
 
+
 draftsman_converters.register_structure_hook_factory(
-    lambda cls: issubclass(cls, Entity),
-    make_entity_structure
+    lambda cls: issubclass(cls, Entity), make_entity_structure
 )
 
 # def make_entity_unstructure(cls, converter: cattrs.Converter):
