@@ -1,7 +1,9 @@
 # circuit_condition.py
 
 from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import Condition, AttrsSimpleCondition, AttrsSignalID, int32
+from draftsman.validators import instance_of
 
 import attrs
 from pydantic import BaseModel, Field
@@ -37,15 +39,15 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
 
     # =========================================================================
 
-    circuit_enabled: bool = attrs.field(
-        default=False,
-        validator=attrs.validators.instance_of(bool),
-        metadata={"location": ("control_behavior", "circuit_enabled")},
-    )
-    """
-    Whether or not the entity is controlled by the specified circuit
-    condition, if present.
-    """
+    # circuit_enabled: bool = attrs.field(
+    #     default=False,
+    #     validator=attrs.validators.instance_of(bool),
+    #     metadata={"location": ("control_behavior", "circuit_enabled")},
+    # )
+    # """
+    # Whether or not the entity is controlled by the specified circuit
+    # condition, if present.
+    # """
 
     # @property
     # def circuit_enabled(self) -> Optional[bool]:
@@ -83,8 +85,7 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
     circuit_condition: AttrsSimpleCondition = attrs.field(
         default=AttrsSimpleCondition(first_signal=None, comparator="<", constant=0),
         converter=AttrsSimpleCondition.converter,
-        validator=attrs.validators.instance_of(AttrsSimpleCondition),
-        metadata={"location": ("control_behavior", "circuit_condition")},
+        validator=instance_of(AttrsSimpleCondition),
     )
     """
     The circuit condition that must be passed in order for this entity
@@ -131,3 +132,28 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
         """
         # self.control_behavior.pop("circuit_condition", None)
         self.control_behavior.circuit_condition = None
+
+
+draftsman_converters.add_schema(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "factorio:circuit_condition",
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    # "circuit_enabled": {
+                    #     "type": "boolean",
+                    #     "default": "false",
+                    # },
+                    "circuit_condition": {"$ref": "factorio:simple_condition"},
+                },
+            }
+        },
+    },
+    CircuitConditionMixin,
+    lambda fields: {
+        # fields.circuit_enabled.name: ("control_behavior", "circuit_enabled"),
+        fields.circuit_condition.name: ("control_behavior", "circuit_condition"),
+    },
+)

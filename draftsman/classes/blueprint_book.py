@@ -145,7 +145,7 @@ draftsman_converters.register_unstructure_hook(
 )
 
 
-@attrs.define(field_transformer=finalize_fields)
+@attrs.define
 class BlueprintBook(Blueprintable):
     """
     Factorio Blueprint Book class. Contains a list of :py:class:`.Blueprintable`
@@ -556,3 +556,20 @@ class BlueprintBook(Blueprintable):
     #         del result[self._root_item]["blueprints"]
 
     #     return result
+
+
+# TODO: versioning
+draftsman_converters.add_schema(
+    {"$schema": "TODO", "$id": "factorio:blueprint_book"},  # TODO
+    BlueprintBook,
+    lambda fields: {
+        fields.item.name: ("blueprint_book", "item"),
+        fields.label.name: ("blueprint_book", "label"),
+        fields.label_color.name: ("blueprint_book", "label_color"),
+        fields.description.name: ("blueprint_book", "description"),
+        fields.icons.name: ("blueprint_book", "icons"),
+        fields.version.name: ("blueprint_book", "version"),
+        fields.active_index.name: ("blueprint_book", "active_index"),
+        fields.blueprints.name: ("blueprint_book", "blueprints"),
+    },
+)

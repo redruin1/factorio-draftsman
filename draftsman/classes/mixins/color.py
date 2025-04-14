@@ -60,12 +60,6 @@ class ColorMixin:
     <= 1.0, the former range is used, otherwise the latter. If "a" is
     omitted, it defaults to 1.0 or 255 when imported, depending on the
     range of the other numbers.
-
-    :getter: Gets the color of the Entity, or ``None`` if not set.
-    :setter: Sets the color of the Entity.
-
-    :exception DataFormatError: If the set ``color`` does not match the
-        above specification.
     """
 
     # @property

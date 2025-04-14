@@ -92,10 +92,10 @@ class ControlBehaviorMixin:
 
     # =========================================================================
 
-    def merge(self, other):
-        super().merge(other)
+    # def merge(self, other):
+    #     super().merge(other)
 
-        self.control_behavior = other.control_behavior
+    #     self.control_behavior = other.control_behavior
 
     # =========================================================================
 

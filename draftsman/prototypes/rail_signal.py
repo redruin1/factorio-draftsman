@@ -5,13 +5,13 @@ from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     ReadRailSignalMixin,
     CircuitConditionMixin,
-    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     EightWayDirectionalMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
+from draftsman.serialization import draftsman_converters, finalize_fields
 from draftsman.signatures import Connections, DraftsmanBaseModel
 from draftsman.utils import get_first
 
@@ -22,11 +22,10 @@ from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
-@attrs.define
+@attrs.define(field_transformer=finalize_fields)
 class RailSignal(
     ReadRailSignalMixin,
     CircuitConditionMixin,
-    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     EightWayDirectionalMixin,
@@ -40,7 +39,6 @@ class RailSignal(
     class Format(
         ReadRailSignalMixin.Format,
         CircuitConditionMixin.Format,
-        CircuitEnableMixin.Format,
         ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
         EightWayDirectionalMixin.Format,
@@ -49,7 +47,6 @@ class RailSignal(
         class ControlBehavior(
             ReadRailSignalMixin.ControlFormat,
             CircuitConditionMixin.ControlFormat,
-            CircuitEnableMixin.ControlFormat,
             DraftsmanBaseModel,
         ):
             circuit_close_signal: Optional[bool] = Field(
@@ -118,8 +115,7 @@ class RailSignal(
 
     enable_disable: bool = attrs.field(
         default=False,
-        # TODO: validators
-        metadata={"location": ("control_behavior", "circuit_close_signal")},
+        validator=attrs.validators.instance_of(bool),
     )
     """
     Whether or not a connected circuit network should control the state of this
@@ -148,8 +144,7 @@ class RailSignal(
 
     read_signal: bool = attrs.field(
         default=True,
-        # TODO: validators
-        metadata={"location": ("control_behavior", "circuit_read_signal")},
+        validator=attrs.validators.instance_of(bool),
     )
     """
     Whether or not to read the state of the rail signal as their output
@@ -188,3 +183,14 @@ class RailSignal(
     # =========================================================================
 
     # __hash__ = Entity.__hash__
+
+
+# TODO: versioning
+draftsman_converters.add_schema(
+    {"$id": "factorio:lamp_v2.0"},
+    RailSignal,
+    lambda fields: {
+        fields.enable_disable.name: ("control_behavior", "circuit_close_signal"),
+        fields.read_signal.name: ("control_behavior", "circuit_read_signal"),
+    },
+)

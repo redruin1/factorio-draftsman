@@ -22,7 +22,7 @@ from draftsman.data.signals import (
     pure_virtual,
 )
 from draftsman.data import entities, fluids, items, signals, tiles
-from draftsman.error import InvalidMapperError, InvalidSignalError, DataFormatError
+from draftsman.error import InvalidMapperError, InvalidSignalError, IncompleteSignalError, DataFormatError
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import encode_version, get_suggestion
 from draftsman.warning import (
@@ -68,12 +68,11 @@ int64 = Annotated[
     int, Field(..., ge=-(2**63), lt=2**63)
 ]  # TODO: description about floating point issues
 
-uint8 = Annotated[int, Field(..., ge=0, lt=2**8)]
-uint16 = Annotated[int, Field(..., ge=0, lt=2**16)]
-uint32 = Annotated[int, Field(..., ge=0, lt=2**32)]
-uint64 = Annotated[
-    int, Field(..., ge=0, lt=2**64)
-]  # TODO: description about floating point issues
+uint8 = Annotated[int, (attrs.validators.ge(0), attrs.validators.lt(2**8))]
+uint16 = Annotated[int, (attrs.validators.ge(0), attrs.validators.lt(2**16))]
+uint32 = Annotated[int, (attrs.validators.ge(0), attrs.validators.lt(2**32))]
+# TODO: description about floating point issues
+uint64 = Annotated[int, (attrs.validators.ge(0), attrs.validators.lt(2**64))]
 
 
 def known_name(type: str, structure: dict, issued_warning):
@@ -484,7 +483,7 @@ class SignalID(DraftsmanBaseModel):
 
 @attrs.define
 class AttrsSignalID:
-    name: Optional[SignalName] = attrs.field()  # TODO: validators
+    name: Optional[SignalName] = attrs.field(default=None)  # TODO: validators
     """
     Name of the signal. If omitted, the signal is treated as no signal and 
     removed on import/export cycle.
@@ -516,26 +515,38 @@ class AttrsSignalID:
     """
 
     @classmethod
-    def converter(cls, input):
+    def converter(cls, value: Any) -> "AttrsSignalID":
         """
-        Attempt to convert an input string name into a dict representation.
+        Attempt to convert an input string name into a SignalID representation.
         Raises a ValueError if unable to determine the type of a signal's name,
         likely if the signal is misspelled or used in a modded configuration
         that differs from Draftsman's current one.
         """
-        if isinstance(input, str):
+        if isinstance(value, str):
             try:
-                return signal_dict(input)
+                # TODO: make function to grab default signal type
+                if "item" in get_signal_types(value):
+                    return AttrsSignalID(name=value, type="item")
+                else:
+                    return AttrsSignalID(name=value, type=next(iter(get_signal_types(value))))
             except InvalidSignalError as e:
-                raise ValueError(
-                    "Unknown signal name {}; either specify the full dictionary, or update your environment".format(
-                        e
-                    )
-                ) from None
+                msg = "Unknown signal name {}; either specify the full dictionary, or update your environment".format(
+                    repr(value)
+                )
+                raise IncompleteSignalError(msg) from None
+        elif isinstance(value, dict):
+            return AttrsSignalID(**value)
         else:
-            return input
+            return value
 
-    # TODO: check type matches name
+    @name.validator
+    def check_name_recognized(self, attribute, value):
+        if value not in signals.raw:
+            msg = "Unknown {} '{}'{}".format(
+                type(self).__name__, value, get_suggestion(value, signals.raw.keys(), n=1)
+            )
+            warnings.warn(UnknownSignalWarning(msg))
+
     @type.validator
     def check_type_matches_name(self, attribute, value):
         if self.name in signals.raw:
@@ -548,6 +559,32 @@ class AttrsSignalID:
                         )
                     )
                 )
+
+draftsman_converters.get_version((1, 0)).add_schema(
+    {
+        "$id": "factorio:signal_id_v1.0"
+        # TODO
+    },
+    AttrsSignalID,
+    lambda fields: {
+        fields.name.name: "name",
+        fields.type.name: "type",
+        fields.quality.name: None,
+    }
+)
+
+draftsman_converters.get_version((2, 0)).add_schema(
+    {
+        "$id": "factorio:signal_id_v2.0"
+        # TODO
+    },
+    AttrsSignalID,
+    lambda fields: {
+        fields.name.name: "name",
+        fields.type.name: "type",
+        fields.quality.name: "quality",
+    }
+)
 
 
 class TargetID(DraftsmanBaseModel):
@@ -666,7 +703,7 @@ def normalize_color(value: Any):
 #             return value
 
 
-@attrs.define(slots=False)
+@attrs.define(hash=True)
 class AttrsColor:
     r: float = attrs.field(validator=[attrs.validators.ge(0), attrs.validators.le(255)])
     g: float = attrs.field(validator=[attrs.validators.ge(0), attrs.validators.le(255)])

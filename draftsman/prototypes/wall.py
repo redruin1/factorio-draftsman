@@ -10,12 +10,15 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import PrimitiveVector, Vector
 from draftsman.constants import ValidationMode
+from draftsman.error import DataFormatError
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     Connections,
     DraftsmanBaseModel,
     SignalID,
     AttrsSignalID,
 )
+from draftsman.validators import instance_of
 from draftsman.utils import get_first
 
 from draftsman.data.entities import walls
@@ -117,12 +120,18 @@ class Wall(
 
     enable_disable: bool = attrs.field(
         default=True,
-        validator=attrs.validators.instance_of(bool),
-        metadata={"location": ("control_behavior", "circuit_open_gate")},
+        validator=instance_of(bool)
     )
     """
     Whether or not this gate should be activated based on an input condition. 
     """
+
+    # @enable_disable.validator
+    # def enable_disable_validator(self, attr, value, mode: Optional[ValidationMode] = None):
+    #     if self.validate_assignment or mode:
+    #         if not isinstance(value, bool):
+    #             msg = "{} given invalid value {}".format(attr.name, repr(value))
+    #             raise DataFormatError(msg)
 
     # @property
     # def enable_disable(self) -> Optional[bool]:
@@ -146,9 +155,15 @@ class Wall(
 
     read_gate: bool = attrs.field(
         default=False,
-        validator=attrs.validators.instance_of(bool),
-        metadata={"location": ("control_behavior", "circuit_read_sensor")},
+        validator=instance_of(bool)
     )
+
+    # @read_gate.validator
+    # def read_gate_validator(self, attr, value, mode: Optional[ValidationMode] = None):
+    #     if self.validate_assignment or mode:
+    #         if not isinstance(value, bool):
+    #             msg = "{} given invalid value {}".format(attr.name, repr(value))
+    #             raise DataFormatError(msg)
 
     # @property
     # def read_gate(self) -> Optional[bool]:
@@ -174,12 +189,17 @@ class Wall(
 
     # =========================================================================
 
-    output_signal: AttrsSignalID = attrs.field(
-        default=AttrsSignalID(name="signal-G", type="virtual"),
+    output_signal: Optional[AttrsSignalID] = attrs.field(
+        factory=lambda: AttrsSignalID(name="signal-G", type="virtual"),
         converter=AttrsSignalID.converter,
-        validator=attrs.validators.instance_of(AttrsSignalID),
-        metadata={"location": ("control_behavior", "output_signal")},
     )
+
+    @output_signal.validator
+    def validate_output_signal(self, attr, value, mode: Optional[ValidationMode] = None):
+        if self.validate_assignment or mode:
+            if not value is None and not isinstance(value, AttrsSignalID):
+                msg = "{} given invalid value {}".format(attr.name, repr(value))
+                raise DataFormatError(msg)
 
     # @property
     # def output_signal(self) -> Optional[SignalID]:
@@ -205,4 +225,36 @@ class Wall(
 
     # =========================================================================
 
+    def merge(self, other: "Wall"):
+        super().merge(other)
+
+        self.enable_disable = other.enable_disable
+        self.read_gate = other.read_gate
+        self.output_signal = other.output_signal
+
     __hash__ = Entity.__hash__
+
+
+draftsman_converters.get_version((1, 0)).add_schema(
+    {
+        "$id": "factorio:wall_v1.0" # TODO
+    },
+    Wall,
+    lambda fields: {
+        fields.enable_disable.name: ("control_behavior", "circuit_open_gate"),
+        fields.read_gate.name: ("control_behavior", "circuit_read_sensor"),
+        fields.output_signal.name: ("control_behavior", "output_signal")
+    }
+)
+
+draftsman_converters.get_version((2, 0)).add_schema(
+    {
+        "$id": "factorio:wall_v2.0", # TODO
+    },
+    Wall,
+    lambda fields: {
+        fields.enable_disable.name: ("control_behavior", "circuit_open_gate"),
+        fields.read_gate.name: ("control_behavior", "circuit_read_gate"),
+        fields.output_signal.name: ("control_behavior", "output_signal"),
+    }
+)

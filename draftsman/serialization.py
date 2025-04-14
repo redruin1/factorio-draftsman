@@ -3,9 +3,13 @@
 import attrs
 import cattrs
 from cattrs.gen._shared import find_structure_handler
+from cattrs._compat import is_bare_final
+from cattrs.fns import identity
+from cattrs.gen._lc import generate_unique_filename
 
 import functools
-from typing import Any, Callable
+from enum import Enum
+from typing import Annotated, Any, Callable, Optional, Union, get_args, get_origin
 
 MASTER_CONVERTER = cattrs.Converter(omit_if_default=False)
 MASTER_CONVERTER_OMIT_NONE = cattrs.Converter(omit_if_default=False)
@@ -203,40 +207,102 @@ def omit_none_default_unstructure_factory(
 #     r = {k: v for k, v in MASTER_CONVERTER.get_unstructure_hook(obj)() if k not in excluded and v is not None}
 
 
-class DraftsmanConverters:
+class ConverterVersion:
     def __init__(self):
-        self.converters: dict[
-            tuple[tuple[int, ...]], dict[tuple[bool, bool], cattrs.Converter]
-        ] = {}
-
-    def add_version(self, version) -> cattrs.Converter:
-        self.converters[version] = {
+        self.converters: dict[tuple[int, int], cattrs.Converter] = {
             # (exclude_none, exclude_defaults)
             (False, False): MASTER_CONVERTER.copy(),
             (True, False): MASTER_CONVERTER_OMIT_NONE.copy(),
             (False, True): MASTER_CONVERTER_OMIT_DEFAULTS.copy(),
             (True, True): MASTER_CONVERTER_OMIT_NONE_DEFAULTS.copy(),
         }
+        self.mapping_funcs = {}
+        self.schemas = {}
 
     def register_structure_hook(self, *args, **kwargs):
-        for version in self.converters.values():
-            for _, converter in version.items():
-                converter.register_structure_hook(*args, **kwargs)
+        for _, converter in self.converters.items():
+            converter.register_structure_hook(*args, **kwargs)
 
     def register_structure_hook_factory(self, *args, **kwargs):
-        for version in self.converters.values():
-            for _, converter in version.items():
-                converter.register_structure_hook_factory(*args, **kwargs)
+        for _, converter in self.converters.items():
+            converter.register_structure_hook_factory(*args, **kwargs)
 
     def register_unstructure_hook(self, *args, **kwargs):
-        for version in self.converters.values():
-            for _, converter in version.items():
-                converter.register_unstructure_hook(*args, **kwargs)
+        for _, converter in self.converters.items():
+            converter.register_unstructure_hook(*args, **kwargs)
 
     def register_unstructure_hook_factory(self, *args, **kwargs):
-        for version in self.converters.values():
-            for _, converter in version.items():
-                converter.register_unstructure_hook_factory(*args, **kwargs)
+        for _, converter in self.converters.items():
+            converter.register_unstructure_hook_factory(*args, **kwargs)
+
+    def get_converter(self, exclude_none: bool = False, exclude_defaults: bool = False):
+        return self.converters[(exclude_none, exclude_defaults)]
+
+    def add_schema(
+        self,
+        schema: dict,
+        cls: Optional[type] = None,
+        mapping_func: Optional[Callable] = None,
+    ):
+        if "$id" not in schema:
+            raise ValueError("invalid schema!")
+        self.schemas[schema["$id"]] = schema
+        if cls is not None:
+            self.schemas[cls] = schema
+            if mapping_func is not None:
+                self.mapping_funcs[cls] = mapping_func
+
+    def get_schema(self, cls):
+        return self.schemas[cls]
+
+    def get_location_dict(self, cls: type) -> dict:
+        location_dict = {}
+        for subcls in reversed(cls.mro()):
+            if subcls in self.mapping_funcs:
+                location_dict.update(
+                    {
+                        k: (v,) if isinstance(v, str) else v
+                        for k, v in self.mapping_funcs[subcls](
+                            attrs.fields(subcls)
+                        ).items()
+                    }
+                )
+        return location_dict
+
+
+class DraftsmanConverters:
+    def __init__(self):
+        self.versions: dict[tuple[int, ...], ConverterVersion] = {}
+        # self.external_formats: dict[tuple[int, ...], Callable] = {}
+
+    def add_version(self, version) -> ConverterVersion:
+        self.versions[version] = ConverterVersion()
+        return self.versions[version]
+
+    def register_structure_hook(self, *args, **kwargs):
+        for version in self.versions.values():
+            version.register_structure_hook(*args, **kwargs)
+
+    def register_structure_hook_factory(self, *args, **kwargs):
+        for version in self.versions.values():
+            version.register_structure_hook_factory(*args, **kwargs)
+
+    def register_unstructure_hook(self, *args, **kwargs):
+        for version in self.versions.values():
+            version.register_unstructure_hook(*args, **kwargs)
+
+    def register_unstructure_hook_factory(self, *args, **kwargs):
+        for version in self.versions.values():
+            version.register_unstructure_hook_factory(*args, **kwargs)
+
+    def add_schema(
+        self,
+        schema: dict,
+        cls: Optional[type] = None,
+        mapping_func: Optional[Callable] = None,
+    ):
+        for version in self.versions.values():
+            version.add_schema(schema, cls, mapping_func)
 
     # @functools.cache
     # def __getitem__(self, item: tuple[int, ...]) -> cattrs.Converter:
@@ -248,20 +314,33 @@ class DraftsmanConverters:
     #     converter_to_use = sorted_versions[sorted_versions.index(item) - 1]
     #     return self.converters[converter_to_use]
 
+    # def register_external_format(self, cls, func, schema=None):
+    #     self.external_formats[cls] = func
+
+    # def get_location_dict(self, cls) -> dict:
+    #     location_dict = {}
+    #     for subcls in reversed(cls.mro()):
+    #         if subcls in self.external_formats:
+    #             location_dict.update(
+    #                 {
+    #                     k: (v,) if isinstance(v, str) else v
+    #                     for k, v in self.external_formats[subcls](
+    #                         attrs.fields(subcls)
+    #                     ).items()
+    #                 }
+    #             )
+    #     return location_dict
+
     @functools.cache
-    def get(
-        self, version: tuple, exclude_none: bool = False, exclude_defaults: bool = False
-    ):
-        if version not in self.converters:
+    def get_version(self, version: tuple[int, ...]):
+        if version not in self.versions:
             # Get the version just "below" the specified version
-            sorted_versions = list(sorted([*self.converters.keys(), version]))
-            # print("sorted_versions", sorted_versions)
+            sorted_versions = list(sorted([*self.versions.keys(), version]))
             try:
                 version = sorted_versions[sorted_versions.index(version) - 1]
             except KeyError:
                 raise ValueError("No converter exists for version {}".format(version))
-            # print("selected_version", version)
-        return self.converters[version][(exclude_none, exclude_defaults)]
+        return self.versions[version]
 
 
 draftsman_converters = DraftsmanConverters()
@@ -269,39 +348,218 @@ draftsman_converters.add_version((1, 0))
 draftsman_converters.add_version((2, 0))
 
 
-class exported_property(property):
-    pass
-
-
-# def exported_property(**kwargs):
-#     def inner(cls):
-#         pass
-#     result = exported_property
-#     result.extra = kwargs
-#     return result
-
-
 def finalize_fields(cls, fields: list[attrs.Attribute]) -> list[attrs.Attribute]:
     """
     Iterate over the "locations" in each field metadata and resolve any lambdas
     to fixed values.
     """
+    # TODO: better
     # print([field.name for field in fields])
     for index, field in enumerate(fields):
-        if field.metadata is not None and "location" in field.metadata:
-            if field.metadata["location"] is None:
-                continue
-            new_metadata = dict(field.metadata)
-            # print(new_metadata)
-            l = list(new_metadata["location"])
-            for i, item in enumerate(l):
-                if callable(item):
-                    l[i] = item(cls)
-            new_metadata["location"] = tuple(l)
-            # print(new_metadata)
-            fields[index] = field.evolve(metadata=new_metadata)
+        # print(field)
+        if (
+            not field.validator and not field.converter and not field.metadata
+        ):  # FIXME: scuffed
+            origin = get_origin(field.type)
+            t = origin if origin else field.type
+            # print(t)
+            converter = None
+            validators = []
+            if isinstance(t, Enum):
+                converter = t
+                validators.append(attrs.validators.instance_of(t))
+            elif t is Union:
+                union_validators = []
+                # print("union")
+                args = get_args(field.type)
+                for arg in args:
+                    if get_origin(arg) is Annotated:
+                        # print("annotated")
+                        ano_args = get_args(arg)
+                        # print(ano_args)
+                        union_validators.append(attrs.validators.and_(*ano_args[1]))
+                    else:
+                        union_validators.append(attrs.validators.instance_of(arg))
+                validators = attrs.validators.or_(*union_validators)
+            else:
+                validators.append(attrs.validators.instance_of(t))
+            if converter is None:
+                fields[index] = field.evolve(validator=validators)
+            else:
+                fields[index] = field.evolve(converter=converter, validators=validators)
+
+        # Shouldn't need this anymore
+        # if field.metadata is not None and "location" in field.metadata:
+        #     if field.metadata["location"] is None:
+        #         continue
+        #     new_metadata = dict(field.metadata)
+        #     # print(new_metadata)
+        #     l = list(new_metadata["location"])
+        #     for i, item in enumerate(l):
+        #         if callable(item):
+        #             l[i] = item(cls)
+        #     new_metadata["location"] = tuple(l)
+        #     # print(new_metadata)
+        #     fields[index] = field.evolve(metadata=new_metadata)
+        # if issubclass(field.type, Enum):
+        #     print(field.name)
 
     # TODO: something more sophisticated might be necessary
     # fields.sort(key=lambda attr: attr.name)
     # print([field.name for field in fields])
     return fields
+
+
+def make_unstructure_function_from_schema(
+    cls: type,
+    converter: cattrs.Converter,
+    schema: dict,
+    exclude_none: bool,
+    exclude_defaults: bool,
+):
+    """
+    Generates an unstructure function based on an input-output mapping dictionary.
+    """
+    fn_name = "unstructure_" + cls.__name__
+    globs = {}
+    lines = []
+    invocation_tree = {"lines": []}
+    internal_arg_parts = {}
+
+    def populate_invocate_tree(invocation_tree: list, loc: tuple[str], invoke: str):
+        if "lines" not in invocation_tree:
+            invocation_tree["lines"] = []
+        if "children" not in invocation_tree:
+            invocation_tree["children"] = {}
+        if len(loc) == 1:
+            invocation_tree["lines"].append(f"'{loc[0]}': {invoke},")
+        else:
+            if loc[0] not in invocation_tree["children"]:
+                invocation_tree["children"][loc[0]] = {"name": loc[0]}
+                invocation_tree["lines"].append(invocation_tree["children"][loc[0]])
+            populate_invocate_tree(invocation_tree["children"][loc[0]], loc[1:], invoke)
+
+    for attr_name, loc in schema.items():
+        a: attrs.Attribute = getattr(attrs.fields(cls), attr_name)
+        if loc is None:
+            continue
+        # override = kwargs.get(attr_name, neutral)
+        # if override.omit:
+        #     continue
+        # if override.omit is None and not a.init and not _cattrs_include_init_false:
+        #     continue
+        # if override.rename is None:
+        #     kn = attr_name if not _cattrs_use_alias else a.alias
+        # else:
+        #     kn = override.rename
+        kn = attr_name
+        d = a.default
+
+        # For each attribute, we try resolving the type here and now.
+        # If a type is manually overwritten, this function should be
+        # regenerated.
+        handler = None
+        if a.type is not None:
+            t = a.type
+
+            # if handler is None:
+            if (
+                is_bare_final(t)
+                and a.default is not attrs.NOTHING
+                and not isinstance(a.default, attrs.Factory)
+            ):
+                # This is a special case where we can use the
+                # type of the default to dispatch on.
+                t = a.default.__class__
+            try:
+                handler = converter.get_unstructure_hook(t, cache_result=False)
+            except RecursionError:
+                # There's a circular reference somewhere down the line
+                handler = converter.unstructure
+        else:
+            handler = converter.unstructure
+
+        is_identity = handler == identity
+
+        if not is_identity:
+            unstruct_handler_name = f"__c_unstr_{attr_name}"
+            globs[unstruct_handler_name] = handler
+            internal_arg_parts[unstruct_handler_name] = handler
+            invoke = f"{unstruct_handler_name}(instance.{attr_name})"
+        else:
+            invoke = f"instance.{attr_name}"
+
+        if (
+            exclude_none or (d is not attrs.NOTHING and exclude_defaults)
+        ) and a.metadata.get("omit", True):
+            conditions = []
+            if exclude_none:
+                conditions.append(f"instance.{attr_name} is not None")
+            if exclude_defaults:
+                def_name = f"__c_def_{attr_name}"
+                if isinstance(d, attrs.Factory):
+                    globs[def_name] = d.factory
+                    internal_arg_parts[def_name] = d.factory
+                    if d.takes_self:
+                        conditions.append(
+                            f"instance.{attr_name} != {def_name}(instance)"
+                        )
+                    else:
+                        conditions.append(f"instance.{attr_name} != {def_name}()")
+                else:
+                    globs[def_name] = d
+                    internal_arg_parts[def_name] = d
+                    conditions.append(f"instance.{attr_name} != {def_name}")
+
+            conditions = " and ".join(conditions)
+            lines.append(f"  if {conditions}:")
+            subloc = []
+
+            def calc_getitem(loc):
+                return "".join([f"['{l}']" for l in loc])
+
+            for i, l in enumerate(loc):
+                subloc.append(l)
+                if i != len(loc) - 1:
+                    lines.append(f"    if '{l}' not in res{calc_getitem(subloc[:-1])}:")
+                    lines.append(f"      res{calc_getitem(subloc)} = {{}}")
+                else:
+                    lines.append(f"    res{calc_getitem(subloc)} = {invoke}")
+        else:
+            # No default or no override.
+            populate_invocate_tree(invocation_tree, loc, invoke)
+
+    internal_arg_line = ", ".join([f"{i}={i}" for i in internal_arg_parts])
+    if internal_arg_line:
+        internal_arg_line = f", {internal_arg_line}"
+    for k, v in internal_arg_parts.items():
+        globs[k] = v
+
+    def resolve_tree(tree, indent=4):
+        res = []
+        for line in tree["lines"]:
+            if isinstance(line, dict):
+                key = line["name"]
+                res += [(" " * indent) + f"'{key}': {{"]
+                res += resolve_tree(line, indent + 2)
+                res += [(" " * indent) + "},"]
+            else:
+                res += [(" " * indent) + line]
+        return res
+
+    total_lines = (
+        [f"def {fn_name}(instance{internal_arg_line}):"]
+        + ["  res = {"]
+        + resolve_tree(invocation_tree)
+        + ["  }"]
+        + lines
+        + ["  return res"]
+    )
+    script = "\n".join(total_lines)
+    fname = generate_unique_filename(cls, "unstructure", lines=total_lines)
+
+    eval(compile(script, fname, "exec"), globs)
+
+    res = globs[fn_name]
+
+    return res

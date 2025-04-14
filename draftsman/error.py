@@ -276,6 +276,17 @@ class InvalidSignalError(DraftsmanError):
     pass
 
 
+class IncompleteSignalError(DraftsmanError):
+    """
+    Raised when a constructing a SignalID from a string name when the name is 
+    not recognized by the current environment. In this case, the type is 
+    ambiguous, and so must be either defined alongside the name at instantiation
+    or the environment must be updated to accomodate the unknown signal.
+    """
+
+    pass
+
+
 class InvalidMapperError(DraftsmanError):
     """
     Raised when a mapper name does not match any valid entry currently

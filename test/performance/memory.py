@@ -14,9 +14,9 @@ import os
 
 # @profile
 def main():
-    entities.add_entity("logistic-train-stop-input", "lamp", [[-0.2, -0.2], [0.2, 0.2]])
-    entities.add_entity("logistic-train-stop-output", "constant-combinator", [[-0.2, -0.2], [0.2, 0.2]])
-    entities.add_entity("logistic-train-stop", "train-stop", [[-0.2, -0.2], [0.2, 0.2]])
+    # entities.add_entity("logistic-train-stop-input", "lamp", [[-0.2, -0.2], [0.2, 0.2]])
+    # entities.add_entity("logistic-train-stop-output", "constant-combinator", [[-0.2, -0.2], [0.2, 0.2]])
+    # entities.add_entity("logistic-train-stop", "train-stop", [[-0.2, -0.2], [0.2, 0.2]])
 
     dirname = os.path.dirname(__file__)
 

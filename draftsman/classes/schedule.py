@@ -5,6 +5,7 @@ from draftsman.classes.exportable import (
     Exportable,
     ValidationResult,
     attempt_and_reissue,
+    custom_define,
 )
 from draftsman.constants import (
     Ticks,
@@ -16,6 +17,7 @@ from draftsman.error import DataFormatError
 from draftsman.prototypes.locomotive import Locomotive
 from draftsman.signatures import Condition, DraftsmanBaseModel, uint32
 
+import attrs
 import copy
 from pydantic import (
     ConfigDict,
@@ -401,6 +403,7 @@ class WaitConditions:
         )
 
 
+@custom_define(field_order=["locomotives", "schedule", "extra_keys"])
 class Schedule(Exportable):
     """
     An object representing a particular train schedule. Schedules contain
@@ -408,115 +411,139 @@ class Schedule(Exportable):
     the order of stops and their conditions.
     """
 
-    class Format(DraftsmanBaseModel):
-        class ScheduleSpecification(DraftsmanBaseModel):
-            class Stop(DraftsmanBaseModel):
-                station: str = Field(
-                    ...,
-                    description="""The name of the station for this particular stop.""",
-                )
-                wait_conditions: WaitConditions = Field(
-                    [],
-                    description="""
-                    A list of wait conditions that a train with this schedule must satisfy 
-                    in order proceed from the associated 'station' name.""",
-                )
+    @attrs.define
+    class Specification:
+        @attrs.define
+        class Stop:
+            station: str = attrs.field()
+            wait_conditions: WaitConditions = attrs.field(factory=WaitConditions)
 
-                @field_validator("wait_conditions", mode="before")
-                @classmethod
-                def instantiate_wait_conditions_list(cls, value: Any):
-                    if isinstance(value, list):
-                        return WaitConditions(value)
-                    else:
-                        return value
+        records: list[Stop] = attrs.field(factory=list)
+        # TODO: interrupts
 
-                # @field_validator("wait_conditions", mode="after")
-                # @classmethod
-                # def test(cls, value: Any):
-                #     print("test")
-                #     print(value)
-                #     print(type(value))
-                #     return value
+    # class Format(DraftsmanBaseModel):
+    #     class ScheduleSpecification(DraftsmanBaseModel):
+    #         class Stop(DraftsmanBaseModel):
+    #             station: str = Field(
+    #                 ...,
+    #                 description="""The name of the station for this particular stop.""",
+    #             )
+    #             wait_conditions: WaitConditions = Field(
+    #                 [],
+    #                 description="""
+    #                 A list of wait conditions that a train with this schedule must satisfy
+    #                 in order proceed from the associated 'station' name.""",
+    #             )
 
-                @field_serializer("wait_conditions")
-                def serialize_wait_conditions(self, value: WaitConditions, _):
-                    return value.to_dict()
+    #             @field_validator("wait_conditions", mode="before")
+    #             @classmethod
+    #             def instantiate_wait_conditions_list(cls, value: Any):
+    #                 if isinstance(value, list):
+    #                     return WaitConditions(value)
+    #                 else:
+    #                     return value
 
-            records: list[Stop] = Field([], description="""List of regular stops.""")
+    #             # @field_validator("wait_conditions", mode="after")
+    #             # @classmethod
+    #             # def test(cls, value: Any):
+    #             #     print("test")
+    #             #     print(value)
+    #             #     print(type(value))
+    #             #     return value
 
-            # TODO: interrupts
+    #             @field_serializer("wait_conditions")
+    #             def serialize_wait_conditions(self, value: WaitConditions, _):
+    #                 return value.to_dict()
 
-        # _locomotives: list[Association.Format] = PrivateAttr()
+    #         records: list[Stop] = Field([], description="""List of regular stops.""")
 
-        locomotives: list[Association.Format] = Field(
-            [],
-            description="""
-            A list of the 'entity_number' of each locomotive in a blueprint that
-            has this schedule.
-            """,
-        )
-        schedule: ScheduleSpecification = Field(
-            ScheduleSpecification(),
-            description="""
-            The list of all train stops and their conditions associated with 
-            this schedule.
-            """,
-        )
+    #         # TODO: interrupts
 
-    def __init__(
-        self,
-        locomotives: list[Association] = [],
-        schedule: Format.ScheduleSpecification = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-    ):
-        """
-        TODO
-        """
-        self._root: __class__.Format
+    #     # _locomotives: list[Association.Format] = PrivateAttr()
 
-        super().__init__()
+    #     locomotives: list[Association.Format] = Field(
+    #         [],
+    #         description="""
+    #         A list of the 'entity_number' of each locomotive in a blueprint that
+    #         has this schedule.
+    #         """,
+    #     )
+    #     schedule: ScheduleSpecification = Field(
+    #         ScheduleSpecification(),
+    #         description="""
+    #         The list of all train stops and their conditions associated with
+    #         this schedule.
+    #         """,
+    #     )
 
-        # Construct root
-        self._root = __class__.Format.model_validate(
-            {"locomotives": locomotives, "schedule": schedule},
-            context={"construction": True, "mode": ValidationMode.NONE},
-        )
-        # self._root._locomotives = locomotives
+    # def __init__(
+    #     self,
+    #     locomotives: list[Association] = [],
+    #     schedule: Format.ScheduleSpecification = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    # ):
+    #     """
+    #     TODO
+    #     """
+    #     self._root: __class__.Format
 
-        # TODO: do I have to convert ints to associations here?
-        # self.locomotives: list[Association] = []
-        # for locomotive in locomotives:
-        #     self.locomotives.append(locomotive)
+    #     super().__init__()
 
-        # self._stops: list[dict] = []
-        # for stop in self.stops:
-        #     if not isinstance(stop["wait_conditions"], WaitConditions):
-        #         # self.stops.append(
-        #         #     {
-        #         #         "station": stop["station"],
-        #         #         "wait_conditions": WaitConditions(stop["wait_conditions"]),
-        #         #     }
-        #         # )
-        #         stop["wait_conditions"] = WaitConditions(stop["wait_conditions"])
+    #     # Construct root
+    #     self._root = __class__.Format.model_validate(
+    #         {"locomotives": locomotives, "schedule": schedule},
+    #         context={"construction": True, "mode": ValidationMode.NONE},
+    #     )
+    #     # self._root._locomotives = locomotives
 
-        self.validate_assignment = validate_assignment
+    #     # TODO: do I have to convert ints to associations here?
+    #     # self.locomotives: list[Association] = []
+    #     # for locomotive in locomotives:
+    #     #     self.locomotives.append(locomotive)
+
+    #     # self._stops: list[dict] = []
+    #     # for stop in self.stops:
+    #     #     if not isinstance(stop["wait_conditions"], WaitConditions):
+    #     #         # self.stops.append(
+    #     #         #     {
+    #     #         #         "station": stop["station"],
+    #     #         #         "wait_conditions": WaitConditions(stop["wait_conditions"]),
+    #     #         #     }
+    #     #         # )
+    #     #         stop["wait_conditions"] = WaitConditions(stop["wait_conditions"])
+
+    #     self.validate_assignment = validate_assignment
 
     # =========================================================================
 
-    @property
-    def locomotives(self) -> list[Association]:
-        """
-        The list of :py:class:`Association`s to each :py:class:`Locomotive` that
-        uses this particular ``Schedule``. Read only; use
-        :py:meth:`add_locomotive` or :py:meth:`remove_locomotive` to change this
-        list.
-        """
-        return self._root.locomotives
+    locomotives: list[Association] = attrs.field(
+        factory=list,
+        # TODO: validators
+    )
+    """
+    The list of :py:class:`Association`s to each :py:class:`Locomotive` that
+    uses this particular ``Schedule``.
+    """
+
+    # @property
+    # def locomotives(self) -> list[Association]:
+    #     """
+    #     The list of :py:class:`Association`s to each :py:class:`Locomotive` that
+    #     uses this particular ``Schedule``. Read only; use
+    #     :py:meth:`add_locomotive` or :py:meth:`remove_locomotive` to change this
+    #     list.
+    #     """
+    #     return self._root.locomotives
+
+    schedule: Specification = attrs.field(
+        factory=Specification,
+        # TODO: validators
+    )
 
     @property
-    def stops(self) -> list[Format.ScheduleSpecification.Stop]:
+    def stops(self) -> list[Specification.Stop]:
         """
         A list of dictionaries of the format:
 
@@ -535,7 +562,7 @@ class Schedule(Exportable):
 
         :returns: A ``list`` of ``dict``s in the format specified above.
         """
-        return self._root.schedule.records
+        return self.schedule.records
 
     # =========================================================================
 
@@ -648,40 +675,40 @@ class Schedule(Exportable):
                 )
             )
 
-    def validate(
-        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
-    ) -> ValidationResult:  # TODO: defer to parent
-        mode = ValidationMode(mode)
+    # def validate(
+    #     self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    # ) -> ValidationResult:  # TODO: defer to parent
+    #     mode = ValidationMode(mode)
 
-        output = ValidationResult([], [])
+    #     output = ValidationResult([], [])
 
-        if (
-            mode is ValidationMode.NONE and not force
-        ):  # or (self.is_valid and not force):
-            return output
+    #     if (
+    #         mode is ValidationMode.NONE and not force
+    #     ):  # or (self.is_valid and not force):
+    #         return output
 
-        context = {
-            "mode": mode,
-            "object": self,
-            "warning_list": [],
-            "assignment": False,
-        }
+    #     context = {
+    #         "mode": mode,
+    #         "object": self,
+    #         "warning_list": [],
+    #         "assignment": False,
+    #     }
 
-        try:
-            result = self.Format.model_validate(
-                self._root, strict=False, context=context
-            )
-            # print("result:", result)
-            # Reassign private attributes
-            # TODO
-            # Acquire the newly converted data
-            self._root = result
-        except ValidationError as e:
-            output.error_list.append(DataFormatError(e))
+    #     try:
+    #         result = self.Format.model_validate(
+    #             self._root, strict=False, context=context
+    #         )
+    #         # print("result:", result)
+    #         # Reassign private attributes
+    #         # TODO
+    #         # Acquire the newly converted data
+    #         self._root = result
+    #     except ValidationError as e:
+    #         output.error_list.append(DataFormatError(e))
 
-        output.warning_list += context["warning_list"]
+    #     output.warning_list += context["warning_list"]
 
-        return output
+    #     return output
 
     # def to_dict(self) -> dict:  # TODO: defer to parent
     #     """
@@ -711,12 +738,12 @@ class Schedule(Exportable):
 
     # =========================================================================
 
-    def __eq__(self, other) -> bool:
-        return (
-            isinstance(other, Schedule)
-            and self.locomotives == other.locomotives
-            and self.stops == other.stops
-        )
+    # def __eq__(self, other) -> bool:
+    #     return (
+    #         isinstance(other, Schedule)
+    #         and self.locomotives == other.locomotives
+    #         and self.stops == other.stops
+    #     )
 
     def __repr__(self) -> str:
         return "<Schedule>{}".format(self.to_dict())

@@ -790,6 +790,22 @@ def aabb_to_dimensions(aabb: Optional[AABB]) -> tuple[int, int]:
 # =============================================================================
 
 
+def dict_merge(a: dict, b: dict) -> dict:
+    """
+    Merge two dictionaries together. Modifies ``a`` inplace. If keys exist in
+    both dictionaries, keys from ``b`` overwrite keys in ``a``.
+    """
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                dict_merge(a[key], b[key])
+            else:
+                a[key] = b[key]
+        else:
+            a[key] = b[key]
+    return a
+
+
 def get_first(entity_names: list[str]):
     """
     Because python has no convenient `get` equivalent for lists, we use this

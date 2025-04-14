@@ -7,6 +7,7 @@ from draftsman.classes.exportable import (
     attempt_and_reissue,
     apply_assignment,
     test_replace_me,
+    custom_define,
 )
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError, IncorrectBlueprintTypeError
@@ -19,7 +20,7 @@ from draftsman.signatures import (
     uint64,
 )
 from draftsman.data.signals import signal_dict
-from draftsman.serialization import draftsman_converters, finalize_fields
+from draftsman.serialization import draftsman_converters
 from draftsman.utils import (
     encode_version,
     decode_version,
@@ -39,7 +40,19 @@ from pydantic import field_validator, ValidationError
 from typing import Any, Literal, Optional, Sequence, Union
 
 
-@attrs.define(slots=False)
+# @attrs.define(slots=False)
+@custom_define(
+    field_order=[
+        "label",
+        "label_color",
+        "description",
+        "icons",
+        "version",
+        "index",
+        "extra_keys",
+    ],
+    slots=False,
+)
 class Blueprintable(Exportable, metaclass=ABCMeta):
     """
     An abstract base class representing "blueprint-like" objects, such as
@@ -170,9 +183,9 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             version = __factorio_version_info__
 
         # print(version)
-        converter = draftsman_converters.get(version=version)
-        import inspect
-
+        version_info = draftsman_converters.get_version(version)
+        converter = version_info.get_converter()
+        # import inspect
         # print(inspect.getsource(converter.get_structure_hook(cls)))
         return converter.structure(json_dict, cls)
 
@@ -592,7 +605,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     # =========================================================================
 
-    index: Optional[uint16] = attrs.field(default=None)
+    index: Optional[uint16] = None
     """
     The 0-indexed location of the blueprintable in a parent
     :py:class:`BlueprintBook`. This member is automatically generated if
@@ -778,3 +791,14 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         return "<{}>{}".format(
             type(self).__name__, repr(self.to_dict()[self.root_item])
         )
+
+
+# TODO: versioning
+draftsman_converters.add_schema(
+    {
+        "$schema": "TODO",  # TODO
+        "$id": "factorio:blueprintable",
+    },
+    Blueprintable,
+    lambda fields: {fields.index.name: "index"},
+)

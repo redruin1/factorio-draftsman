@@ -15,6 +15,7 @@ if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
+@attrs.define(slots=False)
 class EntityLike(SpatialLike, metaclass=ABCMeta):
     """
     Abstract base class for a blueprintable entity. Allows the user to specify
@@ -42,9 +43,10 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     # Properties
     # =========================================================================
 
+    # FIXME: I would like to annotate this, but cattrs cannot find the location of `EntityCollection`
     _parent = attrs.field(
         default=None, init=False, repr=False, metadata={"omit": True}
-    )  # FIXME: I would like to annotate this, but cattrs cannot find the location of `EntityCollection`
+    )
 
     @property
     def parent(self) -> "EntityCollection":

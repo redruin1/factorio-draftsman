@@ -112,7 +112,7 @@ from draftsman.signatures import (
 from draftsman.entity import Entity
 from draftsman.tile import Tile
 from draftsman.classes.schedule import Schedule
-from draftsman.serialization import exported_property, finalize_fields
+from draftsman.serialization import finalize_fields
 from draftsman.utils import (
     AABB,
     aabb_to_dimensions,
@@ -1449,7 +1449,37 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         return result
 
 
-_default_blueprint_hook = draftsman_converters.get((1, 0)).get_structure_hook(Blueprint)
+# TODO: this should be version 2.0
+draftsman_converters.add_schema(
+    {"$id": "factorio:blueprint"},
+    Blueprint,
+    lambda fields: {
+        fields.item.name: ("blueprint", "item"),
+        fields.label.name: ("blueprint", "label"),
+        fields.label_color.name: ("blueprint", "label_color"),
+        fields.description.name: ("blueprint", "description"),
+        fields.icons.name: ("blueprint", "icons"),
+        fields.version.name: ("blueprint", "version"),
+        fields.snapping_grid_size.name: ("blueprint", "snap-to-grid"),
+        fields.absolute_snapping.name: ("blueprint", "absolute-snapping"),
+        fields.position_relative_to_grid.name: (
+            "blueprint",
+            "position-relative-to-grid",
+        ),
+        fields.entities.name: ("blueprint", "entities"),
+        fields.tiles.name: ("blueprint", "tiles"),
+        fields.schedules.name: ("blueprint", "schedules"),
+        fields.wires.name: ("blueprint", "schedules"),
+        fields.stock_connections: ("blueprint", "stock_connections"),
+    },
+)
+
+
+_default_blueprint_hook = (
+    draftsman_converters.get_version((1, 0))
+    .converters[(False, False)]
+    .get_structure_hook(Blueprint)
+)  # TODO: FIXME
 
 
 def structure_blueprint_1_0(d: dict, _: type) -> Blueprint:
@@ -1586,6 +1616,6 @@ def structure_blueprint_1_0(d: dict, _: type) -> Blueprint:
     return _default_blueprint_hook(d, _)
 
 
-draftsman_converters.get((1, 0)).register_structure_hook(
+draftsman_converters.get_version((1, 0)).register_structure_hook(
     Blueprint, structure_blueprint_1_0
 )

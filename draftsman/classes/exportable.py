@@ -1,23 +1,29 @@
 # exportable.py
 from draftsman import __factorio_version_info__
 from draftsman.constants import ValidationMode
-from draftsman.schemas import get_schema
-from draftsman.serialization import draftsman_converters
+from draftsman.serialization import (
+    draftsman_converters,
+    make_unstructure_function_from_schema,
+)
+from draftsman.utils import dict_merge
 
 from draftsman.error import DataFormatError
+from draftsman import validators
 from draftsman.warning import UnknownKeywordWarning
 
 import attrs
 from attr._make import _CountingAttr
 import cattrs
+from cattrs.gen._shared import find_structure_handler
 
 from abc import ABCMeta, abstractmethod
+import copy
+from functools import wraps
 from pydantic import BaseModel, ValidationError
 from typing import Any, List, Literal, Optional, Union
 from typing_extensions import Self
 import warnings
 import pprint  # TODO: think about
-import attrs_jsonschema
 
 
 def convert_to_countingattr(attr):
@@ -36,7 +42,9 @@ def convert_to_countingattr(attr):
 def custom_define(field_order: list[str], **kwargs):
     import inspect
 
+    @wraps(attrs.define)
     def wrapper(cls):
+        # Pre-attrs definition
         these = {}
         for field_name in field_order:
             field = getattr(cls, field_name, attrs.field())
@@ -51,6 +59,16 @@ def custom_define(field_order: list[str], **kwargs):
                 field = attrs.field(default=field)
 
             these[field_name] = field
+
+        # # Post-attrs definition
+        # original_init = res.__init__
+
+        # @wraps(original_init)
+        # def new_init(*args, **kwargs):
+        #     kwargs.pop("entity_number", None)
+        #     original_init(*args, **kwargs)
+
+        # cls.__init__ = new_init
 
         return attrs.define(cls, these=these, **kwargs)
 
@@ -233,12 +251,12 @@ class ValidationResult:
         )
 
 
-class Exportable(metaclass=ABCMeta):
+@attrs.define(slots=False)
+class Exportable:
     """
-    An abstract base class representing an object that has a form within a JSON
+    An abstract base class representing an object that has a form within a
     Factorio blueprint string, such as entities, tiles, or entire blueprints
-    themselves. Posesses a ``_root`` dictionary which contains it's contents, as
-    well as validation utilities.
+    themselves.
     """
 
     # _is_valid: bool = attrs.field(default=False, init=False)
@@ -287,6 +305,22 @@ class Exportable(metaclass=ABCMeta):
 
     # =========================================================================
 
+    validate_assignment: ValidationMode = attrs.field(
+        default=ValidationMode.STRICT,
+        converter=ValidationMode,
+        validator=validators.instance_of(ValidationMode),
+        repr=False,
+        kw_only=True,
+        metadata={"omit": True} 
+    )
+    """
+    Toggleable flag that indicates whether assignments to this object should
+    be validated, and how. Can be set in the constructor of the entity or
+    changed at any point during runtime. Note that this is on a per-entity
+    basis, so multiple instances of otherwise identical entities can have
+    different validation configurations.
+    """
+
     # @property
     # def validate_assignment(
     #     self,
@@ -318,36 +352,53 @@ class Exportable(metaclass=ABCMeta):
 
     # =========================================================================
 
-    unknown: Optional[dict[Any, Any]] = attrs.field(
-        default=None, metadata={"omit": True}
+    extra_keys: Optional[dict[Any, Any]] = attrs.field(
+        default=None, 
+        kw_only=True,
+        metadata={"omit": True}
     )
+    """
+    Any additional keys that are not recognized by Draftsman when loading from
+    a raw JSON dictionary end up as keys in this attribute. Under normal 
+    circumstances, this field should always remain ``None``, indicating that all 
+    fields provided were properly translated into the internal Python class. 
+    
+    This attribute allows you to have "raw-like" access to the input/output dict,
+    should you wish to add additional keys when distributing serialized 
+    blueprint strings. Any keys that remain in this dict will be respected on 
+    output, so you can populate this dictionary with custom keys (beyond what 
+    you could do with ``tags``) and they will be combined on output, meaning 
+    round-trip import-export cycles are stable:
 
-    @unknown.validator
-    def warn_unrecognized_keys(self, attribute, value: Optional[dict]):
-        if value:  # is not empty:
+    TODO: round-trip example
+
+    The structure of input keys are preserved, meaning you may have to recurse
+    through keys to find the unknown data:
+
+    TODO: control_behavior example
+    """
+
+    @extra_keys.validator
+    def _warn_unrecognized_keys(self, _, value: Optional[dict], mode: Optional[ValidationMode] = None):
+        """Warns the user if the ``extra_keys`` dict is populated."""
+        print(mode, self.validate_assignment)
+        mode = mode if mode is not None else self.validate_assignment
+        
+        if mode >= ValidationMode.STRICT and value:  # is not empty:
             msg = "'{}' object has no attribute(s) {}; allowed fields are {}".format(
                 type(self).__name__,
                 list(value.keys()),
                 [
-                    attr.name for attr in attrs.fields(type(self))
-                ],  # TODO: remove '_parent'
+                    attr.name
+                    for attr in attrs.fields(type(self))
+                    if not attr.name.startswith("_")
+                ],
             )
             warnings.warn(UnknownKeywordWarning(msg))
 
-    # @property
-    # def unknown(self) -> bool:
-    #     """
-    #     A read-only flag which indicates whether or not Draftsman recognizes
-    #     this object and thus has a full understanding of it's underlying format.
-    #     If this flag is ``True``, then most validation for this instance is
-    #     disabled, only issuing errors/warnings for issues that Draftsman has
-    #     sufficient information to diagnose.
-    #     """
-    #     return True
-
     # =========================================================================
 
-    def validate(self, mode: ValidationMode, force: bool) -> ValidationResult:
+    def validate(self, mode: ValidationMode, force: bool = False) -> ValidationResult:
         """
         Validates the called object against it's known format.
         Method that attempts to first coerce the object into a known form, and
@@ -377,14 +428,25 @@ class Exportable(metaclass=ABCMeta):
         :returns: A :py:class:`ValidationResult` object containing the
             corresponding errors and warnings.
         """
-        # TODO: instead, capture all attributes and manually run all validators,
-        # while collecting exceptions into a report object to return
-        attrs.validate(self)
-        return ValidationResult([], [])  # FIXME
+        mode = ValidationMode(mode)
+        res = ValidationResult([], [])
+        for a in attrs.fields(self.__class__):
+            v = a.validator
+            if v is not None:
+                # try:
+                # TODO: capture warnings
+                print(v)
+                v(self, a, getattr(self, a.name), mode=mode)
+                # except Exception as e:
+                #     res.error_list.append(e)
+        return res
 
     @classmethod
     def from_dict(
-        cls, d: dict, version: tuple[int, ...] = __factorio_version_info__
+        cls, 
+        d: dict, 
+        version: tuple[int, ...] = __factorio_version_info__,
+        validation: ValidationMode = ValidationMode.NONE,
     ) -> Self:
         """
         TODO
@@ -392,11 +454,17 @@ class Exportable(metaclass=ABCMeta):
         # print("from dict")
         # print(version)
         # import inspect
-
         # print(
         #     inspect.getsource(draftsman_converters.get(version).get_structure_hook(cls))
         # )
-        return draftsman_converters.get(version).structure(d, cls)
+        version_info = draftsman_converters.get_version(version)
+        # return version_info.get_converter().structure(d, cls)
+        kwargs = version_info.get_converter().structure(copy.deepcopy(d), cls)
+        res = cls(**kwargs, validate_assignment=ValidationMode.NONE)
+        if validation:
+            res.validate(mode=validation).reissue_all()
+        res.validate_assignment = validation
+        return res
 
     def to_dict(
         self,
@@ -407,7 +475,8 @@ class Exportable(metaclass=ABCMeta):
         """
         TODO
         """
-        converter = draftsman_converters.get(version, exclude_none, exclude_defaults)
+        version_info = draftsman_converters.get_version(version)
+        converter = version_info.get_converter(exclude_none, exclude_defaults)
         # print(converter)
         # print(converter.omit_if_default)
         # import inspect
@@ -464,7 +533,7 @@ class Exportable(metaclass=ABCMeta):
         # flattened out? If not, how should somebody actually use the urls
         # in practice, since they're all locally hosted?
         # return cls.Format.model_json_schema(by_alias=True)
-        return get_schema(cls, version=version)
+        return draftsman_converters.get_version(version).get_schema(cls)
 
     # TODO
     # @classmethod
@@ -492,3 +561,100 @@ class Exportable(metaclass=ABCMeta):
 
     # def __contains__(self, item: str) -> bool:
     #     return item in self._root
+
+
+def make_exportable_structure_factory_func(
+    version_tuple: tuple[int, ...], exclude_none: bool, exclude_defaults: bool
+):
+    def factory(cls: type, converter: cattrs.Converter):
+        def try_pop_location(subdict, loc):
+            """
+            Traverse loc and try to pop that item, as well as any subdicts that 
+            become empty in the process.
+            """
+            if loc is None:
+                return None
+            if len(loc) == 1:
+                try:
+                    return subdict.pop(loc[0], None)
+                except AttributeError:
+                    return None
+            if loc[0] not in subdict:
+                return None
+            result = try_pop_location(subdict[loc[0]], loc[1:])
+            if subdict[loc[0]] == {}:
+                subdict.pop(loc[0])
+            return result
+
+        class_attrs = attrs.fields(cls)
+        version_data = draftsman_converters.get_version(version_tuple)
+        location_dict = version_data.get_location_dict(cls)
+
+        def structure_hook(input_dict: dict, _: type):
+            res = {}
+            for attr in class_attrs:
+                # print("attr name:", attr.name)
+                if attr.name not in location_dict:
+                    continue
+                loc = location_dict[attr.name]
+
+                value = try_pop_location(input_dict, loc)
+                # print(value)
+                if value is None:
+                    continue
+                handler = find_structure_handler(attr, attr.type, converter)
+                if handler is not None:
+                    # import inspect
+                    # print(inspect.getsource(handler))
+                    try:
+                        res[attr.name] = handler(value, attr.type)
+                    except Exception as e:
+                        raise DataFormatError(e) from None
+                else:
+                    res[attr.name] = value
+
+            if input_dict:
+                res["extra_keys"] = input_dict
+
+            # print(location_dict)
+            # print(res)
+            return res
+            # return cls(**res)
+
+        return structure_hook
+
+    return factory
+
+
+def make_exportable_unstructure_factory_func(
+    version_tuple: tuple[int, ...], exclude_none: bool, exclude_defaults: bool
+):
+    def factory(cls, converter):
+        version_data = draftsman_converters.get_version(version_tuple)
+        location_dict = version_data.get_location_dict(cls)
+        parent_hook = make_unstructure_function_from_schema(
+            cls, converter, location_dict, exclude_none, exclude_defaults
+        )
+
+        def unstructure_hook(inst):
+            res = parent_hook(inst)
+            if inst.extra_keys:
+                dict_merge(res, inst.extra_keys)
+            return res
+
+        return unstructure_hook
+
+    return factory
+
+
+for version_tuple, version in draftsman_converters.versions.items():
+    for exclude_config, converter in version.converters.items():
+        # Technically don't have to do this for *every* structure, but...
+        converter.register_structure_hook_factory(
+            lambda cls: issubclass(cls, Exportable),
+            make_exportable_structure_factory_func(version_tuple, *exclude_config),
+        )
+        converter.register_unstructure_hook_factory(
+            lambda cls: issubclass(cls, Exportable),
+            make_exportable_unstructure_factory_func(version_tuple, *exclude_config),
+        )

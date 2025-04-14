@@ -1,7 +1,8 @@
 # logistic_condition.py
 
 from draftsman.classes.exportable import attempt_and_reissue
-from draftsman.signatures import Condition, SignalID, int32
+from draftsman.serialization import draftsman_converters
+from draftsman.signatures import AttrsSimpleCondition, Condition, SignalID, int32
 
 import attrs
 from pydantic import BaseModel, Field
@@ -76,6 +77,19 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
 
     # =========================================================================
 
+    logistic_condition: AttrsSimpleCondition = attrs.field(
+        default=AttrsSimpleCondition(first_signal=None, comparator="<", constant=0),
+        converter=AttrsSimpleCondition.converter,
+        validator=attrs.validators.instance_of(AttrsSimpleCondition),
+        metadata={"location": ("control_behavior", "logistic_condition")},
+    )
+    """
+    The logistic condition that must be passed in order for this entity to 
+    function, if configured to do so.
+    """
+
+    # =========================================================================
+
     def set_logistic_condition(
         self,
         a: Union[SignalID, None] = None,
@@ -113,3 +127,31 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
         has no logistic condition to remove.
         """
         self.control_behavior.logistic_condition = None
+
+
+draftsman_converters.get_version((2, 0)).add_schema(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "factorio:logistic_condition",
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "connect_to_logistic_network": {
+                        "type": "boolean",
+                        "default": "false",
+                    },
+                    "logistic_condition": {"$ref": "factorio:simple_condition"},
+                },
+            }
+        },
+    },
+    LogisticConditionMixin,
+    lambda fields: {
+        fields.connect_to_logistic_network.name: (
+            "control_behavior",
+            "connect_to_logistic_network",
+        ),
+        fields.logistic_condition.name: ("control_behavior", "logistic_condition"),
+    },
+)

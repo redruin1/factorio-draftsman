@@ -21,6 +21,7 @@ from draftsman.signatures import (
     get_suggestion,
     uint64,
 )
+from draftsman.validators import instance_of, and_
 from draftsman.warning import UnknownEntityWarning
 from draftsman import utils, __factorio_version_info__
 
@@ -107,20 +108,7 @@ def strip_entity_number(cls):
     cls.__init__ = new_init
 
 
-# @strip_entity_number
-# @attrs.define(field_transformer=finalize_fields)
-@custom_define(
-    field_order=[
-        "name",
-        "id",
-        "position",
-        "tile_position",
-        "quality",
-        "tags",
-        "_parent",
-        "unknown",
-    ]
-)
+@attrs.define
 class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     """
     Entity base-class. Used for all entity types that are specified in Factorio.
@@ -384,6 +372,8 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
 
     # =========================================================================
 
+    # TODO: which of these do I want? Need to investigate what happens when you
+    # give the game a blueprint with two entities with the same entity_number...
     # entity_number: uint64 = attrs.field(
     #     validator=attrs.validators.instance_of(uint64),
     #     metadata={"omit": False}
@@ -395,6 +385,9 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     # """
     @property
     def entity_number(self) -> Optional[uint64]:
+        """
+        TODO
+        """
         if self.parent:
             return self.parent.entities.index(self) + 1
         else:
@@ -402,30 +395,31 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
 
     # =========================================================================
 
+    # @name.validator
+    def ensure_name_recognized(self, attribute, value, mode: Optional[ValidationMode]=None):
+        mode = mode if mode is not None else self.validate_assignment
+        if mode >= ValidationMode.STRICT:
+            if value not in entities.raw:
+                msg = "Unknown entity '{}'{}".format(
+                    value, get_suggestion(value, entities.raw.keys(), n=1)
+                )
+                warnings.warn(UnknownEntityWarning(msg))
+            elif value not in self.similar_entities:
+                msg = "'{}' is not a known name for a {}{}".format(
+                    value,
+                    type(self).__name__,
+                    get_suggestion(value, self.similar_entities, n=1),
+                )
+                warnings.warn(UnknownEntityWarning(msg))
+
     name: str = attrs.field(
-        validator=attrs.validators.instance_of(str), metadata={"omit": False}
+        validator=and_(instance_of(str), ensure_name_recognized), metadata={"omit": False}
     )
     """The name of the entity."""
 
     @name.default
     def get_default_entity(self):
         return utils.get_first(self.similar_entities)
-
-    @name.validator
-    def ensure_name_recognized(self, attribute, value):
-        # if self.validation:
-        if value not in entities.raw:
-            msg = "Unknown entity '{}'{}".format(
-                value, get_suggestion(value, entities.raw.keys(), n=1)
-            )
-            warnings.warn(UnknownEntityWarning(msg))
-        elif value not in self.similar_entities:
-            msg = "'{}' is not a known name for a {}{}".format(
-                value,
-                type(self).__name__,
-                get_suggestion(value, self.similar_entities, n=1),
-            )
-            warnings.warn(UnknownEntityWarning(msg))
 
     # @property
     # def name(self) -> str:
@@ -493,8 +487,9 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
                 self.parent.entities._set_key(self.id, self)
         self.id = value
 
+    # TODO: does an ID have to be a string? Is it not being a string ever useful?
     id: Optional[str] = attrs.field(
-        default=None, on_setattr=_set_id, metadata={"omit": True, "location": None}
+        default=None, on_setattr=_set_id, metadata={"omit": True}
     )
     """
     A unique string ID associated with this entity. ID's can be anything,
@@ -503,7 +498,7 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     """
 
     @id.validator
-    def ensure_id_correct_type(self, _: attrs.Attribute, value: Any):
+    def ensure_id_correct_type(self, _: attrs.Attribute, value: Any, **kwargs):
         if value is not None and not isinstance(value, str):
             raise ValueError("TODO")
 
@@ -549,8 +544,8 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     # =========================================================================
 
     quality: Literal["normal", "uncommon", "rare", "epic", "legendary"] = attrs.field(
-        default="normal", validator=attrs.validators.instance_of(str)
-    )  # TODO: literal validator
+        default="normal", validator=instance_of(str)
+    )  # TODO: validate that it is an existant quality
     """
     The quality of this entity. Can modify certain other attributes of the
     entity in (usually) positive ways.
@@ -894,9 +889,10 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     """
 
     @tags.validator
-    def ensure_tags_correct_type(self, attribute: attrs.Attribute, value: Any):
-        if value is not None and not isinstance(value, dict):
-            raise ValueError("Explode")  # TODO
+    def ensure_tags_correct_type(self, attribute: attrs.Attribute, value: Any, mode: Optional[ValidationMode] = None):
+        if self.validate_assignment or mode:
+            if value is not None and not isinstance(value, dict):
+                raise ValueError("Explode")  # TODO
 
     # @property
     # def tags(self) -> Optional[dict[str, Any]]:
@@ -1014,8 +1010,8 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     #         and self.tags == other.tags
     #     )
 
-    # def __hash__(self) -> int:
-    #     return id(self) >> 4  # Apparently this is the default?
+    def __hash__(self) -> int:
+        return id(self) >> 4  # Apparently this is the default?
 
     def __repr__(self) -> str:  # pragma: no coverage
         # return "<{0}{1}>{2}".format(
@@ -1047,59 +1043,57 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     #     return result
 
 
-def make_entity_structure(cls, converter: cattrs.Converter):
-    parent_structure = regular_structure_factory(cls, converter)
-    attribute_names = {a.name for a in attrs.fields(cls)}
-    import inspect
-
-    print(cls)
-    print(inspect.getsource(parent_structure))
-
-    def structure_hook(d: dict, _: type):
-        # Strip "entity_number"
-        d.pop("entity_number", None)
-        # Collapse any attributes we don't recognize into the catch-all dict "unknown"
-        # d["unknown"] = {k: d[k] for k in d.keys() - attribute_names}
-        return parent_structure(d, _)
-
-    return structure_hook
-
-
-draftsman_converters.register_structure_hook_factory(
-    lambda cls: issubclass(cls, Entity), make_entity_structure
+draftsman_converters.get_version((1, 0)).add_schema(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "factorio:entity_v1.0",
+        "type": "object",
+        "properties": {
+            "entity_number": {
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMaximum": 2 ^ 64,
+            },
+            "name": {"type": "string"},
+            "position": {
+                "$ref": "factorio:position",
+            },
+            "tags": {"type": "object"},
+        },
+    },
+    Entity,
+    lambda fields: {
+        fields.name.name: "name",
+        fields.position.name: "position",
+        fields.quality.name: None,
+        fields.tags.name: "tags",
+    },
 )
 
-# def make_entity_unstructure(cls, converter: cattrs.Converter):
-#     parent_unstructure = converter.get_unstructure_hook(cls)
-#     import inspect
-#     print(cls)
-#     print(inspect.getsource(parent_unstructure))
-#     def unstructure_hook(inst: Entity):
-#         res = parent_unstructure(inst)
-#         res.update(inst.unknown)
-#         return res
-#     return unstructure_hook
-
-# draftsman_converters.register_unstructure_hook_factory(
-#     lambda cls: issubclass(cls, Entity),
-#     make_entity_unstructure
-# )
-
-# attrs.field()
-# print({attr.name: attrs.field(default=attr.default, validator=attr.validator, repr=attr.repr, init=attr.init, metadata=attr.metadata, converter=attr.converter, factory=attr.factory, on_setattr=attr.on_setattr) for attr in attrs.fields(Entity)})
-# Entity = attrs.make_class("Entity", attrs={"name": attrs.fields(Entity).name}, class_body={"Format": Entity.Format})
-
-# def strip_entity_number_factory(cls, converter: cattrs.Converter):
-#     default_structure = converter.get_unstructure_hook(cls)
-#     import inspect
-#     print(inspect.getsource(default_structure))
-#     def strip_entity_number(d: dict, type: type):
-#         print("test", d, type)
-#         d.pop("entity_number", None)
-#         return default_structure(d, type)
-#     return strip_entity_number
-
-# draftsman_converters.register_structure_hook_factory(
-#     lambda t: issubclass(t, Entity),
-#     strip_entity_number_factory
-# )
+draftsman_converters.get_version((2, 0)).add_schema(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "factorio:entity_v2.0",
+        "type": "object",
+        "properties": {
+            "entity_number": {
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMaximum": 2 ^ 64,
+            },
+            "name": {"type": "string"},
+            "position": {
+                "$ref": "factorio:position",
+            },
+            "quality": {"enum": ["normal", "uncommon", "rare", "epic", "legendary"]},
+            "tags": {"type": "object"},
+        },
+    },
+    Entity,
+    lambda fields: {
+        fields.name.name: "name",
+        fields.position.name: "position",
+        fields.quality.name: "quality",
+        fields.tags.name: "tags",
+    },
+)
