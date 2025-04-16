@@ -41,18 +41,19 @@ from typing import Any, Literal, Optional, Sequence, Union
 
 
 # @attrs.define(slots=False)
-@custom_define(
-    field_order=[
-        "label",
-        "label_color",
-        "description",
-        "icons",
-        "version",
-        "index",
-        "extra_keys",
-    ],
-    slots=False,
-)
+# @custom_define(
+#     field_order=[
+#         "label",
+#         "label_color",
+#         "description",
+#         "icons",
+#         "version",
+#         "index",
+#         "extra_keys",
+#     ],
+#     slots=False,
+# )
+@attrs.define
 class Blueprintable(Exportable, metaclass=ABCMeta):
     """
     An abstract base class representing "blueprint-like" objects, such as

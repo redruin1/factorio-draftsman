@@ -44,9 +44,7 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     # =========================================================================
 
     # FIXME: I would like to annotate this, but cattrs cannot find the location of `EntityCollection`
-    _parent = attrs.field(
-        default=None, init=False, repr=False, metadata={"omit": True}
-    )
+    _parent = attrs.field(default=None, init=False, repr=False, metadata={"omit": True})
 
     @property
     def parent(self) -> "EntityCollection":
@@ -133,11 +131,6 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     # =========================================================================
     # Abstract Properties
     # =========================================================================
-
-    @property
-    @abstractmethod
-    def similar_entities(self) -> list[str]:  # pragma: no coverage
-        pass
 
     @property
     @abstractmethod

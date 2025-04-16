@@ -33,7 +33,7 @@ class TestUndergroundBelt:
             "type": "output",
         }
 
-        underground_belt = UndergroundBelt("underground-belt", type="output")
+        underground_belt = UndergroundBelt.from_dict({"name": "underground-belt", "type": "output"})
         underground_belt.validate().reissue_all()
         assert underground_belt.to_dict() == {
             "name": "underground-belt",
@@ -43,9 +43,9 @@ class TestUndergroundBelt:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            underground_belt = UndergroundBelt(
-                position=[0, 0], direction=Direction.WEST, invalid_keyword=5
-            )
+            underground_belt = UndergroundBelt.from_dict({
+                "direction": Direction.WEST, "invalid_keyword": 5
+            })
             underground_belt.validate().reissue_all()
 
         # Not in Underground Belts
@@ -58,7 +58,7 @@ class TestUndergroundBelt:
             underground_belt = UndergroundBelt("underground-belt", id=25)
             underground_belt.validate().reissue_all()
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             underground_belt = UndergroundBelt("underground-belt", position=TypeError)
             underground_belt.validate().reissue_all()
 
@@ -69,7 +69,7 @@ class TestUndergroundBelt:
             underground_belt.validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            underground_belt = UndergroundBelt("underground-belt", type="incorrect")
+            underground_belt = UndergroundBelt.from_dict({"name": "underground-belt", "type": "incorrect"})
             underground_belt.validate().reissue_all()
 
         with pytest.raises(DataFormatError):

@@ -12,29 +12,30 @@ import pytest
 class TestTransportBelt:
     def test_constructor_init(self):
         # Valid
-        fast_belt = TransportBelt(
-            "fast-transport-belt",
-            tile_position=[0, 0],
-            direction=Direction.EAST,
-            control_behavior={
-                "circuit_enabled": True,
-                "circuit_condition": {
-                    "first_signal": {"name": "signal-blue", "type": "virtual"},
-                    "comparator": "=",
-                    "second_signal": {"name": "signal-blue", "type": "virtual"},
-                },
-                "connect_to_logistic_network": True,
-                "logistic_condition": {
-                    "first_signal": {
-                        "name": "fast-underground-belt",
-                        "type": "item",
+        fast_belt = TransportBelt.from_dict(
+            {
+                "name": "fast-transport-belt",
+                "direction": Direction.EAST,
+                "control_behavior": {
+                    "circuit_enabled": True,
+                    "circuit_condition": {
+                        "first_signal": {"name": "signal-blue", "type": "virtual"},
+                        "comparator": "=",
+                        "second_signal": {"name": "signal-blue", "type": "virtual"},
                     },
-                    "comparator": ">=",
-                    "constant": 0,
+                    "connect_to_logistic_network": True,
+                    "logistic_condition": {
+                        "first_signal": {
+                            "name": "fast-underground-belt",
+                            "type": "item",
+                        },
+                        "comparator": ">=",
+                        "constant": 0,
+                    },
+                    "circuit_read_hand_contents": False,
+                    "circuit_contents_read_mode": BeltReadMode.HOLD,
                 },
-                "circuit_read_hand_contents": False,
-                "circuit_contents_read_mode": BeltReadMode.HOLD,
-            },
+            }
         )
 
         assert fast_belt.to_dict() == {
@@ -64,7 +65,7 @@ class TestTransportBelt:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            belt = TransportBelt("fast-transport-belt", invalid_param=100)
+            belt = TransportBelt.from_dict({"name": "fast-transport-belt", "invalid_param": 100})
             belt.validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
@@ -76,7 +77,7 @@ class TestTransportBelt:
             belt = TransportBelt("transport-belt", id=25)
             belt.validate().reissue_all()
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             belt = TransportBelt("transport-belt", position=TypeError)
             belt.validate().reissue_all()
 
@@ -87,9 +88,17 @@ class TestTransportBelt:
         with pytest.raises(DataFormatError):
             belt = TransportBelt(
                 "transport-belt",
-                control_behavior=["also", "very", "wrong"],
+                tags=["also", "very", "wrong"],
             )
             belt.validate().reissue_all()
+
+    def test_power_and_circuit_flags(self):
+        for transport_belt in transport_belts:
+            belt = TransportBelt(transport_belt)
+            assert belt.power_connectable == False
+            assert belt.dual_power_connectable == False
+            assert belt.circuit_connectable == True
+            assert belt.dual_circuit_connectable == False
 
     def test_set_circuit_enabled(self):
         belt = TransportBelt("transport-belt")
@@ -107,15 +116,9 @@ class TestTransportBelt:
             "control_behavior": {"circuit_enabled": True},
         }
 
-        belt.circuit_enabled = None
-        assert belt.circuit_enabled == None
-        assert belt.to_dict() == {
-            "name": "transport-belt",
-            "position": {"x": 0.5, "y": 0.5},
-        }
-
         with pytest.raises(DataFormatError):
             belt.circuit_enabled = "incorrect"
+        assert belt.circuit_enabled == True
 
         belt.validate_assignment = "none"
         assert belt.validate_assignment == ValidationMode.NONE
@@ -129,23 +132,23 @@ class TestTransportBelt:
 
     def test_set_read_contents(self):
         belt = TransportBelt("transport-belt")
-        assert belt.read_contents == None
+        assert belt.read_contents == True
         assert belt.to_dict() == {
             "name": "transport-belt",
             "position": {"x": 0.5, "y": 0.5},
         }
 
-        belt.read_contents = True
-        assert belt.read_contents == True
+        belt.read_contents = False
+        assert belt.read_contents == False
         assert belt.to_dict() == {
             "name": "transport-belt",
             "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_read_hand_contents": True},
+            "control_behavior": {"circuit_read_hand_contents": False},
         }
 
         with pytest.raises(DataFormatError):
             belt.read_contents = "incorrect"
-        assert belt.read_contents == True
+        assert belt.read_contents == False
 
         belt.validate_assignment = "none"
         assert belt.validate_assignment == ValidationMode.NONE
@@ -160,12 +163,11 @@ class TestTransportBelt:
 
     def test_set_read_mode(self):
         belt = TransportBelt("transport-belt")
-        assert belt.read_mode == None
+        assert belt.read_mode == BeltReadMode.PULSE
         assert belt.to_dict() == {
             "name": "transport-belt",
             "position": {"x": 0.5, "y": 0.5},
         }
-
         belt.read_mode = BeltReadMode.HOLD
         assert belt.read_mode == BeltReadMode.HOLD
         assert belt.to_dict() == {
@@ -174,57 +176,36 @@ class TestTransportBelt:
             "control_behavior": {"circuit_contents_read_mode": BeltReadMode.HOLD},
         }
 
-        belt.read_mode = None
-        assert belt.read_mode == None
-        assert belt.to_dict() == {
-            "name": "transport-belt",
-            "position": {"x": 0.5, "y": 0.5},
-        }
-
-        with pytest.raises(DataFormatError):
+        with pytest.raises(ValueError):
             belt.read_mode = "incorrect"
-        assert belt.read_mode == None
-
-        belt.validate_assignment = "none"
-        assert belt.validate_assignment == ValidationMode.NONE
-
-        belt.read_mode = "incorrect"
-        assert belt.read_mode == "incorrect"
-        assert belt.to_dict() == {
-            "name": "transport-belt",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_contents_read_mode": "incorrect"},
-        }
-
-    def test_power_and_circuit_flags(self):
-        for transport_belt in transport_belts:
-            belt = TransportBelt(transport_belt)
-            assert belt.power_connectable == False
-            assert belt.dual_power_connectable == False
-            assert belt.circuit_connectable == True
-            assert belt.dual_circuit_connectable == False
+        assert belt.read_mode == BeltReadMode.HOLD
 
     def test_mergable_with(self):
         belt1 = TransportBelt("fast-transport-belt")
-        belt2 = TransportBelt(
-            "fast-transport-belt",
-            control_behavior={
-                "circuit_enabled": True,
-                "circuit_condition": {
-                    "first_signal": "signal-blue",
-                    "comparator": "=",
-                    "second_signal": "signal-blue",
+        belt2 = TransportBelt.from_dict(
+            {
+                "name": "fast-transport-belt",
+                "control_behavior": {
+                    "circuit_enabled": True,
+                    "circuit_condition": {
+                        "first_signal": {"name": "signal-blue", "type": "virtual"},
+                        "comparator": "=",
+                        "second_signal": {"name": "signal-blue", "type": "virtual"},
+                    },
+                    "connect_to_logistic_network": True,
+                    "logistic_condition": {
+                        "first_signal": {
+                            "name": "fast-underground-belt",
+                            "type": "item",
+                        },
+                        "comparator": "≥",
+                        "constant": 0,
+                    },
+                    "circuit_read_hand_contents": False,
+                    "circuit_contents_read_mode": BeltReadMode.HOLD,
                 },
-                "connect_to_logistic_network": True,
-                "logistic_condition": {
-                    "first_signal": "fast-underground-belt",
-                    "comparator": ">=",
-                    "constant": 0,
-                },
-                "circuit_read_hand_contents": False,
-                "circuit_contents_read_mode": BeltReadMode.HOLD,
-            },
-            tags={"some": "stuff"},
+                "tags": {"some": "stuff"},
+            }
         )
 
         assert belt1.mergable_with(belt1)
@@ -237,33 +218,40 @@ class TestTransportBelt:
 
     def test_merge(self):
         belt1 = TransportBelt("fast-transport-belt")
-        belt2 = TransportBelt(
-            "fast-transport-belt",
-            control_behavior={
-                "circuit_enabled": True,
-                "circuit_condition": {
-                    "first_signal": {"name": "signal-blue", "type": "virtual"},
-                    "comparator": "=",
-                    "second_signal": {"name": "signal-blue", "type": "virtual"},
-                },
-                "connect_to_logistic_network": True,
-                "logistic_condition": {
-                    "first_signal": {
-                        "name": "fast-underground-belt",
-                        "type": "item",
+        belt2 = TransportBelt.from_dict(
+            {
+                "name": "fast-transport-belt",
+                "control_behavior": {
+                    "circuit_enabled": True,
+                    "circuit_condition": {
+                        "first_signal": {"name": "signal-blue", "type": "virtual"},
+                        "comparator": "=",
+                        "second_signal": {"name": "signal-blue", "type": "virtual"},
                     },
-                    "comparator": ">=",
-                    "constant": 0,
+                    "connect_to_logistic_network": True,
+                    "logistic_condition": {
+                        "first_signal": {
+                            "name": "fast-underground-belt",
+                            "type": "item",
+                        },
+                        "comparator": "≥",
+                        "constant": 0,
+                    },
+                    "circuit_read_hand_contents": False,
+                    "circuit_contents_read_mode": BeltReadMode.HOLD,
                 },
-                "circuit_read_hand_contents": False,
-                "circuit_contents_read_mode": BeltReadMode.HOLD,
-            },
-            tags={"some": "stuff"},
+                "tags": {"some": "stuff"},
+            }
         )
+
+        print(belt2)
 
         belt1.merge(belt2)
         del belt2
 
+        print(belt1.to_dict(exclude_defaults=False))
+
+        assert belt1.to_dict()["name"] == "fast-transport-belt"
         assert belt1.to_dict()["control_behavior"] == {
             "circuit_enabled": True,
             "circuit_condition": {

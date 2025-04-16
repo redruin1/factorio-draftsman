@@ -234,7 +234,6 @@ draftsman_converters.get_version((2, 0)).add_schema(
             {"$ref": "factorio:circuit_condition"},
             {"$ref": "factorio:logistic_condition"},
         ],
-        "version": (2, 0),
         "type": "object",
         "properties": {
             "control_behavior": {

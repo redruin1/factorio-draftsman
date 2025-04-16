@@ -1,10 +1,9 @@
 # directional.py
 
 from draftsman.classes.collision_set import CollisionSet
-from draftsman.classes.exportable import attempt_and_reissue
-from draftsman.signatures import IntPosition
 from draftsman.constants import Direction, ValidationMode
-from draftsman.error import DraftsmanError
+from draftsman.serialization import draftsman_converters
+from draftsman.validators import enum_converter, instance_of
 from draftsman.warning import DirectionWarning
 
 import attrs
@@ -74,68 +73,68 @@ class DirectionalMixin:
             else:
                 return input
 
-    def __init__(
-        self,
-        name: str,
-        similar_entities: list[str],
-        tile_position: IntPosition = (0, 0),
-        **kwargs
-    ):
-        self._root: __class__.Format
+    # def __init__(
+    #     self,
+    #     name: str,
+    #     similar_entities: list[str],
+    #     tile_position: IntPosition = (0, 0),
+    #     **kwargs
+    # ):
+    #     self._root: __class__.Format
 
-        super().__init__(name, similar_entities, **kwargs)
+    #     super().__init__(name, similar_entities, **kwargs)
 
-        # If 'None' was passed to position, treat that as the same as omission
-        # We do this because we want to be able to annotate `position` in each
-        # entity's __init__ signature and indicate that it's optional
-        if "position" in kwargs and kwargs["position"] is None:
-            del kwargs["position"]
+    #     # If 'None' was passed to position, treat that as the same as omission
+    #     # We do this because we want to be able to annotate `position` in each
+    #     # entity's __init__ signature and indicate that it's optional
+    #     if "position" in kwargs and kwargs["position"] is None:
+    #         del kwargs["position"]
 
-        # Keep track of the entities width and height regardless of rotation
-        self._static_tile_width = self._tile_width
-        self._static_tile_height = self._tile_height
-        # self._static_collision_set = self.collision_set
+    #     # Keep track of the entities width and height regardless of rotation
+    #     self._static_tile_width = self._tile_width
+    #     self._static_tile_height = self._tile_height
+    #     # self._static_collision_set = self.collision_set
 
-        # Technically this check is not necessary, but we include it for
-        # completeness
-        if not hasattr(self, "_overwritten_collision_set"):  # pragma: no branch
-            # Automatically generate a set of rotated collision sets for every
-            # orientation
-            try:
-                _rotated_collision_sets[name]
-            except KeyError:
-                # Cache it so we only need one
-                # TODO: would probably be better to do this in env.py, but how?
-                if super().collision_set:
-                    _rotated_collision_sets[name] = {}
-                    for i in {
-                        Direction.NORTH,
-                        Direction.EAST,
-                        Direction.SOUTH,
-                        Direction.WEST,
-                    }:
-                        _rotated_collision_sets[name][i] = super().collision_set.rotate(
-                            i
-                        )
-                else:
-                    _rotated_collision_sets[name] = {}
-                    for i in {
-                        Direction.NORTH,
-                        Direction.EAST,
-                        Direction.SOUTH,
-                        Direction.WEST,
-                    }:
-                        _rotated_collision_sets[name][i] = None
-                # self._collision_set_rotation = _rotated_collision_sets[self.name]
+    #     # Technically this check is not necessary, but we include it for
+    #     # completeness
+    #     if not hasattr(self, "_overwritten_collision_set"):  # pragma: no branch
+    #         # Automatically generate a set of rotated collision sets for every
+    #         # orientation
+    #         try:
+    #             _rotated_collision_sets[name]
+    #         except KeyError:
+    #             # Cache it so we only need one
+    #             # TODO: would probably be better to do this in env.py, but how?
+    #             if super().collision_set:
+    #                 _rotated_collision_sets[name] = {}
+    #                 for i in {
+    #                     Direction.NORTH,
+    #                     Direction.EAST,
+    #                     Direction.SOUTH,
+    #                     Direction.WEST,
+    #                 }:
+    #                     _rotated_collision_sets[name][i] = super().collision_set.rotate(
+    #                         i
+    #                     )
+    #             else:
+    #                 _rotated_collision_sets[name] = {}
+    #                 for i in {
+    #                     Direction.NORTH,
+    #                     Direction.EAST,
+    #                     Direction.SOUTH,
+    #                     Direction.WEST,
+    #                 }:
+    #                     _rotated_collision_sets[name][i] = None
+    #             # self._collision_set_rotation = _rotated_collision_sets[self.name]
 
-        self.direction = kwargs.get("direction", Direction.NORTH)
+    #     self.direction = kwargs.get("direction", Direction.NORTH)
 
-        # Technically redundant, but we reset the position if the direction has
-        # changed to reflect its changes
-        if "position" in kwargs:
-            self.position = kwargs["position"]
-        else:
-            self.tile_position = tile_position
+    #     # Technically redundant, but we reset the position if the direction has
+    #     # changed to reflect its changes
+    #     if "position" in kwargs:
+    #         self.position = kwargs["position"]
+    #     else:
+    #         self.tile_position = tile_position
 
     # =========================================================================
 
@@ -180,8 +179,8 @@ class DirectionalMixin:
 
     direction: Direction = attrs.field(
         default=Direction.NORTH,
-        converter=Direction,
-        validator=attrs.validators.instance_of(Direction),
+        converter=enum_converter(Direction),
+        validator=instance_of(Direction),
         on_setattr=_set_direction,
     )
     """
@@ -283,3 +282,10 @@ class DirectionalMixin:
 
     # def __eq__(self, other) -> bool:
     #     return super().__eq__(other) and self.direction == other.direction
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:directional_mixin"},
+    DirectionalMixin,
+    lambda fields: {fields.direction.name: "direction"},
+)

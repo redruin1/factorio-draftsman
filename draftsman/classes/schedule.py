@@ -403,7 +403,8 @@ class WaitConditions:
         )
 
 
-@custom_define(field_order=["locomotives", "schedule", "extra_keys"])
+# @custom_define(field_order=["locomotives", "schedule", "extra_keys"])
+@attrs.define
 class Schedule(Exportable):
     """
     An object representing a particular train schedule. Schedules contain

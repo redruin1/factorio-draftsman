@@ -52,12 +52,13 @@ class TestAssemblingMachine:
             AssemblingMachine(recipe=100).validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
+        # TODO: what about different versions?
         for name in assembling_machines:
-            combinator = AssemblingMachine(name)
-            assert combinator.power_connectable == False
-            assert combinator.dual_power_connectable == False
-            assert combinator.circuit_connectable == True
-            assert combinator.dual_circuit_connectable == False
+            assembling_machine = AssemblingMachine(name)
+            assert assembling_machine.power_connectable == False
+            assert assembling_machine.dual_power_connectable == False
+            assert assembling_machine.circuit_connectable == True
+            assert assembling_machine.dual_circuit_connectable == False
 
     def test_set_recipe(self):
         machine = AssemblingMachine("assembling-machine-3")

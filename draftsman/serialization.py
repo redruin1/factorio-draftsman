@@ -1,5 +1,8 @@
 # serialization.py
 
+from draftsman.error import DataFormatError
+from draftsman.validators import and_, instance_of
+
 import attrs
 import cattrs
 from cattrs.gen._shared import find_structure_handler
@@ -209,7 +212,7 @@ def omit_none_default_unstructure_factory(
 
 class ConverterVersion:
     def __init__(self):
-        self.converters: dict[tuple[int, int], cattrs.Converter] = {
+        self.converters: dict[tuple[bool, bool], cattrs.Converter] = {
             # (exclude_none, exclude_defaults)
             (False, False): MASTER_CONVERTER.copy(),
             (True, False): MASTER_CONVERTER_OMIT_NONE.copy(),
@@ -217,6 +220,7 @@ class ConverterVersion:
             (True, True): MASTER_CONVERTER_OMIT_NONE_DEFAULTS.copy(),
         }
         self.mapping_funcs = {}
+        self.exclude_extra = {}
         self.schemas = {}
 
     def register_structure_hook(self, *args, **kwargs):
@@ -243,6 +247,7 @@ class ConverterVersion:
         schema: dict,
         cls: Optional[type] = None,
         mapping_func: Optional[Callable] = None,
+        exclude_extra: Optional[set[str]] = None,
     ):
         if "$id" not in schema:
             raise ValueError("invalid schema!")
@@ -251,6 +256,8 @@ class ConverterVersion:
             self.schemas[cls] = schema
             if mapping_func is not None:
                 self.mapping_funcs[cls] = mapping_func
+            if exclude_extra is not None:
+                self.exclude_extra[cls] = exclude_extra
 
     def get_schema(self, cls):
         return self.schemas[cls]
@@ -268,6 +275,13 @@ class ConverterVersion:
                     }
                 )
         return location_dict
+
+    def get_excluded_keys(self, cls: type) -> set:
+        excluded_keys = set()
+        for subcls in reversed(cls.mro()):
+            if subcls in self.exclude_extra:
+                excluded_keys.update(self.exclude_extra[subcls])
+        return excluded_keys
 
 
 class DraftsmanConverters:
@@ -377,9 +391,9 @@ def finalize_fields(cls, fields: list[attrs.Attribute]) -> list[attrs.Attribute]
                         # print("annotated")
                         ano_args = get_args(arg)
                         # print(ano_args)
-                        union_validators.append(attrs.validators.and_(*ano_args[1]))
+                        union_validators.append(ano_args[1])
                     else:
-                        union_validators.append(attrs.validators.instance_of(arg))
+                        union_validators.append(instance_of(arg))
                 validators = attrs.validators.or_(*union_validators)
             else:
                 validators.append(attrs.validators.instance_of(t))
@@ -408,6 +422,66 @@ def finalize_fields(cls, fields: list[attrs.Attribute]) -> list[attrs.Attribute]
     # fields.sort(key=lambda attr: attr.name)
     # print([field.name for field in fields])
     return fields
+
+
+def make_structure_function_from_schema(
+    cls: type, converter: cattrs.Converter, schema: dict
+):
+    def try_pop_location(subdict, loc):
+        """
+        Traverse loc and try to pop that item, as well as any subdicts that
+        become empty in the process.
+        """
+        if loc is None:
+            return None
+        if len(loc) == 1:
+            try:
+                return subdict.pop(loc[0], None)
+            except AttributeError:
+                return None
+        if loc[0] not in subdict:
+            return None
+        result = try_pop_location(subdict[loc[0]], loc[1:])
+        if subdict[loc[0]] == {}:
+            subdict.pop(loc[0])
+        return result
+
+    class_attrs = attrs.fields(cls)
+    # version_data = draftsman_converters.get_version(version_tuple)
+    # location_dict = version_data.get_location_dict(cls)
+
+    def structure_hook(input_dict: dict, _: type):
+        res = {}
+        for attr in class_attrs:
+            # print("attr name:", attr.name)
+            if attr.name not in schema:
+                continue
+            loc = schema[attr.name]
+
+            value = try_pop_location(input_dict, loc)
+            # print(value)
+            if value is None:
+                continue
+            handler = find_structure_handler(attr, attr.type, converter)
+            if handler is not None:
+                # import inspect
+                # print(inspect.getsource(handler))
+                try:
+                    res[attr.name] = handler(value, attr.type)
+                except Exception as e:
+                    raise DataFormatError(e) from None
+            else:
+                res[attr.name] = value
+
+        if input_dict:
+            res["extra_keys"] = input_dict
+
+        # print(location_dict)
+        # print(res)
+        return res
+        # return cls(**res)
+
+    return structure_hook
 
 
 def make_unstructure_function_from_schema(

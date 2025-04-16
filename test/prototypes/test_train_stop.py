@@ -2,8 +2,8 @@
 
 from draftsman.constants import Direction, ValidationMode
 from draftsman.entity import TrainStop, train_stops, Container
-from draftsman.error import DataFormatError
-from draftsman.signatures import SignalID
+from draftsman.error import DataFormatError, IncompleteSignalError
+from draftsman.signatures import AttrsSignalID
 from draftsman.warning import (
     GridAlignmentWarning,
     DirectionWarning,
@@ -144,13 +144,6 @@ class TestTrainStop:
             "control_behavior": {"send_to_train": False},
         }
 
-        train_stop.send_to_train = None
-        assert train_stop.send_to_train == None
-        assert train_stop.to_dict() == {
-            "name": "train-stop",
-            "position": {"x": 1, "y": 1},
-        }
-
         train_stop.validate_assignment = "none"
         assert train_stop.validate_assignment == ValidationMode.NONE
 
@@ -164,11 +157,10 @@ class TestTrainStop:
 
     def test_set_read_from_train(self):
         train_stop = TrainStop()
+        assert train_stop.read_from_train == False
+
         train_stop.read_from_train = True
         assert train_stop.read_from_train == True
-
-        train_stop.read_from_train = None
-        assert train_stop.read_from_train == None
 
         with pytest.raises(DataFormatError):
             train_stop.read_from_train = "wrong"
@@ -186,11 +178,10 @@ class TestTrainStop:
 
     def test_set_read_stopped_train(self):
         train_stop = TrainStop()
-        train_stop.read_stopped_train = False
         assert train_stop.read_stopped_train == False
 
-        train_stop.read_stopped_train = None
-        assert train_stop.read_stopped_train == None
+        train_stop.read_stopped_train = True
+        assert train_stop.read_stopped_train == True
 
         with pytest.raises(DataFormatError):
             train_stop.read_stopped_train = "wrong"
@@ -209,12 +200,12 @@ class TestTrainStop:
     def test_set_train_stopped_signal(self):
         train_stop = TrainStop()
         train_stop.train_stopped_signal = "signal-A"
-        assert train_stop.train_stopped_signal == SignalID(
+        assert train_stop.train_stopped_signal == AttrsSignalID(
             name="signal-A", type="virtual"
         )
 
         train_stop.train_stopped_signal = {"name": "signal-A", "type": "virtual"}
-        assert train_stop.train_stopped_signal == SignalID(
+        assert train_stop.train_stopped_signal == AttrsSignalID(
             name="signal-A", type="virtual"
         )
 
@@ -229,29 +220,17 @@ class TestTrainStop:
             }
 
         # Errors
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             train_stop.train_stopped_signal = "wrong signal"
         with pytest.raises(DataFormatError):
             train_stop.train_stopped_signal = TypeError
 
-        train_stop.validate_assignment = "none"
-        assert train_stop.validate_assignment == ValidationMode.NONE
-
-        train_stop.train_stopped_signal = "incorrect"
-        assert train_stop.train_stopped_signal == "incorrect"
-        assert train_stop.to_dict() == {
-            "name": "train-stop",
-            "position": {"x": 1, "y": 1},
-            "control_behavior": {"train_stopped_signal": "incorrect"},
-        }
-
     def test_set_trains_limit(self):
         train_stop = TrainStop()
+        assert train_stop.signal_limits_trains == False
+
         train_stop.signal_limits_trains = True
         assert train_stop.signal_limits_trains == True
-
-        train_stop.signal_limits_trains = None
-        assert train_stop.signal_limits_trains == None
 
         with pytest.raises(DataFormatError):
             train_stop.signal_limits_trains = "wrong"
@@ -270,12 +249,12 @@ class TestTrainStop:
     def test_set_trains_limit_signal(self):
         train_stop = TrainStop()
         train_stop.trains_limit_signal = "signal-A"
-        assert train_stop.trains_limit_signal == SignalID(
+        assert train_stop.trains_limit_signal == AttrsSignalID(
             name="signal-A", type="virtual"
         )
 
         train_stop.trains_limit_signal = {"name": "signal-A", "type": "virtual"}
-        assert train_stop.trains_limit_signal == SignalID(
+        assert train_stop.trains_limit_signal == AttrsSignalID(
             name="signal-A", type="virtual"
         )
 
@@ -287,29 +266,17 @@ class TestTrainStop:
             train_stop.trains_limit_signal = {"name": "wrong-signal", "type": "virtual"}
 
         # Errors
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             train_stop.trains_limit_signal = "wrong signal"
         with pytest.raises(DataFormatError):
             train_stop.trains_limit_signal = TypeError
 
-        train_stop.validate_assignment = "none"
-        assert train_stop.validate_assignment == ValidationMode.NONE
-
-        train_stop.trains_limit_signal = "incorrect"
-        assert train_stop.trains_limit_signal == "incorrect"
-        assert train_stop.to_dict() == {
-            "name": "train-stop",
-            "position": {"x": 1, "y": 1},
-            "control_behavior": {"trains_limit_signal": "incorrect"},
-        }
-
     def test_set_read_trains_count(self):
         train_stop = TrainStop()
+        assert train_stop.read_trains_count == False
+
         train_stop.read_trains_count = True
         assert train_stop.read_trains_count == True
-
-        train_stop.read_trains_count = None
-        assert train_stop.read_trains_count == None
 
         with pytest.raises(DataFormatError):
             train_stop.read_trains_count = "wrong"
@@ -328,12 +295,12 @@ class TestTrainStop:
     def test_set_trains_count_signal(self):
         train_stop = TrainStop()
         train_stop.trains_count_signal = "signal-A"
-        assert train_stop.trains_count_signal == SignalID(
+        assert train_stop.trains_count_signal == AttrsSignalID(
             name="signal-A", type="virtual"
         )
 
         train_stop.trains_count_signal = {"name": "signal-A", "type": "virtual"}
-        assert train_stop.trains_count_signal == SignalID(
+        assert train_stop.trains_count_signal == AttrsSignalID(
             name="signal-A", type="virtual"
         )
 
@@ -345,21 +312,10 @@ class TestTrainStop:
             train_stop.trains_count_signal = {"name": "wrong-signal", "type": "virtual"}
 
         # Errors
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             train_stop.trains_count_signal = "wrong signal"
         with pytest.raises(DataFormatError):
             train_stop.trains_count_signal = TypeError
-
-        train_stop.validate_assignment = "none"
-        assert train_stop.validate_assignment == ValidationMode.NONE
-
-        train_stop.trains_count_signal = "incorrect"
-        assert train_stop.trains_count_signal == "incorrect"
-        assert train_stop.to_dict() == {
-            "name": "train-stop",
-            "position": {"x": 1, "y": 1},
-            "control_behavior": {"trains_count_signal": "incorrect"},
-        }
 
     def test_power_and_circuit_flags(self):
         for name in train_stops:
@@ -376,21 +332,23 @@ class TestTrainStop:
 
     def test_mergable_with(self):
         stop1 = TrainStop("train-stop")
-        stop2 = TrainStop(
-            "train-stop",
-            station="Station name",
-            manual_trains_limit=3,
-            color=[0.5, 0.5, 0.5],
-            control_behavior={
-                "read_from_train": True,
-                "read_stopped_train": True,
-                "train_stopped_signal": "signal-A",
-                "set_trains_limit": True,
-                "trains_limit_signal": "signal-B",
-                "read_trains_count": True,
-                "trains_count_signal": "signal-C",
-            },
-            tags={"some": "stuff"},
+        stop2 = TrainStop.from_dict(
+            {
+                "name": "train-stop",
+                "station": "Station name",
+                "manual_trains_limit": 3,
+                "color": [0.5, 0.5, 0.5],
+                "control_behavior": {
+                    "read_from_train": True,
+                    "read_stopped_train": True,
+                    "train_stopped_signal": "signal-A",
+                    "set_trains_limit": True,
+                    "trains_limit_signal": "signal-B",
+                    "read_trains_count": True,
+                    "trains_count_signal": "signal-C",
+                },
+                "tags": {"some": "stuff"},
+            }
         )
 
         assert stop1.mergable_with(stop1)
@@ -403,21 +361,23 @@ class TestTrainStop:
 
     def test_merge(self):
         stop1 = TrainStop("train-stop")
-        stop2 = TrainStop(
-            "train-stop",
-            station="Station name",
-            manual_trains_limit=3,
-            color=[0.5, 0.5, 0.5],
-            control_behavior={
-                "read_from_train": True,
-                "read_stopped_train": True,
-                "train_stopped_signal": "signal-A",
-                "set_trains_limit": True,
-                "trains_limit_signal": "signal-B",
-                "read_trains_count": True,
-                "trains_count_signal": "signal-C",
-            },
-            tags={"some": "stuff"},
+        stop2 = TrainStop.from_dict(
+            {
+                "name": "train-stop",
+                "station": "Station name",
+                "manual_trains_limit": 3,
+                "color": [0.5, 0.5, 0.5],
+                "control_behavior": {
+                    "read_from_train": True,
+                    "read_stopped_train": True,
+                    "train_stopped_signal": "signal-A",
+                    "set_trains_limit": True,
+                    "trains_limit_signal": "signal-B",
+                    "read_trains_count": True,
+                    "trains_count_signal": "signal-C",
+                },
+                "tags": {"some": "stuff"},
+            }
         )
 
         stop1.merge(stop2)

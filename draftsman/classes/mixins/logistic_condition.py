@@ -3,6 +3,7 @@
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import AttrsSimpleCondition, Condition, SignalID, int32
+from draftsman.validators import instance_of
 
 import attrs
 from pydantic import BaseModel, Field
@@ -41,8 +42,7 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
 
     connect_to_logistic_network: bool = attrs.field(
         default=False,
-        validator=attrs.validators.instance_of(bool),
-        metadata={"location": ("control_behavior", "connect_to_logistic_network")},
+        validator=instance_of(bool),
     )
 
     # @property
@@ -80,8 +80,7 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
     logistic_condition: AttrsSimpleCondition = attrs.field(
         default=AttrsSimpleCondition(first_signal=None, comparator="<", constant=0),
         converter=AttrsSimpleCondition.converter,
-        validator=attrs.validators.instance_of(AttrsSimpleCondition),
-        metadata={"location": ("control_behavior", "logistic_condition")},
+        validator=instance_of(AttrsSimpleCondition),
     )
     """
     The logistic condition that must be passed in order for this entity to 
@@ -128,8 +127,14 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
         """
         self.control_behavior.logistic_condition = None
 
+    def merge(self, other: "LogisticConditionMixin"):
+        super().merge(other)
+        self.connect_to_logistic_network = other.connect_to_logistic_network
+        self.logistic_condition = other.logistic_condition
 
-draftsman_converters.get_version((2, 0)).add_schema(
+
+# TODO: versioning
+draftsman_converters.add_schema(
     {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "$id": "factorio:logistic_condition",

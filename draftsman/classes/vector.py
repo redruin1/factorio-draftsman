@@ -1,9 +1,10 @@
 # vector.py
 
 """
-TODO
+A simple Vector class with utilities for manipulating them.
 """
 
+from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
 
 from typing import Union, Callable
@@ -84,7 +85,9 @@ class Vector:
         elif isinstance(other, dict):
             return Vector(type_cast(other["x"]), type_cast(other["y"]))
         else:
-            raise TypeError("Could not resolve '{}' to a Vector object".format(other))
+            raise DataFormatError(
+                "Could not resolve '{}' to a Vector object".format(other)
+            )
 
     def update(self, x: Union[float, int], y: Union[float, int]) -> None:
         """
@@ -111,7 +114,9 @@ class Vector:
         elif isinstance(other, dict):
             self.update(type_cast(other["x"]), type_cast(other["y"]))
         else:
-            raise TypeError("Could not resolve '{}' to a Vector object".format(other))
+            raise DataFormatError(
+                "Could not resolve '{}' to a Vector object".format(other)
+            )
 
     def to_dict(self) -> dict:
         """

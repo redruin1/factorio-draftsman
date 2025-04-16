@@ -13,6 +13,7 @@ box.
 
 
 from draftsman.classes.association import Association
+from draftsman.classes.exportable import Exportable
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.data.signals import (
@@ -22,9 +23,15 @@ from draftsman.data.signals import (
     pure_virtual,
 )
 from draftsman.data import entities, fluids, items, signals, tiles
-from draftsman.error import InvalidMapperError, InvalidSignalError, IncompleteSignalError, DataFormatError
+from draftsman.error import (
+    InvalidMapperError,
+    InvalidSignalError,
+    IncompleteSignalError,
+    DataFormatError,
+)
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import encode_version, get_suggestion
+from draftsman.validators import and_, lt, ge
 from draftsman.warning import (
     BarWarning,
     MalformedSignalWarning,
@@ -63,16 +70,15 @@ import warnings
 
 # TODO: might make sense to move this into another file, so other files can use
 # them without recursive imports
-int32 = Annotated[int, Field(..., ge=-(2**31), lt=2**31)]
-int64 = Annotated[
-    int, Field(..., ge=-(2**63), lt=2**63)
-]  # TODO: description about floating point issues
-
-uint8 = Annotated[int, (attrs.validators.ge(0), attrs.validators.lt(2**8))]
-uint16 = Annotated[int, (attrs.validators.ge(0), attrs.validators.lt(2**16))]
-uint32 = Annotated[int, (attrs.validators.ge(0), attrs.validators.lt(2**32))]
+int32 = Annotated[int, and_(ge(-(2**31)), lt(2**31))]
 # TODO: description about floating point issues
-uint64 = Annotated[int, (attrs.validators.ge(0), attrs.validators.lt(2**64))]
+int64 = Annotated[int, and_(ge(-(2**63)), lt(2**63))]  
+
+uint8 = Annotated[int, and_(ge(0), lt(2**8))]
+uint16 = Annotated[int, and_(ge(0), lt(2**16))]
+uint32 = Annotated[int, and_(ge(0), lt(2**32))]
+# TODO: description about floating point issues
+uint64 = Annotated[int, and_(ge(0), lt(2**64))]
 
 
 def known_name(type: str, structure: dict, issued_warning):
@@ -482,8 +488,8 @@ class SignalID(DraftsmanBaseModel):
 
 
 @attrs.define
-class AttrsSignalID:
-    name: Optional[SignalName] = attrs.field(default=None)  # TODO: validators
+class AttrsSignalID(Exportable):
+    name: Optional[SignalName] = attrs.field(default=None)
     """
     Name of the signal. If omitted, the signal is treated as no signal and 
     removed on import/export cycle.
@@ -528,7 +534,9 @@ class AttrsSignalID:
                 if "item" in get_signal_types(value):
                     return AttrsSignalID(name=value, type="item")
                 else:
-                    return AttrsSignalID(name=value, type=next(iter(get_signal_types(value))))
+                    return AttrsSignalID(
+                        name=value, type=next(iter(get_signal_types(value)))
+                    )
             except InvalidSignalError as e:
                 msg = "Unknown signal name {}; either specify the full dictionary, or update your environment".format(
                     repr(value)
@@ -540,25 +548,33 @@ class AttrsSignalID:
             return value
 
     @name.validator
-    def check_name_recognized(self, attribute, value):
-        if value not in signals.raw:
-            msg = "Unknown {} '{}'{}".format(
-                type(self).__name__, value, get_suggestion(value, signals.raw.keys(), n=1)
-            )
-            warnings.warn(UnknownSignalWarning(msg))
+    def check_name_recognized(
+        self, attribute, value, mode: Optional[ValidationMode] = None
+    ):
+        mode = mode if mode is not None else self.validate_assignment
+        if mode >= ValidationMode.STRICT:
+            if value not in signals.raw:
+                msg = "Unknown {} '{}'{}".format(
+                    type(self).__name__,
+                    value,
+                    get_suggestion(value, signals.raw.keys(), n=1),
+                )
+                warnings.warn(UnknownSignalWarning(msg))
 
     @type.validator
-    def check_type_matches_name(self, attribute, value):
-        if self.name in signals.raw:
-            expected_types = get_signal_types(self.name)
-            if value not in expected_types:
-                warnings.warn(
-                    MalformedSignalWarning(
-                        "Known signal '{}' was given a mismatching type (expected one of {}, found '{}')".format(
-                            self.name, expected_types, value
-                        )
+    def check_type_matches_name(
+        self, attribute, value, mode: Optional[ValidationMode] = None
+    ):
+        mode = mode if mode is not None else self.validate_assignment
+        if mode >= ValidationMode.STRICT:
+            if self.name in signals.raw:
+                expected_types = get_signal_types(self.name)
+                if value not in expected_types:
+                    msg = "Known signal '{}' was given a mismatching type (expected one of {}, found '{}')".format(
+                        self.name, expected_types, value
                     )
-                )
+                    warnings.warn(MalformedSignalWarning(msg))
+
 
 draftsman_converters.get_version((1, 0)).add_schema(
     {
@@ -570,7 +586,7 @@ draftsman_converters.get_version((1, 0)).add_schema(
         fields.name.name: "name",
         fields.type.name: "type",
         fields.quality.name: None,
-    }
+    },
 )
 
 draftsman_converters.get_version((2, 0)).add_schema(
@@ -583,7 +599,7 @@ draftsman_converters.get_version((2, 0)).add_schema(
         fields.name.name: "name",
         fields.type.name: "type",
         fields.quality.name: "quality",
-    }
+    },
 )
 
 
@@ -849,14 +865,29 @@ class NetworkSpecification(DraftsmanBaseModel):
             return value
 
 
+def normalize_comparator(value):
+    conversions = {"==": "=", ">=": "≥", "<=": "≤", "!=": "≠"}
+    if value in conversions:
+        return conversions[value]
+    else:
+        return value
+
+
+Comparator = Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="]
+draftsman_converters.register_unstructure_hook(
+    Comparator, lambda inst: normalize_comparator(inst)
+)
+
+
 @attrs.define
 class AttrsSimpleCondition:
     first_signal: Optional[AttrsSignalID] = attrs.field(
         default=None,
         # TODO: validators
     )
-    comparator: Literal[">", "<", "=", "≥", "≤", "≠"] = attrs.field(
-        default="<"
+    comparator: Comparator = attrs.field(
+        default="<",
+        # converter=normalize_comparator
         # TODO: validators
     )
     constant: int32 = attrs.field(default=0)

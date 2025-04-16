@@ -31,13 +31,12 @@ from typing import Any, Literal, Optional, Union
 @attrs.define
 class Wall(
     CircuitConditionMixin,
-    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     Entity,
 ):
     """
-    A barrier that acts as protection for static structures.
+    A static barrier that acts as protection for structures.
     """
 
     # class Format(
@@ -118,10 +117,7 @@ class Wall(
 
     # =========================================================================
 
-    enable_disable: bool = attrs.field(
-        default=True,
-        validator=instance_of(bool)
-    )
+    enable_disable: bool = attrs.field(default=True, validator=instance_of(bool))
     """
     Whether or not this gate should be activated based on an input condition. 
     """
@@ -153,10 +149,7 @@ class Wall(
 
     # =========================================================================
 
-    read_gate: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    read_gate: bool = attrs.field(default=False, validator=instance_of(bool))
 
     # @read_gate.validator
     # def read_gate_validator(self, attr, value, mode: Optional[ValidationMode] = None):
@@ -192,14 +185,17 @@ class Wall(
     output_signal: Optional[AttrsSignalID] = attrs.field(
         factory=lambda: AttrsSignalID(name="signal-G", type="virtual"),
         converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID]),
     )
 
-    @output_signal.validator
-    def validate_output_signal(self, attr, value, mode: Optional[ValidationMode] = None):
-        if self.validate_assignment or mode:
-            if not value is None and not isinstance(value, AttrsSignalID):
-                msg = "{} given invalid value {}".format(attr.name, repr(value))
-                raise DataFormatError(msg)
+    # @output_signal.validator
+    # def validate_output_signal(
+    #     self, attr, value, mode: Optional[ValidationMode] = None
+    # ):
+    #     if self.validate_assignment or mode:
+    #         if not value is None and not isinstance(value, AttrsSignalID):
+    #             msg = "{} given invalid value {}".format(attr.name, repr(value))
+    #             raise DataFormatError(msg)
 
     # @property
     # def output_signal(self) -> Optional[SignalID]:
@@ -236,25 +232,23 @@ class Wall(
 
 
 draftsman_converters.get_version((1, 0)).add_schema(
-    {
-        "$id": "factorio:wall_v1.0" # TODO
-    },
+    {"$id": "factorio:wall_v1.0"},  # TODO
     Wall,
     lambda fields: {
         fields.enable_disable.name: ("control_behavior", "circuit_open_gate"),
         fields.read_gate.name: ("control_behavior", "circuit_read_sensor"),
-        fields.output_signal.name: ("control_behavior", "output_signal")
-    }
+        fields.output_signal.name: ("control_behavior", "output_signal"),
+    },
 )
 
 draftsman_converters.get_version((2, 0)).add_schema(
     {
-        "$id": "factorio:wall_v2.0", # TODO
+        "$id": "factorio:wall_v2.0",  # TODO
     },
     Wall,
     lambda fields: {
         fields.enable_disable.name: ("control_behavior", "circuit_open_gate"),
         fields.read_gate.name: ("control_behavior", "circuit_read_gate"),
         fields.output_signal.name: ("control_behavior", "output_signal"),
-    }
+    },
 )

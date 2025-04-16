@@ -311,7 +311,7 @@ class Exportable:
         validator=validators.instance_of(ValidationMode),
         repr=False,
         kw_only=True,
-        metadata={"omit": True} 
+        metadata={"omit": True},
     )
     """
     Toggleable flag that indicates whether assignments to this object should
@@ -353,9 +353,7 @@ class Exportable:
     # =========================================================================
 
     extra_keys: Optional[dict[Any, Any]] = attrs.field(
-        default=None, 
-        kw_only=True,
-        metadata={"omit": True}
+        default=None, kw_only=True, metadata={"omit": True}
     )
     """
     Any additional keys that are not recognized by Draftsman when loading from
@@ -379,11 +377,12 @@ class Exportable:
     """
 
     @extra_keys.validator
-    def _warn_unrecognized_keys(self, _, value: Optional[dict], mode: Optional[ValidationMode] = None):
+    def _warn_unrecognized_keys(
+        self, _, value: Optional[dict], mode: Optional[ValidationMode] = None
+    ):
         """Warns the user if the ``extra_keys`` dict is populated."""
-        print(mode, self.validate_assignment)
         mode = mode if mode is not None else self.validate_assignment
-        
+
         if mode >= ValidationMode.STRICT and value:  # is not empty:
             msg = "'{}' object has no attribute(s) {}; allowed fields are {}".format(
                 type(self).__name__,
@@ -398,7 +397,9 @@ class Exportable:
 
     # =========================================================================
 
-    def validate(self, mode: ValidationMode, force: bool = False) -> ValidationResult:
+    def validate(
+        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    ) -> ValidationResult:
         """
         Validates the called object against it's known format.
         Method that attempts to first coerce the object into a known form, and
@@ -433,18 +434,19 @@ class Exportable:
         for a in attrs.fields(self.__class__):
             v = a.validator
             if v is not None:
-                # try:
-                # TODO: capture warnings
-                print(v)
-                v(self, a, getattr(self, a.name), mode=mode)
-                # except Exception as e:
-                #     res.error_list.append(e)
+                try:
+                    with warnings.catch_warnings(record=True) as w:
+                        v(self, a, getattr(self, a.name), mode=mode)
+                    for warning in w:
+                        res.warning_list.append(warning.category(warning.message))
+                except Exception as e:
+                    res.error_list.append(e)
         return res
 
     @classmethod
     def from_dict(
-        cls, 
-        d: dict, 
+        cls,
+        d: dict,
         version: tuple[int, ...] = __factorio_version_info__,
         validation: ValidationMode = ValidationMode.NONE,
     ) -> Self:
@@ -458,13 +460,15 @@ class Exportable:
         #     inspect.getsource(draftsman_converters.get(version).get_structure_hook(cls))
         # )
         version_info = draftsman_converters.get_version(version)
-        # return version_info.get_converter().structure(d, cls)
-        kwargs = version_info.get_converter().structure(copy.deepcopy(d), cls)
-        res = cls(**kwargs, validate_assignment=ValidationMode.NONE)
-        if validation:
-            res.validate(mode=validation).reissue_all()
-        res.validate_assignment = validation
-        return res
+        return version_info.get_converter().structure(
+            copy.deepcopy(d), cls
+        )  # TODO: move deepcopy internal
+        # kwargs = version_info.get_converter().structure(copy.deepcopy(d), cls)
+        # res = cls(**kwargs, validate_assignment=ValidationMode.NONE)
+        # if validation:
+        #     res.validate(mode=validation).reissue_all()
+        # res.validate_assignment = validation
+        # return res
 
     def to_dict(
         self,
@@ -569,7 +573,7 @@ def make_exportable_structure_factory_func(
     def factory(cls: type, converter: cattrs.Converter):
         def try_pop_location(subdict, loc):
             """
-            Traverse loc and try to pop that item, as well as any subdicts that 
+            Traverse loc and try to pop that item, as well as any subdicts that
             become empty in the process.
             """
             if loc is None:
@@ -609,7 +613,7 @@ def make_exportable_structure_factory_func(
                     try:
                         res[attr.name] = handler(value, attr.type)
                     except Exception as e:
-                        raise DataFormatError(e) from None
+                        raise DataFormatError(e)
                 else:
                     res[attr.name] = value
 
@@ -618,8 +622,8 @@ def make_exportable_structure_factory_func(
 
             # print(location_dict)
             # print(res)
-            return res
-            # return cls(**res)
+            # return res
+            return cls(**res, validate_assignment=ValidationMode.NONE)
 
         return structure_hook
 
@@ -635,11 +639,19 @@ def make_exportable_unstructure_factory_func(
         parent_hook = make_unstructure_function_from_schema(
             cls, converter, location_dict, exclude_none, exclude_defaults
         )
+        excluded_keys = version_data.get_excluded_keys(cls)
 
         def unstructure_hook(inst):
             res = parent_hook(inst)
+            # We want to preserve round-trip consistency, even with keys we
+            # don't use/recognize
             if inst.extra_keys:
                 dict_merge(res, inst.extra_keys)
+            # Certain keys we do always want to exclude in certain circumstances
+            # (such as objects like "connections" on Factorio >= 2.0)
+            for key in excluded_keys:
+                if key in res:
+                    del res[key]
             return res
 
         return unstructure_hook

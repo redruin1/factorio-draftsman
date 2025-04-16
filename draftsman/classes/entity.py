@@ -363,6 +363,7 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     # =========================================================================
 
     @property
+    @abstractmethod
     def similar_entities(self) -> list[str]:
         """
         Returns a list of strings representing the names of entities that share
@@ -396,7 +397,9 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     # =========================================================================
 
     # @name.validator
-    def ensure_name_recognized(self, attribute, value, mode: Optional[ValidationMode]=None):
+    def ensure_name_recognized(
+        self, attribute, value, mode: Optional[ValidationMode] = None
+    ):
         mode = mode if mode is not None else self.validate_assignment
         if mode >= ValidationMode.STRICT:
             if value not in entities.raw:
@@ -413,7 +416,8 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
                 warnings.warn(UnknownEntityWarning(msg))
 
     name: str = attrs.field(
-        validator=and_(instance_of(str), ensure_name_recognized), metadata={"omit": False}
+        validator=and_(instance_of(str), ensure_name_recognized),
+        metadata={"omit": False},
     )
     """The name of the entity."""
 
@@ -500,7 +504,7 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     @id.validator
     def ensure_id_correct_type(self, _: attrs.Attribute, value: Any, **kwargs):
         if value is not None and not isinstance(value, str):
-            raise ValueError("TODO")
+            raise TypeError("'id' must be either a str or None")
 
     # @property
     # def id(self) -> Optional[str]:
@@ -889,10 +893,16 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     """
 
     @tags.validator
-    def ensure_tags_correct_type(self, attribute: attrs.Attribute, value: Any, mode: Optional[ValidationMode] = None):
+    def _ensure_tags_correct_type(
+        self,
+        attribute: attrs.Attribute,
+        value: Any,
+        mode: Optional[ValidationMode] = None,
+    ):
         if self.validate_assignment or mode:
             if value is not None and not isinstance(value, dict):
-                raise ValueError("Explode")  # TODO
+                msg = "{} is not an instance of dict nor None".format(repr(value))
+                raise DataFormatError(msg)
 
     # @property
     # def tags(self) -> Optional[dict[str, Any]]:
@@ -1096,4 +1106,5 @@ draftsman_converters.get_version((2, 0)).add_schema(
         fields.quality.name: "quality",
         fields.tags.name: "tags",
     },
+    exclude_extra={"connections"},  # FIXME: this sucks
 )

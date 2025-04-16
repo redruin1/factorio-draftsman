@@ -1,8 +1,8 @@
 # test_wall.py
 
-from draftsman.entity import Wall, Container
+from draftsman.entity import Wall, Container, walls
 from draftsman.error import DataFormatError, IncompleteSignalError
-from draftsman.signatures import AttrsSignalID, SignalID
+from draftsman.signatures import AttrsSignalID
 from draftsman.warning import (
     MalformedSignalWarning,
     UnknownEntityWarning,
@@ -67,7 +67,7 @@ class TestWall:
         }
         wall = Wall.from_dict(d)
         wall.validate(mode=vm.NONE).reissue_all()
-        assert wall.to_dict() == {
+        assert wall.to_dict(version=(1, 0)) == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
             "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
@@ -91,7 +91,7 @@ class TestWall:
             "control_behavior": "incorrect",
         })
         wall.validate(mode=vm.NONE).reissue_all()
-        assert wall.to_dict() == {
+        assert wall.to_dict(version=(1, 0)) == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
             "connections": "incorrect",
@@ -146,7 +146,7 @@ class TestWall:
             }
         )
         wall.validate(mode=vm.MINIMUM).reissue_all()
-        assert wall.to_dict() == {
+        assert wall.to_dict(version=(1, 0)) == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
             "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
@@ -223,7 +223,7 @@ class TestWall:
         )
         with pytest.warns(UnknownKeywordWarning):
             wall.validate(mode=vm.STRICT).reissue_all()
-        assert wall.to_dict() == {
+        assert wall.to_dict(version=(1, 0)) == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
             "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
@@ -291,7 +291,7 @@ class TestWall:
         )
         with pytest.warns(UnknownKeywordWarning):
             wall.validate(mode=vm.PEDANTIC).reissue_all()
-        assert wall.to_dict() == {
+        assert wall.to_dict(version=(1, 0)) == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
             "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
@@ -360,18 +360,20 @@ class TestWall:
         }
         # Load 1.0 dict
         wall = Wall.from_dict(d_1_0, version=(1, 0))
-        print(wall)
         # Output should be equivalent
         assert wall.to_dict(version=(1, 0), exclude_defaults=False) == d_1_0
         # Should be able to output a 2.0 dict
         assert wall.to_dict(version=(2, 0), exclude_defaults=False) == d_2_0
 
         # Load 2.0 dict
-
+        wall = Wall.from_dict(d_2_0, version=(2, 0))
         # Output should be equivalent
-
+        assert wall.to_dict(version=(2, 0), exclude_defaults=False) == d_2_0
         # Should be able to output a 1.0 dict
-        pass
+        # (though we have to delete "connections" because it was never present
+        # the input 2.0 dict)
+        del d_1_0["connections"]
+        assert wall.to_dict(version=(1, 0), exclude_defaults=False) == d_1_0
 
     def test_set_enable_disable(self):
         # ========================
@@ -623,6 +625,14 @@ class TestWall:
         # Incorrect Type
         with pytest.raises(DataFormatError):
             wall.output_signal = DataFormatError
+
+    def test_power_and_circuit_flags(self):
+        for name in walls:
+            wall = Wall(name)
+            assert wall.power_connectable == False
+            assert wall.dual_power_connectable == False
+            assert wall.circuit_connectable == True
+            assert wall.dual_circuit_connectable == False
 
     def test_mergable_with(self):
         wall1 = Wall("stone-wall")

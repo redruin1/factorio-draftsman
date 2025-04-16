@@ -12,6 +12,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import Connections
 from draftsman.utils import get_first
 
@@ -25,8 +26,8 @@ from typing import Any, Literal, Optional, Union
 @attrs.define
 class TransportBelt(
     CircuitReadContentsMixin,
-    CircuitConditionMixin,
     LogisticConditionMixin,
+    CircuitConditionMixin,
     CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
@@ -98,3 +99,10 @@ class TransportBelt(
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+# TODO: versioning
+draftsman_converters.add_schema(
+    {"$id": "factorio:transport_belt"},
+    TransportBelt,
+)

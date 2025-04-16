@@ -133,6 +133,10 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
         # self.control_behavior.pop("circuit_condition", None)
         self.control_behavior.circuit_condition = None
 
+    def merge(self, other: "CircuitConditionMixin"):
+        super().merge(other)
+        self.circuit_condition = other.circuit_condition
+
 
 draftsman_converters.add_schema(
     {

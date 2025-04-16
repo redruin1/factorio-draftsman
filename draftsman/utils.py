@@ -977,6 +977,8 @@ def get_suggestion(name, choices, n=3, cutoff=60):
     :returns: A string intended to be appended to an error or warning message,
         containing the suggested alternative(s).
     """
+    if name is None:
+        return ""
     suggestions = [
         suggestion[0]
         for suggestion in process.extract(name, choices, limit=n)
