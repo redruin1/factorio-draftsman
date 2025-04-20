@@ -14,7 +14,7 @@ from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import Connections
-from draftsman.utils import get_first
+from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import transport_belts
 
@@ -23,6 +23,7 @@ from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
 
+@fix_incorrect_pre_init
 @attrs.define
 class TransportBelt(
     CircuitReadContentsMixin,

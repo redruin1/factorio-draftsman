@@ -10,7 +10,7 @@ from draftsman.error import (
     InvalidNoteID,
     DataFormatError,
 )
-from draftsman.signatures import SignalID
+from draftsman.signatures import AttrsSignalID
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -336,17 +336,17 @@ class TestProgrammableSpeakerTesting:
     def test_set_alert_icon(self):
         speaker = ProgrammableSpeaker()
         speaker.alert_icon = "signal-check"
-        assert speaker.alert_icon == SignalID(name="signal-check", type="virtual")
+        assert speaker.alert_icon == AttrsSignalID(name="signal-check", type="virtual")
 
         speaker.alert_icon = {"name": "signal-check", "type": "virtual"}
-        assert speaker.alert_icon == SignalID(name="signal-check", type="virtual")
+        assert speaker.alert_icon == AttrsSignalID(name="signal-check", type="virtual")
 
         speaker.alert_icon = None
         assert speaker.alert_icon == None
 
         with pytest.warns(UnknownSignalWarning):
             speaker.alert_icon = {"name": "unknown", "type": "virtual"}
-        assert speaker.alert_icon == SignalID(name="unknown", type="virtual")
+        assert speaker.alert_icon == AttrsSignalID(name="unknown", type="virtual")
 
         with pytest.raises(DataFormatError):
             speaker.alert_icon = TypeError
@@ -583,13 +583,13 @@ class TestProgrammableSpeakerTesting:
         # Warnings
         with pytest.warns(UnknownNoteWarning):
             speaker.note_name = "incorrect"
-        speaker.note_id == None
+        assert speaker.note_id == None
         # Here the note name is not even set, which is because we have no
         # way of knowing the translation of this string to an integer index
         # since it was unrecognized
         # If you want to use unknown notes, use `note_id` instead and translate
         # yourself
-        speaker.note_name == None
+        assert speaker.note_name == None
 
         # Handle the case where the instrument is unknown
         with pytest.warns(UnknownInstrumentWarning):
@@ -629,24 +629,16 @@ class TestProgrammableSpeakerTesting:
         speaker1 = ProgrammableSpeaker("programmable-speaker")
         speaker2 = ProgrammableSpeaker(
             "programmable-speaker",
-            parameters={
-                "playback_volume": 1.0,
-                "playback_globally": True,
-                "allow_polyphony": True,
-            },
-            alert_parameters={
-                "show_alert": True,
-                "show_on_map": False,
-                "icon_signal_id": "signal-check",
-                "alert_message": "some string",
-            },
-            control_behavior={
-                "circuit_parameters": {
-                    "signal_value_is_pitch": False,
-                    "instrument_id": 1,
-                    "note_id": 1,
-                }
-            },
+            volume=1.0,
+            global_playback=True,
+            allow_polyphony=True,
+            show_alert=True,
+            show_alert_on_map=False,
+            alert_icon="signal-check",
+            alert_message="some string",
+            signal_value_is_pitch=False,
+            instrument_id=1,
+            note_id=1,
             tags={"some": "stuff"},
         )
 
@@ -662,24 +654,16 @@ class TestProgrammableSpeakerTesting:
         speaker1 = ProgrammableSpeaker("programmable-speaker")
         speaker2 = ProgrammableSpeaker(
             "programmable-speaker",
-            parameters={
-                "playback_volume": 0.5,
-                "playback_globally": True,
-                "allow_polyphony": True,
-            },
-            alert_parameters={
-                "show_alert": True,
-                "show_on_map": False,
-                "icon_signal_id": "signal-check",
-                "alert_message": "some string",
-            },
-            control_behavior={
-                "circuit_parameters": {
-                    "signal_value_is_pitch": True,
-                    "instrument_id": 1,
-                    "note_id": 1,
-                }
-            },
+            volume=0.5,
+            global_playback=True,
+            allow_polyphony=True,
+            show_alert=True,
+            show_alert_on_map=False,
+            alert_icon="signal-check",
+            alert_message="some string",
+            signal_value_is_pitch=True,
+            instrument_id=1,
+            note_id=1,
             tags={"some": "stuff"},
         )
 
@@ -691,7 +675,7 @@ class TestProgrammableSpeakerTesting:
         assert speaker1.allow_polyphony == True
         assert speaker1.show_alert == True
         assert speaker1.show_alert_on_map == False
-        assert speaker1.alert_icon == SignalID(name="signal-check", type="virtual")
+        assert speaker1.alert_icon == AttrsSignalID(name="signal-check", type="virtual")
         assert speaker1.alert_message == "some string"
         assert speaker1.signal_value_is_pitch == True
         assert speaker1.instrument_id == 1

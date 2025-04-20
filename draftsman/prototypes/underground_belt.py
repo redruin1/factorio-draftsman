@@ -4,7 +4,7 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import IOTypeMixin, DirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.utils import get_first
+from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import underground_belts
 
@@ -13,6 +13,7 @@ from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
 
+@fix_incorrect_pre_init
 @attrs.define
 class UndergroundBelt(IOTypeMixin, DirectionalMixin, Entity):
     """

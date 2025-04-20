@@ -35,4 +35,5 @@ from draftsman.classes.mixins.request_filters import RequestFiltersMixin
 from draftsman.classes.mixins.request_items import RequestItemsMixin
 from draftsman.classes.mixins.stack_size import StackSizeMixin
 from draftsman.classes.mixins.target_priorities import TargetPrioritiesMixin
+from draftsman.classes.mixins.variation import VariationMixin
 from draftsman.classes.mixins.vehicle import VehicleMixin

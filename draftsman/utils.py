@@ -991,3 +991,23 @@ def get_suggestion(name, choices, n=3, cutoff=60):
     else:
         return "; did you mean one of {}?".format(suggestions)  # pragma: no coverage
         # return "; did you mean one of {}?".format(", ".join(["or " + str(item) if i == len(suggestions) - 1 else str(item) for i, item in enumerate(suggestions)]))
+
+
+def fix_incorrect_pre_init(cls):
+    """
+    Attrs erroneously passes default values to `__attrs_pre_init__` even when
+    given values during init. We add a sentinel value to the pre-init call so
+    that it only runs once when we tell it to (with the actually correct args).
+    """
+    original_init = cls.__init__
+
+    @wraps(original_init)
+    def new_init(self, *args, **kwargs):
+        print(args)
+        print(kwargs)
+        self.__attrs_pre_init__(*args, first_call=True, **kwargs)
+        original_init(self, *args, **kwargs)
+
+    cls.__init__ = new_init
+
+    return cls

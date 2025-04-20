@@ -1,5 +1,7 @@
 # turret.py
 
+# TODO: remove
+
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import RequestItemsMixin, DirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector

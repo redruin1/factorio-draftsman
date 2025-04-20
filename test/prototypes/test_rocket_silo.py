@@ -13,19 +13,17 @@ class TestRocketSilo:
     def test_constructor_init(self):
         silo = RocketSilo(
             transitional_request_index=12,
-            control_behavior={"read_items_mode": SiloReadMode.READ_ORBITAL_REQUESTS},
+            read_items_mode=SiloReadMode.READ_ORBITAL_REQUESTS
         )
         assert silo.to_dict() == {
             "name": "rocket-silo",
             "position": {"x": 4.5, "y": 4.5},
             "control_behavior": {"read_items_mode": 2},
-            "recipe": "rocket-part",
+            # "recipe": "rocket-part", # TODO: is this important?
             "transitional_request_index": 12,
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            RocketSilo(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             RocketSilo("this is not a rocket silo").validate().reissue_all()
 

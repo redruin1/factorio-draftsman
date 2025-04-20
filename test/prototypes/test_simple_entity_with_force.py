@@ -13,15 +13,16 @@ class TestSimpleEntityWithForce:
         assert entity.name == simple_entities_with_force[0]
         assert entity.variation == 13
 
-        with pytest.warns(UnknownKeywordWarning):
-            SimpleEntityWithForce(unused_keyword="whatever").validate().reissue_all()
-
         with pytest.warns(UnknownEntityWarning):
             SimpleEntityWithForce("this is not correct").validate().reissue_all()
 
     def test_to_dict(self):
         entity = SimpleEntityWithForce("simple-entity-with-force")
         assert entity.variation == 1
+        assert entity.to_dict() == {
+            "name": "simple-entity-with-force",
+            "position": {"x": 0.5, "y": 0.5},
+        }
         assert entity.to_dict(exclude_defaults=False) == {
             "name": "simple-entity-with-force",
             "quality": "normal",  # Default
@@ -31,14 +32,12 @@ class TestSimpleEntityWithForce:
             "tags": {},  # Default
         }
 
-        entity.variation = None
-        assert entity.variation == None
-        assert entity.to_dict(exclude_defaults=False) == {
+        entity.variation = 10
+        assert entity.variation == 10
+        assert entity.to_dict() == {
             "name": "simple-entity-with-force",
-            "quality": "normal",  # Default
             "position": {"x": 0.5, "y": 0.5},
-            "direction": Direction.NORTH,  # Default
-            "tags": {},  # Default
+            "variation": 10
         }
 
     def test_power_and_circuit_flags(self):

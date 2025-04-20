@@ -1470,7 +1470,7 @@ draftsman_converters.add_schema(
         fields.tiles.name: ("blueprint", "tiles"),
         fields.schedules.name: ("blueprint", "schedules"),
         fields.wires.name: ("blueprint", "schedules"),
-        fields.stock_connections: ("blueprint", "stock_connections"),
+        fields.stock_connections.name: ("blueprint", "stock_connections"),
     },
 )
 

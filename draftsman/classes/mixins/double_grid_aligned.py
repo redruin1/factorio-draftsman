@@ -1,5 +1,6 @@
 # double_grid_aligned.py
 
+from draftsman.classes.entity import Entity
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.signatures import FloatPosition
@@ -7,8 +8,6 @@ from draftsman.warning import GridAlignmentWarning
 
 import math
 from pydantic import BaseModel, ValidationInfo, field_validator
-from typing import Union
-import warnings
 
 
 class DoubleGridAlignedMixin:

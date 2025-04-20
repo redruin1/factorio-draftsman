@@ -3,10 +3,10 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import DirectionalMixin
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import ItemName
-from draftsman.utils import get_first
+from draftsman.utils import fix_incorrect_pre_init
+from draftsman.validators import instance_of, one_of
 
 from draftsman.data.entities import splitters
 
@@ -20,6 +20,7 @@ except ImportError:  # pragma: no coverage
     from typing_extensions import Literal
 
 
+@fix_incorrect_pre_init
 @attrs.define
 class Splitter(DirectionalMixin, Entity):
     """
@@ -100,83 +101,113 @@ class Splitter(DirectionalMixin, Entity):
 
     # =========================================================================
 
-    @property
-    def input_priority(self) -> Literal["left", "none", "right", None]:
-        """
-        The input priority of the ``Splitter``. Can be one of ``"left"`` or
-        ``"right"``.
+    input_priority: Literal["left", "none", "right"] = attrs.field(
+        default="none",
+        validator=one_of("left", "none", "right")
+    )
+    """
+    The input priority of the ``Splitter``. Can be one of ``"left"``,
+    ``"right"``, or ``"none"``.
+    """
 
-        :getter: Gets the input priority.
-        :setter: Sets the input priority.
+    # @property
+    # def input_priority(self) -> Literal["left", "none", "right", None]:
+    #     """
+    #     The input priority of the ``Splitter``. Can be one of ``"left"`` or
+    #     ``"right"``.
 
-        :exception TypeError: If set to anything other than a ``str`` or ``None``.
-        :exception InvalidSideError: If set to an invalid side as specified
-            above.
-        """
-        return self._root.input_priority
+    #     :getter: Gets the input priority.
+    #     :setter: Sets the input priority.
 
-    @input_priority.setter
-    def input_priority(self, value: Literal["left", "none", "right", None]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "input_priority", value
-            )
-            self._root.input_priority = result
-        else:
-            self._root.input_priority = value
+    #     :exception TypeError: If set to anything other than a ``str`` or ``None``.
+    #     :exception InvalidSideError: If set to an invalid side as specified
+    #         above.
+    #     """
+    #     return self._root.input_priority
 
-    # =========================================================================
-
-    @property
-    def output_priority(self) -> Literal["left", "none", "right", None]:
-        """
-        The outpu priority of the ``Splitter``. Can be one of ``"left"`` or
-        ``"right"``.
-
-        :getter: Gets the output priority.
-        :setter: Sets the output priority.
-
-        :exception TypeError: If set to anything other than a ``str`` or ``None``.
-        :exception InvalidSideError: If set to an invalid side as specified
-            above.
-        """
-        return self._root.output_priority
-
-    @output_priority.setter
-    def output_priority(self, value: Literal["left", "none", "right", None]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "output_priority", value
-            )
-            self._root.output_priority = result
-        else:
-            self._root.output_priority = value
+    # @input_priority.setter
+    # def input_priority(self, value: Literal["left", "none", "right", None]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, type(self).Format, self._root, "input_priority", value
+    #         )
+    #         self._root.input_priority = result
+    #     else:
+    #         self._root.input_priority = value
 
     # =========================================================================
 
-    @property
-    def filter(self) -> Optional[ItemName]:
-        """
-        Sets the Splitter's filter. If ``filter`` is set but ``output_priority``
-        is not, then the output side defaults to ``"left"``.
+    output_priority: Literal["left", "none", "right"] = attrs.field(
+        default="none",
+        validator=one_of("left", "none", "right")
+    )
+    """
+    The output priority of the ``Splitter``. Can be one of ``"left"`` or
+    ``"right"``.
+    """
 
-        :getter: Gets the splitter's item filter, or ``None`` if not set.
-        :setter: Sets the splitter's item filter.
+    # @property
+    # def output_priority(self) -> Literal["left", "none", "right", None]:
+    #     """
+    #     The output priority of the ``Splitter``. Can be one of ``"left"`` or
+    #     ``"right"``.
 
-        :exception TypeError: If set to anything other than a ``str`` or ``None``.
-        :exception InvalidItemError: If set to an invalid item name.
-        """
-        return self._root.filter
+    #     :getter: Gets the output priority.
+    #     :setter: Sets the output priority.
 
-    @filter.setter
-    def filter(self, value: ItemName):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "filter", value
-            )
-            self._root.filter = result
-        else:
-            self._root.filter = value
+    #     :exception TypeError: If set to anything other than a ``str`` or ``None``.
+    #     :exception InvalidSideError: If set to an invalid side as specified
+    #         above.
+    #     """
+    #     return self._root.output_priority
+
+    # @output_priority.setter
+    # def output_priority(self, value: Literal["left", "none", "right", None]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, type(self).Format, self._root, "output_priority", value
+    #         )
+    #         self._root.output_priority = result
+    #     else:
+    #         self._root.output_priority = value
+
+    # =========================================================================
+
+    filter: Optional[ItemName] = attrs.field(
+        default=None,
+        validator=instance_of(Optional[ItemName])
+    )
+    """
+    Sets the Splitter's filter. If ``filter`` is set but ``output_priority``
+    is not, then the output side defaults to ``"left"``.
+
+    :exception TypeError: If set to anything other than a ``str`` or ``None``.
+    :exception InvalidItemError: If set to an invalid item name.
+    """
+
+    # @property
+    # def filter(self) -> Optional[ItemName]:
+    #     """
+    #     Sets the Splitter's filter. If ``filter`` is set but ``output_priority``
+    #     is not, then the output side defaults to ``"left"``.
+
+    #     :getter: Gets the splitter's item filter, or ``None`` if not set.
+    #     :setter: Sets the splitter's item filter.
+
+    #     :exception TypeError: If set to anything other than a ``str`` or ``None``.
+    #     :exception InvalidItemError: If set to an invalid item name.
+    #     """
+    #     return self._root.filter
+
+    # @filter.setter
+    # def filter(self, value: ItemName):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, type(self).Format, self._root, "filter", value
+    #         )
+    #         self._root.filter = result
+    #     else:
+    #         self._root.filter = value
 
     # =========================================================================
 
@@ -198,3 +229,15 @@ class Splitter(DirectionalMixin, Entity):
     #         and self.output_priority == other.output_priority
     #         and self.filter == other.filter
     #     )
+
+draftsman_converters.add_schema(
+    {
+        "$id": "factorio:splitter"
+    },
+    Splitter,
+    lambda fields: {
+        fields.input_priority.name: "input_priority",
+        fields.output_priority.name: "output_priority",
+        fields.filter.name: "filter",
+    }
+)

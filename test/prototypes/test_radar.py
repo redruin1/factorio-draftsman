@@ -12,7 +12,7 @@ class TestRadar:
         radar = Radar()
 
         with pytest.warns(UnknownKeywordWarning):
-            Radar(unused_keyword="whatever").validate().reissue_all()
+            Radar.from_dict({"name": "radar", "unused_keyword": "whatever"}).validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
             Radar("this is not a radar").validate().reissue_all()

@@ -2,8 +2,8 @@
 
 from draftsman.constants import ValidationMode
 from draftsman.entity import Roboport, roboports, Container
-from draftsman.error import DataFormatError
-from draftsman.signatures import SignalID
+from draftsman.error import DataFormatError, IncompleteSignalError
+from draftsman.signatures import SignalID, AttrsSignalID
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -17,7 +17,7 @@ import pytest
 class TestRoboport:
     def test_constructor_init(self):
         roboport = Roboport(
-            "roboport", tile_position=[1, 1], control_behavior={"read_logistics": False}
+            "roboport", tile_position=[1, 1], read_logistics=False
         )
         assert roboport.to_dict() == {
             "name": "roboport",
@@ -28,14 +28,12 @@ class TestRoboport:
         roboport = Roboport(
             "roboport",
             tile_position=[1, 1],
-            control_behavior={
-                "read_logistics": True,
-                "read_robot_stats": True,
-                "available_logistic_output_signal": "signal-A",
-                "total_logistic_output_signal": "signal-B",
-                "available_construction_output_signal": "signal-C",
-                "total_construction_output_signal": "signal-D",
-            },
+            read_logistics=True,
+            read_robot_stats=True,
+            available_logistic_signal="signal-A",
+            total_logistic_signal="signal-B",
+            available_construction_signal="signal-C",
+            total_construction_signal="signal-D",
         )
         assert roboport.to_dict() == {
             "name": "roboport",
@@ -65,23 +63,12 @@ class TestRoboport:
         roboport = Roboport(
             "roboport",
             tile_position=[1, 1],
-            control_behavior={
-                # "read_logistics": True, # Default
-                "read_robot_stats": True,
-                "available_logistic_output_signal": {
-                    "name": "signal-A",
-                    "type": "virtual",
-                },
-                "total_logistic_output_signal": {"name": "signal-B", "type": "virtual"},
-                "available_construction_output_signal": {
-                    "name": "signal-C",
-                    "type": "virtual",
-                },
-                "total_construction_output_signal": {
-                    "name": "signal-D",
-                    "type": "virtual",
-                },
-            },
+            read_logistics=True,
+            read_robot_stats=True,
+            available_logistic_signal={"name": "signal-A", "type": "virtual"},
+            total_logistic_signal={"name": "signal-B", "type": "virtual"},
+            available_construction_signal={"name": "signal-C", "type": "virtual"},
+            total_construction_signal={"name": "signal-D", "type": "virtual"},
         )
 
         assert roboport.to_dict() == {
@@ -111,21 +98,20 @@ class TestRoboport:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Roboport("roboport", unused_keyword="whatever").validate().reissue_all()
+            Roboport.from_dict({"name": "roboport", "unused_keyword": "whatever"}).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Roboport("this is not a roboport").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            Roboport(control_behavior="incorrect").validate().reissue_all()
+            Roboport(tags="incorrect").validate().reissue_all()
 
     def test_set_read_logistics(self):
         roboport = Roboport()
-        roboport.read_logistics = True
         assert roboport.read_logistics == True
 
-        roboport.read_logistics = None
-        assert roboport.read_logistics == None
+        roboport.read_logistics = False
+        assert roboport.read_logistics == False
 
         with pytest.raises(DataFormatError):
             roboport.read_logistics = "incorrect"
@@ -143,11 +129,10 @@ class TestRoboport:
 
     def test_set_read_robot_stats(self):
         roboport = Roboport()
+        assert roboport.read_robot_stats == False
+
         roboport.read_robot_stats = True
         assert roboport.read_robot_stats == True
-
-        roboport.read_robot_stats = None
-        assert roboport.read_robot_stats == None
 
         with pytest.raises(DataFormatError):
             roboport.read_robot_stats = "incorrect"
@@ -166,12 +151,12 @@ class TestRoboport:
     def test_set_available_logistics_signal(self):
         roboport = Roboport()
         roboport.available_logistic_signal = "signal-A"
-        assert roboport.available_logistic_signal == SignalID(
+        assert roboport.available_logistic_signal == AttrsSignalID(
             name="signal-A", type="virtual"
         )
 
         roboport.available_logistic_signal = {"name": "signal-A", "type": "virtual"}
-        assert roboport.available_logistic_signal == SignalID(
+        assert roboport.available_logistic_signal == AttrsSignalID(
             name="signal-A", type="virtual"
         )
 
@@ -180,35 +165,24 @@ class TestRoboport:
 
         with pytest.warns(UnknownSignalWarning):
             roboport.available_logistic_signal = {"name": "unknown", "type": "item"}
-        assert roboport.available_logistic_signal == SignalID(
-            name="unknown", type="item"
-        )
+            assert roboport.available_logistic_signal == AttrsSignalID(
+                name="unknown", type="item"
+            )
 
         with pytest.raises(DataFormatError):
             roboport.available_logistic_signal = TypeError
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             roboport.available_logistic_signal = "incorrect"
-
-        roboport.validate_assignment = "none"
-        assert roboport.validate_assignment == ValidationMode.NONE
-
-        roboport.available_logistic_signal = "incorrect"
-        assert roboport.available_logistic_signal == "incorrect"
-        assert roboport.to_dict() == {
-            "name": "roboport",
-            "position": {"x": 2, "y": 2},
-            "control_behavior": {"available_logistic_output_signal": "incorrect"},
-        }
 
     def test_set_total_logistics_signal(self):
         roboport = Roboport()
         roboport.total_logistic_signal = "signal-B"
-        assert roboport.total_logistic_signal == SignalID(
+        assert roboport.total_logistic_signal == AttrsSignalID(
             name="signal-B", type="virtual"
         )
 
         roboport.total_logistic_signal = {"name": "signal-B", "type": "virtual"}
-        assert roboport.total_logistic_signal == SignalID(
+        assert roboport.total_logistic_signal == AttrsSignalID(
             name="signal-B", type="virtual"
         )
 
@@ -217,33 +191,24 @@ class TestRoboport:
 
         with pytest.warns(UnknownSignalWarning):
             roboport.total_logistic_signal = {"name": "unknown", "type": "item"}
-        assert roboport.total_logistic_signal == SignalID(name="unknown", type="item")
+            assert roboport.total_logistic_signal == AttrsSignalID(
+                name="unknown", type="item"
+            )
 
         with pytest.raises(DataFormatError):
             roboport.total_logistic_signal = TypeError
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             roboport.total_logistic_signal = "incorrect"
-
-        roboport.validate_assignment = "none"
-        assert roboport.validate_assignment == ValidationMode.NONE
-
-        roboport.total_logistic_signal = "incorrect"
-        assert roboport.total_logistic_signal == "incorrect"
-        assert roboport.to_dict() == {
-            "name": "roboport",
-            "position": {"x": 2, "y": 2},
-            "control_behavior": {"total_logistic_output_signal": "incorrect"},
-        }
 
     def test_set_available_construction_signal(self):
         roboport = Roboport()
         roboport.available_construction_signal = "signal-C"
-        assert roboport.available_construction_signal == SignalID(
+        assert roboport.available_construction_signal == AttrsSignalID(
             name="signal-C", type="virtual"
         )
 
         roboport.available_construction_signal = {"name": "signal-C", "type": "virtual"}
-        assert roboport.available_construction_signal == SignalID(
+        assert roboport.available_construction_signal == AttrsSignalID(
             name="signal-C", type="virtual"
         )
 
@@ -252,35 +217,24 @@ class TestRoboport:
 
         with pytest.warns(UnknownSignalWarning):
             roboport.available_construction_signal = {"name": "unknown", "type": "item"}
-        assert roboport.available_construction_signal == SignalID(
-            name="unknown", type="item"
-        )
+            assert roboport.available_construction_signal == AttrsSignalID(
+                name="unknown", type="item"
+            )
 
         with pytest.raises(DataFormatError):
             roboport.available_construction_signal = TypeError
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             roboport.available_construction_signal = "incorrect"
-
-        roboport.validate_assignment = "none"
-        assert roboport.validate_assignment == ValidationMode.NONE
-
-        roboport.available_construction_signal = "incorrect"
-        assert roboport.available_construction_signal == "incorrect"
-        assert roboport.to_dict() == {
-            "name": "roboport",
-            "position": {"x": 2, "y": 2},
-            "control_behavior": {"available_construction_output_signal": "incorrect"},
-        }
 
     def test_set_total_construction_signal(self):
         roboport = Roboport()
         roboport.total_construction_signal = "signal-D"
-        assert roboport.total_construction_signal == SignalID(
+        assert roboport.total_construction_signal == AttrsSignalID(
             name="signal-D", type="virtual"
         )
 
         roboport.total_construction_signal = {"name": "signal-D", "type": "virtual"}
-        assert roboport.total_construction_signal == SignalID(
+        assert roboport.total_construction_signal == AttrsSignalID(
             name="signal-D", type="virtual"
         )
 
@@ -289,38 +243,25 @@ class TestRoboport:
 
         with pytest.warns(UnknownSignalWarning):
             roboport.total_construction_signal = {"name": "unknown", "type": "item"}
-        assert roboport.total_construction_signal == SignalID(
-            name="unknown", type="item"
-        )
+            assert roboport.total_construction_signal == AttrsSignalID(
+                name="unknown", type="item"
+            )
 
         with pytest.raises(DataFormatError):
             roboport.total_construction_signal = TypeError
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             roboport.total_construction_signal = "incorrect"
-
-        roboport.validate_assignment = "none"
-        assert roboport.validate_assignment == ValidationMode.NONE
-
-        roboport.total_construction_signal = "incorrect"
-        assert roboport.total_construction_signal == "incorrect"
-        assert roboport.to_dict() == {
-            "name": "roboport",
-            "position": {"x": 2, "y": 2},
-            "control_behavior": {"total_construction_output_signal": "incorrect"},
-        }
 
     def test_mergable_with(self):
         roboport1 = Roboport("roboport")
         roboport2 = Roboport(
             "roboport",
-            control_behavior={
-                "read_logistics": True,
-                "read_robot_stats": True,
-                "available_logistic_output_signal": "signal-A",
-                "total_logistic_output_signal": "signal-B",
-                "available_construction_output_signal": "signal-C",
-                "total_construction_output_signal": "signal-D",
-            },
+            read_logistics=True,
+            read_robot_stats=True,
+            available_logistic_signal="signal-A",
+            total_logistic_signal="signal-B",
+            available_construction_signal="signal-C",
+            total_construction_signal="signal-D",
             tags={"some": "stuff"},
         )
 
@@ -336,30 +277,24 @@ class TestRoboport:
         roboport1 = Roboport("roboport")
         roboport2 = Roboport(
             "roboport",
-            control_behavior={
-                "read_logistics": True,
-                "read_robot_stats": True,
-                "available_logistic_output_signal": "signal-A",
-                "total_logistic_output_signal": "signal-B",
-                "available_construction_output_signal": "signal-C",
-                "total_construction_output_signal": "signal-D",
-            },
+            read_logistics=True,
+            read_robot_stats=True,
+            available_logistic_signal="signal-A",
+            total_logistic_signal="signal-B",
+            available_construction_signal="signal-C",
+            total_construction_signal="signal-D",
             tags={"some": "stuff"},
         )
 
         roboport1.merge(roboport2)
         del roboport2
 
-        assert roboport1.control_behavior == Roboport.Format.ControlBehavior(
-            **{
-                "read_logistics": True,
-                "read_robot_stats": True,
-                "available_logistic_output_signal": "signal-A",
-                "total_logistic_output_signal": "signal-B",
-                "available_construction_output_signal": "signal-C",
-                "total_construction_output_signal": "signal-D",
-            }
-        )
+        assert roboport1.read_logistics == True
+        assert roboport1.read_robot_stats == True
+        assert roboport1.available_logistic_signal == AttrsSignalID(name="signal-A", type="virtual")
+        assert roboport1.total_logistic_signal == AttrsSignalID(name="signal-B", type="virtual")
+        assert roboport1.available_construction_signal == AttrsSignalID(name="signal-C", type="virtual")
+        assert roboport1.total_construction_signal == AttrsSignalID(name="signal-D", type="virtual")
         assert roboport1.tags == {"some": "stuff"}
 
         assert roboport1.to_dict(exclude_defaults=False)["control_behavior"] == {

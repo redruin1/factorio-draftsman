@@ -2,6 +2,7 @@
 
 from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.signatures import AttrsColor, Color, normalize_color
+from draftsman.validators import instance_of
 
 import attrs
 from pydantic import (
@@ -45,7 +46,7 @@ class ColorMixin:
     color: Optional[AttrsColor] = attrs.field(
         default=AttrsColor(r=1.0, g=1.0, b=1.0, a=1.0),
         converter=AttrsColor.converter,
-        validator=attrs.validators.instance_of(AttrsColor),
+        validator=instance_of(Optional[AttrsColor]),
     )
     """
     The color of the Entity.

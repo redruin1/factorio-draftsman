@@ -3,14 +3,15 @@
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import ValidationMode
 from draftsman.data import modules, recipes
-from draftsman.error import InvalidRecipeError
-from draftsman.signatures import get_suggestion, uint32
+from draftsman.signatures import QualityName, RecipeName, get_suggestion
+from draftsman.validators import instance_of, is_none, one_of, or_
 from draftsman.warning import (
     ItemLimitationWarning,
     RecipeLimitationWarning,
     UnknownRecipeWarning,
 )
 
+import attrs
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 from typing import TYPE_CHECKING, Literal, Optional
 
@@ -18,6 +19,7 @@ if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
+@attrs.define(slots=False)
 class RecipeMixin:
     """
     Enables the Entity to have a current recipe it's set to make and a set of
@@ -111,14 +113,14 @@ class RecipeMixin:
 
             return value
 
-    def __init__(self, name: str, similar_entities: list[str], **kwargs):
-        self._root: __class__.Format
+    # def __init__(self, name: str, similar_entities: list[str], **kwargs):
+    #     self._root: __class__.Format
 
-        super().__init__(name, similar_entities, **kwargs)
+    #     super().__init__(name, similar_entities, **kwargs)
 
-        # Recipe that this machine is currently set to
-        self.recipe = kwargs.get("recipe", None)
-        self.recipe_quality = kwargs.get("recipe_quality", None)
+    #     # Recipe that this machine is currently set to
+    #     self.recipe = kwargs.get("recipe", None)
+    #     self.recipe_quality = kwargs.get("recipe_quality", None)
 
     # =========================================================================
 
@@ -144,69 +146,105 @@ class RecipeMixin:
 
     # =========================================================================
 
-    @property
-    def recipe(self) -> str:
-        """
-        The recipe that this Entity is currently set to make.
+    recipe: Optional[RecipeName] = attrs.field(
+        default=None,
+        validator=instance_of(Optional[RecipeName])
+    )
+    """
+    The recipe that this Entity is currently set to make.
 
-        Raises a :py:class:`~draftsman.warning.ModuleLimitationWarning` if the
-        recipe changes to one that conflicts with the current module requests.
+    Raises a :py:class:`~draftsman.warning.ModuleLimitationWarning` if the
+    recipe changes to one that conflicts with the current module requests.
 
-        Raises a :py:class:`~draftsman.warning.ItemLimtiationWarning` if the
-        recipe changes to one whose input ingredients no longer match the
-        current item requests.
+    Raises a :py:class:`~draftsman.warning.ItemLimtiationWarning` if the
+    recipe changes to one whose input ingredients no longer match the
+    current item requests.
 
-        :getter: Gets the current recipe of the Entity.
-        :setter: Sets the current recipe of the Entity.
+    warns UnknownRecipeWarning if set to a string that is not contained within
+    this entity's recipes.
 
-        :exception TypeError: If set to anything other than a ``str`` or
-            ``None``.
-        :exception InvalidRecipeError: If set to a string that is not contained
-            within this Entity's ``recipes``.
-        """
-        return self._root.recipe
+    :exception DataFormatError: If set to anything other than a ``str`` or
+        ``None``.
+    """
 
-    @recipe.setter
-    def recipe(self, value: str):
-        if self.validate_assignment:
-            self._root.recipe = value  # TODO: FIXME; this is bad practice
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "recipe", value
-            )
-            self._root.recipe = result
-        else:
-            self._root.recipe = value
+    # @property
+    # def recipe(self) -> str:
+    #     """
+    #     The recipe that this Entity is currently set to make.
 
-    # =========================================================================
+    #     Raises a :py:class:`~draftsman.warning.ModuleLimitationWarning` if the
+    #     recipe changes to one that conflicts with the current module requests.
 
-    @property
-    def recipe_quality(self) -> Optional[str]:
-        """
-        The quality of the recipe that this Entity is selected to make.
+    #     Raises a :py:class:`~draftsman.warning.ItemLimtiationWarning` if the
+    #     recipe changes to one whose input ingredients no longer match the
+    #     current item requests.
 
-        :getter: Gets the current recipe quality of the Entity.
-        :setter: Sets the current recipe quality of the Entity.
+    #     :getter: Gets the current recipe of the Entity.
+    #     :setter: Sets the current recipe of the Entity.
 
-        :exception TypeError: If set to anything other than a ``str`` or
-            ``None``.
-        """
-        return self._root.recipe
+    #     :exception TypeError: If set to anything other than a ``str`` or
+    #         ``None``.
+    #     :exception InvalidRecipeError: If set to a string that is not contained
+    #         within this Entity's ``recipes``.
+    #     """
+    #     return self._root.recipe
 
-    @recipe_quality.setter
-    def recipe_quality(self, value: str):
-        if self.validate_assignment:
-            self._root.recipe_quality = value  # TODO: FIXME; this is bad practice
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "recipe_quality", value
-            )
-            self._root.recipe_quality = result
-        else:
-            self._root.recipe_quality = value
+    # @recipe.setter
+    # def recipe(self, value: str):
+    #     if self.validate_assignment:
+    #         self._root.recipe = value  # TODO: FIXME; this is bad practice
+    #         result = attempt_and_reissue(
+    #             self, type(self).Format, self._root, "recipe", value
+    #         )
+    #         self._root.recipe = result
+    #     else:
+    #         self._root.recipe = value
 
     # =========================================================================
 
-    def merge(self, other: "Entity"):
+    recipe_quality: Optional[QualityName] = attrs.field(
+        default="normal",
+        validator=or_(one_of(QualityName), is_none)
+    )
+    """
+    The quality of the recipe that this Entity is selected to make.
+
+    :getter: Gets the current recipe quality of the Entity.
+    :setter: Sets the current recipe quality of the Entity.
+
+    :exception DataFormatError: If set to anything other than a ``str`` or
+        ``None``.
+    """
+
+    # @property
+    # def recipe_quality(self) -> Optional[str]:
+    #     """
+    #     The quality of the recipe that this Entity is selected to make.
+
+    #     :getter: Gets the current recipe quality of the Entity.
+    #     :setter: Sets the current recipe quality of the Entity.
+
+    #     :exception DataFormatError: If set to anything other than a ``str`` or
+    #         ``None``.
+    #     """
+    #     return self._root.recipe
+
+    # @recipe_quality.setter
+    # def recipe_quality(self, value: str):
+    #     if self.validate_assignment:
+    #         self._root.recipe_quality = value  # TODO: FIXME; this is bad practice
+    #         result = attempt_and_reissue(
+    #             self, type(self).Format, self._root, "recipe_quality", value
+    #         )
+    #         self._root.recipe_quality = result
+    #     else:
+    #         self._root.recipe_quality = value
+
+    # =========================================================================
+
+    def merge(self, other: "RecipeMixin"):
         self.recipe = other.recipe
+        self.recipe_quality = other.recipe_quality
 
         super().merge(other)
 

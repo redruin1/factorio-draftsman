@@ -2,8 +2,8 @@
 
 from draftsman.constants import ValidationMode
 from draftsman.entity import RailSignal, rail_signals, Container
-from draftsman.error import DataFormatError
-from draftsman.signatures import SignalID
+from draftsman.error import DataFormatError, IncompleteSignalError
+from draftsman.signatures import AttrsSignalID
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -16,7 +16,7 @@ import pytest
 
 class TestRailSignal:
     def test_constructor_init(self):
-        rail_signal = RailSignal("rail-signal", control_behavior={})
+        rail_signal = RailSignal("rail-signal")
         assert rail_signal.to_dict() == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
@@ -24,63 +24,64 @@ class TestRailSignal:
 
         rail_signal = RailSignal(
             "rail-signal",
-            control_behavior={
-                "red_output_signal": "signal-A",
-                "orange_output_signal": "signal-B",
-                "green_output_signal": "signal-C",
-            },
+            red_output_signal="signal-A",
+            yellow_output_signal="signal-B",
+            green_output_signal="signal-C",
         )
         assert rail_signal.to_dict() == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
                 "red_output_signal": {"name": "signal-A", "type": "virtual"},
-                "orange_output_signal": {"name": "signal-B", "type": "virtual"},
+                "yellow_output_signal": {"name": "signal-B", "type": "virtual"},
                 "green_output_signal": {"name": "signal-C", "type": "virtual"},
             },
         }
 
         rail_signal = RailSignal(
             "rail-signal",
-            control_behavior={
-                "red_output_signal": {"name": "signal-A", "type": "virtual"},
-                "orange_output_signal": {"name": "signal-B", "type": "virtual"},
-                "green_output_signal": {"name": "signal-C", "type": "virtual"},
-            },
+            red_output_signal={"name": "signal-A", "type": "virtual"},
+            yellow_output_signal={"name": "signal-B", "type": "virtual"},
+            green_output_signal={"name": "signal-C", "type": "virtual"},
         )
         assert rail_signal.to_dict() == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
                 "red_output_signal": {"name": "signal-A", "type": "virtual"},
-                "orange_output_signal": {"name": "signal-B", "type": "virtual"},
+                "yellow_output_signal": {"name": "signal-B", "type": "virtual"},
                 "green_output_signal": {"name": "signal-C", "type": "virtual"},
             },
         }
 
         # Warnings:
         with pytest.warns(UnknownKeywordWarning):
-            RailSignal(
-                "rail-signal", invalid_keyword="whatever"
+            RailSignal.from_dict(
+                {"name": "rail-signal", "invalid_keyword": "whatever"}
             ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             RailSignal("this is not a rail signal").validate().reissue_all()
 
         # Errors:
         with pytest.raises(DataFormatError):
-            RailSignal(control_behavior="incorrect").validate().reissue_all()
+            RailSignal(tags="incorrect").validate().reissue_all()
 
     def test_flags(self):
-        assert RailSignal("rail-signal").rotatable == True
-        assert RailSignal("rail-signal").square == True
+        for name in rail_signals:
+            signal = RailSignal(name)
+            assert signal.rotatable == True
+            assert signal.square == True
+            assert signal.power_connectable == False
+            assert signal.dual_power_connectable == False
+            assert signal.circuit_connectable == True
+            assert signal.dual_circuit_connectable == False
 
     def test_enable_disable(self):
         rail_signal = RailSignal("rail-signal")
+        rail_signal.enable_disable == False
+
         rail_signal.enable_disable = True
         assert rail_signal.enable_disable == True
-
-        rail_signal.enable_disable = None
-        assert rail_signal.enable_disable == None
 
         with pytest.raises(DataFormatError):
             rail_signal.enable_disable = "incorrect"
@@ -98,11 +99,10 @@ class TestRailSignal:
 
     def test_read_signal(self):
         rail_signal = RailSignal("rail-signal")
-        rail_signal.read_signal = True
         assert rail_signal.read_signal == True
 
-        rail_signal.read_signal = None
-        assert rail_signal.read_signal == None
+        rail_signal.read_signal = False
+        assert rail_signal.read_signal == False
 
         with pytest.raises(DataFormatError):
             rail_signal.read_signal = "incorrect"
@@ -120,7 +120,7 @@ class TestRailSignal:
 
     def test_red_output_signal(self):
         rail_signal = RailSignal("rail-signal")
-        assert rail_signal.red_output_signal == SignalID(
+        assert rail_signal.red_output_signal == AttrsSignalID(
             name="signal-red", type="virtual"
         )
         assert rail_signal.to_dict() == {
@@ -129,7 +129,7 @@ class TestRailSignal:
         }
 
         rail_signal.red_output_signal = "signal-A"
-        assert rail_signal.red_output_signal == SignalID(
+        assert rail_signal.red_output_signal == AttrsSignalID(
             name="signal-A", type="virtual"
         )
         assert rail_signal.to_dict() == {
@@ -141,7 +141,7 @@ class TestRailSignal:
         }
 
         rail_signal.red_output_signal = {"name": "signal-B", "type": "virtual"}
-        assert rail_signal.red_output_signal == SignalID(
+        assert rail_signal.red_output_signal == AttrsSignalID(
             name="signal-B", type="virtual"
         )
         assert rail_signal.to_dict() == {
@@ -154,7 +154,7 @@ class TestRailSignal:
 
         with pytest.warns(UnknownSignalWarning):
             rail_signal.red_output_signal = {"name": "unknown", "type": "virtual"}
-        assert rail_signal.red_output_signal == SignalID(name="unknown", type="virtual")
+            assert rail_signal.red_output_signal == AttrsSignalID(name="unknown", type="virtual")
         assert rail_signal.to_dict() == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
@@ -163,23 +163,12 @@ class TestRailSignal:
             },
         }
 
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             rail_signal.red_output_signal = "incorrect"
-
-        rail_signal.validate_assignment = "none"
-        assert rail_signal.validate_assignment == ValidationMode.NONE
-
-        rail_signal.red_output_signal = "incorrect"
-        assert rail_signal.red_output_signal == "incorrect"
-        assert rail_signal.to_dict() == {
-            "name": "rail-signal",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"red_output_signal": "incorrect"},
-        }
 
     def test_yellow_output_signal(self):
         rail_signal = RailSignal("rail-signal")
-        assert rail_signal.yellow_output_signal == SignalID(
+        assert rail_signal.yellow_output_signal == AttrsSignalID(
             name="signal-yellow", type="virtual"
         )
         assert rail_signal.to_dict() == {
@@ -188,59 +177,48 @@ class TestRailSignal:
         }
 
         rail_signal.yellow_output_signal = "signal-A"
-        assert rail_signal.yellow_output_signal == SignalID(
+        assert rail_signal.yellow_output_signal == AttrsSignalID(
             name="signal-A", type="virtual"
         )
         assert rail_signal.to_dict() == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
-                "orange_output_signal": {"name": "signal-A", "type": "virtual"}
+                "yellow_output_signal": {"name": "signal-A", "type": "virtual"}
             },
         }
 
         rail_signal.yellow_output_signal = {"name": "signal-B", "type": "virtual"}
-        assert rail_signal.yellow_output_signal == SignalID(
+        assert rail_signal.yellow_output_signal == AttrsSignalID(
             name="signal-B", type="virtual"
         )
         assert rail_signal.to_dict() == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
-                "orange_output_signal": {"name": "signal-B", "type": "virtual"}
+                "yellow_output_signal": {"name": "signal-B", "type": "virtual"}
             },
         }
 
         with pytest.warns(UnknownSignalWarning):
             rail_signal.yellow_output_signal = {"name": "unknown", "type": "virtual"}
-        assert rail_signal.yellow_output_signal == SignalID(
-            name="unknown", type="virtual"
-        )
+            assert rail_signal.yellow_output_signal == AttrsSignalID(
+                name="unknown", type="virtual"
+            )
         assert rail_signal.to_dict() == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
-                "orange_output_signal": {"name": "unknown", "type": "virtual"}
+                "yellow_output_signal": {"name": "unknown", "type": "virtual"}
             },
         }
 
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             rail_signal.yellow_output_signal = "incorrect"
-
-        rail_signal.validate_assignment = "none"
-        assert rail_signal.validate_assignment == ValidationMode.NONE
-
-        rail_signal.yellow_output_signal = "incorrect"
-        assert rail_signal.yellow_output_signal == "incorrect"
-        assert rail_signal.to_dict() == {
-            "name": "rail-signal",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"orange_output_signal": "incorrect"},
-        }
 
     def test_green_output_signal(self):
         rail_signal = RailSignal("rail-signal")
-        assert rail_signal.green_output_signal == SignalID(
+        assert rail_signal.green_output_signal == AttrsSignalID(
             name="signal-green", type="virtual"
         )
         assert rail_signal.to_dict() == {
@@ -249,7 +227,7 @@ class TestRailSignal:
         }
 
         rail_signal.green_output_signal = "signal-A"
-        assert rail_signal.green_output_signal == SignalID(
+        assert rail_signal.green_output_signal == AttrsSignalID(
             name="signal-A", type="virtual"
         )
         assert rail_signal.to_dict() == {
@@ -261,7 +239,7 @@ class TestRailSignal:
         }
 
         rail_signal.green_output_signal = {"name": "signal-B", "type": "virtual"}
-        assert rail_signal.green_output_signal == SignalID(
+        assert rail_signal.green_output_signal == AttrsSignalID(
             name="signal-B", type="virtual"
         )
         assert rail_signal.to_dict() == {
@@ -274,9 +252,9 @@ class TestRailSignal:
 
         with pytest.warns(UnknownSignalWarning):
             rail_signal.green_output_signal = {"name": "unknown", "type": "virtual"}
-        assert rail_signal.green_output_signal == SignalID(
-            name="unknown", type="virtual"
-        )
+            assert rail_signal.green_output_signal == AttrsSignalID(
+                name="unknown", type="virtual"
+            )
         assert rail_signal.to_dict() == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
@@ -285,29 +263,16 @@ class TestRailSignal:
             },
         }
 
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             rail_signal.green_output_signal = "incorrect"
-
-        rail_signal.validate_assignment = "none"
-        assert rail_signal.validate_assignment == ValidationMode.NONE
-
-        rail_signal.green_output_signal = "incorrect"
-        assert rail_signal.green_output_signal == "incorrect"
-        assert rail_signal.to_dict() == {
-            "name": "rail-signal",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"green_output_signal": "incorrect"},
-        }
 
     def test_mergable_with(self):
         signal1 = RailSignal("rail-signal")
         signal2 = RailSignal(
             "rail-signal",
-            control_behavior={
-                "red_output_signal": "signal-A",
-                "orange_output_signal": "signal-B",
-                "green_output_signal": "signal-C",
-            },
+            red_output_signal="signal-A",
+            yellow_output_signal="signal-B",
+            green_output_signal="signal-C",
             tags={"some": "stuff"},
         )
 
@@ -323,29 +288,23 @@ class TestRailSignal:
         signal1 = RailSignal("rail-signal")
         signal2 = RailSignal(
             "rail-signal",
-            control_behavior={
-                "red_output_signal": "signal-A",
-                "orange_output_signal": "signal-B",
-                "green_output_signal": "signal-C",
-            },
+            red_output_signal="signal-A",
+            yellow_output_signal="signal-B",
+            green_output_signal="signal-C",
             tags={"some": "stuff"},
         )
 
         signal1.merge(signal2)
         del signal2
 
-        assert signal1.control_behavior == RailSignal.Format.ControlBehavior(
-            **{
-                "red_output_signal": "signal-A",
-                "orange_output_signal": "signal-B",
-                "green_output_signal": "signal-C",
-            }
-        )
+        assert signal1.red_output_signal == AttrsSignalID(name="signal-A", type="virtual")
+        assert signal1.yellow_output_signal == AttrsSignalID(name="signal-B", type="virtual")
+        assert signal1.green_output_signal == AttrsSignalID(name="signal-C", type="virtual")
         assert signal1.tags == {"some": "stuff"}
 
         assert signal1.to_dict()["control_behavior"] == {
             "red_output_signal": {"name": "signal-A", "type": "virtual"},
-            "orange_output_signal": {"name": "signal-B", "type": "virtual"},
+            "yellow_output_signal": {"name": "signal-B", "type": "virtual"},
             "green_output_signal": {"name": "signal-C", "type": "virtual"},
         }
 

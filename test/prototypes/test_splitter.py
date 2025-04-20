@@ -35,23 +35,27 @@ class TestSplitter:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Splitter(
-                position=[0, 0], direction=Direction.WEST, invalid_keyword=5
+            Splitter.from_dict(
+                {
+                    "name": "splitter",
+                    "position": {"x": 0.5, "y": 1.0},
+                    "direction": Direction.WEST,
+                    "invalid_keyword": 5
+                }
             ).validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
             Splitter("this is not a splitter").validate().reissue_all()
 
-        # TODO
-        # with pytest.raises(UnknownItemWarning):
-        #     Splitter("splitter", filter="wrong")
+        with pytest.raises(UnknownItemWarning):
+            Splitter("splitter", filter="wrong")
 
         # Errors
         # Raises errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             Splitter("splitter", id=25).validate().reissue_all()
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             Splitter("splitter", position=TypeError).validate().reissue_all()
 
         with pytest.raises(DataFormatError):

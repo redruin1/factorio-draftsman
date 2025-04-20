@@ -22,7 +22,7 @@ from draftsman.data.signals import (
     get_signal_types,
     pure_virtual,
 )
-from draftsman.data import entities, fluids, items, signals, tiles
+from draftsman.data import entities, fluids, items, signals, tiles, recipes
 from draftsman.error import (
     InvalidMapperError,
     InvalidSignalError,
@@ -31,7 +31,7 @@ from draftsman.error import (
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import encode_version, get_suggestion
-from draftsman.validators import and_, lt, ge
+from draftsman.validators import and_, lt, ge, one_of, is_none, or_, instance_of
 from draftsman.warning import (
     BarWarning,
     MalformedSignalWarning,
@@ -42,6 +42,7 @@ from draftsman.warning import (
     UnknownItemWarning,
     UnknownSignalWarning,
     UnknownTileWarning,
+    UnknownRecipeWarning
 )
 
 from typing_extensions import Annotated
@@ -81,48 +82,43 @@ uint32 = Annotated[int, and_(ge(0), lt(2**32))]
 uint64 = Annotated[int, and_(ge(0), lt(2**64))]
 
 
-def known_name(type: str, structure: dict, issued_warning):
+def known_name(type: str, structure: dict, issued_warning: Warning):
     """
     Validator function builder for any type of unknown name.
     """
 
-    def inside_func(value: str, info: ValidationInfo) -> str:
-        if not info.context:
-            return value
-        if info.context["mode"] <= ValidationMode.MINIMUM:
-            return value
+    def validator(inst: Exportable, attr: attrs.Attribute, value: str, mode: Optional[ValidationMode] = None) -> str:
+        mode = mode if mode is not None else inst.validate_assignment
 
-        warning_list: list = info.context["warning_list"]
-
-        if value not in structure:
-            warning_list.append(
-                issued_warning(
-                    "Unknown {} '{}'{}".format(
-                        type, value, get_suggestion(value, structure.keys(), n=1)
-                    )
+        if mode >= ValidationMode.STRICT:
+            if value not in structure:
+                msg = "Unknown {} '{}'{}".format(
+                    type, value, get_suggestion(value, structure.keys(), n=1)
                 )
-            )
+                warnings.warn(issued_warning(msg))
 
-        return value
-
-    return inside_func
+    return validator
 
 
 ItemName = Annotated[
-    str, AfterValidator(known_name("item", items.raw, UnknownItemWarning))
+    str, known_name("item", items.raw, UnknownItemWarning)
 ]
 SignalName = Annotated[
-    str, AfterValidator(known_name("signal", signals.raw, UnknownSignalWarning))
+    str, known_name("signal", signals.raw, UnknownSignalWarning)
 ]
 EntityName = Annotated[
-    str, AfterValidator(known_name("entity", entities.raw, UnknownEntityWarning))
+    str, known_name("entity", entities.raw, UnknownEntityWarning)
 ]
 FluidName = Annotated[
-    str, AfterValidator(known_name("fluid", fluids.raw, UnknownFluidWarning))
+    str, known_name("fluid", fluids.raw, UnknownFluidWarning)
 ]
 TileName = Annotated[
-    str, AfterValidator(known_name("tile", tiles.raw, UnknownTileWarning))
+    str, known_name("tile", tiles.raw, UnknownTileWarning)
 ]
+RecipeName = Annotated[
+    str, known_name("recipe", recipes.raw, UnknownRecipeWarning)
+]
+QualityName = Literal["normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"]
 
 
 class DraftsmanBaseModel(BaseModel):
@@ -489,7 +485,10 @@ class SignalID(DraftsmanBaseModel):
 
 @attrs.define
 class AttrsSignalID(Exportable):
-    name: Optional[SignalName] = attrs.field(default=None)
+    name: Optional[SignalName] = attrs.field(
+        default=None
+        # TODO: validators
+    )
     """
     Name of the signal. If omitted, the signal is treated as no signal and 
     removed on import/export cycle.
@@ -509,13 +508,10 @@ class AttrsSignalID(Exportable):
     """
     Category of the signal.
     """
-    quality: Optional[
-        Literal[
-            "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
-        ]
-    ] = attrs.field(
-        default="normal"
-    )  # TODO: validators
+    quality: Optional[QualityName] = attrs.field(
+        default="normal",
+        validator=or_(one_of(QualityName), is_none)
+    )
     """
     Quality flag of the signal.
     """
@@ -738,15 +734,16 @@ class AttrsColor:
         return cls(*sequence)
 
     @classmethod
-    def converter(cls, input) -> "AttrsColor":
-        if isinstance(input, AttrsColor):
-            return input
-        elif isinstance(input, (tuple, list)):  # TODO: sequence
-            return cls.from_sequence(input)
-        elif isinstance(input, dict):
-            return cls(**input)
+    def converter(cls, value) -> "AttrsColor":
+        if isinstance(value, AttrsColor):
+            return value
+        elif isinstance(value, (tuple, list)):  # TODO: sequence
+            return cls.from_sequence(value)
+        elif isinstance(value, dict):
+            return cls(**value)
         else:
-            raise TypeError("Explode")  # TODO
+            msg = "{} can not be interpreted as a {}".format(repr(value), cls.__name__)
+            raise DataFormatError("Explode")
 
 
 class Color(DraftsmanBaseModel):
@@ -1489,11 +1486,7 @@ class Section(DraftsmanBaseModel):
 
 
 class QualityFilter(DraftsmanBaseModel):
-    quality: Optional[
-        Literal[
-            "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
-        ]
-    ] = Field("any", description="""The quality of the signal to compare against.""")
+    quality: Optional[QualityName] = Field("any", description="""The quality of the signal to compare against.""")
     comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
         "=",
         description="""The comparison operator to use when evaluating signal comparisons.""",
@@ -1507,6 +1500,49 @@ class QualityFilter(DraftsmanBaseModel):
             return conversions[input]
         else:
             return input
+
+
+@attrs.define
+class AttrsItemSpecification(Exportable):
+    class InventryLocation(Exportable):
+        inventory: uint32
+        """
+        Which inventory this item sits in, 1-indexed.
+        """
+        stack: uint32
+        """
+        Which slot in the inventory this item sits in, 0-indexed.
+        """
+        count: Optional[uint32] = attrs.field(
+            default=1,
+            validator=instance_of(Optional[uint32])
+        )
+        """
+        The amount of that item to request to that slot. Defaults to 1 if 
+        omitted.
+        """
+
+    in_inventory: list[InventryLocation] = attrs.field(
+        factory=list,
+        # TODO: validators
+    )
+    """
+    The list of all locations that the selected item should go.
+    """
+    grid_count: uint32 = attrs.field(
+        default=0,
+        validator=instance_of(uint32)
+    )
+    """
+    The total amount of items being requested to all locations.
+    """
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return AttrsItemSpecification(**value)
+        else:
+            return value
 
 
 class ItemSpecification(DraftsmanBaseModel):
@@ -1528,6 +1564,25 @@ class ItemSpecification(DraftsmanBaseModel):
     grid_count: Optional[uint32] = Field(
         0, description="The amount to request to the associated grid."
     )
+
+
+@attrs.define
+class AttrsItemRequest(Exportable):
+    id: AttrsSignalID = attrs.field(
+        converter=AttrsSignalID.converter,
+        validator=instance_of(AttrsSignalID)
+    )
+    """
+    The item to request.
+    """
+    items: AttrsItemSpecification = attrs.field(
+        factory=AttrsItemSpecification,
+        converter=AttrsItemSpecification.converter,
+        validator=instance_of(AttrsItemSpecification)
+    )
+    """
+    The grids/locations each item is being requested to.
+    """
 
 
 class ItemRequest(DraftsmanBaseModel):

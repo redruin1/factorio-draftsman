@@ -4,18 +4,15 @@
 # 2.0: well, definitely now they can
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMixin
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode
-from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID
-from draftsman.utils import get_first
+from draftsman.serialization import draftsman_converters
+from draftsman.signatures import AttrsSignalID
+from draftsman.validators import instance_of
 
 from draftsman.data.entities import roboports
 
 import attrs
-from pydantic import ConfigDict, Field
-from typing import Any, Literal, Optional, Union
+from typing import Optional
 
 
 @attrs.define
@@ -112,192 +109,295 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
 
     # =========================================================================
 
-    @property
-    def read_logistics(self) -> Optional[bool]:
-        """
-        Whether or not to read the item contents of the logisitics network.
+    read_logistics: bool = attrs.field(
+        default=True,
+        validator=instance_of(bool)
+    )
+    """
+    Whether or not to read the item contents of the logisitics network to any
+    connected circuit network.
 
-        :getter: Gets whether or not the logistics are read, or ``None`` if not
-            set.
-        :setter: Sets whether or not the logistics are read. Removes the key if
-            set to ``None``.
+    :exception DataFormatError: If set to anything other than a ``bool`` or 
+        ``None``.
+    """
 
-        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
-        """
-        return self.control_behavior.read_logistics
+    # @property
+    # def read_logistics(self) -> Optional[bool]:
+    #     """
+    #     Whether or not to read the item contents of the logisitics network.
 
-    @read_logistics.setter
-    def read_logistics(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "read_logistics",
-                value,
-            )
-            self.control_behavior.read_logistics = result
-        else:
-            self.control_behavior.read_logistics = value
+    #     :getter: Gets whether or not the logistics are read, or ``None`` if not
+    #         set.
+    #     :setter: Sets whether or not the logistics are read. Removes the key if
+    #         set to ``None``.
 
-    # =========================================================================
+    #     :exception TypeError: If set to anything other than a ``bool`` or ``None``.
+    #     """
+    #     return self.control_behavior.read_logistics
 
-    @property
-    def read_robot_stats(self) -> Optional[bool]:
-        """
-        Whether or not to read the number of construction and logistics robots
-        in the logisitics network.
-
-        :getter: Gets whether or not the robot counts are read, or ``None`` if
-            not set.
-        :setter: Sets whether or not the robot counts are read. Removes the key
-            if set to ``None``.
-
-        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
-        """
-        return self.control_behavior.read_robot_stats
-
-    @read_robot_stats.setter
-    def read_robot_stats(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "read_robot_stats",
-                value,
-            )
-            self.control_behavior.read_robot_stats = result
-        else:
-            self.control_behavior.read_robot_stats = value
+    # @read_logistics.setter
+    # def read_logistics(self, value: Optional[bool]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior,
+    #             self.control_behavior,
+    #             "read_logistics",
+    #             value,
+    #         )
+    #         self.control_behavior.read_logistics = result
+    #     else:
+    #         self.control_behavior.read_logistics = value
 
     # =========================================================================
 
-    @property
-    def available_logistic_signal(self) -> Optional[SignalID]:
-        """
-        What signal to output the number of available logistic robots to the
-        circuit network with.
+    read_robot_stats: bool = attrs.field(
+        default=False,
+        validator=instance_of(bool)
+    )
+    """
+    Whether or not to read the number of construction and logistics robots
+    in the logisitics network to any connected circuit network.
 
-        :getter: Gets the available logistic robot signal, or ``None`` if not
-            set.
-        :setter: Sets the available logistic robot signal. Removes the key if
-            set to ``None``.
+    :exception DataFormatError: If set to anything other than a ``bool`` or ``None``.
+    """
 
-        :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
-            or ``None``.
-        """
-        return self.control_behavior.available_logistic_output_signal
+    # @property
+    # def read_robot_stats(self) -> Optional[bool]:
+    #     """
+    #     Whether or not to read the number of construction and logistics robots
+    #     in the logisitics network.
 
-    @available_logistic_signal.setter
-    def available_logistic_signal(self, value: Union[str, SignalID, None]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "available_logistic_output_signal",
-                value,
-            )
-            self.control_behavior.available_logistic_output_signal = result
-        else:
-            self.control_behavior.available_logistic_output_signal = value
+    #     :getter: Gets whether or not the robot counts are read, or ``None`` if
+    #         not set.
+    #     :setter: Sets whether or not the robot counts are read. Removes the key
+    #         if set to ``None``.
 
-    # =========================================================================
+    #     :exception TypeError: If set to anything other than a ``bool`` or ``None``.
+    #     """
+    #     return self.control_behavior.read_robot_stats
 
-    @property
-    def total_logistic_signal(self) -> Optional[SignalID]:
-        """
-        What signal to output the total number of logistic robots to the
-        circuit network with.
-
-        :getter: Gets the total logistic robot signal, or ``None`` if not set.
-        :setter: Sets the total logistic robot signal. Removes the key if set to
-            ``None``.
-
-        :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
-            or ``None``.
-        """
-        return self.control_behavior.total_logistic_output_signal
-
-    @total_logistic_signal.setter
-    def total_logistic_signal(self, value: Union[str, SignalID, None]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "total_logistic_output_signal",
-                value,
-            )
-            self.control_behavior.total_logistic_output_signal = result
-        else:
-            self.control_behavior.total_logistic_output_signal = value
+    # @read_robot_stats.setter
+    # def read_robot_stats(self, value: Optional[bool]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior,
+    #             self.control_behavior,
+    #             "read_robot_stats",
+    #             value,
+    #         )
+    #         self.control_behavior.read_robot_stats = result
+    #     else:
+    #         self.control_behavior.read_robot_stats = value
 
     # =========================================================================
 
-    @property
-    def available_construction_signal(self) -> Optional[SignalID]:
-        """
-        What signal to output the number of available construction robots to the
-        circuit network with.
+    available_logistic_signal: Optional[AttrsSignalID] = attrs.field(
+        factory=lambda: AttrsSignalID(name="signal-X", type="virtual"),
+        converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID])
+    )
+    """
+    What signal to output the number of available logistic robots to the
+    circuit network with.
 
-        :getter: Gets the available construction robot signal, or ``None`` if
-            not set.
-        :setter: Sets the available construction robot signal. Removes the key
-            if set to ``None``.
+    :exception DataFormatError: If set to anything that isn't a valid 
+        ``SIGNAL_ID`` or ``None``.
+    """
 
-        :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
-            or ``None``.
-        """
-        return self.control_behavior.available_construction_output_signal
+    # @property
+    # def available_logistic_signal(self) -> Optional[SignalID]:
+    #     """
+    #     What signal to output the number of available logistic robots to the
+    #     circuit network with.
 
-    @available_construction_signal.setter
-    def available_construction_signal(self, value: Union[str, SignalID, None]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "available_construction_output_signal",
-                value,
-            )
-            self.control_behavior.available_construction_output_signal = result
-        else:
-            self.control_behavior.available_construction_output_signal = value
+    #     :getter: Gets the available logistic robot signal, or ``None`` if not
+    #         set.
+    #     :setter: Sets the available logistic robot signal. Removes the key if
+    #         set to ``None``.
 
-    # =========================================================================
+    #     :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
+    #         or ``None``.
+    #     """
+    #     return self.control_behavior.available_logistic_output_signal
 
-    @property
-    def total_construction_signal(self) -> Optional[SignalID]:
-        """
-        What signal to output the total number of construction robots to the
-        circuit network with.
-
-        :getter: Gets the total construction robot signal, or ``None`` if not
-            set.
-        :setter: Sets the total construction robot signal. Removes the key if
-            set to ``None``.
-
-        :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
-            or ``None``.
-        """
-        return self.control_behavior.total_construction_output_signal
-
-    @total_construction_signal.setter
-    def total_construction_signal(self, value: Union[str, SignalID, None]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "total_construction_output_signal",
-                value,
-            )
-            self.control_behavior.total_construction_output_signal = result
-        else:
-            self.control_behavior.total_construction_output_signal = value
+    # @available_logistic_signal.setter
+    # def available_logistic_signal(self, value: Union[str, SignalID, None]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior,
+    #             self.control_behavior,
+    #             "available_logistic_output_signal",
+    #             value,
+    #         )
+    #         self.control_behavior.available_logistic_output_signal = result
+    #     else:
+    #         self.control_behavior.available_logistic_output_signal = value
 
     # =========================================================================
 
-    # __hash__ = Entity.__hash__
+    total_logistic_signal: Optional[AttrsSignalID] = attrs.field(
+        factory=lambda: AttrsSignalID(name="signal-Y", type="virtual"),
+        converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID])
+    )
+    """
+    What signal to output the total number of logistic robots to the
+    circuit network with.
+
+    :exception DataFormatError: If set to anything that isn't a valid 
+        ``SIGNAL_ID`` or ``None``.
+    """
+
+    # @property
+    # def total_logistic_signal(self) -> Optional[SignalID]:
+    #     """
+    #     What signal to output the total number of logistic robots to the
+    #     circuit network with.
+
+    #     :getter: Gets the total logistic robot signal, or ``None`` if not set.
+    #     :setter: Sets the total logistic robot signal. Removes the key if set to
+    #         ``None``.
+
+    #     :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
+    #         or ``None``.
+    #     """
+    #     return self.control_behavior.total_logistic_output_signal
+
+    # @total_logistic_signal.setter
+    # def total_logistic_signal(self, value: Union[str, SignalID, None]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior,
+    #             self.control_behavior,
+    #             "total_logistic_output_signal",
+    #             value,
+    #         )
+    #         self.control_behavior.total_logistic_output_signal = result
+    #     else:
+    #         self.control_behavior.total_logistic_output_signal = value
+
+    # =========================================================================
+
+    available_construction_signal: Optional[AttrsSignalID] = attrs.field(
+        factory=lambda: AttrsSignalID(name="signal-Z", type="virtual"),
+        converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID])
+    )
+    """
+    What signal to output the number of available construction robots to the
+    circuit network with.
+
+    :exception DataFormatError: If set to anything that isn't a valid 
+        ``SIGNAL_ID`` or ``None``.
+    """
+
+    # @property
+    # def available_construction_signal(self) -> Optional[SignalID]:
+    #     """
+    #     What signal to output the number of available construction robots to the
+    #     circuit network with.
+
+    #     :getter: Gets the available construction robot signal, or ``None`` if
+    #         not set.
+    #     :setter: Sets the available construction robot signal. Removes the key
+    #         if set to ``None``.
+
+    #     :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
+    #         or ``None``.
+    #     """
+    #     return self.control_behavior.available_construction_output_signal
+
+    # @available_construction_signal.setter
+    # def available_construction_signal(self, value: Union[str, SignalID, None]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior,
+    #             self.control_behavior,
+    #             "available_construction_output_signal",
+    #             value,
+    #         )
+    #         self.control_behavior.available_construction_output_signal = result
+    #     else:
+    #         self.control_behavior.available_construction_output_signal = value
+
+    # =========================================================================
+
+    total_construction_signal: Optional[AttrsSignalID] = attrs.field(
+        factory=lambda: AttrsSignalID(name="signal-T", type="virtual"),
+        converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID])
+    )
+    """
+    What signal to output the total number of construction robots to the
+    circuit network with.
+
+    :exception DataFormatError: If set to anything that isn't a valid 
+        ``SIGNAL_ID`` or ``None``.
+    """
+
+    # @property
+    # def total_construction_signal(self) -> Optional[SignalID]:
+    #     """
+    #     What signal to output the total number of construction robots to the
+    #     circuit network with.
+
+    #     :getter: Gets the total construction robot signal, or ``None`` if not
+    #         set.
+    #     :setter: Sets the total construction robot signal. Removes the key if
+    #         set to ``None``.
+
+    #     :exception TypeError: If set to anything that isn't a valid ``SIGNAL_ID``
+    #         or ``None``.
+    #     """
+    #     return self.control_behavior.total_construction_output_signal
+
+    # @total_construction_signal.setter
+    # def total_construction_signal(self, value: Union[str, SignalID, None]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior,
+    #             self.control_behavior,
+    #             "total_construction_output_signal",
+    #             value,
+    #         )
+    #         self.control_behavior.total_construction_output_signal = result
+    #     else:
+    #         self.control_behavior.total_construction_output_signal = value
+
+    # =========================================================================
+
+    def merge(self, other: "Roboport"):
+        super().merge(other)
+
+        self.read_logistics = other.read_logistics
+        self.read_robot_stats = other.read_robot_stats
+        self.available_logistic_signal = other.available_logistic_signal
+        self.total_logistic_signal = other.total_logistic_signal
+        self.available_construction_signal = other.available_construction_signal
+        self.total_construction_signal = other.total_construction_signal
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
+
+
+draftsman_converters.add_schema(
+    {
+        "$id": "factorio:roboport"
+    },
+    Roboport,
+    lambda fields: {
+        fields.read_logistics.name: ("control_behavior", "read_logistics"),
+        fields.read_robot_stats.name: ("control_behavior", "read_robot_stats"),
+        fields.available_logistic_signal.name: ("control_behavior", "available_logistic_output_signal"),
+        fields.total_logistic_signal.name: ("control_behavior", "total_logistic_output_signal"),
+        fields.available_construction_signal.name: ("control_behavior", "available_construction_output_signal"),
+        fields.total_construction_signal.name: ("control_behavior", "total_construction_output_signal")
+    }
+)

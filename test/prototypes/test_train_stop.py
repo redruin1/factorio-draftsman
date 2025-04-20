@@ -20,8 +20,7 @@ class TestTrainStop:
         train_stop = TrainStop(
             "train-stop",
             tile_position=[0, 0],
-            direction=Direction.EAST,
-            control_behavior={},
+            direction=Direction.EAST
         )
         assert train_stop.to_dict() == {
             "name": "train-stop",
@@ -29,22 +28,24 @@ class TestTrainStop:
             "direction": Direction.EAST,
         }
 
-        train_stop = TrainStop(
-            "train-stop",
-            tile_position=[0, 0],
-            direction=Direction.EAST,
-            station="Station name",
-            manual_trains_limit=3,
-            color=[1.0, 1.0, 1.0, 1.0],
-            control_behavior={
-                "read_from_train": True,
-                "read_stopped_train": True,
-                "train_stopped_signal": "signal-A",
-                "set_trains_limit": True,
-                "trains_limit_signal": "signal-B",
-                "read_trains_count": True,
-                "trains_count_signal": "signal-C",
-            },
+        train_stop = TrainStop.from_dict(
+            {
+                "name": "train-stop",
+                "position": {"x": 1.0, "y": 1.0},
+                "direction": Direction.EAST,
+                "station": "Station name",
+                "manual_trains_limit": 3,
+                "color": {"r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0},
+                "control_behavior": {
+                    "read_from_train": True,
+                    "read_stopped_train": True,
+                    "train_stopped_signal": {"name": "signal-A", "type": "virtual"},
+                    "set_trains_limit": True,
+                    "trains_limit_signal": {"name": "signal-B", "type": "virtual"},
+                    "read_trains_count": True,
+                    "trains_count_signal": {"name": "signal-C", "type": "virtual"}, # Default
+                },
+            }
         )
         assert train_stop.to_dict() == {
             "name": "train-stop",
@@ -60,22 +61,24 @@ class TestTrainStop:
                 "set_trains_limit": True,
                 "trains_limit_signal": {"name": "signal-B", "type": "virtual"},
                 "read_trains_count": True,
-                # "trains_count_signal": {"name": "signal-C", "type": "virtual"}, # Default
+                "trains_count_signal": {"name": "signal-C", "type": "virtual"},
             },
         }
 
-        train_stop = TrainStop(
-            "train-stop",
-            tile_position=[0, 0],
-            direction=Direction.EAST,
-            station="Station name",
-            manual_trains_limit=3,
-            color={"r": 1.0, "g": 1.0, "b": 1.0},
-            control_behavior={
-                "train_stopped_signal": {"name": "signal-A", "type": "virtual"},
-                "trains_limit_signal": {"name": "signal-B", "type": "virtual"},
-                "trains_count_signal": {"name": "signal-C", "type": "virtual"},
-            },
+        train_stop = TrainStop.from_dict(
+            {
+                "name": "train-stop",
+                "position": {"x": 1.0, "y": 1.0},
+                "direction": Direction.EAST,
+                "station": "Station name",
+                "manual_trains_limit": 3,
+                "color": {"r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0},
+                "control_behavior": {
+                    "train_stopped_signal": {"name": "signal-A", "type": "virtual"},
+                    "trains_limit_signal": {"name": "signal-B", "type": "virtual"},
+                    "trains_count_signal": {"name": "signal-C", "type": "virtual"}
+                },
+            }
         )
         assert train_stop.to_dict() == {
             "name": "train-stop",
@@ -83,19 +86,19 @@ class TestTrainStop:
             "direction": Direction.EAST,
             "station": "Station name",
             "manual_trains_limit": 3,
-            "color": {"r": 1.0, "g": 1.0, "b": 1.0},
+            "color": {"r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0},
             "control_behavior": {
                 "train_stopped_signal": {"name": "signal-A", "type": "virtual"},
                 "trains_limit_signal": {"name": "signal-B", "type": "virtual"},
-                # "trains_count_signal": {"name": "signal-C", "type": "virtual"}, # Default
+                "trains_count_signal": {"name": "signal-C", "type": "virtual"}, # Default
             },
         }
 
         # Warnings:
         with pytest.warns(UnknownKeywordWarning):
-            stop = TrainStop("train-stop", invalid_keyword="whatever")
+            stop = TrainStop.from_dict({"name": "train-stop", "invalid_keyword": "whatever"})
             stop.validate().reissue_all()
-        # if entity is not on a grid pos / 2, then warn the user of the incoming
+        # If entity is not on a grid pos / 2, then warn the user of the incoming
         # shift
         with pytest.warns(GridAlignmentWarning):
             stop = TrainStop("train-stop", tile_position=(1, 1))
@@ -112,10 +115,6 @@ class TestTrainStop:
 
         with pytest.raises(DataFormatError):
             stop = TrainStop(color="wrong")
-            stop.validate().reissue_all()
-
-        with pytest.raises(DataFormatError):
-            stop = TrainStop(control_behavior="incorrect")
             stop.validate().reissue_all()
 
     def test_set_manual_trains_limit(self):

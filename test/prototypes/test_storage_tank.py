@@ -3,7 +3,7 @@
 from draftsman.constants import Direction
 from draftsman.entity import StorageTank, storage_tanks, Container
 from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import DraftsmanWarning, UnknownEntityWarning
+from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
@@ -34,9 +34,14 @@ class TestStorageTank:
             "tags": {"A": "B"},
         }
         # Warnings
-        with pytest.warns(DraftsmanWarning):
-            StorageTank(
-                position=[0, 0], direction=Direction.WEST, invalid_keyword=5
+        with pytest.warns(UnknownKeywordWarning):
+            StorageTank.from_dict(
+                {
+                    "name": "storage-tank",
+                    "position": {"x": 16.5, "y": 4.5},
+                    "direction": Direction.WEST,
+                    "invalid_keyword": 5
+                }
             ).validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
@@ -47,8 +52,9 @@ class TestStorageTank:
         with pytest.raises(TypeError):
             StorageTank("storage-tank", id=25).validate().reissue_all()
 
-        with pytest.raises(TypeError):
-            StorageTank("storage-tank", position=TypeError).validate().reissue_all()
+        with pytest.raises(DataFormatError):
+            tank = StorageTank("storage-tank", position=DataFormatError)
+            tank.validate().reissue_all()
 
         with pytest.raises(DataFormatError):
             StorageTank("storage-tank", direction="incorrect").validate().reissue_all()

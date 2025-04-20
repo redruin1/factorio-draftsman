@@ -1,7 +1,6 @@
 # train_stop.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     ColorMixin,
     CircuitConditionMixin,
@@ -12,23 +11,18 @@ from draftsman.classes.mixins import (
     DoubleGridAlignedMixin,
     DirectionalMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
-from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import DraftsmanBaseModel, AttrsSignalID, uint32
+from draftsman.signatures import AttrsSignalID, uint32
+from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import train_stops
 
 import attrs
-from pydantic import (
-    ConfigDict,
-    Field,
-)
-from typing import Any, Literal, Optional, Union
+from typing import Optional
 
 
+@fix_incorrect_pre_init
 @attrs.define
 class TrainStop(
     ColorMixin,

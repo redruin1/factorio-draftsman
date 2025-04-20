@@ -8,13 +8,10 @@ import pytest
 
 
 class TestSimpleEntityWithOwner:
-    def test_contstructor_init(self):
+    def test_constructor_init(self):
         entity = SimpleEntityWithOwner(variation=13)
         assert entity.name == simple_entities_with_owner[0]
         assert entity.variation == 13
-
-        with pytest.warns(UnknownKeywordWarning):
-            SimpleEntityWithOwner(unused_keyword="whatever").validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
             SimpleEntityWithOwner("this is not correct").validate().reissue_all()
@@ -22,6 +19,10 @@ class TestSimpleEntityWithOwner:
     def test_to_dict(self):
         entity = SimpleEntityWithOwner("simple-entity-with-owner")
         assert entity.variation == 1
+        assert entity.to_dict() == {
+            "name": "simple-entity-with-owner",
+            "position": {"x": 0.5, "y": 0.5},
+        }
         assert entity.to_dict(exclude_defaults=False) == {
             "name": "simple-entity-with-owner",
             "quality": "normal",  # Default
@@ -31,14 +32,12 @@ class TestSimpleEntityWithOwner:
             "tags": {},  # Default
         }
 
-        entity.variation = None
-        assert entity.variation == None
-        assert entity.to_dict(exclude_defaults=False) == {
+        entity.variation = 10
+        assert entity.variation == 10
+        assert entity.to_dict() == {
             "name": "simple-entity-with-owner",
-            "quality": "normal",  # Default
             "position": {"x": 0.5, "y": 0.5},
-            "direction": Direction.NORTH,  # Default
-            "tags": {},  # Default
+            "variation": 10,
         }
 
     def test_power_and_circuit_flags(self):

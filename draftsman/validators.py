@@ -5,7 +5,7 @@ from draftsman.error import DataFormatError
 import attrs
 
 import operator
-from typing import Annotated, Any, Union, TYPE_CHECKING, get_origin, get_args
+from typing import Annotated, Any, Literal, Union, TYPE_CHECKING, get_origin, get_args
 
 if TYPE_CHECKING:
     from draftsman.classes.exportable import Exportable
@@ -50,7 +50,7 @@ class _OrValidator:
                 try:
                     validator(inst, attr, value, **kwargs)
                     return
-                except Exception as e:
+                except DataFormatError as e:
                     messages.append(str(e))
             msg = "{} did not match any of {}\n\t{}".format(
                 repr(value), repr(self.validators),
@@ -62,6 +62,14 @@ class _OrValidator:
 def or_(*validators):
     return _OrValidator(*validators)
 
+
+def is_none(inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
+    mode = kwargs.get("mode", None)
+    mode = mode if mode is not None else inst.validate_assignment
+    if mode:
+        if not value is None:
+            msg = "{} was not None".format(repr(value))
+            raise DataFormatError(msg)
 
 class _InstanceOfValidator:
     def __init__(self, cls: type):
@@ -93,11 +101,37 @@ def instance_of(cls: type):
     if get_origin(cls) is Union:
         vs = []
         for u in get_args(cls):
-            vs.append(_InstanceOfValidator(u))
+            if u is None:
+                vs.append(is_none)
+            else:
+                vs.append(_InstanceOfValidator(u))
         return _OrValidator(*vs)
     else:
         return _InstanceOfValidator(cls)
     
+
+class _OneOfValidator:
+    def __init__(self, *values):
+        self.values = values
+
+    def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
+        mode = kwargs.get("mode", None)
+        mode = mode if mode is not None else inst.validate_assignment
+        if mode:
+            if value not in self.values:
+                msg = "value {} not one of {}".format(repr(value), self.values)
+                raise DataFormatError(msg)
+
+
+def one_of(*values):
+    """
+    TODO
+    """
+    if len(values) == 1 and get_origin(values[0]) is Literal:
+        return _OneOfValidator(*get_args(values[0]))
+    else:
+        return _OneOfValidator(*values)
+
 
 @attrs.define(repr=False, frozen=True, slots=True)
 class _NumberValidator:

@@ -3,6 +3,7 @@
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import AttrsSignalID, SignalID
+from draftsman.validators import instance_of
 
 import attrs
 from pydantic import BaseModel, Field
@@ -42,13 +43,14 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
 
     # =========================================================================
 
-    red_output_signal: AttrsSignalID = attrs.field(
-        default=AttrsSignalID(name="signal-red", type="virtual"),
+    red_output_signal: Optional[AttrsSignalID] = attrs.field(
+        factory=lambda: AttrsSignalID(name="signal-red", type="virtual"),
         converter=AttrsSignalID.converter,
-        validator=attrs.validators.instance_of(AttrsSignalID),
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
-    The red output signal. Sent when the rail signal's state is red.
+    The red output signal. Sent with a unit value when the rail signal's state 
+    is red.
     """
 
     # @property
@@ -90,13 +92,14 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
 
     # =========================================================================
 
-    yellow_output_signal: AttrsSignalID = attrs.field(
-        default=AttrsSignalID(name="signal-yellow", type="virtual"),
+    yellow_output_signal: Optional[AttrsSignalID] = attrs.field(
+        factory=lambda: AttrsSignalID(name="signal-yellow", type="virtual"),
         converter=AttrsSignalID.converter,
-        validator=attrs.validators.instance_of(AttrsSignalID),
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
-    The yellow output signal. Sent when the rail signal's state is yellow.
+    The yellow output signal. Sent with a unit value when the rail signal's 
+    state is yellow.
     """
 
     # @property
@@ -138,13 +141,14 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
 
     # =========================================================================
 
-    green_output_signal: AttrsSignalID = attrs.field(
-        default=AttrsSignalID(name="signal-yellow", type="virtual"),
+    green_output_signal: Optional[AttrsSignalID] = attrs.field(
+        factory=lambda: AttrsSignalID(name="signal-green", type="virtual"),
         converter=AttrsSignalID.converter,
-        validator=attrs.validators.instance_of(AttrsSignalID),
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
-    The green output signal. Sent when the rail signal's state is green.
+    The green output signal. Sent with a unit value when the rail signal's state
+    is green.
     """
 
     # @property
@@ -194,8 +198,18 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
         self.green_output_signal = other.green_output_signal
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:read_rail_signals"},
+draftsman_converters.get_version((1, 0)).add_schema(
+    {"$id": "factorio:read_rail_signals_mixin_v1.0"},
+    ReadRailSignalMixin,
+    lambda fields: {
+        fields.red_output_signal.name: ("control_behavior", "red_output_signal"),
+        fields.yellow_output_signal.name: ("control_behavior", "orange_output_signal"),
+        fields.green_output_signal.name: ("control_behavior", "green_output_signal"),
+    },
+)
+
+draftsman_converters.get_version((2, 0)).add_schema(
+    {"$id": "factorio:read_rail_signals_mixin_v2.0"},
     ReadRailSignalMixin,
     lambda fields: {
         fields.red_output_signal.name: ("control_behavior", "red_output_signal"),

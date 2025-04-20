@@ -2,7 +2,7 @@
 
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import Direction
-from draftsman.signatures import IntPosition, uint8
+from draftsman.validators import instance_of
 
 import attrs
 from pydantic import (
@@ -115,14 +115,14 @@ class EightWayDirectionalMixin:
         Whether or not the tile width of this entity matches it's tile height.
         Not exported; read only.
         """
-        return self._tile_width == self._tile_height
+        return self.tile_width == self.tile_height
 
     # =========================================================================
 
     direction: Direction = attrs.field(
         default=Direction.NORTH,
         converter=Direction,
-        validator=attrs.validators.instance_of(Direction),
+        validator=instance_of(Direction),
     )
     """
     The direction that the Entity is facing. An Entity's "front" is usually

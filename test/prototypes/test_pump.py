@@ -14,15 +14,13 @@ class TestPump:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Pump("pump", unused_keyword=10).validate().reissue_all()
+            Pump.from_dict({"name": "pump", "unused_keyword": 10}).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Pump("this is not a pump").validate().reissue_all()
-        with pytest.warns(UnknownKeywordWarning):
-            Pump(control_behavior={"unused_key": "something"}).validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            Pump(control_behavior="incorrect").validate().reissue_all()
+            Pump(tags="incorrect").validate().reissue_all()
 
     def test_mergable_with(self):
         pump1 = Pump("pump")

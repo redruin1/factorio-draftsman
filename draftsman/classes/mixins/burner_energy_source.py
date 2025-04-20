@@ -6,11 +6,11 @@ from draftsman.warning import FuelCapacityWarning, FuelLimitationWarning
 
 from draftsman.data import entities, items
 
-import math
+import attrs
 from pydantic import BaseModel, ValidationInfo, field_validator
 from typing import Optional
 
-_valid_fuel_items: dict[str, set[str]] = {}
+# _valid_fuel_items: dict[str, set[str]] = {}
 
 from typing import TYPE_CHECKING
 
@@ -18,12 +18,14 @@ if TYPE_CHECKING:
     from draftsman.classes.mixins import RequestItemsMixin
 
 
+@attrs.define(slots=False)
 class BurnerEnergySourceMixin:  # (RequestItemsMixin)
     """
     Allows this entity to own a fuel input slot or slots and accept fuel item
     requests (for categories available to the specific entity). Implicitly
     inherits :py:class:`~.RequestItemsMixin`.
     """
+    # TODO: this should probably just be EnergySourceMixin or InputEnergySourceMixin
 
     class Format(BaseModel):
         @field_validator("items", check_fields=False)
@@ -99,46 +101,50 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
 
         #     return value
 
-    def __init__(self, name: str, similar_entities: list[str], **kwargs):
-        # Cache a set of valid fuel items for this entity, if they have not been
-        # created beforehand
-        # We do this before calling super in case `items` has been set as a
-        # keyword argument and needs to be validated
+    # def __init__(self, name: str, similar_entities: list[str], **kwargs):
+    #     # Cache a set of valid fuel items for this entity, if they have not been
+    #     # created beforehand
+    #     # We do this before calling super in case `items` has been set as a
+    #     # keyword argument and needs to be validated
 
-        super().__init__(name, similar_entities, **kwargs)
+    #     super().__init__(name, similar_entities, **kwargs)
 
-        if name not in _valid_fuel_items:
-            if name in entities.raw:
-                energy_source = self.input_energy_source
-                if energy_source is not None:
-                    if "fuel_categories" in energy_source:
-                        fuel_categories = energy_source[
-                            "fuel_categories"
-                        ]  # pragma: no coverage
-                    else:
-                        fuel_categories = [
-                            energy_source.get("fuel_category", "chemical")
-                        ]
+    #     if name not in _valid_fuel_items:
+    #         if name in entities.raw:
+    #             energy_source = self.input_energy_source
+    #             if energy_source is not None:
+    #                 if "fuel_categories" in energy_source:
+    #                     fuel_categories = energy_source[
+    #                         "fuel_categories"
+    #                     ]  # pragma: no coverage
+    #                 else:
+    #                     fuel_categories = [
+    #                         energy_source.get("fuel_category", "chemical")
+    #                     ]
 
-                    _valid_fuel_items[name] = set()
-                    for fuel_category in fuel_categories:
-                        _valid_fuel_items[name].update(items.fuels[fuel_category])
-                else:
-                    _valid_fuel_items[name] = set()
-            else:
-                _valid_fuel_items[name] = None
+    #                 _valid_fuel_items[name] = set()
+    #                 for fuel_category in fuel_categories:
+    #                     _valid_fuel_items[name].update(items.fuels[fuel_category])
+    #             else:
+    #                 _valid_fuel_items[name] = set()
+    #         else:
+    #             _valid_fuel_items[name] = None
 
     # =========================================================================
 
     @property
     def input_energy_source(self) -> Optional[dict]:
         """
+        The input energy source specification. Typically a BurnerEnergySource,
+        but can be any type of energysource.
+
         TODO
         """
         energy_source = entities.raw.get(self.name, {"energy_source": None})[
             "energy_source"
         ]
-        if energy_source is not None and energy_source["type"] == "burner":
+        energy_source = self.prototype.get("energy_source", None)
+        if energy_source is not None: # and energy_source["type"] == "burner":
             return energy_source
         else:
             return None
@@ -152,9 +158,8 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
         Returns ``None`` if the name of this entity is not recognized by
         Draftsman. Not exported; read only.
         """
-        energy_source = self.input_energy_source
-        if energy_source is not None:
-            return energy_source.get("fuel_inventory_size", None)
+        if self.input_energy_source is not None:
+            return self.input_energy_source.get("fuel_inventory_size", None)
         else:
             return None
 
@@ -175,7 +180,7 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
 
     # =========================================================================
 
-    @property
+    @property # TODO: cache?
     def allowed_fuel_items(self) -> Optional[set[str]]:
         """
         A set of strings, each one a valid item that can be used as a fuel
@@ -184,7 +189,24 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
         property returns an empty set. Returns ``None`` if this entity is not
         recognized by Draftsman. Not exported; read only.
         """
-        return _valid_fuel_items.get(self.name, None)
+        if self.name not in entities.raw:
+            return None
+        if self.input_energy_source is None:
+            return set()
+        
+        # Fuel types can be specified either as a "categories" list or as a 
+        # single "category"
+        if "fuel_categories" in self.input_energy_source:
+            fuel_categories = self.input_energy_source["fuel_categories"]
+        else:
+            fuel_categories = [
+                self.input_energy_source.get("fuel_category", "chemical")
+            ]
+
+        result = set()
+        for fuel_category in fuel_categories:
+            result.update(items.fuels[fuel_category])
+        return result
 
     # =========================================================================
 

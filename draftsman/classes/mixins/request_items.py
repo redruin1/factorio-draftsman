@@ -5,21 +5,20 @@ from draftsman.data import items
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
-from draftsman.signatures import DraftsmanBaseModel, ItemRequest, uint32, ItemName
+from draftsman.signatures import DraftsmanBaseModel, AttrsItemRequest, ItemRequest, uint32
 from draftsman.utils import reissue_warnings
-from draftsman.warning import ItemLimitationWarning, UnknownItemWarning
 
+import attrs
 from pydantic import Field, ValidationInfo, field_validator
 from copy import deepcopy
 
-from typing import Literal, Optional, Union
+from typing import Literal, Optional
 
 
+@attrs.define(slots=False)
 class RequestItemsMixin:
     """
     Enables an entity to request items during its construction.
-
-    Not to be confused with
 
     Note that this
     is *not* for Logistics requests such as requester and buffer chests (that's
@@ -71,12 +70,12 @@ class RequestItemsMixin:
 
         #     return value
 
-    def __init__(self, name: str, similar_entities: list[str], **kwargs):
-        self._root: __class__.Format
+    # def __init__(self, name: str, similar_entities: list[str], **kwargs):
+    #     self._root: __class__.Format
 
-        super().__init__(name, similar_entities, **kwargs)
+    #     super().__init__(name, similar_entities, **kwargs)
 
-        self.items = kwargs.get("items", {})
+    #     self.items = kwargs.get("items", {})
 
     # =========================================================================
 
@@ -86,36 +85,44 @@ class RequestItemsMixin:
 
     # =========================================================================
 
-    @property
-    def items(self) -> Optional[list[ItemRequest]]:
-        """
-        TODO
-        """
-        return self._root.items
+    items: Optional[list[AttrsItemRequest]] = attrs.field(
+        factory=list,
+        # TODO: validators
+    )
+    """
+    TODO
+    """
 
-    @items.setter
-    def items(self, value: Optional[list[ItemRequest]]) -> None:
-        if self.validate_assignment:
-            # In the validator functions for `items`, we use a lot of internal
-            # properties that operate on the current items value instead of the
-            # items value that we're setting
-            # Thus, in order for those to work, we set the items to the new
-            # value first, check for errors, and revert it back to the original
-            # value if it fails for whatever reason
-            try:
-                original_items = self._root.items
-                self._root.items = value
-                value = attempt_and_reissue(
-                    self, type(self).Format, self._root, "items", value
-                )
-            except DataFormatError as e:
-                self._root.items = original_items
-                raise e
+    # @property
+    # def items(self) -> Optional[list[ItemRequest]]:
+    #     """
+    #     TODO
+    #     """
+    #     return self._root.items
 
-        if value is None:
-            self._root.items = []
-        else:
-            self._root.items = value
+    # @items.setter
+    # def items(self, value: Optional[list[ItemRequest]]) -> None:
+    #     if self.validate_assignment:
+    #         # In the validator functions for `items`, we use a lot of internal
+    #         # properties that operate on the current items value instead of the
+    #         # items value that we're setting
+    #         # Thus, in order for those to work, we set the items to the new
+    #         # value first, check for errors, and revert it back to the original
+    #         # value if it fails for whatever reason
+    #         try:
+    #             original_items = self._root.items
+    #             self._root.items = value
+    #             value = attempt_and_reissue(
+    #                 self, type(self).Format, self._root, "items", value
+    #             )
+    #         except DataFormatError as e:
+    #             self._root.items = original_items
+    #             raise e
+
+    #     if value is None:
+    #         self._root.items = []
+    #     else:
+    #         self._root.items = value
 
     # =========================================================================
 
@@ -177,7 +184,7 @@ class RequestItemsMixin:
                 if slot is None:
                     slot = len(new_items)
                 new_items.append(
-                    {
+                    AttrsItemRequest(**{
                         "id": {"name": item, "quality": quality},
                         "items": {
                             "in_inventory": [
@@ -188,7 +195,7 @@ class RequestItemsMixin:
                                 }
                             ]
                         },
-                    }
+                    })
                 )
             else:
                 # Try to find an existing entry at the same slot in the same inventory
@@ -210,17 +217,7 @@ class RequestItemsMixin:
                     # If so, simply modify the count
                     existing_slot["count"] = count
 
-        try:
-            original_items = self._root.items
-            self._root.items = new_items
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "items", new_items
-            )
-        except DataFormatError as e:
-            self._root.items = original_items
-            raise e
-        else:
-            self._root.items = result
+        self.items = new_items
 
     # =========================================================================
 
@@ -231,5 +228,5 @@ class RequestItemsMixin:
 
     # =========================================================================
 
-    def __eq__(self, other) -> bool:
-        return super().__eq__(other) and self.items == other.items
+    # def __eq__(self, other) -> bool:
+    #     return super().__eq__(other) and self.items == other.items

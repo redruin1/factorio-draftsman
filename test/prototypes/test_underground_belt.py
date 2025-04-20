@@ -44,7 +44,9 @@ class TestUndergroundBelt:
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
             underground_belt = UndergroundBelt.from_dict({
-                "direction": Direction.WEST, "invalid_keyword": 5
+                "name": "underground-belt",
+                "direction": Direction.WEST, 
+                "invalid_keyword": 5
             })
             underground_belt.validate().reissue_all()
 

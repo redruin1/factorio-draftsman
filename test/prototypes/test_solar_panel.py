@@ -17,7 +17,9 @@ class TestSolarPanel:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            SolarPanel(unused_keyword="whatever").validate().reissue_all()
+            SolarPanel.from_dict(
+                {"name": "solar-panel", "unused_keyword": "whatever"}
+            ).validate().reissue_all()
 
         # Errors
         with pytest.warns(UnknownEntityWarning):

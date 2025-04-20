@@ -1,5 +1,6 @@
 # entity.py
 
+from draftsman import __factorio_version_info__
 from draftsman.classes.association import Association
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
@@ -21,9 +22,9 @@ from draftsman.signatures import (
     get_suggestion,
     uint64,
 )
+from draftsman.utils import aabb_to_dimensions, get_first, passes_surface_conditions
 from draftsman.validators import instance_of, and_
-from draftsman.warning import UnknownEntityWarning
-from draftsman import utils, __factorio_version_info__
+from draftsman.warning import GridAlignmentWarning, UnknownEntityWarning
 
 from draftsman.data.planets import get_surface_properties
 
@@ -354,7 +355,7 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     #     # Entity tags
     #     self.tags = kwargs.get("tags", {})
 
-    def __attrs_pre_init__(self):
+    def __attrs_pre_init__(self, **kwargs):
         super(EntityLike).__init__()
 
     def __attrs_post_init__(self):
@@ -370,6 +371,17 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
         the same type.
         """
         return []
+
+    # =========================================================================
+
+    @property
+    def prototype(self) -> dict:
+        """
+        Returns the prototype entry from data.raw for this entity. If the entity
+        has a name which is not recognized, an empty dict is returned instead.
+        Not exported; read only.
+        """
+        return entities.raw.get(self.name, {})
 
     # =========================================================================
 
@@ -423,7 +435,7 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
 
     @name.default
     def get_default_entity(self):
-        return utils.get_first(self.similar_entities)
+        return get_first(self.similar_entities)
 
     # @property
     # def name(self) -> str:
@@ -477,7 +489,7 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
         this entity's name is not recognized when created without validation.
         Not exported; read only.
         """
-        return entities.raw.get(self.name, {"type": None})["type"]
+        return self.prototype.get("type", None)
 
     # =========================================================================
 
@@ -582,6 +594,19 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
             round(self.position.y - self.tile_height / 2),
         )
 
+        if self.validate_assignment and self.double_grid_aligned:
+            if self.tile_position.x % 2 == 1 or self.tile_position.y % 2 == 1:
+                cast_position = Vector(
+                    math.floor(self.tile_position.x / 2) * 2,
+                    math.floor(self.tile_position.y / 2) * 2,
+                )
+                msg = (
+                    "Double-grid aligned entity is not placed along chunk grid; "
+                    "entity's tile position will be cast from {} to {} when "
+                    "imported".format(self.tile_position, cast_position)
+                )
+                warnings.warn(GridAlignmentWarning(msg))
+
     position: _PosVector = attrs.field(
         converter=Vector.from_other, on_setattr=_set_position, metadata={"omit": False}
     )
@@ -667,7 +692,19 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
             self.tile_position.x + self.tile_width / 2,
             self.tile_position.y + self.tile_height / 2,
         )
-        return self.tile_position
+
+        if self.validate_assignment and self.double_grid_aligned:
+            if self.tile_position.x % 2 == 1 or self.tile_position.y % 2 == 1:
+                cast_position = Vector(
+                    math.floor(self.tile_position.x / 2) * 2,
+                    math.floor(self.tile_position.y / 2) * 2,
+                )
+                msg = (
+                    "Double-grid aligned entity is not placed along chunk grid; "
+                    "entity's tile position will be cast from {} to {} when "
+                    "imported".format(self.tile_position, cast_position)
+                )
+                warnings.warn(GridAlignmentWarning(msg))
 
     tile_position: _TileVector = attrs.field(
         converter=Vector.from_other, on_setattr=_set_tile_position
@@ -807,16 +844,16 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
         # We guarantee that the "collision_mask" key will exist during
         # `draftsman-update`, and that it will have it's proper default based
         # on it's type
-        return entities.raw.get(self.name, {"collision_mask": None})["collision_mask"]
+        return self.prototype.get("collision_mask", None)
 
     # =========================================================================
 
-    @property
+    @property  # Cache?
     def tile_width(self) -> int:
-        if "tile_width" in entities.raw.get(self.name, {}):
-            return entities.raw[self.name]["tile_width"]
+        if "tile_width" in self.prototype:
+            return self.prototype["tile_width"]
         else:
-            return utils.aabb_to_dimensions(
+            return aabb_to_dimensions(
                 self.static_collision_set.get_bounding_box()
                 if self.static_collision_set
                 else None
@@ -826,10 +863,10 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
 
     @property  # Cache?
     def tile_height(self) -> int:
-        if "tile_height" in entities.raw.get(self.name, {}):
-            return entities.raw[self.name]["tile_height"]
+        if "tile_height" in self.prototype:
+            return self.prototype["tile_height"]
         else:
-            return utils.aabb_to_dimensions(
+            return aabb_to_dimensions(
                 self.static_collision_set.get_bounding_box()
                 if self.static_collision_set
                 else None
@@ -847,7 +884,7 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
 
             `<https://wiki.factorio.com/Types/EntityPrototypeFlags>`_
         """
-        return entities.raw.get(self.name, {"flags": None}).get("flags", [])
+        return self.prototype.get("flags", None)
 
     # =========================================================================
 
@@ -939,7 +976,7 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
         function always returns `True`.
         """
         surface_properties = get_surface_properties(surface_name)
-        return utils.passes_surface_conditions(
+        return passes_surface_conditions(
             self.surface_conditions, surface_properties
         )
 

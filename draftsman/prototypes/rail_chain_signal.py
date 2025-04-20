@@ -1,23 +1,20 @@
 # rail_chain_signal.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     ReadRailSignalMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     EightWayDirectionalMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID
-from draftsman.utils import get_first
+from draftsman.serialization import draftsman_converters
+from draftsman.signatures import AttrsSignalID
+from draftsman.validators import instance_of
 
 from draftsman.data.entities import rail_chain_signals
 
 import attrs
-from pydantic import ConfigDict, Field
-from typing import Any, Literal, Optional, Union
+from typing import Optional
 
 
 @attrs.define
@@ -97,43 +94,71 @@ class RailChainSignal(
 
     # =========================================================================
 
-    @property
-    def blue_output_signal(self) -> Optional[SignalID]:
-        """
-        The blue output signal. Sent when the rail signal's state is blue.
+    blue_output_signal: Optional[AttrsSignalID] = attrs.field(
+        factory=lambda: AttrsSignalID(name="signal-blue", type="virtual"),
+        converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID])
+    )
+    """
+    The blue output signal. Sent with a unit value when the rail signal's state 
+    is blue.
+    """
 
-        Stored as a ``dict`` in the format ``{"name": str, "type": str}``, where
-        ``name`` is the name of the signal and ``type`` is it's type, either
-        ``"item"``, ``"fluid"``, or ``"signal"``.
+    # @property
+    # def blue_output_signal(self) -> Optional[SignalID]:
+    #     """
+    #     The blue output signal. Sent when the rail signal's state is blue.
 
-        However, because a signal's type is always constant and can be inferred,
-        it is recommended to simply set the attribute to the string name of the
-        signal which will automatically be converted to the above format.
+    #     Stored as a ``dict`` in the format ``{"name": str, "type": str}``, where
+    #     ``name`` is the name of the signal and ``type`` is it's type, either
+    #     ``"item"``, ``"fluid"``, or ``"signal"``.
 
-        :getter: Gets the blue output signal, or ``None`` if not set.
-        :setter: Sets the blue output signal. Removes the key if set to ``None``.
+    #     However, because a signal's type is always constant and can be inferred,
+    #     it is recommended to simply set the attribute to the string name of the
+    #     signal which will automatically be converted to the above format.
 
-        :exception InvalidSignalID: If set to a string that is not a valid
-            signal name.
-        :exception DataFormatError: If set to a dict that does not match the
-            dict format specified above.
-        """
-        return self.control_behavior.blue_output_signal
+    #     :getter: Gets the blue output signal, or ``None`` if not set.
+    #     :setter: Sets the blue output signal. Removes the key if set to ``None``.
 
-    @blue_output_signal.setter
-    def blue_output_signal(self, value: Union[str, SignalID, None]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "blue_output_signal",
-                value,
-            )
-            self.control_behavior.blue_output_signal = result
-        else:
-            self.control_behavior.blue_output_signal = value
+    #     :exception InvalidSignalID: If set to a string that is not a valid
+    #         signal name.
+    #     :exception DataFormatError: If set to a dict that does not match the
+    #         dict format specified above.
+    #     """
+    #     return self.control_behavior.blue_output_signal
+
+    # @blue_output_signal.setter
+    # def blue_output_signal(self, value: Union[str, SignalID, None]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior,
+    #             self.control_behavior,
+    #             "blue_output_signal",
+    #             value,
+    #         )
+    #         self.control_behavior.blue_output_signal = result
+    #     else:
+    #         self.control_behavior.blue_output_signal = value
+
+    # =========================================================================
+
+    def merge(self, other: "RailChainSignal"):
+        super().merge(other)
+
+        self.blue_output_signal = other.blue_output_signal
 
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+draftsman_converters.add_schema(
+    {
+        "$id": "factorio:rail_chain_signal"
+    },
+    RailChainSignal,
+    lambda fields: {
+        fields.blue_output_signal.name: ("control_behavior", "blue_output_signal")
+    }
+)

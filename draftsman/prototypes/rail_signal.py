@@ -1,7 +1,6 @@
 # rail_signal.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     ReadRailSignalMixin,
     CircuitConditionMixin,
@@ -11,9 +10,9 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.serialization import draftsman_converters, finalize_fields
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import Connections, DraftsmanBaseModel
-from draftsman.utils import get_first
+from draftsman.validators import instance_of
 
 from draftsman.data.entities import rail_signals
 
@@ -22,7 +21,7 @@ from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
-@attrs.define(field_transformer=finalize_fields)
+@attrs.define
 class RailSignal(
     ReadRailSignalMixin,
     CircuitConditionMixin,
@@ -36,37 +35,37 @@ class RailSignal(
     rail block.
     """
 
-    class Format(
-        ReadRailSignalMixin.Format,
-        CircuitConditionMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        EightWayDirectionalMixin.Format,
-        Entity.Format,
-    ):
-        class ControlBehavior(
-            ReadRailSignalMixin.ControlFormat,
-            CircuitConditionMixin.ControlFormat,
-            DraftsmanBaseModel,
-        ):
-            circuit_close_signal: Optional[bool] = Field(
-                False,
-                description="""
-                Whether or not to have this signal close off if a circuit 
-                condition is met. 'enable_disable' equivalent for train signals.
-                """,
-            )
-            circuit_read_signal: Optional[bool] = Field(
-                True,
-                description="""
-                Whether or not to output the state of this train signal to any
-                connected circuit network.
-                """,
-            )
+    # class Format(
+    #     ReadRailSignalMixin.Format,
+    #     CircuitConditionMixin.Format,
+    #     ControlBehaviorMixin.Format,
+    #     CircuitConnectableMixin.Format,
+    #     EightWayDirectionalMixin.Format,
+    #     Entity.Format,
+    # ):
+    #     class ControlBehavior(
+    #         ReadRailSignalMixin.ControlFormat,
+    #         CircuitConditionMixin.ControlFormat,
+    #         DraftsmanBaseModel,
+    #     ):
+    #         circuit_close_signal: Optional[bool] = Field(
+    #             False,
+    #             description="""
+    #             Whether or not to have this signal close off if a circuit 
+    #             condition is met. 'enable_disable' equivalent for train signals.
+    #             """,
+    #         )
+    #         circuit_read_signal: Optional[bool] = Field(
+    #             True,
+    #             description="""
+    #             Whether or not to output the state of this train signal to any
+    #             connected circuit network.
+    #             """,
+    #         )
 
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        model_config = ConfigDict(title="RailSignal")
+    #     model_config = ConfigDict(title="RailSignal")
 
     # def __init__(
     #     self,
@@ -115,7 +114,7 @@ class RailSignal(
 
     enable_disable: bool = attrs.field(
         default=False,
-        validator=attrs.validators.instance_of(bool),
+        validator=instance_of(bool),
     )
     """
     Whether or not a connected circuit network should control the state of this
@@ -144,7 +143,7 @@ class RailSignal(
 
     read_signal: bool = attrs.field(
         default=True,
-        validator=attrs.validators.instance_of(bool),
+        validator=instance_of(bool),
     )
     """
     Whether or not to read the state of the rail signal as their output
@@ -182,12 +181,11 @@ class RailSignal(
 
     # =========================================================================
 
-    # __hash__ = Entity.__hash__
+    __hash__ = Entity.__hash__
 
 
-# TODO: versioning
 draftsman_converters.add_schema(
-    {"$id": "factorio:lamp_v2.0"},
+    {"$id": "factorio:lamp"},
     RailSignal,
     lambda fields: {
         fields.enable_disable.name: ("control_behavior", "circuit_close_signal"),

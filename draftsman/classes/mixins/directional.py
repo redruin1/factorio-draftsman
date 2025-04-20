@@ -2,11 +2,14 @@
 
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.constants import Direction, ValidationMode
+from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
-from draftsman.validators import enum_converter, instance_of
+from draftsman.validators import and_, enum_converter, instance_of
+from draftsman.utils import aabb_to_dimensions, get_first
 from draftsman.warning import DirectionWarning
 
 import attrs
+import functools
 from pydantic import (
     BaseModel,
     Field,
@@ -14,6 +17,7 @@ from pydantic import (
     field_validator,
 )
 from typing import Any, Optional
+import warnings
 
 from typing import TYPE_CHECKING
 
@@ -21,6 +25,15 @@ if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 _rotated_collision_sets: dict[str, list[CollisionSet]] = {}
+
+# def replace_init(cls):
+#     original_init = cls.__init__
+
+#     def new_init(self, *args, **kwargs):
+#         self.__attrs_pre_init__(*args, **kwargs)
+#         original_init(*args, **kwargs)
+
+#     return cls
 
 
 @attrs.define(slots=False)
@@ -72,6 +85,65 @@ class DirectionalMixin:
                 return output
             else:
                 return input
+
+    def __attrs_pre_init__(self, name=attrs.NOTHING, first_call=None, **kwargs):
+        # Make sure this is the first time calling pre-init (bugfix until attrs
+        # is patched)
+        if not first_call:
+            return
+        print("first_call")
+        # print(args)
+        print(kwargs)
+
+        # Call parent pre-init
+        super().__attrs_pre_init__()
+        # name = kwargs.get("name", get_first(self.similar_entities))
+        name = name if name is not attrs.NOTHING else get_first(self.similar_entities)
+        # print(name)
+        
+        # We generate collision sets on an as-needed basis for each unique 
+        # entity that is instantiated
+        # Automatically generate a set of rotated collision sets for every
+        # orientation
+        try:
+            _rotated_collision_sets[name]
+        except KeyError:
+            # Automatically generate a set of rotated collision sets for every
+            # orientation
+            # TODO: would probably be better to do this in env.py, but how?
+            known_collision_set = entities.collision_sets.get(name, None)
+            if known_collision_set:
+                _rotated_collision_sets[name] = {}
+                for i in {
+                    Direction.NORTH,
+                    Direction.EAST,
+                    Direction.SOUTH,
+                    Direction.WEST,
+                }:
+                    _rotated_collision_sets[name][i] = known_collision_set.rotate(
+                        i
+                    )
+            else:
+                _rotated_collision_sets[name] = {}
+                for i in {
+                    Direction.NORTH,
+                    Direction.EAST,
+                    Direction.SOUTH,
+                    Direction.WEST,
+                }:
+                    _rotated_collision_sets[name][i] = None
+
+        # The default position function uses `tile_width`/`tile_height`, which
+        # use `collision_set`, which for rotatable entities is derived from the
+        # current `direction`. However, since direction is specified *after* 
+        # position sequentially (and there is no way to easily rearrange them
+        # since they are inherited), we need to manually "patch" the given value
+        # of direction before the rest of the attribute setting code has run.
+        # We use `object.__setattr__()` to circumvent the fact that we gave
+        # `direction` a custom setattr function and mimic a "raw" attribute set.
+        direction = kwargs.get("direction", Direction.NORTH)
+        object.__setattr__(self, "direction", direction)
+
 
     # def __init__(
     #     self,
@@ -150,37 +222,89 @@ class DirectionalMixin:
         Whether or not the tile width of this entity matches it's tile height.
         Not exported; read only.
         """
-        return (
-            self._tile_width == self._tile_height
-        )  # TODO: should be property accesses
+        return self.tile_width == self.tile_height
 
     # =========================================================================
 
     @property
-    def static_collision_set(self) -> Optional[CollisionSet]:
-        # return _rotated_collision_sets.get(self.name, {}).get(Direction.NORTH, None)
-        return super().collision_set
+    def static_tile_width(self) -> int:
+        """
+        The width of the entity irrespective of it's current orientation. 
+        Equivalent to the :py:attr:`.tile_width` when the entity is facing north.
+        """
+        return super().tile_width
+    
+    # =========================================================================
 
+    @property
+    def static_tile_height(self) -> int:
+        """
+        The height of the entity irrespective of it's current orientation. 
+        Equivalent to the :py:attr:`.tile_width` when the entity is facing north.
+        """
+        return super().tile_height
+    
     # =========================================================================
 
     @property
     def collision_set(self) -> Optional[CollisionSet]:
         return _rotated_collision_sets.get(self.name, {}).get(self.direction, None)
+    
+    # =========================================================================
+
+    @property  # Cache?
+    def tile_width(self) -> int:
+        if "tile_width" in self.prototype and "tile_height" in self.prototype:
+            if self.direction in {Direction.EAST, Direction.WEST}:
+                return self.prototype["tile_height"]
+            else:
+                return self.prototype["tile_width"]
+        else:
+            return aabb_to_dimensions(
+                self.collision_set.get_bounding_box()
+                if self.collision_set
+                else None
+            )[0]
+
+    # =========================================================================
+
+    @property  # Cache?
+    def tile_height(self) -> int:
+        if "tile_width" in self.prototype and "tile_height" in self.prototype:
+            if self.direction in {Direction.EAST, Direction.WEST}:
+                return self.prototype["tile_width"]
+            else:
+                return self.prototype["tile_height"]
+        else:
+            return aabb_to_dimensions(
+                self.collision_set.get_bounding_box()
+                if self.collision_set
+                else None
+            )[1]
 
     # =========================================================================
 
     def _set_direction(self, _: attrs.Attribute, value: Any):
         self.direction = value
 
-        # TODO: update collision set
-
         if not self.square:
             self.tile_position = self.tile_position
+
+    def ensure_4_way_direction(self, _: attrs.Attribute, value: Any, mode: Optional[ValidationMode] = None):
+        mode = mode if mode is not None else self.validate_assignment
+        if mode >= ValidationMode.STRICT:
+            if value not in {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST}:
+                # TODO: should we convert it for the user, or let it be wrong?
+                warnings.warn(DirectionWarning(
+                    "'{}' only has 4-way rotation; will be converted to {} on import".format(
+                        type(self).__name__, Direction(int(value / 4) * 4)
+                    ),
+                ))
 
     direction: Direction = attrs.field(
         default=Direction.NORTH,
         converter=enum_converter(Direction),
-        validator=instance_of(Direction),
+        validator=and_(instance_of(Direction), ensure_4_way_direction),
         on_setattr=_set_direction,
     )
     """
