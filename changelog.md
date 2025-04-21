@@ -1,7 +1,9 @@
 # Changelog
 
 ## 2.0.2
-Fixed #157 (Incompatibility with pydantic>=2.11)
+* Updated `factorio-data` to version `2.0.45` (latest)
+* Fixed #158 (Key "comparator" not found when exporting/importing Constant Combinator)
+* Fixed #157 (Incompatibility with pydantic>=2.11)
 
 ## 2.0.1
 * Updated `factorio-data` to version `2.0.41` (latest)

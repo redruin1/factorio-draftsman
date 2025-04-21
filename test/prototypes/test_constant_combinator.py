@@ -401,6 +401,54 @@ class TestConstantCombinator:  # TODO: reimplement
     #         }
     #     )
 
+    def test_issue_158(self):
+        cc = ConstantCombinator(
+            id="doesnt-import",
+            tile_position=(0, 0),
+            control_behavior={
+                "sections": {
+                    "sections": [
+                        {
+                            "index": 1,
+                            "filters": [
+                                {
+                                    "index": 1,
+                                    "type": "item",
+                                    "name": "iron-plate",
+                                    "quality": "normal",
+                                    "comparator": "=",
+                                    "count": 1,
+                                }
+                            ],
+                        }
+                    ]
+                }
+            },
+        )
+        assert cc.to_dict() == {
+            "name": "constant-combinator",
+            "position": {"x": 0.5, "y": 0.5},
+            "connections": {},
+            "control_behavior": {
+                "sections": {
+                    "sections": [
+                        {
+                            "index": 1,
+                            "filters": [
+                                {
+                                    "index": 1,
+                                    "name": "iron-plate",
+                                    "quality": "normal",
+                                    "comparator": "=",  # Must exist, otherwise error
+                                    "count": 1,
+                                }
+                            ],
+                        }
+                    ]
+                }
+            },
+        }
+
     def test_eq(self):
         cc1 = ConstantCombinator("constant-combinator")
         cc2 = ConstantCombinator("constant-combinator")

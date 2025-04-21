@@ -1309,8 +1309,10 @@ class SignalFilter(DraftsmanBaseModel):
         equal to 'any' quality level.
         """,
     )
-    comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
-        "=", description="Comparison operator when deducing the quality type."
+    # TODO: comparator should have a user default, but should always be exported
+    comparator: Literal[">", "<", "=", "≥", "≤", "≠"] = Field(
+        ...,
+        description="Comparison operator when deducing the quality type.",
     )
     count: int32 = Field(
         ...,

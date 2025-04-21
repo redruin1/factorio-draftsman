@@ -59,7 +59,14 @@ class TestLogisticRequestContainer:
                 "sections": [
                     {
                         "index": 1,
-                        "filters": [{"index": 1, "name": "iron-ore", "count": 100}],
+                        "filters": [
+                            {
+                                "index": 1,
+                                "name": "iron-ore",
+                                "count": 100,
+                                "comparator": "=",
+                            }
+                        ],
                     }
                 ],
                 "request_from_buffers": True,
@@ -67,12 +74,16 @@ class TestLogisticRequestContainer:
         }
 
         request_chest = LogisticRequestContainer(
-            request_filters=[{"index": 1, "name": "iron-ore", "count": 100}]
+            request_filters=[
+                {"index": 1, "name": "iron-ore", "count": 100, "comparator": "="}
+            ]
         )
         assert request_chest.to_dict() == {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
-            "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
+            "request_filters": [
+                {"index": 1, "name": "iron-ore", "count": 100, "comparator": "="}
+            ],
         }
 
         # Warnings
@@ -186,21 +197,21 @@ class TestLogisticRequestContainer:
             ("coal", 300),
         ]
         assert container.sections[-1].filters == [
-            SignalFilter(index=1, name="iron-ore", count=100),
-            SignalFilter(index=2, name="copper-ore", count=200),
-            SignalFilter(index=3, name="coal", count=300),
+            SignalFilter(index=1, name="iron-ore", count=100, comparator="="),
+            SignalFilter(index=2, name="copper-ore", count=200, comparator="="),
+            SignalFilter(index=3, name="coal", count=300, comparator="="),
         ]
 
         # Longhand
         section.filters = [
-            {"index": 1, "name": "iron-ore", "count": 100},
-            {"index": 2, "name": "copper-ore", "count": 200},
-            {"index": 3, "name": "coal", "count": 300},
+            {"index": 1, "name": "iron-ore", "count": 100, "comparator": "="},
+            {"index": 2, "name": "copper-ore", "count": 200, "comparator": "="},
+            {"index": 3, "name": "coal", "count": 300, "comparator": "="},
         ]
         assert container.sections[-1].filters == [
-            SignalFilter(index=1, name="iron-ore", count=100),
-            SignalFilter(index=2, name="copper-ore", count=200),
-            SignalFilter(index=3, name="coal", count=300),
+            SignalFilter(index=1, name="iron-ore", count=100, comparator="="),
+            SignalFilter(index=2, name="copper-ore", count=200, comparator="="),
+            SignalFilter(index=3, name="coal", count=300, comparator="="),
         ]
 
     # def test_set_request_filter(self): # TODO: reimplement
@@ -350,7 +361,12 @@ class TestLogisticRequestContainer:
                     {
                         "index": 1,
                         "filters": [
-                            {"name": "utility-science-pack", "index": 1, "count": 10}
+                            {
+                                "name": "utility-science-pack",
+                                "index": 1,
+                                "count": 10,
+                                "comparator": "=",
+                            }
                         ],
                     }
                 ]
@@ -369,7 +385,12 @@ class TestLogisticRequestContainer:
                     {
                         "index": 1,
                         "filters": [
-                            {"name": "utility-science-pack", "index": 1, "count": 10}
+                            {
+                                "name": "utility-science-pack",
+                                "index": 1,
+                                "count": 10,
+                                "comparator": "=",
+                            }
                         ],
                     }
                 ]
