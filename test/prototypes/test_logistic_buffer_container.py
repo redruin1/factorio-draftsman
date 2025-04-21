@@ -142,7 +142,12 @@ class TestLogisticBufferContainer:
                     {
                         "index": 1,
                         "filters": [
-                            {"name": "utility-science-pack", "index": 1, "count": 10}
+                            {
+                                "name": "utility-science-pack",
+                                "index": 1,
+                                "count": 10,
+                                "comparator": "=",
+                            }
                         ],
                     }
                 ]
@@ -160,7 +165,12 @@ class TestLogisticBufferContainer:
                 {
                     "index": 1,
                     "filters": [
-                        {"name": "utility-science-pack", "index": 1, "count": 10}
+                        {
+                            "name": "utility-science-pack",
+                            "index": 1,
+                            "count": 10,
+                            "comparator": "=",
+                        }
                     ],
                 }
             ]
