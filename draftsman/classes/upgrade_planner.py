@@ -77,7 +77,7 @@ def check_valid_upgrade_pair(
     ):
         unrecognized.append(
             UnknownElementWarning(
-                "Unrecognized entity/item '{}'".format(from_obj["name"])
+                "Unrecognized entity/item '{}'".format(from_obj.name)
             )
         )
     if (
@@ -87,7 +87,7 @@ def check_valid_upgrade_pair(
     ):
         unrecognized.append(
             UnknownElementWarning(
-                "Unrecognized entity/item '{}'".format(to_obj["name"])
+                "Unrecognized entity/item '{}'".format(to_obj.name)
             )
         )
     if unrecognized:
@@ -608,7 +608,6 @@ class UpgradePlanner(Blueprintable):
                         )
                     )
 
-            print("in func warnings:", warning_list)
             for warning in warning_list:
                 warnings.warn(warning)
 
@@ -617,7 +616,7 @@ class UpgradePlanner(Blueprintable):
         converter=_convert_mappers,
         validator=and_(
             instance_of(list), _instance_of_mappers_validator, _ensure_valid_mappings
-        ),  # TODO: validators
+        ),
     )
     """
     The list of mappings of one entity or item type to the other entity or

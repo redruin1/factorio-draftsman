@@ -205,30 +205,6 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
         """
         return self
 
-    # def __deepcopy__(self, memo: dict) -> "EntityLike":
-    #     """
-    #     We override the default deepcopy method so that we don't get infinite
-    #     recursion when attempting to copy it's 'parent' attribute. We instead
-    #     set it to ``None`` because we don't want entities to have a parent if
-    #     they are not in an :py:class:`.EntityCollection`.
-
-    #     This means that if you attempt to deepcopy an Entity that exists within
-    #     an EntityCollection, that copied entity will *not* be inside of that
-    #     EntityCollection, and will have to be added manually. If instead the
-    #     *entire* EntityCollection is deepcopied, then the parent will be the
-    #     copied EntityCollection and everything *should* remain correct.
-
-    #     See `here <https://github.com/redruin1/factorio-draftsman/issues/22>`
-    #     for more information.
-
-    #     :returns: A copy of the EntityLike.
-    #     """
-    #     cls = self.__class__
-    #     result = cls.__new__(cls)
-    #     memo[id(self)] = result
-    #     for k, v in self.__dict__.items():
-    #         if k == "_parent":
-    #             setattr(result, k, None)
-    #         else:
-    #             setattr(result, k, copy.deepcopy(v, memo))
-    #     return result
+    # @abstractmethod # TODO
+    # def validate():
+    #     pass

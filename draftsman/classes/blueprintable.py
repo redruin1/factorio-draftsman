@@ -389,7 +389,9 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     # =========================================================================
 
     def _icons_converter(value):
-        if isinstance(value, list):
+        if value is None:
+            return []
+        elif isinstance(value, Sequence) and not isinstance(value, str):
             res = [None] * len(value)
             for i, elem in enumerate(value):
                 if isinstance(elem, str):
@@ -406,7 +408,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     icons: list[AttrsIcon] = attrs.field(
         factory=list,
         converter=_icons_converter,
-        validator=instance_of(list),  # TODO: validators + converters
+        validator=instance_of(list),  # TODO: validators
     )
     """
     The visible icons of the blueprintable, as shown in the icon in

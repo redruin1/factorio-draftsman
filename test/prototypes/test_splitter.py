@@ -47,7 +47,7 @@ class TestSplitter:
         with pytest.warns(UnknownEntityWarning):
             Splitter("this is not a splitter").validate().reissue_all()
 
-        with pytest.raises(UnknownItemWarning):
+        with pytest.warns(UnknownItemWarning):
             Splitter("splitter", filter="wrong")
 
         # Errors

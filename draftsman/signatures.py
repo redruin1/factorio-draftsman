@@ -986,9 +986,9 @@ def normalize_comparator(value):
 
 
 Comparator = Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="]
-draftsman_converters.register_unstructure_hook(
-    Comparator, lambda inst: normalize_comparator(inst)
-)
+# draftsman_converters.register_unstructure_hook(
+#     Comparator, lambda inst: normalize_comparator(inst)
+# )
 
 
 @attrs.define
@@ -1000,7 +1000,7 @@ class AttrsSimpleCondition(Exportable):
     )
     comparator: Comparator = attrs.field(
         default="<",
-        # converter=normalize_comparator
+        converter=try_convert(normalize_comparator),
         validator=one_of(Comparator),
     )
     constant: int32 = attrs.field(default=0, validator=instance_of(int32))
@@ -1281,7 +1281,11 @@ class AttrsItemFilter(Exportable):
     """
     Quality flag of the item.
     """
-    comparator: Comparator = attrs.field(default="=", validator=one_of(Comparator))
+    comparator: Comparator = attrs.field(
+        default="=", 
+        converter=try_convert(normalize_comparator),
+        validator=one_of(Comparator)
+    )
     """
     Comparator if filtering a range of different qualities.
     """
@@ -1555,8 +1559,8 @@ class AttrsSignalFilter(Exportable):
     """
     comparator: Comparator = attrs.field(
         default="=",
-        # TODO: converter from double forms
-        # validator=one_of(Comparator), # TODO: validator
+        converter=try_convert(normalize_comparator),
+        validator=one_of(Comparator),
         metadata={"omit": False},
     )
     """

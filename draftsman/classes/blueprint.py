@@ -78,6 +78,7 @@
     }
 """
 
+import draftsman
 from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.association import Association
 from draftsman.classes.blueprintable import Blueprintable
@@ -358,16 +359,8 @@ def _normalize_internal_structure(
                 stock_connection["back"] = get_index(stock_connection["back"])
 
 
-def custom_define(cls):
-    model_validators = [
-        v for _, v in cls.__dict__.items() if hasattr(v, "__attrs_class_validator__")
-    ]
-    cls = attrs.define(cls)
-    cls.__attrs_class_validators__ = model_validators
-    return cls
 
-
-@custom_define
+@draftsman.define
 class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     """
     Factorio Blueprint class. Contains and maintains a list of ``EntityLikes``
@@ -1440,65 +1433,12 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                 )
                 raise UnreasonablySizedBlueprintError(msg)
 
-    # def __eq__(self, other: Any) -> bool:
-    #     if not isinstance(other, Blueprint):
-    #         return NotImplemented
-
-    #     return (
-    #         self.label == other.label
-    #         and self.label_color == other.label_color
-    #         and self.description == other.description
-    #         and self.icons == other.icons
-    #         and self.version == other.version
-    #         and self.snapping_grid_size == other.snapping_grid_size
-    #         and self.snapping_grid_position == other.snapping_grid_position
-    #         and self.absolute_snapping == other.absolute_snapping
-    #         and self.position_relative_to_grid == other.position_relative_to_grid
-    #         and self.entities == other.entities
-    #         and self.tiles == other.tiles
-    #         and self.schedules == other.schedules
-    #     )
+    # =========================================================================
 
     def __deepcopy__(self, memo: dict) -> "Blueprint":
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
-
-        # Make sure we copy "_entity_hashmap" first so we don't get
-        # OverlappingEntitiesWarnings
-        # v = getattr(self, "_entity_map")
-        # setattr(result, "_entity_map", copy.deepcopy(v, memo))
-        # result.entity_map.clear()
-
-        # # We copy everything else, save for the 'root' dictionary, because
-        # # deepcopying those depend on some of the other attributes, so we load
-        # # those first
-        # for k, v in self.__dict__.items():
-        #     if k == "_entity_map" or k == "_root":
-        #         continue
-        #     else:
-        #         setattr(result, k, copy.deepcopy(v, memo))
-
-        # Finally we can copy the root (most notably EntityList)
-        # root = getattr(self, "_root")
-        # copied_dict = {}
-        # copied_dict["blueprint"] = {}
-        # for rk, rv in root["blueprint"].model_fields.items():
-        #     if rk == "entities":
-        #         # Create a copy of EntityList with copied self as new
-        #         # parent so that `result.entities[0].parent` will be
-        #         # `result`
-        #         memo["new_parent"] = result  # This is hacky, but fugg it
-        #         copied_dict["blueprint"][rk] = copy.deepcopy(rv, memo)
-        #     else:
-        #         copied_dict["blueprint"][rk] = copy.deepcopy(rv, memo)
-        # # Dont forget index (if present)
-        # if "index" in root:
-        #     copied_dict["index"] = copy.deepcopy(root["index"], memo)
-
-        # setattr(result, "_root", copied_dict)
-
-        # root = getattr(self, "_root")
 
         def swap_association(original_association):
             """
@@ -1536,12 +1476,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                 object.__setattr__(
                     result, attr.name, copy.deepcopy(getattr(self, attr.name), memo)
                 )
-            
-
-        # root_copy = copy.deepcopy(root, memo)
-
-        # setattr(result, "_root", root_copy)
-        # setattr(result, "_root_item", self._root_item)
 
         return result
 

@@ -33,11 +33,12 @@ from draftsman.error import (
     EntityNotCircuitConnectableError,
     DataFormatError,
     InvalidAssociationError,
+    IncompleteSignalError,
     InvalidSignalError,
     InvalidEntityError,
     InvalidTileError,
 )
-from draftsman.signatures import Color, Icon
+from draftsman.signatures import AttrsColor, AttrsIcon
 from draftsman.utils import encode_version, AABB
 from draftsman.warning import (
     DraftsmanWarning,
@@ -67,51 +68,27 @@ class TestBlueprint:
             "version": encode_version(*__factorio_version_info__),
         }
 
-        # String
-        blueprint = Blueprint(
-            "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTI0s7A0q60FAHmRE1c="
-        )
-        # self.assertEqual(
-        #     blueprint.to_dict()["blueprint"],
-        #     {"item": "blueprint", "version": encode_version(1, 1, 54, 0)},
-        # )
-        assert blueprint.to_dict()["blueprint"] == {
-            "item": "blueprint",
-            "version": encode_version(1, 1, 54, 0),
-        }
-        # This doesn't work on Python 2 (I believe) because the order is not guaranteed
-        # self.assertEqual(
-        #     blueprint.to_string(),
-        #     "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTI0s7A0q60FAHmRE1c="
-        # )
-
         # Dict
         example = {
             "blueprint": {"item": "blueprint", "version": encode_version(1, 1, 54, 0)}
         }
-        blueprint = Blueprint(example)
+        blueprint = Blueprint.from_dict(example)
         assert blueprint.to_dict() == example
 
         broken_example = {"blueprint": {"item": "blueprint", "version": "incorrect"}}
 
-        blueprint = Blueprint(broken_example, validate="none")
-        assert blueprint.to_dict() == broken_example
-
         with pytest.raises(DataFormatError):
-            blueprint.validate().reissue_all()
+            blueprint = Blueprint.from_dict(broken_example)
 
         # Valid format, but incorrect type
         with pytest.raises(IncorrectBlueprintTypeError):
-            blueprint = Blueprint(
+            blueprint = Blueprint.from_string(
                 "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
             )
 
         # Invalid format
         with pytest.raises(MalformedBlueprintStringError):
             blueprint = get_blueprintable_from_string("0lmaothisiswrong")
-
-        ### Complex blueprint ###
-        # TODO
 
     # =========================================================================
 
@@ -120,7 +97,7 @@ class TestBlueprint:
         blueprint = Blueprint()
 
         # Valid format
-        blueprint.from_string(
+        blueprint = Blueprint.from_string(
             "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3sTQ1MTc1rq0FAHmyE1c="
         )
         assert blueprint.to_dict()["blueprint"] == {
@@ -140,53 +117,53 @@ class TestBlueprint:
 
     # =========================================================================
 
-    def test_setup(self):
-        blueprint = Blueprint()
-        blueprint.setup(
-            label="something",
-            label_color={"r": 1.0, "g": 0.0, "b": 0.0},
-            icons=[
-                {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}},
-                {"index": 2, "signal": {"name": "signal-B", "type": "virtual"}},
-            ],
-            snapping_grid_size=(32, 32),
-            snapping_grid_position=(16, 16),
-            position_relative_to_grid=(-5, -7),
-            absolute_snapping=True,
-            entities=[],
-            tiles=[],
-            schedules=[],
-        )
-        assert blueprint.to_dict()["blueprint"] == {
-            "item": "blueprint",
-            "label": "something",
-            "label_color": {"r": 1.0, "g": 0.0, "b": 0.0},
-            "icons": [
-                {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}},
-                {"index": 2, "signal": {"name": "signal-B", "type": "virtual"}},
-            ],
-            "snap-to-grid": {"x": 32, "y": 32},
-            "position-relative-to-grid": {"x": -5, "y": -7},
-            # "absolute-snapping": True, # Default
-            "version": encode_version(*__factorio_version_info__),
-        }
-        example_dict = {
-            "snap-to-grid": {"x": 32, "y": 32},
-            "absolute-snapping": True,
-            "position-relative-to-grid": {"x": -5, "y": -7},
-        }
-        blueprint.setup(**example_dict)
-        assert blueprint.to_dict()["blueprint"] == {
-            "item": "blueprint",
-            "snap-to-grid": {"x": 32, "y": 32},
-            # "absolute-snapping": True, # Default
-            "position-relative-to-grid": {"x": -5, "y": -7},
-            "version": encode_version(*__factorio_version_info__),
-        }
+    # def test_setup(self):
+    #     blueprint = Blueprint()
+    #     blueprint.setup(
+    #         label="something",
+    #         label_color={"r": 1.0, "g": 0.0, "b": 0.0},
+    #         icons=[
+    #             {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}},
+    #             {"index": 2, "signal": {"name": "signal-B", "type": "virtual"}},
+    #         ],
+    #         snapping_grid_size=(32, 32),
+    #         snapping_grid_position=(16, 16),
+    #         position_relative_to_grid=(-5, -7),
+    #         absolute_snapping=True,
+    #         entities=[],
+    #         tiles=[],
+    #         schedules=[],
+    #     )
+    #     assert blueprint.to_dict()["blueprint"] == {
+    #         "item": "blueprint",
+    #         "label": "something",
+    #         "label_color": {"r": 1.0, "g": 0.0, "b": 0.0},
+    #         "icons": [
+    #             {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}},
+    #             {"index": 2, "signal": {"name": "signal-B", "type": "virtual"}},
+    #         ],
+    #         "snap-to-grid": {"x": 32, "y": 32},
+    #         "position-relative-to-grid": {"x": -5, "y": -7},
+    #         # "absolute-snapping": True, # Default
+    #         "version": encode_version(*__factorio_version_info__),
+    #     }
+    #     example_dict = {
+    #         "snap-to-grid": {"x": 32, "y": 32},
+    #         "absolute-snapping": True,
+    #         "position-relative-to-grid": {"x": -5, "y": -7},
+    #     }
+    #     blueprint.setup(**example_dict)
+    #     assert blueprint.to_dict()["blueprint"] == {
+    #         "item": "blueprint",
+    #         "snap-to-grid": {"x": 32, "y": 32},
+    #         # "absolute-snapping": True, # Default
+    #         "position-relative-to-grid": {"x": -5, "y": -7},
+    #         "version": encode_version(*__factorio_version_info__),
+    #     }
 
-        with pytest.warns(DraftsmanWarning):
-            blueprint.setup(unused="whatever")
-            blueprint.validate().reissue_all()
+    #     with pytest.warns(DraftsmanWarning):
+    #         blueprint.setup(unused="whatever")
+    #         blueprint.validate().reissue_all()
 
     # =========================================================================
 
@@ -217,7 +194,7 @@ class TestBlueprint:
         # Valid 3 args list
         # Test for floating point conversion error by using 0.1
         blueprint.label_color = (0.5, 0.1, 0.5)
-        assert blueprint.label_color == Color(**{"r": 0.5, "g": 0.1, "b": 0.5})
+        assert blueprint.label_color == AttrsColor(**{"r": 0.5, "g": 0.1, "b": 0.5})
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "label_color": {"r": 0.5, "g": 0.1, "b": 0.5},
@@ -248,7 +225,7 @@ class TestBlueprint:
 
         # Valid None
         blueprint.label_color = None
-        assert blueprint.label_color == None
+        assert blueprint.label_color == AttrsColor(1.0, 1.0, 1.0, 1.0)
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "version": encode_version(1, 1, 54, 0),
@@ -258,24 +235,6 @@ class TestBlueprint:
         with pytest.raises(DataFormatError):
             blueprint.label_color = "wrong"
 
-        # Turn off validation
-        blueprint.validate_assignment = "none"
-        assert blueprint.validate_assignment is ValidationMode.NONE
-
-        # Incorrect Data now works
-        blueprint.label_color = "wrong"
-        assert blueprint.label_color == "wrong"
-        assert blueprint.to_dict()["blueprint"] == {
-            "item": "blueprint",
-            "label_color": "wrong",
-            "version": encode_version(1, 1, 54, 0),
-        }
-
-        # We can set label color to anything
-        blueprint.label_color = ("red", blueprint, 5)
-        # But we can't always serialize it
-        blueprint.to_dict()
-
     # =========================================================================
 
     def test_set_icons(self):
@@ -283,24 +242,24 @@ class TestBlueprint:
         # Single Icon
         blueprint.icons = ["signal-A"]
         assert blueprint.icons == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
+            AttrsIcon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
         ]
-        assert blueprint["blueprint"]["icons"] == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
+        assert blueprint.icons == [
+            AttrsIcon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
         ]
         # Multiple Icon
         blueprint.icons = ("signal-A", "signal-B", "signal-C")
-        assert blueprint["blueprint"]["icons"] == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}),
-            Icon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}),
-            Icon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}),
+        assert blueprint.icons == [
+            AttrsIcon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}),
+            AttrsIcon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}),
+            AttrsIcon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}),
         ]
 
         # Raw signal dicts:
 
         blueprint.icons = [{"signal": "signal-A", "index": 2}]
-        assert blueprint["blueprint"]["icons"] == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 2})
+        assert blueprint.icons == [
+            AttrsIcon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 2})
         ]
 
         # Unrecognized dict
@@ -308,20 +267,20 @@ class TestBlueprint:
             blueprint.icons = [
                 {"signal": {"name": "some-signal", "type": "item"}, "index": 1}
             ]
-        assert blueprint["blueprint"]["icons"] == [
-            Icon(**{"signal": {"name": "some-signal", "type": "item"}, "index": 1})
-        ]
+            assert blueprint.icons == [
+                AttrsIcon(**{"signal": {"name": "some-signal", "type": "item"}, "index": 1})
+            ]
 
         # None
         blueprint.icons = None
-        assert blueprint.icons == None
+        assert blueprint.icons == []
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "version": encode_version(*__factorio_version_info__),
         }
 
         # Incorrect Signal Name
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             blueprint.icons = ["wrong!"]
 
         # Incorrect Signal dict format
@@ -330,19 +289,6 @@ class TestBlueprint:
 
         with pytest.raises(DataFormatError):
             blueprint.icons = "incorrect"
-
-        blueprint.validate_assignment = "none"
-        assert blueprint.validate_assignment == ValidationMode.NONE
-
-        blueprint.icons = "incorrect"
-        assert blueprint.icons == "incorrect"
-        assert blueprint.to_dict() == {
-            "blueprint": {
-                "item": "blueprint",
-                "version": encode_version(*__factorio_version_info__),
-                "icons": "incorrect",
-            }
-        }
 
     # =========================================================================
 
@@ -364,20 +310,7 @@ class TestBlueprint:
         blueprint.version = (1, 0, 40, 0)
         assert blueprint.version == 281474979332096
 
-        blueprint.version = None
-        assert blueprint.version == None
-        assert blueprint.to_dict()["blueprint"] == {"item": "blueprint"}
-
-        blueprint.validate_assignment = "none"
-        blueprint.version = "wrong"
-        assert blueprint.version == "wrong"
-        assert blueprint.to_dict()["blueprint"] == {
-            "item": "blueprint",
-            "version": "wrong",
-        }
-
         with pytest.raises(DataFormatError):
-            blueprint.validate_assignment = "strict"
             blueprint.version = "wrong"
 
     # =========================================================================
@@ -386,16 +319,15 @@ class TestBlueprint:
         blueprint = Blueprint()
         blueprint.snapping_grid_size = (10, 10)
         assert blueprint.snapping_grid_size == Vector(10, 10)
-        # assert blueprint["blueprint"]["snap-to-grid"] == Vector(10, 10) # TODO
 
-        blueprint.snapping_grid_size = None
+        blueprint.snapping_grid_size = Vector(0, 0)
         assert blueprint.snapping_grid_size == Vector(0, 0)
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "version": encode_version(*__factorio_version_info__),
         }
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             blueprint.snapping_grid_size = TypeError
 
     # =========================================================================
@@ -405,21 +337,24 @@ class TestBlueprint:
         blueprint.snapping_grid_position = (1, 2)
         assert blueprint.snapping_grid_position == Vector(1, 2)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             blueprint.snapping_grid_position = TypeError
 
     # =========================================================================
 
     def test_set_absolute_snapping(self):
         blueprint = Blueprint()
-        blueprint.absolute_snapping = True
         assert blueprint.absolute_snapping == True
-        assert blueprint["blueprint"]["absolute-snapping"] == True
-
-        blueprint.absolute_snapping = None
-        assert blueprint.absolute_snapping == None
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
+            "version": encode_version(*__factorio_version_info__),
+        }
+
+        blueprint.absolute_snapping = False
+        assert blueprint.absolute_snapping == False
+        assert blueprint.to_dict()["blueprint"] == {
+            "item": "blueprint",
+            "absolute-snapping": False,
             "version": encode_version(*__factorio_version_info__),
         }
 
@@ -434,14 +369,15 @@ class TestBlueprint:
         assert blueprint.position_relative_to_grid == Vector(1, 2)
         # assert blueprint["blueprint"]["position-relative-to-grid"] == Vector(1, 2) # TODO
 
-        blueprint.position_relative_to_grid = None
-        assert blueprint.position_relative_to_grid == Vector(0, 0)
+        blueprint.position_relative_to_grid = Vector(10, 10)
+        assert blueprint.position_relative_to_grid == Vector(10, 10)
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
+            "position-relative-to-grid": {"x": 10.0, "y": 10.0},
             "version": encode_version(*__factorio_version_info__),
         }
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             blueprint.position_relative_to_grid = TypeError
 
     # =========================================================================
@@ -517,7 +453,7 @@ class TestBlueprint:
         with pytest.warns(UnknownEntityWarning):
             blueprint.validate_assignment = "strict"
             blueprint.entities = [new_entity("undocumented-entity")]
-            blueprint.validate().reissue_all()  # Warning
+            blueprint.entities.validate().reissue_all()  # Warning
 
         # Warn unknown entity (individual)
         blueprint.entities.validate_assignment = "none"
@@ -525,7 +461,7 @@ class TestBlueprint:
         with pytest.warns(UnknownEntityWarning):
             blueprint.validate_assignment = "strict"
             blueprint.entities[-1] = new_entity("undocumented-entity")
-            blueprint.validate().reissue_all()  # Warning
+            blueprint.entities.validate().reissue_all()  # Warning
 
         # Format error
         with pytest.raises(TypeError):

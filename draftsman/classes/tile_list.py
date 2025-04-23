@@ -1,5 +1,6 @@
 # tilelist.py
 
+import draftsman
 from draftsman.classes.spatial_hashmap import SpatialDataStructure, SpatialHashMap
 from draftsman.classes.exportable import Exportable, ValidationResult
 from draftsman.constants import ValidationMode
@@ -8,6 +9,7 @@ from draftsman.data import tiles
 from draftsman.error import DataFormatError, InvalidTileError
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import DraftsmanBaseModel
+from draftsman.validators import classvalidator
 
 from collections.abc import MutableSequence
 from copy import deepcopy
@@ -147,43 +149,22 @@ class TileList(Exportable, MutableSequence):
         del self._root[:]
         self.spatial_map.clear()
 
-    # def validate(
-    #     self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
-    # ) -> ValidationResult:
-    #     mode = ValidationMode(mode)
+    def validate(
+        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    ) -> ValidationResult:
+        mode = ValidationMode(mode)
+        output = ValidationResult([], [])
 
-    #     output = ValidationResult([], [])
+        if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
+            return output
 
-    #     if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
-    #         return output
+        for tile in self:
+            # TODO: more sophisticated
+            result = tile.validate(mode=mode, force=force)
+            output.error_list += result.error_list
+            output.warning_list += result.warning_list
 
-    #     context: dict[str, Any] = {
-    #         "mode": mode,
-    #         "object": self,
-    #         "warning_list": [],
-    #         "assignment": False,
-    #     }
-
-    #     try:
-    #         result = self.Format.model_validate(
-    #             {"root": self._root},
-    #             strict=False,  # TODO: ideally this should be strict
-    #             context=context,
-    #         )
-    #         # Reassign private attributes
-    #         # Acquire the newly converted data
-    #         self._root = result["root"]
-    #     except ValidationError as e:  # pragma: no coverage
-    #         output.error_list.append(DataFormatError(e))
-
-    #     output.warning_list += context["warning_list"]
-
-    #     for tile in self:
-    #         result = tile.validate(mode=mode, force=force)
-    #         output.error_list += result.error_list
-    #         output.warning_list += result.warning_list
-
-    #     return output
+        return output
 
     def union(self, other: "TileList") -> "TileList":
         """

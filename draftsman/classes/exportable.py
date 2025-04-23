@@ -430,23 +430,21 @@ class Exportable:
         :returns: A :py:class:`ValidationResult` object containing the
             corresponding errors and warnings.
         """
+        # TODO: I should write my own custom __setattr__ function to every
+        # attrs class, such that errors and warnings are passed through as lists
+        # and each validator adds itself to that list
+        # This will prevent the issues that arise from reissuing warnings, as
+        # warnings in Python are just unbelievably cursed in all aspects
         mode = ValidationMode(mode)
         res = ValidationResult([], [])
         for a in attrs.fields(self.__class__):
-            print("\t", a.name)
             v = a.validator
             if v is not None:
                 with warnings.catch_warnings(record=True) as ws:
                     try:
                         v(self, a, getattr(self, a.name), mode=mode)
-                    # except Warning as w: # Warnings are considered exceptions, ignore
-                    #     print(w)
-                    #     pass
                     except Exception as e:
-                        print("exception")
-                        print(e)
                         res.error_list.append(e)
-                print("warnings:", ws)
                 for warning in ws:
                     res.warning_list.append(warning.message)
         return res
