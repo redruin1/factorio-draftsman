@@ -66,7 +66,7 @@ from draftsman.classes.exportable import ValidationResult, attempt_and_reissue
 from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
-from draftsman.serialization import draftsman_converters, finalize_fields
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import Color, DraftsmanBaseModel, Icon, uint16, uint64
 from draftsman.utils import encode_version, reissue_warnings
 from draftsman.validators import instance_of

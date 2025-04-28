@@ -92,6 +92,55 @@ class TestInserter:
         with pytest.raises(DataFormatError):
             Inserter("inserter", tags="incorrect").validate().reissue_all()
 
+    def test_filter_count(self):
+        assert Inserter("inserter").filter_count == 5
+
+    def test_set_filters(self):
+        inserter = Inserter("inserter")
+
+        with pytest.raises(DataFormatError):
+            inserter.filters = "wrong"
+
+        inserter.set_item_filter(0, item="transport-belt", quality="uncommon", comparator=">=")
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "filters": [
+                {
+                    "index": 1,
+                    "name": "transport-belt",
+                    "quality": "uncommon",
+                    "comparator": "≥"
+                }
+            ]
+        }
+
+        inserter.set_item_filter(0, item="fast-transport-belt")
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "filters": [
+                {
+                    "index": 1,
+                    "name": "fast-transport-belt",
+                }
+            ]
+        }
+
+        inserter.set_item_filter(1, item="express-transport-belt")
+        inserter.set_item_filter(1, item=None)
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "filters": [
+                {
+                    "index": 1,
+                    "name": "fast-transport-belt",
+                }
+            ]
+        }
+
+
     def test_set_spoil_priority(self):
         inserter = Inserter("stack-inserter")
         assert inserter.spoil_priority == None

@@ -245,19 +245,15 @@ class ConverterVersion:
     def add_schema(
         self,
         schema: dict,
-        cls: Optional[type] = None,
+        cls: type,
         structure_func: Optional[Callable] = None,
-        unstructure_func: Optional[set[str]] = None,
+        unstructure_func: Optional[Callable] = None,
     ):
-        if "$id" not in schema:
-            raise ValueError("invalid schema!")
         self.schemas[schema["$id"]] = schema
-        if cls is not None:
-            self.schemas[cls] = schema
-            if structure_func is not None:
-                self.structure_funcs[cls] = structure_func
-            if unstructure_func is not None:
-                self.unstructure_funcs[cls] = unstructure_func
+        self.schemas[cls] = schema
+        self.structure_funcs[cls] = structure_func
+        if unstructure_func is not None:
+            self.unstructure_funcs[cls] = unstructure_func
 
     def get_schema(self, cls):
         return self.schemas[cls]
@@ -379,127 +375,127 @@ draftsman_converters.add_version((1, 0))
 draftsman_converters.add_version((2, 0))
 
 
-def finalize_fields(cls, fields: list[attrs.Attribute]) -> list[attrs.Attribute]:
-    """
-    Iterate over the "locations" in each field metadata and resolve any lambdas
-    to fixed values.
-    """
-    # TODO: better
-    # print([field.name for field in fields])
-    for index, field in enumerate(fields):
-        # print(field)
-        if (
-            not field.validator and not field.converter and not field.metadata
-        ):  # FIXME: scuffed
-            origin = get_origin(field.type)
-            t = origin if origin else field.type
-            # print(t)
-            converter = None
-            validators = []
-            if isinstance(t, Enum):
-                converter = t
-                validators.append(instance_of(t))
-            elif t is Union:
-                union_validators = []
-                # print("union")
-                args = get_args(field.type)
-                for arg in args:
-                    if get_origin(arg) is Annotated:
-                        # print("annotated")
-                        ano_args = get_args(arg)
-                        # print(ano_args)
-                        union_validators.append(ano_args[1])
-                    else:
-                        union_validators.append(instance_of(arg))
-                validators = or_(*union_validators)
-            else:
-                validators.append(instance_of(t))
-            if converter is None:
-                fields[index] = field.evolve(validator=validators)
-            else:
-                fields[index] = field.evolve(converter=converter, validators=validators)
+# def finalize_fields(cls, fields: list[attrs.Attribute]) -> list[attrs.Attribute]:
+#     """
+#     Iterate over the "locations" in each field metadata and resolve any lambdas
+#     to fixed values.
+#     """
+#     # TODO: better
+#     # print([field.name for field in fields])
+#     for index, field in enumerate(fields):
+#         # print(field)
+#         if (
+#             not field.validator and not field.converter and not field.metadata
+#         ):  # FIXME: scuffed
+#             origin = get_origin(field.type)
+#             t = origin if origin else field.type
+#             # print(t)
+#             converter = None
+#             validators = []
+#             if isinstance(t, Enum):
+#                 converter = t
+#                 validators.append(instance_of(t))
+#             elif t is Union:
+#                 union_validators = []
+#                 # print("union")
+#                 args = get_args(field.type)
+#                 for arg in args:
+#                     if get_origin(arg) is Annotated:
+#                         # print("annotated")
+#                         ano_args = get_args(arg)
+#                         # print(ano_args)
+#                         union_validators.append(ano_args[1])
+#                     else:
+#                         union_validators.append(instance_of(arg))
+#                 validators = or_(*union_validators)
+#             else:
+#                 validators.append(instance_of(t))
+#             if converter is None:
+#                 fields[index] = field.evolve(validator=validators)
+#             else:
+#                 fields[index] = field.evolve(converter=converter, validators=validators)
 
-        # Shouldn't need this anymore
-        # if field.metadata is not None and "location" in field.metadata:
-        #     if field.metadata["location"] is None:
-        #         continue
-        #     new_metadata = dict(field.metadata)
-        #     # print(new_metadata)
-        #     l = list(new_metadata["location"])
-        #     for i, item in enumerate(l):
-        #         if callable(item):
-        #             l[i] = item(cls)
-        #     new_metadata["location"] = tuple(l)
-        #     # print(new_metadata)
-        #     fields[index] = field.evolve(metadata=new_metadata)
-        # if issubclass(field.type, Enum):
-        #     print(field.name)
+#         # Shouldn't need this anymore
+#         # if field.metadata is not None and "location" in field.metadata:
+#         #     if field.metadata["location"] is None:
+#         #         continue
+#         #     new_metadata = dict(field.metadata)
+#         #     # print(new_metadata)
+#         #     l = list(new_metadata["location"])
+#         #     for i, item in enumerate(l):
+#         #         if callable(item):
+#         #             l[i] = item(cls)
+#         #     new_metadata["location"] = tuple(l)
+#         #     # print(new_metadata)
+#         #     fields[index] = field.evolve(metadata=new_metadata)
+#         # if issubclass(field.type, Enum):
+#         #     print(field.name)
 
-    # TODO: something more sophisticated might be necessary
-    # fields.sort(key=lambda attr: attr.name)
-    # print([field.name for field in fields])
-    return fields
+#     # TODO: something more sophisticated might be necessary
+#     # fields.sort(key=lambda attr: attr.name)
+#     # print([field.name for field in fields])
+#     return fields
 
 
-def make_structure_function_from_schema(
-    cls: type, converter: cattrs.Converter, schema: dict
-):
-    def try_pop_location(subdict, loc):
-        """
-        Traverse loc and try to pop that item, as well as any subdicts that
-        become empty in the process.
-        """
-        if loc is None:
-            return None
-        if len(loc) == 1:
-            try:
-                return subdict.pop(loc[0], None)
-            except AttributeError:
-                return None
-        if loc[0] not in subdict:
-            return None
-        result = try_pop_location(subdict[loc[0]], loc[1:])
-        if subdict[loc[0]] == {}:
-            subdict.pop(loc[0])
-        return result
+# def make_structure_function_from_schema(
+#     cls: type, converter: cattrs.Converter, schema: dict
+# ):
+#     def try_pop_location(subdict, loc):
+#         """
+#         Traverse loc and try to pop that item, as well as any subdicts that
+#         become empty in the process.
+#         """
+#         if loc is None:
+#             return None
+#         if len(loc) == 1:
+#             try:
+#                 return subdict.pop(loc[0], None)
+#             except AttributeError:
+#                 return None
+#         if loc[0] not in subdict:
+#             return None
+#         result = try_pop_location(subdict[loc[0]], loc[1:])
+#         if subdict[loc[0]] == {}:
+#             subdict.pop(loc[0])
+#         return result
 
-    class_attrs = attrs.fields(cls)
-    # version_data = draftsman_converters.get_version(version_tuple)
-    # location_dict = version_data.get_location_dict(cls)
+#     class_attrs = attrs.fields(cls)
+#     # version_data = draftsman_converters.get_version(version_tuple)
+#     # location_dict = version_data.get_location_dict(cls)
 
-    def structure_hook(input_dict: dict, _: type):
-        res = {}
-        for attr in class_attrs:
-            # attr_name = attr.alias if attr.alias is not None else attr.name
-            # print("attr name:", attr.name, attr.alias)
-            if attr.name not in schema:
-                continue
-            loc = schema[attr.name]
+#     def structure_hook(input_dict: dict, _: type):
+#         res = {}
+#         for attr in class_attrs:
+#             # attr_name = attr.alias if attr.alias is not None else attr.name
+#             # print("attr name:", attr.name, attr.alias)
+#             if attr.name not in schema:
+#                 continue
+#             loc = schema[attr.name]
 
-            value = try_pop_location(input_dict, loc)
-            # print(value)
-            if value is None:
-                continue
-            handler = find_structure_handler(attr, attr.type, converter)
-            if handler is not None:
-                # import inspect
-                # print(inspect.getsource(handler))
-                try:
-                    res[attr.name] = handler(value, attr.type)
-                except Exception as e:
-                    raise DataFormatError(e) from None
-            else:
-                res[attr.name] = value
+#             value = try_pop_location(input_dict, loc)
+#             # print(value)
+#             if value is None:
+#                 continue
+#             handler = find_structure_handler(attr, attr.type, converter)
+#             if handler is not None:
+#                 # import inspect
+#                 # print(inspect.getsource(handler))
+#                 try:
+#                     res[attr.name] = handler(value, attr.type)
+#                 except Exception as e:
+#                     raise DataFormatError(e) from None
+#             else:
+#                 res[attr.name] = value
 
-        if input_dict:
-            res["extra_keys"] = input_dict
+#         if input_dict:
+#             res["extra_keys"] = input_dict
 
-        # print(location_dict)
-        # print(res)
-        return res
-        # return cls(**res)
+#         # print(location_dict)
+#         # print(res)
+#         return res
+#         # return cls(**res)
 
-    return structure_hook
+#     return structure_hook
 
 
 def make_unstructure_function_from_schema(
@@ -532,6 +528,7 @@ def make_unstructure_function_from_schema(
             populate_invocate_tree(invocation_tree["children"][loc[0]], loc[1:], invoke)
 
     for dict_loc, inst_loc in schema.items():
+        print(dict_loc, inst_loc)
         if dict_loc is None or inst_loc is None:
             continue
         handler = None
@@ -584,7 +581,7 @@ def make_unstructure_function_from_schema(
                     t = a.default.__class__
                 try:
                     handler = converter.get_unstructure_hook(t, cache_result=False)
-                except RecursionError:
+                except RecursionError: # pragma: no coverage
                     # There's a circular reference somewhere down the line
                     handler = converter.unstructure
             else:

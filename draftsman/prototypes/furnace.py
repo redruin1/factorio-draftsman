@@ -22,7 +22,7 @@ from pydantic import ConfigDict, ValidationInfo, field_validator
 from typing import Any, Literal, Optional, Union
 
 
-_valid_input_ingredients: dict[str, set[str]] = {}
+# _valid_input_ingredients: dict[str, set[str]] = {}
 
 
 @fix_incorrect_pre_init
@@ -39,78 +39,78 @@ class Furnace(
     An entity that takes a fuel and an input item and creates an output item.
     """
 
-    class Format(
-        InputIngredientsMixin.Format,
-        BurnerEnergySourceMixin.Format,
-        ModulesMixin.Format,
-        RequestItemsMixin.Format,
-        DirectionalMixin.Format,
-        Entity.Format,
-    ):
-        @field_validator("items")
-        @classmethod
-        def ensure_input_ingredients_are_valid(
-            cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-        ):
-            """
-            Warns if the requested input items are not valid ingredients to this
-            entity's recipe list.
-            """
-            if not info.context or value is None:
-                return value
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
+    # class Format(
+    #     InputIngredientsMixin.Format,
+    #     BurnerEnergySourceMixin.Format,
+    #     ModulesMixin.Format,
+    #     RequestItemsMixin.Format,
+    #     DirectionalMixin.Format,
+    #     Entity.Format,
+    # ):
+    #     @field_validator("items")
+    #     @classmethod
+    #     def ensure_input_ingredients_are_valid(
+    #         cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+    #     ):
+    #         """
+    #         Warns if the requested input items are not valid ingredients to this
+    #         entity's recipe list.
+    #         """
+    #         if not info.context or value is None:
+    #             return value
+    #         if info.context["mode"] <= ValidationMode.MINIMUM:
+    #             return value
 
-            entity: "Furnace" = info.context["object"]
-            warning_list: list = info.context["warning_list"]
+    #         entity: "Furnace" = info.context["object"]
+    #         warning_list: list = info.context["warning_list"]
 
-            for item in entity.items:
-                if (
-                    item not in modules.raw
-                    and item not in entity.allowed_input_ingredients
-                ):
-                    warning_list.append(
-                        ItemLimitationWarning(
-                            "Requested item '{}' cannot be smelted by furnace '{}'".format(
-                                item, entity.name
-                            ),
-                        )
-                    )
+    #         for item in entity.items:
+    #             if (
+    #                 item not in modules.raw
+    #                 and item not in entity.allowed_input_ingredients
+    #             ):
+    #                 warning_list.append(
+    #                     ItemLimitationWarning(
+    #                         "Requested item '{}' cannot be smelted by furnace '{}'".format(
+    #                             item, entity.name
+    #                         ),
+    #                     )
+    #                 )
 
-            return value
+    #         return value
 
-        # @field_validator("items") # TODO: reimplement
-        # @classmethod
-        # def ensure_input_ingredients_dont_exceed_stack_size(
-        #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-        # ):
-        #     """
-        #     Warns if the amount of a particular item requested exceeds 1 stack
-        #     of that item, indicating that some items will be returned when
-        #     placed.
-        #     """
-        #     if not info.context or value is None:
-        #         return value
-        #     if info.context["mode"] <= ValidationMode.MINIMUM:
-        #         return value
+    #     # @field_validator("items") # TODO: reimplement
+    #     # @classmethod
+    #     # def ensure_input_ingredients_dont_exceed_stack_size(
+    #     #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+    #     # ):
+    #     #     """
+    #     #     Warns if the amount of a particular item requested exceeds 1 stack
+    #     #     of that item, indicating that some items will be returned when
+    #     #     placed.
+    #     #     """
+    #     #     if not info.context or value is None:
+    #     #         return value
+    #     #     if info.context["mode"] <= ValidationMode.MINIMUM:
+    #     #         return value
 
-        #     entity: "Furnace" = info.context["object"]
-        #     warning_list: list = info.context["warning_list"]
+    #     #     entity: "Furnace" = info.context["object"]
+    #     #     warning_list: list = info.context["warning_list"]
 
-        #     for item in entity.ingredient_items:
-        #         stack_size = items.raw[item["id"]["name"]]["stack_size"]
-        #         if count > stack_size:
-        #             warning_list.append(
-        #                 ItemCapacityWarning(
-        #                     "Cannot request more than {} of '{}' to a '{}'; will not fit in ingredient inputs".format(
-        #                         stack_size, item, entity.name
-        #                     )
-        #                 )
-        #             )
+    #     #     for item in entity.ingredient_items:
+    #     #         stack_size = items.raw[item["id"]["name"]]["stack_size"]
+    #     #         if count > stack_size:
+    #     #             warning_list.append(
+    #     #                 ItemCapacityWarning(
+    #     #                     "Cannot request more than {} of '{}' to a '{}'; will not fit in ingredient inputs".format(
+    #     #                         stack_size, item, entity.name
+    #     #                     )
+    #     #                 )
+    #     #             )
 
-        #     return value
+    #     #     return value
 
-        model_config = ConfigDict(title="Furnace")
+    #     model_config = ConfigDict(title="Furnace")
 
     # def __init__(
     #     self,

@@ -13,7 +13,6 @@ from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode, LampColorMode
 from draftsman.serialization import (
     draftsman_converters,
-    finalize_fields,
 )
 from draftsman.signatures import AttrsColor, Connections, DraftsmanBaseModel
 from draftsman.utils import get_first

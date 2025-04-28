@@ -27,92 +27,92 @@ class RecipeMixin:
     recipes that it can make.
     """
 
-    class Format(BaseModel):
-        recipe: Optional[str] = Field(
-            None, description="""The name of the entity's selected recipe."""
-        )
-        recipe_quality: Optional[
-            Literal["normal", "uncommon", "rare", "epic", "legendary"]
-        ] = Field(
-            "normal", description="""The specified quality of the selected recipe."""
-        )
+    # class Format(BaseModel):
+    #     recipe: Optional[str] = Field(
+    #         None, description="""The name of the entity's selected recipe."""
+    #     )
+    #     recipe_quality: Optional[
+    #         Literal["normal", "uncommon", "rare", "epic", "legendary"]
+    #     ] = Field(
+    #         "normal", description="""The specified quality of the selected recipe."""
+    #     )
 
-        @field_validator("recipe")
-        @classmethod
-        def ensure_recipe_known(cls, value: Optional[str], info: ValidationInfo):
-            if not info.context or value is None:
-                return value
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
+    #     @field_validator("recipe")
+    #     @classmethod
+    #     def ensure_recipe_known(cls, value: Optional[str], info: ValidationInfo):
+    #         if not info.context or value is None:
+    #             return value
+    #         if info.context["mode"] <= ValidationMode.MINIMUM:
+    #             return value
 
-            warning_list: list = info.context["warning_list"]
+    #         warning_list: list = info.context["warning_list"]
 
-            if value not in recipes.raw:
-                warning_list.append(
-                    UnknownRecipeWarning(
-                        "'{}' is not a known recipe{}".format(
-                            value, get_suggestion(value, recipes.raw.keys(), 1)
-                        )
-                    )
-                )
+    #         if value not in recipes.raw:
+    #             warning_list.append(
+    #                 UnknownRecipeWarning(
+    #                     "'{}' is not a known recipe{}".format(
+    #                         value, get_suggestion(value, recipes.raw.keys(), 1)
+    #                     )
+    #                 )
+    #             )
 
-            return value
+    #         return value
 
-        @field_validator("recipe")
-        @classmethod
-        def ensure_recipe_allowed_in_machine(
-            cls, value: Optional[str], info: ValidationInfo
-        ):
-            if not info.context or value is None:
-                return value
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
+    #     @field_validator("recipe")
+    #     @classmethod
+    #     def ensure_recipe_allowed_in_machine(
+    #         cls, value: Optional[str], info: ValidationInfo
+    #     ):
+    #         if not info.context or value is None:
+    #             return value
+    #         if info.context["mode"] <= ValidationMode.MINIMUM:
+    #             return value
 
-            entity: "RecipeMixin" = info.context["object"]
-            warning_list: list = info.context["warning_list"]
+    #         entity: "RecipeMixin" = info.context["object"]
+    #         warning_list: list = info.context["warning_list"]
 
-            if entity.allowed_recipes is None:  # entity not recognized
-                return value
+    #         if entity.allowed_recipes is None:  # entity not recognized
+    #             return value
 
-            if value in recipes.raw and value not in entity.allowed_recipes:
-                warning_list.append(
-                    RecipeLimitationWarning(
-                        "'{}' is not a valid recipe for '{}'; allowed recipes are: {}".format(
-                            value, entity.name, entity.allowed_recipes
-                        )
-                    )
-                )
+    #         if value in recipes.raw and value not in entity.allowed_recipes:
+    #             warning_list.append(
+    #                 RecipeLimitationWarning(
+    #                     "'{}' is not a valid recipe for '{}'; allowed recipes are: {}".format(
+    #                         value, entity.name, entity.allowed_recipes
+    #                     )
+    #                 )
+    #             )
 
-            return value
+    #         return value
 
-        @field_validator("recipe", mode="after")
-        @classmethod
-        def check_items_fit_in_recipe(cls, value: Optional[str], info: ValidationInfo):
-            if not info.context or value is None:
-                return value
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
+    #     @field_validator("recipe", mode="after")
+    #     @classmethod
+    #     def check_items_fit_in_recipe(cls, value: Optional[str], info: ValidationInfo):
+    #         if not info.context or value is None:
+    #             return value
+    #         if info.context["mode"] <= ValidationMode.MINIMUM:
+    #             return value
 
-            entity: "RecipeMixin" = info.context["object"]
-            if entity.items == {}:
-                return value
+    #         entity: "RecipeMixin" = info.context["object"]
+    #         if entity.items == {}:
+    #             return value
 
-            warning_list: list = info.context["warning_list"]
+    #         warning_list: list = info.context["warning_list"]
 
-            # TODO: display all items that don't fit with the current recipe in
-            # one warnings
-            for item in entity.items:
-                if item["id"]["name"] not in entity.allowed_items:
-                    warning_list.append(
-                        ItemLimitationWarning(
-                            "Item '{}' is not used with the current recipe ({})".format(
-                                item["id"]["name"], entity.recipe
-                            ),
-                        )
-                    )
-                    break
+    #         # TODO: display all items that don't fit with the current recipe in
+    #         # one warnings
+    #         for item in entity.items:
+    #             if item["id"]["name"] not in entity.allowed_items:
+    #                 warning_list.append(
+    #                     ItemLimitationWarning(
+    #                         "Item '{}' is not used with the current recipe ({})".format(
+    #                             item["id"]["name"], entity.recipe
+    #                         ),
+    #                     )
+    #                 )
+    #                 break
 
-            return value
+    #         return value
 
     # def __init__(self, name: str, similar_entities: list[str], **kwargs):
     #     self._root: __class__.Format
@@ -246,11 +246,6 @@ class RecipeMixin:
         self.recipe_quality = other.recipe_quality
 
         super().merge(other)
-
-    # =========================================================================
-
-    def __eq__(self, other) -> bool:
-        return super().__eq__(other) and self.recipe == other.recipe
 
 
 draftsman_converters.get_version((1, 0)).add_schema(

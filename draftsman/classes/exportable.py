@@ -489,8 +489,8 @@ class Exportable:
         converter = version_info.get_converter(exclude_none, exclude_defaults)
         # print(converter)
         # print(converter.omit_if_default)
-        # import inspect
-        # print(inspect.getsource(converter.get_unstructure_hook(type(self))))
+        import inspect
+        print(inspect.getsource(converter.get_unstructure_hook(type(self))))
         # print(getattr(attrs.fields(type(self)), "always_on").default)
         # defaults = {field.name: field.default for field in attrs.fields(type(self))}
         # print(defaults)
@@ -681,8 +681,8 @@ def make_exportable_unstructure_factory_func(
         # excluded_keys = version_data.get_excluded_keys(cls)
 
         def unstructure_hook(inst):
-            # import inspect
-            # print(inspect.getsource(parent_hook))
+            import inspect
+            print(inspect.getsource(parent_hook))
             # TODO: should be wrapped in a try block with a better error message
             res = parent_hook(inst)
             # We want to preserve round-trip consistency, even with keys we

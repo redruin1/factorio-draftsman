@@ -34,32 +34,32 @@ class RocketSilo(
     An entity that produces rockets, usually used in research.
     """
 
-    class Format(
-        ModulesMixin.Format,
-        RequestItemsMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        RecipeMixin.Format,
-        Entity.Format,
-    ):
-        # auto_launch: Optional[bool] = Field(
-        #     False,
-        #     description="""
-        #     Whether or not this silo is configured to automatically launch
-        #     itself when cargo is present inside of it.
-        #     """,
-        # )
+    # class Format(
+    #     ModulesMixin.Format,
+    #     RequestItemsMixin.Format,
+    #     ControlBehaviorMixin.Format,
+    #     CircuitConnectableMixin.Format,
+    #     RecipeMixin.Format,
+    #     Entity.Format,
+    # ):
+    #     # auto_launch: Optional[bool] = Field(
+    #     #     False,
+    #     #     description="""
+    #     #     Whether or not this silo is configured to automatically launch
+    #     #     itself when cargo is present inside of it.
+    #     #     """,
+    #     # )
 
-        class ControlBehavior(DraftsmanBaseModel):
-            read_items_mode: Optional[SiloReadMode] = SiloReadMode.READ_CONTENTS
+    #     class ControlBehavior(DraftsmanBaseModel):
+    #         read_items_mode: Optional[SiloReadMode] = SiloReadMode.READ_CONTENTS
 
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        transitional_request_index: Optional[uint32] = Field(  # TODO: size, wtf is this
-            0, description="""TODO"""
-        )
+    #     transitional_request_index: Optional[uint32] = Field(  # TODO: size, wtf is this
+    #         0, description="""TODO"""
+    #     )
 
-        model_config = ConfigDict(title="RocketSilo")
+    #     model_config = ConfigDict(title="RocketSilo")
 
     # def __init__(
     #     self,

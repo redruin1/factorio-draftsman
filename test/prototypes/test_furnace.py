@@ -28,6 +28,30 @@ class TestFurnace:
 
         # Errors
 
+    def test_allowed_effects(self):
+        furnace = Furnace("stone-furnace")
+        assert furnace.allowed_effects == {"consumption", "speed", "pollution"}
+        furnace = Furnace("electric-furnace")
+        assert furnace.allowed_effects == {"speed", "productivity", "quality", "pollution", "consumption"}
+
+        with pytest.warns(UnknownEntityWarning):
+            furnace = Furnace("unknown-furance")
+        assert furnace.allowed_effects == None
+
+    def test_allowed_input_ingredients(self):
+        furnace = Furnace("stone-furnace")
+        assert furnace.allowed_input_ingredients == {
+            "iron-plate", "stone", "iron-ore", "lithium", "copper-ore"
+        }
+        furnace = Furnace("electric-furnace")
+        assert furnace.allowed_input_ingredients == {
+            "iron-plate", "stone", "iron-ore", "lithium", "copper-ore"
+        }
+
+        with pytest.warns(UnknownEntityWarning):
+            furnace = Furnace("unknown-furance")
+        assert furnace.allowed_input_ingredients == None
+
     # def test_set_item_request(self):
     #     furnace = Furnace("stone-furnace")
     #     assert furnace.allowed_modules == {
@@ -99,12 +123,12 @@ class TestFurnace:
     #         furnace.set_item_request("copper-plate", 100)
     #     assert furnace.items == {"copper-plate": 100}
     #     assert furnace.module_slots_occupied == 0
-    #     assert furnace.fuel_slots_occupied == 0
+    #     # assert furnace.fuel_slots_occupied == 0
 
     #     furnace.items = {}
     #     assert furnace.items == {}
     #     assert furnace.module_slots_occupied == 0
-    #     assert furnace.fuel_slots_occupied == 0
+    #     # assert furnace.fuel_slots_occupied == 0
 
     #     # Errors
     #     with pytest.raises(DataFormatError):
