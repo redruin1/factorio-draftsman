@@ -16,7 +16,6 @@ from draftsman.rail import Schedule, WaitConditions, WaitCondition
 
 
 def main() -> None:
-
     # Let's import a normal 2-4 train from a blueprint string:
     blueprint = Blueprint(
         "0eNqtk91qhDAQRt9lrrPLGn8S8yqllKwNEogTidFWJO/e0b1ZiqAX3mWGb84JYbLA042mDxYjqAVs43EA9bHAYFvUbu3FuTegwEbTAQPU3Vo53/jORzsZSAwsfptfUFlih4ONDq2//ejW49skT58MDEYbrXn5t2L+wrF7mkDoXQCD3g80Q0fyEefGa3mvpCgZzKByKUjhgyWYfqUed16u1olaPlAGR+fWa//z8dO+7BJfftYni0t8xVmfEJf4yr3N2dM9DnU79OokvcqP6bSI28aqt5/BYDJh2DJcZoWo6VlyUZeySOkPzX4Oog=="
@@ -49,7 +48,7 @@ def main() -> None:
             ),
         ]
     )
-    # Using the Enums is rather verbose, so if you want to be more terse you can 
+    # Using the Enums is rather verbose, so if you want to be more terse you can
     # use the equivalent strings:
     dropoff_conditions = WaitConditions(
         [

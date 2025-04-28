@@ -1,7 +1,7 @@
 # fusion_generator.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import DirectionalMixin
+from draftsman.classes.mixins import EnergySourceMixin, DirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.utils import fix_incorrect_pre_init
@@ -15,7 +15,7 @@ from typing import Any, Literal, Optional, Union
 
 @fix_incorrect_pre_init
 @attrs.define
-class FusionGenerator(DirectionalMixin, Entity):
+class FusionGenerator(EnergySourceMixin, DirectionalMixin, Entity):
     """
     An entity which converts plasma into energy.
     """

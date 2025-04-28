@@ -8,6 +8,7 @@ from draftsman.classes.mixins import (
     CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
@@ -32,6 +33,7 @@ class AsteroidCollector(
     CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
     Entity,
 ):

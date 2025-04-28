@@ -2,8 +2,8 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    BurnerEnergySourceMixin,
     RequestItemsMixin,
+    EnergySourceMixin,
     DirectionalMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
@@ -21,7 +21,7 @@ import attrs
 @fix_incorrect_pre_init
 @attrs.define
 class BurnerGenerator(
-    BurnerEnergySourceMixin, RequestItemsMixin, DirectionalMixin, Entity
+    RequestItemsMixin, EnergySourceMixin, DirectionalMixin, Entity
 ):
     """
     A electrical generator that only requires fuel in order to function.

@@ -2,7 +2,7 @@
 
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMixin
+from draftsman.classes.mixins import EnergySourceMixin, ControlBehaviorMixin, CircuitConnectableMixin
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import AttrsSignalID
 from draftsman.utils import get_first
@@ -15,7 +15,7 @@ from typing import Optional
 
 
 @attrs.define
-class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
+class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, EnergySourceMixin, Entity):
     """
     An entity that stores electricity for periods of high demand.
     """

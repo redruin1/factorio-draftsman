@@ -7,6 +7,7 @@ from draftsman.classes.mixins import (
     RequestItemsMixin,
     CircuitConnectableMixin,
     RecipeMixin,
+    EnergySourceMixin,
     DirectionalMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
@@ -31,6 +32,7 @@ class AssemblingMachine(
     RequestItemsMixin,
     CircuitConnectableMixin,
     RecipeMixin,
+    EnergySourceMixin,
     DirectionalMixin,
     Entity,
 ):

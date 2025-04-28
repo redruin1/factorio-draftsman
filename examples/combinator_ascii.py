@@ -27,7 +27,6 @@ import math
 
 
 def main():
-
     letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     translations = {}
 

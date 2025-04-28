@@ -1,7 +1,7 @@
 # loader.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import FiltersMixin, IOTypeMixin, DirectionalMixin
+from draftsman.classes.mixins import FiltersMixin, IOTypeMixin, EnergySourceMixin, DirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.signatures import FilterEntry
@@ -16,7 +16,7 @@ from typing import Any, Literal, Optional, Union
 
 @fix_incorrect_pre_init
 @attrs.define
-class Loader(FiltersMixin, IOTypeMixin, DirectionalMixin, Entity):
+class Loader(FiltersMixin, IOTypeMixin, EnergySourceMixin, DirectionalMixin, Entity):
     """
     An entity that inserts items directly from a belt to an inventory or
     vise-versa.

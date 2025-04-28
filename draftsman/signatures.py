@@ -1484,7 +1484,8 @@ class RequestFilter(DraftsmanBaseModel):
 @attrs.define
 class AttrsSignalFilter(Exportable):
     index: int64 = attrs.field(
-        # TODO: validators
+        converter=try_convert(lambda index: index + 1),
+        validator=instance_of(int64),
     )
     """
     Numeric index of the signal in the combinator, 1-based. Typically the 
@@ -1514,7 +1515,9 @@ class AttrsSignalFilter(Exportable):
             "quality",
         ]
     ] = attrs.field(
+        # default="item",
         # TODO: validators
+        metadata={"omit": False}
     )
     """
     Type of the signal.
@@ -1550,12 +1553,12 @@ class AttrsSignalFilter(Exportable):
     # )
     # TODO: make this dynamic based on current environment?
     quality: QualityName = attrs.field(
-        default="normal",
-        # TODO: validators
+        default="any",
+        validator=one_of(QualityName)
     )
     """
-    Quality flag of the signal. If unspecified, this value is effectively 
-    equal to 'any' quality level.
+    Quality flag of the signal. Defaults to special "any" quality signal, rather
+    than "normal" quality.
     """
     comparator: Comparator = attrs.field(
         default="=",

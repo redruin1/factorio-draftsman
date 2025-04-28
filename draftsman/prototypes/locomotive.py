@@ -5,6 +5,7 @@ from draftsman.classes.mixins import (
     EquipmentGridMixin,
     RequestItemsMixin,
     ColorMixin,
+    EnergySourceMixin,
     OrientationMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
@@ -22,7 +23,7 @@ from typing import Any, Literal, Optional, Union
 
 @attrs.define
 class Locomotive(
-    EquipmentGridMixin, RequestItemsMixin, ColorMixin, OrientationMixin, Entity
+    EquipmentGridMixin, RequestItemsMixin, ColorMixin, EnergySourceMixin, OrientationMixin, Entity
 ):
     """
     A train car that moves other wagons around using a fuel.

@@ -7,6 +7,7 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.mixins import EnergySourceMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.serialization import draftsman_converters
@@ -22,7 +23,7 @@ from typing import Any, Literal, Optional, Union
 
 
 @attrs.define
-class ElectricEnergyInterface(Entity):
+class ElectricEnergyInterface(EnergySourceMixin, Entity):
     """
     An entity that interfaces with an electrical grid.
     """

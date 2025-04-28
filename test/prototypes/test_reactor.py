@@ -30,7 +30,7 @@ class TestReactor:
     def test_set_fuel_request(self):
         reactor = Reactor("nuclear-reactor")
         assert reactor.allowed_fuel_items == {"uranium-fuel-cell"}
-        assert reactor.total_fuel_slots == 1
+        assert reactor.fuel_input_size == 1
 
         reactor.set_item_request("uranium-fuel-cell", 50)
         assert reactor.items == [

@@ -1,7 +1,7 @@
 # radar.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import CircuitConnectableMixin
+from draftsman.classes.mixins import CircuitConnectableMixin, EnergySourceMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.utils import get_first
@@ -14,7 +14,7 @@ from typing import Any, Literal, Optional, Union
 
 
 @attrs.define
-class Radar(CircuitConnectableMixin, Entity):
+class Radar(CircuitConnectableMixin, EnergySourceMixin, Entity):
     """
     An entity that scans neighbouring chunks periodically.
     """

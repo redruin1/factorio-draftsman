@@ -1,4 +1,4 @@
-# burner_energy_source.py
+# energy_source.py
 
 from draftsman.constants import ValidationMode
 from draftsman.signatures import ItemName, uint16, uint32
@@ -19,56 +19,54 @@ if TYPE_CHECKING:
 
 
 @attrs.define(slots=False)
-class BurnerEnergySourceMixin:  # (RequestItemsMixin)
+class EnergySourceMixin:
     """
-    Allows this entity to own a fuel input slot or slots and accept fuel item
-    requests (for categories available to the specific entity). Implicitly
-    inherits :py:class:`~.RequestItemsMixin`.
+    Entities which inherit this mixin consume a specific kind of energy. This
+    class populates methods depending on what type of energy source is 
+    configured for a particular entity.
     """
 
-    # TODO: this should probably just be EnergySourceMixin or InputEnergySourceMixin
+    # class Format(BaseModel):
+    #     @field_validator("items", check_fields=False)
+    #     @classmethod
+    #     def ensure_fuel_type_valid(
+    #         cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+    #     ):
+    #         """
+    #         Warn the user if they set a fuel item that is disallowed for this
+    #         particular entity.
+    #         """
+    #         if not info.context or value is None:
+    #             return value
+    #         if info.context["mode"] <= ValidationMode.MINIMUM:
+    #             return value
 
-    class Format(BaseModel):
-        @field_validator("items", check_fields=False)
-        @classmethod
-        def ensure_fuel_type_valid(
-            cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-        ):
-            """
-            Warn the user if they set a fuel item that is disallowed for this
-            particular entity.
-            """
-            if not info.context or value is None:
-                return value
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
+    #         entity: "EnergySourceMixin" = info.context["object"]
+    #         warning_list: list = info.context["warning_list"]
 
-            entity: "BurnerEnergySourceMixin" = info.context["object"]
-            warning_list: list = info.context["warning_list"]
+    #         if entity.allowed_fuel_items is None:  # entity not recognized
+    #             return value
 
-            if entity.allowed_fuel_items is None:  # entity not recognized
-                return value
+    #         for item in entity.fuel_items:
+    #             if item["id"]["name"] not in entity.allowed_fuel_items:
+    #                 if len(entity.allowed_fuel_items) == 0:
+    #                     context_string = " this entity does not consume items for power"
+    #                 else:
+    #                     context_string = (
+    #                         " the valid fuel items for this entity are {}".format(
+    #                             entity.allowed_fuel_items
+    #                         )
+    #                     )
 
-            for item in entity.fuel_items:
-                if item["id"]["name"] not in entity.allowed_fuel_items:
-                    if len(entity.allowed_fuel_items) == 0:
-                        context_string = " this entity does not consume items for power"
-                    else:
-                        context_string = (
-                            " the valid fuel items for this entity are {}".format(
-                                entity.allowed_fuel_items
-                            )
-                        )
+    #                 warning_list.append(
+    #                     FuelLimitationWarning(
+    #                         "Cannot add fuel item '{}' to '{}';{}".format(
+    #                             item["id"]["name"], entity.name, context_string
+    #                         )
+    #                     )
+    #                 )
 
-                    warning_list.append(
-                        FuelLimitationWarning(
-                            "Cannot add fuel item '{}' to '{}';{}".format(
-                                item["id"]["name"], entity.name, context_string
-                            )
-                        )
-                    )
-
-            return value
+    #         return value
 
         # @field_validator("items", check_fields=False)
         # @classmethod
@@ -134,37 +132,51 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
     # =========================================================================
 
     @property
-    def input_energy_source(self) -> Optional[dict]:
+    def energy_source(self) -> Optional[dict]:
         """
-        The input energy source specification. Typically a BurnerEnergySource,
-        but can be any type of energysource.
+        The energy source specification for this entity. 
 
         TODO
         """
-        energy_source = entities.raw.get(self.name, {"energy_source": None})[
-            "energy_source"
-        ]
+        # energy_source = entities.raw.get(self.name, {"energy_source": None})[
+        #     "energy_source"
+        # ]
         energy_source = self.prototype.get("energy_source", None)
-        if energy_source is not None:  # and energy_source["type"] == "burner":
+        if energy_source is not None:
             return energy_source
+        else:
+            return None
+
+    # =========================================================================
+    # BurnerEnergySource
+    # =========================================================================
+
+    @property
+    def fuel_input_size(self) -> Optional[uint16]:
+        """
+        Gets the total number of fuel input slots that this entity can hold.
+        Returns ``None`` if the name of this entity is not recognized by
+        Draftsman. Not exported; read only.
+        """
+        if self.energy_source is not None:
+            return self.energy_source.get("fuel_inventory_size", None)
         else:
             return None
 
     # =========================================================================
 
     @property
-    def total_fuel_slots(self) -> Optional[uint16]:
+    def fuel_output_size(self) -> Optional[uint16]:
         """
-        Gets the total number of fuel input slots that this entity can hold.
-        Returns ``None`` if the name of this entity is not recognized by
-        Draftsman. Not exported; read only.
+        Gets the total number of fuel output slots that this entity has. Returns
+        ``None`` if the entity does not have a BurnerEnergySource, or if the
+        entity itself is not recognized in the current environment. Not exported;
+        read only.
         """
-        if self.input_energy_source is not None:
-            return self.input_energy_source.get("fuel_inventory_size", None)
+        if self.energy_source is not None:
+            return self.energy_source.get("burnt_inventory_size", None)
         else:
             return None
-
-    # =========================================================================
 
     # @property
     # def fuel_slots_occupied(self) -> int: # TODO: reimplment
@@ -192,33 +204,19 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
         """
         if self.name not in entities.raw:
             return None
-        if self.input_energy_source is None:
+        if self.energy_source is None:
             return set()
 
         # Fuel types can be specified either as a "categories" list or as a
         # single "category"
-        if "fuel_categories" in self.input_energy_source:
-            fuel_categories = self.input_energy_source["fuel_categories"]
+        if "fuel_categories" in self.energy_source:
+            fuel_categories = self.energy_source["fuel_categories"]
         else:
             fuel_categories = [
-                self.input_energy_source.get("fuel_category", "chemical")
+                self.energy_source.get("fuel_category", "chemical")
             ]
 
         result = set()
         for fuel_category in fuel_categories:
             result.update(items.fuels[fuel_category])
         return result
-
-    # =========================================================================
-
-    @property
-    def fuel_items(self) -> list["RequestItemsMixin.Format.ItemRequest"]:
-        """
-        The subset of :py:attr:`.items` where each key is a valid item fuel
-        source that can be consumed by this entity. Returns an empty dict if
-        none of the keys of ``items`` are known as valid module names. Not
-        exported; read only.
-        """
-        return [
-            item for item in self.items if item["id"]["name"] in items.all_fuel_items
-        ]

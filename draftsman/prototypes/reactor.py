@@ -3,10 +3,10 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
-    BurnerEnergySourceMixin,
     RequestItemsMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
@@ -23,10 +23,10 @@ from typing import Any, Literal, Optional, Union
 
 @attrs.define
 class Reactor(
-    BurnerEnergySourceMixin,
     RequestItemsMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     Entity,
 ):
     """

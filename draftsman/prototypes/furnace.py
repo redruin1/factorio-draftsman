@@ -3,9 +3,9 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     InputIngredientsMixin,
-    BurnerEnergySourceMixin,
     ModulesMixin,
     RequestItemsMixin,
+    EnergySourceMixin,
     DirectionalMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
@@ -29,9 +29,9 @@ from typing import Any, Literal, Optional, Union
 @attrs.define
 class Furnace(
     InputIngredientsMixin,
-    BurnerEnergySourceMixin,
     ModulesMixin,
     RequestItemsMixin,
+    EnergySourceMixin,
     DirectionalMixin,
     Entity,
 ):

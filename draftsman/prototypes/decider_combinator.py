@@ -6,6 +6,7 @@ from draftsman.classes.mixins import (
     PlayerDescriptionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
@@ -283,6 +284,7 @@ class DeciderCombinator(
     PlayerDescriptionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
     Entity,
 ):

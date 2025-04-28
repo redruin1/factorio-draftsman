@@ -1,7 +1,7 @@
 # boiler.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import RequestItemsMixin, DirectionalMixin
+from draftsman.classes.mixins import RequestItemsMixin, EnergySourceMixin, DirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.signatures import ItemRequest
@@ -17,7 +17,7 @@ from typing import Any, Literal, Optional, Union
 
 @fix_incorrect_pre_init
 @attrs.define
-class Boiler(RequestItemsMixin, DirectionalMixin, Entity):
+class Boiler(RequestItemsMixin, EnergySourceMixin, DirectionalMixin, Entity):
     """
     An entity that uses a fuel to convert a fluid (usually water) to another
     fluid (usually steam).

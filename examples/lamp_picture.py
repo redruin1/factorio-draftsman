@@ -20,6 +20,7 @@ try:
 except ImportError:
     pyperclip = None
 
+
 def main():
     print("Filepath of image to convert:")
     img_path = input()
@@ -38,13 +39,15 @@ def main():
     img = img.resize((target_width, target_height))
 
     # Unmodified images can look a little washed out, due to the nature in which
-    # Factorio lamps don't occupy the entire tile area. Here we increase the 
-    # image contrast to make it pop a little more (particularly on regular 
+    # Factorio lamps don't occupy the entire tile area. Here we increase the
+    # image contrast to make it pop a little more (particularly on regular
     # truecolor images):
     level = 100
     factor = (259 * (level + 255)) / (255 * (259 - level))
+
     def contrast(c):
         return 128 + factor * (c - 128)
+
     img = img.point(contrast)
 
     img_data = np.array(img)[:, :, :3]
@@ -58,7 +61,12 @@ def main():
     for y in range(target_height):
         for x in range(target_width):
             lamp.tile_position = (x, y)
-            lamp.color = {"r": int(img_data[y][x][0]), "g": int(img_data[y][x][1]), "b": int(img_data[y][x][2]), "a": 255}
+            lamp.color = {
+                "r": int(img_data[y][x][0]),
+                "g": int(img_data[y][x][1]),
+                "b": int(img_data[y][x][2]),
+                "a": 255,
+            }
             blueprint.entities.append(lamp)
 
     # Output is usually too big for the console, so we just write it to a file

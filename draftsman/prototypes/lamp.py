@@ -8,6 +8,7 @@ from draftsman.classes.mixins import (
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode, LampColorMode
@@ -33,6 +34,7 @@ class Lamp(
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     Entity,
 ):
     """

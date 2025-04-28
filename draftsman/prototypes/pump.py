@@ -6,6 +6,7 @@ from draftsman.classes.mixins import (
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
 )
 from draftsman.signatures import DraftsmanBaseModel
@@ -25,6 +26,7 @@ class Pump(
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
     Entity,
 ):

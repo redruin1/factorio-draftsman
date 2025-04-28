@@ -1,7 +1,6 @@
 # __init__.py
 
 from draftsman.classes.mixins.artillery_auto_target import ArtilleryAutoTargetMixin
-from draftsman.classes.mixins.burner_energy_source import BurnerEnergySourceMixin
 from draftsman.classes.mixins.circuit_condition import CircuitConditionMixin
 from draftsman.classes.mixins.circuit_connectable import CircuitConnectableMixin
 from draftsman.classes.mixins.circuit_read_contents import CircuitReadContentsMixin
@@ -13,6 +12,7 @@ from draftsman.classes.mixins.control_behavior import ControlBehaviorMixin
 from draftsman.classes.mixins.directional import DirectionalMixin
 from draftsman.classes.mixins.double_grid_aligned import DoubleGridAlignedMixin
 from draftsman.classes.mixins.eight_way_directional import EightWayDirectionalMixin
+from draftsman.classes.mixins.energy_source import EnergySourceMixin
 from draftsman.classes.mixins.equipment_grid import EquipmentGridMixin
 from draftsman.classes.mixins.circuit_enable import CircuitEnableMixin
 from draftsman.classes.mixins.filters import FiltersMixin

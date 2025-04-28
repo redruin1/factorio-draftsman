@@ -1,6 +1,7 @@
 # lightning_attractor.py
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.mixins import EnergySourceMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.utils import get_first
@@ -11,7 +12,7 @@ from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
 
-class LightningAttractor(Entity):
+class LightningAttractor(EnergySourceMixin, Entity):
     """
     An entity that protects an area from lightning strike damage and converts
     their energy for a power grid.

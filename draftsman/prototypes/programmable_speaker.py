@@ -7,6 +7,7 @@ from draftsman.classes.mixins import (
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     CircuitEnableMixin,
+    EnergySourceMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
@@ -47,6 +48,7 @@ class ProgrammableSpeaker(
     CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     Entity,
 ):
     """

@@ -8,47 +8,49 @@ from draftsman.utils import get_first
 
 from draftsman.data.entities import rail_supports
 
+import attrs
 from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
 
+@attrs.define
 class RailSupport:
     """
     An entity that permits the construction of elevated from it.
     """
 
-    class Format(
-        DoubleGridAlignedMixin.Format, EightWayDirectionalMixin.Format, Entity.Format
-    ):
-        model_config = ConfigDict(title="RailRamp")
+    # class Format(
+    #     DoubleGridAlignedMixin.Format, EightWayDirectionalMixin.Format, Entity.Format
+    # ):
+    #     model_config = ConfigDict(title="RailRamp")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(rail_supports),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        direction: Direction = Direction.NORTH,
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(rail_supports),
+    #     position: Union[Vector, PrimitiveVector] = None,
+    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+    #     direction: Direction = Direction.NORTH,
+    #     tags: dict[str, Any] = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     """
+    #     TODO
+    #     """
 
-        super().__init__(
-            name,
-            rail_supports,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            tags=tags,
-            **kwargs
-        )
+    #     super().__init__(
+    #         name,
+    #         rail_supports,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         direction=direction,
+    #         tags=tags,
+    #         **kwargs
+    #     )
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
 
     @property
     def similar_entities(self) -> list[str]:

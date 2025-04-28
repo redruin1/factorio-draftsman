@@ -8,6 +8,7 @@ from draftsman.classes.mixins import (
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RecipeMixin,
+    EnergySourceMixin,
 )
 from draftsman.constants import SiloReadMode
 from draftsman.serialization import draftsman_converters
@@ -28,6 +29,7 @@ class RocketSilo(
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RecipeMixin,
+    EnergySourceMixin,
     Entity,
 ):
     """

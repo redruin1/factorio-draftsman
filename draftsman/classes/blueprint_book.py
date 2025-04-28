@@ -154,7 +154,10 @@ def blueprintable_list_unstructure_factory(_: type, converter: cattrs.Converter)
     def unstructure_hook(inst):
         res = [None] * len(inst)
         for i, elem in enumerate(inst):
-            d = converter.unstructure(elem)
+            # d = converter.unstructure(elem)
+            d = elem.to_dict() # TODO: this is a problem because we lose the
+            # information stored in converter; plus, what arguments would you
+            # call `to_dict()` with here?
             if "index" not in d:
                 d["index"] = i
             res[i] = d
@@ -599,5 +602,5 @@ draftsman_converters.add_schema(
         ("blueprint_book", "version"): fields.version.name,
         ("blueprint_book", "active_index"): fields.active_index.name,
         ("blueprint_book", "blueprints"): fields.blueprints.name,
-    },
+    }
 )

@@ -7,6 +7,7 @@ from draftsman.classes.mixins import (
     LogisticConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
 )
 from draftsman.constants import Direction, ValidationMode
 from draftsman.signatures import DraftsmanBaseModel, uint8, uint32
@@ -23,6 +24,7 @@ class AgriculturalTower(
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     Entity,
 ):
     """

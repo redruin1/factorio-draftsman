@@ -7,6 +7,7 @@ their contents to stdout.
 from draftsman.data import planets, recipes
 from draftsman.entity import AssemblingMachine
 
+
 def main():
     # All recipes where productivity modules are allowed
     productivity_recipes = {}

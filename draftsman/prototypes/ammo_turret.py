@@ -10,6 +10,7 @@ from draftsman.classes.mixins import (
     CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
@@ -36,6 +37,7 @@ class AmmoTurret(
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
+    EnergySourceMixin,
     Entity,
 ):
     """

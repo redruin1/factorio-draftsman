@@ -125,7 +125,8 @@ class EntityList(Exportable, MutableSequence):
         **kwargs
     ) -> EntityLike:
         """
-        Appends the ``EntityLike`` to the end of the sequence.
+        Appends the ``EntityLike`` to the end of the sequence. Returns a 
+        reference to the appended entity, if successful.
 
         Supports an optional shorthand where you can specify the string name of
         an Entity as ``entity`` and any keyword arguments, which are appended to
@@ -817,6 +818,16 @@ def _entity_list_structure_factory(cls, converter: cattrs.Converter):
 
 draftsman_converters.register_structure_hook_factory(
     lambda cls: issubclass(cls, EntityList), _entity_list_structure_factory
+)
+
+def _entity_list_unstructure_factory(cls, converter: cattrs.Converter):
+    def unstructure_hook(inst):
+        return [converter.unstructure(entity) for entity in inst._root]
+    return unstructure_hook
+
+draftsman_converters.register_unstructure_hook_factory(
+    lambda cls: issubclass(cls, EntityList),
+    _entity_list_unstructure_factory
 )
 
 # draftsman_converters.register_unstructure_hook(

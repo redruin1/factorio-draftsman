@@ -13,7 +13,7 @@ try:
 
         raw: dict[str, dict] = _data[0]
 
-except FileNotFoundError:
+except FileNotFoundError: # pragma: no coverage
     raw = {}
 
 

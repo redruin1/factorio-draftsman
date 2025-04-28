@@ -49,10 +49,10 @@ class StraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     An old, 1.0 straight rail entity.
     """
 
-    class Format(
-        DoubleGridAlignedMixin.Format, EightWayDirectionalMixin.Format, Entity.Format
-    ):
-        model_config = ConfigDict(title="StraightRail")
+    # class Format(
+    #     DoubleGridAlignedMixin.Format, EightWayDirectionalMixin.Format, Entity.Format
+    # ):
+    #     model_config = ConfigDict(title="StraightRail")
 
     # def __init__(
     #     self,

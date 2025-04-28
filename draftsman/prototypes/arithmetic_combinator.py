@@ -6,6 +6,7 @@ from draftsman.classes.mixins import (
     PlayerDescriptionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
@@ -83,6 +84,7 @@ class ArithmeticCombinator(
     PlayerDescriptionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
     Entity,
 ):

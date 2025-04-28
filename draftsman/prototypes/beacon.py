@@ -2,9 +2,9 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    # InputIngredientsMixin,
     ModulesMixin,
     RequestItemsMixin,
+    EnergySourceMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
@@ -19,9 +19,9 @@ from typing import Any, Literal, Optional, Union
 
 
 @attrs.define
-class Beacon(ModulesMixin, RequestItemsMixin, Entity):
+class Beacon(ModulesMixin, RequestItemsMixin, EnergySourceMixin, Entity):
     """
-    An entity designed to apply module effects to other machine's in it's radius.
+    An entity designed to apply module effects to other machines in its radius.
     """
 
     # class Format(
@@ -62,17 +62,6 @@ class Beacon(ModulesMixin, RequestItemsMixin, Entity):
     @property
     def similar_entities(self) -> list[str]:
         return beacons
-
-    # =========================================================================
-
-    # @property
-    # def allowed_input_ingredients(self) -> set[str]:
-    #     """
-    #     Gets the list of items that are valid inputs ingredients for crafting
-    #     machines of all types. Returns ``None`` if this entity's name is not
-    #     recognized by Draftsman. Not exported; read only.
-    #     """
-    #     return set()
 
     # =========================================================================
 

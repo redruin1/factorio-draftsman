@@ -2,7 +2,6 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    BurnerEnergySourceMixin,
     ModulesMixin,
     RequestItemsMixin,
     CircuitReadResourceMixin,
@@ -11,6 +10,7 @@ from draftsman.classes.mixins import (
     LogisticConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
 )
 from draftsman.utils import fix_incorrect_pre_init
@@ -24,7 +24,6 @@ from typing import Optional
 @fix_incorrect_pre_init
 @attrs.define
 class MiningDrill(
-    BurnerEnergySourceMixin,
     ModulesMixin,
     RequestItemsMixin,
     CircuitReadResourceMixin,
@@ -33,6 +32,7 @@ class MiningDrill(
     CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
     Entity,
 ):
