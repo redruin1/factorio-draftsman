@@ -1003,8 +1003,6 @@ def fix_incorrect_pre_init(cls):
 
     @wraps(original_init)
     def new_init(self, *args, **kwargs):
-        print(args)
-        print(kwargs)
         self.__attrs_pre_init__(*args, first_call=True, **kwargs)
         original_init(self, *args, **kwargs)
 

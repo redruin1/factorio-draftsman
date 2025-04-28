@@ -147,43 +147,43 @@ class TileList(Exportable, MutableSequence):
         del self._root[:]
         self.spatial_map.clear()
 
-    def validate(
-        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
-    ) -> ValidationResult:
-        mode = ValidationMode(mode)
+    # def validate(
+    #     self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    # ) -> ValidationResult:
+    #     mode = ValidationMode(mode)
 
-        output = ValidationResult([], [])
+    #     output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
-            return output
+    #     if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
+    #         return output
 
-        context: dict[str, Any] = {
-            "mode": mode,
-            "object": self,
-            "warning_list": [],
-            "assignment": False,
-        }
+    #     context: dict[str, Any] = {
+    #         "mode": mode,
+    #         "object": self,
+    #         "warning_list": [],
+    #         "assignment": False,
+    #     }
 
-        try:
-            result = self.Format.model_validate(
-                {"root": self._root},
-                strict=False,  # TODO: ideally this should be strict
-                context=context,
-            )
-            # Reassign private attributes
-            # Acquire the newly converted data
-            self._root = result["root"]
-        except ValidationError as e:  # pragma: no coverage
-            output.error_list.append(DataFormatError(e))
+    #     try:
+    #         result = self.Format.model_validate(
+    #             {"root": self._root},
+    #             strict=False,  # TODO: ideally this should be strict
+    #             context=context,
+    #         )
+    #         # Reassign private attributes
+    #         # Acquire the newly converted data
+    #         self._root = result["root"]
+    #     except ValidationError as e:  # pragma: no coverage
+    #         output.error_list.append(DataFormatError(e))
 
-        output.warning_list += context["warning_list"]
+    #     output.warning_list += context["warning_list"]
 
-        for tile in self:
-            result = tile.validate(mode=mode, force=force)
-            output.error_list += result.error_list
-            output.warning_list += result.warning_list
+    #     for tile in self:
+    #         result = tile.validate(mode=mode, force=force)
+    #         output.error_list += result.error_list
+    #         output.warning_list += result.warning_list
 
-        return output
+    #     return output
 
     def union(self, other: "TileList") -> "TileList":
         """
@@ -304,15 +304,8 @@ class TileList(Exportable, MutableSequence):
     #     self.difference(other)
 
     def __eq__(self, other: "TileList") -> bool:
-        # TODO: not implmented
         if not isinstance(other, TileList):
-            return False
-        # if len(self.data) != len(other.data):
-        #     return False
-        # for i in range(len(self.data)):
-        #     if self.data[i] != other.data[i]:
-        #         return False
-        # return True
+            return NotImplemented
         return self._root == other._root
 
     def __repr__(self) -> str:  # pragma: no coverage

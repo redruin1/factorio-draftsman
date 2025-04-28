@@ -12,14 +12,16 @@ from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.data.signals import get_signal_types
 from draftsman.error import DataFormatError
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     Connections,
     DraftsmanBaseModel,
     Sections,
-    Section,
+    AttrsSection,
     uint32,
 )
-from draftsman.utils import get_first
+from draftsman.utils import fix_incorrect_pre_init
+from draftsman.validators import instance_of
 from draftsman.warning import PureVirtualDisallowedWarning  # TODO
 
 from draftsman.data.entities import constant_combinators
@@ -30,6 +32,7 @@ from pydantic import ConfigDict, Field, ValidationError, field_validator
 from typing import Any, Literal, Optional, Union
 
 
+@fix_incorrect_pre_init
 @attrs.define
 class ConstantCombinator(
     PlayerDescriptionMixin,
@@ -203,52 +206,76 @@ class ConstantCombinator(
     #     else:
     #         self.control_behavior.sections.filters = value
 
-    @property
-    def sections(self) -> Optional[list[Section]]:
-        return self.control_behavior.sections.sections
+    def _sections_converter(value):
+        print("sections converter")
+        print(value)
+        if isinstance(value, list):
+            for i, elem in enumerate(value):
+                value[i] = AttrsSection.converter(elem)
+        print(value)
+        return value
 
-    @sections.setter
-    def sections(self, value: Optional[list[Section]]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior.Sections,
-                self.control_behavior.sections,
-                "sections",
-                value,
-            )
-            self.control_behavior.sections.sections = result
-        else:
-            self.control_behavior.sections.sections = value
+    sections: list[AttrsSection] = attrs.field(
+        factory=list,
+        converter=_sections_converter,
+        validator=instance_of(list),  # TODO: validator
+    )
+    """
+    TODO
+    """
+
+    # @property
+    # def sections(self) -> Optional[list[Section]]:
+    #     return self.control_behavior.sections.sections
+
+    # @sections.setter
+    # def sections(self, value: Optional[list[Section]]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior.Sections,
+    #             self.control_behavior.sections,
+    #             "sections",
+    #             value,
+    #         )
+    #         self.control_behavior.sections.sections = result
+    #     else:
+    #         self.control_behavior.sections.sections = value
 
     # =========================================================================
 
-    @property
-    def is_on(self) -> Optional[bool]:
-        """
-        Whether or not this Constant combinator is "on" and currently outputting
-        it's contents to connected wires. Default state is enabled.
+    enabled: bool = attrs.field(default=True, validator=instance_of(bool))
+    """
+    Whether or not this Constant combinator is "on" and currently outputting
+    it's contents to connected wires. Default state is enabled.
+    """
 
-        :getter: Gets whether or not this combinator is enabled, or ``None`` if
-            not set.
-        :setter: Sets whether or not this combinator is enabled. Removes the key
-            if set to ``None``.
-        """
-        return self.control_behavior.is_on
+    # @property
+    # def is_on(self) -> Optional[bool]:
+    #     """
+    #     Whether or not this Constant combinator is "on" and currently outputting
+    #     it's contents to connected wires. Default state is enabled.
 
-    @is_on.setter
-    def is_on(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "is_on",
-                value,
-            )
-            self.control_behavior.is_on = result
-        else:
-            self.control_behavior.is_on = value
+    #     :getter: Gets whether or not this combinator is enabled, or ``None`` if
+    #         not set.
+    #     :setter: Sets whether or not this combinator is enabled. Removes the key
+    #         if set to ``None``.
+    #     """
+    #     return self.control_behavior.is_on
+
+    # @is_on.setter
+    # def is_on(self, value: Optional[bool]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior,
+    #             self.control_behavior,
+    #             "is_on",
+    #             value,
+    #         )
+    #         self.control_behavior.is_on = result
+    #     else:
+    #         self.control_behavior.is_on = value
 
     # =========================================================================
 
@@ -257,13 +284,17 @@ class ConstantCombinator(
         group: Union[str, None] = None,
         index: Optional[int] = None,  # TODO: integer size
         active: bool = True,
-    ) -> Section:
+    ) -> AttrsSection:
         """
         Adds a new section to the constant combinator.
 
         NOTE:: Beware of giving sections the same or existing names! If a named
             group already exists within a save, then that group will take
             precedence over a newly added group.
+
+        NOTE:: When exporting combinators to a Factorio 1.0 string, only the
+            first :py:attr:`.item_slot_count` filters of the first
+            :py:class:`.Section` will be exported.
 
         :param group: The name to give this group. The group will have no name
             if omitted.
@@ -281,7 +312,7 @@ class ConstantCombinator(
             section["index"] = index + 1
         else:
             section["index"] = len(self.sections) + 1
-        section = Section(**section)
+        section = AttrsSection(**section)
         self.sections.append(section)
         return self.sections[-1]
 
@@ -351,3 +382,13 @@ class ConstantCombinator(
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:constant_combinator"},
+    ConstantCombinator,
+    lambda fields: {
+        ("control_behavior", "is_on"): fields.enabled.name,
+        ("control_behavior", "sections", "sections"): fields.sections.name,
+    },
+)

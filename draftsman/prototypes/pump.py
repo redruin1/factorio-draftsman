@@ -38,7 +38,7 @@ class Pump(
     :param tile_position: The tile position of the entity.
     :param tags: Additional keys, usually populated by mods.
     :param direction: The orientation of the entity.
-    :param circuit_condition: The circuit condition that this entity needs to 
+    :param circuit_condition: The circuit condition that this entity needs to
         satisfy in order to operate.
     :param connect_to_logistic_network: Whether or not this entity should use
         the neighbouring logistic network to influence its behavior.
@@ -48,7 +48,7 @@ class Pump(
         for this entity, either during or after construction.
     :param extra_keys: Any additional dictionary keys/values that are not valid
         under this entity's schema. Unknown keys on import will be collected
-        here, and if there are any values 
+        here, and if there are any values
     """
 
     # class Format(

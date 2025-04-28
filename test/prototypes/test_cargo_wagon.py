@@ -3,7 +3,7 @@
 from draftsman.constants import Orientation, ValidationMode
 from draftsman.entity import CargoWagon, cargo_wagons, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import ItemFilter
+from draftsman.signatures import AttrsItemFilter
 from draftsman.warning import (
     BarWarning,
     UnknownEntityWarning,
@@ -19,7 +19,7 @@ import warnings
 class TestCargoWagon:
     def test_constructor_init(self):
         cargo_wagon = CargoWagon(
-            "cargo-wagon", tile_position=[0, 0], inventory={"bar": 0}
+            "cargo-wagon", tile_position=[0, 0], bar=0,
         )
         assert cargo_wagon.to_dict() == {
             "name": "cargo-wagon",
@@ -31,10 +31,8 @@ class TestCargoWagon:
             "cargo-wagon",
             position={"x": 1.0, "y": 1.0},
             orientation=0.75,
-            inventory={
-                "bar": 10,
-                "filters": ["transport-belt", "transport-belt", "transport-belt"],
-            },
+            bar=10,
+            filters=["transport-belt", "transport-belt", "transport-belt"]
         )
         assert cargo_wagon.to_dict() == {
             "name": "cargo-wagon",
@@ -54,14 +52,12 @@ class TestCargoWagon:
             "cargo-wagon",
             position={"x": 1.0, "y": 1.0},
             orientation=0.75,
-            inventory={
-                "bar": 10,
-                "filters": [
-                    {"index": 1, "name": "transport-belt"},
-                    {"index": 2, "name": "transport-belt"},
-                    {"index": 3, "name": "transport-belt"},
-                ],
-            },
+            bar=10,
+            filters=[
+                {"index": 0, "name": "transport-belt"},
+                {"index": 1, "name": "transport-belt"},
+                {"index": 2, "name": "transport-belt"},
+            ]
         )
         assert cargo_wagon.to_dict() == {
             "name": "cargo-wagon",
@@ -78,10 +74,6 @@ class TestCargoWagon:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            CargoWagon(
-                "cargo-wagon", unused_keyword="whatever"
-            ).validate().reissue_all()
         # Warn if the cargo wagon is not on a rail (close enough to one?)
         # TODO (Complex)
         with pytest.warns(UnknownEntityWarning):
@@ -90,8 +82,6 @@ class TestCargoWagon:
         # Errors
         with pytest.raises(DataFormatError):
             CargoWagon("cargo-wagon", orientation="wrong").validate().reissue_all()
-        with pytest.raises(DataFormatError):
-            CargoWagon("cargo-wagon", inventory="incorrect").validate().reissue_all()
 
     def test_set_orientation(self):
         wagon = CargoWagon("cargo-wagon")
@@ -101,7 +91,7 @@ class TestCargoWagon:
             "position": {"x": 1.0, "y": 2.5},
         }
 
-        wagon.orientation = None
+        wagon.orientation = 0.0
         assert wagon.orientation == Orientation.NORTH
         assert wagon.collision_set.shapes[0].angle == 0
         assert wagon.to_dict() == {
@@ -110,8 +100,7 @@ class TestCargoWagon:
         }
 
         # Unknown wagon
-        wagon = CargoWagon("unknown-cargo-wagon", validate=ValidationMode.MINIMUM)
-        wagon.orientation = None
+        wagon = CargoWagon("unknown-cargo-wagon", validate_assignment=ValidationMode.MINIMUM)
         assert wagon.orientation == Orientation.NORTH
         assert wagon.collision_set is None
         assert wagon.to_dict() == {
@@ -119,23 +108,12 @@ class TestCargoWagon:
             "position": {"x": 0.0, "y": 0.0},
         }
 
-    def test_set_inventory(self):
-        wagon = CargoWagon("cargo-wagon")
-        assert wagon.inventory == CargoWagon.Format.InventoryFilters()
-
-        wagon.inventory = {"filters": None, "bar": 10}
-        assert wagon.inventory == CargoWagon.Format.InventoryFilters(
-            filters=None, bar=10
-        )
-        assert wagon.to_dict() == {
-            "name": "cargo-wagon",
-            "position": {"x": 1.0, "y": 2.5},
-            "inventory": {"bar": 10},
-        }
+        with pytest.raises(DataFormatError):
+            wagon.orientation = "incorrect"
 
     def test_set_filters(self):
         wagon = CargoWagon("cargo-wagon")
-        assert wagon.filters == None
+        assert wagon.filters == []
         assert wagon.to_dict() == {
             "name": "cargo-wagon",
             "position": {"x": 1.0, "y": 2.5},
@@ -144,9 +122,9 @@ class TestCargoWagon:
         # Shorthand format
         wagon.filters = ["iron-ore", "copper-ore", "iron-ore"]
         assert wagon.filters == [
-            ItemFilter(**{"index": 1, "name": "iron-ore"}),
-            ItemFilter(**{"index": 2, "name": "copper-ore"}),
-            ItemFilter(**{"index": 3, "name": "iron-ore"}),
+            AttrsItemFilter(**{"index": 0, "name": "iron-ore"}),
+            AttrsItemFilter(**{"index": 1, "name": "copper-ore"}),
+            AttrsItemFilter(**{"index": 2, "name": "iron-ore"}),
         ]
         assert wagon.to_dict() == {
             "name": "cargo-wagon",
@@ -162,14 +140,14 @@ class TestCargoWagon:
 
         # Explicit format
         wagon.filters = [
-            {"index": 1, "name": "iron-ore"},
-            {"index": 2, "name": "copper-ore"},
-            {"index": 3, "name": "iron-ore"},
+            {"index": 0, "name": "iron-ore"},
+            {"index": 1, "name": "copper-ore"},
+            {"index": 2, "name": "iron-ore"},
         ]
         assert wagon.filters == [
-            ItemFilter(**{"index": 1, "name": "iron-ore"}),
-            ItemFilter(**{"index": 2, "name": "copper-ore"}),
-            ItemFilter(**{"index": 3, "name": "iron-ore"}),
+            AttrsItemFilter(**{"index": 0, "name": "iron-ore"}),
+            AttrsItemFilter(**{"index": 1, "name": "copper-ore"}),
+            AttrsItemFilter(**{"index": 2, "name": "iron-ore"}),
         ]
         assert wagon.to_dict() == {
             "name": "cargo-wagon",
@@ -185,39 +163,29 @@ class TestCargoWagon:
 
         with pytest.warns(UnknownItemWarning):
             wagon.filters = ["unknown"]
-        assert wagon.filters == [
-            ItemFilter(**{"index": 1, "name": "unknown"}),
-        ]
+            assert wagon.filters == [
+                AttrsItemFilter(**{"index": 0, "name": "unknown"}),
+            ]
 
         with pytest.raises(DataFormatError):
             wagon.filters = "incorrect"
-        assert wagon.filters == [
-            ItemFilter(**{"index": 1, "name": "unknown"}),
-        ]
+        assert wagon.filters[0].name == "unknown"
 
         wagon.validate_assignment = "none"
         assert wagon.validate_assignment == ValidationMode.NONE
-
-        wagon.filters = "incorrect"
-        assert wagon.filters == "incorrect"
-        assert wagon.to_dict() == {
-            "name": "cargo-wagon",
-            "position": {"x": 1.0, "y": 2.5},
-            "inventory": {"filters": "incorrect"},
-        }
 
     def test_set_inventory_filter(self):
         wagon = CargoWagon("cargo-wagon")
 
         wagon.set_inventory_filter(0, "wooden-chest")
         assert wagon.filters == [
-            ItemFilter(**{"index": 1, "name": "wooden-chest"}),
+            AttrsItemFilter(**{"index": 0, "name": "wooden-chest"}),
         ]
 
         # Replace existing
         wagon.set_inventory_filter(0, "iron-chest")
         assert wagon.filters == [
-            ItemFilter(**{"index": 1, "name": "iron-chest"}),
+            AttrsItemFilter(**{"index": 0, "name": "iron-chest"}),
         ]
 
         # Remove existing
@@ -235,34 +203,25 @@ class TestCargoWagon:
 
         # Shorthand
         data = ["iron-ore", "copper-ore", "coal"]
-        wagon.set_inventory_filters(data)
+        wagon.filters = data
         assert wagon.filters == [
-            ItemFilter(**{"index": 1, "name": "iron-ore"}),
-            ItemFilter(**{"index": 2, "name": "copper-ore"}),
-            ItemFilter(**{"index": 3, "name": "coal"}),
+            AttrsItemFilter(**{"index": 0, "name": "iron-ore"}),
+            AttrsItemFilter(**{"index": 1, "name": "copper-ore"}),
+            AttrsItemFilter(**{"index": 2, "name": "coal"}),
         ]
 
         # Longhand
         data = [
-            {"index": 1, "name": "iron-ore"},
-            {"index": 2, "name": "copper-ore"},
-            {"index": 3, "name": "coal"},
+            {"index": 0, "name": "iron-ore"},
+            {"index": 1, "name": "copper-ore"},
+            {"index": 2, "name": "coal"},
         ]
-        wagon.set_inventory_filters(data)
+        wagon.filters = data
         assert wagon.filters == [
-            ItemFilter(**{"index": 1, "name": "iron-ore"}),
-            ItemFilter(**{"index": 2, "name": "copper-ore"}),
-            ItemFilter(**{"index": 3, "name": "coal"}),
+            AttrsItemFilter(**{"index": 0, "name": "iron-ore"}),
+            AttrsItemFilter(**{"index": 1, "name": "copper-ore"}),
+            AttrsItemFilter(**{"index": 2, "name": "coal"}),
         ]
-
-        wagon.set_inventory_filters(None)
-        assert wagon.filters == None
-
-        # Ensure errors even if validation is off
-        wagon.validate_assignment = "none"
-        assert wagon.validate_assignment == ValidationMode.NONE
-        # with pytest.raises(DataFormatError): # TODO: think about
-        #     wagon.set_inventory_filters("incorrect")
 
     def test_set_inventory_bar(self):
         wagon = CargoWagon("cargo-wagon")
@@ -280,18 +239,10 @@ class TestCargoWagon:
             "inventory": {"bar": 10},
         }
 
-        wagon.bar = 100
-        assert wagon.bar == 100
-
-        wagon.validate_assignment = "minimum"
-        assert wagon.validate_assignment == ValidationMode.MINIMUM
-        with warnings.catch_warnings(record=True) as w:
-            wagon.bar = 100
-            assert len(w) == 0
-
         wagon.validate_assignment = ValidationMode.PEDANTIC
         with pytest.warns(BarWarning):
             wagon.bar = 100
+        assert wagon.bar == 100
 
         with pytest.raises(DataFormatError):
             wagon.bar = "incorrect"
@@ -313,7 +264,8 @@ class TestCargoWagon:
         wagon2 = CargoWagon(
             "cargo-wagon",
             tags={"some": "stuff"},
-            inventory={"bar": 1, "filters": [{"index": 1, "name": "transport-belt"}]},
+            bar=1,
+            filters=[{"index": 1, "name": "transport-belt"}]
         )
 
         assert wagon1.mergable_with(wagon2)
@@ -331,7 +283,8 @@ class TestCargoWagon:
         wagon2 = CargoWagon(
             "cargo-wagon",
             tags={"some": "stuff"},
-            inventory={"bar": 1, "filters": [{"index": 1, "name": "transport-belt"}]},
+            bar=1,
+            filters=[{"index": 1, "name": "transport-belt"}]
         )
 
         wagon1.merge(wagon2)
@@ -339,8 +292,8 @@ class TestCargoWagon:
 
         assert wagon1.tags == {"some": "stuff"}
         assert wagon1.bar == 1
-        assert wagon1.inventory["filters"] == [
-            ItemFilter(**{"index": 1, "name": "transport-belt"})
+        assert wagon1.filters == [
+            AttrsItemFilter(**{"index": 1, "name": "transport-belt"})
         ]
 
     def test_eq(self):

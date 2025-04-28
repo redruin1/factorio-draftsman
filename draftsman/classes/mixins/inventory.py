@@ -3,14 +3,17 @@
 from draftsman.data import entities, items
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import ValidationMode
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     DraftsmanBaseModel,
     ensure_bar_less_than_inventory_size,
     uint16,
     uint32,
 )
+from draftsman.validators import and_, instance_of
 from draftsman.warning import BarWarning, IndexWarning, ItemCapacityWarning
 
+import attrs
 import math
 from pydantic import Field, ValidationInfo, field_validator
 import warnings
@@ -21,6 +24,7 @@ if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
 
 
+@attrs.define(slots=False)
 class InventoryMixin:
     """
     Enables the entity to have inventory control. Keeps track of the currently
@@ -64,14 +68,14 @@ class InventoryMixin:
         ):
             return ensure_bar_less_than_inventory_size(cls, bar, info)
 
-    def __init__(self, name, similar_entities, **kwargs):
-        self._root: __class__.Format
+    # def __init__(self, name, similar_entities, **kwargs):
+    #     self._root: __class__.Format
 
-        # self._inventory_slots_occupied = 0
+    #     # self._inventory_slots_occupied = 0
 
-        super().__init__(name, similar_entities, **kwargs)
+    #     super().__init__(name, similar_entities, **kwargs)
 
-        self._root.bar = kwargs.get("bar", None)
+    #     self._root.bar = kwargs.get("bar", None)
 
     # =========================================================================
 
@@ -149,36 +153,67 @@ class InventoryMixin:
 
     # =========================================================================
 
-    @property
-    def bar(self) -> uint16:
-        """
-        The limiting bar of the inventory. Used to prevent the final-most
-        slots in the inventory from accepting new items.
+    def _check_bar_enabled(self, attr, value, mode=None):
+        mode = mode if mode is not None else self.validate_assignment
+        if mode >= ValidationMode.STRICT:
+            # Make sure to check that it's `False`; this attribute can return
+            # `None` if it doesn't recognize the entity, and in that case we
+            # don't want to issue a warning at all
+            if self.inventory_bar_enabled is False:
+                msg = "This entity does not have bar control"
+                warnings.warn(BarWarning(msg))
 
-        Raises :py:class:`~draftsman.warning.IndexWarning` if the set value
-        exceeds the Entity's ``inventory_size`` attribute.
+    bar: Optional[uint16] = attrs.field(
+        default=None,
+        validator=and_(
+            instance_of(Optional[uint16]),
+            ensure_bar_less_than_inventory_size,
+            _check_bar_enabled,
+        ),
+    )
+    """
+    The limiting bar of the inventory. Used to prevent the final-most
+    slots in the inventory from accepting new items.
 
-        :getter: Gets the bar location of the inventory.
-        :setter: Sets the bar location of the inventory.
+    Raises :py:class:`~draftsman.warning.IndexWarning` if the set value
+    exceeds the Entity's ``inventory_size`` attribute.
 
-        :exception DraftsmanError: If attempting to set the bar of an Entity
-            that has the ``inventory_bar_enabled`` attribute set to ``False``.
-        :exception DataFormatError: If set to anything other than an ``int`` or
-            ``None``.
-        :exception DataFormatError: If the set value lies outside of the range
-            ``[0, 65536)``.
-        """
-        return self._root.bar
+    :exception DataFormatError: If set to anything other than an ``int`` or
+        ``None``.
+    :exception DataFormatError: If the set value lies outside of the range
+        ``[0, 65536)``.
+    """
 
-    @bar.setter
-    def bar(self, value: uint16):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "bar", value
-            )
-            self._root.bar = result
-        else:
-            self._root.bar = value
+    # @property
+    # def bar(self) -> uint16:
+    #     """
+    #     The limiting bar of the inventory. Used to prevent the final-most
+    #     slots in the inventory from accepting new items.
+
+    #     Raises :py:class:`~draftsman.warning.IndexWarning` if the set value
+    #     exceeds the Entity's ``inventory_size`` attribute.
+
+    #     :getter: Gets the bar location of the inventory.
+    #     :setter: Sets the bar location of the inventory.
+
+    #     :exception DraftsmanError: If attempting to set the bar of an Entity
+    #         that has the ``inventory_bar_enabled`` attribute set to ``False``.
+    #     :exception DataFormatError: If set to anything other than an ``int`` or
+    #         ``None``.
+    #     :exception DataFormatError: If the set value lies outside of the range
+    #         ``[0, 65536)``.
+    #     """
+    #     return self._root.bar
+
+    # @bar.setter
+    # def bar(self, value: uint16):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, type(self).Format, self._root, "bar", value
+    #         )
+    #         self._root.bar = result
+    #     else:
+    #         self._root.bar = value
 
     # =========================================================================
 
@@ -215,3 +250,10 @@ class InventoryMixin:
 
     def __eq__(self, other) -> bool:
         return super().__eq__(other) and self.bar == other.bar
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:inventory_mixin"},
+    InventoryMixin,
+    lambda fields: {"bar": fields.bar.name},
+)

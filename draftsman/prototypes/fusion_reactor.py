@@ -48,6 +48,10 @@ class FusionReactor:
 
         self.validate_assignment = validate_assignment
 
+    @property
+    def similar_entities(self) -> list[str]:
+        return fusion_reactors
+
     # =========================================================================
 
     __hash__ = Entity.__hash__

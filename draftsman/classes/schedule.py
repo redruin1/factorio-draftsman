@@ -15,7 +15,14 @@ from draftsman.constants import (
 )
 from draftsman.error import DataFormatError
 from draftsman.prototypes.locomotive import Locomotive
-from draftsman.signatures import Condition, DraftsmanBaseModel, uint32
+from draftsman.serialization import draftsman_converters
+from draftsman.signatures import (
+    AttrsSimpleCondition,
+    Condition,
+    DraftsmanBaseModel,
+    uint32,
+)
+from draftsman.validators import instance_of, one_of, try_convert
 
 import attrs
 import copy
@@ -32,7 +39,7 @@ from pydantic_core import CoreSchema, core_schema
 from typing import Any, Literal, Mapping, Optional, Union
 
 
-# TODO: make dataclass?
+@attrs.define
 class WaitCondition(Exportable):
     """
     An object that represents a particular criteria to wait for when a train is
@@ -103,72 +110,72 @@ class WaitCondition(Exportable):
 
         model_config = ConfigDict(title="WaitCondition")
 
-    def __init__(
-        self,
-        type: Literal[
-            "time",
-            "inactivity",
-            "full",
-            "empty",
-            "item_count",
-            "fluid_count",
-            "circuit",
-            "passenger_present",
-            "passenger_not_present",
-        ],
-        compare_type: Literal["and", "or"] = "or",
-        ticks: Optional[uint32] = None,
-        condition: Condition = None,
-        validate: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-    ):
-        """
-        Constructs a new :py:class:`WaitCondition` object.
+    # def __init__(
+    #     self,
+    #     type: Literal[
+    #         "time",
+    #         "inactivity",
+    #         "full",
+    #         "empty",
+    #         "item_count",
+    #         "fluid_count",
+    #         "circuit",
+    #         "passenger_present",
+    #         "passenger_not_present",
+    #     ],
+    #     compare_type: Literal["and", "or"] = "or",
+    #     ticks: Optional[uint32] = None,
+    #     condition: Condition = None,
+    #     validate: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    # ):
+    #     """
+    #     Constructs a new :py:class:`WaitCondition` object.
 
-        :param type: A ``str`` value equivalent to one of the members of
-            :py:class:`WaitConditionType`.
-        :param compare_type: A ``str`` value equivalent to one of the members of
-            :py:class:`WaitConditionCompareType`.
-        :param ticks: The number of in-game ticks to wait for on conditions of
-            type ``TIME_PASSED`` and ``INACTIVITY``.
-        :param condition: The condition to use for conditions of type
-            ``ITEM_COUNT``, ``FLUID_COUNT``, and ``CIRCUIT_CONDITION``.
-            Specified as a sequence of the format
-            ``(first_signal, comparator, second_signal_or_constant)``.
-        """
-        self._root: __class__.Format
+    #     :param type: A ``str`` value equivalent to one of the members of
+    #         :py:class:`WaitConditionType`.
+    #     :param compare_type: A ``str`` value equivalent to one of the members of
+    #         :py:class:`WaitConditionCompareType`.
+    #     :param ticks: The number of in-game ticks to wait for on conditions of
+    #         type ``TIME_PASSED`` and ``INACTIVITY``.
+    #     :param condition: The condition to use for conditions of type
+    #         ``ITEM_COUNT``, ``FLUID_COUNT``, and ``CIRCUIT_CONDITION``.
+    #         Specified as a sequence of the format
+    #         ``(first_signal, comparator, second_signal_or_constant)``.
+    #     """
+    #     self._root: __class__.Format
 
-        super().__init__()
+    #     super().__init__()
 
-        if type == WaitConditionType.TIME_PASSED and ticks is None:
-            ticks = 30 * Ticks.SECOND
-        elif type == WaitConditionType.INACTIVITY and ticks is None:
-            ticks = 5 * Ticks.SECOND
-        if type in {
-            WaitConditionType.ITEM_COUNT,
-            WaitConditionType.FLUID_COUNT,
-            WaitConditionType.CIRCUIT_CONDITION,
-        }:
-            condition = Condition() if condition is None else condition
+    #     if type == WaitConditionType.TIME_PASSED and ticks is None:
+    #         ticks = 30 * Ticks.SECOND
+    #     elif type == WaitConditionType.INACTIVITY and ticks is None:
+    #         ticks = 5 * Ticks.SECOND
+    #     if type in {
+    #         WaitConditionType.ITEM_COUNT,
+    #         WaitConditionType.FLUID_COUNT,
+    #         WaitConditionType.CIRCUIT_CONDITION,
+    #     }:
+    #         condition = Condition() if condition is None else condition
 
-        self._root = self.Format.model_validate(
-            {
-                "type": type,
-                "compare_type": compare_type,
-                "ticks": ticks,
-                "condition": condition,
-            },
-            strict=False,
-            context={"construction": True, "mode": ValidationMode.NONE},
-        )
+    #     self._root = self.Format.model_validate(
+    #         {
+    #             "type": type,
+    #             "compare_type": compare_type,
+    #             "ticks": ticks,
+    #             "condition": condition,
+    #         },
+    #         strict=False,
+    #         context={"construction": True, "mode": ValidationMode.NONE},
+    #     )
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
 
-        self.validate(mode=validate).reissue_all(stacklevel=3)
+    #     self.validate(mode=validate).reissue_all(stacklevel=3)
 
     # def to_dict(self) -> dict:
     #     result = {"type": self.type, "compare_type": self.compare_type}
@@ -189,106 +196,149 @@ class WaitCondition(Exportable):
 
     # =========================================================================
 
-    @property
-    def type(self) -> WaitConditionType:
-        return self._root.type
+    type: WaitConditionType = attrs.field(
+        converter=try_convert(WaitConditionType),
+        validator=instance_of(WaitConditionType),
+    )
 
-    @type.setter
-    def type(self, value: WaitConditionType):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, __class__.Format, self._root, "type", value
-            )
-            self._root.type = result
-        else:
-            self._root.type = value
+    # @property
+    # def type(self) -> WaitConditionType:
+    #     return self._root.type
 
-    # =========================================================================
-
-    @property
-    def compare_type(self):
-        return self._root.compare_type
-
-    @compare_type.setter
-    def compare_type(self, value: WaitConditionCompareType):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, __class__.Format, self._root, "compare_type", value
-            )
-            self._root.compare_type = result
-        else:
-            self._root.compare_type = value
+    # @type.setter
+    # def type(self, value: WaitConditionType):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, __class__.Format, self._root, "type", value
+    #         )
+    #         self._root.type = result
+    #     else:
+    #         self._root.type = value
 
     # =========================================================================
 
-    @property
-    def ticks(self) -> Optional[uint32]:
-        """
-        TODO
-        """
-        return self._root.ticks
+    compare_type: Literal["or", "and"] = attrs.field(
+        default="or", validator=one_of("or", "and")
+    )
 
-    @ticks.setter
-    def ticks(self, value: Optional[uint32]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, __class__.Format, self._root, "ticks", value
-            )
-            self._root.ticks = result
-        else:
-            self._root.ticks = value
+    # @property
+    # def compare_type(self):
+    #     return self._root.compare_type
 
-    # =========================================================================
-
-    @property
-    def condition(self) -> Optional[Condition]:
-        """
-        TODO
-        """
-        return self._root.condition
-
-    @condition.setter
-    def condition(self, value: Optional[Condition]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, __class__.Format, self._root, "condition", value
-            )
-            self._root.condition = result
-        else:
-            self._root.condition = value
+    # @compare_type.setter
+    # def compare_type(self, value: WaitConditionCompareType):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, __class__.Format, self._root, "compare_type", value
+    #         )
+    #         self._root.compare_type = result
+    #     else:
+    #         self._root.compare_type = value
 
     # =========================================================================
 
-    def validate(
-        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
-    ) -> ValidationResult:
-        mode = ValidationMode(mode)
+    ticks: Optional[uint32] = attrs.field(validator=instance_of(Optional[uint32]))
+    """
+    TODO
+    """
 
-        output = ValidationResult([], [])
+    @ticks.default
+    def _(self):
+        if self.type is WaitConditionType.TIME_PASSED:
+            return 30 * Ticks.SECOND
+        elif self.type is WaitConditionType.INACTIVITY:
+            return 5 * Ticks.SECOND
+        else:
+            return None
 
-        if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
-            return output
+    # @property
+    # def ticks(self) -> Optional[uint32]:
+    #     """
+    #     TODO
+    #     """
+    #     return self._root.ticks
 
-        context = {
-            "mode": mode,
-            "object": self,
-            "warning_list": [],
-            "assignment": False,
-        }
+    # @ticks.setter
+    # def ticks(self, value: Optional[uint32]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, __class__.Format, self._root, "ticks", value
+    #         )
+    #         self._root.ticks = result
+    #     else:
+    #         self._root.ticks = value
 
-        try:
-            self.Format.model_validate(self._root, strict=False, context=context)
-            # print("result:", result)
-            # Reassign private attributes
-            # TODO
-            # Acquire the newly converted data
-            # self._root = result
-        except ValidationError as e:
-            output.error_list.append(DataFormatError(e))
+    # =========================================================================
 
-        output.warning_list += context["warning_list"]
+    condition: Optional[AttrsSimpleCondition] = attrs.field(
+        converter=AttrsSimpleCondition.converter,
+        validator=instance_of(Optional[AttrsSimpleCondition]),
+    )
+    """
+    TODO
+    """
 
-        return output
+    @condition.default
+    def _(self):
+        print(self.type)
+        if self.type in {
+            WaitConditionType.ITEM_COUNT,
+            WaitConditionType.FLUID_COUNT,
+            WaitConditionType.CIRCUIT_CONDITION,
+        }:
+            return AttrsSimpleCondition()
+        else:
+            return None
+
+    # @property
+    # def condition(self) -> Optional[Condition]:
+    #     """
+    #     TODO
+    #     """
+    #     return self._root.condition
+
+    # @condition.setter
+    # def condition(self, value: Optional[Condition]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, __class__.Format, self._root, "condition", value
+    #         )
+    #         self._root.condition = result
+    #     else:
+    #         self._root.condition = value
+
+    # =========================================================================
+
+    # def validate(
+    #     self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    # ) -> ValidationResult:
+    #     mode = ValidationMode(mode)
+
+    #     output = ValidationResult([], [])
+
+    #     if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
+    #         return output
+
+    #     context = {
+    #         "mode": mode,
+    #         "object": self,
+    #         "warning_list": [],
+    #         "assignment": False,
+    #     }
+
+    #     try:
+    #         self.Format.model_validate(self._root, strict=False, context=context)
+    #         # print("result:", result)
+    #         # Reassign private attributes
+    #         # TODO
+    #         # Acquire the newly converted data
+    #         # self._root = result
+    #     except ValidationError as e:
+    #         output.error_list.append(DataFormatError(e))
+
+    #     output.warning_list += context["warning_list"]
+
+    #     return output
 
     # =========================================================================
 
@@ -342,17 +392,26 @@ class WaitCondition(Exportable):
         else:
             return NotImplemented
 
-    def __eq__(self, other: "WaitCondition") -> bool:
-        return (
-            isinstance(other, WaitCondition)
-            and self.type == other.type
-            and self.compare_type == other.compare_type
-            and self.ticks == other.ticks
-            and self.condition == other.condition
-        )
+    # def __eq__(self, other: "WaitCondition") -> bool:
+    #     return (
+    #         isinstance(other, WaitCondition)
+    #         and self.type == other.type
+    #         and self.compare_type == other.compare_type
+    #         and self.ticks == other.ticks
+    #         and self.condition == other.condition
+    #     )
 
-    def __repr__(self) -> str:
-        return "<WaitCondition>{{{}}}".format(str(self._root))
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:wait_condition"},
+    WaitCondition,
+    lambda fields: {
+        "type": fields.type.name,
+        "compare_type": fields.compare_type.name,
+        "ticks": fields.ticks.name,
+        "condition": fields.condition.name,
+    },
+)
 
 
 class WaitConditions:
@@ -403,6 +462,23 @@ class WaitConditions:
         )
 
 
+draftsman_converters.register_structure_hook(
+    WaitConditions, lambda l, _: WaitConditions([WaitCondition(**elem) for elem in l])
+)
+
+
+def wait_conditions_unstructure_factory(cls: type, converter):
+    def unstructure_hook(inst):
+        return [converter.unstructure(w) for w in inst._conditions]
+
+    return unstructure_hook
+
+
+draftsman_converters.register_unstructure_hook_factory(
+    lambda cls: issubclass(cls, WaitConditions), wait_conditions_unstructure_factory
+)
+
+
 # @custom_define(field_order=["locomotives", "schedule", "extra_keys"])
 @attrs.define
 class Schedule(Exportable):
@@ -413,14 +489,41 @@ class Schedule(Exportable):
     """
 
     @attrs.define
-    class Specification:
+    class Specification(Exportable):
         @attrs.define
-        class Stop:
-            station: str = attrs.field()
-            wait_conditions: WaitConditions = attrs.field(factory=WaitConditions)
+        class Stop(Exportable):
+            station: str = attrs.field(validator=instance_of(str))
+            wait_conditions: WaitConditions = attrs.field(
+                factory=WaitConditions, validator=instance_of(WaitConditions)
+            )
 
-        records: list[Stop] = attrs.field(factory=list)
+            @classmethod
+            def converter(cls, value):
+                if isinstance(value, dict):
+                    return cls(**value)
+                return value
+
+        def _records_converter(value):
+            if isinstance(value, list):
+                res = [None] * len(value)
+                for i, elem in enumerate(value):
+                    res[i] = Schedule.Specification.Stop.converter(elem)
+                return res
+            else:
+                return value
+
+        records: list[Stop] = attrs.field(
+            factory=list,
+            converter=_records_converter,
+            validator=instance_of(list),  # TODO: validators
+        )
         # TODO: interrupts
+
+        @classmethod
+        def converter(cls, value):
+            if isinstance(value, dict):
+                return cls(**value)
+            return value
 
     # class Format(DraftsmanBaseModel):
     #     class ScheduleSpecification(DraftsmanBaseModel):
@@ -520,8 +623,7 @@ class Schedule(Exportable):
     # =========================================================================
 
     locomotives: list[Association] = attrs.field(
-        factory=list,
-        # TODO: validators
+        factory=list, validator=instance_of(list)  # TODO: validators
     )
     """
     The list of :py:class:`Association`s to each :py:class:`Locomotive` that
@@ -540,7 +642,8 @@ class Schedule(Exportable):
 
     schedule: Specification = attrs.field(
         factory=Specification,
-        # TODO: validators
+        converter=Specification.converter,
+        validator=instance_of(Specification),
     )
 
     @property
@@ -631,9 +734,7 @@ class Schedule(Exportable):
 
         self.stops.insert(
             index,
-            self.Format.ScheduleSpecification.Stop(
-                station=name, wait_conditions=wait_conditions
-            ),
+            Schedule.Specification.Stop(station=name, wait_conditions=wait_conditions),
         )
 
     def remove_stop(
@@ -658,16 +759,13 @@ class Schedule(Exportable):
 
         if wait_conditions is None:
             for i, stop in enumerate(self.stops):
-                if stop["station"] == name:
+                if stop.station == name:
                     self.stops.pop(i)
                     return
             raise ValueError("No station with name '{}' found in schedule".format(name))
         else:
             for i, stop in enumerate(self.stops):
-                if (
-                    stop["station"] == name
-                    and stop["wait_conditions"] == wait_conditions
-                ):
+                if stop.station == name and stop.wait_conditions == wait_conditions:
                     self.stops.pop(i)
                     return
             raise ValueError(
@@ -748,3 +846,30 @@ class Schedule(Exportable):
 
     def __repr__(self) -> str:
         return "<Schedule>{}".format(self.to_dict())
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:schedule:specification:stop"},
+    Schedule.Specification.Stop,
+    lambda fields: {
+        "station": fields.station.name,
+        "wait_conditions": fields.wait_conditions.name,
+    },
+)
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:schedule:specification"},
+    Schedule.Specification,
+    lambda fields: {
+        "records": fields.records.name,
+    },
+)
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:schedule"},
+    Schedule,
+    lambda fields: {
+        "locomotives": fields.locomotives.name,
+        "schedule": fields.schedule.name,
+    },
+)

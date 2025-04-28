@@ -25,8 +25,8 @@ class SimpleEntityWithOwner(VariationMixin, DirectionalMixin, Entity):
     #     variation: Optional[uint16] = Field(
     #         1,  # I think this is the default
     #         description="""
-    #         The graphical variation of this entity. Used in many decorative 
-    #         objects, though (currently) only mods like Text-Plates utilize this 
+    #         The graphical variation of this entity. Used in many decorative
+    #         objects, though (currently) only mods like Text-Plates utilize this
     #         in blueprint strings.
     #         """,
     #     )

@@ -3,8 +3,10 @@
 from draftsman.classes.association import Association
 from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.data import entities
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import DraftsmanBaseModel, Connections
 
+import attrs
 from pydantic import (
     Field,
     ValidationInfo,
@@ -14,6 +16,7 @@ from pydantic import (
 from typing import Any, Optional
 
 
+@attrs.define(slots=False)
 class CircuitConnectableMixin:
     """
     Enables the Entity to be connected to circuit networks.
@@ -60,16 +63,17 @@ class CircuitConnectableMixin:
 
     # =========================================================================
 
-    # @property
-    # def connections(self) -> Connections:
-    #     """
-    #     Connections dictionary. Primarily holds information about the Entity's
-    #     circuit connections (as well as copper wire connections).
+    _connections: dict = attrs.field(factory=dict, repr=False, alias="connections")
 
-    #     :exception DataFormatError: If set to anything that does not match the
-    #         format of :py:data:`draftsman.signatures.CONNECTIONS`.
-    #     """
-    #     return self._root.connections
+    @property
+    def connections(self) -> dict:
+        """
+        Connections dictionary. Primarily holds information about the Entity's
+        circuit connections (as well as copper wire connections).
+
+        Deprecated in Factorio 2.0.
+        """
+        return self._connections
 
     # @connections.setter
     # def connections(self, value: Connections):
@@ -211,3 +215,30 @@ class CircuitConnectableMixin:
 
     # def __eq__(self, other) -> bool:
     #     return super().__eq__(other) and self.connections == other.connections
+
+
+draftsman_converters.get_version((1, 0)).add_schema(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "factorio:circuit_connectable_mixin",
+    },
+    CircuitConnectableMixin,
+    lambda fields: {
+        "connections": fields._connections.name,
+    },
+    lambda fields, converter: {
+        "connections": fields._connections.name,
+    },
+)
+
+draftsman_converters.get_version((2, 0)).add_schema(
+    {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": "factorio:circuit_connectable_mixin",
+    },
+    CircuitConnectableMixin,
+    lambda fields: {
+        "connections": fields._connections.name,
+    },
+    lambda fields, converter: {"connections": None},
+)

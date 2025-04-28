@@ -1,24 +1,21 @@
 # orientation.py
 
 from draftsman.classes.collision_set import CollisionSet
-from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.exportable import Exportable, attempt_and_reissue
 from draftsman.constants import Orientation
+from draftsman.serialization import draftsman_converters
 from draftsman.utils import Rectangle
+from draftsman.validators import instance_of, try_convert
 
 from draftsman.data import entities
 
 import attrs
 from pydantic import BaseModel, Field
-from typing import Optional, Union
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.entity import Entity
+from typing import Optional
 
 
 @attrs.define(slots=False)
-class OrientationMixin:
+class OrientationMixin(Exportable):
     """
     Used in trains and wagons to specify their direction.
     """
@@ -56,6 +53,79 @@ class OrientationMixin:
 
     # =========================================================================
 
+    def _set_orientation(self, attr: attrs.Attribute, value):
+        # Convert
+        value = attr.converter(value)
+        # Validate
+        attr.validator(self, attr, value)
+        # instance_of(Orientation)(self, attr, value)
+        if self.collision_set is not None:
+            self._collision_set.shapes[0].angle = (value % 1.0) * 360.0
+        return value
+
+    orientation: Orientation = attrs.field(
+        default=Orientation.NORTH,
+        converter=try_convert(Orientation),
+        on_setattr=_set_orientation,
+        validator=instance_of(Orientation),
+    )
+    """
+    The angle that the current Entity is facing, expressed as a ``float``
+    in the range ``[0.0, 1.0)``, where ``0.0`` is North and increases
+    clockwise.
+
+    Raises :py:class:`.ValueWarning` if set to a value not in the range
+    ``[0.0, 1.0)``.
+
+    .. NOTE::
+
+        This is distinct from ``direction``, which is used on grid-aligned
+        entities and can only be a max of 16 possible rotations.
+    """
+
+    # @property
+    # def orientation(self) -> Orientation:
+    #     """
+    #     The angle that the current Entity is facing, expressed as a ``float``
+    #     in the range ``[0.0, 1.0)``, where ``0.0`` is North and increases
+    #     clockwise.
+
+    #     Raises :py:class:`.ValueWarning` if set to a value not in the range
+    #     ``[0.0, 1.0)``.
+
+    #     .. NOTE::
+
+    #         This is distinct from ``direction``, which is used on grid-aligned
+    #         entities and can only be a max of 8 possible rotations.
+
+    #     :getter: Gets the orientation of the Entity.
+    #     :setter: Sets the orientation of the Entity. Orients the object to north
+    #         (0.0) if set to ``None``.
+    #     """
+    #     return self._root.orientation
+
+    # @orientation.setter
+    # def orientation(self, value: Union[float, Orientation, None]):
+    #     if self.validate_assignment:
+    #         value = attempt_and_reissue(
+    #             self, type(self).Format, self._root, "orientation", value
+    #         )
+
+    #     if value is None:
+    #         self._root.orientation = Orientation.NORTH
+    #         if self.collision_set is not None:
+    #             self._collision_set.shapes[0].angle = 0
+    #     elif isinstance(value, (float, int)):
+    #         self._root.orientation = Orientation(value)
+    #         if self.collision_set is not None:
+    #             self._collision_set.shapes[0].angle = (value % 1.0) * 360.0
+    #     else:
+    #         self._root.orientation = value
+    #         # if self.collision_set is not None:
+    #         #     self._collision_set.shapes[0].angle = (value % 1.0) * 360.0
+
+    # =========================================================================
+
     _collision_set: Optional[CollisionSet] = attrs.field(
         init=False, repr=False, metadata={"omit": True}
     )
@@ -70,7 +140,13 @@ class OrientationMixin:
         # grabbing the entire grabbed collision set and rotating it by orientation?
         width = original.bot_right[0] - original.top_left[0]
         height = original.bot_right[1] - original.top_left[1]
-        return CollisionSet([Rectangle((0, 0), width, height, 0)])
+        # Orientation might not be valid, so we default to 0 if thats the case
+        orientation = (
+            self.orientation if isinstance(self.orientation, Orientation) else 0.0
+        )
+        return CollisionSet(
+            [Rectangle((0, 0), width, height, (orientation % 1.0) * 360.0)]
+        )
 
     @property
     def collision_set(self) -> Optional[CollisionSet]:
@@ -78,50 +154,7 @@ class OrientationMixin:
 
     # =========================================================================
 
-    @property
-    def orientation(self) -> Orientation:
-        """
-        The angle that the current Entity is facing, expressed as a ``float``
-        in the range ``[0.0, 1.0)``, where ``0.0`` is North and increases
-        clockwise.
-
-        Raises :py:class:`.ValueWarning` if set to a value not in the range
-        ``[0.0, 1.0)``.
-
-        .. NOTE::
-
-            This is distinct from ``direction``, which is used on grid-aligned
-            entities and can only be a max of 8 possible rotations.
-
-        :getter: Gets the orientation of the Entity.
-        :setter: Sets the orientation of the Entity. Orients the object to north
-            (0.0) if set to ``None``.
-        """
-        return self._root.orientation
-
-    @orientation.setter
-    def orientation(self, value: Union[float, Orientation, None]):
-        if self.validate_assignment:
-            value = attempt_and_reissue(
-                self, type(self).Format, self._root, "orientation", value
-            )
-
-        if value is None:
-            self._root.orientation = Orientation.NORTH
-            if self.collision_set is not None:
-                self._collision_set.shapes[0].angle = 0
-        elif isinstance(value, (float, int)):
-            self._root.orientation = Orientation(value)
-            if self.collision_set is not None:
-                self._collision_set.shapes[0].angle = (value % 1.0) * 360.0
-        else:
-            self._root.orientation = value
-            # if self.collision_set is not None:
-            #     self._collision_set.shapes[0].angle = (value % 1.0) * 360.0
-
-    # =========================================================================
-
-    def mergable_with(self, other: "Entity") -> bool:
+    def mergable_with(self, other: "OrientationMixin") -> bool:
         base_mergable = super().mergable_with(other)
         return base_mergable and self.orientation == other.orientation
 
@@ -129,3 +162,10 @@ class OrientationMixin:
 
     # def __eq__(self, other) -> bool:
     #     return super().__eq__(other) and self.orientation == other.orientation
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:orientation_mixin"},
+    OrientationMixin,
+    lambda fields: {fields.orientation.name: "orientation"},
+)

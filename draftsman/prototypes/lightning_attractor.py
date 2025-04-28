@@ -46,6 +46,10 @@ class LightningAttractor(Entity):
 
         self.validate_assignment = validate_assignment
 
+    @property
+    def similar_entities(self) -> list[str]:
+        return lightning_attractors
+
     # =========================================================================
 
     __hash__ = Entity.__hash__

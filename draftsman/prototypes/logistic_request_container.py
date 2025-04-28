@@ -11,22 +11,13 @@ from draftsman.classes.mixins import (
     RequestFiltersMixin,
     InventoryMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import (
-    DraftsmanBaseModel,
-    ItemRequest,
-    uint16,
-)
-from draftsman.utils import get_first
+from draftsman.validators import instance_of
 
 from draftsman.data.entities import logistic_request_containers
 
 import attrs
 import cattrs
-from pydantic import ConfigDict, Field
-from typing import Any, Literal, Optional, Union
 
 
 @attrs.define
@@ -114,6 +105,14 @@ class LogisticRequestContainer(
     @property
     def similar_entities(self) -> list[str]:
         return logistic_request_containers
+
+    # =========================================================================
+
+    # TODO: should be evolve
+    request_from_buffers: bool = attrs.field(
+        default=False,
+        validator=instance_of(bool),
+    )
 
     # =========================================================================
 

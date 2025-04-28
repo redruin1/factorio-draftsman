@@ -25,6 +25,7 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
     requests (for categories available to the specific entity). Implicitly
     inherits :py:class:`~.RequestItemsMixin`.
     """
+
     # TODO: this should probably just be EnergySourceMixin or InputEnergySourceMixin
 
     class Format(BaseModel):
@@ -144,7 +145,7 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
             "energy_source"
         ]
         energy_source = self.prototype.get("energy_source", None)
-        if energy_source is not None: # and energy_source["type"] == "burner":
+        if energy_source is not None:  # and energy_source["type"] == "burner":
             return energy_source
         else:
             return None
@@ -180,7 +181,7 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
 
     # =========================================================================
 
-    @property # TODO: cache?
+    @property  # TODO: cache?
     def allowed_fuel_items(self) -> Optional[set[str]]:
         """
         A set of strings, each one a valid item that can be used as a fuel
@@ -193,8 +194,8 @@ class BurnerEnergySourceMixin:  # (RequestItemsMixin)
             return None
         if self.input_energy_source is None:
             return set()
-        
-        # Fuel types can be specified either as a "categories" list or as a 
+
+        # Fuel types can be specified either as a "categories" list or as a
         # single "category"
         if "fuel_categories" in self.input_energy_source:
             fuel_categories = self.input_energy_source["fuel_categories"]

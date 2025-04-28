@@ -3,7 +3,7 @@
 from draftsman.constants import MiningDrillReadMode, ValidationMode
 from draftsman.entity import MiningDrill, mining_drills, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import ItemRequest
+from draftsman.signatures import AttrsItemRequest
 from draftsman.warning import (
     ModuleCapacityWarning,
     ItemLimitationWarning,
@@ -27,10 +27,6 @@ class TestMiningDrill:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            MiningDrill(unused_keyword="whatever").validate().reissue_all()
-        with pytest.warns(UnknownKeywordWarning):
-            MiningDrill(control_behavior={"unused": "keyword"}).validate().reissue_all()
         # with pytest.warns(ModuleCapacityWarning): # TODO
         #     drill = MiningDrill("electric-mining-drill")
         #     drill.validate().reissue_all()
@@ -41,7 +37,7 @@ class TestMiningDrill:
         with pytest.raises(DataFormatError):
             MiningDrill(items="incorrect").validate().reissue_all()
         with pytest.raises(DataFormatError):
-            MiningDrill(control_behavior="incorrect").validate().reissue_all()
+            MiningDrill(tags="incorrect").validate().reissue_all()
 
     def test_set_item_request(self):
         mining_drill = MiningDrill("electric-mining-drill")
@@ -88,11 +84,10 @@ class TestMiningDrill:
 
     def test_set_read_resources(self):
         mining_drill = MiningDrill("burner-mining-drill")
-        mining_drill.read_resources = True
         assert mining_drill.read_resources == True
 
-        mining_drill.read_resources = None
-        assert mining_drill.read_resources == None
+        mining_drill.read_resources = False
+        assert mining_drill.read_resources == False
 
         with pytest.raises(DataFormatError):
             mining_drill.read_resources = "incorrect"
@@ -110,31 +105,19 @@ class TestMiningDrill:
 
     def test_set_read_mode(self):
         mining_drill = MiningDrill("burner-mining-drill")
-        mining_drill.read_mode = MiningDrillReadMode.UNDER_DRILL
         assert mining_drill.read_mode == MiningDrillReadMode.UNDER_DRILL
 
-        mining_drill.read_mode = None
-        assert mining_drill.read_mode == None
+        mining_drill.read_mode = MiningDrillReadMode.TOTAL_PATCH
+        assert mining_drill.read_mode == MiningDrillReadMode.TOTAL_PATCH
 
-        with pytest.raises(DataFormatError):
+        with pytest.raises(ValueError):
             mining_drill.read_mode = "incorrect"
-
-        mining_drill.validate_assignment = "none"
-        assert mining_drill.validate_assignment == ValidationMode.NONE
-
-        mining_drill.read_mode = "incorrect"
-        assert mining_drill.read_mode == "incorrect"
-        assert mining_drill.to_dict() == {
-            "name": "burner-mining-drill",
-            "position": {"x": 1, "y": 1},
-            "control_behavior": {"circuit_resource_read_mode": "incorrect"},
-        }
 
     def test_mergable_with(self):
         drill1 = MiningDrill("electric-mining-drill")
         drill2 = MiningDrill(
             "electric-mining-drill",
-            items={"productivity-module": 1, "productivity-module-2": 1},
+            # items={"productivity-module": 1, "productivity-module-2": 1},
             tags={"some": "stuff"},
         )
 
@@ -187,22 +170,18 @@ class TestMiningDrill:
         del drill2
 
         assert drill1.items == [
-            ItemRequest(
-                **{
-                    "id": "productivity-module",
-                    "items": {
-                        "in_inventory": [{"inventory": 1, "stack": 0, "count": 1}]
-                    },
+            AttrsItemRequest(**{
+                "id": "productivity-module",
+                "items": {
+                    "in_inventory": [{"inventory": 1, "stack": 0, "count": 1}]
+                },
+            }),
+            AttrsItemRequest(**{
+                "id": "productivity-module-2",
+                "items": {
+                    "in_inventory": [{"inventory": 1, "stack": 1, "count": 1}]
                 }
-            ),
-            ItemRequest(
-                **{
-                    "id": "productivity-module-2",
-                    "items": {
-                        "in_inventory": [{"inventory": 1, "stack": 1, "count": 1}]
-                    },
-                }
-            ),
+            }),
         ]
         assert drill1.tags == {"some": "stuff"}
 

@@ -57,6 +57,10 @@ class Turret(RequestItemsMixin, DirectionalMixin, Entity):
 
         self.validate_assignment = validate_assignment
 
+    @property
+    def similar_entities(self) -> list[str]:
+        return turrets
+
     # =========================================================================
 
     __hash__ = Entity.__hash__

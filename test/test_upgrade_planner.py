@@ -11,7 +11,7 @@ from draftsman.error import (
     DataFormatError,
     InvalidMapperError,
 )
-from draftsman.signatures import Icon, Mapper
+from draftsman.signatures import AttrsIcon, AttrsMapper
 from draftsman.utils import encode_version
 from draftsman.warning import (
     DraftsmanWarning,
@@ -37,9 +37,10 @@ class TestUpgradePlanner:
         }
 
         # String
-        upgrade_planner = UpgradePlanner(
+        upgrade_planner = UpgradePlanner.from_string(
             "0eNqrViotSC9KTEmNL8hJzMtLLVKyqlYqTi0pycxLL1ayyivNydFRyixJzVWygqnUhanUUSpLLSrOzM9TsjKyMDQxtzQyNzUDIhOL2loAhpkdww=="
         )
+        assert upgrade_planner.extra_keys == None
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "version": encode_version(1, 1, 61),
@@ -51,15 +52,15 @@ class TestUpgradePlanner:
                 "settings": {
                     "mappers": [
                         {
-                            "from": "transport-belt",
-                            "to": "fast-transport-belt",
+                            "from": {"name": "transport-belt", "type": "entity"},
+                            "to": {"name": "fast-transport-belt", "type": "entity"},
                             "index": 0,
                         }
                     ]
                 }
             }
         }
-        upgrade_planner = UpgradePlanner(test_planner)
+        upgrade_planner = UpgradePlanner.from_dict(test_planner)
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "settings": {
@@ -76,19 +77,19 @@ class TestUpgradePlanner:
 
         # Warnings
         with pytest.warns(DraftsmanWarning):
-            UpgradePlanner(
+            UpgradePlanner.from_dict(
                 {"upgrade_planner": {"unused": "keyword"}}
             ).validate().reissue_all()
 
         # Correct format, but incorrect type
         with pytest.raises(IncorrectBlueprintTypeError):
-            UpgradePlanner(
+            UpgradePlanner.from_string(
                 "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3sTQ1MTc1rq0FAHmyE1c="
             )
 
         # Incorrect format
         with pytest.raises(MalformedBlueprintStringError):
-            UpgradePlanner("0lmaothisiswrong")
+            UpgradePlanner.from_string("0lmaothisiswrong")
 
     def test_description(self):
         upgrade_planner = UpgradePlanner()
@@ -96,10 +97,6 @@ class TestUpgradePlanner:
         # Normal case
         upgrade_planner.description = "some description"
         assert upgrade_planner.description == "some description"
-        assert (
-            upgrade_planner["upgrade_planner"]["settings"]["description"]
-            is upgrade_planner.description
-        )
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "version": encode_version(*__factorio_version_info__),
@@ -109,7 +106,6 @@ class TestUpgradePlanner:
         # None case
         upgrade_planner.description = None
         assert upgrade_planner.description == None
-        # assert "description" not in upgrade_planner["upgrade_planner"]["settings"]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "version": encode_version(*__factorio_version_info__),
@@ -129,12 +125,8 @@ class TestUpgradePlanner:
             {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}
         ]
         assert upgrade_planner.icons == [
-            Icon(**{"index": 1, "signal": {"name": "signal-A", "type": "virtual"}})
+            AttrsIcon(**{"index": 1, "signal": {"name": "signal-A", "type": "virtual"}})
         ]
-        assert (
-            upgrade_planner["upgrade_planner"]["settings"]["icons"]
-            is upgrade_planner.icons
-        )
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "version": encode_version(*__factorio_version_info__),
@@ -146,8 +138,8 @@ class TestUpgradePlanner:
         }
 
         # None case
-        upgrade_planner.icons = None
-        assert upgrade_planner.icons == None
+        upgrade_planner.icons = []
+        assert upgrade_planner.icons == []
         # assert "icons" not in upgrade_planner["upgrade_planner"]["settings"]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
@@ -167,12 +159,8 @@ class TestUpgradePlanner:
         # upgrade_planner.set_icons("signal-A")
         upgrade_planner.icons = ["signal-A"]
         assert upgrade_planner.icons == [
-            Icon(**{"index": 1, "signal": {"name": "signal-A", "type": "virtual"}})
+            AttrsIcon(**{"index": 1, "signal": {"name": "signal-A", "type": "virtual"}})
         ]
-        assert (
-            upgrade_planner["upgrade_planner"]["settings"]["icons"]
-            is upgrade_planner.icons
-        )
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "version": encode_version(*__factorio_version_info__),
@@ -186,9 +174,9 @@ class TestUpgradePlanner:
         # Multiple known
         upgrade_planner.icons = ["signal-A", "signal-B", "signal-C"]
         assert upgrade_planner.icons == [
-            Icon(**{"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}),
-            Icon(**{"index": 2, "signal": {"name": "signal-B", "type": "virtual"}}),
-            Icon(**{"index": 3, "signal": {"name": "signal-C", "type": "virtual"}}),
+            AttrsIcon(**{"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}),
+            AttrsIcon(**{"index": 2, "signal": {"name": "signal-B", "type": "virtual"}}),
+            AttrsIcon(**{"index": 3, "signal": {"name": "signal-C", "type": "virtual"}}),
         ]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
@@ -225,26 +213,19 @@ class TestUpgradePlanner:
             },
         ]
         assert upgrade_planner.mappers == [
-            Mapper(
-                **{
-                    "from": {"name": "transport-belt", "type": "entity"},
-                    "to": {"name": "fast-transport-belt", "type": "entity"},
-                    "index": 0,
-                }
+            AttrsMapper(
+                index=0,
+                from_={"name": "transport-belt", "type": "entity"},
+                to={"name": "fast-transport-belt", "type": "entity"},
             ),
-            Mapper(
-                **{
-                    "from": {"name": "transport-belt", "type": "entity"},
-                    "to": {"name": "express-transport-belt", "type": "entity"},
-                    "index": 23,
-                }
+            AttrsMapper(
+                index=23,
+                from_={"name": "transport-belt", "type": "entity"},
+                to={"name": "express-transport-belt", "type": "entity"},
             ),
         ]
 
         # Test None
-        upgrade_planner.mappers = None
-        assert upgrade_planner.mappers == None
-
         upgrade_planner.validate_assignment = "none"
         assert upgrade_planner.validate_assignment == ValidationMode.NONE
 
@@ -257,36 +238,48 @@ class TestUpgradePlanner:
         upgrade_planner.set_mapping("transport-belt", "express-transport-belt", 1)
         assert len(upgrade_planner.mappers) == 2
         assert upgrade_planner.mappers == [
-            {
-                "from": {"name": "transport-belt", "type": "entity"},
-                "to": {"name": "fast-transport-belt", "type": "entity"},
-                "index": 0,
-            },
-            {
-                "from": {"name": "transport-belt", "type": "entity"},
-                "to": {"name": "express-transport-belt", "type": "entity"},
-                "index": 1,
-            },
+            AttrsMapper(
+                index=0,
+                from_={"name": "transport-belt", "type": "entity"},
+                to={"name": "fast-transport-belt", "type": "entity"}
+            ),
+            AttrsMapper(
+                index=1,
+                from_={"name": "transport-belt", "type": "entity"},
+                to={"name": "express-transport-belt", "type": "entity"}
+            )
         ]
 
         # Test replace
         upgrade_planner.set_mapping("transport-belt", "fast-transport-belt", 0)
         assert upgrade_planner.mappers == [
-            {
-                "from": {"name": "transport-belt", "type": "entity"},
-                "to": {"name": "fast-transport-belt", "type": "entity"},
-                "index": 0,
-            },
-            {
-                "from": {"name": "transport-belt", "type": "entity"},
-                "to": {"name": "express-transport-belt", "type": "entity"},
-                "index": 1,
-            },
+            AttrsMapper(
+                index=0,
+                from_={"name": "transport-belt", "type": "entity"},
+                to={"name": "fast-transport-belt", "type": "entity"}
+            ),
+            AttrsMapper(
+                index=1,
+                from_={"name": "transport-belt", "type": "entity"},
+                to={"name": "express-transport-belt", "type": "entity"}
+            )
         ]
 
         # None as argument values at specified index
         upgrade_planner.set_mapping(None, None, 1)
         assert upgrade_planner.mappers == [
+            AttrsMapper(
+                index=0,
+                from_={"name": "transport-belt", "type": "entity"},
+                to={"name": "fast-transport-belt", "type": "entity"}
+            ),
+            AttrsMapper(
+                index=1,
+                from_=None,
+                to=None
+            )
+        ]
+        assert upgrade_planner.to_dict()["upgrade_planner"]["settings"]["mappers"] == [
             {
                 "from": {"name": "transport-belt", "type": "entity"},
                 "to": {"name": "fast-transport-belt", "type": "entity"},
@@ -308,27 +301,33 @@ class TestUpgradePlanner:
         # Normal
         upgrade_planner.remove_mapping("transport-belt", "fast-transport-belt", 0)
         assert upgrade_planner.mappers == [
-            {
-                "index": 1,
-            },
+            AttrsMapper(
+                index=1,
+                from_=None,
+                to=None
+            )
         ]
 
         # Remove missing at index
         with pytest.raises(ValueError):
             upgrade_planner.remove_mapping("transport-belt", "fast-transport-belt", 0)
         assert upgrade_planner.mappers == [
-            {
-                "index": 1,
-            },
+            AttrsMapper(
+                index=1,
+                from_=None,
+                to=None
+            )
         ]
 
         # Remove missing at any index
         with pytest.raises(ValueError):
             upgrade_planner.remove_mapping("transport-belt", "fast-transport-belt")
         assert upgrade_planner.mappers == [
-            {
-                "index": 1,
-            },
+            AttrsMapper(
+                index=1,
+                from_=None,
+                to=None
+            )
         ]
 
         # Remove first occurence of multiple
@@ -336,14 +335,16 @@ class TestUpgradePlanner:
         upgrade_planner.set_mapping("inserter", "fast-inserter", 3)
         upgrade_planner.remove_mapping("inserter", "fast-inserter")
         assert upgrade_planner.mappers == [
-            {
-                "index": 1,
-            },
-            {
-                "from": {"name": "inserter", "type": "entity"},
-                "to": {"name": "fast-inserter", "type": "entity"},
-                "index": 3,
-            },
+            AttrsMapper(
+                index=1,
+                from_=None,
+                to=None
+            ),
+            AttrsMapper(
+                index=3,
+                from_={"name": "inserter", "type": "entity"},
+                to={"name": "fast-inserter", "type": "entity"}
+            ),
         ]
 
         # Warnings
@@ -363,57 +364,45 @@ class TestUpgradePlanner:
         upgrade_planner = UpgradePlanner(validate_assignment="minimum")
 
         upgrade_planner.mappers = [
-            Mapper(
-                **{
-                    "to": {"name": "transport-belt", "type": "entity"},
-                    "from": {"name": "express-transport-belt", "type": "entity"},
-                    "index": 1,
-                }
+            AttrsMapper(
+                index=1,
+                from_={"name": "express-transport-belt", "type": "entity"},
+                to={"name": "transport-belt", "type": "entity"},
             ),
-            Mapper(
-                **{
-                    "to": {"name": "assembling-machine-1", "type": "entity"},
-                    "from": {"name": "assembling-machine-2", "type": "entity"},
-                    "index": 1,
-                }
+            AttrsMapper(
+                index=1,
+                from_={"name": "assembling-machine-2", "type": "entity"},
+                to={"name": "assembling-machine-1", "type": "entity"},
             ),
-            Mapper(
-                **{
-                    "to": {"name": "transport-belt", "type": "entity"},
-                    "from": {"name": "fast-transport-belt", "type": "entity"},
-                    "index": 0,
-                }
+            AttrsMapper(
+                index=0,
+                from_={"name": "fast-transport-belt", "type": "entity"},
+                to={"name": "transport-belt", "type": "entity"},
             ),
         ]
 
         # Remove mapping with index 0
         upgrade_planner.pop_mapping(0)
         assert upgrade_planner.mappers == [
-            Mapper(
-                **{
-                    "to": {"name": "transport-belt", "type": "entity"},
-                    "from": {"name": "express-transport-belt", "type": "entity"},
-                    "index": 1,
-                }
+            AttrsMapper(
+                index=1,
+                from_={"name": "express-transport-belt", "type": "entity"},
+                to={"name": "transport-belt", "type": "entity"},
             ),
-            Mapper(
-                **{
-                    "to": {"name": "assembling-machine-1", "type": "entity"},
-                    "from": {"name": "assembling-machine-2", "type": "entity"},
-                    "index": 1,
-                }
+            AttrsMapper(
+                index=1,
+                from_={"name": "assembling-machine-2", "type": "entity"},
+                to={"name": "assembling-machine-1", "type": "entity"},
             ),
         ]
 
         # Remove first mapping with specified index
         upgrade_planner.pop_mapping(1)
         assert upgrade_planner.mappers == [
-            Mapper(
-                **{
-                    "to": {"name": "assembling-machine-1", "type": "entity"},
-                    "from": {"name": "assembling-machine-2", "type": "entity"},
-                    "index": 1,
-                }
+            AttrsMapper(
+                index=1,
+                from_={"name": "assembling-machine-2", "type": "entity"},
+                to={"name": "assembling-machine-1", "type": "entity"},
             ),
         ]
 
@@ -421,12 +410,10 @@ class TestUpgradePlanner:
         with pytest.raises(ValueError):
             upgrade_planner.pop_mapping(10)
         assert upgrade_planner.mappers == [
-            Mapper(
-                **{
-                    "to": {"name": "assembling-machine-1", "type": "entity"},
-                    "from": {"name": "assembling-machine-2", "type": "entity"},
-                    "index": 1,
-                }
+            AttrsMapper(
+                index=1,
+                from_={"name": "assembling-machine-2", "type": "entity"},
+                to={"name": "assembling-machine-1", "type": "entity"},
             ),
         ]
 
@@ -442,7 +429,7 @@ class TestUpgradePlanner:
         # Errors
         with pytest.raises(DataFormatError):
             upgrade_planner.mappers = [
-                {"from": "incorrect", "to": "incorrect", "index": 1}
+                {"from": TypeError, "to": TypeError, "index": 1}
             ]
 
         with pytest.raises(DataFormatError):
@@ -456,45 +443,40 @@ class TestUpgradePlanner:
             (None, "assembling-machine-3"),
         ]
         assert upgrade_planner.mappers == [
-            Mapper(
-                **{
-                    "index": 0,
-                    "from": {"name": "assembling-machine-3", "type": "entity"},
-                    "to": None,
-                }
+            AttrsMapper(
+                index=0,
+                from_="assembling-machine-3",
+                to=None
             ),
-            Mapper(
-                **{
-                    "index": 1,
-                    "from": None,
-                    "to": {"name": "assembling-machine-3", "type": "entity"},
-                }
+            AttrsMapper(
+                index=1,
+                from_=None,
+                to="assembling-machine-3"
             ),
         ]
 
         # Test items
         upgrade_planner.mappers = [("speed-module", "speed-module-3")]
         assert upgrade_planner.mappers == [
-            Mapper(
-                **{
-                    "index": 0,
-                    "from": {"name": "speed-module", "type": "item"},
-                    "to": {"name": "speed-module-3", "type": "item"},
-                }
+            AttrsMapper(
+                index=0,
+                from_="speed-module",
+                to="speed-module-3"
             )
         ]
 
         # Test validation failure
         upgrade_planner = UpgradePlanner()
-        upgrade_planner.set_mapping("transport-belt", "transport-belt", -1)
-        validation_result = upgrade_planner.validate()
-        assert len(validation_result.error_list) > 0
         with pytest.raises(DataFormatError):
-            validation_result.reissue_all()
+            upgrade_planner.set_mapping("transport-belt", "transport-belt", -1)
+        # validation_result = upgrade_planner.validate()
+        # assert len(validation_result.error_list) > 0
+        # with pytest.raises(DataFormatError):
+        #     validation_result.reissue_all()
 
         # Redundant mapping
-        upgrade_planner_2 = UpgradePlanner()
-        upgrade_planner_2.set_mapping("transport-belt", "transport-belt", 1)
+        upgrade_planner = UpgradePlanner()
+        upgrade_planner.set_mapping("transport-belt", "transport-belt", 1)
         goal = ValidationResult(
             error_list=[],
             warning_list=[
@@ -503,7 +485,7 @@ class TestUpgradePlanner:
                 )
             ],
         )
-        validation_result = upgrade_planner_2.validate()
+        validation_result = upgrade_planner.validate()
         assert validation_result == goal
         with pytest.warns(NoEffectWarning):
             validation_result.reissue_all()

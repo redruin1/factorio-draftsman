@@ -3,9 +3,9 @@
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
-    Condition,
+    AttrsSimpleCondition,
     DraftsmanBaseModel,
-    SignalID,
+    AttrsSignalID,
     int32,
 )
 
@@ -20,7 +20,7 @@ from pydantic import (
 from typing import Any, Literal, Union
 
 
-@attrs.define
+# @attrs.define(slots=False)
 class ControlBehaviorMixin:
     """
     Enables the entity to specify control behavior.
@@ -115,9 +115,9 @@ class ControlBehaviorMixin:
     def _set_condition(
         self,
         condition_name: str,
-        a: Union[SignalID, None],
+        a: Union[AttrsSignalID, None],
         cmp: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="],
-        b: Union[SignalID, int32],
+        b: Union[AttrsSignalID, int32],
     ):
         """
         Single function for setting a condition. Used in `CircuitConditionMixin`
@@ -134,40 +134,15 @@ class ControlBehaviorMixin:
             ``cmp`` is not a valid operation, or if ``b`` is neither a valid
             signal name nor a constant.
         """
-        new_condition = Condition()
-
-        # A
-        # if a is None:
-        #     condition.pop("first_signal", None)
-        # else:
-        #     condition["first_signal"] = a
-        new_condition.first_signal = a
-        new_condition.comparator = cmp
+        condition = AttrsSimpleCondition(first_signal=a, comparator=cmp)
 
         # B (should never be None)
         if isinstance(b, int):
-            new_condition.constant = b
+            condition.constant = b
         else:
-            new_condition.second_signal = b
+            condition.second_signal = b
 
-        # TODO: we need to figure out a way to dirty an entity even if we only
-        # modify it's sub-attributes like control behavior; the above function
-        # does not reset `is_valid` even though it should
-        # We manually set it below, but this is not sufficient for cases where
-        # the user themselves modify subattributes; FIXME
-        # self._is_valid = False
-
-        # Check if the condition is valid, and raise/warn if not
-        result = attempt_and_reissue(
-            self,
-            type(self).Format.ControlBehavior,
-            self.control_behavior,
-            condition_name,
-            new_condition,
-        )
-
-        # Success, so assign
-        self.control_behavior[condition_name] = result
+        setattr(self, condition_name, condition)
 
     # =========================================================================
 

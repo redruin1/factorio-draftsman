@@ -9,7 +9,7 @@ from typing import Optional
 
 class VehicleMixin:
     """
-    Enables the entity to have an equipment grid.
+    A number of common properties that all vehicles have.
     """
 
     class Format(BaseModel):

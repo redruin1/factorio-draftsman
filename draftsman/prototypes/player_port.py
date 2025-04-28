@@ -44,3 +44,11 @@ class PlayerPort(Entity):
         )
 
         self.validate_assignment = validate_assignment
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return player_ports
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__

@@ -51,7 +51,7 @@ class RailSignal(
     #         circuit_close_signal: Optional[bool] = Field(
     #             False,
     #             description="""
-    #             Whether or not to have this signal close off if a circuit 
+    #             Whether or not to have this signal close off if a circuit
     #             condition is met. 'enable_disable' equivalent for train signals.
     #             """,
     #         )
@@ -188,7 +188,7 @@ draftsman_converters.add_schema(
     {"$id": "factorio:lamp"},
     RailSignal,
     lambda fields: {
-        fields.enable_disable.name: ("control_behavior", "circuit_close_signal"),
-        fields.read_signal.name: ("control_behavior", "circuit_read_signal"),
+        ("control_behavior", "circuit_close_signal"): fields.enable_disable.name,
+        ("control_behavior", "circuit_read_signal"): fields.read_signal.name,
     },
 )

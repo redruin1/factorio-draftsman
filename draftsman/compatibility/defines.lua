@@ -2,6 +2,8 @@
 -- Extracted with the command:
 -- /c helpers.write_file("defines.lua", "defines = " .. serpent.block(defines, {indent="    "}))
 
+-- TODO: extract these during environment update
+
 defines = {
     alert_type = {
         collector_path_blocked = 13,

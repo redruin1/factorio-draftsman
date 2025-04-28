@@ -109,10 +109,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
 
     # =========================================================================
 
-    read_logistics: bool = attrs.field(
-        default=True,
-        validator=instance_of(bool)
-    )
+    read_logistics: bool = attrs.field(default=True, validator=instance_of(bool))
     """
     Whether or not to read the item contents of the logisitics network to any
     connected circuit network.
@@ -151,10 +148,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
 
     # =========================================================================
 
-    read_robot_stats: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    read_robot_stats: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not to read the number of construction and logistics robots
     in the logisitics network to any connected circuit network.
@@ -196,7 +190,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     available_logistic_signal: Optional[AttrsSignalID] = attrs.field(
         factory=lambda: AttrsSignalID(name="signal-X", type="virtual"),
         converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
     What signal to output the number of available logistic robots to the
@@ -241,7 +235,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     total_logistic_signal: Optional[AttrsSignalID] = attrs.field(
         factory=lambda: AttrsSignalID(name="signal-Y", type="virtual"),
         converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
     What signal to output the total number of logistic robots to the
@@ -285,7 +279,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     available_construction_signal: Optional[AttrsSignalID] = attrs.field(
         factory=lambda: AttrsSignalID(name="signal-Z", type="virtual"),
         converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
     What signal to output the number of available construction robots to the
@@ -330,7 +324,7 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     total_construction_signal: Optional[AttrsSignalID] = attrs.field(
         factory=lambda: AttrsSignalID(name="signal-T", type="virtual"),
         converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
     What signal to output the total number of construction robots to the
@@ -388,16 +382,26 @@ class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
 
 
 draftsman_converters.add_schema(
-    {
-        "$id": "factorio:roboport"
-    },
+    {"$id": "factorio:roboport"},
     Roboport,
     lambda fields: {
-        fields.read_logistics.name: ("control_behavior", "read_logistics"),
-        fields.read_robot_stats.name: ("control_behavior", "read_robot_stats"),
-        fields.available_logistic_signal.name: ("control_behavior", "available_logistic_output_signal"),
-        fields.total_logistic_signal.name: ("control_behavior", "total_logistic_output_signal"),
-        fields.available_construction_signal.name: ("control_behavior", "available_construction_output_signal"),
-        fields.total_construction_signal.name: ("control_behavior", "total_construction_output_signal")
-    }
+        ("control_behavior", "read_logistics"): fields.read_logistics.name,
+        ("control_behavior", "read_robot_stats"): fields.read_robot_stats.name,
+        (
+            "control_behavior",
+            "available_logistic_output_signal",
+        ): fields.available_logistic_signal.name,
+        (
+            "control_behavior",
+            "total_logistic_output_signal",
+        ): fields.total_logistic_signal.name,
+        (
+            "control_behavior",
+            "available_construction_output_signal",
+        ): fields.available_construction_signal.name,
+        (
+            "control_behavior",
+            "total_construction_output_signal",
+        ): fields.total_construction_signal.name,
+    },
 )

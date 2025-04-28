@@ -21,10 +21,6 @@ class TestLinkedContainer:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            LinkedContainer(
-                "linked-chest", unused_keyword="whatever"
-            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             LinkedContainer("this is not a linked container").validate().reissue_all()
 
@@ -52,8 +48,8 @@ class TestLinkedContainer:
         container.link_id = 0xFFFF
         assert container.link_id == 0xFFFF
 
-        container.link_id = None
-        assert container.link_id == 0
+        container.link_id = 0xFFFF_FFFF_FFFF
+        assert container.link_id == 0xFFFF_FFFF
 
         with pytest.raises(DataFormatError):
             container.link_id = "incorrect"

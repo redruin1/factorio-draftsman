@@ -112,5 +112,5 @@ class IOTypeMixin:
 draftsman_converters.add_schema(
     {"$id": "factorio:io_type_mixin"},
     IOTypeMixin,
-    lambda fields: {fields.io_type.name: "type"},
+    lambda fields: {"type": fields.io_type.name},
 )

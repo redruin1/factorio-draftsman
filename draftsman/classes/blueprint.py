@@ -112,7 +112,6 @@ from draftsman.signatures import (
 from draftsman.entity import Entity
 from draftsman.tile import Tile
 from draftsman.classes.schedule import Schedule
-from draftsman.serialization import finalize_fields
 from draftsman.utils import (
     AABB,
     aabb_to_dimensions,
@@ -121,6 +120,7 @@ from draftsman.utils import (
     flatten_entities,
     reissue_warnings,
 )
+from draftsman.validators import classvalidator, instance_of
 
 import attrs
 from builtins import int
@@ -138,8 +138,59 @@ from pydantic import (
 )
 
 
+@attrs.define
+class StockConnection:
+    stock: Association = attrs.field(
+        # TODO: validators
+    )
+    front: Optional[Association] = attrs.field(default=None)
+    back: Optional[Association] = attrs.field(default=None)
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:stock_connection"},
+    StockConnection,
+    lambda fields: {
+        "stock": fields.stock.name,
+        "front": fields.front.name,
+        "back": fields.back.name,
+    },
+)
+
+
+def _convert_wires_to_associations(wires: list[list[int]], entities):
+    for i, wire in enumerate(wires):
+        # print(wire)
+        if isinstance(wire[0], int):
+            entity1 = entities[wire[0] - 1]
+            wire[0] = Association(entity1)
+        if isinstance(wire[2], int):
+            entity2 = entities[wire[2] - 1]
+            wire[2] = Association(entity2)
+
+
+def _convert_schedules_to_associations(schedules: ScheduleList, entities):
+    for schedule in schedules:
+        for i, locomotive in enumerate(schedule.locomotives):
+            if isinstance(locomotive, int):
+                entity: Entity = entities[locomotive - 1]
+                schedule.locomotives[i] = Association(entity)
+
+
+def _convert_stock_connections_to_associations(
+    stock_connections: list[StockConnection], entities
+):
+    for connection in stock_connections:
+        if isinstance(connection.stock, int):
+            connection.stock = Association(entities[connection.stock - 1])
+        if isinstance(connection.front, int):
+            connection.front = Association(entities[connection.front - 1])
+        if isinstance(connection.back, int):
+            connection.back = Association(entities[connection.back - 1])
+
+
 def _normalize_internal_structure(
-    input_root, entities_in, tiles_in, schedules_in, wires_in
+    input_root, entities_in, tiles_in, schedules_in, wires_in, stock_connections_in
 ):
     # TODO make this a member of blueprint?
     def _throw_invalid_association(entity):
@@ -259,31 +310,64 @@ def _normalize_internal_structure(
     flattened_wires.extend(wires_in)
     flattened_wires.extend(flatten_wires(entities_in))
 
+    def get_index(assoc):
+        if not isinstance(assoc, int):
+            # We would normally use index, but index uses `==` for comparisons,
+            # wheras we want to use `is` for strict checking:
+            try:
+                return (
+                    next(
+                        i
+                        for i, entity in enumerate(flattened_entities)
+                        if entity is assoc()
+                    )
+                    + 1
+                )
+            except StopIteration:
+                msg = "Association points to entity {} which does not exist in this blueprint".format(
+                    assoc()
+                )
+                raise InvalidAssociationError(msg)
+        return assoc
+
     wires_out = []
     for wire in flattened_wires:
-        entity_1 = wire[0]
-        if entity_1() is None or entity_1() not in flattened_entities:
-            raise InvalidAssociationError(wire)
-        entity_2 = wire[2]
-        if entity_2() is None or entity_2() not in flattened_entities:
-            raise InvalidAssociationError(wire)
+        new_wire = [
+            get_index(wire[0]),
+            wire[1],
+            get_index(wire[2]),
+            wire[3],
+        ]
 
         # Check to see if this wire already exists in the output, and neglect
         # adding it if so
         # TODO: this should happen earlier... somewhere...
-        new_wire = [
-            flattened_entities.index(entity_1()) + 1,
-            wire[1],
-            flattened_entities.index(entity_2()) + 1,
-            wire[3],
-        ]
         if new_wire not in wires_out:
             wires_out.append(new_wire)
 
     input_root["wires"] = wires_out
 
+    # TODO: needs to be recursive, since theoretically groups could have stock
+    # connections
+    if "stock_connections" in input_root:
+        for stock_connection in input_root["stock_connections"]:
+            stock_connection["stock"] = get_index(stock_connection["stock"])
+            if "front" in stock_connection:
+                stock_connection["front"] = get_index(stock_connection["front"])
+            if "back" in stock_connection:
+                stock_connection["back"] = get_index(stock_connection["back"])
 
-@attrs.define(field_transformer=finalize_fields)
+
+def custom_define(cls):
+    model_validators = [
+        v for _, v in cls.__dict__.items() if hasattr(v, "__attrs_class_validator__")
+    ]
+    cls = attrs.define(cls)
+    cls.__attrs_class_validators__ = model_validators
+    return cls
+
+
+@custom_define
 class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     """
     Factorio Blueprint class. Contains and maintains a list of ``EntityLikes``
@@ -675,26 +759,11 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         #         for i, neighbour in enumerate(neighbours):
         #             neighbours[i] = Association(self.entities[neighbour - 1])
 
-        # Change all locomotive numbers to use Associations
-        for schedule in self.schedules:
-            for i, locomotive in enumerate(schedule.locomotives):
-                if isinstance(locomotive, int):
-                    entity: Entity = self.entities[locomotive - 1]
-                    schedule.locomotives[i] = Association(entity)
-
-        # Change all wire numbers to use Associations
-        # print(self.label)
-        # print(self.entities)
-        # print(self.wires)
-        for i, wire in enumerate(self.wires):
-            # print(wire)
-            if isinstance(wire[0], int):
-                entity1 = self.entities[wire[0] - 1]
-                wire[0] = Association(entity1)
-            if isinstance(wire[2], int):
-                entity2 = self.entities[wire[2] - 1]
-                wire[2] = Association(entity2)
-            # self.wires[i] = [Association(entity1), wire[1], Association(entity2), wire[3]]
+        _convert_wires_to_associations(self.wires, self.entities)
+        _convert_schedules_to_associations(self.schedules, self.entities)
+        _convert_stock_connections_to_associations(
+            self.stock_connections, self.entities
+        )
 
         # if self.validation:
         #     self.validate(mode=self.validation).reissue_all()
@@ -709,6 +778,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     # =========================================================================
 
+    # TODO: this should be an evolve
     item: str = attrs.field(
         default="blueprint",
         # TODO: validators
@@ -724,8 +794,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     snapping_grid_size: Optional[Vector] = attrs.field(
         default=Vector(0, 0),
         converter=Vector.from_other,
-        validator=attrs.validators.instance_of(Vector),
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "snap-to-grid")},
+        validator=instance_of(Vector),
     )
     """
     Sets the size of the snapping grid to use. The presence of this entry
@@ -782,7 +851,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         eq=False,
         repr=False,
         converter=Vector.from_other,
-        validator=attrs.validators.instance_of(Vector),
+        validator=instance_of(Vector),
         metadata={"omit": True},
     )
     """
@@ -834,10 +903,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     absolute_snapping: bool = attrs.field(
         default=True,
-        validator=attrs.validators.instance_of(bool),
-        metadata={
-            "location": (lambda cls: cls.root_item.fget(cls), "absolute-snapping")
-        },
+        validator=instance_of(bool),
     )
     """
     Whether or not the blueprint uses absolute positioning or relative
@@ -884,13 +950,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     position_relative_to_grid: Vector = attrs.field(
         default=Vector(0, 0),
         converter=Vector.from_other,
-        validator=attrs.validators.instance_of(Vector),  # TODO: on_setattr
-        metadata={
-            "location": (
-                lambda cls: cls.root_item.fget(cls),
-                "position-relative-to-grid",
-            )
-        },
+        validator=instance_of(Vector),  # TODO: on_setattr
     )
     """
     The absolute position of the snapping grid in the world. Only used if
@@ -937,15 +997,14 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     def _set_entities(self, _: attrs.Attribute, value: Any):
         if value is None:
-            self.entities.clear()
+            return EntityList(self)
         elif isinstance(value, EntityList):
-            self.entities = EntityList(self, value._root)
+            return EntityList(self, value._root)
         else:
-            self.entities = EntityList(self, value)
+            return EntityList(self, value)
 
     entities: EntityList = attrs.field(
         on_setattr=_set_entities,
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "entities")},
     )
     """
     The list of the Blueprint's entities. Internally the list is a custom
@@ -995,15 +1054,14 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     def _set_tiles(self, _: attrs.Attribute, value: Any):
         if value is None:
-            self.tiles.clear()
+            return TileList(self)
         elif isinstance(value, TileList):
-            self.tiles = TileList(self, value._root)
+            return TileList(self, value._root)
         else:
-            self.tiles = TileList(self, value)
+            return TileList(self, value)
 
     tiles: TileList = attrs.field(
         on_setattr=_set_tiles,
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "tiles")},
     )
     """
     The list of the Blueprint's tiles. Internally the list is a custom
@@ -1073,15 +1131,14 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         # set to one blueprint being copied over to another? Should probably
         # wipe the locomotives of each schedule when doing so
         if value is None:
-            self.schedules.clear()
+            return ScheduleList()
         elif isinstance(value, ScheduleList):
-            self.schedules = value
+            return value
         else:
-            self.schedules = ScheduleList(value)
+            return ScheduleList(value)
 
     schedules: ScheduleList = attrs.field(
         on_setattr=_set_schedules,
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "schedules")},
     )
     """
     A list of the Blueprint's train schedules.
@@ -1187,11 +1244,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     # =========================================================================
 
-    stock_connections: list[dict] = attrs.field(  # TODO: annotations
+    stock_connections: list[StockConnection] = attrs.field(  # TODO: annotations
         factory=list,
-        metadata={
-            "location": (lambda cls: cls.root_item.fget(cls), "stock_connections")
-        },
     )
     """
     TODO
@@ -1261,23 +1315,15 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         """
         return aabb_to_dimensions(self.get_world_bounding_box())
 
-    # def validate(
-    #     self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
-    # ) -> ValidationResult:
-    #     # Validate regular attributes
-    #     output = super().validate(mode=mode, force=force)
+    def validate(
+        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+    ) -> ValidationResult:
+        result = super().validate(mode=mode, force=force)
 
-    #     # Validate recursive attributes
-    #     output += self.entities.validate(mode=mode, force=force)
-    #     output += self.tiles.validate(mode=mode, force=force)
+        for class_validator in type(self).__attrs_class_validators__:
+            class_validator(self, mode=mode)
 
-    #     # if len(output.error_list) == 0:
-    #     #     # Set the `is_valid` attribute
-    #     #     # This means that if mode="pedantic", an entity that issues only
-    #     #     # warnings will still not be considered valid
-    #     #     super().validate()
-
-    #     return output
+        return result
 
     def to_dict(
         self,
@@ -1314,6 +1360,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             self.tiles,
             self.schedules,
             self.wires,
+            self.stock_connections,
         )
 
         # # Construct a model with the flattened data, not running any validation
@@ -1379,6 +1426,19 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         return result
 
     # =========================================================================
+    # Class validators
+    # =========================================================================
+
+    @classvalidator
+    def ensure_reasonable_size(self, mode: Optional[ValidationMode] = None):
+        mode = mode if mode is not None else self.validate_assignment
+        if mode:
+            tile_width, tile_height = self.get_dimensions()
+            if tile_width > 10000 or tile_height > 10000:
+                msg = "Current blueprint dimensions ({}, {}) exceeds the maximum size permitted by Factorio (10000, 10000)".format(
+                    tile_width, tile_height
+                )
+                raise UnreasonablySizedBlueprintError(msg)
 
     # def __eq__(self, other: Any) -> bool:
     #     if not isinstance(other, Blueprint):
@@ -1438,13 +1498,50 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
         # setattr(result, "_root", copied_dict)
 
-        root = getattr(self, "_root")
+        # root = getattr(self, "_root")
+
+        def swap_association(original_association):
+            """
+            Take an association which points to some entity in `self` and return
+            a new association which points to the equivalent entity in `result`.
+            """
+            original_entity = original_association()
+            copied_entity = memo[id(original_entity)]
+            return Association(copied_entity)
 
         memo["new_parent"] = result
-        root_copy = copy.deepcopy(root, memo)
+        for attr in attrs.fields(cls):
+            if attr.name == "wires": # special
+                new_wires = copy.deepcopy(getattr(self, attr.name), memo)
+                for wire in new_wires:
+                    wire[0] = swap_association(wire[0])
+                    wire[2] = swap_association(wire[2])
 
-        setattr(result, "_root", root_copy)
-        setattr(result, "_root_item", self._root_item)
+                object.__setattr__(
+                    result, attr.name, new_wires
+                )
+            elif attr.name == "stock_connections": # special
+                new_connections: list[StockConnection] = copy.deepcopy(getattr(self, attr.name), memo)
+                for connection in new_connections:
+                    connection.stock = swap_association(connection.stock)
+                    if connection.front is not None:
+                        connection.front = swap_association(connection.front)
+                    if connection.back is not None:
+                        connection.back = swap_association(connection.back)
+                
+                object.__setattr__(
+                    result, attr.name, new_connections
+                )
+            else:
+                object.__setattr__(
+                    result, attr.name, copy.deepcopy(getattr(self, attr.name), memo)
+                )
+            
+
+        # root_copy = copy.deepcopy(root, memo)
+
+        # setattr(result, "_root", root_copy)
+        # setattr(result, "_root_item", self._root_item)
 
         return result
 
@@ -1454,23 +1551,23 @@ draftsman_converters.add_schema(
     {"$id": "factorio:blueprint"},
     Blueprint,
     lambda fields: {
-        fields.item.name: ("blueprint", "item"),
-        fields.label.name: ("blueprint", "label"),
-        fields.label_color.name: ("blueprint", "label_color"),
-        fields.description.name: ("blueprint", "description"),
-        fields.icons.name: ("blueprint", "icons"),
-        fields.version.name: ("blueprint", "version"),
-        fields.snapping_grid_size.name: ("blueprint", "snap-to-grid"),
-        fields.absolute_snapping.name: ("blueprint", "absolute-snapping"),
-        fields.position_relative_to_grid.name: (
+        ("blueprint", "item"): fields.item.name,
+        ("blueprint", "label"): fields.label.name,
+        ("blueprint", "label_color"): fields.label_color.name,
+        ("blueprint", "description"): fields.description.name,
+        ("blueprint", "icons"): fields.icons.name,
+        ("blueprint", "version"): fields.version.name,
+        ("blueprint", "snap-to-grid"): fields.snapping_grid_size.name,
+        ("blueprint", "absolute-snapping"): fields.absolute_snapping.name,
+        (
             "blueprint",
             "position-relative-to-grid",
-        ),
-        fields.entities.name: ("blueprint", "entities"),
-        fields.tiles.name: ("blueprint", "tiles"),
-        fields.schedules.name: ("blueprint", "schedules"),
-        fields.wires.name: ("blueprint", "schedules"),
-        fields.stock_connections.name: ("blueprint", "stock_connections"),
+        ): fields.position_relative_to_grid.name,
+        ("blueprint", "entities"): fields.entities.name,
+        ("blueprint", "tiles"): fields.tiles.name,
+        ("blueprint", "schedules"): fields.schedules.name,
+        ("blueprint", "wires"): fields.wires.name,
+        ("blueprint", "stock_connections"): fields.stock_connections.name,
     },
 )
 
@@ -1609,6 +1706,12 @@ def structure_blueprint_1_0(d: dict, _: type) -> Blueprint:
                         )
 
                 del entity["neighbours"]
+
+    # Schedules are split into "records" which holds stops and the new interrupts
+    if "schedules" in blueprint_dict:
+        for schedule in blueprint_dict["schedules"]:
+            stop_data = schedule["schedule"]
+            schedule["schedule"] = {"records": stop_data}
 
     # print("blueprint_dict", blueprint_dict)
     # import inspect

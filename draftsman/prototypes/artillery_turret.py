@@ -82,7 +82,7 @@ class ArtilleryTurret(
         ] = ValidationMode.STRICT,
         **kwargs
     ):
-        self._root: self.__class__.Format
+        self._root: ArtilleryTurret.Format
         super().__init__(
             name,
             artillery_turrets,
@@ -96,6 +96,10 @@ class ArtilleryTurret(
         )
 
         self.validate_assignment = validate_assignment
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return artillery_turrets
 
     # =========================================================================
 

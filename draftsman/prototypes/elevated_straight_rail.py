@@ -50,6 +50,10 @@ class ElevatedStraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Ent
 
         self.validate_assignment = validate_assignment
 
+    @property
+    def similar_entities(self) -> list[str]:
+        return elevated_straight_rails
+
     # =========================================================================
 
     __hash__ = Entity.__hash__

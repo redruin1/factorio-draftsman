@@ -1,31 +1,27 @@
 # wall.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     CircuitConditionMixin,
-    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
 )
-from draftsman.classes.vector import PrimitiveVector, Vector
-from draftsman.constants import ValidationMode
-from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import (
-    Connections,
-    DraftsmanBaseModel,
-    SignalID,
-    AttrsSignalID,
-)
+from draftsman.signatures import AttrsSignalID
 from draftsman.validators import instance_of
 from draftsman.utils import get_first
 
 from draftsman.data.entities import walls
 
 import attrs
-from pydantic import ConfigDict, Field
-from typing import Any, Literal, Optional, Union
+from typing import Optional
+
+
+# TODO: gimme gimme
+# def schema(version=None):
+#     def inner(wrapped_object):
+#         pass
+#     return inner
 
 
 @attrs.define
@@ -38,6 +34,18 @@ class Wall(
     """
     A static barrier that acts as protection for structures.
     """
+
+    # @schema(version=(1, 0))
+    # def json_schema(self) -> dict:
+    #     return {
+    #         "$id": "factorio:wall"
+    #     }
+
+    # @schema(version=(2, 0))
+    # def json_schema(self) -> dict:
+    #     return {
+    #         "$id": "factorio:wall"
+    #     }
 
     # class Format(
     #     CircuitConditionMixin.Format,
@@ -235,9 +243,9 @@ draftsman_converters.get_version((1, 0)).add_schema(
     {"$id": "factorio:wall_v1.0"},  # TODO
     Wall,
     lambda fields: {
-        fields.enable_disable.name: ("control_behavior", "circuit_open_gate"),
-        fields.read_gate.name: ("control_behavior", "circuit_read_sensor"),
-        fields.output_signal.name: ("control_behavior", "output_signal"),
+        ("control_behavior", "circuit_open_gate"): fields.enable_disable.name,
+        ("control_behavior", "circuit_read_sensor"): fields.read_gate.name,
+        ("control_behavior", "output_signal"): fields.output_signal.name,
     },
 )
 
@@ -247,8 +255,8 @@ draftsman_converters.get_version((2, 0)).add_schema(
     },
     Wall,
     lambda fields: {
-        fields.enable_disable.name: ("control_behavior", "circuit_open_gate"),
-        fields.read_gate.name: ("control_behavior", "circuit_read_gate"),
-        fields.output_signal.name: ("control_behavior", "output_signal"),
+        ("control_behavior", "circuit_open_gate"): fields.enable_disable.name,
+        ("control_behavior", "circuit_read_gate"): fields.read_gate.name,
+        ("control_behavior", "output_signal"): fields.output_signal.name,
     },
 )

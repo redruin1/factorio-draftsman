@@ -202,9 +202,9 @@ draftsman_converters.get_version((1, 0)).add_schema(
     {"$id": "factorio:read_rail_signals_mixin_v1.0"},
     ReadRailSignalMixin,
     lambda fields: {
-        fields.red_output_signal.name: ("control_behavior", "red_output_signal"),
-        fields.yellow_output_signal.name: ("control_behavior", "orange_output_signal"),
-        fields.green_output_signal.name: ("control_behavior", "green_output_signal"),
+        ("control_behavior", "red_output_signal"): fields.red_output_signal.name,
+        ("control_behavior", "orange_output_signal"): fields.yellow_output_signal.name,
+        ("control_behavior", "green_output_signal"): fields.green_output_signal.name,
     },
 )
 
@@ -212,8 +212,8 @@ draftsman_converters.get_version((2, 0)).add_schema(
     {"$id": "factorio:read_rail_signals_mixin_v2.0"},
     ReadRailSignalMixin,
     lambda fields: {
-        fields.red_output_signal.name: ("control_behavior", "red_output_signal"),
-        fields.yellow_output_signal.name: ("control_behavior", "yellow_output_signal"),
-        fields.green_output_signal.name: ("control_behavior", "green_output_signal"),
+        ("control_behavior", "red_output_signal"): fields.red_output_signal.name,
+        ("control_behavior", "yellow_output_signal"): fields.yellow_output_signal.name,
+        ("control_behavior", "green_output_signal"): fields.green_output_signal.name,
     },
 )

@@ -102,6 +102,12 @@ class Direction(IntEnum):
         """
         return Direction((self.value - (4 if four_way else 1)) % 16)
 
+    def to_4_way(self) -> "Direction":
+        """
+        Floor this direction to the closest 4-way direction below its current.
+        """
+        return Direction(int(self / 4) * 4)
+
     def to_orientation(self) -> "Orientation":
         """
         Converts this direction to an :py:class:`Orientation` of corresponding
@@ -349,12 +355,10 @@ class LegacyDirection(IntEnum):
 
 
 draftsman_converters.get_version((1, 0)).register_structure_hook(
-    Direction,
-    lambda d, _: LegacyDirection(d).to_modern()
+    Direction, lambda d, _: LegacyDirection(d).to_modern()
 )
 draftsman_converters.get_version((1, 0)).register_unstructure_hook(
-    Direction,
-    lambda inst: inst.to_legacy()
+    Direction, lambda inst: inst.to_legacy()
 )
 
 # class OrientationMeta(type):

@@ -132,7 +132,7 @@ draftsman_converters.add_schema(
     },
     CircuitReadContentsMixin,
     lambda fields: {
-        fields.read_contents.name: ("control_behavior", "circuit_read_hand_contents"),
-        fields.read_mode.name: ("control_behavior", "circuit_contents_read_mode"),
+        ("control_behavior", "circuit_read_hand_contents"): fields.read_contents.name,
+        ("control_behavior", "circuit_contents_read_mode"): fields.read_mode.name,
     },
 )

@@ -88,6 +88,6 @@ draftsman_converters.add_schema(
     {"$id": "factorio:circuit_enable_mixin"},
     CircuitEnableMixin,
     lambda fields: {
-        fields.circuit_enabled.name: ("control_behavior", "circuit_enabled")
+        ("control_behavior", "circuit_enabled"): fields.circuit_enabled.name
     },
 )

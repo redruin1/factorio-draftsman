@@ -19,6 +19,7 @@ from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError, DraftsmanError, InvalidTileError
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     DraftsmanBaseModel,
     IntPosition,
@@ -26,6 +27,7 @@ from draftsman.signatures import (
     get_suggestion,
 )
 from draftsman.utils import AABB
+from draftsman.validators import instance_of
 from draftsman.warning import UnknownTileWarning
 
 import draftsman.data.tiles as tiles
@@ -150,15 +152,19 @@ class Tile(SpatialLike, Exportable):
 
     # =========================================================================
 
+    # FIXME: I would like to annotate this, but cattrs cannot find the location of `EntityCollection`
+    _parent = attrs.field(
+        default=None, init=False, repr=False, eq=False, metadata={"omit": True}
+    )
+
     @property
     def parent(self) -> Optional["TileCollection"]:
         return self._parent
 
     # =========================================================================
 
-    name: str = attrs.field(  # TODO: some annotation like "TileName"
-        # TODO: validators
-        validator=attrs.validators.instance_of(str),
+    name: TileName = attrs.field(  # TODO: some annotation like "TileName"
+        validator=instance_of(TileName),
         metadata={"omit": False},
     )
     """
@@ -201,8 +207,10 @@ class Tile(SpatialLike, Exportable):
     def _set_position(self, _: attrs.Attribute, value: Any):
         self.position.update_from_other(value, int)
 
+        return self.position
+
     position: Vector = attrs.field(
-        default=Vector(0, 0),
+        factory=lambda: Vector(0, 0),
         converter=Vector.from_other,
         on_setattr=_set_position,
         metadata={"omit": False},
@@ -341,3 +349,13 @@ class Tile(SpatialLike, Exportable):
     #     cls, _, handler: GetCoreSchemaHandler
     # ) -> CoreSchema:  # pragma: no coverage
     #     return core_schema.no_info_after_validator_function(cls, handler(Tile.Format))
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:tile"},
+    Tile,
+    lambda fields: {
+        "name": fields.name.name,
+        "position": fields.position.name,  # TODO: global_position
+    },
+)

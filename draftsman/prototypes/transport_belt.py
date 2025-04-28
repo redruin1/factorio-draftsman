@@ -100,10 +100,3 @@ class TransportBelt(
     # =========================================================================
 
     __hash__ = Entity.__hash__
-
-
-# TODO: versioning
-draftsman_converters.add_schema(
-    {"$id": "factorio:transport_belt"},
-    TransportBelt,
-)

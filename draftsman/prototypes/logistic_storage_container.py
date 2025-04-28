@@ -10,16 +10,10 @@ from draftsman.classes.mixins import (
     RequestFiltersMixin,
     InventoryMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode
-from draftsman.signatures import ItemRequest, RequestFilter, uint16
-from draftsman.utils import get_first
 
 from draftsman.data.entities import logistic_storage_containers
 
 import attrs
-from typing import Any, Literal, Optional, Union
-from pydantic import ConfigDict
 
 
 @attrs.define

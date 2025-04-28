@@ -31,7 +31,16 @@ from draftsman.error import (
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import encode_version, get_suggestion
-from draftsman.validators import and_, lt, ge, one_of, is_none, or_, instance_of
+from draftsman.validators import (
+    and_,
+    lt,
+    ge,
+    one_of,
+    is_none,
+    or_,
+    instance_of,
+    try_convert,
+)
 from draftsman.warning import (
     BarWarning,
     MalformedSignalWarning,
@@ -42,7 +51,7 @@ from draftsman.warning import (
     UnknownItemWarning,
     UnknownSignalWarning,
     UnknownTileWarning,
-    UnknownRecipeWarning
+    UnknownRecipeWarning,
 )
 
 from typing_extensions import Annotated
@@ -73,7 +82,7 @@ import warnings
 # them without recursive imports
 int32 = Annotated[int, and_(ge(-(2**31)), lt(2**31))]
 # TODO: description about floating point issues
-int64 = Annotated[int, and_(ge(-(2**63)), lt(2**63))]  
+int64 = Annotated[int, and_(ge(-(2**63)), lt(2**63))]
 
 uint8 = Annotated[int, and_(ge(0), lt(2**8))]
 uint16 = Annotated[int, and_(ge(0), lt(2**16))]
@@ -87,7 +96,12 @@ def known_name(type: str, structure: dict, issued_warning: Warning):
     Validator function builder for any type of unknown name.
     """
 
-    def validator(inst: Exportable, attr: attrs.Attribute, value: str, mode: Optional[ValidationMode] = None) -> str:
+    def validator(
+        inst: Exportable,
+        attr: attrs.Attribute,
+        value: str,
+        mode: Optional[ValidationMode] = None,
+    ) -> str:
         mode = mode if mode is not None else inst.validate_assignment
 
         if mode >= ValidationMode.STRICT:
@@ -100,25 +114,19 @@ def known_name(type: str, structure: dict, issued_warning: Warning):
     return validator
 
 
-ItemName = Annotated[
-    str, known_name("item", items.raw, UnknownItemWarning)
+ItemName = Annotated[str, known_name("item", items.raw, UnknownItemWarning)]
+SignalName = Annotated[str, known_name("signal", signals.raw, UnknownSignalWarning)]
+EntityName = Annotated[str, known_name("entity", entities.raw, UnknownEntityWarning)]
+FluidName = Annotated[str, known_name("fluid", fluids.raw, UnknownFluidWarning)]
+TileName = Annotated[str, known_name("tile", tiles.raw, UnknownTileWarning)]
+RecipeName = Annotated[str, known_name("recipe", recipes.raw, UnknownRecipeWarning)]
+QualityName = Literal[
+    "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
 ]
-SignalName = Annotated[
-    str, known_name("signal", signals.raw, UnknownSignalWarning)
+
+ArithmeticOperation = Literal[
+    "*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR"
 ]
-EntityName = Annotated[
-    str, known_name("entity", entities.raw, UnknownEntityWarning)
-]
-FluidName = Annotated[
-    str, known_name("fluid", fluids.raw, UnknownFluidWarning)
-]
-TileName = Annotated[
-    str, known_name("tile", tiles.raw, UnknownTileWarning)
-]
-RecipeName = Annotated[
-    str, known_name("recipe", recipes.raw, UnknownRecipeWarning)
-]
-QualityName = Literal["normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"]
 
 
 class DraftsmanBaseModel(BaseModel):
@@ -182,7 +190,7 @@ class DraftsmanBaseModel(BaseModel):
         # cannot really know what entity is being imported) then we don't want
         # to issue the following warnings, since we don't want to make
         # assertions where we don't have enough information
-        if obj.unknown:
+        if obj.extra_keys:
             return self
 
         # We also only want to issue this particular warning if we're setting an
@@ -251,6 +259,40 @@ class DraftsmanBaseModel(BaseModel):
     )
 
 
+@attrs.define
+class AttrsMapperID(Exportable):
+    name: str = attrs.field()  # TODO: optional? # TODO: validators
+    type: Literal["entity", "item"] = attrs.field(  # TODO: optional?
+        validator=one_of("entity", "item")
+    )
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, str):
+            try:
+                return cls(**mapper_dict(value))
+            except InvalidMapperError as e:
+                raise InvalidMapperError(
+                    "Unknown mapping target {}; either specify the full dictionary, or update your environment".format(
+                        e
+                    )
+                ) from None
+        elif isinstance(value, dict):
+            return cls(**value)
+        else:
+            return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:mapper_id"},
+    AttrsMapperID,
+    lambda fields: {
+        "name": fields.name.name,
+        "type": fields.type.name,
+    },
+)
+
+
 class MapperID(DraftsmanBaseModel):
     name: str  # TODO: optional?
     type: Literal["entity", "item"] = Field(
@@ -281,6 +323,43 @@ class MapperID(DraftsmanBaseModel):
                 ) from None
         else:
             return value
+
+
+@attrs.define
+class AttrsMapper(Exportable):
+    index: uint64 = attrs.field(validator=instance_of(uint64))
+    from_: Optional[AttrsMapperID] = attrs.field(
+        default=None,
+        converter=AttrsMapperID.converter,
+        validator=instance_of(Optional[AttrsMapperID]),
+    )
+    to: Optional[AttrsMapperID] = attrs.field(
+        default=None,
+        converter=AttrsMapperID.converter,
+        validator=instance_of(Optional[AttrsMapperID]),
+    )
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(
+                index=value["index"],
+                from_=value.get("from", None),
+                to=value.get("to", None),
+            )
+        else:
+            return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:mapper"},
+    AttrsMapper,
+    lambda fields: {
+        "index": fields.index.name,
+        "from": fields.from_.name,
+        "to": fields.to.name,
+    },
+)
 
 
 class Mapper(DraftsmanBaseModel):
@@ -486,8 +565,7 @@ class SignalID(DraftsmanBaseModel):
 @attrs.define
 class AttrsSignalID(Exportable):
     name: Optional[SignalName] = attrs.field(
-        default=None
-        # TODO: validators
+        default=None, validator=instance_of(Optional[SignalName])
     )
     """
     Name of the signal. If omitted, the signal is treated as no signal and 
@@ -503,14 +581,13 @@ class AttrsSignalID(Exportable):
         "asteroid-chunk",
         "quality",
     ] = attrs.field(
-        default="item"
+        default="item", metadata={"omit": False}
     )  # TODO: validators, name-specific default
     """
     Category of the signal.
     """
     quality: Optional[QualityName] = attrs.field(
-        default="normal",
-        validator=or_(one_of(QualityName), is_none)
+        default="normal", validator=or_(one_of(QualityName), is_none)
     )
     """
     Quality flag of the signal.
@@ -574,27 +651,27 @@ class AttrsSignalID(Exportable):
 
 draftsman_converters.get_version((1, 0)).add_schema(
     {
-        "$id": "factorio:signal_id_v1.0"
+        "$id": "factorio:signal_id"
         # TODO
     },
     AttrsSignalID,
     lambda fields: {
-        fields.name.name: "name",
-        fields.type.name: "type",
-        fields.quality.name: None,
+        "name": fields.name.name,
+        "type": fields.type.name,
+        None: fields.quality.name,
     },
 )
 
 draftsman_converters.get_version((2, 0)).add_schema(
     {
-        "$id": "factorio:signal_id_v2.0"
+        "$id": "factorio:signal_id"
         # TODO
     },
     AttrsSignalID,
     lambda fields: {
-        fields.name.name: "name",
-        fields.type.name: "type",
-        fields.quality.name: "quality",
+        "name": fields.name.name,
+        "type": fields.type.name,
+        "quality": fields.quality.name,
     },
 )
 
@@ -602,6 +679,29 @@ draftsman_converters.get_version((2, 0)).add_schema(
 class TargetID(DraftsmanBaseModel):
     index: uint32 = Field(..., description="TODO")  # TODO: size
     name: str = Field(..., description="TODO")  # TODO: TargetName?
+
+
+@attrs.define
+class AttrsAsteroidChunkID(Exportable):
+    index: uint32 = attrs.field(validator=instance_of(uint32))
+    name: str = attrs.field(validator=instance_of(str))  # TODO: AsteroidChunkName
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(**value)
+        else:
+            return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:asteroid_chunk_id"},
+    AttrsAsteroidChunkID,
+    lambda fields: {
+        fields.index.name: "index",
+        fields.name.name: "name",
+    },
+)
 
 
 class AsteroidChunkID(DraftsmanBaseModel):
@@ -641,15 +741,33 @@ class Icon(DraftsmanBaseModel):
 
 
 @attrs.define
-class AttrsIcon:
-    signal: AttrsSignalID = attrs.field()  # TODO: validators
+class AttrsIcon(Exportable):
+    signal: AttrsSignalID = attrs.field(
+        converter=AttrsSignalID.converter, validator=instance_of(AttrsSignalID)
+    )
     """
     Which signal icon to display.
     """
-    index: uint8 = attrs.field()
+    index: uint8 = attrs.field(validator=instance_of(uint8))
     """
     Numeric index of the icon, 1-based.
     """
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(**value)
+        return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:icon"},
+    AttrsIcon,
+    lambda fields: {
+        "signal": fields.signal.name,
+        "index": fields.index.name,
+    },
+)
 
 
 def normalize_icons(value: Any):
@@ -735,15 +853,12 @@ class AttrsColor:
 
     @classmethod
     def converter(cls, value) -> "AttrsColor":
-        if isinstance(value, AttrsColor):
-            return value
-        elif isinstance(value, (tuple, list)):  # TODO: sequence
-            return cls.from_sequence(value)
+        if isinstance(value, (tuple, list)):  # TODO: sequence
+            return cls(*value)
         elif isinstance(value, dict):
             return cls(**value)
         else:
-            msg = "{} can not be interpreted as a {}".format(repr(value), cls.__name__)
-            raise DataFormatError("Explode")
+            return value
 
 
 class Color(DraftsmanBaseModel):
@@ -877,27 +992,66 @@ draftsman_converters.register_unstructure_hook(
 
 
 @attrs.define
-class AttrsSimpleCondition:
+class AttrsSimpleCondition(Exportable):
     first_signal: Optional[AttrsSignalID] = attrs.field(
         default=None,
-        # TODO: validators
+        converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     comparator: Comparator = attrs.field(
         default="<",
         # converter=normalize_comparator
-        # TODO: validators
+        validator=one_of(Comparator),
     )
-    constant: int32 = attrs.field(default=0)
-    second_signal: Optional[AttrsSignalID] = attrs.field(default=None)
+    constant: int32 = attrs.field(default=0, validator=instance_of(int32))
+    second_signal: Optional[AttrsSignalID] = attrs.field(
+        default=None,
+        converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID]),
+    )
 
     @classmethod
     def converter(cls, value):
-        if isinstance(value, cls):
-            return value
-        elif isinstance(value, dict):
+        if isinstance(value, dict):
             return cls(**value)
         else:
             return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:simple_condition"},
+    AttrsSimpleCondition,
+    lambda fields: {
+        "first_signal": fields.first_signal.name,
+        "comparator": fields.comparator.name,
+        "constant": fields.constant.name,
+        "second_signal": fields.second_signal.name,
+    },
+)
+
+
+@attrs.define
+class AttrsNetworkSpecification(Exportable):
+    red: bool = attrs.field(default=True, validator=instance_of(bool))
+    green: bool = attrs.field(default=True, validator=instance_of(bool))
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, set):
+            d = {k: k in value for k in ("red", "green")}
+            return cls(**d)
+        else:
+            return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:network_specification"},
+    AttrsNetworkSpecification,
+    lambda fields: {
+        "red": fields.red.name,
+        "green": fields.green.name,
+    },
+)
 
 
 class Condition(
@@ -1105,6 +1259,53 @@ class FilterEntry(DraftsmanBaseModel):
     #     return result
 
 
+@attrs.define
+class AttrsItemFilter(Exportable):
+    index: int64 = attrs.field(
+        converter=try_convert(
+            lambda index: index + 1
+        ),  # Convert from zero-indexed to 1-indexed
+        validator=instance_of(int64),
+    )
+    """
+    Index of the filter in the GUI, 1-indexed.
+    """
+    name: ItemName = attrs.field(validator=instance_of(ItemName))
+    """
+    Name of the item.
+    """
+    # TODO: determine "any" quality
+    # I think that might be the true default, but theres some additional info
+    # needed
+    quality: QualityName = attrs.field(default="normal", validator=one_of(QualityName))
+    """
+    Quality flag of the item.
+    """
+    comparator: Comparator = attrs.field(default="=", validator=one_of(Comparator))
+    """
+    Comparator if filtering a range of different qualities.
+    """
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(**value)
+        else:
+            return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:item_filter"},
+    AttrsItemFilter,
+    lambda fields: {
+        fields.index.name: "index",
+        fields.name.name: "name",
+        fields.quality.name: "quality",
+        fields.comparator.name: "comparator",
+    },
+)
+
+
 class ItemFilter(DraftsmanBaseModel):
     index: int64 = Field(
         ..., description="""Numeric index of a filter entry, 1-based."""
@@ -1146,6 +1347,23 @@ def ensure_bar_less_than_inventory_size(
         )
 
     return value
+
+
+def ensure_bar_less_than_inventory_size(
+    self: Exportable,
+    attr,
+    value: Optional[uint16],
+    mode: Optional[ValidationMode] = None,
+):
+    mode = mode if mode is not None else self.validate_assignment
+    if mode >= ValidationMode.PEDANTIC:
+        if self.inventory_size and value >= self.inventory_size:
+            msg = (
+                "Bar index ({}) exceeds the container's inventory size ({})".format(
+                    value, self.inventory_size
+                ),
+            )
+            warnings.warn(BarWarning(msg))
 
 
 # class Bar(RootModel):
@@ -1257,6 +1475,178 @@ class RequestFilter(DraftsmanBaseModel):
     #         else:
     #             result.append(entry)
     #     return result
+
+
+@attrs.define
+class AttrsSignalFilter(Exportable):
+    index: int64 = attrs.field(
+        # TODO: validators
+    )
+    """
+    Numeric index of the signal in the combinator, 1-based. Typically the 
+    index of the signal in the parent 'filters' key, but this is not 
+    strictly enforced. 
+    """
+    name: SignalName = attrs.field(  # TODO: SignalName
+        validator=instance_of(SignalName)
+    )
+    """
+    Name of the signal.
+    """
+    count: int32 = attrs.field()
+    """
+    Value of the signal filter, or the lower bound of a range if ``max_count`` 
+    is also specified.
+    """
+    type: Optional[
+        Literal[
+            "virtual",
+            "item",
+            "fluid",
+            "recipe",
+            "entity",
+            "space-location",
+            "asteroid-chunk",
+            "quality",
+        ]
+    ] = attrs.field(
+        # TODO: validators
+    )
+    """
+    Type of the signal.
+    """
+
+    @type.default
+    def get_type_default(
+        self,
+    ) -> Literal[
+        "virtual",
+        "item",
+        "fluid",
+        "recipe",
+        "entity",
+        "space-location",
+        "asteroid-chunk",
+        "quality",
+    ]:
+        try:
+            return get_signal_types(self.name)[0]
+        except InvalidSignalError:
+            return None
+
+    # signal: Optional[SignalID] = Field(
+    #     None,
+    #     description="""
+    #     Signal to broadcast. If this value is omitted the occupied slot will
+    #     behave as if no signal exists within it. Cannot be a pure virtual
+    #     (logic) signal like "signal-each", "signal-any", or
+    #     "signal-everything"; if such signals are set they will be removed
+    #     on import.
+    #     """,
+    # )
+    # TODO: make this dynamic based on current environment?
+    quality: QualityName = attrs.field(
+        default="normal",
+        # TODO: validators
+    )
+    """
+    Quality flag of the signal. If unspecified, this value is effectively 
+    equal to 'any' quality level.
+    """
+    comparator: Comparator = attrs.field(
+        default="=",
+        # TODO: converter from double forms
+        # validator=one_of(Comparator), # TODO: validator
+        metadata={"omit": False},
+    )
+    """
+    Comparison operator when deducing the quality type.
+    """
+    max_count: Optional[int32] = attrs.field(
+        default=None,
+        # TODO: validators
+    )
+    """
+    The maximum amount of the signal to request of the signal to emit. Only used
+    (currently) with logistics-type requests.
+    """
+
+    # Deprecated in 2.0
+    # @field_validator("index")
+    # @classmethod
+    # def ensure_index_within_range(cls, value: int64, info: ValidationInfo):
+    #     """
+    #     Factorio does not permit signal values outside the range of it's item
+    #     slot count; this method raises an error IF item slot count is known.
+    #     """
+    #     if not info.context:
+    #         return value
+    #     if info.context["mode"] <= ValidationMode.MINIMUM:
+    #         return value
+
+    #     entity = info.context["object"]
+
+    #     # If Draftsman doesn't recognize entity, early exit
+    #     if entity.item_slot_count is None:
+    #         return value
+
+    #     # TODO: what happens if index is 0?
+    #     if not 0 < value <= entity.item_slot_count:
+    #         raise ValueError(
+    #             "Signal 'index' ({}) must be in the range [0, {})".format(
+    #                 value, entity.item_slot_count
+    #             )
+    #         )
+
+    #     return value
+
+    # TODO: move to ConstantCombinator
+    # @field_validator("name")
+    # @classmethod
+    # def ensure_not_pure_virtual(cls, value: Optional[str], info: ValidationInfo):
+    #     """
+    #     Warn if pure virtual signals (like "signal-each", "signal-any", and
+    #     "signal-everything") are entered inside of a constant combinator.
+    #     """
+    #     if not info.context or value is None:
+    #         return value
+    #     if info.context["mode"] <= ValidationMode.MINIMUM:
+    #         return value
+
+    #     warning_list: list = info.context["warning_list"]
+
+    #     if value in pure_virtual:
+    #         warning_list.append(
+    #             PureVirtualDisallowedWarning(
+    #                 "Cannot set pure virtual signal '{}' in a constant combinator".format(
+    #                     value.name
+    #                 )
+    #             )
+    #         )
+
+    #     return value
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(**value)
+        else:
+            return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:signal_filter"},
+    AttrsSignalFilter,
+    lambda fields: {
+        fields.index.name: "index",
+        fields.name.name: "name",
+        fields.count.name: "count",
+        fields.type.name: "type",
+        fields.quality.name: "quality",
+        fields.comparator.name: "comparator",
+        fields.max_count.name: "max_count",
+    },
+)
 
 
 class SignalFilter(DraftsmanBaseModel):
@@ -1383,6 +1773,150 @@ class SignalFilter(DraftsmanBaseModel):
         return value
 
 
+@attrs.define
+class AttrsSection(Exportable):
+    index: uint32 = attrs.field(validator=instance_of(uint32))
+    """
+    Location of the logistics section within the entity, 1-indexed.
+    """
+
+    def _filters_converter(value: list[Any]) -> list[AttrsSignalFilter]:
+        # TODO: more robust testing
+        if isinstance(value, list):
+            for i, entry in enumerate(value):
+                if isinstance(entry, tuple):
+                    value[i] = AttrsSignalFilter(
+                        index=i + 1,
+                        name=entry[0],
+                        count=entry[1],
+                    )
+                else:
+                    value[i] = AttrsSignalFilter.converter(entry)
+            return value
+        else:
+            return value
+
+    filters: list[AttrsSignalFilter] = attrs.field(
+        factory=list, converter=_filters_converter, validator=instance_of(list)
+    )
+    """
+    List of item requests for this section.
+    """
+
+    group: Optional[str] = attrs.field(
+        default=None, validator=instance_of(Optional[str])
+    )
+    """
+    Name of this section group. Once named, this group will become registered 
+    within the save it is imported into. If a logistic section with the given
+    name already exists within the save, the one that exists in the save will 
+    overwrite the one specified here.
+    """
+
+    active: bool = attrs.field(default=True, validator=instance_of(bool))
+    """
+    Whether or not this logistic section is currently enabled in this entity.
+    """
+
+    def set_signal(
+        self,
+        index: int64,
+        name: Union[str, None],
+        count: int32 = 0,
+        quality: Literal[
+            "normal",
+            "uncommon",
+            "rare",
+            "epic",
+            "legendary",
+            "quality-unknown",
+            "any",
+        ] = "normal",
+        type: Optional[str] = None,
+    ) -> None:
+        """
+        TODO
+        """
+        new_entry = AttrsSignalFilter(
+            index=index,
+            name=name,
+            type=type,
+            quality=quality,
+            comparator="=",
+            count=count,
+        )
+
+        # Check to see if filters already contains an entry with the same index
+        existing_index = None
+        for i, signal_filter in enumerate(self.filters):
+            if index + 1 == signal_filter.index:  # Index already exists in the list
+                if name is None:  # Delete the entry
+                    del self.filters[i]
+                else:
+                    self.filters[i] = new_entry
+                existing_index = i
+                break
+
+        if existing_index is None:
+            self.filters.append(new_entry)
+
+    def get_signal(self, index: int64) -> Optional[AttrsSignalFilter]:
+        """
+        Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
+        if it exists.
+
+        :param index: The index of the signal to analyze.
+
+        :returns: A ``dict`` that conforms to :py:data:`.SIGNAL_FILTER`, or
+            ``None`` if nothing was found at that index.
+        """
+        return next(
+            (item for item in self.filters if item["index"] == index + 1),
+            None,
+        )
+
+    # @field_validator("filters", mode="before")
+    # @classmethod
+    # def normalize_input(cls, value: Any):
+    #     if isinstance(value, list):
+    #         for i, entry in enumerate(value):
+    #             if isinstance(entry, tuple):
+    #                 # TODO: perhaps it would be better to modify the format so
+    #                 # you must specify the signal type... or maybe not...
+    #                 signal_types = get_signal_types(entry[0])
+    #                 filter_type = (
+    #                     "item" if "item" in signal_types else next(iter(signal_types))
+    #                 )
+    #                 value[i] = {
+    #                     "index": i + 1,
+    #                     "name": entry[0],
+    #                     "type": filter_type,
+    #                     "comparator": "=",
+    #                     "count": entry[1],
+    #                 }
+
+    #     return value
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(**value)
+        else:
+            return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:signal_section"},
+    AttrsSection,
+    lambda fields: {
+        fields.index.name: "index",
+        fields.filters.name: "filters",
+        fields.group.name: "group",
+        fields.active.name: "active",
+    },
+)
+
+
 class Section(DraftsmanBaseModel):
     index: uint32  # TODO: 0-based or 1-based?
     filters: Optional[list[SignalFilter]] = []
@@ -1488,7 +2022,9 @@ class Section(DraftsmanBaseModel):
 
 
 class QualityFilter(DraftsmanBaseModel):
-    quality: Optional[QualityName] = Field("any", description="""The quality of the signal to compare against.""")
+    quality: Optional[QualityName] = Field(
+        "any", description="""The quality of the signal to compare against."""
+    )
     comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
         "=",
         description="""The comparison operator to use when evaluating signal comparisons.""",
@@ -1505,36 +2041,62 @@ class QualityFilter(DraftsmanBaseModel):
 
 
 @attrs.define
-class AttrsItemSpecification(Exportable):
-    class InventryLocation(Exportable):
-        inventory: uint32
-        """
-        Which inventory this item sits in, 1-indexed.
-        """
-        stack: uint32
-        """
-        Which slot in the inventory this item sits in, 0-indexed.
-        """
-        count: Optional[uint32] = attrs.field(
-            default=1,
-            validator=instance_of(Optional[uint32])
-        )
-        """
-        The amount of that item to request to that slot. Defaults to 1 if 
-        omitted.
-        """
+class AttrsInventoryLocation(Exportable):
+    inventory: uint32 = attrs.field(validator=instance_of(uint32))
+    """
+    Which inventory this item sits in, 1-indexed.
+    """
+    stack: uint32 = attrs.field(validator=instance_of(uint32))
+    """
+    Which slot in the inventory this item sits in, 0-indexed.
+    """
+    count: Optional[uint32] = attrs.field(
+        default=1, validator=instance_of(Optional[uint32])
+    )
+    """
+    The amount of that item to request to that slot. Defaults to 1 if 
+    omitted.
+    """
 
-    in_inventory: list[InventryLocation] = attrs.field(
+    @classmethod
+    def convert(cls, value):
+        if isinstance(value, dict):
+            return AttrsInventoryLocation(**value)
+        else:
+            return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:item_specification"},
+    AttrsInventoryLocation,
+    lambda fields: {
+        fields.inventory.name: "inventory",
+        fields.stack.name: "stack",
+        fields.count.name: "count",
+    },
+)
+
+
+@attrs.define
+class AttrsItemSpecification(Exportable):
+    def _convert_inventory_location_list(value):
+        if isinstance(value, list):
+            res = [None] * len(value)
+            for i, elem in enumerate(value):
+                res[i] = AttrsInventoryLocation.convert(elem)
+            return res
+        else:
+            return value
+
+    in_inventory: list[AttrsInventoryLocation] = attrs.field(
         factory=list,
-        # TODO: validators
+        converter=_convert_inventory_location_list,
+        validator=instance_of(list),
     )
     """
     The list of all locations that the selected item should go.
     """
-    grid_count: uint32 = attrs.field(
-        default=0,
-        validator=instance_of(uint32)
-    )
+    grid_count: uint32 = attrs.field(default=0, validator=instance_of(uint32))
     """
     The total amount of items being requested to all locations.
     """
@@ -1545,6 +2107,16 @@ class AttrsItemSpecification(Exportable):
             return AttrsItemSpecification(**value)
         else:
             return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:item_specification"},
+    AttrsItemSpecification,
+    lambda fields: {
+        fields.in_inventory.name: "in_inventory",
+        fields.grid_count.name: "grid_count",
+    },
+)
 
 
 class ItemSpecification(DraftsmanBaseModel):
@@ -1569,10 +2141,30 @@ class ItemSpecification(DraftsmanBaseModel):
 
 
 @attrs.define
+class AttrsItemID(Exportable):
+    name: ItemName = attrs.field(validator=instance_of(ItemName))
+    quality: QualityName = attrs.field(default="normal", validator=one_of(QualityName))
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, str):
+            return cls(name=value)
+        elif isinstance(value, dict):
+            return cls(**value)
+        return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:item_id"},
+    AttrsItemID,
+    lambda fields: {"name": fields.name.name, "quality": fields.quality.name},
+)
+
+
+@attrs.define
 class AttrsItemRequest(Exportable):
-    id: AttrsSignalID = attrs.field(
-        converter=AttrsSignalID.converter,
-        validator=instance_of(AttrsSignalID)
+    id: AttrsItemID = attrs.field(
+        converter=AttrsItemID.converter, validator=instance_of(AttrsItemID)
     )
     """
     The item to request.
@@ -1580,11 +2172,28 @@ class AttrsItemRequest(Exportable):
     items: AttrsItemSpecification = attrs.field(
         factory=AttrsItemSpecification,
         converter=AttrsItemSpecification.converter,
-        validator=instance_of(AttrsItemSpecification)
+        validator=instance_of(AttrsItemSpecification),
     )
     """
     The grids/locations each item is being requested to.
     """
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return AttrsItemRequest(**value)
+        else:
+            return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:item_request"},
+    AttrsItemRequest,
+    lambda fields: {
+        fields.id.name: "id",
+        fields.items.name: "items",
+    },
+)
 
 
 class ItemRequest(DraftsmanBaseModel):
@@ -1596,6 +2205,52 @@ class ItemRequest(DraftsmanBaseModel):
         entity.
         """,
     )
+
+
+@attrs.define
+class AttrsInfinityFilter(Exportable):
+    index: uint16 = attrs.field(validator=instance_of(uint16))
+    """
+    Where in the infinity containers GUI this filter will exist,
+    1-based.
+    """
+    name: ItemName = attrs.field(validator=instance_of(ItemName))  # TODO: ItemID
+    """
+    The name of the item to create/remove.
+    """
+    count: uint32 = attrs.field(default=0, validator=instance_of(uint32))
+    """
+    The amount of this item to keep in the entity, as dicerned
+    by 'mode'.
+    """
+    mode: Literal["at-least", "at-most", "exactly"] = attrs.field(
+        default="at-least", validator=one_of("at-least", "at-most", "exactly")
+    )
+    """
+    What manner in which to create or remove this item from the 
+    entity. 'at-least' sets 'count' as a lower-bound, 'at-most' 
+    sets 'count' as an upper-bound, and exactly makes the 
+    quantity of this item match 'count' exactly.
+    """
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(**value)
+        else:
+            return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:infinity_filter"},
+    AttrsInfinityFilter,
+    lambda fields: {
+        fields.index.name: "index",
+        fields.name.name: "name",
+        fields.count.name: "count",
+        fields.mode.name: "mode",
+    },
+)
 
 
 class Sections(DraftsmanBaseModel):
@@ -1700,3 +2355,21 @@ class Sections(DraftsmanBaseModel):
             return next(section for section in self.sections if section.group == key)
         else:
             return self.sections[key]
+
+
+@attrs.define
+class EquipmentID:
+    name: str = attrs.field()  # TODO: validators, EquipmentName
+    quality: QualityName = attrs.field(default="normal")  # TODO: validators
+
+
+@attrs.define
+class EquipmentComponent:
+    equipment: EquipmentID = attrs.field()  # TODO: validators
+    """
+    The type of equipment to add.
+    """
+    position: IntPosition = attrs.field()  # TODO: validators
+    """
+    The top leftmost tile in which this item sits, 0-based.
+    """

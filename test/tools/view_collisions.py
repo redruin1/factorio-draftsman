@@ -17,8 +17,8 @@ import math
 def main():
     bp_string = input()
 
-    blueprint = Blueprint(bp_string)
-    print(blueprint.area)
+    blueprint = Blueprint.from_string(bp_string)
+    print(blueprint.get_world_bounding_box())
 
     entity_list = flatten_entities(blueprint.entities)
 
@@ -26,7 +26,7 @@ def main():
 
     screen_size = 1000
 
-    translation = blueprint.area.top_left
+    translation = blueprint.get_world_bounding_box().top_left
 
     root = Tk()
     root.title("test")
@@ -35,7 +35,7 @@ def main():
     canvas = Canvas(root, width=screen_size, height=screen_size, bg="white")
     canvas.pack()
 
-    scale = screen_size / max(blueprint.tile_width, blueprint.tile_height)
+    scale = screen_size / max(blueprint.get_dimensions())
 
     grid_size = 1
 

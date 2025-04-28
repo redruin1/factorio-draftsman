@@ -102,8 +102,7 @@ class Splitter(DirectionalMixin, Entity):
     # =========================================================================
 
     input_priority: Literal["left", "none", "right"] = attrs.field(
-        default="none",
-        validator=one_of("left", "none", "right")
+        default="none", validator=one_of("left", "none", "right")
     )
     """
     The input priority of the ``Splitter``. Can be one of ``"left"``,
@@ -138,8 +137,7 @@ class Splitter(DirectionalMixin, Entity):
     # =========================================================================
 
     output_priority: Literal["left", "none", "right"] = attrs.field(
-        default="none",
-        validator=one_of("left", "none", "right")
+        default="none", validator=one_of("left", "none", "right")
     )
     """
     The output priority of the ``Splitter``. Can be one of ``"left"`` or
@@ -174,8 +172,7 @@ class Splitter(DirectionalMixin, Entity):
     # =========================================================================
 
     filter: Optional[ItemName] = attrs.field(
-        default=None,
-        validator=instance_of(Optional[ItemName])
+        default=None, validator=instance_of(Optional[ItemName])
     )
     """
     Sets the Splitter's filter. If ``filter`` is set but ``output_priority``
@@ -230,14 +227,13 @@ class Splitter(DirectionalMixin, Entity):
     #         and self.filter == other.filter
     #     )
 
+
 draftsman_converters.add_schema(
-    {
-        "$id": "factorio:splitter"
-    },
+    {"$id": "factorio:splitter"},
     Splitter,
     lambda fields: {
-        fields.input_priority.name: "input_priority",
-        fields.output_priority.name: "output_priority",
-        fields.filter.name: "filter",
-    }
+        "input_priority": fields.input_priority.name,
+        "output_priority": fields.output_priority.name,
+        "filter": fields.filter.name,
+    },
 )

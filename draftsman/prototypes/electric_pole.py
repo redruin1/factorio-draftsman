@@ -69,4 +69,4 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
 
     # =========================================================================
 
-    # __hash__ = Entity.__hash__
+    __hash__ = Entity.__hash__

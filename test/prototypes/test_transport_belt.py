@@ -53,7 +53,7 @@ class TestTransportBelt:
                 "logistic_condition": {
                     "first_signal": {
                         "name": "fast-underground-belt",
-                        # "type": "item", # Default
+                        "type": "item",
                     },
                     "comparator": "≥",
                     # "constant": 0, # Default
@@ -263,7 +263,7 @@ class TestTransportBelt:
             "logistic_condition": {
                 "first_signal": {
                     "name": "fast-underground-belt",
-                    # "type": "item" # Default
+                    "type": "item"
                 },
                 "comparator": "≥",
                 # "constant": 0, # Default

@@ -15,7 +15,7 @@ with pkg_resources.open_binary(data, "signals.pkl") as inp:
     raw: dict[str, dict] = _data["raw"]
 
     # Look up table for a particular signal's type
-    type_of: dict[str, set[str]] = _data["type_of"]
+    type_of: dict[str, list[str]] = _data["type_of"]
 
     # Lists of signal names organized by their type for easy iteration
     virtual: list[str] = _data["virtual"]
@@ -87,7 +87,7 @@ def add_signal(name: str, type: str):
         quality.append(name)
 
 
-def get_signal_types(signal_name: str) -> set[str]:
+def get_signal_types(signal_name: str) -> list[str]:
     """
     Returns the set of types that a given signal can have based on its ID string.
 
@@ -105,7 +105,10 @@ def get_signal_types(signal_name: str) -> set[str]:
     try:
         return type_of[signal_name]
     except KeyError:
-        raise InvalidSignalError("'{}'".format(signal_name))
+        msg = "Cannot determine signal types for unknown signal '{}'".format(
+            signal_name
+        )
+        raise InvalidSignalError(msg)
 
 
 def signal_dict(signal: str) -> dict:

@@ -12,7 +12,7 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsSignalID, uint32
+from draftsman.signatures import AttrsColor, AttrsSignalID, uint32
 from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 
@@ -26,8 +26,8 @@ from typing import Optional
 @attrs.define
 class TrainStop(
     ColorMixin,
-    CircuitConditionMixin,
     LogisticConditionMixin,
+    CircuitConditionMixin,
     CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
@@ -179,6 +179,15 @@ class TrainStop(
     @property
     def double_grid_aligned(self) -> bool:
         return True
+
+    # =========================================================================
+
+    # TODO: should be evolved
+    color: Optional[AttrsColor] = attrs.field(
+        default=AttrsColor(r=242 / 255, g=0, b=0, a=127 / 255),
+        converter=AttrsColor.converter,
+        validator=instance_of(Optional[AttrsColor]),
+    )
 
     # =========================================================================
 
@@ -510,15 +519,15 @@ draftsman_converters.add_schema(
     {"$id": "factorio:train_stop"},
     TrainStop,
     lambda fields: {
-        fields.station.name: "station",
-        fields.manual_trains_limit.name: "manual_trains_limit",
-        fields.send_to_train.name: ("control_behavior", "send_to_train"),
-        fields.read_from_train.name: ("control_behavior", "read_from_train"),
-        fields.read_stopped_train.name: ("control_behavior", "read_stopped_train"),
-        fields.train_stopped_signal.name: ("control_behavior", "train_stopped_signal"),
-        fields.signal_limits_trains.name: ("control_behavior", "set_trains_limit"),
-        fields.trains_limit_signal.name: ("control_behavior", "trains_limit_signal"),
-        fields.read_trains_count.name: ("control_behavior", "read_trains_count"),
-        fields.trains_count_signal.name: ("control_behavior", "trains_count_signal"),
+        "station": fields.station.name,
+        "manual_trains_limit": fields.manual_trains_limit.name,
+        ("control_behavior", "send_to_train"): fields.send_to_train.name,
+        ("control_behavior", "read_from_train"): fields.read_from_train.name,
+        ("control_behavior", "read_stopped_train"): fields.read_stopped_train.name,
+        ("control_behavior", "train_stopped_signal"): fields.train_stopped_signal.name,
+        ("control_behavior", "set_trains_limit"): fields.signal_limits_trains.name,
+        ("control_behavior", "trains_limit_signal"): fields.trains_limit_signal.name,
+        ("control_behavior", "read_trains_count"): fields.read_trains_count.name,
+        ("control_behavior", "trains_count_signal"): fields.trains_count_signal.name,
     },
 )

@@ -20,8 +20,8 @@ class UndergroundBelt(IOTypeMixin, DirectionalMixin, Entity):
     A transport belt that transfers items underneath other entities.
     """
 
-    class Format(IOTypeMixin.Format, DirectionalMixin.Format, Entity.Format):
-        model_config = ConfigDict(title="UndergroundBelt")
+    # class Format(IOTypeMixin.Format, DirectionalMixin.Format, Entity.Format):
+    #     model_config = ConfigDict(title="UndergroundBelt")
 
     # def __init__(
     #     self,

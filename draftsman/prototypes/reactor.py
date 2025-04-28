@@ -32,6 +32,7 @@ class Reactor(
     """
     An entity that converts a fuel into thermal energy.
     """
+
     # TODO: technically, a reactor can have more than just a burnable energy
     # source; it could have any type of energy source other than heat as
     # input. Thus, we need to make sure that the attributes from
@@ -106,10 +107,7 @@ class Reactor(
 
     # =========================================================================
 
-    read_burner_fuel: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    read_burner_fuel: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not to broadcast the amount of fuel currently in the reactor to 
     any connected circuit networks.
@@ -173,7 +171,7 @@ class Reactor(
     temperature_signal: Optional[AttrsSignalID] = attrs.field(
         factory=lambda: AttrsSignalID(name="signal-T", type="virtual"),
         converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
     The signal with which to broadcast the reactors temperature to, if this 

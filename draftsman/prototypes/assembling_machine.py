@@ -12,16 +12,19 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.signatures import ItemRequest, uint32
-from draftsman.utils import get_first
+from draftsman.utils import fix_incorrect_pre_init
 from draftsman.warning import ModuleLimitationWarning
 
 from draftsman.data.entities import assembling_machines
 from draftsman.data import entities, modules
 
+import attrs
 from pydantic import ConfigDict, ValidationInfo, field_validator
 from typing import Any, Literal, Optional, Union
 
 
+@fix_incorrect_pre_init
+@attrs.define
 class AssemblingMachine(
     InputIngredientsMixin,
     ModulesMixin,
@@ -37,83 +40,83 @@ class AssemblingMachine(
     does not include :py:class:`.RocketSilo`.
     """
 
-    class Format(
-        InputIngredientsMixin.Format,
-        ModulesMixin.Format,
-        RequestItemsMixin.Format,
-        RecipeMixin.Format,
-        DirectionalMixin.Format,
-        Entity.Format,
-    ):
-        @field_validator("items")
-        @classmethod
-        def ensure_module_permitted_with_recipe(
-            cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-        ):
-            if not info.context or value is None:
-                return value
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
+    # class Format(
+    #     InputIngredientsMixin.Format,
+    #     ModulesMixin.Format,
+    #     RequestItemsMixin.Format,
+    #     RecipeMixin.Format,
+    #     DirectionalMixin.Format,
+    #     Entity.Format,
+    # ):
+    #     @field_validator("items")
+    #     @classmethod
+    #     def ensure_module_permitted_with_recipe(
+    #         cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+    #     ):
+    #         if not info.context or value is None:
+    #             return value
+    #         if info.context["mode"] <= ValidationMode.MINIMUM:
+    #             return value
 
-            entity: "AssemblingMachine" = info.context["object"]
-            warning_list: list = info.context["warning_list"]
+    #         entity: "AssemblingMachine" = info.context["object"]
+    #         warning_list: list = info.context["warning_list"]
 
-            if entity.recipe is None:  # Cannot check in this case
-                return value
+    #         if entity.recipe is None:  # Cannot check in this case
+    #             return value
 
-            for item in entity.items:
-                # Check to make sure the recipe is within the module's limitations
-                # (If it has any)
-                module = modules.raw.get(item["id"]["name"], {})
-                if "limitation" in module:
-                    if (  # pragma: no branch
-                        entity.recipe is not None
-                        and entity.recipe not in module["limitation"]
-                    ):
-                        tooltip = module.get("limitation_message_key", "no message key")
-                        warning_list.append(
-                            ModuleLimitationWarning(
-                                "Cannot use module '{}' with recipe '{}' ({})".format(
-                                    item["id"]["name"], entity.recipe, tooltip
-                                ),
-                            )
-                        )
+    #         for item in entity.items:
+    #             # Check to make sure the recipe is within the module's limitations
+    #             # (If it has any)
+    #             module = modules.raw.get(item["id"]["name"], {})
+    #             if "limitation" in module:
+    #                 if (  # pragma: no branch
+    #                     entity.recipe is not None
+    #                     and entity.recipe not in module["limitation"]
+    #                 ):
+    #                     tooltip = module.get("limitation_message_key", "no message key")
+    #                     warning_list.append(
+    #                         ModuleLimitationWarning(
+    #                             "Cannot use module '{}' with recipe '{}' ({})".format(
+    #                                 item["id"]["name"], entity.recipe, tooltip
+    #                             ),
+    #                         )
+    #                     )
 
-            return value
+    #         return value
 
-        model_config = ConfigDict(title="AssemblingMachine")
+    #     model_config = ConfigDict(title="AssemblingMachine")
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(assembling_machines),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        direction: Direction = Direction.NORTH,
-        recipe: str = None,
-        items: Optional[list[ItemRequest]] = [],
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
+    # def __init__(
+    #     self,
+    #     name: Optional[str] = get_first(assembling_machines),
+    #     position: Union[Vector, PrimitiveVector] = None,
+    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
+    #     direction: Direction = Direction.NORTH,
+    #     recipe: str = None,
+    #     items: Optional[list[ItemRequest]] = [],
+    #     tags: dict[str, Any] = {},
+    #     validate_assignment: Union[
+    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
+    #     ] = ValidationMode.STRICT,
+    #     **kwargs
+    # ):
+    #     """
+    #     TODO
+    #     """
 
-        super().__init__(
-            name,
-            assembling_machines,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            recipe=recipe,
-            items=items,
-            tags=tags,
-            **kwargs
-        )
+    #     super().__init__(
+    #         name,
+    #         assembling_machines,
+    #         position=position,
+    #         tile_position=tile_position,
+    #         direction=direction,
+    #         recipe=recipe,
+    #         items=items,
+    #         tags=tags,
+    #         **kwargs
+    #     )
 
-        self.validate_assignment = validate_assignment
+    #     self.validate_assignment = validate_assignment
 
     # @utils.reissue_warnings
     # def set_item_request(self, item: str, count: uint32):
@@ -150,6 +153,10 @@ class AssemblingMachine(
     # TODO: overwrite direction.setter so that it only works with specific recipes
     # TODO: technically assembling machines can have burner energy sources, so
     # it should inhert BurnerEnergySourceMixin
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return assembling_machines
 
     # =========================================================================
 

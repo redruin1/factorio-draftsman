@@ -1,12 +1,14 @@
 # request_items.py
 
-from draftsman import signatures
-from draftsman.data import items
-from draftsman.classes.exportable import attempt_and_reissue
-from draftsman.constants import ValidationMode
-from draftsman.error import DataFormatError
-from draftsman.signatures import DraftsmanBaseModel, AttrsItemRequest, ItemRequest, uint32
+from draftsman.serialization import draftsman_converters
+from draftsman.signatures import (
+    DraftsmanBaseModel,
+    AttrsItemRequest,
+    ItemRequest,
+    uint32,
+)
 from draftsman.utils import reissue_warnings
+from draftsman.validators import instance_of
 
 import attrs
 from pydantic import Field, ValidationInfo, field_validator
@@ -85,9 +87,17 @@ class RequestItemsMixin:
 
     # =========================================================================
 
+    def _items_converter(value):
+        if isinstance(value, list):
+            res = [None] * len(value)
+            for i, elem in enumerate(value):
+                res[i] = AttrsItemRequest.converter(elem)
+            return res
+        else:
+            return value
+
     items: Optional[list[AttrsItemRequest]] = attrs.field(
-        factory=list,
-        # TODO: validators
+        factory=list, converter=_items_converter, validator=instance_of(Optional[list])
     )
     """
     TODO
@@ -184,18 +194,20 @@ class RequestItemsMixin:
                 if slot is None:
                     slot = len(new_items)
                 new_items.append(
-                    AttrsItemRequest(**{
-                        "id": {"name": item, "quality": quality},
-                        "items": {
-                            "in_inventory": [
-                                {
-                                    "inventory": inventory + 1,
-                                    "stack": slot,
-                                    "count": count,
-                                }
-                            ]
-                        },
-                    })
+                    AttrsItemRequest(
+                        **{
+                            "id": {"name": item, "quality": quality},
+                            "items": {
+                                "in_inventory": [
+                                    {
+                                        "inventory": inventory + 1,
+                                        "stack": slot,
+                                        "count": count,
+                                    }
+                                ]
+                            },
+                        }
+                    )
                 )
             else:
                 # Try to find an existing entry at the same slot in the same inventory
@@ -230,3 +242,12 @@ class RequestItemsMixin:
 
     # def __eq__(self, other) -> bool:
     #     return super().__eq__(other) and self.items == other.items
+
+
+draftsman_converters.add_schema(
+    {
+        "$id": "factorio:request_items_mixin",
+    },
+    RequestItemsMixin,
+    lambda fields: {"items": fields.items.name},
+)

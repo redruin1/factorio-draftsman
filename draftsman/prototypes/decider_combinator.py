@@ -11,6 +11,7 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.error import DataFormatError, DraftsmanError
+from draftsman.serialization import instance_of
 from draftsman.signatures import (
     Condition,
     Connections,
@@ -19,7 +20,7 @@ from draftsman.signatures import (
     SignalID,
     int32,
 )
-from draftsman.utils import get_first
+from draftsman.utils import fix_incorrect_pre_init
 from draftsman.warning import DraftsmanWarning, PureVirtualDisallowedWarning
 
 from draftsman.data.entities import decider_combinators
@@ -276,6 +277,7 @@ class DeciderOutput(Temp):  # TODO: Exportable
         return self._root.networks
 
 
+@fix_incorrect_pre_init
 @attrs.define
 class DeciderCombinator(
     PlayerDescriptionMixin,
@@ -513,43 +515,55 @@ class DeciderCombinator(
 
     # =========================================================================
 
-    @property
-    def conditions(self) -> list[Condition]:
-        return self.control_behavior.decider_conditions.conditions
+    conditions: list[Condition] = attrs.field(
+        factory=list,
+        # TODO: converter
+        validator=instance_of(list),  # TODO: validators
+    )
 
-    @conditions.setter
-    def conditions(self, value: list[Condition]) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior.DeciderConditions,
-                self.control_behavior.decider_conditions,
-                "conditions",
-                value,
-            )
-            self.control_behavior.decider_conditions.conditions = result
-        else:
-            self.control_behavior.decider_conditions.conditions = value
+    # @property
+    # def conditions(self) -> list[Condition]:
+    #     return self.control_behavior.decider_conditions.conditions
+
+    # @conditions.setter
+    # def conditions(self, value: list[Condition]) -> None:
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior.DeciderConditions,
+    #             self.control_behavior.decider_conditions,
+    #             "conditions",
+    #             value,
+    #         )
+    #         self.control_behavior.decider_conditions.conditions = result
+    #     else:
+    #         self.control_behavior.decider_conditions.conditions = value
 
     # =========================================================================
 
-    @property
-    def outputs(self) -> list[DeciderOutput]:
-        return self.control_behavior.decider_conditions.outputs
+    outputs: list[Output] = attrs.field(
+        factory=list,
+        # TODO: converter
+        validator=instance_of(list),  # TODO: validators
+    )
 
-    @outputs.setter
-    def outputs(self, value: Optional[list[DeciderOutput]]) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior.DeciderConditions,
-                self.control_behavior.decider_conditions,
-                "outputs",
-                value,
-            )
-            self.control_behavior.decider_conditions.outputs = result
-        else:
-            self.control_behavior.decider_conditions.outputs = value
+    # @property
+    # def outputs(self) -> list[DeciderOutput]:
+    #     return self.control_behavior.decider_conditions.outputs
+
+    # @outputs.setter
+    # def outputs(self, value: Optional[list[DeciderOutput]]) -> None:
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior.DeciderConditions,
+    #             self.control_behavior.decider_conditions,
+    #             "outputs",
+    #             value,
+    #         )
+    #         self.control_behavior.decider_conditions.outputs = result
+    #     else:
+    #         self.control_behavior.decider_conditions.outputs = value
 
     # @property
     # def first_operand(self) -> Union[SignalID, None]:
@@ -825,16 +839,16 @@ class DeciderCombinator(
     #     # Set
     #     self.control_behavior = new_control_behavior
 
-    def remove_decider_conditions(self):
-        """
-        Wipes all the values from the ``"decider_conditions"`` key in this
-        entity's control behavior. Allows you to quickly clear all values
-        associated with this entity without having to manually reset each
-        attribute.
-        """
-        self.control_behavior.decider_conditions = (
-            __class__.Format.ControlBehavior.DeciderConditions()
-        )
+    # def remove_decider_conditions(self):
+    #     """
+    #     Wipes all the values from the ``"decider_conditions"`` key in this
+    #     entity's control behavior. Allows you to quickly clear all values
+    #     associated with this entity without having to manually reset each
+    #     attribute.
+    #     """
+    #     self.control_behavior.decider_conditions = (
+    #         __class__.Format.ControlBehavior.DeciderConditions()
+    #     )
 
     # =========================================================================
 

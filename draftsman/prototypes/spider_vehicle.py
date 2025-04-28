@@ -22,6 +22,7 @@ from typing import Any, Literal, Optional, Union
 
 class SpiderVehicle(
     VehicleMixin,
+    # TODO: ColorMixin
     EquipmentGridMixin,
     RequestFiltersMixin,
     RequestItemsMixin,
@@ -120,6 +121,10 @@ class SpiderVehicle(
         self.request_filters = request_filters
 
         self.validate_assignment = validate_assignment
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return spider_vehicles
 
     # =========================================================================
 

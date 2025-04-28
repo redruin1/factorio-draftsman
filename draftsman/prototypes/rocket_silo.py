@@ -123,8 +123,7 @@ class RocketSilo(
     # =========================================================================
 
     auto_launch: Optional[bool] = attrs.field(
-        default=False,
-        validator=instance_of(Optional[bool])
+        default=False, validator=instance_of(Optional[bool])
     )
     """
     Whether or not to automatically launch the rocket when it's cargo is
@@ -189,8 +188,7 @@ class RocketSilo(
     # =========================================================================
 
     transitional_request_index: uint32 = attrs.field(
-        default=0,
-        validator=instance_of(uint32)
+        default=0, validator=instance_of(uint32)
     )
     """
     TODO
@@ -235,25 +233,21 @@ class RocketSilo(
 
 
 draftsman_converters.get_version((1, 0)).add_schema(
-    {
-        "$id": "factorio:rocket_silo_v1.0"
-    },
+    {"$id": "factorio:rocket_silo_v1.0"},
     RocketSilo,
     lambda fields: {
-        fields.auto_launch.name: "auto_launch",
-        fields.read_items_mode: None,
-        fields.transitional_request_index: None,
-    }
+        "auto_launch": fields.auto_launch.name,
+        None: fields.read_items_mode.name,
+        None: fields.transitional_request_index.name,
+    },
 )
 
 draftsman_converters.get_version((2, 0)).add_schema(
-    {
-        "$id": "factorio:rocket_silo_v2.0"
-    },
+    {"$id": "factorio:rocket_silo_v2.0"},
     RocketSilo,
     lambda fields: {
-        fields.auto_launch.name: None,
-        fields.read_items_mode.name: ("control_behavior", "read_items_mode"),
-        fields.transitional_request_index.name: "transitional_request_index",
-    }
+        None: fields.auto_launch.name,
+        ("control_behavior", "read_items_mode"): fields.read_items_mode.name,
+        "transitional_request_index": fields.transitional_request_index.name,
+    },
 )

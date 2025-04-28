@@ -19,9 +19,6 @@ class TestBeacon:
     def test_contstructor_init(self):
         beacon = Beacon()
 
-        with pytest.warns(UnknownKeywordWarning):
-            Beacon(unused_keyword="whatever").validate().reissue_all()
-
         with pytest.warns(UnknownEntityWarning):
             Beacon("this is not a beacon").validate().reissue_all()
 
@@ -66,7 +63,7 @@ class TestBeacon:
 
     def test_mergable_with(self):
         beacon1 = Beacon("beacon")
-        beacon2 = Beacon("beacon", items={"speed-module-2": 2})
+        beacon2 = Beacon("beacon", tags={"some": "stuff"})
 
         assert beacon1.mergable_with(beacon2)
         assert beacon2.mergable_with(beacon1)

@@ -97,7 +97,7 @@ class RailChainSignal(
     blue_output_signal: Optional[AttrsSignalID] = attrs.field(
         factory=lambda: AttrsSignalID(name="signal-blue", type="virtual"),
         converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
     The blue output signal. Sent with a unit value when the rail signal's state 
@@ -154,11 +154,9 @@ class RailChainSignal(
 
 
 draftsman_converters.add_schema(
-    {
-        "$id": "factorio:rail_chain_signal"
-    },
+    {"$id": "factorio:rail_chain_signal"},
     RailChainSignal,
     lambda fields: {
-        fields.blue_output_signal.name: ("control_behavior", "blue_output_signal")
-    }
+        ("control_behavior", "blue_output_signal"): fields.blue_output_signal.name
+    },
 )

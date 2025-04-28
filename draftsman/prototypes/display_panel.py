@@ -102,6 +102,10 @@ class DisplayPanel(
 
         self.validate_assignment = validate_assignment
 
+    @property
+    def similar_entities(self) -> list[str]:
+        return display_panels
+
     # =========================================================================
 
     @property

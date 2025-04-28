@@ -11,8 +11,6 @@ class TestLandMine:
     def test_contstructor_init(self):
         land_mine = LandMine()
 
-        with pytest.warns(UnknownKeywordWarning):
-            LandMine(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             LandMine("this is not a land mine").validate().reissue_all()
 

@@ -143,7 +143,7 @@ class TestGroup:
         with pytest.raises(TypeError):
             Group(id=TypeError)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             Group(position="incorrect")
 
         with pytest.raises(TypeError):  # TODO: maybe change this?
@@ -342,7 +342,7 @@ class TestGroup:
         assert isinstance(group.schedules, ScheduleList)
         assert group.schedules[0].locomotives[0]() is group.entities[0]
         assert group.schedules[0].stops == [
-            Schedule.Format.ScheduleSpecification.Stop(
+            Schedule.Specification.Stop(
                 **{
                     "station": "station_name",
                     "wait_conditions": WaitConditions(

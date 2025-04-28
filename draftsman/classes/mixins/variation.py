@@ -6,6 +6,7 @@ from draftsman.validators import instance_of
 
 import attrs
 
+
 @attrs.define(slots=False)
 class VariationMixin:
     """
@@ -13,20 +14,14 @@ class VariationMixin:
     entities like text-plates.
     """
 
-    variation: uint16 = attrs.field(
-        default=1,
-        validator=instance_of(uint16)
-    )
+    variation: uint16 = attrs.field(default=1, validator=instance_of(uint16))
     """
     The graphical variation of the entity.
     """
 
+
 draftsman_converters.add_schema(
-    {
-        "$id": "factorio:simple_entity_with_owner"
-    },
+    {"$id": "factorio:simple_entity_with_owner"},
     VariationMixin,
-    lambda fields: {
-        fields.variation.name: "variation"
-    }
+    lambda fields: {"variation": fields.variation.name},
 )

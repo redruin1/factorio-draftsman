@@ -3,12 +3,22 @@
 from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.data import items, entities
 from draftsman.error import InvalidItemError, DataFormatError
-from draftsman.signatures import DraftsmanBaseModel, ItemFilter, ItemName, int64
+from draftsman.serialization import draftsman_converters
+from draftsman.signatures import (
+    DraftsmanBaseModel,
+    ItemFilter,
+    AttrsItemFilter,
+    ItemName,
+    int64,
+)
+from draftsman.validators import instance_of
 
+import attrs
 from pydantic import Field, ValidationError, ValidationInfo, field_validator
 from typing import Any, Literal, Optional
 
 
+@attrs.define(slots=False)
 class FiltersMixin:
     """
     Allows the entity to specify item filters.
@@ -42,12 +52,12 @@ class FiltersMixin:
             else:
                 return value
 
-    def __init__(self, name: str, similar_entities: list[str], **kwargs):
-        self._root: __class__.Format
+    # def __init__(self, name: str, similar_entities: list[str], **kwargs):
+    #     self._root: __class__.Format
 
-        super().__init__(name, similar_entities, **kwargs)
+    #     super().__init__(name, similar_entities, **kwargs)
 
-        self.filters = kwargs.get("filters", None)
+    #     self.filters = kwargs.get("filters", None)
 
     # =========================================================================
 
@@ -65,51 +75,76 @@ class FiltersMixin:
 
     # =========================================================================
 
-    @property
-    def use_filters(self) -> Optional[bool]:
-        """
-        Whether or not this inserter should use filters at all. Overrided by
-        ``circuit_set_filters``, if present.
-        """
-        return self._root.use_filters
+    use_filters: bool = attrs.field(default=False, validator=instance_of(bool))
+    """
+    Whether or not this inserter should use filters at all. Overrided by
+    ``circuit_set_filters``, if present.
+    """
 
-    @use_filters.setter
-    def use_filters(self, value: Optional[list[ItemFilter]]):
-        test_replace_me(
-            self,
-            type(self).Format,
-            self._root,
-            "use_filters",
-            value,
-            self.validate_assignment,
-        )
+    # @property
+    # def use_filters(self) -> Optional[bool]:
+    #     """
+    #     Whether or not this inserter should use filters at all. Overrided by
+    #     ``circuit_set_filters``, if present.
+    #     """
+    #     return self._root.use_filters
+
+    # @use_filters.setter
+    # def use_filters(self, value: Optional[list[ItemFilter]]):
+    #     test_replace_me(
+    #         self,
+    #         type(self).Format,
+    #         self._root,
+    #         "use_filters",
+    #         value,
+    #         self.validate_assignment,
+    #     )
 
     # =========================================================================
 
-    @property
-    def filters(self) -> Optional[list[ItemFilter]]:
-        """
-        TODO
-        """
-        return self._root.filters
+    def _filters_converter(value):
+        if isinstance(value, list):
+            for i, elem in enumerate(value):
+                value[i] = AttrsItemFilter.converter(elem)
+            return value
+        else:
+            return value
 
-    @filters.setter
-    def filters(self, value: Optional[list[ItemFilter]]):
-        test_replace_me(
-            self,
-            type(self).Format,
-            self._root,
-            "filters",
-            value,
-            self.validate_assignment,
-        )
-        # if self.validate_assignment:
-        #     result = attempt_and_reissue(
-        #         self, type(self).Format, self._root, "filters", value
-        #     )
-        #     self._root.filters = result
-        # else:
-        #     self._root.filters = value
+    filters: list[ItemFilter] = attrs.field(
+        factory=list,
+        converter=_filters_converter,
+        validator=instance_of(list),  # TODO: more validators
+    )
+    """
+    The manually-set item filters that this inserter/loader will abide by. These
+    values are overridden by filters set by the circuit network, if so 
+    configured.
+    """
+
+    # @property
+    # def filters(self) -> Optional[list[ItemFilter]]:
+    #     """
+    #     TODO
+    #     """
+    #     return self._root.filters
+
+    # @filters.setter
+    # def filters(self, value: Optional[list[ItemFilter]]):
+    #     test_replace_me(
+    #         self,
+    #         type(self).Format,
+    #         self._root,
+    #         "filters",
+    #         value,
+    #         self.validate_assignment,
+    #     )
+    #     # if self.validate_assignment:
+    #     #     result = attempt_and_reissue(
+    #     #         self, type(self).Format, self._root, "filters", value
+    #     #     )
+    #     #     self._root.filters = result
+    #     # else:
+    #     #     self._root.filters = value
 
     # =========================================================================
 
@@ -205,5 +240,15 @@ class FiltersMixin:
 
     # =========================================================================
 
-    def __eq__(self, other: "FiltersMixin") -> bool:
-        return super().__eq__(other) and self.filters == other.filters
+    # def __eq__(self, other: "FiltersMixin") -> bool:
+    #     return super().__eq__(other) and self.filters == other.filters
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:item_filters_mixin"},
+    FiltersMixin,
+    lambda fields: {
+        fields.use_filters.name: "use_filters",
+        fields.filters.name: "filters",
+    },
+)

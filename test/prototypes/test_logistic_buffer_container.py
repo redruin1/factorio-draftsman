@@ -7,7 +7,7 @@ from draftsman.entity import (
 )
 from draftsman.error import DataFormatError
 from draftsman.classes.mixins import RequestFiltersMixin
-from draftsman.signatures import RequestFilter, Section
+from draftsman.signatures import RequestFilter, AttrsSection
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from draftsman.data import mods
@@ -41,31 +41,7 @@ class TestLogisticBufferContainer:
             "tags": {"A": "B"},
         }
 
-        buffer_chest = LogisticBufferContainer(request_filters=[("iron-ore", 100)])
-        assert buffer_chest.to_dict() == {
-            "name": "buffer-chest",
-            "position": {"x": 0.5, "y": 0.5},
-            "request_filters": [("iron-ore", 100)],
-        }
-
-        buffer_chest = LogisticBufferContainer(
-            request_filters=[{"index": 1, "name": "iron-ore", "count": 100}]
-        )
-        assert buffer_chest.to_dict() == {
-            "name": "buffer-chest",
-            "position": {"x": 0.5, "y": 0.5},
-            "request_filters": [{"index": 1, "name": "iron-ore", "count": 100}],
-        }
-
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            LogisticBufferContainer(
-                "buffer-chest", position=[0, 0], invalid_keyword="100"
-            ).validate().reissue_all()
-        with pytest.warns(UnknownKeywordWarning):
-            LogisticBufferContainer(
-                control_behavior={"unused_key": "something"}
-            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             LogisticBufferContainer(
                 "this is not a buffer chest"
@@ -75,7 +51,7 @@ class TestLogisticBufferContainer:
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             LogisticBufferContainer("buffer-chest", id=25).validate().reissue_all()
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             LogisticBufferContainer(
                 "buffer-chest", position=TypeError
             ).validate().reissue_all()
@@ -85,11 +61,11 @@ class TestLogisticBufferContainer:
             ).validate().reissue_all()
         with pytest.raises(DataFormatError):
             LogisticBufferContainer(
-                "buffer-chest", request_filters=["very", "wrong"]
+                "buffer-chest", sections=["very", "wrong"]
             ).validate().reissue_all()
         with pytest.raises(DataFormatError):
             LogisticBufferContainer(
-                "buffer-chest", control_behavior="incorrect"
+                "buffer-chest", tags="incorrect"
             ).validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
@@ -120,7 +96,12 @@ class TestLogisticBufferContainer:
         container2 = LogisticBufferContainer(
             "buffer-chest",
             bar=10,
-            request_filters=[{"name": "utility-science-pack", "index": 1, "count": 10}],
+            sections=[
+                {
+                    "index": 1,
+                    "filters": [{"name": "utility-science-pack", "index": 1, "count": 10}],
+                }
+            ],
             tags={"some": "stuff"},
         )
 
@@ -137,30 +118,6 @@ class TestLogisticBufferContainer:
         container2 = LogisticBufferContainer(
             "buffer-chest",
             bar=10,
-            request_filters={
-                "sections": [
-                    {
-                        "index": 1,
-                        "filters": [
-                            {
-                                "name": "utility-science-pack",
-                                "index": 1,
-                                "count": 10,
-                                "comparator": "=",
-                            }
-                        ],
-                    }
-                ]
-            },
-            tags={"some": "stuff"},
-        )
-        container2.validate().reissue_all()
-
-        container1.merge(container2)
-        del container2
-
-        assert container1.bar == 10
-        assert container1.request_filters == RequestFiltersMixin.Format.RequestFilters(
             sections=[
                 {
                     "index": 1,
@@ -173,13 +130,33 @@ class TestLogisticBufferContainer:
                         }
                     ],
                 }
-            ]
+            ],
+            tags={"some": "stuff"},
         )
+        container2.validate().reissue_all()
+
+        container1.merge(container2)
+        del container2
+
+        assert container1.bar == 10
+        assert container1.sections == [
+            AttrsSection(**{
+                "index": 1,
+                "filters": [
+                    {
+                        "name": "utility-science-pack",
+                        "index": 1,
+                        "count": 10,
+                        "comparator": "=",
+                    }
+                ],
+            })
+        ]
         assert container1.tags == {"some": "stuff"}
 
     def test_eq(self):
-        container1 = LogisticBufferContainer("logistic-chest-buffer")
-        container2 = LogisticBufferContainer("logistic-chest-buffer")
+        container1 = LogisticBufferContainer("buffer-chest")
+        container2 = LogisticBufferContainer("buffer-chest")
 
         assert container1 == container2
 

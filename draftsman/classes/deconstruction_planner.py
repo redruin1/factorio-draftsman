@@ -46,12 +46,12 @@
 
 from draftsman import __factorio_version_info__
 from draftsman.classes.blueprintable import Blueprintable
-from draftsman.classes.exportable import ValidationResult, attempt_and_reissue
+from draftsman.classes.exportable import Exportable, attempt_and_reissue
 from draftsman.constants import FilterMode, TileSelectionMode, ValidationMode
 from draftsman.data import items
 from draftsman.error import DataFormatError
 from draftsman.warning import IndexWarning, UnknownEntityWarning, UnknownTileWarning
-from draftsman.serialization import finalize_fields
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     Icon,
     DraftsmanBaseModel,
@@ -65,6 +65,7 @@ from draftsman.signatures import (
     TileName,
 )
 from draftsman.utils import encode_version, reissue_warnings
+from draftsman.validators import instance_of, try_convert
 
 import attrs
 from pydantic import (
@@ -79,36 +80,68 @@ from typing import Any, Literal, Optional, Sequence, Union
 
 
 @attrs.define
-class EntityFilter:
-    name: EntityName = attrs.field()  # TODO: validators
+class EntityFilter(Exportable):
+    index: Optional[uint64] = attrs.field(validator=instance_of(uint64))
+    """
+    Position of the filter in the DeconstructionPlanner, 0-based. Seems to 
+    behave more like a sorting key rather than a numeric index; if omitted, 
+    entities will be sorted by their Factorio order when imported instead
+    of specific slots in the GUI, contrary to what index would seem to imply.
+    """
+    name: EntityName = attrs.field(validator=instance_of(EntityName))
     """
     The name of a valid deconstructable entity.
     """
-    index: Optional[uint64] = attrs.field()  # TODO: validators
-    """
-    Position of the filter in the DeconstructionPlanner, 0-based. Seems to 
-    behave more like a sorting key rather than a numeric index; if omitted, 
-    entities will be sorted by their Factorio order when imported instead
-    of specific slots in the GUI, contrary to what index would seem to imply.
-    """
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(**value)
+        return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:deconstruction_planner:entity_filter"},
+    EntityFilter,
+    lambda fields: {
+        "name": fields.name.name,
+        "index": fields.index.name,
+    },
+)
 
 
 @attrs.define
-class TileFilter:
-    name: EntityName = attrs.field()  # TODO: validators
-    """
-    The name of a valid deconstructable tile.
-    """
-    index: Optional[uint64] = attrs.field()  # TODO: validators
+class TileFilter(Exportable):
+    index: Optional[uint64] = attrs.field(validator=instance_of(uint64))
     """
     Position of the filter in the DeconstructionPlanner, 0-based. Seems to 
     behave more like a sorting key rather than a numeric index; if omitted, 
     entities will be sorted by their Factorio order when imported instead
     of specific slots in the GUI, contrary to what index would seem to imply.
     """
+    name: TileName = attrs.field(validator=instance_of(TileName))
+    """
+    The name of a valid deconstructable tile.
+    """
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(**value)
+        return value
 
 
-@attrs.define(field_transformer=finalize_fields)
+draftsman_converters.add_schema(
+    {"$id": "factorio:deconstruction_planner:tile_filter"},
+    TileFilter,
+    lambda fields: {
+        "name": fields.name.name,
+        "index": fields.index.name,
+    },
+)
+
+
+@attrs.define
 class DeconstructionPlanner(Blueprintable):
     """
     Handles the deconstruction of entities. Has functionality to only select
@@ -369,7 +402,6 @@ class DeconstructionPlanner(Blueprintable):
         # TODO: validators
         metadata={
             "omit": False,
-            "location": (lambda cls: cls.root_item.fget(cls), "item"),
         },
     )
     # TODO: description
@@ -396,15 +428,8 @@ class DeconstructionPlanner(Blueprintable):
 
     entity_filter_mode: FilterMode = attrs.field(
         default=FilterMode.WHITELIST,
-        converter=FilterMode,
-        validator=attrs.validators.instance_of(FilterMode),
-        metadata={
-            "location": (
-                lambda cls: cls.root_item.fget(cls),
-                "settings",
-                "entity_filter_mode",
-            )
-        },
+        converter=try_convert(FilterMode),
+        validator=instance_of(FilterMode),
     )
     """
     The method of filtering entities for deconstruction. Can be either ``0``
@@ -444,16 +469,22 @@ class DeconstructionPlanner(Blueprintable):
 
     # =========================================================================
 
+    def _convert_entity_filters(value):
+        if isinstance(value, list):
+            res = [None] * len(value)
+            for i, elem in enumerate(value):
+                if isinstance(elem, str):
+                    res[i] = EntityFilter(index=i, name=elem)
+                else:
+                    res[i] = EntityFilter.converter(elem)
+            return res
+        else:
+            return value
+
     entity_filters: list[EntityFilter] = attrs.field(
         factory=list,
-        # TODO: validators
-        metadata={
-            "location": (
-                lambda cls: cls.root_item.fget(cls),
-                "settings",
-                "entity_filters",
-            )
-        },
+        converter=_convert_entity_filters,
+        validator=instance_of(list),  # TODO: validators
     )
     """
     The list of entity filters.
@@ -486,14 +517,7 @@ class DeconstructionPlanner(Blueprintable):
 
     trees_and_rocks_only: bool = attrs.field(
         default=False,
-        validator=attrs.validators.instance_of(bool),
-        metadata={
-            "location": (
-                lambda cls: cls.root_item.fget(cls),
-                "settings",
-                "trees_and_rocks_only",
-            )
-        },
+        validator=instance_of(bool),
     )
     """
     Whether or not to only deconstruct natural entities, such as trees and
@@ -533,15 +557,8 @@ class DeconstructionPlanner(Blueprintable):
 
     tile_filter_mode: FilterMode = attrs.field(
         default=FilterMode.WHITELIST,
-        converter=FilterMode,
-        validator=attrs.validators.instance_of(FilterMode),
-        metadata={
-            "location": (
-                lambda cls: cls.root_item.fget(cls),
-                "settings",
-                "tile_filter_mode",
-            )
-        },
+        converter=try_convert(FilterMode),
+        validator=instance_of(FilterMode),
     )
     """
     The method of filtering tiles for deconstruction. Can be either ``0``
@@ -581,16 +598,22 @@ class DeconstructionPlanner(Blueprintable):
 
     # =========================================================================
 
+    def _convert_tile_filters(value):
+        if isinstance(value, list):
+            res = [None] * len(value)
+            for i, elem in enumerate(value):
+                if isinstance(elem, str):
+                    res[i] = TileFilter(index=i, name=elem)
+                else:
+                    res[i] = TileFilter.converter(elem)
+            return res
+        else:
+            return value
+
     tile_filters: list[TileFilter] = attrs.field(
         factory=list,
-        # TODO: validators
-        metadata={
-            "location": (
-                lambda cls: cls.root_item.fget(cls),
-                "settings",
-                "tile_filters",
-            )
-        },
+        converter=_convert_tile_filters,
+        validator=instance_of(list),  # TODO: validators
     )
     """
     The list of tile filters.
@@ -625,15 +648,8 @@ class DeconstructionPlanner(Blueprintable):
 
     tile_selection_mode: TileSelectionMode = attrs.field(
         default=TileSelectionMode.NORMAL,
-        converter=TileSelectionMode,
-        validator=attrs.validators.instance_of(TileSelectionMode),
-        metadata={
-            "location": (
-                lambda cls: cls.root_item.fget(cls),
-                "settings",
-                "tile_selection_mode",
-            )
-        },
+        converter=try_convert(TileSelectionMode),
+        validator=instance_of(TileSelectionMode),
     )
     """
     The method of filtering entities for deconstruction. Valid modes are:
@@ -694,40 +710,23 @@ class DeconstructionPlanner(Blueprintable):
         :param index: The index to set the new filter at.
         :param name: The name of the entity to filter for deconstruction.
         """
-        # TODO: sorting with bisect
-        if name is not None:
-            try:
-                new_entry = EntityFilter(index=index, name=name)
-                new_entry.index += 1
-            except ValidationError as e:
-                raise DataFormatError(e) from None
-
-        new_filters = self.entity_filters if self.entity_filters is not None else []
-
         found_index = None
-        for i, filter in enumerate(new_filters):
-            if filter["index"] == index + 1:
+        for i, filter in enumerate(self.entity_filters):
+            if filter.index == index:
                 if name is None:
-                    del new_filters[i]
+                    del self.entity_filters[i]
                 else:
-                    filter["name"] = name
+                    filter.name = name
                 found_index = i
                 break
 
         if found_index is None:
             # Otherwise its unique; add to list
-            new_filters.append(new_entry)
+            new_entry = EntityFilter(index=index, name=name)
+            # TODO: sorting with bisect
+            self.entity_filters.append(new_entry)
 
-        result = attempt_and_reissue(
-            self,
-            self.Format.DeconstructionPlannerObject.Settings,
-            self._root[self._root_item]["settings"],
-            "entity_filters",
-            new_filters,
-        )
-        self._root[self._root_item]["settings"]["entity_filters"] = result
-
-    def set_entity_filters(self, *entity_filters: list[str]):
+    def set_entity_filters(self, *entity_names: list[str]):
         """
         Sets a tile filter in the list of tile filters. Appends the new one
         to the end of the list regardless of the ``index``. If ``index`` is
@@ -738,14 +737,8 @@ class DeconstructionPlanner(Blueprintable):
         :param index: The index to set the new filter at.
         :param name: The name of the tile to filter for deconstruction.
         """
-        result = attempt_and_reissue(
-            self,
-            self.Format.DeconstructionPlannerObject.Settings,
-            self._root[self._root_item]["settings"],
-            "entity_filters",
-            entity_filters,
-        )
-        self._root[self._root_item]["settings"]["entity_filters"] = result
+        for i, entity_name in enumerate(entity_names):
+            self.set_entity_filter(i, entity_name)
 
     def set_tile_filter(self, index: uint64, name: TileName):
         """
@@ -758,38 +751,22 @@ class DeconstructionPlanner(Blueprintable):
         :param index: The index to set the new filter at.
         :param name: The name of the tile to filter for deconstruction.
         """
-        # TODO: sorting with bisect
-        if name is not None:
-            try:
-                new_entry = TileFilter(index=index, name=name)
-                new_entry.index += 1
-            except ValidationError as e:
-                raise DataFormatError(e) from None
-
-        new_filters = self.tile_filters if self.tile_filters is not None else []
 
         found_index = None
-        for i, filter in enumerate(new_filters):
-            if filter["index"] == index + 1:
+        for i, filter in enumerate(self.tile_filters):
+            if filter.index == index:
                 if name is None:
-                    del new_filters[i]
+                    del self.tile_filters[i]
                 else:
-                    filter["name"] = name
+                    filter.name = name
                 found_index = i
                 break
 
         if found_index is None:
             # Otherwise its unique; add to list
-            new_filters.append(new_entry)
-
-        result = attempt_and_reissue(
-            self,
-            self.Format.DeconstructionPlannerObject.Settings,
-            self._root[self._root_item]["settings"],
-            "tile_filters",
-            new_filters,
-        )
-        self._root[self._root_item]["settings"]["tile_filters"] = result
+            new_entry = TileFilter(index=index, name=name)
+            # TODO: sorting with bisect
+            self.tile_filters.append(new_entry)
 
     def set_tile_filters(self, *tile_names: list[str]):
         """
@@ -797,3 +774,48 @@ class DeconstructionPlanner(Blueprintable):
         """
         for i, tile_name in enumerate(tile_names):
             self.set_tile_filter(i, tile_name)
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:deconstruction_planner"},
+    DeconstructionPlanner,
+    lambda fields: {
+        ("deconstruction_planner", "item"): fields.item.name,
+        ("deconstruction_planner", "label"): fields.label.name,
+        ("deconstruction_planner", "label_color"): fields.label_color.name,
+        ("deconstruction_planner", "settings", "description"): fields.description.name,
+        ("deconstruction_planner", "settings", "icons"): fields.icons.name,
+        (
+            "deconstruction_planner",
+            "settings",
+            "entity_filter_mode",
+        ): fields.entity_filter_mode.name,
+        (
+            "deconstruction_planner",
+            "settings",
+            "entity_filters",
+        ): fields.entity_filters.name,
+        (
+            "deconstruction_planner",
+            "settings",
+            "trees_and_rocks_only",
+        ): fields.trees_and_rocks_only.name,
+        (
+            "deconstruction_planner",
+            "settings",
+            "tile_filter_mode",
+        ): fields.tile_filter_mode.name,
+        (
+            "deconstruction_planner",
+            "settings",
+            "tile_filters",
+        ): fields.tile_filters.name,
+        (
+            "deconstruction_planner",
+            "settings",
+            "tile_selection_mode",
+        ): fields.tile_selection_mode.name,
+        ("deconstruction_planner", "settings"): None,
+        ("deconstruction_planner", "version"): fields.version.name,
+    },
+)

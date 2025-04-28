@@ -5,10 +5,7 @@ Alias module. Imports :py:class:`.Tile` under the namespace ``draftsman``.
 """
 
 from draftsman.classes.tile import Tile
-from draftsman.data import tiles
-from draftsman.error import InvalidTileError
-
-from typing import Literal
+from draftsman.classes.exportable import ValidationMode
 
 
 def new_tile(name: str, **kwargs):
@@ -26,4 +23,4 @@ def new_tile(name: str, **kwargs):
 
     :returns: A new :py:class:`.Tile` instance.
     """
-    return Tile(name=name, **kwargs)
+    return Tile(name=name, **kwargs, validate_assignment=ValidationMode.NONE)

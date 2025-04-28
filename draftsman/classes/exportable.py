@@ -310,6 +310,7 @@ class Exportable:
         converter=ValidationMode,
         validator=validators.instance_of(ValidationMode),
         repr=False,
+        eq=False,
         kw_only=True,
         metadata={"omit": True},
     )
@@ -432,15 +433,22 @@ class Exportable:
         mode = ValidationMode(mode)
         res = ValidationResult([], [])
         for a in attrs.fields(self.__class__):
+            print("\t", a.name)
             v = a.validator
             if v is not None:
-                try:
-                    with warnings.catch_warnings(record=True) as w:
+                with warnings.catch_warnings(record=True) as ws:
+                    try:
                         v(self, a, getattr(self, a.name), mode=mode)
-                    for warning in w:
-                        res.warning_list.append(warning.category(warning.message))
-                except Exception as e:
-                    res.error_list.append(e)
+                    # except Warning as w: # Warnings are considered exceptions, ignore
+                    #     print(w)
+                    #     pass
+                    except Exception as e:
+                        print("exception")
+                        print(e)
+                        res.error_list.append(e)
+                print("warnings:", ws)
+                for warning in ws:
+                    res.warning_list.append(warning.message)
         return res
 
     @classmethod
@@ -457,7 +465,7 @@ class Exportable:
         # print(version)
         # import inspect
         # print(
-        #     inspect.getsource(draftsman_converters.get(version).get_structure_hook(cls))
+        #     inspect.getsource(draftsman_converters.get_version(version).get_converter().get_structure_hook(cls))
         # )
         version_info = draftsman_converters.get_version(version)
         return version_info.get_converter().structure(
@@ -592,18 +600,23 @@ def make_exportable_structure_factory_func(
 
         class_attrs = attrs.fields(cls)
         version_data = draftsman_converters.get_version(version_tuple)
-        location_dict = version_data.get_location_dict(cls)
+        structure_dict = version_data.get_structure_dict(cls)
 
         def structure_hook(input_dict: dict, _: type):
             res = {}
-            for attr in class_attrs:
-                # print("attr name:", attr.name)
-                if attr.name not in location_dict:
+            for dict_loc, attr_name in structure_dict.items():
+                print(dict_loc, attr_name)
+                # if not hasattr(class_attrs, attr_name):
+                #     continue
+                if attr_name is None:
+                    try_pop_location(input_dict, dict_loc)
                     continue
-                loc = location_dict[attr.name]
 
-                value = try_pop_location(input_dict, loc)
-                # print(value)
+                attr = getattr(class_attrs, attr_name)
+                attr_name = attr.alias if attr.alias != attr.name else attr.name
+
+                value = try_pop_location(input_dict, dict_loc)
+                print(value)
                 if value is None:
                     continue
                 handler = find_structure_handler(attr, attr.type, converter)
@@ -611,11 +624,37 @@ def make_exportable_structure_factory_func(
                     # import inspect
                     # print(inspect.getsource(handler))
                     try:
-                        res[attr.name] = handler(value, attr.type)
+                        res[attr_name] = handler(value, attr.type)
                     except Exception as e:
+                        # res[attr_name] = value
+                        # raise e
                         raise DataFormatError(e)
                 else:
-                    res[attr.name] = value
+                    res[attr_name] = value
+
+            # for attr in class_attrs:
+            #     # print("attr name:", attr.name, attr.alias)
+            #     attr_name = attr.alias if attr.alias != attr.name else attr.name
+            #     if attr_name not in structure_dict:
+            #         continue
+            #     loc = structure_dict[attr_name]
+
+            #     value = try_pop_location(input_dict, loc)
+            #     # print(value)
+            #     if value is None:
+            #         continue
+            #     handler = find_structure_handler(attr, attr.type, converter)
+            #     if handler is not None:
+            #         # import inspect
+            #         # print(inspect.getsource(handler))
+            #         try:
+            #             res[attr_name] = handler(value, attr.type)
+            #         except Exception as e:
+            #             # res[attr_name] = value
+            #             # raise e
+            #             raise DataFormatError(e)
+            #     else:
+            #         res[attr_name] = value
 
             if input_dict:
                 res["extra_keys"] = input_dict
@@ -635,13 +674,18 @@ def make_exportable_unstructure_factory_func(
 ):
     def factory(cls, converter):
         version_data = draftsman_converters.get_version(version_tuple)
-        location_dict = version_data.get_location_dict(cls)
+        unstructure_dict = version_data.get_unstructure_dict(cls, converter)
+        # print(cls.__name__)
+        # print("unstructure_dict", unstructure_dict)
         parent_hook = make_unstructure_function_from_schema(
-            cls, converter, location_dict, exclude_none, exclude_defaults
+            cls, converter, unstructure_dict, exclude_none, exclude_defaults
         )
-        excluded_keys = version_data.get_excluded_keys(cls)
+        # excluded_keys = version_data.get_excluded_keys(cls)
 
         def unstructure_hook(inst):
+            # import inspect
+            # print(inspect.getsource(parent_hook))
+            # TODO: should be wrapped in a try block with a better error message
             res = parent_hook(inst)
             # We want to preserve round-trip consistency, even with keys we
             # don't use/recognize
@@ -649,9 +693,9 @@ def make_exportable_unstructure_factory_func(
                 dict_merge(res, inst.extra_keys)
             # Certain keys we do always want to exclude in certain circumstances
             # (such as objects like "connections" on Factorio >= 2.0)
-            for key in excluded_keys:
-                if key in res:
-                    del res[key]
+            # for key in excluded_keys:
+            #     if key in res:
+            #         del res[key]
             return res
 
         return unstructure_hook

@@ -3,7 +3,7 @@
 from draftsman.constants import Direction, ValidationMode
 from draftsman.entity import TrainStop, train_stops, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
-from draftsman.signatures import AttrsSignalID
+from draftsman.signatures import AttrsColor, AttrsSignalID
 from draftsman.warning import (
     GridAlignmentWarning,
     DirectionWarning,
@@ -61,7 +61,7 @@ class TestTrainStop:
                 "set_trains_limit": True,
                 "trains_limit_signal": {"name": "signal-B", "type": "virtual"},
                 "read_trains_count": True,
-                "trains_count_signal": {"name": "signal-C", "type": "virtual"},
+                # "trains_count_signal": {"name": "signal-C", "type": "virtual"}, # Default
             },
         }
 
@@ -90,7 +90,7 @@ class TestTrainStop:
             "control_behavior": {
                 "train_stopped_signal": {"name": "signal-A", "type": "virtual"},
                 "trains_limit_signal": {"name": "signal-B", "type": "virtual"},
-                "trains_count_signal": {"name": "signal-C", "type": "virtual"}, # Default
+                # "trains_count_signal": {"name": "signal-C", "type": "virtual"}, # Default
             },
         }
 
@@ -116,6 +116,9 @@ class TestTrainStop:
         with pytest.raises(DataFormatError):
             stop = TrainStop(color="wrong")
             stop.validate().reissue_all()
+
+    def test_color(self):
+        assert TrainStop("train-stop").color == AttrsColor(242/255, 0, 0, 127/255)
 
     def test_set_manual_trains_limit(self):
         train_stop = TrainStop()
@@ -336,7 +339,7 @@ class TestTrainStop:
                 "name": "train-stop",
                 "station": "Station name",
                 "manual_trains_limit": 3,
-                "color": [0.5, 0.5, 0.5],
+                "color": {"r": 0.5, "g": 0.5, "b": 0.5},
                 "control_behavior": {
                     "read_from_train": True,
                     "read_stopped_train": True,
@@ -365,7 +368,7 @@ class TestTrainStop:
                 "name": "train-stop",
                 "station": "Station name",
                 "manual_trains_limit": 3,
-                "color": [0.5, 0.5, 0.5],
+                "color": {"r": 0.5, "g": 0.5, "b": 0.5},
                 "control_behavior": {
                     "read_from_train": True,
                     "read_stopped_train": True,

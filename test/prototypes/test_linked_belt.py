@@ -16,8 +16,6 @@ class TestLinkedBelt:
         linked_belt = LinkedBelt("linked-belt")
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            LinkedBelt(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             LinkedBelt("this is not a linked belt").validate().reissue_all()
 

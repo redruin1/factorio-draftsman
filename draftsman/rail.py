@@ -6,6 +6,12 @@ as trains and their schedules.
 """
 
 from draftsman.classes.rail_planner import RailPlanner
-from draftsman.classes.schedule import Schedule, WaitCondition, WaitConditions
+from draftsman.classes.schedule import (
+    Schedule,
+    WaitCondition,
+    WaitConditions,
+    WaitConditionType,
+    WaitConditionCompareType,
+)  # TODO: probably makes sense to move this to it's own file, so we can reuse it for space platform schedules/interrupts
 from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.train_configuration import TrainConfiguration

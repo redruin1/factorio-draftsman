@@ -15,14 +15,14 @@ class TestTileList:
     def test_constructor(self):
         # test load from blueprint string
         bp_string = "0eNp9j8EOgjAQRP9lzuUAVoH+ivEAuNGNsG1oNRLSf7fFizHGZC67k3m7s6If7+RmlgCzggcrHua4wvNFujHvwuIIBhxogoJ0U558sEJFP/NwQ1RgOdMTpownhcAjvRnOeg5sJVOSW7U7hQWm0GX8ArkuXBPnR0T/j6R722Pmo4fCg2a/Qaqm1HVb1ftDkm5ifAFGbk0H"
-        blueprint = Blueprint(bp_string)
+        blueprint = Blueprint.from_string(bp_string)
         assert blueprint.to_dict()["blueprint"]["tiles"] == [
             {"name": "stone-path", "position": {"x": 293, "y": -41}},
             {"name": "stone-path", "position": {"x": 294, "y": -41}},
         ]
 
         with pytest.raises(DataFormatError):
-            blueprint.setup(tiles=["not", "a", "tile"])
+            blueprint.tiles = ["not", "a", "tile"]
 
     def test_insert(self):
         blueprint = Blueprint()

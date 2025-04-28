@@ -20,18 +20,12 @@ class TestPowerSwitch:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            PowerSwitch(unused_keyword="whatever").validate().reissue_all()
-        with pytest.warns(UnknownKeywordWarning):
-            PowerSwitch(
-                control_behavior={"unused_key": "something"}
-            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             PowerSwitch("this is not a power switch").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            PowerSwitch(control_behavior="incorrect").validate().reissue_all()
+            PowerSwitch(tags="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in power_switches:
@@ -46,13 +40,13 @@ class TestPowerSwitch:
 
     def test_switch_state(self):
         power_switch = PowerSwitch()
-        power_switch.switch_state = False
         assert power_switch.switch_state == False
-        power_switch.switch_state = None
-        assert power_switch.switch_state == None
-        # TODO: move to validate
-        # with pytest.raises(TypeError):
-        #     power_switch.switch_state = TypeError
+
+        power_switch.switch_state = True
+        assert power_switch.switch_state == True
+        
+        with pytest.raises(DataFormatError):
+            power_switch.switch_state = TypeError
 
     def test_mergable_with(self):
         switch1 = PowerSwitch("power-switch")

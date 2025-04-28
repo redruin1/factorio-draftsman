@@ -5,6 +5,7 @@ Entity alias module. Imports the base-class :py:class:`.Entity`, as well as
 all the prototypes in :py:mod:`draftsman.prototypes`.
 """
 
+from draftsman import __factorio_version_info__
 from draftsman.classes.entity import Entity
 from draftsman.constants import ValidationMode
 from draftsman.error import InvalidEntityError
@@ -125,10 +126,6 @@ def new_entity(name: str, **kwargs):
         :py:class:`.Entity` if `name` could not be deduced under the current
         Factorio environment.
     """
-    # Remove entity_number from an input dict, as it is only meaningful when
-    # exporting
-    # TODO: this should probably be done elsewhere
-    kwargs.pop("entity_number", None)
     # TODO: this would be better as a dict
     if name in of_type["accumulator"]:
         return Accumulator(name, **kwargs)
@@ -195,7 +192,7 @@ def new_entity(name: str, **kwargs):
     if name in of_type["fusion-reactor"]:
         return FusionReactor(name, **kwargs)
     if name in of_type["gate"]:
-        return Gate.from_dict({"name": name, **kwargs})
+        return Gate(name, **kwargs)
     if name in of_type["generator"]:
         return Generator(name, **kwargs)
     if name in of_type["half-diagonal-rail"]:
@@ -231,15 +228,15 @@ def new_entity(name: str, **kwargs):
     if name in of_type["locomotive"]:
         return Locomotive(name, **kwargs)
     if name in of_type["logistic-container-active"]:
-        return LogisticActiveContainer.from_dict({"name": name, **kwargs})
+        return LogisticActiveContainer(name, **kwargs)
     if name in of_type["logistic-container-buffer"]:
-        return LogisticBufferContainer.from_dict({"name": name, **kwargs})
+        return LogisticBufferContainer(name, **kwargs)
     if name in of_type["logistic-container-passive"]:
-        return LogisticPassiveContainer.from_dict({"name": name, **kwargs})
+        return LogisticPassiveContainer(name, **kwargs)
     if name in of_type["logistic-container-request"]:
-        return LogisticRequestContainer.from_dict({"name": name, **kwargs})
+        return LogisticRequestContainer(name, **kwargs)
     if name in of_type["logistic-container-storage"]:
-        return LogisticStorageContainer.from_dict({"name": name, **kwargs})
+        return LogisticStorageContainer(name, **kwargs)
     if name in of_type["mining-drill"]:
         return MiningDrill(name, **kwargs)
     if name in of_type["offshore-pump"]:
@@ -261,7 +258,7 @@ def new_entity(name: str, **kwargs):
     if name in of_type["rail-ramp"]:
         return RailRamp(name, **kwargs)
     if name in of_type["rail-signal"]:
-        return RailSignal.from_dict({"name": name, **kwargs})
+        return RailSignal(name, **kwargs)
     if name in of_type["rail-support"]:
         return RailSupport(name, **kwargs)
     if name in of_type["reactor"]:
@@ -299,23 +296,13 @@ def new_entity(name: str, **kwargs):
     if name in of_type["pipe-to-ground"]:
         return UndergroundPipe(name, **kwargs)
     if name in of_type["wall"]:
-        return Wall.from_dict({"name": name, **kwargs})
+        return Wall(name, **kwargs)
 
     # At this point, the name is unrecognized by the current environment.
     # We want Draftsman to at least try to parse it and serialize it, if not
     # entirely validate it. Thus, we construct a generic instance of `Entity`
     # and return that.
-    result = Entity(name, similar_entities=None, **kwargs)
-
-    # Mark this class as unknown format, so some validation checks are
-    # omitted
-    # TODO: is this necessary?
-    result._unknown = True
-
-    # Of course, since entity is normally a base class, we have to do a
-    # little magic to make it behave similar to all other classes
-    validate_assignment = kwargs.get("validate_assignment", ValidationMode.STRICT)
-    result.validation = validate_assignment
+    result = Entity(name, validate_assignment=ValidationMode.NONE, **kwargs)
 
     return result
 
@@ -377,3 +364,7 @@ def get_class(d: dict):
         "wall": Wall,
     }
     return type_mappings.get(d_type, Entity)
+
+
+def new_entity_from_dict(d: dict, version: tuple[int] = __factorio_version_info__):
+    return get_class(d).from_dict(d, version=version)

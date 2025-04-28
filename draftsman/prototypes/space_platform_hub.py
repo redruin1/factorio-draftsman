@@ -131,6 +131,10 @@ class SpacePlatformHub(
         else:
             self._root.request_missing_construction_materials = value
 
+    @property
+    def similar_entities(self) -> list[str]:
+        return space_platform_hubs
+
     # =========================================================================
 
     __hash__ = Entity.__hash__

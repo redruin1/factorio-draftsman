@@ -51,7 +51,7 @@ class TestTile:
             tile = Tile(name=100).validate().reissue_all()
 
         # validation off
-        tile = Tile(name=100, validate="none")
+        tile = Tile(name=100, validate_assignment="none")
         assert tile.name == 100
 
         # TODO: test closure
@@ -96,8 +96,7 @@ class TestTile:
         assert tile.position.y == 123
 
         with pytest.raises(DataFormatError):
-            tile._root.position = "incorrect"
-            tile.validate().reissue_all()
+            tile.position = "incorrect"
 
     def test_to_dict(self):
         tile = Tile("landfill", position=(123, 123))
@@ -132,10 +131,12 @@ class TestTileFactory:
 
         # You should also be able to set new attributes to them without Draftsman
         # complaining
-        tile = new_tile(
-            "unknown",
-            position=(1, 1),
-            unknown_attribute="value",
+        tile = Tile.from_dict(
+            {
+                "name": "unknown",
+                "position": {"x": 1, "y": 1},
+                "unknown_attribute": "value",
+            }
         )
         assert tile.to_dict() == {
             "name": "unknown",
@@ -144,7 +145,7 @@ class TestTileFactory:
         }
 
         # After construction, as well
-        tile["new_thing"] = "extra!"
+        tile.extra_keys["new_thing"] = "extra!"
         assert tile.to_dict() == {
             "name": "unknown",
             "position": {"x": 1, "y": 1},
@@ -157,6 +158,7 @@ class TestTileFactory:
 
         # However, setting known attributes incorrectly should still create
         # issues
+        tile.validate_assignment = ValidationMode.STRICT
         assert tile.validate_assignment is ValidationMode.STRICT
         with pytest.raises(DataFormatError):
             tile.name = 100

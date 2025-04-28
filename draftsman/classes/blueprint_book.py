@@ -69,10 +69,12 @@ from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters, finalize_fields
 from draftsman.signatures import Color, DraftsmanBaseModel, Icon, uint16, uint64
 from draftsman.utils import encode_version, reissue_warnings
+from draftsman.validators import instance_of
 from draftsman.warning import DraftsmanWarning, IndexWarning
 import draftsman.blueprintable
 
 import attrs
+import cattrs
 from collections.abc import MutableSequence
 from pydantic import (
     ConfigDict,
@@ -83,7 +85,7 @@ from pydantic import (
     field_validator,
     ValidationError,
 )
-from typing import Any, Literal, Union
+from typing import Any, Literal, Optional, Union
 
 
 class BlueprintableList(MutableSequence):
@@ -108,10 +110,12 @@ class BlueprintableList(MutableSequence):
 
         self.data.insert(idx, value)
 
-    def __getitem__(self, idx: Union[int, slice]) -> Union[Any, MutableSequence[Any]]:
+    def __getitem__(
+        self, idx: Union[int, slice]
+    ) -> Union[Blueprintable, MutableSequence[Blueprintable]]:
         return self.data[idx]
 
-    def __setitem__(self, idx: Union[int, slice], value: Any) -> None:
+    def __setitem__(self, idx: Union[int, slice], value: Blueprintable) -> None:
         self.check_blueprintable(value)
 
         self.data[idx] = value
@@ -135,13 +139,34 @@ class BlueprintableList(MutableSequence):
                 "DeconstructionPlanner, UpgradePlanner, BlueprintBook)"
             )
 
+    def __eq__(self, other: Any):
+        if not isinstance(other, BlueprintableList):
+            return NotImplemented
+        return self.data == other.data
+
 
 draftsman_converters.register_structure_hook(
-    BlueprintableList, lambda d, type: BlueprintableList(d)
+    BlueprintableList, lambda d, _: BlueprintableList(d)
 )
-draftsman_converters.register_unstructure_hook(
-    BlueprintableList,
-    lambda inst: [elem.to_dict() for elem in inst],  # TODO: handle versions
+
+
+def blueprintable_list_unstructure_factory(_: type, converter: cattrs.Converter):
+    def unstructure_hook(inst):
+        res = [None] * len(inst)
+        for i, elem in enumerate(inst):
+            d = converter.unstructure(elem)
+            if "index" not in d:
+                d["index"] = i
+            res[i] = d
+
+        return res
+
+    return unstructure_hook
+
+
+draftsman_converters.register_unstructure_hook_factory(
+    lambda cls: issubclass(cls, BlueprintableList),
+    blueprintable_list_unstructure_factory,
 )
 
 
@@ -357,11 +382,7 @@ class BlueprintBook(Blueprintable):
 
     # =========================================================================
 
-    active_index: uint16 = attrs.field(
-        default=0,
-        # TODO: validators
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "active_index")},
-    )
+    active_index: uint16 = attrs.field(default=0, validator=instance_of(uint16))
     """
     The currently selected Blueprintable in the BlueprintBook. Zero-indexed,
     from ``0`` to ``len(blueprint_book.blueprints) - 1``.
@@ -409,15 +430,14 @@ class BlueprintBook(Blueprintable):
 
     def _set_blueprints(self, _: attrs.Attribute, value: Any):
         if value is None:
-            self.blueprints = BlueprintableList()
+            return BlueprintableList()
         elif isinstance(value, BlueprintableList):
-            self.blueprints = BlueprintableList(value.data)
+            return BlueprintableList(value.data)
         else:
-            self.blueprints = BlueprintableList(value)
+            return BlueprintableList(value)
 
     blueprints: BlueprintableList = attrs.field(
         on_setattr=_set_blueprints,
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "blueprints")},
     )
     """
     The list of Blueprintable objects within this BlueprintBook.
@@ -515,47 +535,55 @@ class BlueprintBook(Blueprintable):
 
     #     return output
 
-    # def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
-    #     """
-    #     Returns the blueprint as a dictionary. Intended for getting the
-    #     precursor to a Factorio blueprint string before encoding and compression
-    #     takes place.
+    def to_dict(
+        self,
+        version: tuple[int, ...] = __factorio_version_info__,
+        exclude_none: bool = True,
+        exclude_defaults: bool = True,
+        index: Optional[uint64] = None,
+    ) -> dict:
+        """
+        Returns the blueprint as a dictionary. Intended for getting the
+        precursor to a Factorio blueprint string before encoding and compression
+        takes place.
 
-    #     :returns: The dict representation of the BlueprintBook.
-    #     """
-    #     # Create a copy, omitting blueprints because that part is special
-    #     result = super().to_dict(
-    #         exclude_none=exclude_none, exclude_defaults=exclude_defaults
-    #     )
+        :returns: The dict representation of the BlueprintBook.
+        """
+        # Create a copy, omitting blueprints because that part is special
+        result = super().to_dict(
+            version=version,
+            exclude_none=exclude_none,
+            exclude_defaults=exclude_defaults,
+        )
 
-    #     # Transform blueprints
-    #     converted_blueprints = []
-    #     for i, blueprintable in enumerate(self.blueprints):
-    #         blueprintable_entry = blueprintable.to_dict(
-    #             exclude_none=exclude_none, exclude_defaults=exclude_defaults
-    #         )
-    #         # Users can manually customize index, we only override if none is found
-    #         if "index" not in blueprintable_entry:
-    #             blueprintable_entry["index"] = i
-    #         converted_blueprints.append(blueprintable_entry)
+        # Transform blueprints
+        # converted_blueprints = []
+        # for i, blueprintable in enumerate(self.blueprints):
+        #     blueprintable_entry = blueprintable.to_dict(
+        #         exclude_none=exclude_none, exclude_defaults=exclude_defaults
+        #     )
+        #     # Users can manually customize index, we only override if none is found
+        #     if "index" not in blueprintable_entry:
+        #         blueprintable_entry["index"] = i
+        #     converted_blueprints.append(blueprintable_entry)
 
-    #     result[self._root_item]["blueprints"] = converted_blueprints
+        # result[self._root_item]["blueprints"] = converted_blueprints
 
-    #     # out_model = BlueprintBook.Format.model_construct(
-    #     #     **{self._root_item: root_copy}, _recursive=True
-    #     # )
+        # out_model = BlueprintBook.Format.model_construct(
+        #     **{self._root_item: root_copy}, _recursive=True
+        # )
 
-    #     # out_dict = out_model.model_dump(
-    #     #     by_alias=True,
-    #     #     exclude_none=True,
-    #     #     exclude_defaults=True,
-    #     #     warnings=False  # Ignore warnings until model_construct is recursive
-    #     # )
+        # out_dict = out_model.model_dump(
+        #     by_alias=True,
+        #     exclude_none=True,
+        #     exclude_defaults=True,
+        #     warnings=False  # Ignore warnings until model_construct is recursive
+        # )
 
-    #     if len(result[self._root_item]["blueprints"]) == 0:
-    #         del result[self._root_item]["blueprints"]
+        # if len(result[self.root_item]["blueprints"]) == 0:
+        #     del result[self.root_item]["blueprints"]
 
-    #     return result
+        return result
 
 
 # TODO: versioning
@@ -563,13 +591,13 @@ draftsman_converters.add_schema(
     {"$schema": "TODO", "$id": "factorio:blueprint_book"},  # TODO
     BlueprintBook,
     lambda fields: {
-        fields.item.name: ("blueprint_book", "item"),
-        fields.label.name: ("blueprint_book", "label"),
-        fields.label_color.name: ("blueprint_book", "label_color"),
-        fields.description.name: ("blueprint_book", "description"),
-        fields.icons.name: ("blueprint_book", "icons"),
-        fields.version.name: ("blueprint_book", "version"),
-        fields.active_index.name: ("blueprint_book", "active_index"),
-        fields.blueprints.name: ("blueprint_book", "blueprints"),
+        ("blueprint_book", "item"): fields.item.name,
+        ("blueprint_book", "label"): fields.label.name,
+        ("blueprint_book", "label_color"): fields.label_color.name,
+        ("blueprint_book", "description"): fields.description.name,
+        ("blueprint_book", "icons"): fields.icons.name,
+        ("blueprint_book", "version"): fields.version.name,
+        ("blueprint_book", "active_index"): fields.active_index.name,
+        ("blueprint_book", "blueprints"): fields.blueprints.name,
     },
 )

@@ -13,8 +13,6 @@ class TestHeatPipe:
         heat_pipe = HeatPipe()
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            HeatPipe(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             HeatPipe("not a heat pipe").validate().reissue_all()
 

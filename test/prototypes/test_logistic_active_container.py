@@ -20,27 +20,11 @@ class TestContainer:
             "active-provider-chest",  # "logistic-chest-active-provider",
             tile_position={"x": 15, "y": 3},
             bar=5,
-            connections={
-                "1": {
-                    "red": [
-                        {"entity_id": 2},
-                        {"entity_id": 2, "circuit_id": 1},
-                    ]
-                }
-            },
         )
         assert active_chest.to_dict() == {
             "name": "active-provider-chest",
             "position": {"x": 15.5, "y": 3.5},
             "bar": 5,
-            "connections": {
-                "1": {
-                    "red": [
-                        {"entity_id": 2},
-                        {"entity_id": 2, "circuit_id": 1},
-                    ]
-                }
-            },
         }
         active_chest = LogisticActiveContainer(
             "active-provider-chest",
@@ -55,15 +39,6 @@ class TestContainer:
             "tags": {"A": "B"},
         }
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            LogisticActiveContainer(
-                "active-provider-chest", position=[0, 0], invalid_keyword="100"
-            ).validate().reissue_all()
-        with pytest.warns(UnknownKeywordWarning):
-            LogisticActiveContainer(
-                "active-provider-chest",
-                connections={"this is": ["very", "wrong"]},
-            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             LogisticActiveContainer(
                 "this is not an active provider chest"
@@ -76,7 +51,7 @@ class TestContainer:
                 "active-provider-chest", id=25
             ).validate().reissue_all()
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             LogisticActiveContainer(
                 "active-provider-chest", position=TypeError
             ).validate().reissue_all()

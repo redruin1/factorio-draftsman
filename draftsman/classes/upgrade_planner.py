@@ -17,12 +17,14 @@ from draftsman.classes.exportable import (
 from draftsman.constants import ValidationMode
 from draftsman.data import entities, items
 from draftsman.error import DataFormatError
-from draftsman.serialization import finalize_fields
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     AttrsColor,
     Color,
     DraftsmanBaseModel,
     Icon,
+    AttrsMapper,
+    AttrsMapperID,
     Mapper,
     MapperID,
     mapper_dict,
@@ -32,6 +34,7 @@ from draftsman.signatures import (
     uint64,
 )
 from draftsman.utils import encode_version, reissue_warnings
+from draftsman.validators import and_, instance_of
 from draftsman.warning import (
     IndexWarning,
     NoEffectWarning,
@@ -43,10 +46,11 @@ import attrs
 import bisect
 from pydantic import ConfigDict, Field, ValidationInfo, field_validator, model_validator
 from typing import Any, Literal, Optional, Sequence, Union
+import warnings
 
 
 def check_valid_upgrade_pair(
-    from_obj: dict | None, to_obj: dict | None
+    from_obj: AttrsMapperID | None, to_obj: AttrsMapperID | None
 ) -> list[Warning]:
     """
     Checks two :py:data:`MAPPING_ID` objects to see if it's possible for
@@ -68,8 +72,8 @@ def check_valid_upgrade_pair(
     unrecognized = []
     if (
         from_obj is not None
-        and from_obj["name"] not in entities.raw
-        and from_obj["name"] not in items.raw
+        and from_obj.name not in entities.raw
+        and from_obj.name not in items.raw
     ):
         unrecognized.append(
             UnknownElementWarning(
@@ -78,8 +82,8 @@ def check_valid_upgrade_pair(
         )
     if (
         to_obj is not None
-        and to_obj["name"] not in entities.raw
-        and to_obj["name"] not in items.raw
+        and to_obj.name not in entities.raw
+        and to_obj.name not in items.raw
     ):
         unrecognized.append(
             UnknownElementWarning(
@@ -101,28 +105,26 @@ def check_valid_upgrade_pair(
     if from_obj == to_obj:
         return [
             NoEffectWarning(
-                "Mapping entity/item '{}' to itself has no effect".format(
-                    from_obj["name"]
-                )
+                "Mapping entity/item '{}' to itself has no effect".format(from_obj.name)
             )
         ]
 
     # The types of both need to match in order to make sense
-    if from_obj["type"] != to_obj["type"]:
+    if from_obj.type != to_obj.type:
         return [
             UpgradeProhibitedWarning(
                 "'{}' is an {} but '{}' is an {}".format(
-                    from_obj["name"],
-                    from_obj["type"],
-                    to_obj["name"],
-                    to_obj["type"],
+                    from_obj.name,
+                    from_obj.type,
+                    to_obj.name,
+                    to_obj.type,
                 )
             )
         ]
 
     # TODO: currently we don't check for item mapping correctness
     # For now we just ignore it and early exit
-    if from_obj["type"] == "item" and to_obj["type"] == "item":
+    if from_obj.type == "item" and to_obj.type == "item":
         return None
 
     # To quote Entity prototype documentation for the "next_upgrade" key:
@@ -136,20 +138,18 @@ def check_valid_upgrade_pair(
     # > upgrade target entity must have least 1 item that builds it that
     # > isn't hidden.
 
-    from_entity = entities.raw[from_obj["name"]]
-    to_entity = entities.raw[to_obj["name"]]
+    from_entity = entities.raw[from_obj.name]
+    to_entity = entities.raw[to_obj.name]
 
     # from must be upgradable
     if "not-upgradable" in from_entity.get("flags", set()):
         return [
-            UpgradeProhibitedWarning("'{}' is not upgradable".format(from_obj["name"]))
+            UpgradeProhibitedWarning("'{}' is not upgradable".format(from_obj.name))
         ]
 
     # from must be minable
     if not from_entity.get("minable", False):
-        return [
-            UpgradeProhibitedWarning("'{}' is not minable".format(from_obj["name"]))
-        ]
+        return [UpgradeProhibitedWarning("'{}' is not minable".format(from_obj.name))]
 
     # Mining results from the upgrade must not be hidden
     if "results" in from_entity["minable"]:
@@ -162,7 +162,7 @@ def check_valid_upgrade_pair(
             return [
                 UpgradeProhibitedWarning(
                     "Returned item '{}' when upgrading '{}' is hidden".format(
-                        mined_item, from_obj["name"]
+                        mined_item, from_obj.name
                     ),
                 )
             ]
@@ -176,9 +176,7 @@ def check_valid_upgrade_pair(
     }:
         return [
             UpgradeProhibitedWarning(
-                "Cannot upgrade '{}' because it is RollingStock".format(
-                    from_obj["name"]
-                ),
+                "Cannot upgrade '{}' because it is RollingStock".format(from_obj.name),
             )
         ]
 
@@ -187,7 +185,7 @@ def check_valid_upgrade_pair(
         return [
             UpgradeProhibitedWarning(
                 "Cannot upgrade '{}' to '{}'; collision boxes differ".format(
-                    from_obj["name"], to_obj["name"]
+                    from_obj.name, to_obj.name
                 ),
             )
         ]
@@ -197,7 +195,7 @@ def check_valid_upgrade_pair(
         return [
             UpgradeProhibitedWarning(
                 "Cannot upgrade '{}' to '{}'; collision masks differ".format(
-                    from_obj["name"], to_obj["name"]
+                    from_obj.name, to_obj.name
                 ),
             )
         ]
@@ -209,7 +207,7 @@ def check_valid_upgrade_pair(
         return [
             UpgradeProhibitedWarning(
                 "Cannot upgrade '{}' to '{}'; fast replacable groups differ".format(
-                    from_obj["name"], to_obj["name"]
+                    from_obj.name, to_obj.name
                 ),
             )
         ]
@@ -218,7 +216,7 @@ def check_valid_upgrade_pair(
     return None
 
 
-@attrs.define(field_transformer=finalize_fields)
+@attrs.define
 class UpgradePlanner(Blueprintable):
     """
     A :py:class:`.Blueprintable` used to upgrade and downgrade entities and
@@ -501,70 +499,185 @@ class UpgradePlanner(Blueprintable):
 
     # =========================================================================
 
+    # TODO: this should be an evolve
     item: str = attrs.field(
         default="upgrade-planner",
         # TODO: validators
         metadata={
             "omit": False,
-            "location": (lambda cls: cls.root_item.fget(cls), "item"),
         },
     )
     # TODO: description
 
     # =========================================================================
 
-    # @property
-    # def mapper_count(self) -> uint8: # TODO: maximum extent 1000?
-    #     """
-    #     The total number of unique mappings that this entity can have. Read only.
-    #     """
-    #     # return items.raw[self.item]["mapper_count"] # TODO: this was removed in 1.0?
+    @property
+    def mapper_count(self) -> uint8:
+        """
+        The total number of unique mappings that this :py:attr:`.UpgradePlanner`
+        can have. Read only.
+
+        .. NOTE::
+
+            This value is only used on Factorio 1.0. Attempting to grab this
+            value from a modern environment (Factorio 2.0+) will return ``None``.
+        """
+        return items.raw[self.item].get("mapper_count", None)
 
     # =========================================================================
 
-    @property
-    def mappers(self) -> Optional[list[Mapper]]:
-        """
-        The list of mappings of one entity or item type to the other entity or
-        item type.
+    def _convert_mappers(value):
+        if isinstance(value, Sequence) and not isinstance(value, str):
+            res = [None] * len(value)
+            for i, elem in enumerate(value):
+                if isinstance(elem, Sequence) and not isinstance(elem, str):
+                    res[i] = AttrsMapper(index=i, from_=elem[0], to=elem[1])
+                else:
+                    res[i] = AttrsMapper.converter(elem)
+            return res
+        else:
+            return value
 
-        Using :py:meth:`.set_mapping()` will attempt to keep this list sorted
-        by each mapping's internal ``"index"``, but outside of this function
-        this  behavior is not required or enforced.
+    def _instance_of_mappers_validator(
+        self, attr, value, mode=None
+    ):  # TODO: should be better
+        mode = mode if mode is not None else self.validate_assignment
+        if mode:
+            for i, elem in enumerate(value):
+                if not isinstance(elem, AttrsMapper):
+                    msg = "Element {} in list ({}) is not an instance of {}".format(
+                        i, repr(elem), AttrsMapper.__name__
+                    )
+                    raise DataFormatError(msg)
 
-        :getter: Gets the mappers dictionary, or ``None`` if not set.
-        :setter: Sets the mappers dictionary, or deletes the dictionary if set
-            to ``None``
-        """
-        return self._root[self._root_item]["settings"].get("mappers", None)
+    def _ensure_valid_mappings(self, attr, value: list[AttrsMapper], mode=None):
+        mode = mode if mode is not None else self.validate_assignment
+        if mode >= ValidationMode.STRICT:
+            occupied_indices = {}
+            warning_list = []
+            for mapper in value:
+                # Ensure that "from" and "to" are a valid pair
+                # We assert that index must exist in each mapper, but both "from"
+                # and "to" may be omitted
+                reasons = check_valid_upgrade_pair(mapper.from_, mapper.to)
+                if reasons is not None:
+                    warning_list.extend(reasons)
 
-    @mappers.setter
-    def mappers(self, value: Optional[list[Union[tuple[str, str], Mapper]]]):
-        test_replace_me(
-            self,
-            self.Format.UpgradePlannerObject.Settings,
-            self._root[self._root_item]["settings"],
-            "mappers",
-            value,
-            self.validate_assignment,
-        )
-        # if self.validate_assignment:
-        #     result = attempt_and_reissue(
-        #         self,
-        #         self.Format.UpgradePlannerObject.Settings,
-        #         self._root[self._root_item]["settings"],
-        #         "mappers",
-        #         value,
-        #     )
-        #     self._root[self._root_item]["settings"]["mappers"] = result
-        # else:
-        #     self._root[self._root_item]["settings"]["mappers"] = value
+                # 1.0
+                # # If the index is greater than mapper_count, then the mapping will
+                # # be redundant
+                # if not mapper["index"] < upgrade_planner.mapper_count:
+                #     warning_list.append(
+                #         IndexWarning(
+                #             "'index' ({}) for mapping '{}' to '{}' must be in range [0, {}) or else it will have no effect".format(
+                #                 mapper["index"],
+                #                 mapper["from"]["name"],
+                #                 mapper["to"]["name"],
+                #                 upgrade_planner.mapper_count,
+                #             )
+                #         )
+                #     )
+
+                # Keep track of entries that occupy the same index (only the last
+                # mapping is used)
+                if mapper.index in occupied_indices:
+                    occupied_indices[mapper.index]["count"] += 1
+                    occupied_indices[mapper.index]["mapper"] = mapper
+                else:
+                    occupied_indices[mapper.index] = {
+                        "count": 0,
+                        "mapper": mapper,
+                    }
+
+            # Issue warnings if multiple mappers occupy the same index
+            for spot in occupied_indices:
+                entry = occupied_indices[spot]
+                if entry["count"] > 0:
+                    from_name = entry["mapper"].from_
+                    from_name = from_name.name if from_name is not None else from_name
+                    to_name = entry["mapper"].to
+                    to_name = to_name.name if to_name is not None else to_name
+                    warning_list.append(
+                        IndexWarning(
+                            "Mapping at index {} was overwritten {} time(s); final mapping is '{}' to '{}'".format(
+                                spot,
+                                entry["count"],
+                                from_name,
+                                to_name,
+                            )
+                        )
+                    )
+
+            print("in func warnings:", warning_list)
+            for warning in warning_list:
+                warnings.warn(warning)
+
+    mappers: list[AttrsMapper] = attrs.field(
+        factory=list,
+        converter=_convert_mappers,
+        validator=and_(
+            instance_of(list), _instance_of_mappers_validator, _ensure_valid_mappings
+        ),  # TODO: validators
+    )
+    """
+    The list of mappings of one entity or item type to the other entity or
+    item type.
+
+    Using :py:meth:`.set_mapping()` will attempt to keep this list sorted
+    by each mapping's internal ``"index"``, but outside of this function
+    this  behavior is not required or enforced.
+
+    :getter: Gets the mappers dictionary, or ``None`` if not set.
+    :setter: Sets the mappers dictionary, or deletes the dictionary if set
+        to ``None``
+    """
+
+    # @property
+    # def mappers(self) -> Optional[list[Mapper]]:
+    #     """
+    #     The list of mappings of one entity or item type to the other entity or
+    #     item type.
+
+    #     Using :py:meth:`.set_mapping()` will attempt to keep this list sorted
+    #     by each mapping's internal ``"index"``, but outside of this function
+    #     this  behavior is not required or enforced.
+
+    #     :getter: Gets the mappers dictionary, or ``None`` if not set.
+    #     :setter: Sets the mappers dictionary, or deletes the dictionary if set
+    #         to ``None``
+    #     """
+    #     return self._root[self._root_item]["settings"].get("mappers", None)
+
+    # @mappers.setter
+    # def mappers(self, value: Optional[list[Union[tuple[str, str], Mapper]]]):
+    #     test_replace_me(
+    #         self,
+    #         self.Format.UpgradePlannerObject.Settings,
+    #         self._root[self._root_item]["settings"],
+    #         "mappers",
+    #         value,
+    #         self.validate_assignment,
+    #     )
+    #     # if self.validate_assignment:
+    #     #     result = attempt_and_reissue(
+    #     #         self,
+    #     #         self.Format.UpgradePlannerObject.Settings,
+    #     #         self._root[self._root_item]["settings"],
+    #     #         "mappers",
+    #     #         value,
+    #     #     )
+    #     #     self._root[self._root_item]["settings"]["mappers"] = result
+    #     # else:
+    #     #     self._root[self._root_item]["settings"]["mappers"] = value
 
     # =========================================================================
 
     @reissue_warnings
     def set_mapping(
-        self, from_obj: Union[str, MapperID], to_obj: Union[str, MapperID], index: int
+        self,
+        from_obj: Union[str, AttrsMapperID],
+        to_obj: Union[str, AttrsMapperID],
+        index: int,
     ):
         """
         Sets a single mapping in the :py:class:`.UpgradePlanner`. Setting
@@ -588,30 +701,30 @@ class UpgradePlanner(Blueprintable):
         to_obj = mapper_dict(to_obj)
         index = int(index)
 
-        if self.mappers is None:
-            self.mappers = []
-
-        new_mapping = {"index": index}
+        # new_mapping = {"index": index}
         # Both 'from' and 'to' can be None and end up blank
-        if from_obj is not None:
-            new_mapping["from"] = from_obj
-        if to_obj is not None:
-            new_mapping["to"] = to_obj
+        # if from_obj is not None:
+        #     new_mapping["from"] = from_obj
+        # if to_obj is not None:
+        #     new_mapping["to"] = to_obj
+
+        new_mapping = AttrsMapper(index=index, from_=from_obj, to=to_obj)
 
         # Iterate over indexes to see where we should place the new mapping
         for i, current_mapping in enumerate(self.mappers):
             # If we find an exact index match, replace it
-            if current_mapping["index"] == index:
+            if current_mapping.index == index:
                 self.mappers[i] = new_mapping
                 return
+
         # Otherwise, insert it sorted by index
         # TODO: make backwards compatible
-        bisect.insort(self.mappers, new_mapping, key=lambda x: x["index"])
+        bisect.insort(self.mappers, new_mapping, key=lambda x: x.index)
 
     def remove_mapping(
         self,
-        from_obj: Union[str, MapperID],
-        to_obj: Union[str, MapperID],
+        from_obj: Union[str, AttrsMapperID],
+        to_obj: Union[str, AttrsMapperID],
         index: Optional[int] = None,
     ):
         """
@@ -638,17 +751,14 @@ class UpgradePlanner(Blueprintable):
         :param to_obj: The :py:data:`.MAPPING_ID` to convert entities/items to.
         :param index: The index of the mapping in the mapper to search.
         """
-        from_obj = mapper_dict(from_obj)
-        to_obj = mapper_dict(to_obj)
+        from_obj = AttrsMapperID.converter(from_obj)
+        to_obj = AttrsMapperID.converter(to_obj)
         index = int(index) if index is not None else None
 
         if index is None:
             # Remove the first occurence of the mapping, if there are multiple
             for i, mapping in enumerate(self.mappers):
-                if (
-                    mapping.get("from", None) == from_obj
-                    and mapping.get("to", None) == to_obj
-                ):
+                if mapping.from_ == from_obj and mapping.to == to_obj:
                     self.mappers.pop(i)
                     return
             # Otherwise, raise ValueError if we didn't find a match
@@ -656,10 +766,11 @@ class UpgradePlanner(Blueprintable):
                 "Unable to find mapper from '{}' to '{}'".format(from_obj, to_obj)
             )
         else:
-            mapper = {"from": from_obj, "to": to_obj, "index": index}
+            # mapper = {"from": from_obj, "to": to_obj, "index": index}
+            mapper = AttrsMapper(index=index, from_=from_obj, to=to_obj)
             self.mappers.remove(mapper)
 
-    def pop_mapping(self, index: int) -> Mapper:
+    def pop_mapping(self, index: int) -> AttrsMapper:
         """
         Removes a mapping at a specific mapper index. Note that this is not the
         position of the mapper in the :py:attr:`.mappers` list; it is the value
@@ -679,7 +790,24 @@ class UpgradePlanner(Blueprintable):
 
         # Simple search and pop
         for i, mapping in enumerate(self.mappers):
-            if mapping["index"] == index:
+            if mapping.index == index:
                 return self.mappers.pop(i)
 
         raise ValueError("Unable to find mapper with index '{}'".format(index))
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:upgrade_planner"},
+    UpgradePlanner,
+    lambda fields: {
+        ("upgrade_planner", "item"): fields.item.name,
+        ("upgrade_planner", "item"): fields.item.name,
+        ("upgrade_planner", "label"): fields.label.name,
+        ("upgrade_planner", "label_color"): fields.label_color.name,
+        ("upgrade_planner", "settings", "description"): fields.description.name,
+        ("upgrade_planner", "settings", "icons"): fields.icons.name,
+        ("upgrade_planner", "settings", "mappers"): fields.mappers.name,
+        ("upgrade_planner", "settings"): None,  # Delete settings key if null
+        ("upgrade_planner", "version"): fields.version.name,
+    },
+)

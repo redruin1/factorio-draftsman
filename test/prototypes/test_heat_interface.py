@@ -14,7 +14,7 @@ import pytest
 
 
 class TestHeatInterface:
-    def test_contstructor_init(self):
+    def test_constructor_init(self):
         interface = HeatInterface(temperature=10, mode="at-most")
         assert interface.to_dict() == {
             "name": "heat-interface",
@@ -24,8 +24,6 @@ class TestHeatInterface:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            HeatInterface(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             HeatInterface("this is not a heat interface").validate().reissue_all()
 
@@ -38,11 +36,10 @@ class TestHeatInterface:
 
     def test_set_temperature(self):
         interface = HeatInterface()
+        assert interface.temperature == 0.0
+
         interface.temperature = 100
         assert interface.temperature == 100
-
-        interface.temperature = None
-        assert interface.temperature == None
 
         # No warnings on strict
         interface.temperature = -1000
@@ -63,11 +60,10 @@ class TestHeatInterface:
 
     def test_set_mode(self):
         interface = HeatInterface()
+        assert interface.mode == "at-least"
+
         interface.mode = "exactly"
         assert interface.mode == "exactly"
-
-        interface.mode = None
-        assert interface.mode == None
 
         with pytest.raises(DataFormatError):
             interface.mode = "incorrect"

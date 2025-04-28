@@ -91,17 +91,14 @@ class DirectionalMixin:
         # is patched)
         if not first_call:
             return
-        print("first_call")
-        # print(args)
-        print(kwargs)
 
         # Call parent pre-init
         super().__attrs_pre_init__()
         # name = kwargs.get("name", get_first(self.similar_entities))
         name = name if name is not attrs.NOTHING else get_first(self.similar_entities)
         # print(name)
-        
-        # We generate collision sets on an as-needed basis for each unique 
+
+        # We generate collision sets on an as-needed basis for each unique
         # entity that is instantiated
         # Automatically generate a set of rotated collision sets for every
         # orientation
@@ -120,9 +117,7 @@ class DirectionalMixin:
                     Direction.SOUTH,
                     Direction.WEST,
                 }:
-                    _rotated_collision_sets[name][i] = known_collision_set.rotate(
-                        i
-                    )
+                    _rotated_collision_sets[name][i] = known_collision_set.rotate(i)
             else:
                 _rotated_collision_sets[name] = {}
                 for i in {
@@ -135,7 +130,7 @@ class DirectionalMixin:
 
         # The default position function uses `tile_width`/`tile_height`, which
         # use `collision_set`, which for rotatable entities is derived from the
-        # current `direction`. However, since direction is specified *after* 
+        # current `direction`. However, since direction is specified *after*
         # position sequentially (and there is no way to easily rearrange them
         # since they are inherited), we need to manually "patch" the given value
         # of direction before the rest of the attribute setting code has run.
@@ -143,7 +138,6 @@ class DirectionalMixin:
         # `direction` a custom setattr function and mimic a "raw" attribute set.
         direction = kwargs.get("direction", Direction.NORTH)
         object.__setattr__(self, "direction", direction)
-
 
     # def __init__(
     #     self,
@@ -229,27 +223,30 @@ class DirectionalMixin:
     @property
     def static_tile_width(self) -> int:
         """
-        The width of the entity irrespective of it's current orientation. 
+        The width of the entity irrespective of it's current orientation.
         Equivalent to the :py:attr:`.tile_width` when the entity is facing north.
         """
         return super().tile_width
-    
+
     # =========================================================================
 
     @property
     def static_tile_height(self) -> int:
         """
-        The height of the entity irrespective of it's current orientation. 
+        The height of the entity irrespective of it's current orientation.
         Equivalent to the :py:attr:`.tile_width` when the entity is facing north.
         """
         return super().tile_height
-    
+
     # =========================================================================
 
     @property
     def collision_set(self) -> Optional[CollisionSet]:
-        return _rotated_collision_sets.get(self.name, {}).get(self.direction, None)
-    
+        try:
+            return _rotated_collision_sets.get(self.name, {}).get(self.direction.to_4_way(), None)
+        except AttributeError:
+            return None
+
     # =========================================================================
 
     @property  # Cache?
@@ -261,9 +258,7 @@ class DirectionalMixin:
                 return self.prototype["tile_width"]
         else:
             return aabb_to_dimensions(
-                self.collision_set.get_bounding_box()
-                if self.collision_set
-                else None
+                self.collision_set.get_bounding_box() if self.collision_set else None
             )[0]
 
     # =========================================================================
@@ -277,29 +272,42 @@ class DirectionalMixin:
                 return self.prototype["tile_height"]
         else:
             return aabb_to_dimensions(
-                self.collision_set.get_bounding_box()
-                if self.collision_set
-                else None
+                self.collision_set.get_bounding_box() if self.collision_set else None
             )[1]
 
     # =========================================================================
 
-    def _set_direction(self, _: attrs.Attribute, value: Any):
-        self.direction = value
+    def _set_direction(self, attr: attrs.Attribute, value: Any):
+        # self.direction = value
+        value = attr.converter(value)
+        attr.validator(self, attr, value, mode=self.validate_assignment)
+        value: Direction
+        object.__setattr__(self, "direction", value)  # Prevent recursion
 
         if not self.square:
             self.tile_position = self.tile_position
 
-    def ensure_4_way_direction(self, _: attrs.Attribute, value: Any, mode: Optional[ValidationMode] = None):
+        return value
+
+    def ensure_4_way_direction(
+        self, _: attrs.Attribute, value: Any, mode: Optional[ValidationMode] = None
+    ):
         mode = mode if mode is not None else self.validate_assignment
         if mode >= ValidationMode.STRICT:
-            if value not in {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST}:
+            if value not in {
+                Direction.NORTH,
+                Direction.EAST,
+                Direction.SOUTH,
+                Direction.WEST,
+            }:
                 # TODO: should we convert it for the user, or let it be wrong?
-                warnings.warn(DirectionWarning(
-                    "'{}' only has 4-way rotation; will be converted to {} on import".format(
-                        type(self).__name__, Direction(int(value / 4) * 4)
-                    ),
-                ))
+                warnings.warn(
+                    DirectionWarning(
+                        "'{}' only has 4-way rotation; will be converted to the value '{}' on import".format(
+                            type(self).__name__, Direction(int(value / 4) * 4)
+                        ),
+                    )
+                )
 
     direction: Direction = attrs.field(
         default=Direction.NORTH,
@@ -411,5 +419,5 @@ class DirectionalMixin:
 draftsman_converters.add_schema(
     {"$id": "factorio:directional_mixin"},
     DirectionalMixin,
-    lambda fields: {fields.direction.name: "direction"},
+    lambda fields: {"direction": fields.direction.name},
 )

@@ -1,7 +1,7 @@
 # test_loader.py
 
 from draftsman.entity import Loader, loaders, Container
-from draftsman.signatures import ItemFilter
+from draftsman.signatures import AttrsItemFilter
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -13,8 +13,6 @@ class TestLoader:
         # loader = Loader()
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            Loader("loader", unused_keyword=10).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Loader("this is not a loader").validate().reissue_all()
 
@@ -47,7 +45,7 @@ class TestLoader:
         loader1.merge(loader2)
         del loader2
 
-        assert loader1.filters == [ItemFilter(**{"name": "coal", "index": 1})]
+        assert loader1.filters == [AttrsItemFilter(**{"name": "coal", "index": 1})]
         assert loader1.io_type == "input"
         assert loader1.tags == {"some": "stuff"}
 

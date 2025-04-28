@@ -15,6 +15,7 @@ from draftsman.error import (
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import reissue_warnings
 from draftsman.signatures import Connections, DraftsmanBaseModel
+from draftsman.validators import classvalidator
 from draftsman.warning import HiddenEntityWarning
 from draftsman import utils
 
@@ -306,7 +307,7 @@ class EntityList(Exportable, MutableSequence):
         # Of course, this feature is optional, so if you're going to validate
         # the final blueprintable at the end anyway you can disable this feature
         # and save some overhead
-        if True:
+        if self.validate_assignment:
             # Validate the object itself
             # entitylike.validate(mode=self.validate_assignment).reissue_all()
             # Check for issues regarding placing this entity in the parent object
@@ -665,6 +666,7 @@ class EntityList(Exportable, MutableSequence):
         return True
 
     def __deepcopy__(self, memo: dict) -> "EntityList":
+        # TODO: I think we want to delete this function
         """
         Creates a deepcopy of the EntityList. Also copies Associations such that
         they are preserved.
@@ -695,47 +697,47 @@ class EntityList(Exportable, MutableSequence):
             new.append(entity_copy, copy=False)
             memo[id(entity)] = entity_copy
 
-        def try_to_replace_association(old):
-            try:
-                return Association(memo[id(old())])
-            except KeyError:
-                # The association must belong outside of the copied region
-                raise InvalidAssociationError(
-                    "Attempting to connect to {} which lies outside this "
-                    "EntityCollection; are all Associations between entities "
-                    "contained within this EntityCollection being copied?".format(
-                        repr(old())
-                    )
-                )
+        # def try_to_replace_association(old):
+        #     try:
+        #         return Association(memo[id(old())])
+        #     except KeyError:
+        #         # The association must belong outside of the copied region
+        #         raise InvalidAssociationError(
+        #             "Attempting to connect to {} which lies outside this "
+        #             "EntityCollection; are all Associations between entities "
+        #             "contained within this EntityCollection being copied?".format(
+        #                 repr(old())
+        #             )
+        #         )
 
-        # Then, we iterate over all the associations in every Entity in the new
-        # EntityList and replace them with associations to the new Entities
-        for entity in new:
-            # swap linked position lmao
-            # entity._position.linked = entity._tile_position
-            # entity._tile_position.linked = entity._position
-            if hasattr(entity, "connections"):
-                connections: Connections = entity.connections
-                for side in connections.true_model_fields():
-                    if connections[side] is None:
-                        continue
-                    if side in {"1", "2"}:
-                        for color, _ in connections[side]:
-                            connection_points = connections[side][color]
-                            if connection_points is None:
-                                continue
-                            for point in connection_points:
-                                old = point["entity_id"]
-                                point["entity_id"] = try_to_replace_association(old)
-                    elif side in {"Cu0", "Cu1"}:  # pragma: no branch
-                        connection_points = connections[side]
-                        for point in connection_points:
-                            old = point["entity_id"]
-                            point["entity_id"] = try_to_replace_association(old)
-            if hasattr(entity, "neighbours"):
-                neighbours = entity.neighbours
-                for i, neighbour in enumerate(neighbours):
-                    neighbours[i] = try_to_replace_association(neighbour)
+        # # Then, we iterate over all the associations in every Entity in the new
+        # # EntityList and replace them with associations to the new Entities
+        # for entity in new:
+        #     # swap linked position lmao
+        #     # entity._position.linked = entity._tile_position
+        #     # entity._tile_position.linked = entity._position
+        #     if hasattr(entity, "connections"):
+        #         connections: Connections = entity.connections
+        #         for side in connections.true_model_fields():
+        #             if connections[side] is None:
+        #                 continue
+        #             if side in {"1", "2"}:
+        #                 for color, _ in connections[side]:
+        #                     connection_points = connections[side][color]
+        #                     if connection_points is None:
+        #                         continue
+        #                     for point in connection_points:
+        #                         old = point["entity_id"]
+        #                         point["entity_id"] = try_to_replace_association(old)
+        #             elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+        #                 connection_points = connections[side]
+        #                 for point in connection_points:
+        #                     old = point["entity_id"]
+        #                     point["entity_id"] = try_to_replace_association(old)
+        #     if hasattr(entity, "neighbours"):
+        #         neighbours = entity.neighbours
+        #         for i, neighbour in enumerate(neighbours):
+        #             neighbours[i] = try_to_replace_association(neighbour)
 
         return new
 

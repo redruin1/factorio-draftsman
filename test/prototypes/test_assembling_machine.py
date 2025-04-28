@@ -40,8 +40,6 @@ class TestAssemblingMachine:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            AssemblingMachine(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownRecipeWarning):
             AssemblingMachine(recipe="incorrect").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):

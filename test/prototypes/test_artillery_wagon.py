@@ -15,6 +15,7 @@ class TestArtilleryWagon:
             "artillery-wagon",
             position={"x": 1.0, "y": 1.0},
             orientation=0.75,
+            enable_logistics_while_moving=False,
         )
         assert artillery_wagon.to_dict() == {
             "name": "artillery-wagon",
@@ -24,10 +25,6 @@ class TestArtilleryWagon:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            ArtilleryWagon(
-                "artillery-wagon", unused_keyword="whatever"
-            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             ArtilleryWagon("this is not an artillery wagon").validate().reissue_all()
 

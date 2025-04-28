@@ -4,7 +4,7 @@ from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.schedule import Schedule, WaitCondition, WaitConditions
 from draftsman.constants import WaitConditionType, WaitConditionCompareType
 from draftsman.error import DataFormatError
-from draftsman.signatures import Condition
+from draftsman.signatures import AttrsSimpleCondition
 
 import pytest
 import re
@@ -30,9 +30,9 @@ class TestWaitCondition:
         assert w.type == "circuit"
         assert w.compare_type == "or"
         assert w.ticks == None
-        assert w.condition == Condition()
+        assert w.condition == AttrsSimpleCondition()
 
-        w = WaitCondition("incorrect", compare_type="incorrect", validate="none")
+        w = WaitCondition("incorrect", compare_type="incorrect", validate_assignment="none")
         assert w.type == "incorrect"
         assert w.compare_type == "incorrect"
         assert w.ticks == None
@@ -45,9 +45,9 @@ class TestWaitCondition:
     def test_to_dict(self):
         w = WaitCondition(
             "circuit",
-            condition=("signal-A", "!=", "signal-B"),
+            condition=AttrsSimpleCondition(first_signal="signal-A", comparator="!=", second_signal="signal-B"),
         )
-        assert isinstance(w.condition, Condition)
+        assert isinstance(w.condition, AttrsSimpleCondition)
         assert w.to_dict() == {
             "type": "circuit",
             # "compare_type": "or", # Default
@@ -58,7 +58,7 @@ class TestWaitCondition:
             },
         }
 
-        w = WaitCondition("circuit", condition=("signal-A", "<", 100))
+        w = WaitCondition("circuit", condition=AttrsSimpleCondition(first_signal="signal-A", comparator="<", constant=100))
         assert w.to_dict() == {
             "type": "circuit",
             # "compare_type": "or", # Default
@@ -101,7 +101,7 @@ class TestWaitCondition:
             "comparator": ">",
             "constant": 1000,
         }
-        assert circuit_condition.condition == Condition(
+        assert circuit_condition.condition == AttrsSimpleCondition(
             **{"first_signal": "signal-A", "comparator": ">", "constant": 1000}
         )
 
@@ -113,7 +113,7 @@ class TestWaitCondition:
             "comparator": "==",
             "second_signal": "signal-B",
         }
-        assert full_cargo.condition == Condition(
+        assert full_cargo.condition == AttrsSimpleCondition(
             **{
                 "first_signal": "signal-A",
                 "comparator": "==",
@@ -140,7 +140,7 @@ class TestWaitCondition:
         )
 
         # WaitCondition and WaitConditions
-        signal_sent = WaitCondition("circuit", condition=("signal-A", "==", 100))
+        signal_sent = WaitCondition("circuit", condition=AttrsSimpleCondition(first_signal="signal-A", comparator="==", constant=100))
         sum1 = signal_sent & conditions
         assert isinstance(sum1, WaitConditions)
         assert len(sum1) == 3
@@ -148,7 +148,7 @@ class TestWaitCondition:
             [
                 WaitCondition(
                     "circuit",
-                    condition=("signal-A", "==", 100),
+                    condition=AttrsSimpleCondition(first_signal="signal-A", comparator="==", constant=100),
                 ),
                 WaitCondition("full", compare_type="and"),
                 WaitCondition("inactivity", compare_type="and"),
@@ -175,7 +175,7 @@ class TestWaitCondition:
                 WaitCondition(
                     "circuit",
                     compare_type="and",
-                    condition=("signal-A", "==", 100),
+                    condition=AttrsSimpleCondition(first_signal="signal-A", comparator="==", constant=100),
                 ),
             ]
         )
@@ -205,7 +205,7 @@ class TestWaitCondition:
         )
 
         # WaitCondition and WaitConditions
-        signal_sent = WaitCondition("circuit", condition=("signal-A", "==", 100))
+        signal_sent = WaitCondition("circuit", condition=AttrsSimpleCondition(first_signal="signal-A", comparator="==", constant=100))
         sum1 = signal_sent | conditions
         assert isinstance(sum1, WaitConditions)
         assert len(sum1) == 3
@@ -213,7 +213,7 @@ class TestWaitCondition:
             [
                 WaitCondition(
                     "circuit",
-                    condition=("signal-A", "==", 100),
+                    condition=AttrsSimpleCondition(first_signal="signal-A", comparator="==", constant=100),
                 ),
                 WaitCondition("full"),
                 WaitCondition("inactivity"),
@@ -237,7 +237,7 @@ class TestWaitCondition:
                 WaitCondition("inactivity"),
                 WaitCondition(
                     "circuit",
-                    condition=("signal-A", "==", 100),
+                    condition=AttrsSimpleCondition(first_signal="signal-A", comparator="==", constant=100),
                 ),
             ]
         )
@@ -249,22 +249,22 @@ class TestWaitCondition:
         ):
             Schedule() | signal_sent
 
-    def test_repr(self):
-        w = WaitCondition("passenger_present")
-        assert (
-            repr(w)
-            == "<WaitCondition>{type=<WaitConditionType.PASSENGER_PRESENT: 'passenger_present'> compare_type=<WaitConditionCompareType.OR: 'or'> ticks=None condition=None}"
-        )
-        w = WaitCondition("inactivity")
-        assert (
-            repr(w)
-            == "<WaitCondition>{type=<WaitConditionType.INACTIVITY: 'inactivity'> compare_type=<WaitConditionCompareType.OR: 'or'> ticks=300 condition=None}"
-        )
-        w = WaitCondition("item_count", condition=("signal-A", "=", "signal-B"))
-        assert (
-            repr(w)
-            == "<WaitCondition>{type=<WaitConditionType.ITEM_COUNT: 'item_count'> compare_type=<WaitConditionCompareType.OR: 'or'> ticks=None condition=Condition(first_signal=SignalID(name='signal-A', type='virtual', quality='normal'), first_signal_networks=NetworkSpecification(red=True, green=True), comparator='=', constant=0, second_signal=SignalID(name='signal-B', type='virtual', quality='normal'), second_signal_networks=NetworkSpecification(red=True, green=True))}"
-        )
+    # def test_repr(self):
+    #     w = WaitCondition("passenger_present")
+    #     assert (
+    #         repr(w)
+    #         == "<WaitCondition>{type=<WaitConditionType.PASSENGER_PRESENT: 'passenger_present'> compare_type=<WaitConditionCompareType.OR: 'or'> ticks=None condition=None}"
+    #     )
+    #     w = WaitCondition("inactivity")
+    #     assert (
+    #         repr(w)
+    #         == "<WaitCondition>{type=<WaitConditionType.INACTIVITY: 'inactivity'> compare_type=<WaitConditionCompareType.OR: 'or'> ticks=300 condition=None}"
+    #     )
+    #     w = WaitCondition("item_count", condition=("signal-A", "=", "signal-B"))
+    #     assert (
+    #         repr(w)
+    #         == "<WaitCondition>{type=<WaitConditionType.ITEM_COUNT: 'item_count'> compare_type=<WaitConditionCompareType.OR: 'or'> ticks=None condition=Condition(first_signal=SignalID(name='signal-A', type='virtual', quality='normal'), first_signal_networks=NetworkSpecification(red=True, green=True), comparator='=', constant=0, second_signal=SignalID(name='signal-B', type='virtual', quality='normal'), second_signal_networks=NetworkSpecification(red=True, green=True))}"
+    #     )
 
 
 class TestWaitConditions:
@@ -325,18 +325,13 @@ class TestSchedule:
         )
         assert s.locomotives == []
         assert s.stops == [
-            Schedule.Format.ScheduleSpecification.Stop(
+            Schedule.Specification.Stop(
                 **{"station": "some name", "wait_conditions": WaitConditions([])}
             )
         ]
 
         with pytest.raises(DataFormatError):
             s = Schedule(locomotives="incorrect").validate().reissue_all()
-
-        s = Schedule(locomotives="incorrect")
-        assert s.to_dict() == {
-            "locomotives": "incorrect",
-        }
 
     def test_locomotives(self):
         pass  # TODO
@@ -389,7 +384,7 @@ class TestSchedule:
         s.insert_stop(0, "Station A")
         assert len(s.stops) == 1
         assert s.stops == [
-            Schedule.Format.ScheduleSpecification.Stop(
+            Schedule.Specification.Stop(
                 **{"station": "Station A", "wait_conditions": WaitConditions()}
             )
         ]
@@ -401,10 +396,10 @@ class TestSchedule:
         s.insert_stop(1, "Station B", full_cargo)
         assert len(s.stops) == 2
         assert s.stops == [
-            Schedule.Format.ScheduleSpecification.Stop(
+            Schedule.Specification.Stop(
                 **{"station": "Station A", "wait_conditions": WaitConditions()}
             ),
-            Schedule.Format.ScheduleSpecification.Stop(
+            Schedule.Specification.Stop(
                 **{
                     "station": "Station B",
                     "wait_conditions": WaitConditions([WaitCondition("full")]),
@@ -416,16 +411,16 @@ class TestSchedule:
         s.insert_stop(2, "Station C", full_cargo & inactivity)
         assert len(s.stops) == 3
         assert s.stops == [
-            Schedule.Format.ScheduleSpecification.Stop(
+            Schedule.Specification.Stop(
                 **{"station": "Station A", "wait_conditions": WaitConditions()}
             ),
-            Schedule.Format.ScheduleSpecification.Stop(
+            Schedule.Specification.Stop(
                 **{
                     "station": "Station B",
                     "wait_conditions": WaitConditions([WaitCondition("full")]),
                 }
             ),
-            Schedule.Format.ScheduleSpecification.Stop(
+            Schedule.Specification.Stop(
                 **{
                     "station": "Station C",
                     "wait_conditions": WaitConditions(
@@ -449,16 +444,16 @@ class TestSchedule:
         s.append_stop("Station A", wait_conditions=inactivity)
         assert len(s.stops) == 3
         assert s.stops == [
-            Schedule.Format.ScheduleSpecification.Stop(
+            Schedule.Specification.Stop(
                 **{"station": "Station A", "wait_conditions": WaitConditions()}
             ),
-            Schedule.Format.ScheduleSpecification.Stop(
+            Schedule.Specification.Stop(
                 **{
                     "station": "Station A",
                     "wait_conditions": WaitConditions([full_cargo]),
                 }
             ),
-            Schedule.Format.ScheduleSpecification.Stop(
+            Schedule.Specification.Stop(
                 **{
                     "station": "Station A",
                     "wait_conditions": WaitConditions([inactivity]),
@@ -470,13 +465,13 @@ class TestSchedule:
         s.remove_stop("Station A")
         assert len(s.stops) == 2
         assert s.stops == [
-            Schedule.Format.ScheduleSpecification.Stop(
+            Schedule.Specification.Stop(
                 **{
                     "station": "Station A",
                     "wait_conditions": WaitConditions([full_cargo]),
                 }
             ),
-            Schedule.Format.ScheduleSpecification.Stop(
+            Schedule.Specification.Stop(
                 **{
                     "station": "Station A",
                     "wait_conditions": WaitConditions([inactivity]),
@@ -485,7 +480,7 @@ class TestSchedule:
         ]
         s.remove_stop("Station A")
         assert s.stops == [
-            Schedule.Format.ScheduleSpecification.Stop(
+            Schedule.Specification.Stop(
                 **{
                     "station": "Station A",
                     "wait_conditions": WaitConditions([inactivity]),

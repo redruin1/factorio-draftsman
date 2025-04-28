@@ -14,10 +14,12 @@ from draftsman.utils import get_first
 
 from draftsman.data.entities import cargo_landing_pads
 
+import attrs
 from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
 
+@attrs.define
 class CargoLandingPad(
     RequestFiltersMixin,
     CargoHubModeOfOperationMixin,
@@ -72,6 +74,10 @@ class CargoLandingPad(
         )
 
         self.validate_assignment = validate_assignment
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return cargo_landing_pads
 
     # =========================================================================
 

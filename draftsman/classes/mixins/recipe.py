@@ -3,6 +3,7 @@
 from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import ValidationMode
 from draftsman.data import modules, recipes
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import QualityName, RecipeName, get_suggestion
 from draftsman.validators import instance_of, is_none, one_of, or_
 from draftsman.warning import (
@@ -147,8 +148,7 @@ class RecipeMixin:
     # =========================================================================
 
     recipe: Optional[RecipeName] = attrs.field(
-        default=None,
-        validator=instance_of(Optional[RecipeName])
+        default=None, validator=instance_of(Optional[RecipeName])
     )
     """
     The recipe that this Entity is currently set to make.
@@ -203,8 +203,7 @@ class RecipeMixin:
     # =========================================================================
 
     recipe_quality: Optional[QualityName] = attrs.field(
-        default="normal",
-        validator=or_(one_of(QualityName), is_none)
+        default="normal", validator=or_(one_of(QualityName), is_none)
     )
     """
     The quality of the recipe that this Entity is selected to make.
@@ -252,3 +251,27 @@ class RecipeMixin:
 
     def __eq__(self, other) -> bool:
         return super().__eq__(other) and self.recipe == other.recipe
+
+
+draftsman_converters.get_version((1, 0)).add_schema(
+    {"$id": "factorio:recipe_mixin"},
+    RecipeMixin,
+    lambda fields: {
+        fields.recipe.name: "recipe",
+        fields.recipe_quality: "recipe_quality",  # TODO: Should this go to extra keys?
+    },
+    lambda fields: {
+        "recipe": fields.recipe.name,
+        "recipe_quality": None,
+    },
+)
+
+
+draftsman_converters.get_version((2, 0)).add_schema(
+    {"$id": "factorio:recipe_mixin"},
+    RecipeMixin,
+    lambda fields: {
+        fields.recipe.name: "recipe",
+        fields.recipe_quality.name: "recipe_quality",
+    },
+)

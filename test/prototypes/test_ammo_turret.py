@@ -12,10 +12,6 @@ class TestAmmoTurret:
         turret = AmmoTurret("gun-turret")
         turret.validate().reissue_all()
 
-        with pytest.warns(UnknownKeywordWarning):
-            turret = AmmoTurret("gun-turret", unused_keyword="whatever")
-            turret.validate().reissue_all()
-
         with pytest.warns(UnknownEntityWarning):
             turret = AmmoTurret("this is not a turret")
             turret.validate().reissue_all()
@@ -24,9 +20,10 @@ class TestAmmoTurret:
         turret = AmmoTurret("gun-turret")
         assert turret.rotatable == True
         assert turret.square == True
-        turret = AmmoTurret("flamethrower-turret")
-        assert turret.rotatable == True
-        assert turret.square == False
+        # TODO: move
+        # turret = AmmoTurret("flamethrower-turret")
+        # assert turret.rotatable == True
+        # assert turret.square == False
 
     def test_mergable_with(self):
         turret1 = AmmoTurret("gun-turret")

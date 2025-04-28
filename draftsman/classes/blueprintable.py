@@ -29,6 +29,7 @@ from draftsman.utils import (
     reissue_warnings,
     version_tuple_to_string,
 )
+from draftsman.validators import instance_of, try_convert
 
 import attrs
 import cattrs
@@ -308,10 +309,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     # =========================================================================
 
     label_color: AttrsColor = attrs.field(
-        default=AttrsColor(255, 255, 255, 255),
-        converter=AttrsColor.converter,
-        validator=attrs.validators.instance_of(AttrsColor),
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "label_color")},
+        factory=lambda: AttrsColor(1.0, 1.0, 1.0, 1.0),
+        converter=lambda value: AttrsColor(1.0, 1.0, 1.0, 1.0)
+        if value is None
+        else AttrsColor.converter(value),
+        validator=instance_of(AttrsColor),
     )
     """
     The color of the Blueprint's label.
@@ -345,11 +347,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     # =========================================================================
 
     description: Optional[str] = attrs.field(
-        default=None,
-        # TODO: validators
-        metadata={
-            "location": (lambda cls: cls.root_item.fget(cls), "description")
-        },  # FIXME
+        default=None, validator=instance_of(Optional[str])
     )
     """
     The description of the blueprintable. Visible when hovering over it when
@@ -390,10 +388,25 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     # =========================================================================
 
+    def _icons_converter(value):
+        if isinstance(value, list):
+            res = [None] * len(value)
+            for i, elem in enumerate(value):
+                if isinstance(elem, str):
+                    res[i] = AttrsIcon(
+                        index=i + 1,
+                        signal=elem,
+                    )
+                else:
+                    res[i] = AttrsIcon.converter(elem)
+            return res
+        else:
+            return value
+
     icons: list[AttrsIcon] = attrs.field(
         factory=list,
-        # TODO: TODO: validators + converters
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "icons")},  # FIXME
+        converter=_icons_converter,
+        validator=instance_of(list),  # TODO: validators + converters
     )
     """
     The visible icons of the blueprintable, as shown in the icon in
@@ -506,10 +519,14 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     version: uint64 = attrs.field(
         default=encode_version(*__factorio_version_info__),
-        # TODO: validators
+        converter=try_convert(
+            lambda value: encode_version(*value)
+            if isinstance(value, Sequence)
+            else value
+        ),
+        validator=instance_of(uint64),
         metadata={
             "omit": False,
-            "location": (lambda cls: cls.root_item.fget(cls), "version"),
         },
     )
     """
@@ -606,7 +623,14 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     # =========================================================================
 
-    index: Optional[uint16] = None
+    # TODO: this really probably should be removed, for the same reason that
+    # `Entity.entity_number should be removed`; it only really exists for
+    # `BlueprintBook.active_index` to work, but that should really probably just
+    # be `BlueprintBook.active_blueprint` and have it point directly to the
+    # blueprintable
+    index: Optional[uint16] = attrs.field(
+        default=None, validator=instance_of(Optional[uint16])
+    )
     """
     The 0-indexed location of the blueprintable in a parent
     :py:class:`BlueprintBook`. This member is automatically generated if

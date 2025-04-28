@@ -1,7 +1,7 @@
 # serialization.py
 
 from draftsman.error import DataFormatError
-from draftsman.validators import and_, instance_of
+from draftsman.validators import and_, instance_of, or_
 
 import attrs
 import cattrs
@@ -55,7 +55,7 @@ def regular_structure_factory(cls, converter):
             # either a default or an error which will be caught later
             try:
                 value = resolve_location(d, location)
-            except KeyError:
+            except (KeyError, TypeError):
                 continue
             # If the input object has its own special structuring hook, use that
             # print("value", value)
@@ -219,8 +219,8 @@ class ConverterVersion:
             (False, True): MASTER_CONVERTER_OMIT_DEFAULTS.copy(),
             (True, True): MASTER_CONVERTER_OMIT_NONE_DEFAULTS.copy(),
         }
-        self.mapping_funcs = {}
-        self.exclude_extra = {}
+        self.structure_funcs = {}
+        self.unstructure_funcs = {}
         self.schemas = {}
 
     def register_structure_hook(self, *args, **kwargs):
@@ -246,42 +246,58 @@ class ConverterVersion:
         self,
         schema: dict,
         cls: Optional[type] = None,
-        mapping_func: Optional[Callable] = None,
-        exclude_extra: Optional[set[str]] = None,
+        structure_func: Optional[Callable] = None,
+        unstructure_func: Optional[set[str]] = None,
     ):
         if "$id" not in schema:
             raise ValueError("invalid schema!")
         self.schemas[schema["$id"]] = schema
         if cls is not None:
             self.schemas[cls] = schema
-            if mapping_func is not None:
-                self.mapping_funcs[cls] = mapping_func
-            if exclude_extra is not None:
-                self.exclude_extra[cls] = exclude_extra
+            if structure_func is not None:
+                self.structure_funcs[cls] = structure_func
+            if unstructure_func is not None:
+                self.unstructure_funcs[cls] = unstructure_func
 
     def get_schema(self, cls):
         return self.schemas[cls]
 
-    def get_location_dict(self, cls: type) -> dict:
-        location_dict = {}
+    def get_structure_dict(self, cls: type) -> dict:
+        res = {}
         for subcls in reversed(cls.mro()):
-            if subcls in self.mapping_funcs:
-                location_dict.update(
+            if subcls in self.structure_funcs:
+                call_value = self.structure_funcs[subcls](attrs.fields(subcls))
+                res.update(
                     {
-                        k: (v,) if isinstance(v, str) else v
-                        for k, v in self.mapping_funcs[subcls](
+                        (k,) if isinstance(k, str) else k: v
+                        for k, v in call_value.items()
+                    }
+                )
+        return res
+
+    def get_unstructure_dict(self, cls: type, converter: cattrs.Converter) -> dict:
+        res = {}
+        for subcls in reversed(cls.mro()):
+            if subcls in self.unstructure_funcs:
+                res.update(
+                    {
+                        (k,) if isinstance(k, str) else k: v
+                        for k, v in self.unstructure_funcs[subcls](
+                            attrs.fields(subcls), converter
+                        ).items()
+                    }
+                )
+            elif subcls in self.structure_funcs:
+                # use the reverse of the structure fuction
+                res.update(
+                    {
+                        (k,) if isinstance(k, str) else k: v
+                        for k, v in self.structure_funcs[subcls](
                             attrs.fields(subcls)
                         ).items()
                     }
                 )
-        return location_dict
-
-    def get_excluded_keys(self, cls: type) -> set:
-        excluded_keys = set()
-        for subcls in reversed(cls.mro()):
-            if subcls in self.exclude_extra:
-                excluded_keys.update(self.exclude_extra[subcls])
-        return excluded_keys
+        return res
 
 
 class DraftsmanConverters:
@@ -313,10 +329,11 @@ class DraftsmanConverters:
         self,
         schema: dict,
         cls: Optional[type] = None,
-        mapping_func: Optional[Callable] = None,
+        structure_func: Optional[Callable] = None,
+        unstructure_func: Optional[Callable] = None,
     ):
         for version in self.versions.values():
-            version.add_schema(schema, cls, mapping_func)
+            version.add_schema(schema, cls, structure_func, unstructure_func)
 
     # @functools.cache
     # def __getitem__(self, item: tuple[int, ...]) -> cattrs.Converter:
@@ -381,7 +398,7 @@ def finalize_fields(cls, fields: list[attrs.Attribute]) -> list[attrs.Attribute]
             validators = []
             if isinstance(t, Enum):
                 converter = t
-                validators.append(attrs.validators.instance_of(t))
+                validators.append(instance_of(t))
             elif t is Union:
                 union_validators = []
                 # print("union")
@@ -394,9 +411,9 @@ def finalize_fields(cls, fields: list[attrs.Attribute]) -> list[attrs.Attribute]
                         union_validators.append(ano_args[1])
                     else:
                         union_validators.append(instance_of(arg))
-                validators = attrs.validators.or_(*union_validators)
+                validators = or_(*union_validators)
             else:
-                validators.append(attrs.validators.instance_of(t))
+                validators.append(instance_of(t))
             if converter is None:
                 fields[index] = field.evolve(validator=validators)
             else:
@@ -453,7 +470,8 @@ def make_structure_function_from_schema(
     def structure_hook(input_dict: dict, _: type):
         res = {}
         for attr in class_attrs:
-            # print("attr name:", attr.name)
+            # attr_name = attr.alias if attr.alias is not None else attr.name
+            # print("attr name:", attr.name, attr.alias)
             if attr.name not in schema:
                 continue
             loc = schema[attr.name]
@@ -500,7 +518,7 @@ def make_unstructure_function_from_schema(
     invocation_tree = {"lines": []}
     internal_arg_parts = {}
 
-    def populate_invocate_tree(invocation_tree: list, loc: tuple[str], invoke: str):
+    def populate_invocate_tree(invocation_tree: dict, loc: tuple[str], invoke: str):
         if "lines" not in invocation_tree:
             invocation_tree["lines"] = []
         if "children" not in invocation_tree:
@@ -513,10 +531,29 @@ def make_unstructure_function_from_schema(
                 invocation_tree["lines"].append(invocation_tree["children"][loc[0]])
             populate_invocate_tree(invocation_tree["children"][loc[0]], loc[1:], invoke)
 
-    for attr_name, loc in schema.items():
-        a: attrs.Attribute = getattr(attrs.fields(cls), attr_name)
-        if loc is None:
+    for dict_loc, inst_loc in schema.items():
+        if dict_loc is None or inst_loc is None:
             continue
+        handler = None
+        user_handler = False
+        if isinstance(inst_loc, attrs.Attribute):  # TODO: make this baseline
+            # handler = inst_loc
+            # attr_name = "_".join(dict_loc)
+            # print("\t", attr_name)
+            a = inst_loc
+            attr_name = a.name
+        elif isinstance(inst_loc, tuple):
+            a: attrs.Attribute = inst_loc[0]
+            attr_name = a.name
+            handler = inst_loc[1]
+            user_handler = True
+        else:
+            a: attrs.Attribute = getattr(attrs.fields(cls), inst_loc)
+            attr_name = a.name
+            # source_attr_name = a.name
+
+        omittable = a.metadata.get("omit", True)
+
         # override = kwargs.get(attr_name, neutral)
         # if override.omit:
         #     continue
@@ -526,32 +563,32 @@ def make_unstructure_function_from_schema(
         #     kn = attr_name if not _cattrs_use_alias else a.alias
         # else:
         #     kn = override.rename
-        kn = attr_name
+
         d = a.default
 
         # For each attribute, we try resolving the type here and now.
         # If a type is manually overwritten, this function should be
         # regenerated.
-        handler = None
-        if a.type is not None:
-            t = a.type
+        if handler is None:
+            if a.type is not None:
+                t = a.type
 
-            # if handler is None:
-            if (
-                is_bare_final(t)
-                and a.default is not attrs.NOTHING
-                and not isinstance(a.default, attrs.Factory)
-            ):
-                # This is a special case where we can use the
-                # type of the default to dispatch on.
-                t = a.default.__class__
-            try:
-                handler = converter.get_unstructure_hook(t, cache_result=False)
-            except RecursionError:
-                # There's a circular reference somewhere down the line
+                # if handler is None:
+                if (
+                    is_bare_final(t)
+                    and a.default is not attrs.NOTHING
+                    and not isinstance(a.default, attrs.Factory)
+                ):
+                    # This is a special case where we can use the
+                    # type of the default to dispatch on.
+                    t = a.default.__class__
+                try:
+                    handler = converter.get_unstructure_hook(t, cache_result=False)
+                except RecursionError:
+                    # There's a circular reference somewhere down the line
+                    handler = converter.unstructure
+            else:
                 handler = converter.unstructure
-        else:
-            handler = converter.unstructure
 
         is_identity = handler == identity
 
@@ -559,31 +596,39 @@ def make_unstructure_function_from_schema(
             unstruct_handler_name = f"__c_unstr_{attr_name}"
             globs[unstruct_handler_name] = handler
             internal_arg_parts[unstruct_handler_name] = handler
-            invoke = f"{unstruct_handler_name}(instance.{attr_name})"
+            if user_handler:
+                invoke = f"{unstruct_handler_name}(instance)"
+            else:
+                invoke = f"{unstruct_handler_name}(instance.{attr_name})"
         else:
             invoke = f"instance.{attr_name}"
 
         if (
             exclude_none or (d is not attrs.NOTHING and exclude_defaults)
-        ) and a.metadata.get("omit", True):
+        ) and omittable:
+            # write to local val
+            if user_handler:
+                lines.append(f"  val = {invoke}")
+                value = "val"
+            else:
+                value = f"instance.{attr_name}"
+
             conditions = []
             if exclude_none:
-                conditions.append(f"instance.{attr_name} is not None")
+                conditions.append(f"{value} is not None")
             if exclude_defaults:
                 def_name = f"__c_def_{attr_name}"
                 if isinstance(d, attrs.Factory):
                     globs[def_name] = d.factory
                     internal_arg_parts[def_name] = d.factory
                     if d.takes_self:
-                        conditions.append(
-                            f"instance.{attr_name} != {def_name}(instance)"
-                        )
+                        conditions.append(f"{value} != {def_name}(instance)")
                     else:
-                        conditions.append(f"instance.{attr_name} != {def_name}()")
+                        conditions.append(f"{value} != {def_name}()")
                 else:
                     globs[def_name] = d
                     internal_arg_parts[def_name] = d
-                    conditions.append(f"instance.{attr_name} != {def_name}")
+                    conditions.append(f"{value} != {def_name}")
 
             conditions = " and ".join(conditions)
             lines.append(f"  if {conditions}:")
@@ -592,16 +637,19 @@ def make_unstructure_function_from_schema(
             def calc_getitem(loc):
                 return "".join([f"['{l}']" for l in loc])
 
-            for i, l in enumerate(loc):
+            for i, l in enumerate(dict_loc):
                 subloc.append(l)
-                if i != len(loc) - 1:
+                if i != len(dict_loc) - 1:
                     lines.append(f"    if '{l}' not in res{calc_getitem(subloc[:-1])}:")
                     lines.append(f"      res{calc_getitem(subloc)} = {{}}")
                 else:
-                    lines.append(f"    res{calc_getitem(subloc)} = {invoke}")
+                    if user_handler:
+                        lines.append(f"    res{calc_getitem(subloc)} = val")
+                    else:
+                        lines.append(f"    res{calc_getitem(subloc)} = {invoke}")
         else:
             # No default or no override.
-            populate_invocate_tree(invocation_tree, loc, invoke)
+            populate_invocate_tree(invocation_tree, dict_loc, invoke)
 
     internal_arg_line = ", ".join([f"{i}={i}" for i in internal_arg_parts])
     if internal_arg_line:

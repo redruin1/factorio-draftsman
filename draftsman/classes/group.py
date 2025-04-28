@@ -8,7 +8,7 @@ from draftsman.classes.collection import EntityCollection
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.entity_list import EntityList
-from draftsman.classes.exportable import ValidationMode, ValidationResult
+from draftsman.classes.exportable import Exportable, ValidationMode, ValidationResult
 from draftsman.classes.schedule import Schedule
 from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.transformable import Transformable
@@ -26,9 +26,11 @@ from draftsman.utils import (
     reissue_warnings,
     string_to_JSON,
 )
+from draftsman.validators import instance_of
 
+import attrs
 import copy
-from typing import Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 
 class Group(Transformable, EntityCollection, EntityLike):
@@ -169,39 +171,39 @@ class Group(Transformable, EntityCollection, EntityLike):
 
         # Convert circuit and power connections to Associations
         # TODO: write a single function to do this and reuse
-        for entity in self.entities:
-            if hasattr(entity, "connections"):  # Wire connections
-                connections: Connections = entity.connections
-                for side in connections.true_model_fields():
-                    if connections[side] is None:
-                        continue
+        # for entity in self.entities:
+        #     if hasattr(entity, "connections"):  # Wire connections
+        #         connections: Connections = entity.connections
+        #         for side in connections.true_model_fields():
+        #             if connections[side] is None:
+        #                 continue
 
-                    if side in {"1", "2"}:
-                        for color, _ in connections[side]:
-                            connection_points = connections[side][color]
-                            if connection_points is None:
-                                continue
-                            for point in connection_points:
-                                old = point["entity_id"] - 1
-                                point["entity_id"] = Association(self.entities[old])
+        #             if side in {"1", "2"}:
+        #                 for color, _ in connections[side]:
+        #                     connection_points = connections[side][color]
+        #                     if connection_points is None:
+        #                         continue
+        #                     for point in connection_points:
+        #                         old = point["entity_id"] - 1
+        #                         point["entity_id"] = Association(self.entities[old])
 
-                    elif side in {"Cu0", "Cu1"}:  # pragma: no branch
-                        connection_points = connections[side]
-                        if connection_points is None:
-                            continue  # pragma: no coverage
-                        for point in connection_points:
-                            old = point["entity_id"] - 1
-                            point["entity_id"] = Association(self.entities[old])
+        #             elif side in {"Cu0", "Cu1"}:  # pragma: no branch
+        #                 connection_points = connections[side]
+        #                 if connection_points is None:
+        #                     continue  # pragma: no coverage
+        #                 for point in connection_points:
+        #                     old = point["entity_id"] - 1
+        #                     point["entity_id"] = Association(self.entities[old])
 
-            if hasattr(entity, "neighbours"):  # Power pole connections
-                neighbours = entity.neighbours
-                for i, neighbour in enumerate(neighbours):
-                    neighbours[i] = Association(self.entities[neighbour - 1])
+        #     if hasattr(entity, "neighbours"):  # Power pole connections
+        #         neighbours = entity.neighbours
+        #         for i, neighbour in enumerate(neighbours):
+        #             neighbours[i] = Association(self.entities[neighbour - 1])
 
-        # Change all locomotive numbers to use Associations
-        for schedule in self._schedules:
-            for i, locomotive in enumerate(schedule.locomotives):
-                schedule.locomotives[i] = Association(self.entities[locomotive - 1])
+        # # Change all locomotive numbers to use Associations
+        # for schedule in self._schedules:
+        #     for i, locomotive in enumerate(schedule.locomotives):
+        #         schedule.locomotives[i] = Association(self.entities[locomotive - 1])
 
         # TODO: wires
 
@@ -228,6 +230,28 @@ class Group(Transformable, EntityCollection, EntityLike):
             self._wires = kwargs.pop("wires")
 
     # =========================================================================
+
+    # name: str = attrs.field(
+    #     default="group",
+    #     validator=instance_of(str)
+    # )
+    # """
+    # The name of the Group. Defaults to ``"group"``. Can be specified to any
+    # string to aid in organization. For example:
+
+    # .. code-block:: python
+
+    #     blueprint.entities.append(Group("A"))
+    #     blueprint.entities.append(Group("B", name="different_name"))
+
+    #     diff = blueprint.find_entities_filtered(name="different_name")
+    #     assert diff[0] is blueprint.entities["B"]
+
+    # :getter: Gets the name of the Group.
+    # :setter: Sets the name of the Group.
+
+    # :exception TypeError: If set to anything other than a ``str``.
+    # """
 
     @property
     def name(self) -> str:
@@ -431,6 +455,25 @@ class Group(Transformable, EntityCollection, EntityLike):
 
     # =========================================================================
 
+    # def _set_entities(self, _: attrs.Attribute, value: Any):
+    #     if value is None:
+    #         self.entities.clear()
+    #     elif isinstance(value, EntityList):
+    #         self.entities = EntityList(self, value._root)
+    #     else:
+    #         self.entities = EntityList(self, value)
+
+    #     return self.entities
+
+    # # TODO: move into EntityCollection
+    # entities: EntityList = attrs.field(
+    #     on_setattr=_set_entities,
+    # )
+
+    # @entities.default
+    # def _(self):
+    #     return EntityList(self)
+
     @property
     def entities(self) -> EntityList:
         """
@@ -457,6 +500,7 @@ class Group(Transformable, EntityCollection, EntityLike):
 
     # =========================================================================
 
+    # TODO: move into EntityCollection
     @property
     def schedules(self) -> ScheduleList:
         """
@@ -485,6 +529,26 @@ class Group(Transformable, EntityCollection, EntityLike):
             self._schedules = ScheduleList(value)
 
     # =========================================================================
+
+    # TODO: move into EntityCollection
+    # wires: list[list[Association, int, Association, int]] = attrs.field(
+    #     factory=list,
+    # )
+    # """
+    # A list of the wire connections in this collection.
+
+    # Wires are specified as a list of 4 integers; the first pair of numbers
+    # represents the first entity, and the second pair represents the second
+    # entity. The first number of each pair represents the ``entity_number``
+    # of the corresponding entity in the list, and the second number indicates
+    # what type of connection it is.
+
+    # TODO: more detail
+
+    # :getter: Gets the wires of the Blueprint.
+    # :setter: Sets the wires of the Blueprint. Defaults to an empty list if
+    #     set to ``None``.
+    # """
 
     @property
     def wires(self) -> list[list[int]]:

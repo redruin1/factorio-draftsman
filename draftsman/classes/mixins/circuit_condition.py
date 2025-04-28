@@ -158,6 +158,6 @@ draftsman_converters.add_schema(
     CircuitConditionMixin,
     lambda fields: {
         # fields.circuit_enabled.name: ("control_behavior", "circuit_enabled"),
-        fields.circuit_condition.name: ("control_behavior", "circuit_condition"),
+        ("control_behavior", "circuit_condition"): fields.circuit_condition.name,
     },
 )

@@ -18,15 +18,13 @@ class TestLab:
     def test_contstructor_init(self):
         lab = Lab()
 
-        with pytest.warns(UnknownKeywordWarning):
-            Lab(unused_keyword="whatever").validate().reissue_all()
-
         with pytest.warns(UnknownEntityWarning):
             Lab("this is not a lab").validate().reissue_all()
 
     def test_inputs(self):
         lab = Lab("lab")
 
+        # TODO: how should this be verified on different data versions?
         assert lab.inputs == [
             "automation-science-pack",
             "logistic-science-pack",

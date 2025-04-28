@@ -1,303 +1,29 @@
 # request_filters.py
 
-from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
+from draftsman.classes.exportable import Exportable
 from draftsman.data import items
 from draftsman.data.signals import get_signal_types
-from draftsman.error import InvalidSignalError
+from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     DraftsmanBaseModel,
     RequestFilter,
     Section,
-    SignalFilter,
+    AttrsSection,
     int32,
     int64,
     uint32,
 )
+from draftsman.validators import and_, instance_of
 
 import attrs
 import cattrs
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from typing import Any, Literal, Optional, Union
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.entity import Entity
-
-
-@attrs.define
-class AttrsSignalFilter:
-    index: int64 = attrs.field(
-        # TODO: validators
-    )
-    """
-    Numeric index of the signal in the combinator, 1-based. Typically the 
-    index of the signal in the parent 'filters' key, but this is not 
-    strictly enforced. 
-    """
-    name: str = attrs.field(  # TODO: SignalName
-        # TODO: validators
-    )
-    """
-    Name of the signal.
-    """
-    count: int32 = attrs.field()
-    """
-    Value of the signal filter, or the lower bound of a range if ``max_count`` 
-    is also specified.
-    """
-    type: Optional[
-        Literal[
-            "virtual",
-            "item",
-            "fluid",
-            "recipe",
-            "entity",
-            "space-location",
-            "asteroid-chunk",
-            "quality",
-        ]
-    ] = attrs.field(
-        # TODO: validators
-    )
-    """
-    Type of the signal.
-    """
-
-    @type.default
-    def get_type_default(
-        self,
-    ) -> Literal[
-        "virtual",
-        "item",
-        "fluid",
-        "recipe",
-        "entity",
-        "space-location",
-        "asteroid-chunk",
-        "quality",
-    ]:
-        try:
-            return next(iter(get_signal_types(self.name)))
-        except InvalidSignalError:
-            return "item"
-
-    # signal: Optional[SignalID] = Field(
-    #     None,
-    #     description="""
-    #     Signal to broadcast. If this value is omitted the occupied slot will
-    #     behave as if no signal exists within it. Cannot be a pure virtual
-    #     (logic) signal like "signal-each", "signal-any", or
-    #     "signal-everything"; if such signals are set they will be removed
-    #     on import.
-    #     """,
-    # )
-    # TODO: make this dynamic based on current environment?
-    quality: Literal[
-        "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
-    ] = attrs.field(
-        default="any",
-        # TODO: validators
-    )
-    """
-    Quality flag of the signal. If unspecified, this value is effectively 
-    equal to 'any' quality level.
-    """
-    comparator: Literal[">", "<", "=", "≥", "≤", "≠"] = attrs.field(
-        default="=",
-        # TODO: converter from double forms
-        # TODO: validators
-    )
-    """
-    Comparison operator when deducing the quality type.
-    """
-    max_count: Optional[int32] = attrs.field(
-        default=None,
-        # TODO: validators
-    )
-    """
-    The maximum amount of the signal to request of the signal to emit. Only used
-    (currently) with logistics-type requests.
-    """
-
-    # Deprecated in 2.0
-    # @field_validator("index")
-    # @classmethod
-    # def ensure_index_within_range(cls, value: int64, info: ValidationInfo):
-    #     """
-    #     Factorio does not permit signal values outside the range of it's item
-    #     slot count; this method raises an error IF item slot count is known.
-    #     """
-    #     if not info.context:
-    #         return value
-    #     if info.context["mode"] <= ValidationMode.MINIMUM:
-    #         return value
-
-    #     entity = info.context["object"]
-
-    #     # If Draftsman doesn't recognize entity, early exit
-    #     if entity.item_slot_count is None:
-    #         return value
-
-    #     # TODO: what happens if index is 0?
-    #     if not 0 < value <= entity.item_slot_count:
-    #         raise ValueError(
-    #             "Signal 'index' ({}) must be in the range [0, {})".format(
-    #                 value, entity.item_slot_count
-    #             )
-    #         )
-
-    #     return value
-
-    # TODO: move to ConstantCombinator
-    # @field_validator("name")
-    # @classmethod
-    # def ensure_not_pure_virtual(cls, value: Optional[str], info: ValidationInfo):
-    #     """
-    #     Warn if pure virtual signals (like "signal-each", "signal-any", and
-    #     "signal-everything") are entered inside of a constant combinator.
-    #     """
-    #     if not info.context or value is None:
-    #         return value
-    #     if info.context["mode"] <= ValidationMode.MINIMUM:
-    #         return value
-
-    #     warning_list: list = info.context["warning_list"]
-
-    #     if value in pure_virtual:
-    #         warning_list.append(
-    #             PureVirtualDisallowedWarning(
-    #                 "Cannot set pure virtual signal '{}' in a constant combinator".format(
-    #                     value.name
-    #                 )
-    #             )
-    #         )
-
-    #     return value
-
-
-@attrs.define
-class AttrsSection:
-    index: uint32 = attrs.field(
-        # TODO: validators
-    )  # TODO: 0-based or 1-based?
-    """
-    Location of the logistics section within the entity, 1-indexed.
-    """
-
-    def filters_converter(self, value: list[Any]) -> list[AttrsSignalFilter]:
-        # TODO: more robust testing
-        if isinstance(value, list):
-            for i, entry in enumerate(value):
-                if isinstance(entry, tuple):
-                    value[i] = AttrsSignalFilter(
-                        index=i + 1,
-                        name=entry[0],
-                        count=entry[1],
-                    )
-
-        return value
-
-    filters: list[AttrsSignalFilter] = attrs.field(
-        factory=list,
-        # converter=filters_converter
-        # TODO: validators
-    )
-    """
-    List of item requests for this section.
-    """
-
-    group: Optional[str] = attrs.field(
-        default=None,
-        # TODO: validators
-    )
-    """
-    Name of this section group. Once named, this group will become registered 
-    within the save it is imported into. If a logistic section with the given
-    name already exists within the save, the one that exists in the save will 
-    overwrite the one specified here.
-    """
-
-    def set_signal(
-        self,
-        index: int64,
-        name: Union[str, None],
-        count: int32 = 0,
-        quality: Literal[
-            "normal",
-            "uncommon",
-            "rare",
-            "epic",
-            "legendary",
-            "quality-unknown",
-            "any",
-        ] = "normal",
-        type: Optional[str] = None,
-    ) -> None:
-        new_entry = AttrsSignalFilter(
-            index=index,
-            name=name,
-            type=type,
-            quality=quality,
-            comparator="=",
-            count=count,
-        )
-
-        # Check to see if filters already contains an entry with the same index
-        existing_index = None
-        for i, signal_filter in enumerate(self.filters):
-            if index + 1 == signal_filter["index"]:  # Index already exists in the list
-                if name is None:  # Delete the entry
-                    del self.filters[i]
-                else:
-                    self.filters[i] = new_entry
-                existing_index = i
-                break
-
-        if existing_index is None:
-            self.filters.append(new_entry)
-
-    def get_signal(self, index: int64) -> Optional[AttrsSignalFilter]:
-        """
-        Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
-        if it exists.
-
-        :param index: The index of the signal to analyze.
-
-        :returns: A ``dict`` that conforms to :py:data:`.SIGNAL_FILTER`, or
-            ``None`` if nothing was found at that index.
-        """
-        return next(
-            (item for item in self.filters if item["index"] == index + 1),
-            None,
-        )
-
-    # @field_validator("filters", mode="before")
-    # @classmethod
-    # def normalize_input(cls, value: Any):
-    #     if isinstance(value, list):
-    #         for i, entry in enumerate(value):
-    #             if isinstance(entry, tuple):
-    #                 # TODO: perhaps it would be better to modify the format so
-    #                 # you must specify the signal type... or maybe not...
-    #                 signal_types = get_signal_types(entry[0])
-    #                 filter_type = (
-    #                     "item" if "item" in signal_types else next(iter(signal_types))
-    #                 )
-    #                 value[i] = {
-    #                     "index": i + 1,
-    #                     "name": entry[0],
-    #                     "type": filter_type,
-    #                     "comparator": "=",
-    #                     "count": entry[1],
-    #                 }
-
-    #     return value
-
 
 @attrs.define(slots=False)
-class RequestFiltersMixin:
+class RequestFiltersMixin(Exportable):
     """
     Used to allow Logistics Containers to request items from the Logistic
     network.
@@ -462,8 +188,7 @@ class RequestFiltersMixin:
 
     trash_not_requested: bool = attrs.field(
         default=False,
-        validator=attrs.validators.instance_of(bool),
-        metadata={"location": ("request_filters", "trash_not_requested")},
+        validator=instance_of(bool),
     )
     """
     Whether or not to mark items in the inventory but not currently requested 
@@ -495,8 +220,7 @@ class RequestFiltersMixin:
 
     request_from_buffers: bool = attrs.field(
         default=True,
-        validator=attrs.validators.instance_of(bool),
-        metadata={"location": ("request_filters", "request_from_buffers")},
+        validator=instance_of(bool),
     )
     """
     Whether or not this chest should request items from buffer chests in its 
@@ -528,8 +252,7 @@ class RequestFiltersMixin:
 
     requests_enabled: bool = attrs.field(
         default=True,
-        validator=attrs.validators.instance_of(bool),
-        metadata={"location": ("request_filters", "enabled")},
+        validator=instance_of(bool),
     )
     """
     Master toggle for all logistics requests on this entity. Superceeds any 
@@ -559,10 +282,28 @@ class RequestFiltersMixin:
 
     # =========================================================================
 
+    def _sections_converter(value):
+        if isinstance(value, list):
+            for i, elem in enumerate(value):
+                value[i] = AttrsSection.converter(elem)
+            return value
+        else:
+            return value
+
+    def _sections_validator(self, attr, value, mode=None):  # TODO: should be better
+        mode = mode if mode is not None else self.validate_assignment
+        if mode:
+            for i, elem in enumerate(value):
+                if not isinstance(elem, AttrsSection):
+                    msg = "Element {} in list ({}) is not an instance of {}".format(
+                        i, repr(elem), AttrsSection.__name__
+                    )
+                    raise DataFormatError(msg)
+
     sections: list[AttrsSection] = attrs.field(
         factory=list,
-        # TODO: validators
-        metadata={"location": ("request_filters", "sections")},
+        converter=_sections_converter,
+        validator=and_(instance_of(list), _sections_validator),
     )
     """
     The list of logistics sections that this entity is configured to request.
@@ -627,10 +368,10 @@ class RequestFiltersMixin:
 
     # =========================================================================
 
-    def merge(self, other: "Entity"):
+    def merge(self, other: "RequestFiltersMixin"):
         super().merge(other)
 
-        self.request_filters = other.request_filters
+        self.sections = other.sections
 
     # =========================================================================
 
@@ -648,3 +389,15 @@ class RequestFiltersMixin:
 
     # def __eq__(self, other) -> bool:
     #     return super().__eq__(other) and self.request_filters == other.request_filters
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:request_filters_mixin"},
+    RequestFiltersMixin,
+    lambda fields: {
+        ("request_filters", "trash_not_requested"): fields.trash_not_requested.name,
+        ("request_filters", "request_from_buffers"): fields.request_from_buffers.name,
+        ("request_filters", "enabled"): fields.requests_enabled.name,
+        ("request_filters", "sections"): fields.sections.name,
+    },
+)

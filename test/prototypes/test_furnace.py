@@ -23,8 +23,6 @@ class TestFurnace:
         furnace = Furnace("stone-furnace")
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            Furnace("stone-furnace", unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Furnace("not a furnace").validate().reissue_all()
 
@@ -124,9 +122,7 @@ class TestFurnace:
 
     def test_mergable_with(self):
         furnace1 = Furnace("stone-furnace")
-        furnace2 = Furnace(
-            "stone-furnace", items={"copper-ore": 50}, tags={"some": "stuff"}
-        )
+        furnace2 = Furnace("stone-furnace", tags={"some": "stuff"})
 
         assert furnace1.mergable_with(furnace1)
 

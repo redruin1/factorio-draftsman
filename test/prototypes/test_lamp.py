@@ -10,7 +10,7 @@ import pytest
 
 class TestLamp:
     def test_constructor_init(self):
-        lamp = Lamp("small-lamp", control_behavior={"use_colors": True})
+        lamp = Lamp("small-lamp", use_colors=True)
         assert lamp.to_dict() == {
             "name": "small-lamp",
             "position": {"x": 0.5, "y": 0.5},
@@ -18,27 +18,19 @@ class TestLamp:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            Lamp("small-lamp", unused_keyword="whatever").validate().reissue_all()
-        with pytest.warns(UnknownKeywordWarning):
-            Lamp(control_behavior={"unused_key": "something"}).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Lamp("this is not a lamp").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            Lamp(control_behavior="incorrect").validate().reissue_all()
+            Lamp(tags="incorrect").validate().reissue_all()
 
     def test_set_use_colors(self):
         lamp = Lamp("small-lamp")
+        assert lamp.use_colors == False
+
         lamp.use_colors = True
         assert lamp.use_colors == True
-        assert lamp.control_behavior == Lamp.Format.ControlBehavior(
-            **{"use_colors": True}
-        )
-
-        lamp.use_colors = None
-        assert lamp.use_colors == None
 
         with pytest.raises(DataFormatError):
             lamp.use_colors = "incorrect"
@@ -56,7 +48,7 @@ class TestLamp:
     def test_mergable_with(self):
         lamp1 = Lamp("small-lamp")
         lamp2 = Lamp(
-            "small-lamp", control_behavior={"use_colors": True}, tags={"some": "stuff"}
+            "small-lamp", use_colors=True, tags={"some": "stuff"}
         )
 
         assert lamp1.mergable_with(lamp1)
@@ -70,7 +62,7 @@ class TestLamp:
     def test_merge(self):
         lamp1 = Lamp("small-lamp")
         lamp2 = Lamp(
-            "small-lamp", control_behavior={"use_colors": True}, tags={"some": "stuff"}
+            "small-lamp", use_colors=True, tags={"some": "stuff"}
         )
 
         lamp1.merge(lamp2)

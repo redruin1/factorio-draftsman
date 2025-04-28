@@ -12,14 +12,10 @@ import pytest
 
 
 class TestBlueprintable:
-    def test_init(self):
-        with pytest.raises(DataFormatError):
-            blueprint = Blueprint(["incorrect", "data"])
-
-    def test_load_from_string(self):
+    def test_from_string(self):
         with pytest.raises(IncorrectBlueprintTypeError):
             # Pass a BlueprintBook string into a Blueprint object
-            blueprint = Blueprint(
+            blueprint = Blueprint.from_string(
                 "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
             )
 
@@ -75,15 +71,16 @@ class TestBlueprintUtils:
         blueprintable = get_blueprintable_from_string(
             "0eNrNlNtugzAMht/F16Eqh4TDq1RVxcFl0SCgBNqxinefCxtdByrrXRFChNjf79jGF0iKFmstVQPRBWRaKQPR7gJG5iourt9UXCJEkGBMm9AzkCrDD4jsfs8AVSMbiaPPsOgOqi0T1GTAfnyxwLTRMrVQoc47i9RQH+MUgUFdGSIQmaSI6oqAQUfObkhSSXs8oj4Y+UkYeztdPZupOZNaInNrUqyrYlHFH1U8u19guU+x/Ics7ylWED5icfanGnMA5xv+jXA3fAki/gEJ7iBU8gbLscYy+9UTpkbMrLLK2gItF26GZKcOUp1IutLd6HhbUWOYJk7fIRoKubhD3dXTPQ/fXw9fiLUcBOsQX7xuDsL18IMXLqG9neKPjcEyKaTKrTJO36S6BjE/TWjfV5Qmz1nqYezsHMaZy/ie7ejJPHrbj4e4pmcabgxOqM2A5MIJvTDk3OHCdehH+wIapKEo"
         )
+        assert isinstance(blueprintable, Blueprint)
         assert blueprintable.to_dict() == {
             "blueprint": {
-                "icons": [{"signal": {"name": "beacon"}, "index": 1}],
+                "icons": [{"signal": {"name": "beacon", "type": "item"}, "index": 1}],
                 "entities": [
                     {
                         "entity_number": 1,
                         "name": "electric-energy-interface",
                         "position": {"x": 368, "y": 139},
-                        # "buffer_size": 10000000000 # Default
+                        "buffer_size": 10000000000 # Default
                     },
                     {
                         "entity_number": 2,

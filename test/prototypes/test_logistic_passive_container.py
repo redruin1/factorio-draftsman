@@ -40,12 +40,6 @@ class TestLogisticPassiveContainer:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            LogisticPassiveContainer(
-                "passive-provider-chest",
-                position=[0, 0],
-                invalid_keyword="100",
-            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             LogisticPassiveContainer(
                 "this is not a logistics passive chest"
@@ -57,7 +51,7 @@ class TestLogisticPassiveContainer:
             LogisticPassiveContainer(
                 "passive-provider-chest", id=25
             ).validate().reissue_all()
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             LogisticPassiveContainer(
                 "passive-provider-chest", position=TypeError
             ).validate().reissue_all()

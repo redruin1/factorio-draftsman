@@ -50,6 +50,10 @@ class RailSupport:
 
         self.validate_assignment = validate_assignment
 
+    @property
+    def similar_entities(self) -> list[str]:
+        return rail_supports
+
     # =========================================================================
 
     __hash__ = Entity.__hash__

@@ -78,7 +78,9 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
     # =========================================================================
 
     logistic_condition: AttrsSimpleCondition = attrs.field(
-        default=AttrsSimpleCondition(first_signal=None, comparator="<", constant=0),
+        factory=lambda: AttrsSimpleCondition(
+            first_signal=None, comparator="<", constant=0
+        ),
         converter=AttrsSimpleCondition.converter,
         validator=instance_of(AttrsSimpleCondition),
     )
@@ -91,9 +93,9 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
 
     def set_logistic_condition(
         self,
-        a: Union[SignalID, None] = None,
-        cmp: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "<",
-        b: Union[SignalID, int32] = 0,
+        first_operand: Union[SignalID, None] = None,
+        comparator: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "<",
+        second_operand: Union[SignalID, int32] = 0,
     ):
         """
         Sets the logistic condition of the Entity.
@@ -118,14 +120,16 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
             ``cmp`` is not a valid operation, or if ``b`` is neither a valid
             signal name nor a constant.
         """
-        self._set_condition("logistic_condition", a, cmp, b)
+        self._set_condition(
+            "logistic_condition", first_operand, comparator, second_operand
+        )
 
-    def remove_logistic_condition(self):
-        """
-        Removes the logistic condition of the Entity. Does nothing if the Entity
-        has no logistic condition to remove.
-        """
-        self.control_behavior.logistic_condition = None
+    # def remove_logistic_condition(self):
+    #     """
+    #     Removes the logistic condition of the Entity. Does nothing if the Entity
+    #     has no logistic condition to remove.
+    #     """
+    #     self.logistic_condition = None
 
     def merge(self, other: "LogisticConditionMixin"):
         super().merge(other)
@@ -153,10 +157,10 @@ draftsman_converters.add_schema(
     },
     LogisticConditionMixin,
     lambda fields: {
-        fields.connect_to_logistic_network.name: (
+        (
             "control_behavior",
             "connect_to_logistic_network",
-        ),
-        fields.logistic_condition.name: ("control_behavior", "logistic_condition"),
+        ): fields.connect_to_logistic_network.name,
+        ("control_behavior", "logistic_condition"): fields.logistic_condition.name,
     },
 )

@@ -115,12 +115,12 @@ class TestBlueprint:
 
     # =========================================================================
 
-    def test_load_from_string(self):
+    def test_from_string(self):
         ### Simple blueprint ###
         blueprint = Blueprint()
 
         # Valid format
-        blueprint.load_from_string(
+        blueprint.from_string(
             "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3sTQ1MTc1rq0FAHmyE1c="
         )
         assert blueprint.to_dict()["blueprint"] == {
@@ -717,8 +717,9 @@ class TestBlueprint:
 
         blueprint.tiles.append("landfill")
 
-        with pytest.raises(DraftsmanError):
-            blueprint.tiles[0].position = (100, 100)
+        # TODO: think about
+        # with pytest.raises(DraftsmanError):
+        #     blueprint.tiles[0].position = (100, 100)
 
     def test_rotate_entity(self):
         blueprint = Blueprint()
@@ -838,7 +839,6 @@ class TestBlueprint:
         blueprint.add_power_connection("a", "b", side_1="input")
         blueprint.tiles.append("landfill")
         blueprint.snapping_grid_position = (-1, -1)  # also test this
-        self.maxDiff = None
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "entities": [
@@ -860,10 +860,10 @@ class TestBlueprint:
 
         # Non-string id connection case
         example_string = "0eNqVkMFugzAQRP9lz0uETUyAX4lQROi2XckYZDuhEfK/dwFVPTRS1Is1tmbermeBq73R5NlFaBbgfnQBmvMCgT9cZ9c31w0EDUzjTD4LM8f+ExICuzf6gkalFoFc5Mi0J7fL4+Juw5W8GPCHEIbO2ows9dFzn02jJUDhBsmObh0lvGNeHAzCQ4Kn6mBSwj9E/U+iyl8RC3z6yyfLVTuoyqWB3XUJsYsSfe9soLWMmf3WxFmhQo2qRVFGlBElJxZYtuLjSINM/O0f4U4+bNNMqetjXRujTVloldI3iaSImA=="
-        blueprint.load_from_string(example_string)
+        blueprint = Blueprint.from_string(example_string)
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "icons": [{"index": 1, "signal": {"name": "power-switch"}}],
+            "icons": [{"index": 1, "signal": {"name": "power-switch", "type": "item"}}],
             "entities": [
                 {
                     "name": "small-electric-pole",
@@ -888,7 +888,7 @@ class TestBlueprint:
 
         # Numeric Locomotive case
         bp_string = "0eNqVk92OgjAQhV/FzHU1iKDC7V7uE2w2hlSYhYnQkrbqEsO77xT8izEbDTedduY7Z+j0BNt6j60h5SA9AeVaWUi/T2CpVLL2e0o2CCkYSTX0AkgV+AvpvBdPkmqd60Y7OuBdathvBKBy5AhH+BB0mdo3WzTMEtd6LGXeTa1jtbJy00FUQKstF2vllRgYBbGAjuvWK1YpyGA+nkbe1AM8fBu+eh2+EE86f4Jc3yFRyW2NWa1Lso5ymx0r4rjRB1IlpD+ytihAG2ItOVKCWRg/UY/ebi15vbX4Xfh8/jp8eYV7qGK2bv9DJg9IAfbybwD8eNm8wmJfn+frdhk+XtydezJjtCnOY37FfBj03Wk1+ZxNvqTKK2nY0lGSy/hVFIOxsYjhrTSYua71LWifd147avwA8L3urDceBP2Gv8Gi0/nOo9TYxsUA7/Ig+Qxy2DDj9iIFHNDYwV+8DJMoSeI4jJeLcN73fwrmQGw="
-        blueprint.load_from_string(bp_string)  # TODO
+        blueprint = Blueprint.from_string(bp_string)  # TODO
         # assert blueprint.to_dict()["blueprint"] == {
         #     "icons": [
         #         {"signal": {"type": "item", "name": "rail"}, "index": 1},
@@ -1035,24 +1035,24 @@ class TestBlueprint:
 
     # =========================================================================
 
-    def test_getitem(self):
-        blueprint = Blueprint()
-        blueprint.label = "testing"
-        assert blueprint["blueprint"]["label"] is blueprint._root["blueprint"]["label"]
+    # def test_getitem(self):
+    #     blueprint = Blueprint()
+    #     blueprint.label = "testing"
+    #     assert blueprint["blueprint"]["label"] is blueprint._root["blueprint"]["label"]
 
     # =========================================================================
 
-    def test_setitem(self):
-        blueprint = Blueprint()
-        blueprint["blueprint"]["label"] = "testing"
-        assert blueprint["blueprint"]["label"] is blueprint._root["blueprint"]["label"]
+    # def test_setitem(self):
+    #     blueprint = Blueprint()
+    #     blueprint["blueprint"]["label"] = "testing"
+    #     assert blueprint["blueprint"]["label"] is blueprint._root["blueprint"]["label"]
 
     # =========================================================================
 
-    def test_contains(self):
-        blueprint = Blueprint()
-        blueprint["label"] = "testing"
-        assert ("label" in blueprint["blueprint"]) == True
+    # def test_contains(self):
+    #     blueprint = Blueprint()
+    #     blueprint["label"] = "testing"
+    #     assert ("label" in blueprint["blueprint"]) == True
 
     def test_deepcopy(self):
         blueprint = Blueprint()
@@ -2465,7 +2465,7 @@ class TestBlueprint:
     def test_set_train_schedule(self):
         # 2 trains with 2 different schedules
         test_string = "0eNq1lM1ugzAQhN9lz1ZU/tLCuYcee24VIQMLsWpsZJukKOLdaxuS0CqHoLY3e7T+dtYa+wQF77FTTBjITsBKKTRk7yfQrBGUO03QFiEDRRmHkQATFX5CFozkRhGXpWylYQdclIbjjgAKwwzDCe43Qy76tkBlWeTGeQKd1PaIFI5vMXEcERgsLgg2cfSYjA5KC445lw3ThpU6P+6Z3bfywEQDWU25RgJSMduQTqiHTeKc/3AQ3ukg/TcH0co7ePpzB/HKO/itAxsKXe6x6vmcimtbtw9ItKhw3RWWUlVzPM8keEFaWZtHykxu01t5s1ORxXVUYW6Gzo0lla2b13XPbZp3PsQX1LOSnazr9TRsOzM43G50xO+DhCS+a5BXyg+o3tZ376jWKBpUeafQrszsxHU1svxwKIHlleVV/+xqJd3Dj6Z78Gp4UeOFamNXUH9oIcZn0b9wZrC1bq7/CQE7j/bDJdswjdM0ScJkG4XBOH4Bm4OGxA=="
-        blueprint = Blueprint(test_string)
+        blueprint = Blueprint.from_string(test_string)
         # Also add another dummy schedule before
         # blueprint.schedules.insert(0, Schedule())
 
@@ -2612,7 +2612,7 @@ class TestBlueprint:
         # 1 going around a east-to-north corner, dual-headed "1-C-1"
         # 1 isolated locomotive pointing west, "1"
         test_string = "0eNqVk9FuwyAMRf+F5xQ5BmLIr0zTlLasQqJQkaRbVOXfR9Mqm5R2yx5B9rn32nBhW9/bU3KhY/WFuV0MLatfLqx1h9D46103nCyrmevskRUsNMfrKTXOs7FgLuztJ6vL8bVgNnSuc/bWPx2Gt9AftzblgrnTx108xs6dbaadYptbYrjqZMwGJRVsYDUK5KbSpLJETC7DmlsZjMWCjSvZKHmFJRhB6i5CHEAYqHCpw0EbDSUprZBIKRIkQN4sLRyI2cG7791+89EcMuS3eGZ9PDnDd006xOdwNFyRLvGeTpacSqmleCDDS0IAFJCzA5ABCTmmkNNoXDjn0pgyJPTeP7CkVk5cEVfi25BY+ng4zmolXlQcDU6D/KcCzQpN6pz3Ng1/L01Wz5aWH//0Peofv6lgZ5vaqQB1KckgVQZBCxzHLxBxE5M="
-        blueprint = Blueprint(test_string)
+        blueprint = Blueprint.from_string(test_string)
 
         # Grab train #1 with the locomotive
         assert blueprint.find_train_from_wagon(blueprint.entities[0]) == [
@@ -2636,7 +2636,7 @@ class TestBlueprint:
         # Curved locomotive like above, with a fluid wagon within range of the
         # head but facing a perpendicular direction
         test_string = "0eNqNktFqwzAMRf9Fz5mRZTu28ytjjLT1iiGxi5N0KyX/PiUtZawZ7FFG99wrWVfYdVM4lZhGaK4Q9zkN0LxeYYjH1HbL23g5BWggjqGHClLbL1VpYwdzBTEdwhc0cn6rIKQxjjHc9GtxeU9TvwuFGx7KLu9zn8d4Dkw75YElOS0+jHkh0qImiV5ZU8EFGlJWICqPNRm2yyUyuL1JUKDzDqU1zpC1xlhlFeraWW59SkCPBB/dFA8vn+2RIRsRtLo5axIkV9Yv2w24esD3bTnmv+HkhbFO0n06LYWV2mm1YSOkJURSyLMjWo8aeUyl19XEdObWXBiSpq7biKT/uXFVC/Lkl63dM6nnKByPP3g9gebHxVRwDmVYe8hJbT3Z2hM6RfP8Da2auHA="
-        blueprint = Blueprint(test_string)
+        blueprint = Blueprint.from_string(test_string)
 
         # Make sure the fluid wagon is not falsely included with the train
         assert blueprint.find_train_from_wagon(blueprint.entities[0]) == [
@@ -2647,7 +2647,7 @@ class TestBlueprint:
 
         # 1 train, "2-C" pointing east
         test_string = "0eNqVkk1uhDAMha9SeZ2pZgIIJrv2Cl1WCGUgpZFCgkJgilDuXgdoi1r6t7Mjv+85tie4qF60VmoHbAJZGt0Be5ygk7XmKry5sRXAQDrRAAHNm5BZLhV4AlJX4gXYyZNfJcqUpjFODmIjpD4nILSTTorFeE7GQvfNRVgkv+tLbmtzuPLaaIS2pkMNhmiHnAONKIERWHyMkG6sRA5fCo63aRIMB3wyFmt0r1Ro+JMV3Wt1x4km3zvRZAcc/RF8yn4E46S68llUvVpH9UELOSXRpmJZ4pseHpbo5g59r1y6Ahddze4LCkEtt6JYN2cs1q3xE04LfD5v+Avv/v880bRuDMA8/Gi+Eba5QgKDsN3sQrNTnJ5pmkbpOcli718BQnHlBA=="
-        blueprint = Blueprint(test_string)
+        blueprint = Blueprint.from_string(test_string)
 
         # Grab from the cargo wagon (which is pointing the wrong way!)
         # and make sure the output is reversed so trains are at front
@@ -2664,7 +2664,7 @@ class TestBlueprint:
         # 1 isolated locomotive pointing west, "1"
         test_string = "0eNqVk9FuwyAMRf+F5xQ5BmLIr0zTlLasQqJQkaRbVOXfR9Mqm5R2yx5B9rn32nBhW9/bU3KhY/WFuV0MLatfLqx1h9D46103nCyrmevskRUsNMfrKTXOs7FgLuztJ6vL8bVgNnSuc/bWPx2Gt9AftzblgrnTx108xs6dbaadYptbYrjqZMwGJRVsYDUK5KbSpLJETC7DmlsZjMWCjSvZKHmFJRhB6i5CHEAYqHCpw0EbDSUprZBIKRIkQN4sLRyI2cG7791+89EcMuS3eGZ9PDnDd006xOdwNFyRLvGeTpacSqmleCDDS0IAFJCzA5ABCTmmkNNoXDjn0pgyJPTeP7CkVk5cEVfi25BY+ng4zmolXlQcDU6D/KcCzQpN6pz3Ng1/L01Wz5aWH//0Peofv6lgZ5vaqQB1KckgVQZBCxzHLxBxE5M="
 
-        blueprint = Blueprint(test_string)
+        blueprint = Blueprint.from_string(test_string)
 
         # Return all trains:
         assert blueprint.find_trains_filtered() == [
@@ -2712,7 +2712,7 @@ class TestBlueprint:
 
         # Test continuity around corners
         test_string = "0eNqNkutqwzAMhd9Fv1PjayTnVcYYaWeKIbFLLt1KybtPSdoyaKD9KXHO0SehK+ybMZy6mAaorhAPOfVQfVyhj8dUN3NvuJwCVBCH0EIBqW7nqqtjA1MBMX2HX6jU9FlASEMcYlj9S3H5SmO7Dx0LHs4mH3Kbh3gOnHbKPVtymudwzE6XvoALVNoogY7zcxc5qV41UnDrKVo/og91d8y7n/rI4s1sISWS0u42g7ZnsAiRVcaRI+Ws9iWhm3c9sy537E1j02ygmHdRUApSpZXlncU6of06aIPIO2+kMeilIzJIfjW+BrJvAzlBVKJaFl2AvCBU0pstoJKviMobPikytLLa3e76Gsm9+QmkRWnJmjuQU88czMZ/t3xm9e+RCziHrl80mpRFrxH5eI7sNP0BD83n6g=="
-        blueprint = Blueprint(test_string)
+        blueprint = Blueprint.from_string(test_string)
 
         assert blueprint.find_trains_filtered() == [
             [
@@ -2726,7 +2726,7 @@ class TestBlueprint:
 
         # A whole bunch of trains in some hypothetical depot
         test_string = """0eNq1mcty2yAUQH8lw1rJ6AFIeNcuuuquy47HI8vYYSKDB2Gnnoz/vSA/pLRK5nKT7CzMPYAu6ID0QpbtXu6s0o7MXohqjO7I7PcL6dRG120o0/VWkhmxtWrJKSFKr+QfMstO84RI7ZRT8hzRXxwXer9dSusrJNfIVm7q5njfOY/YPLr7npSQnel8sNGhDQ8seJGQo49jhW9lpaxszv/SU/IfPI+GMzi8iIaXcDiNhgs4nMXCywwO59HwiISW0fCIhFbR8IiEimh4REKzNJZeRWQ0i16jVURKs+hFWkXkNButUtOYrXHqIKeYfMSUul62ctGajeqcarrF86Py11tzUHpDZuu67WRCjFW+sfpMSR9yNtV89DquIuZUFr2Qq5hJNazkQNUebnbvMdk/zIR019tDftZP8u5He9SaTDVVwpq6PfvL102FOTS09ev86+77ZFMVWjgCcM8E2jgAep7CJjPnIyZqMpdTkznP0MaDDC5HKw9CL9DOg9CHZd7UdmPun+uNr/uO6z6QmbC3OvgiYz1J79t2qkMMbWHIcDlawxB6ifYwhF6hRQyhC6Bu0o/Og0ndFPh9AGBwBX4fAKHj9wEQeoEWMYRO0SKG0BlWWZwB6ByrLBC9xDoDRK+wzgDRBdYZEDpNoc7IR9AvdAbNsM4ADTfHOgNEL7DOANEp7Kleio9mavKpThlWWaDBcawzQPQS6wwQvcI6A0QXcWfHT047S7HKggyOZVhlgeh53NmRl++cHa/nuW9T5zlWYOVYZoBxUKwcQXSGlSOIPizs2jrVttIe35QMFw8Z4/m488iZnAytLeq9Mwvn7SZdH+PsXk71tMRqHHQfKqzGQXSBtSaEzlOsNUH04Rmwbvdq9fYWhH/W7JjqRY51N2iMBVaeIDrFyhNEZ0ABFV+ZHo41OGiIJdbgIHqFVSiILrAK/Z8+98JrHuVq314+kw0JD9d+B0rFqE4A+mhjV5fPcBOyTMhzrdyiMXrVd+Jc01N3tZULd9yFjhvr611+r/25gJzmYaRTL1OjeXK7c8cAnJ/68TnTPIVwfR72tee+NLynPzfbX4T3nMu6/0XHxX6xra0JnyBHNcS4hpgMpLfa9FXxwKO3QJqOa4jJwGDWSyDPRuXheXotZ9dIxsc1bsW8/zKqnNz6OzV8XE3IQdquv/V+RQsqBGM540WenU5/AR24zCE="""
-        bp = Blueprint(test_string)
+        bp = Blueprint.from_string(test_string)
 
         # All trains
         trains = bp.find_trains_filtered()

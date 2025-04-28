@@ -12,9 +12,6 @@ class TestGate:
     def test_contstructor_init(self):
         gate = Gate("gate")
 
-        with pytest.warns(UnknownKeywordWarning):
-            Gate("gate", unused_keyword="whatever").validate().reissue_all()
-
         with pytest.warns(UnknownEntityWarning):
             Gate("this is not a gate").validate().reissue_all()
 

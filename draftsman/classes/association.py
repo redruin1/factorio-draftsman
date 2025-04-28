@@ -1,5 +1,7 @@
 # association.py
 
+from draftsman.serialization import draftsman_converters
+
 from pydantic import Field, WrapValidator
 from pydantic_core import core_schema
 
@@ -79,3 +81,6 @@ class Association(weakref.ref):
     # @classmethod
     # def __get_pydantic_core_schema__(cls, _):
     #     return core_schema.int_schema()
+
+
+draftsman_converters.register_structure_hook(Association, lambda v, _: v)

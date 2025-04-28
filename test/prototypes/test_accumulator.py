@@ -3,8 +3,8 @@
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.entity import Accumulator, accumulators, Container
-from draftsman.error import DataFormatError
-from draftsman.signatures import SignalID
+from draftsman.error import DataFormatError, IncompleteSignalError
+from draftsman.signatures import AttrsSignalID
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -13,7 +13,10 @@ import pytest
 
 class TestAccumulator:
     def test_constructor_init(self):
-        accumulator = Accumulator(control_behavior={"output_signal": "signal-B"})
+        accumulator = Accumulator(
+            "accumulator",
+            output_signal="signal-B"
+        )
         assert accumulator.to_dict() == {
             "name": accumulators[0],
             "position": accumulator.position.to_dict(),
@@ -22,7 +25,8 @@ class TestAccumulator:
             },
         }
         accumulator = Accumulator(
-            control_behavior={"output_signal": {"name": "signal-B", "type": "virtual"}}
+            "accumulator",
+            output_signal={"name": "signal-B", "type": "virtual"}
         )
         assert accumulator.to_dict() == {
             "name": accumulators[0],
@@ -33,28 +37,20 @@ class TestAccumulator:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            Accumulator(unused_keyword="whatever").validate().reissue_all()
-        with pytest.warns(UnknownKeywordWarning):
-            Accumulator(
-                control_behavior={"unused_keyword": "whatever"}
-            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Accumulator("not an accumulator").validate().reissue_all()
 
         # Errors
-        with pytest.raises(DataFormatError):
-            Accumulator(control_behavior="incorrect").validate().reissue_all()
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             Accumulator(
-                control_behavior={"output_signal": "incorrect"}
+                output_signal="incorrect"
             ).validate().reissue_all()
 
     def test_output_signal(self):
         accumulator = Accumulator()
         # String case
         accumulator.output_signal = "signal-D"
-        assert accumulator.output_signal == SignalID(
+        assert accumulator.output_signal == AttrsSignalID(
             **{"name": "signal-D", "type": "virtual"}
         )
 
@@ -67,21 +63,10 @@ class TestAccumulator:
         accumulator.output_signal = None
         assert accumulator.output_signal == None
 
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             accumulator.output_signal = "incorrect"
-        with pytest.raises(DataFormatError):
+        with pytest.raises(TypeError):
             accumulator.output_signal = {"incorrectly": "formatted"}
-
-        accumulator.validate_assignment = "none"
-        assert accumulator.validate_assignment == ValidationMode.NONE
-
-        accumulator.output_signal = "incorrect"
-        assert accumulator.output_signal == "incorrect"
-        assert accumulator.to_dict() == {
-            "name": "accumulator",
-            "position": {"x": 1, "y": 1},
-            "control_behavior": {"output_signal": "incorrect"},
-        }
 
     def test_mergable(self):
         accumulatorA = Accumulator("accumulator", tile_position=(0, 0))
@@ -112,7 +97,7 @@ class TestAccumulator:
         assert accumulatorA.name == "accumulator"
         assert accumulatorA.tile_position == Vector(0, 0)
         assert accumulatorA.tile_position.to_dict() == {"x": 0, "y": 0}
-        assert accumulatorA.output_signal == SignalID(
+        assert accumulatorA.output_signal == AttrsSignalID(
             **{"name": "signal-A", "type": "virtual"}
         )
 

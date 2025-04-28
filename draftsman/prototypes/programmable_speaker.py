@@ -10,10 +10,17 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
+from draftsman.error import InvalidNoteID
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import Connections, DraftsmanBaseModel, AttrsSignalID, SignalID, uint32
+from draftsman.signatures import (
+    Connections,
+    DraftsmanBaseModel,
+    AttrsSignalID,
+    SignalID,
+    uint32,
+)
 from draftsman.utils import get_first
-from draftsman.validators import instance_of
+from draftsman.validators import and_, instance_of, ge, le
 from draftsman.warning import (
     UnknownInstrumentWarning,
     UnknownNoteWarning,
@@ -428,13 +435,13 @@ class ProgrammableSpeaker(
     #         value,
     #         self.validate_assignment,
     #     )
-        # if self.validate_assignment:
-        #     result = attempt_and_reissue(
-        #         self, type(self).Format, self._root, "parameters", value
-        #     )
-        #     self._root.parameters = result
-        # else:
-        #     self._root.parameters = value
+    # if self.validate_assignment:
+    #     result = attempt_and_reissue(
+    #         self, type(self).Format, self._root, "parameters", value
+    #     )
+    #     self._root.parameters = result
+    # else:
+    #     self._root.parameters = value
 
     # =========================================================================
 
@@ -472,9 +479,19 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
+    def _volume_in_range_validator(
+        self, attr, value, mode: Optional[ValidationMode] = None
+    ):
+        mode = mode if mode is not None else self.validate_assignment
+        if mode >= ValidationMode.PEDANTIC:
+            if not (0.0 <= value <= 1.0):
+                msg = "'volume' ({}) not in range [0.0, 1.0]; will be clamped to this range on import".format(
+                    value
+                )
+                warnings.warn(VolumeRangeWarning(msg))
+
     volume: float = attrs.field(
-        default=1.0,
-        validator=instance_of(float)
+        default=1.0, validator=and_(instance_of(float), _volume_in_range_validator)
     )
     """
     The volume of the programmable speaker, in the range ``[0.0, 1.0]``.
@@ -518,10 +535,7 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
-    global_playback: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    global_playback: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not to play this sound at a constant volume regardless of
     distance.
@@ -555,10 +569,7 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
-    show_alert: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    show_alert: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not to show an alert to the player(s) if a sound is played.
 
@@ -590,10 +601,7 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
-    allow_polyphony: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    allow_polyphony: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not to allow the speaker to play multiple notes at once.
 
@@ -625,10 +633,7 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
-    show_alert_on_map: bool = attrs.field(
-        default=True,
-        validator=instance_of(bool)
-    )
+    show_alert_on_map: bool = attrs.field(default=True, validator=instance_of(bool))
     """
     Whether or not to show the alert on the map where the speaker lives.
 
@@ -663,7 +668,7 @@ class ProgrammableSpeaker(
     alert_icon: Optional[AttrsSignalID] = attrs.field(
         default=None,
         converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
     What icon to show to the player(s) and on the map if the speaker makes a
@@ -705,8 +710,7 @@ class ProgrammableSpeaker(
     # =========================================================================
 
     alert_message: Optional[str] = attrs.field(
-        default=None,
-        validator=instance_of(Optional[str])
+        default=None, validator=instance_of(Optional[str])
     )
     """
     What message to show to the player(s) if the speaker makes a sound (and
@@ -746,8 +750,7 @@ class ProgrammableSpeaker(
     # =========================================================================
 
     signal_value_is_pitch: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
+        default=False, validator=instance_of(bool)
     )
     """
     Whether or not the value of a signal determines the pitch of the note to
@@ -783,7 +786,9 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
-    def known_instrument_validator(self, attr, value, mode: Optional[ValidationMode] = None):
+    def known_instrument_validator(
+        self, attr, value, mode: Optional[ValidationMode] = None
+    ):
         mode = mode if mode is not None else self.validate_assignment
         if mode >= ValidationMode.STRICT:
             # If we don't recognize entity.name, then we can't know that
@@ -791,10 +796,7 @@ class ProgrammableSpeaker(
             if self.name not in instruments_data.name_of:
                 return value
 
-            if (
-                value is not None
-                and value not in instruments_data.name_of[self.name]
-            ):
+            if value is not None and value not in instruments_data.name_of[self.name]:
                 msg = "ID '{}' is not a known instrument for this programmable speaker".format(
                     value
                 )
@@ -802,7 +804,7 @@ class ProgrammableSpeaker(
 
     instrument_id: Optional[uint32] = attrs.field(
         default=0,
-        validator=instance_of(Optional[uint32])
+        validator=and_(instance_of(Optional[uint32]), known_instrument_validator),
     )
     """
     Numeric index of the instrument, 0-indexed.
@@ -862,7 +864,7 @@ class ProgrammableSpeaker(
 
         :exception InvalidInstrumentID: If set to a name that is not recognized
             as a valid instrument index for this speaker.
-        :exception DataFormatError: If set to anything other than a ``str`` or 
+        :exception DataFormatError: If set to anything other than a ``str`` or
             ``None``.
         """
         return (
@@ -890,6 +892,11 @@ class ProgrammableSpeaker(
                 .get(value, {})
                 .get("self", None)
             )
+            if new_id is None:
+                msg = "Name '{}' is not a known instrument for this programmable speaker".format(
+                    value
+                )
+                warnings.warn(UnknownInstrumentWarning(msg))
             self.instrument_id = new_id
 
     # =========================================================================
@@ -901,17 +908,12 @@ class ProgrammableSpeaker(
             # we can't know that the ID is invalid
             if self.name not in instruments_data.name_of:
                 return value
-            if (
-                self.instrument_id
-                not in instruments_data.name_of[self.name]
-            ):
+            if self.instrument_id not in instruments_data.name_of[self.name]:
                 return value
 
             if (
                 value is not None
-                and value not in instruments_data.name_of[self.name][
-                    self.instrument_id
-                ]
+                and value not in instruments_data.name_of[self.name][self.instrument_id]
             ):
                 msg = "ID '{}' is not a known note for this instrument and/or programmable speaker".format(
                     value
@@ -919,8 +921,7 @@ class ProgrammableSpeaker(
                 warnings.warn(UnknownNoteWarning(msg))
 
     note_id: Optional[uint32] = attrs.field(
-        default=0,
-        validator=instance_of(Optional[uint32], known_note_validator)
+        default=0, validator=and_(instance_of(Optional[uint32]), known_note_validator)
     )
     """
     Numeric index of the note. Updated in tandem with ``note_name``.
@@ -965,11 +966,13 @@ class ProgrammableSpeaker(
     @property
     def note_name(self) -> Optional[str]:
         """
-        Name of the note. Updated in tandem with ``note_id``. Not exported.
+        Name of the note. Derived from :py:attr:`.note_id`, but can be set via
+        this attribute as well.
 
-        :exception InvalidInstrumentID: If set to a name that is not recognized
-            as a valid instrument name for this speaker.
-        :exception TypeError: If set to anything other than a ``str`` or ``None``.
+        TODO: warnings
+
+        :exception DataFormatError: If set to anything other than a ``str`` or
+            ``None``.
         """
         return (
             instruments_data.name_of.get(self.name, {})
@@ -1000,6 +1003,11 @@ class ProgrammableSpeaker(
                 .get(self.instrument_name, {})
                 .get(value, None)
             )
+            if new_id is None:
+                msg = "Name '{}' is not a known note for this instrument and/or programmable speaker".format(
+                    value
+                )
+                warnings.warn(UnknownNoteWarning(msg))
             self.note_id = new_id
 
     # =========================================================================
@@ -1034,20 +1042,26 @@ class ProgrammableSpeaker(
 
 
 draftsman_converters.add_schema(
-    {
-        "$id": "factorio:programmable_speaker"
-    },
+    {"$id": "factorio:programmable_speaker"},
     ProgrammableSpeaker,
     lambda fields: {
-        fields.signal_value_is_pitch.name: ("control_behavior", "circuit_parameters", "signal_value_is_pitch"),
-        fields.instrument_id.name: ("control_behavior", "circuit_parameters", "instrument_id"),
-        fields.note_id.name: ("control_behavior", "circuit_parameters", "note_id"),
-        fields.volume.name: ("parameters", "playback_volume"),
-        fields.global_playback.name: ("parameters", "playback_globally"),
-        fields.allow_polyphony.name: ("parameters", "allow_polyphony"),
-        fields.show_alert.name: ("alert_parameters", "show_alert"),
-        fields.show_alert_on_map.name: ("alert_parameters", "show_on_map"),
-        fields.alert_icon.name: ("alert_parameters", "icon_signal_id"),
-        fields.alert_message.name: ("alert_parameters", "alert_message"),
-    }
+        (
+            "control_behavior",
+            "circuit_parameters",
+            "signal_value_is_pitch",
+        ): fields.signal_value_is_pitch.name,
+        (
+            "control_behavior",
+            "circuit_parameters",
+            "instrument_id",
+        ): fields.instrument_id.name,
+        ("control_behavior", "circuit_parameters", "note_id"): fields.note_id.name,
+        ("parameters", "playback_volume"): fields.volume.name,
+        ("parameters", "playback_globally"): fields.global_playback.name,
+        ("parameters", "allow_polyphony"): fields.allow_polyphony.name,
+        ("alert_parameters", "show_alert"): fields.show_alert.name,
+        ("alert_parameters", "show_on_map"): fields.show_alert_on_map.name,
+        ("alert_parameters", "icon_signal_id"): fields.alert_icon.name,
+        ("alert_parameters", "alert_message"): fields.alert_message.name,
+    },
 )

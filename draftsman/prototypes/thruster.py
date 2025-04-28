@@ -45,6 +45,10 @@ class Thruster(Entity):
 
         self.validate_assignment = validate_assignment
 
+    @property
+    def similar_entities(self) -> list[str]:
+        return thrusters
+
     # =========================================================================
 
     __hash__ = Entity.__hash__

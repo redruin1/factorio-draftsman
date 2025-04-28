@@ -75,7 +75,9 @@ def get_blueprintable_from_JSON(blueprintable_JSON: dict) -> Blueprintable:
         blueprintable_type = BlueprintBook
     else:
         raise IncorrectBlueprintTypeError(
-            "Unknown blueprintable '{}'".format(next(blueprintable_JSON))
+            "Unknown blueprintable with root key '{}'".format(
+                next(iter(blueprintable_JSON))
+            )
         )
     # Try and get the version from the dictionary, falling back to current
     # environment configuration if not found

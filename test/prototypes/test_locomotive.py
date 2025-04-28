@@ -2,7 +2,7 @@
 
 from draftsman.entity import Locomotive, locomotives, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import Color
+from draftsman.signatures import AttrsColor
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -25,8 +25,6 @@ class TestLocomotive:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            Locomotive("locomotive", unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Locomotive("this is not a locomotive").validate().reissue_all()
         # Warn if the locomotive is not on a rail (close enough to one?)
@@ -37,6 +35,9 @@ class TestLocomotive:
             Locomotive("locomotive", orientation="wrong").validate().reissue_all()
         with pytest.raises(DataFormatError):
             Locomotive("locomotive", color="also wrong").validate().reissue_all()
+
+    def test_color(self):
+        assert Locomotive("locomotive").color == AttrsColor(234/255, 17/255, 0, 127/255)
 
     def test_mergable_with(self):
         train1 = Locomotive("locomotive")
@@ -57,7 +58,7 @@ class TestLocomotive:
         train1.merge(train2)
         del train2
 
-        assert train1.color == Color(r=100, g=100, b=100)
+        assert train1.color == AttrsColor(r=100, g=100, b=100)
         assert train1.tags == {"some": "stuff"}
 
         assert train1.to_dict() == {

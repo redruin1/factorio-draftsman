@@ -12,12 +12,12 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode, LampColorMode
 from draftsman.serialization import (
-    MASTER_CONVERTER_OMIT_NONE_DEFAULTS,
     draftsman_converters,
     finalize_fields,
 )
 from draftsman.signatures import AttrsColor, Connections, DraftsmanBaseModel
 from draftsman.utils import get_first
+from draftsman.validators import instance_of
 
 from draftsman.data.entities import lamps
 
@@ -27,7 +27,7 @@ from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
-@attrs.define(field_transformer=finalize_fields)
+@attrs.define
 class Lamp(
     ColorMixin,
     LogisticConditionMixin,
@@ -133,7 +133,7 @@ class Lamp(
 
     # =========================================================================
 
-    use_colors: Optional[bool] = False
+    use_colors: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not this entity should use color signals to determine it's
     color.
@@ -163,7 +163,11 @@ class Lamp(
 
     # =========================================================================
 
-    color_mode: Optional[LampColorMode] = LampColorMode.COLOR_MAPPING
+    color_mode: Optional[LampColorMode] = attrs.field(
+        default=LampColorMode.COLOR_MAPPING,
+        converter=LampColorMode,
+        validator=instance_of(LampColorMode),
+    )
     """
     In what way to interpret signals given to the lamp if `use_colors` is 
     ``True``.
@@ -183,7 +187,7 @@ class Lamp(
 
     # =========================================================================
 
-    always_on: Optional[bool] = False
+    always_on: Optional[bool] = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not this entity should always be active, regardless of the
     current day-night cycle. This option is superceeded by any condition
@@ -213,7 +217,7 @@ class Lamp(
     color: AttrsColor = attrs.field(
         default=AttrsColor(r=1.0, g=1.0, b=191 / 255, a=1.0),
         converter=AttrsColor.converter,
-        validator=attrs.validators.instance_of(AttrsColor),
+        validator=instance_of(AttrsColor),
     )
     """
     What (static) color should this lamp have. Setting the lamp's color via
@@ -222,6 +226,20 @@ class Lamp(
     # TODO: different defaults for different Factorio versions
     # < 2.0: white
     # >= 2.0: off-white
+
+    # =========================================================================
+
+    def merge(self, other: "Lamp"):
+        super().merge(other)
+
+        self.use_colors = other.use_colors
+        self.color_mode = other.color_mode
+        self.always_on = other.always_on
+        self.color = other.color
+
+    # =========================================================================
+
+    __hash__ = Entity.__hash__
 
 
 # TODO: versioning
@@ -265,9 +283,9 @@ draftsman_converters.get_version((2, 0)).add_schema(
     },
     Lamp,
     lambda fields: {
-        fields.use_colors.name: ("control_behavior", "use_colors"),
-        fields.color_mode.name: ("control_behavior", "color_mode"),
-        fields.always_on.name: "always_on",
-        fields.color.name: "color",
+        ("control_behavior", "use_colors"): fields.use_colors.name,
+        ("control_behavior", "color_mode"): fields.color_mode.name,
+        "always_on": fields.always_on.name,
+        "color": fields.color.name,
     },
 )

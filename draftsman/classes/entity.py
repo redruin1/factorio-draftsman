@@ -19,6 +19,7 @@ from draftsman.signatures import (
     DraftsmanBaseModel,
     FloatPosition,
     IntPosition,
+    QualityName,
     get_suggestion,
     uint64,
 )
@@ -32,6 +33,7 @@ from abc import ABCMeta, abstractmethod
 import attrs
 import cattrs
 import copy
+from itertools import chain
 from functools import wraps
 import math
 from pydantic import (
@@ -56,14 +58,14 @@ class _PosVector(Vector):
     @Vector.x.setter
     def x(self, value):
         self._data[0] = float(value)
-        self.entity()._root._tile_position._data[0] = round(
+        self.entity().tile_position._data[0] = round(
             value - self.entity().tile_width / 2
         )
 
     @Vector.y.setter
     def y(self, value):
         self._data[1] = float(value)
-        self.entity()._root._tile_position._data[1] = round(
+        self.entity().tile_position._data[1] = round(
             value - self.entity().tile_height / 2
         )
 
@@ -84,12 +86,12 @@ class _TileVector(Vector):
     @Vector.x.setter
     def x(self, value):
         self._data[0] = int(value)
-        self.entity()._root._position._data[0] = value + self.entity().tile_width / 2
+        self.entity().position._data[0] = value + self.entity().tile_width / 2
 
     @Vector.y.setter
     def y(self, value):
         self._data[1] = int(value)
-        self.entity()._root._position._data[1] = value + self.entity().tile_height / 2
+        self.entity().position._data[1] = value + self.entity().tile_height / 2
 
 
 def strip_entity_number(cls):
@@ -109,8 +111,17 @@ def strip_entity_number(cls):
     cls.__init__ = new_init
 
 
+class MyMeta(ABCMeta):
+    def __init__(self, classname, superclasses, attributedict):
+        super().__init__(classname, superclasses, attributedict)
+        if "similar_entities" not in self.__dict__:
+            raise TypeError(
+                "{} does not have attribute 'similar_entities'".format(classname)
+            )
+
+
 @attrs.define
-class Entity(EntityLike, Exportable, metaclass=ABCMeta):
+class Entity(EntityLike, Exportable, metaclass=MyMeta):
     """
     Entity base-class. Used for all entity types that are specified in Factorio.
     Categorizes entities into "types" based on their class, each of which is
@@ -355,8 +366,38 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     #     # Entity tags
     #     self.tags = kwargs.get("tags", {})
 
-    def __attrs_pre_init__(self, **kwargs):
+    def __attrs_pre_init__(self):
         super(EntityLike).__init__()
+
+    def __init__(
+        self,
+        name: str,
+        id: str | None = None,
+        quality: QualityName = "normal",
+        position: _PosVector = attrs.NOTHING,
+        tile_position: _TileVector = attrs.NOTHING,
+        tags: dict[str, Any] | None = attrs.NOTHING,
+        entity_number: uint64 | None = None,
+        *,
+        validate_assignment: Any = ValidationMode.STRICT,
+        extra_keys: dict[Any, Any] | None = None,
+        **kwargs
+    ):
+        self.__attrs_init__(
+            name,
+            id=id,
+            quality=quality,
+            position=position,
+            tile_position=tile_position,
+            tags=tags,
+            entity_number=entity_number,
+            validate_assignment=validate_assignment,
+            extra_keys=extra_keys,
+        )
+        if self.extra_keys:
+            self.extra_keys.update(kwargs)
+        elif kwargs:
+            self.extra_keys = kwargs
 
     def __attrs_post_init__(self):
         self._set_tile_position(None, self.tile_position)
@@ -364,7 +405,7 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
     # =========================================================================
 
     @property
-    @abstractmethod
+    # @abstractmethod # TODO: is there some way to ensure this?
     def similar_entities(self) -> list[str]:
         """
         Returns a list of strings representing the names of entities that share
@@ -382,29 +423,6 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
         Not exported; read only.
         """
         return entities.raw.get(self.name, {})
-
-    # =========================================================================
-
-    # TODO: which of these do I want? Need to investigate what happens when you
-    # give the game a blueprint with two entities with the same entity_number...
-    # entity_number: uint64 = attrs.field(
-    #     validator=attrs.validators.instance_of(uint64),
-    #     metadata={"omit": False}
-    # )
-    # """
-    # The number of the entity in it's parent blueprint, 1-indexed. In practice
-    # this is the index of the dictionary in the blueprint's 'entities' list, but
-    # this is not strictly enforced.
-    # """
-    @property
-    def entity_number(self) -> Optional[uint64]:
-        """
-        TODO
-        """
-        if self.parent:
-            return self.parent.entities.index(self) + 1
-        else:
-            return None
 
     # =========================================================================
 
@@ -427,6 +445,9 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
                 )
                 warnings.warn(UnknownEntityWarning(msg))
 
+    # TODO: maybe it should be impossible to change the name of the entity after
+    # it is created. This would prevent the complications that would arise from
+    # such flexibility
     name: str = attrs.field(
         validator=and_(instance_of(str), ensure_name_recognized),
         metadata={"omit": False},
@@ -495,13 +516,11 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
 
     def _set_id(self, _: attrs.Attribute, value: Optional[str]):
         if self.parent:
-            if value is None:
-                self.parent.entities._remove_key(self.id)
-            else:
-                old_id = self.id
-                self.parent.entities._remove_key(old_id)
-                self.parent.entities._set_key(self.id, self)
-        self.id = value
+            self.parent.entities._remove_key(self.id)
+            if value is not None:
+                self.parent.entities._set_key(value, self)
+
+        return value
 
     # TODO: does an ID have to be a string? Is it not being a string ever useful?
     id: Optional[str] = attrs.field(
@@ -559,9 +578,10 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
 
     # =========================================================================
 
-    quality: Literal["normal", "uncommon", "rare", "epic", "legendary"] = attrs.field(
-        default="normal", validator=instance_of(str)
-    )  # TODO: validate that it is an existant quality
+    quality: QualityName = attrs.field(
+        default="normal",
+        validator=instance_of(str),  # TODO: validate that it is an existant quality
+    )
     """
     The quality of this entity. Can modify certain other attributes of the
     entity in (usually) positive ways.
@@ -606,6 +626,8 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
                     "imported".format(self.tile_position, cast_position)
                 )
                 warnings.warn(GridAlignmentWarning(msg))
+
+        return self.position
 
     position: _PosVector = attrs.field(
         converter=Vector.from_other, on_setattr=_set_position, metadata={"omit": False}
@@ -705,6 +727,8 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
                     "imported".format(self.tile_position, cast_position)
                 )
                 warnings.warn(GridAlignmentWarning(msg))
+
+        return self.tile_position
 
     tile_position: _TileVector = attrs.field(
         converter=Vector.from_other, on_setattr=_set_tile_position
@@ -968,6 +992,47 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
 
     # =========================================================================
 
+    # TODO: which of these do I want? Need to investigate what happens when you
+    # give the game a blueprint with two entities with the same entity_number...
+    _entity_number: Optional[uint64] = attrs.field(
+        default=None,
+        repr=False,
+        eq=False,
+        validator=instance_of(Optional[uint64]),
+        metadata={"omit": False},
+    )
+
+    @property
+    def entity_number(self) -> Optional[uint64]:
+        # TODO: an entity number is used for associations, dummy
+        # Fix this docstring
+        # TODO: also, I'm not convinced this should exist in Entity even for
+        # posterity/completeness-sake; it's a mechanism for holding relationship
+        # information which is entirely superceeded by Associations, and keeping
+        # it here will likely confuse more people than help them
+        """
+        A numeric value associated with this entity, 1-indexed. In practice this is
+        the index of the dictionary in the blueprint's 'entities' list, but this is
+        not strictly enforced, and its even possible for multiple entities to share
+        the same ``entity_number`` in the same blueprint without consequence.
+
+        An :py:class:`.Entity` created outside of a blueprint has no way to
+        determine it's own ``entity_number``, so it defaults to ``None``. Entities
+        added to blueprints also default to ``None``, as since entity lists
+        are frequently modified it makes the most sense to only generate these
+        values when exporting. This value is only populated when importing from an
+        existing blueprint string, but the value is not kept "accurate" if the
+        parent entity list in which it resides changes.
+
+        This attribute is provided for posterity in case this value is somehow
+        useful, but since its value is non-authorative, it gets overwritten when
+        exporting to follow the above "entity number == index in entities list"
+        axiom.
+        """
+        return self._entity_number
+
+    # =========================================================================
+
     def is_placable_on(self, surface_name: str) -> bool:
         """
         Check to see if this entity is placable on a particular planet/surface.
@@ -976,9 +1041,7 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
         function always returns `True`.
         """
         surface_properties = get_surface_properties(surface_name)
-        return passes_surface_conditions(
-            self.surface_conditions, surface_properties
-        )
+        return passes_surface_conditions(self.surface_conditions, surface_properties)
 
     # def validate(
     #     self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
@@ -1048,15 +1111,6 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
         # (Make sure to make a copy in case the original data gets deleted)
         self.tags = copy.deepcopy(other.tags)
 
-    # def __eq__(self, other: "Entity") -> bool:
-    #     return (
-    #         type(self) == type(other)
-    #         and self.name == other.name
-    #         and self.global_position == other.global_position
-    #         and self.id == other.id
-    #         and self.tags == other.tags
-    #     )
-
     def __hash__(self) -> int:
         return id(self) >> 4  # Apparently this is the default?
 
@@ -1074,20 +1128,65 @@ class Entity(EntityLike, Exportable, metaclass=ABCMeta):
             str(self.to_dict()),
         )
 
-    # def __deepcopy__(self, memo) -> "Entity":
-    #     # Perform the normal deepcopy
-    #     result = super().__deepcopy__(memo=memo)
-    #     # This is very cursed
-    #     # We need a reference to the parent entity stored in `_root` so that we
-    #     # can properly serialize it's position
-    #     # If we use a regular reference, it copies properly, but then it creates
-    #     # a circular reference which makes garbage collection worse
-    #     # We use a weakref to mitigate this memory issue (and ensure that
-    #     # deleting an entity immediately destroys it), but means that we have to
-    #     # manually update it's reference here
-    #     result._root._entity = weakref.ref(result)
-    #     # Get me out of here
-    #     return result
+    def __deepcopy__(self, memo) -> "Entity":
+        # Perform the normal deepcopy
+        cls = self.__class__
+        result = cls.__new__(cls)
+
+        # Make sure we don't copy ourselves multiple times unnecessarily
+        memo[id(self)] = result
+
+        # for k, v in self.__dict__.items():
+        #     print("key:", k)
+        #     print("value:", v)
+        #     if k == "_parent":
+        #         object.__setattr__(result, "_parent", None)
+        #     else:
+        #         object.__setattr__(result, k, copy.deepcopy(v, memo))
+        # slots = chain.from_iterable(getattr(s, '__slots__', []) for s in self.__class__.__mro__)
+
+        # print(slots)
+        # for slot in slots:
+        #     print(slot)
+        #     setattr(result, slot, copy.deepcopy(getattr(self, slot), memo))
+
+        for attr in attrs.fields(cls):
+            # Making the copy of an entity directly "removes" its parent, as there
+            # is no guarantee that that cloned entity will actually lie in some
+            # EntityCollection
+            if attr.name == "_parent":
+                object.__setattr__(result, "_parent", None)
+            else:
+                object.__setattr__(
+                    result, attr.name, copy.deepcopy(getattr(self, attr.name), memo)
+                )
+
+        return result
+
+        if id(self) in memo:
+            return memo[id(self)]
+        print(super().__deepcopy__)
+        result = self.__class__.__new__(self.__class__)
+        # This is very cursed
+        # We need a reference to the parent entity stored in `_root` so that we
+        # can properly serialize it's position
+        # If we use a regular reference, it copies properly, but then it creates
+        # a circular reference which makes garbage collection worse
+        # We use a weakref to mitigate this memory issue (and ensure that
+        # deleting an entity immediately destroys it), but means that we have to
+        # manually update it's reference here
+        # result._root._entity = weakref.ref(result)
+        result._parent = None
+        # Get me out of here
+        return result
+
+
+@attrs.define
+class _ExportEntity:
+    global_position: Vector = attrs.field(metadata={"omit": False})
+
+
+_export_fields = attrs.fields(_ExportEntity)
 
 
 draftsman_converters.get_version((1, 0)).add_schema(
@@ -1110,10 +1209,17 @@ draftsman_converters.get_version((1, 0)).add_schema(
     },
     Entity,
     lambda fields: {
-        fields.name.name: "name",
-        fields.position.name: "position",
-        fields.quality.name: None,
-        fields.tags.name: "tags",
+        "name": fields.name.name,
+        "position": fields.position.name,
+        None: fields.quality.name,
+        "tags": fields.tags.name,
+        "entity_number": fields._entity_number.name,
+    },
+    lambda fields, converter: {
+        "name": fields.name.name,
+        "position": _export_fields.global_position,
+        "quality": None,
+        "tags": fields.tags.name,
     },
 )
 
@@ -1138,10 +1244,16 @@ draftsman_converters.get_version((2, 0)).add_schema(
     },
     Entity,
     lambda fields: {
-        fields.name.name: "name",
-        fields.position.name: "position",
-        fields.quality.name: "quality",
-        fields.tags.name: "tags",
+        "name": fields.name.name,
+        "position": fields.position.name,
+        "quality": fields.quality.name,
+        "tags": fields.tags.name,
+        "entity_number": fields._entity_number.name,
     },
-    exclude_extra={"connections"},  # FIXME: this sucks
+    lambda fields, converter: {
+        "name": fields.name.name,
+        "position": _export_fields.global_position,
+        "quality": fields.quality.name,
+        "tags": fields.tags.name,
+    },
 )

@@ -2,18 +2,16 @@
 
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMixin
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode
-from draftsman.signatures import Connections, DraftsmanBaseModel, AttrsSignalID
+from draftsman.serialization import draftsman_converters
+from draftsman.signatures import AttrsSignalID
 from draftsman.utils import get_first
+from draftsman.validators import instance_of
 
 from draftsman.data.entities import accumulators
 
 import attrs
-from pydantic import ConfigDict, Field
-from typing import Any, Literal, Optional, Union
+from typing import Optional
 
 
 @attrs.define
@@ -77,10 +75,9 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
     # =========================================================================
 
     output_signal: Optional[AttrsSignalID] = attrs.field(
-        default=AttrsSignalID(name="signal-A", type="virtual"),
+        factory=lambda: AttrsSignalID(name="signal-A", type="virtual"),
         converter=AttrsSignalID.converter,
-        validator=attrs.validators.instance_of(AttrsSignalID),
-        metadata={"location": ("control_behavior", "output_signal")},
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
     The signal used to output this accumulator's charge level, if connected to
@@ -123,7 +120,16 @@ class Accumulator(ControlBehaviorMixin, CircuitConnectableMixin, Entity):
 
     # =========================================================================
 
-    # __hash__ = Entity.__hash__
+    def merge(self, other: "Accumulator"):
+        super().merge(other)
 
-    # def __eq__(self, other: "Accumulator") -> bool:
-    #     return super().__eq__(other) and self.output_signal == other.output_signal
+        self.output_signal = other.output_signal
+
+    __hash__ = Entity.__hash__
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:accumulator"},
+    Accumulator,
+    lambda fields: {("control_behavior", "output_signal"): fields.output_signal.name},
+)

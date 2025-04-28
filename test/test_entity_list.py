@@ -5,7 +5,7 @@ from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.entity_list import EntityList
 from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.group import Group
-from draftsman.constants import ValidationMode
+from draftsman.constants import ValidationMode, Direction
 from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.error import DuplicateIDError
 from draftsman.utils import encode_version
@@ -142,7 +142,7 @@ class TestEntityList:
 
         blueprint2 = Blueprint()
 
-        blueprint2.entities.append("inserter", direction=2, tile_position=(1, 0))
+        blueprint2.entities.append("inserter", direction=Direction.EAST, tile_position=(1, 0))
 
         blueprint3 = Blueprint()
 
@@ -158,7 +158,7 @@ class TestEntityList:
             {
                 "name": "inserter",
                 "position": {"x": 1.5, "y": 0.5},
-                "direction": 2,
+                "direction": Direction.EAST,
                 "entity_number": 2,
             },
         ]

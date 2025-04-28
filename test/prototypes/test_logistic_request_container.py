@@ -8,7 +8,7 @@ from draftsman.entity import (
     Container,
 )
 from draftsman.error import DataFormatError
-from draftsman.signatures import SignalFilter, Section
+from draftsman.signatures import AttrsSignalFilter, AttrsSection
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownItemWarning,
@@ -47,10 +47,8 @@ class TestLogisticRequestContainer:
         }
 
         request_chest = LogisticRequestContainer(
-            request_filters={
-                "sections": [{"index": 1, "filters": [("iron-ore", 100)]}],
-                "request_from_buffers": True,
-            }
+            sections=[{"index": 1, "filters": [("iron-ore", 100)]}],
+            request_from_buffers=True,
         )
         assert request_chest.to_dict() == {
             "name": "requester-chest",
@@ -74,27 +72,31 @@ class TestLogisticRequestContainer:
         }
 
         request_chest = LogisticRequestContainer(
-            request_filters=[
-                {"index": 1, "name": "iron-ore", "count": 100, "comparator": "="}
+            sections=[
+                {
+                    "index": 1,
+                    "filters": [
+                        {"index": 1, "name": "iron-ore", "count": 100}
+                    ]
+                }
             ]
         )
         assert request_chest.to_dict() == {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
-            "request_filters": [
-                {"index": 1, "name": "iron-ore", "count": 100, "comparator": "="}
-            ],
+            "request_filters": {
+                "sections": [
+                    {
+                        "index": 1,
+                        "filters": [
+                            {"index": 1, "name": "iron-ore", "count": 100, "comparator": "="}
+                        ]
+                    }
+                ]
+            },
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            LogisticRequestContainer(
-                "requester-chest", position=[0, 0], invalid_keyword="100"
-            ).validate().reissue_all()
-        with pytest.warns(UnknownKeywordWarning):
-            LogisticRequestContainer(
-                control_behavior={"unused_key": "something"}
-            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             LogisticRequestContainer(
                 "this is not a logistics storage chest"
@@ -104,7 +106,7 @@ class TestLogisticRequestContainer:
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             LogisticRequestContainer("requester-chest", id=25).validate().reissue_all()
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             LogisticRequestContainer(
                 "requester-chest", position=TypeError
             ).validate().reissue_all()
@@ -115,11 +117,11 @@ class TestLogisticRequestContainer:
         with pytest.raises(DataFormatError):
             LogisticRequestContainer(
                 "requester-chest",
-                request_filters=["very", "wrong"],
+                sections=["very", "wrong"],
             ).validate().reissue_all()
         with pytest.raises(DataFormatError):
             LogisticRequestContainer(
-                control_behavior="incorrect"
+                tags="incorrect"
             ).validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
@@ -142,28 +144,19 @@ class TestLogisticRequestContainer:
             "legendary": 120,
         }
         for quality, size in qualities.items():
-            chest = LogisticRequestContainer("passive-provider-chest", quality=quality)
+            chest = LogisticRequestContainer("requester-chest", quality=quality)
             assert chest.inventory_size == size
 
     def test_logistics_mode(self):
         container = LogisticRequestContainer("requester-chest")
-        assert container.mode_of_operation == None
+        assert container.mode_of_operation == LogisticModeOfOperation.SEND_CONTENTS
         assert container.to_dict() == {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
         }
 
         # Set int
-        container.mode_of_operation = 0
-        assert container.mode_of_operation == LogisticModeOfOperation.SEND_CONTENTS
-        assert container.to_dict() == {
-            "name": "requester-chest",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_mode_of_operation": 0},
-        }
-
-        # Set Enum
-        container.mode_of_operation = LogisticModeOfOperation.SET_REQUESTS
+        container.mode_of_operation = 1
         assert container.mode_of_operation == LogisticModeOfOperation.SET_REQUESTS
         assert container.to_dict() == {
             "name": "requester-chest",
@@ -171,19 +164,13 @@ class TestLogisticRequestContainer:
             "control_behavior": {"circuit_mode_of_operation": 1},
         }
 
-        # Set int outside range of enum
-        with pytest.raises(DataFormatError):
-            container.mode_of_operation = -1
-
-        # Turn of validation
-        container.validate_assignment = "none"
-        assert container.validate_assignment == ValidationMode.NONE
-        container.mode_of_operation = -1
-        assert container.mode_of_operation == -1
+        # Set Enum
+        container.mode_of_operation = LogisticModeOfOperation.NONE
+        assert container.mode_of_operation == LogisticModeOfOperation.NONE
         assert container.to_dict() == {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_mode_of_operation": -1},
+            "control_behavior": {"circuit_mode_of_operation": 2},
         }
 
     def test_set_requests(self):
@@ -197,9 +184,9 @@ class TestLogisticRequestContainer:
             ("coal", 300),
         ]
         assert container.sections[-1].filters == [
-            SignalFilter(index=1, name="iron-ore", count=100, comparator="="),
-            SignalFilter(index=2, name="copper-ore", count=200, comparator="="),
-            SignalFilter(index=3, name="coal", count=300, comparator="="),
+            AttrsSignalFilter(index=1, name="iron-ore", count=100, comparator="="),
+            AttrsSignalFilter(index=2, name="copper-ore", count=200, comparator="="),
+            AttrsSignalFilter(index=3, name="coal", count=300, comparator="="),
         ]
 
         # Longhand
@@ -209,9 +196,9 @@ class TestLogisticRequestContainer:
             {"index": 3, "name": "coal", "count": 300, "comparator": "="},
         ]
         assert container.sections[-1].filters == [
-            SignalFilter(index=1, name="iron-ore", count=100, comparator="="),
-            SignalFilter(index=2, name="copper-ore", count=200, comparator="="),
-            SignalFilter(index=3, name="coal", count=300, comparator="="),
+            AttrsSignalFilter(index=1, name="iron-ore", count=100, comparator="="),
+            AttrsSignalFilter(index=2, name="copper-ore", count=200, comparator="="),
+            AttrsSignalFilter(index=3, name="coal", count=300, comparator="="),
         ]
 
     # def test_set_request_filter(self): # TODO: reimplement
@@ -339,7 +326,19 @@ class TestLogisticRequestContainer:
         container2 = LogisticRequestContainer(
             "requester-chest",
             bar=10,
-            request_filters=[{"name": "utility-science-pack", "index": 1, "count": 10}],
+            sections=[
+                {
+                    "index": 1,
+                    "filters": [
+                        {
+                            "name": "utility-science-pack",
+                            "index": 1,
+                            "count": 10,
+                            "comparator": "=",
+                        }
+                    ],
+                }
+            ],
             tags={"some": "stuff"},
         )
 
@@ -356,21 +355,19 @@ class TestLogisticRequestContainer:
         container2 = LogisticRequestContainer(
             "requester-chest",
             bar=10,
-            request_filters={
-                "sections": [
-                    {
-                        "index": 1,
-                        "filters": [
-                            {
-                                "name": "utility-science-pack",
-                                "index": 1,
-                                "count": 10,
-                                "comparator": "=",
-                            }
-                        ],
-                    }
-                ]
-            },
+            sections=[
+                {
+                    "index": 1,
+                    "filters": [
+                        {
+                            "name": "utility-science-pack",
+                            "index": 1,
+                            "count": 10,
+                            "comparator": "=",
+                        }
+                    ],
+                }
+            ],
             tags={"some": "stuff"},
         )
 
@@ -379,22 +376,19 @@ class TestLogisticRequestContainer:
 
         assert container1.bar == 10
         assert (
-            container1.request_filters
-            == LogisticRequestContainer.Format.LogisticsRequestFilters(
-                sections=[
-                    {
-                        "index": 1,
-                        "filters": [
-                            {
-                                "name": "utility-science-pack",
-                                "index": 1,
-                                "count": 10,
-                                "comparator": "=",
-                            }
-                        ],
-                    }
-                ]
-            )
+            container1.sections == [
+                AttrsSection(**{
+                    "index": 1,
+                    "filters": [
+                        {
+                            "name": "utility-science-pack",
+                            "index": 1,
+                            "count": 10,
+                            "comparator": "=",
+                        }
+                    ],
+                })
+            ]
         )
         assert container1.tags == {"some": "stuff"}
 

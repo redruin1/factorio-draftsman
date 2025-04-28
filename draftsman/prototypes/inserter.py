@@ -16,8 +16,9 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import DraftsmanBaseModel, uint8
-from draftsman.utils import get_first
+from draftsman.serialization import draftsman_converters
+from draftsman.utils import fix_incorrect_pre_init
+from draftsman.validators import instance_of, one_of
 
 from draftsman.data.entities import inserters
 
@@ -26,6 +27,7 @@ from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
+@fix_incorrect_pre_init
 @attrs.define
 class Inserter(
     FiltersMixin,
@@ -41,13 +43,7 @@ class Inserter(
     Entity,
 ):
     """
-    An entity that can move items between machines.
-
-    .. NOTE::
-
-        In Factorio, the ``Inserter`` prototype includes both regular and filter
-        inserters. In Draftsman, inserters are split into two different classes,
-        :py:class:`~.Inserter` and :py:class:`~.FilterInserter`
+    An entity with a swinging arm that can move items between machines.
     """
 
     # class Format(
@@ -160,142 +156,225 @@ class Inserter(
 
     # =========================================================================
 
-    @property
-    def pickup_position(self) -> Optional[list[float]]:
-        """
-        The pickup position of the inserter.
+    pickup_position: Optional[list[float]] = attrs.field(
+        default=None,
+        # TODO: validators
+    )
+    """
+    The pickup position of the inserter.
 
-        TODO
-        """
-        return self._root.pickup_position
+    TODO
+    """
 
-    @pickup_position.setter
-    def pickup_position(self, value: Optional[list[float]]) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format,
-                self._root,
-                "pickup_position",
-                value,
-            )
-            self._root.pickup_position = result
-        else:
-            self._root.pickup_position = value
+    # @property
+    # def pickup_position(self) -> Optional[list[float]]:
+    #     """
+    #     The pickup position of the inserter.
 
-    # =========================================================================
+    #     TODO
+    #     """
+    #     return self._root.pickup_position
 
-    @property
-    def drop_position(self) -> Optional[list[float]]:
-        """
-        The drop position of the inserter.
-
-        TODO
-        """
-        return self._root.drop_position
-
-    @drop_position.setter
-    def drop_position(self, value: Optional[list[float]]) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format,
-                self._root,
-                "drop_position",
-                value,
-            )
-            self._root.drop_position = result
-        else:
-            self._root.drop_position = value
+    # @pickup_position.setter
+    # def pickup_position(self, value: Optional[list[float]]) -> None:
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format,
+    #             self._root,
+    #             "pickup_position",
+    #             value,
+    #         )
+    #         self._root.pickup_position = result
+    #     else:
+    #         self._root.pickup_position = value
 
     # =========================================================================
 
-    @property
-    def filter_mode(self) -> Literal["whitelist", "blacklist", None]:
-        """
-        The mode that the filter is set to. Can be either ``"whitelist"`` or
-        ``"blacklist"``.
+    drop_position: Optional[list[float]] = attrs.field(
+        default=None,
+        # TODO: validators
+    )
+    """
+    The drop position of the inserter.
 
-        :getter: Gets the filter mode.
-        :setter: Sets the filter mode.
+    TODO
+    """
 
-        :exception ValueError: If set to a ``str`` that is neither ``"whitelist"``
-            nor ``"blacklist"``.
-        :exception TypeError: If set to anything other than a ``str`` or ``None``.
-        """
-        return self._root.filter_mode
+    # @property
+    # def drop_position(self) -> Optional[list[float]]:
+    #     """
+    #     The drop position of the inserter.
 
-    @filter_mode.setter
-    def filter_mode(self, value: Literal["whitelist", "blacklist", None]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "filter_mode", value
-            )
-            self._root.filter_mode = result
-        else:
-            self._root.filter_mode = value
+    #     TODO
+    #     """
+    #     return self._root.drop_position
 
-    # =========================================================================
-
-    @property
-    def spoil_priority(self) -> Literal["spoiled-first", "fresh-first", None]:
-        """
-        Whether or not this inserter should prefer most fresh or most spoiled
-        items when grabbing from an inventory.
-
-        TODO
-        """
-        return self._root.spoil_priority
-
-    @spoil_priority.setter
-    def spoil_priority(
-        self, value: Literal["spoiled-first", "fresh-first", None]
-    ) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "spoil_priority", value
-            )
-            self._root.spoil_priority = result
-        else:
-            self._root.spoil_priority = value
+    # @drop_position.setter
+    # def drop_position(self, value: Optional[list[float]]) -> None:
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format,
+    #             self._root,
+    #             "drop_position",
+    #             value,
+    #         )
+    #         self._root.drop_position = result
+    #     else:
+    #         self._root.drop_position = value
 
     # =========================================================================
 
-    @property
-    def circuit_set_filters(self) -> Optional[bool]:
-        """
-        Whether or not the inserter should have its filters determined via
-        signals on connected circuit networks.
+    filter_mode: Literal["whitelist", "blacklist"] = attrs.field(
+        default="whitelist", validator=one_of("whitelist", "blacklist")
+    )
+    """
+    The mode that the given filter should operate under. 
 
-        TODO
-        """
-        return self.control_behavior.circuit_set_filters
+    :exception DataFormatError: If set to a value that is neither ``"whitelist"``
+        nor ``"blacklist"``.
+    """
 
-    @circuit_set_filters.setter
-    def circuit_set_filters(
-        self, value: Literal["spoiled-first", "fresh-first", None]
-    ) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "circuit_set_filters",
-                value,
-            )
-            self.control_behavior.circuit_set_filters = result
-        else:
-            self.control_behavior.circuit_set_filters = value
+    # @property
+    # def filter_mode(self) -> Literal["whitelist", "blacklist", None]:
+    #     """
+    #     The mode that the filter is set to. Can be either ``"whitelist"`` or
+    #     ``"blacklist"``.
+
+    #     :getter: Gets the filter mode.
+    #     :setter: Sets the filter mode.
+
+    #     :exception ValueError: If set to a ``str`` that is neither ``"whitelist"``
+    #         nor ``"blacklist"``.
+    #     :exception TypeError: If set to anything other than a ``str`` or ``None``.
+    #     """
+    #     return self._root.filter_mode
+
+    # @filter_mode.setter
+    # def filter_mode(self, value: Literal["whitelist", "blacklist", None]):
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, type(self).Format, self._root, "filter_mode", value
+    #         )
+    #         self._root.filter_mode = result
+    #     else:
+    #         self._root.filter_mode = value
+
+    # =========================================================================
+
+    spoil_priority: Literal["spoiled-first", "fresh-first", None] = attrs.field(
+        default=None,  # TODO: is this true?
+        validator=one_of("spoiled-first", "fresh-first", None),
+    )
+    """
+    Whether or not this inserter should prefer most fresh or most spoiled
+    items when grabbing from an inventory. If set to ``None``, this inserter
+    will ignore the spoiled value of items entirely.
+
+    :raises DataFormatError: When set to a value other than ``"spoiled-first"``,
+        ``"fresh-first"``, or ``None``.
+    """
+
+    # @property
+    # def spoil_priority(self) -> Literal["spoiled-first", "fresh-first", None]:
+    #     """
+    #     Whether or not this inserter should prefer most fresh or most spoiled
+    #     items when grabbing from an inventory.
+
+    #     TODO
+    #     """
+    #     return self._root.spoil_priority
+
+    # @spoil_priority.setter
+    # def spoil_priority(
+    #     self, value: Literal["spoiled-first", "fresh-first", None]
+    # ) -> None:
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self, type(self).Format, self._root, "spoil_priority", value
+    #         )
+    #         self._root.spoil_priority = result
+    #     else:
+    #         self._root.spoil_priority = value
+
+    # =========================================================================
+
+    circuit_set_filters: bool = attrs.field(default=False, validator=instance_of(bool))
+    """
+    Whether or not the inserter should have its filters determined via
+    signals on connected circuit networks.
+
+    :raises DataFormatError: If set to anything other than a ``bool``.
+    """
+
+    # @property
+    # def circuit_set_filters(self) -> Optional[bool]:
+    #     """
+    #     Whether or not the inserter should have its filters determined via
+    #     signals on connected circuit networks.
+
+    #     TODO
+    #     """
+    #     return self.control_behavior.circuit_set_filters
+
+    # @circuit_set_filters.setter
+    # def circuit_set_filters(
+    #     self, value: Literal["spoiled-first", "fresh-first", None]
+    # ) -> None:
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.ControlBehavior,
+    #             self.control_behavior,
+    #             "circuit_set_filters",
+    #             value,
+    #         )
+    #         self.control_behavior.circuit_set_filters = result
+    #     else:
+    #         self.control_behavior.circuit_set_filters = value
 
     # =========================================================================
 
     def merge(self, other: "Inserter"):
         super().merge(other)
 
+        self.circuit_set_filters = other.circuit_set_filters
         self.pickup_position = other.pickup_position
         self.drop_position = other.drop_position
         self.filter_mode = other.filter_mode
+        self.spoil_priority = other.spoil_priority
 
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+draftsman_converters.get_version((1, 0)).add_schema(
+    {
+        "$id": "factorio:inserter",
+    },
+    Inserter,
+    lambda fields: {
+        fields.circuit_set_filters.name: ("control_behavior", "circuit_set_filters"),
+        fields.pickup_position.name: "pickup_position",
+        fields.drop_position.name: "drop_position",
+        fields.filter_mode.name: "filter_mode",
+        fields.spoil_priority.name: None,
+    },
+)
+
+
+draftsman_converters.get_version((2, 0)).add_schema(
+    {
+        "$id": "factorio:inserter",
+    },
+    Inserter,
+    lambda fields: {
+        ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
+        "pickup_position": fields.pickup_position.name,
+        "drop_position": fields.drop_position.name,
+        "filter_mode": fields.filter_mode.name,
+        "spoil_priority": fields.spoil_priority.name,
+    },
+)

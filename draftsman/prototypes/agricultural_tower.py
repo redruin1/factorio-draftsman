@@ -86,6 +86,12 @@ class AgriculturalTower(
     # =========================================================================
 
     @property
+    def similar_entities(self) -> list[str]:
+        return agricultural_towers
+
+    # =========================================================================
+
+    @property
     def read_contents(self) -> Optional[bool]:
         """
         Whether or not this Entity is set to output it's contents to a

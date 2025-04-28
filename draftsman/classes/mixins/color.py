@@ -1,7 +1,8 @@
 # color.py
 
-from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
-from draftsman.signatures import AttrsColor, Color, normalize_color
+from draftsman.classes.exportable import Exportable
+from draftsman.serialization import draftsman_converters
+from draftsman.signatures import AttrsColor, Color
 from draftsman.validators import instance_of
 
 import attrs
@@ -12,16 +13,11 @@ from pydantic import (
     ValidatorFunctionWrapHandler,
     field_validator,
 )
-from typing import Any, Optional, Union
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.entity import Entity
+from typing import Any, Optional
 
 
 @attrs.define(slots=False)
-class ColorMixin:
+class ColorMixin(Exportable):
     """
     Gives the entity an editable color.
     """
@@ -108,7 +104,7 @@ class ColorMixin:
 
     # =========================================================================
 
-    def merge(self, other: "Entity"):
+    def merge(self, other: "ColorMixin"):
         super().merge(other)
 
         self.color = other.color
@@ -117,3 +113,10 @@ class ColorMixin:
 
     # def __eq__(self, other) -> bool:
     #     return super().__eq__(other) and self.color == other.color
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:color_mixin"},
+    ColorMixin,
+    lambda fields: {"color": fields.color.name},
+)

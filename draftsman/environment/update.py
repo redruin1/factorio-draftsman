@@ -1289,7 +1289,7 @@ def extract_signals(
     data = lua.globals().data
 
     unsorted_raw_signals = {}
-    type_of_signals: dict[str, set[str]] = {}
+    type_of_signals: dict[str, list[str]] = {}
 
     virtual_signals = []
     item_signals = []
@@ -1325,9 +1325,9 @@ def extract_signals(
             #     continue
 
             if signal_name not in type_of_signals:
-                type_of_signals[signal_name] = {signal_type}
+                type_of_signals[signal_name] = [signal_type]
             else:
-                type_of_signals[signal_name].add(signal_type)
+                type_of_signals[signal_name].append(signal_type)
 
             target_location.append(signal_category[signal_name])
 
