@@ -296,7 +296,19 @@ class TestWaitCondition:
 
 class TestWaitConditions:
     def test_constructor(self):
-        pass
+        # Test dict input
+        a = WaitConditions(
+            [
+                {"type": "full"},
+                {"type": "inactivity"}
+            ]
+        )
+        assert a == WaitConditions(
+            [
+                WaitCondition("full"),
+                WaitCondition("inactivity"),
+            ]
+        )
 
     def test_to_dict(self):
         pass
@@ -364,7 +376,11 @@ class TestSchedule:
         pass  # TODO
 
     def test_stops(self):
-        pass  # TODO
+        s = Schedule()
+        assert s.stops == []
+        with pytest.raises(DataFormatError):
+            s.stops = "incorrect"
+        assert s.stops == []
 
     def test_add_locomotive(self):
         blueprint = Blueprint()

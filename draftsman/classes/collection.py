@@ -2,13 +2,16 @@
 
 from draftsman.classes.association import Association
 from draftsman.classes.entity_like import EntityLike
+from draftsman.classes.entity_list import EntityList
 from draftsman.classes.train_configuration import TrainConfiguration
 from draftsman.classes.schedule import Schedule, WaitCondition, WaitConditions
 from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.tile import Tile
+from draftsman.classes.tile_list import TileList
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, Orientation
+from draftsman.signatures import StockConnection
 from draftsman.error import (
     DraftsmanError,
     EntityNotPowerConnectableError,
@@ -24,22 +27,24 @@ from draftsman.warning import (
     TooManyConnectionsWarning,
 )
 from draftsman.utils import AABB, PrimitiveAABB, flatten_entities, distance
+from draftsman.validators import instance_of
 
+import attrs
 from abc import ABCMeta, abstractmethod
 import math
-from typing import Literal, Optional, Sequence, Type, Union, TYPE_CHECKING
+from typing import Any, Literal, Optional, Sequence, Type, Union, TYPE_CHECKING
 import warnings
+
 
 # TODO: move this
 from draftsman.entity import Locomotive, CargoWagon, FluidWagon, ArtilleryWagon
 
 RollingStock = Union[Locomotive, CargoWagon, FluidWagon, ArtilleryWagon]
 
-if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.entity_list import EntityList
-    from draftsman.classes.tile_list import TileList
+# if TYPE_CHECKING:  # pragma: no coverage
 
 
+@attrs.define(slots=False)
 class EntityCollection(metaclass=ABCMeta):
     """
     Abstract class used to describe an object that can contain a list of
@@ -50,31 +55,117 @@ class EntityCollection(metaclass=ABCMeta):
     # Properties
     # =========================================================================
 
-    @property
-    @abstractmethod
-    def entities(self) -> "EntityList":  # pragma: no coverage
-        """
-        Object that holds the ``EntityLikes``, usually a :py:class:`.EntityList`.
-        """
-        pass
+    def _set_entities(self, attr: attrs.Attribute, value: Any):
+        # attr.validator(self, attr, value)
+        if value is None:
+            return EntityList(self)
+        elif isinstance(value, EntityList):
+            return EntityList(self, value._root)
+        else:
+            return EntityList(self, value)
 
-    @property
-    @abstractmethod
-    def schedules(self) -> ScheduleList:  # pragma: no coverage
-        """
-        Object that holds any :py:class:`Schedule` objects within the collection,
-        usually a :py:class:`ScheduleList`.
-        """
-        pass
+    entities: EntityList = attrs.field(
+        on_setattr=_set_entities,
+        # validator=instance_of(EntityList),
+        kw_only=True,
+    )
+    """
+    The list of the Blueprint's entities. Internally the list is a custom
+    class named :py:class:`.EntityList`, which has all the normal properties
+    of a regular list, as well as some extra features. For more information
+    on ``EntityList``, check out this writeup
+    :ref:`here <handbook.blueprints.blueprint_differences>`.
+    """
 
-    @property
-    @abstractmethod
-    def wires(self) -> list[list[int]]:
-        """
-        Object that holds any wire connections between entities within the
-        collection.
-        """
-        pass
+    @entities.default
+    def _entities_default(self) -> EntityList:
+        return EntityList(self)
+    
+    # =========================================================================
+
+    def _set_schedules(self, _: attrs.Attribute, value: Any):
+        # TODO: this needs to be more complex. What about associations already
+        # set to one blueprint being copied over to another? Should probably
+        # wipe the locomotives of each schedule when doing so
+        if value is None:
+            return ScheduleList()
+        elif isinstance(value, ScheduleList):
+            return value
+        else:
+            return ScheduleList(value)
+
+    schedules: ScheduleList = attrs.field(
+        on_setattr=_set_schedules,
+        # TODO: validators
+        kw_only=True,
+    )
+    """
+    A list of the entity collections's train schedules.
+
+    .. seealso::
+
+        `<https://wiki.factorio.com/Blueprint_string_format#Schedule_object>`_
+
+    :getter: Gets the schedules of this collection.
+    :setter: Sets the schedules of this collection. Defaults to an empty
+        :py:class:`.ScheduleList` if set to ``None``.
+
+    :exception ValueError: If set to anything other than a ``list`` of
+        :py:class:`.Schedule` or .
+    """
+
+    @schedules.default
+    def _(self) -> ScheduleList:
+        return ScheduleList()
+
+    # =========================================================================
+
+    wires: list[list[Association, int, Association, int]] = attrs.field(
+        factory=list,
+        converter=lambda v: [] if v is None else v,
+        # TODO: validators
+        kw_only=True,
+    )
+    """
+    A list of the wire connections in this blueprint.
+
+    Wires are specified as a list of 4 integers; the first pair of numbers
+    represents the first entity, and the second pair represents the second
+    entity. The first number of each pair represents the ``entity_number``
+    of the corresponding entity in the list, and the second number indicates
+    what type of connection it is.
+
+    When exported to JSON, the associations in each wire are resolved to 
+    integers corresponding to the given ``"entity_number"`` in the resulting
+    ``"entities"`` list.
+
+    TODO: more detail
+
+    :getter: Gets the wires of the Blueprint.
+    :setter: Sets the wires of the Blueprint. Defaults to an empty list if
+        set to ``None``.
+    """
+
+    # =========================================================================
+
+    stock_connections: list[StockConnection] = attrs.field(  # TODO: annotations
+        factory=list,
+        # TODO: validators
+        kw_only=True
+    )
+    """
+    A list of connections between train cars, documenting exactly which ones
+    are connected to what. Prior to Factorio 2.0, train car connections were 
+    inferred and automatically generated on blueprint import; this field allows
+    for manual control over this behavior.
+
+    Each :py:class:`.StockConnection` element contains a ``stock`` Association
+    which points to the locomotive or wagon in question, along with optional
+    ``front`` and ``back`` Associations pointing to which stock this car is 
+    connected to (if any).
+    """
+
+    # =========================================================================
 
     @property
     def rotatable(self) -> bool:
@@ -1657,20 +1748,49 @@ class EntityCollection(metaclass=ABCMeta):
 # =============================================================================
 
 
+@attrs.define(slots=False)
 class TileCollection(metaclass=ABCMeta):
     """
     Abstract class used to describe an object that can contain a list of
     :py:class:`.Tile` instances.
     """
 
-    @property
-    @abstractmethod
-    def tiles(self) -> "TileList":  # pragma: no coverage
-        """
-        Object that holds the ``Tiles``, usually a
-        :py:class:`~draftsman.classes.tilelist.TileList`.
-        """
-        pass
+    def _set_tiles(self, _: attrs.Attribute, value: Any):
+        if value is None:
+            return TileList(self)
+        elif isinstance(value, TileList):
+            return TileList(self, value._root)
+        else:
+            return TileList(self, value)
+
+    tiles: TileList = attrs.field(
+        on_setattr=_set_tiles,
+        # TODO: validators
+        kw_only=True,
+    )
+    """
+    The list of the collection's tiles. Internally the list is a custom
+    class named :py:class:`~.TileList`, which has all the normal properties
+    of a regular list, as well as some extra features.
+
+    :example:
+
+    .. code-block:: python
+
+        blueprint.tiles.append("landfill")
+        assert isinstance(blueprint.tiles[-1], Tile)
+        assert blueprint.tiles[-1].name == "landfill"
+
+        blueprint.tiles.insert(0, "refined-hazard-concrete", position=(1, 0))
+        assert blueprint.tiles[0].position == {"x": 1.5, "y": 1.5}
+
+        blueprint.tiles = None
+        assert len(blueprint.tiles) == 0
+    """
+
+    @tiles.default
+    def get_tiles_default(self):
+        return TileList(self)
 
     # =========================================================================
     # Custom edge functions for TileList interaction

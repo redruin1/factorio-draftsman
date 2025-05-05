@@ -233,7 +233,7 @@ class RocketSilo(
     #     )
 
 
-draftsman_converters.get_version((1, 0)).add_schema(
+draftsman_converters.get_version((1, 0)).add_schema( # pragma: no branch
     {"$id": "factorio:rocket_silo_v1.0"},
     RocketSilo,
     lambda fields: {

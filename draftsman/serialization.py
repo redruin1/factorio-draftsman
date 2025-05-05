@@ -36,9 +36,7 @@ def regular_structure_factory(cls, converter):
 
     def structure_hook(d, _):
         res = {}
-        # print("d", d)
         for attr in attrs.fields(cls):
-            # print("attr.name", attr.name)
             attr: attrs.Attribute
             # print(attr)
             if not attr.init:
@@ -58,7 +56,6 @@ def regular_structure_factory(cls, converter):
             except (KeyError, TypeError):
                 continue
             # If the input object has its own special structuring hook, use that
-            # print("value", value)
             handler = find_structure_handler(attr, attr.type, converter)
             if handler is not None:
                 res[attr.name] = handler(value, attr.type)
@@ -364,6 +361,7 @@ class DraftsmanConverters:
             # Get the version just "below" the specified version
             sorted_versions = list(sorted([*self.versions.keys(), version]))
             prev_version_index = sorted_versions.index(version) - 1
+            # If this index is negative, it means there is no version below to use
             if prev_version_index < 0:
                 msg = "No converter exists for version {}".format(version)
                 raise ValueError(msg)

@@ -11,6 +11,7 @@ from draftsman.serialization import draftsman_converters
 from draftsman.signatures import DraftsmanBaseModel
 from draftsman.validators import classvalidator
 
+import attrs
 from collections.abc import MutableSequence
 from copy import deepcopy
 from pydantic import ConfigDict, ValidationError
@@ -28,7 +29,7 @@ from typing import (
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.collection import TileCollection
 
-
+@attrs.define
 class TileList(Exportable, MutableSequence):
     """
     TODO
@@ -41,7 +42,17 @@ class TileList(Exportable, MutableSequence):
 
     #     model_config = ConfigDict(revalidate_instances="always")
 
-    def __init__(
+    # FIXME: I would like to annotate this, but cattrs cannot find the location of `EntityCollection`
+    _parent = attrs.field(
+        default=None, init=False, repr=False, eq=False, metadata={"deepcopy_func": lambda value, memo: None}
+    )
+
+    _root: list[Tile] = attrs.field( # TODO: rename to data (perhaps use UserList?)
+        factory=list,
+        init=False,
+    )
+
+    def __init__( # TODO: rely on attrs generated one
         self,
         parent: "TileCollection",
         initlist: Optional[list[Tile]] = None,

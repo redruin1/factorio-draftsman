@@ -100,12 +100,6 @@ class Reactor(
 
     # =========================================================================
 
-    @property
-    def allowed_items(self) -> Optional[set[str]]:
-        return self.allowed_fuel_items
-
-    # =========================================================================
-
     read_burner_fuel: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not to broadcast the amount of fuel currently in the reactor to 

@@ -503,6 +503,7 @@ class Entity(EntityLike, Exportable):
 
     # =========================================================================
 
+    # TODO: this should be moved into EntityLike since that makes more sense
     def _set_id(self, _: attrs.Attribute, value: Optional[str]):
         if self.parent:
             self.parent.entities._remove_key(self.id)
@@ -522,7 +523,7 @@ class Entity(EntityLike, Exportable):
     """
 
     @id.validator
-    def ensure_id_correct_type(self, _: attrs.Attribute, value: Any, **kwargs):
+    def _ensure_id_correct_type(self, _: attrs.Attribute, value: Any, **kwargs):
         if value is not None and not isinstance(value, str):
             raise TypeError("'id' must be either a str or None")
 
@@ -1137,40 +1138,40 @@ class Entity(EntityLike, Exportable):
             str(self.to_dict()),
         )
 
-    def __deepcopy__(self, memo) -> "Entity":
-        # Perform the normal deepcopy
-        cls = self.__class__
-        result = cls.__new__(cls)
+    # def __deepcopy__(self, memo) -> "Entity":
+    #     # Perform the normal deepcopy
+    #     cls = self.__class__
+    #     result = cls.__new__(cls)
 
-        # Make sure we don't copy ourselves multiple times unnecessarily
-        memo[id(self)] = result
+    #     # Make sure we don't copy ourselves multiple times unnecessarily
+    #     memo[id(self)] = result
 
-        # for k, v in self.__dict__.items():
-        #     print("key:", k)
-        #     print("value:", v)
-        #     if k == "_parent":
-        #         object.__setattr__(result, "_parent", None)
-        #     else:
-        #         object.__setattr__(result, k, copy.deepcopy(v, memo))
-        # slots = chain.from_iterable(getattr(s, '__slots__', []) for s in self.__class__.__mro__)
+    #     # for k, v in self.__dict__.items():
+    #     #     print("key:", k)
+    #     #     print("value:", v)
+    #     #     if k == "_parent":
+    #     #         object.__setattr__(result, "_parent", None)
+    #     #     else:
+    #     #         object.__setattr__(result, k, copy.deepcopy(v, memo))
+    #     # slots = chain.from_iterable(getattr(s, '__slots__', []) for s in self.__class__.__mro__)
 
-        # print(slots)
-        # for slot in slots:
-        #     print(slot)
-        #     setattr(result, slot, copy.deepcopy(getattr(self, slot), memo))
+    #     # print(slots)
+    #     # for slot in slots:
+    #     #     print(slot)
+    #     #     setattr(result, slot, copy.deepcopy(getattr(self, slot), memo))
 
-        for attr in attrs.fields(cls):
-            # Making the copy of an entity directly "removes" its parent, as there
-            # is no guarantee that that cloned entity will actually lie in some
-            # EntityCollection
-            if attr.name == "_parent":
-                object.__setattr__(result, "_parent", None)
-            else:
-                object.__setattr__(
-                    result, attr.name, copy.deepcopy(getattr(self, attr.name), memo)
-                )
+    #     for attr in attrs.fields(cls):
+    #         # Making the copy of an entity directly "removes" its parent, as there
+    #         # is no guarantee that that cloned entity will actually lie in some
+    #         # EntityCollection
+    #         if attr.name == "_parent":
+    #             object.__setattr__(result, "_parent", None)
+    #         else:
+    #             object.__setattr__(
+    #                 result, attr.name, copy.deepcopy(getattr(self, attr.name), memo)
+    #             )
 
-        return result
+    #     return result
 
         if id(self) in memo:
             return memo[id(self)]

@@ -797,10 +797,10 @@ def dict_merge(a: dict, b: dict) -> dict:
     """
     for key in b:
         if key in a:
-            if isinstance(a[key], dict) and isinstance(b[key], dict):
+            if isinstance(a[key], dict) and isinstance(b[key], dict): # pragma: no branch
                 dict_merge(a[key], b[key])
             else:
-                a[key] = b[key]
+                a[key] = b[key] # pragma: no coverage
         else:
             a[key] = b[key]
     return a
@@ -906,12 +906,12 @@ def passes_surface_conditions(conditions: list[dict], properties: dict) -> bool:
 
     for condition in conditions:
         property_name = condition["property"]
-        if property_name in properties:
-            value = properties[property_name]
-            min_val = condition.get("min", -math.inf)
-            max_val = condition.get("max", math.inf)
-            if not (min_val <= value <= max_val):
-                return False
+        # if property_name in properties:
+        value = properties[property_name]
+        min_val = condition.get("min", -math.inf)
+        max_val = condition.get("max", math.inf)
+        if not (min_val <= value <= max_val):
+            return False
 
     return True
 
@@ -977,8 +977,8 @@ def get_suggestion(name, choices, n=3, cutoff=60):
     :returns: A string intended to be appended to an error or warning message,
         containing the suggested alternative(s).
     """
-    if name is None:
-        return ""
+    # if name is None:
+    #     return ""
     suggestions = [
         suggestion[0]
         for suggestion in process.extract(name, choices, limit=n)

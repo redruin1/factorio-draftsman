@@ -577,6 +577,51 @@ class Exportable:
     # def __contains__(self, item: str) -> bool:
     #     return item in self._root
 
+    def __deepcopy__(self, memo: Optional[dict[int, Any]]={}):
+        # Perform the normal deepcopy
+        cls = self.__class__
+        result = cls.__new__(cls)
+
+        # Make sure we don't copy ourselves multiple times unnecessarily
+        memo[id(self)] = result
+
+        # for k, v in self.__dict__.items():
+        #     print("key:", k)
+        #     print("value:", v)
+        #     if k == "_parent":
+        #         object.__setattr__(result, "_parent", None)
+        #     else:
+        #         object.__setattr__(result, k, copy.deepcopy(v, memo))
+        # slots = chain.from_iterable(getattr(s, '__slots__', []) for s in self.__class__.__mro__)
+
+        # print(slots)
+        # for slot in slots:
+        #     print(slot)
+        #     setattr(result, slot, copy.deepcopy(getattr(self, slot), memo))
+
+        print("Exportable deepcopy")
+
+        for attr in attrs.fields(cls):
+            print("\t", attr)
+            # Making the copy of an entity directly "removes" its parent, as there
+            # is no guarantee that that cloned entity will actually lie in some
+            # EntityCollection
+            if "deepcopy_func" in attr.metadata:
+                object.__setattr__(
+                    result, 
+                    attr.name, 
+                    attr.metadata["deepcopy_func"](
+                        getattr(self, attr.name), 
+                        memo
+                    )
+                )
+            else:
+                object.__setattr__(
+                    result, attr.name, copy.deepcopy(getattr(self, attr.name), memo)
+                )
+
+        return result
+
 
 def make_exportable_structure_factory_func(
     version_tuple: tuple[int, ...], exclude_none: bool, exclude_defaults: bool

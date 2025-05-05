@@ -42,9 +42,6 @@ class ScheduleList(MutableSequence):
 
         self.data.insert(index, schedule)
 
-    def clear(self) -> None:
-        self.data.clear()
-
     def __getitem__(self, index: int) -> Schedule:
         return self.data[index]
 
@@ -83,17 +80,6 @@ class ScheduleList(MutableSequence):
 
     def __repr__(self) -> str:
         return "<ScheduleList>{}".format(repr(self.data))
-
-    # def __deepcopy__(self, memo):
-    #     pass # TODO, I think
-
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls, _: Any, handler: GetCoreSchemaHandler
-    ) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(
-            cls, handler(list[Schedule.Format])
-        )  # pragma: no coverage
 
 
 def _schedule_list_structure_factory(cls, converter: cattrs.Converter):

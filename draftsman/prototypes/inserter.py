@@ -353,17 +353,17 @@ class Inserter(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.get_version((1, 0)).add_schema(
+draftsman_converters.get_version((1, 0)).add_schema(  # pragma: no branch
     {
         "$id": "factorio:inserter",
     },
     Inserter,
     lambda fields: {
-        # fields.circuit_set_filters.name: ("control_behavior", "circuit_set_filters"),
-        fields.pickup_position.name: "pickup_position",
-        fields.drop_position.name: "drop_position",
-        fields.filter_mode.name: "filter_mode",
-        fields.spoil_priority.name: None,
+        ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
+        "pickup_position": fields.pickup_position.name,
+        "drop_position": fields.drop_position.name,
+        "filter_mode": fields.filter_mode.name,
+        None: fields.spoil_priority.name,
     },
 )
 

@@ -237,7 +237,7 @@ class EntityList(Exportable, MutableSequence):
             things like rails or power-poles on the edges of tiled blueprints.
         :param kwargs: Any other keyword arguments to pass to the entity
             instance. This is used primarily when constructing a new entity from
-            a string name, but can also be used to overwrite certain attributes
+            a string name, but can also be used to overwrite specific attributes
             of a passed in ``EntityLike`` before adding it to the ``EntityList``.
 
         :example:

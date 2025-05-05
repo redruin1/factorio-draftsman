@@ -135,7 +135,7 @@ class AgriculturalTower(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
+draftsman_converters.add_schema(  # pragma: no branch
     {"$id": "factorio:entity:agricultural_tower"},
     AgriculturalTower,
     lambda fields: {("control_behavior", "read_contents"): fields.read_contents.name},

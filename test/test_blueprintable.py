@@ -67,6 +67,12 @@ class TestBlueprintUtils:
         )
         assert isinstance(blueprintable, BlueprintBook)
 
+        # Valid format (no version)
+        blueprintable = get_blueprintable_from_string(
+            "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEqutBQDZSgyK"
+        )
+        assert isinstance(blueprintable, Blueprint)
+
         # Test description key
         blueprintable = get_blueprintable_from_string(
             "0eNrNlNtugzAMht/F16Eqh4TDq1RVxcFl0SCgBNqxinefCxtdByrrXRFChNjf79jGF0iKFmstVQPRBWRaKQPR7gJG5iourt9UXCJEkGBMm9AzkCrDD4jsfs8AVSMbiaPPsOgOqi0T1GTAfnyxwLTRMrVQoc47i9RQH+MUgUFdGSIQmaSI6oqAQUfObkhSSXs8oj4Y+UkYeztdPZupOZNaInNrUqyrYlHFH1U8u19guU+x/Ics7ylWED5icfanGnMA5xv+jXA3fAki/gEJ7iBU8gbLscYy+9UTpkbMrLLK2gItF26GZKcOUp1IutLd6HhbUWOYJk7fIRoKubhD3dXTPQ/fXw9fiLUcBOsQX7xuDsL18IMXLqG9neKPjcEyKaTKrTJO36S6BjE/TWjfV5Qmz1nqYezsHMaZy/ie7ejJPHrbj4e4pmcabgxOqM2A5MIJvTDk3OHCdehH+wIapKEo"

@@ -67,7 +67,7 @@ class PlayerDescriptionMixin:
     #         self._root.player_description = value
 
 
-draftsman_converters.get_version((1, 0)).add_schema(
+draftsman_converters.get_version((1, 0)).add_schema( # pragma: no branch
     {"$id": "factorio:player_description_mixin"},
     PlayerDescriptionMixin,
     lambda fields: {None: fields.player_description.name},

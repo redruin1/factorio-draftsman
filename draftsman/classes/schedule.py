@@ -296,9 +296,6 @@ class WaitConditions:
 
         self._conditions: list[WaitCondition] = conditions
 
-    def to_dict(self) -> list:
-        return [condition.to_dict() for condition in self._conditions]
-
     def __len__(self) -> int:
         return len(self._conditions)
 
@@ -317,14 +314,6 @@ class WaitConditions:
 
     def __repr__(self) -> str:
         return "<WaitConditions>{}".format(repr(self._conditions))
-
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls, _source_type: Any, handler: GetCoreSchemaHandler
-    ) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(
-            cls, handler(list[WaitCondition.Format])
-        )
 
 
 draftsman_converters.register_structure_hook(
@@ -514,6 +503,7 @@ class Schedule(Exportable):
     @property
     def stops(self) -> list[Specification.Stop]:
         """
+        TODO: update
         A list of dictionaries of the format:
 
         .. code-block: python
@@ -532,6 +522,10 @@ class Schedule(Exportable):
         :returns: A ``list`` of ``dict``s in the format specified above.
         """
         return self.schedule.records
+    
+    @stops.setter
+    def stops(self, value: list[Specification.Stop]):
+        self.schedule.records = value
 
     # =========================================================================
 

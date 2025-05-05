@@ -6,7 +6,6 @@ Alias module. Imports :py:class:`.Blueprint`, :py:class:`.BlueprintBook`,
 :py:class:`.Group` under the namespace ``draftsman``.
 """
 
-from draftsman import __factorio_version_info__
 from draftsman.error import IncorrectBlueprintTypeError
 from draftsman.utils import reissue_warnings, string_to_JSON, decode_version
 
@@ -15,6 +14,18 @@ from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.deconstruction_planner import DeconstructionPlanner
 from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.classes.blueprint_book import BlueprintBook
+from draftsman.classes.group import Group
+
+
+__all__ = [
+    "Blueprint",
+    "DeconstructionPlanner",
+    "UpgradePlanner",
+    "BlueprintBook",
+    "Group",
+    "get_blueprintable_from_string",
+    "get_blueprintable_from_JSON",
+]
 
 
 @reissue_warnings
@@ -85,6 +96,6 @@ def get_blueprintable_from_JSON(blueprintable_JSON: dict) -> Blueprintable:
     if "version" in blueprintable_JSON[root_item]:
         version = decode_version(blueprintable_JSON[root_item]["version"])
     else:
-        version = __factorio_version_info__
+        version = None
 
     return blueprintable_type.from_dict(blueprintable_JSON, version=version)

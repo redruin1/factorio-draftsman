@@ -1,6 +1,6 @@
 # spatial_hashmap.py
 
-from draftsman.classes.collection import EntityCollection
+# from draftsman.classes.collection import EntityCollection
 from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.vector import PrimitiveVector, PrimitiveIntVector
@@ -62,7 +62,7 @@ class SpatialHashMap(SpatialDataStructure):
     def recursive_add(
         self, item: SpatialLike, merge: bool = False
     ) -> Optional[SpatialLike]:
-        if isinstance(item, EntityCollection):
+        if hasattr(item, "entities"):
             # Recurse through all subentities
             merged_entities = []  # keep track of merged entities, if any
             for sub_entity in item.entities:
@@ -92,7 +92,7 @@ class SpatialHashMap(SpatialDataStructure):
                 pass
 
     def recursive_remove(self, item: SpatialLike) -> None:
-        if isinstance(item, EntityCollection):
+        if hasattr(item, "entities"):
             for sub_item in item.entities:
                 self.recursive_remove(sub_item)
         else:
@@ -106,7 +106,7 @@ class SpatialHashMap(SpatialDataStructure):
         Issues OverlappingObjectWarnings if adding this particular ``item``
         would be unplacable in the current blueprint/group configuration.
         """
-        if isinstance(item, EntityCollection):
+        if hasattr(item, "entities"):
             # Recurse through all subentities
             for sub_entity in item.entities:
                 self.validate_insert(sub_entity, merge)

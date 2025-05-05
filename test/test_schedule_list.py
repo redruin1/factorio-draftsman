@@ -9,6 +9,14 @@ import pytest
 
 
 class TestScheduleList:
+    def test_constructor(self):
+        sl = ScheduleList(initlist=[{}])
+        assert sl == ScheduleList(
+            [
+                Schedule()
+            ]
+        )
+
     def test_insert(self):
         sl = ScheduleList()
         with pytest.raises(

@@ -304,9 +304,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     label_color: AttrsColor = attrs.field(
         factory=lambda: AttrsColor(1.0, 1.0, 1.0, 1.0),
-        converter=lambda value: AttrsColor(1.0, 1.0, 1.0, 1.0)
-        if value is None
-        else AttrsColor.converter(value),
+        converter=(
+            lambda value: AttrsColor(1.0, 1.0, 1.0, 1.0)
+            if value is None
+            else AttrsColor.converter(value)
+        ),
         validator=instance_of(AttrsColor),
     )
     """

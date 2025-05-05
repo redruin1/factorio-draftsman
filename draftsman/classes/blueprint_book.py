@@ -377,7 +377,6 @@ class BlueprintBook(Blueprintable):
         # TODO: validators
         metadata={
             "omit": False,
-            "location": (lambda cls: cls.root_item.fget(cls), "item"),
         },
     )
     # TODO: description

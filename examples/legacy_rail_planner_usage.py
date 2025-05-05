@@ -11,7 +11,7 @@ provides a set of turtle-like commands not unlike the in-game rail building GUI.
 from draftsman.blueprintable import Blueprint, BlueprintBook
 from draftsman.rail import RailPlanner, TrainConfiguration
 from draftsman.entity import RailSignal
-from draftsman.constants import Direction
+from draftsman.constants import LegacyDirection
 
 
 def main():
@@ -24,7 +24,7 @@ def main():
     rail_planner = RailPlanner()
 
     # Create rails going in every direction from the origin
-    for direction in Direction:
+    for direction in LegacyDirection:
         # (Re)set the position and direction of the starting rail
         rail_planner.head_position = (0, 0)
         rail_planner.head_direction = direction
@@ -52,12 +52,12 @@ def main():
     rail_planner = RailPlanner()
 
     rail_planner.head_position = (0, 0)
-    rail_planner.head_direction = Direction.NORTHEAST
+    rail_planner.head_direction = LegacyDirection.NORTHEAST
     rail_planner.diagonal_side = 0
     rail_planner.move_forward(5)
 
     rail_planner.head_position = (0, 0)
-    rail_planner.head_direction = Direction.NORTHEAST
+    rail_planner.head_direction = LegacyDirection.NORTHEAST
     rail_planner.diagonal_side = 1
     rail_planner.move_forward(10)  # different lengths so we can distinguish
 
@@ -101,25 +101,25 @@ def main():
         for _ in range(8):
             rail_planner.turn_right()
             rail_planner.add_signal("rail-signal", front=side)
-            rail_planner.add_signal("rail-chain-signal", front=side, right_side=False)
+            rail_planner.add_signal("rail-chain-signal", front=side, right=False)
             rail_planner.move_forward()
             rail_planner.add_signal("rail-signal", front=side)
-            rail_planner.add_signal("rail-chain-signal", front=side, right_side=False)
+            rail_planner.add_signal("rail-chain-signal", front=side, right=False)
 
         # Left turning circle on the left
         rail_planner.head_position = (-2, side * 28)
         for _ in range(8):
             rail_planner.turn_left()
             rail_planner.add_signal("rail-signal", front=side)
-            rail_planner.add_signal("rail-chain-signal", front=side, right_side=False)
+            rail_planner.add_signal("rail-chain-signal", front=side, right=False)
             rail_planner.move_forward()
             rail_planner.add_signal("rail-signal", front=side)
-            rail_planner.add_signal("rail-chain-signal", front=side, right_side=False)
+            rail_planner.add_signal("rail-chain-signal", front=side, right=False)
 
     # Note that diagonals continue to be strange in that they only have 2 valid
     # rail signal spots, so the `front` argument has no effect on them. Also
     # note that RailPlanner (currently) doesn't warn if rail signals are placed
-    # too close together (like in this one), so that behavior has to be caught
+    # too close together (like in the above), so that behavior has to be caught
     # manually by the user.
 
     blueprint.entities.append(rail_planner)
@@ -137,7 +137,7 @@ def main():
     template.set_circuit_condition("signal-A", ">", "signal-B")
     template.enable_disable = True
 
-    rail_planner.head_direction = Direction.EAST
+    rail_planner.head_direction = LegacyDirection.EAST
     rail_planner.move_forward()
     rail_planner.add_signal(template)
 
@@ -182,7 +182,7 @@ def main():
     blueprint.label = "Train creation!"
     rail_planner = RailPlanner()
 
-    rail_planner.head_direction = Direction.EAST
+    rail_planner.head_direction = LegacyDirection.EAST
     rail_planner.move_forward(18)
     rail_planner.add_station("train-stop")
 

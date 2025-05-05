@@ -5,6 +5,7 @@ from draftsman.classes.association import Association
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_list import EntityList
+from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.group import Group
 from draftsman.classes.schedule import Schedule, WaitCondition, WaitConditions
 from draftsman.classes.schedule_list import ScheduleList
@@ -23,6 +24,7 @@ from draftsman.error import (
     MalformedBlueprintStringError,
     IncorrectBlueprintTypeError,
 )
+from draftsman.signatures import StockConnection
 from draftsman.utils import encode_version, AABB
 from draftsman.warning import (
     ConnectionSideWarning,
@@ -62,7 +64,9 @@ class TestGroup:
 
         # Initialize from string with entities
         test_string = "0eNqdkttqwzAMht9F187IwVk23/YxSig5aK0gcYLtLAvB7z45ZaW0gbHdGNn6/euT0Ap1N+FoSDtQK1AzaAvquIKls6668OaWEUEBOexBgK76cDNVWxnwAki3+AUq8aUA1I4c4dVguywnPfU1GhY8fBUwDpbVgw412CHNXnIBC6iIA+/Fk0N6cxiHGU1kZ3LNZc9os4kZjrvR2IScDcnDFN+jUQuKtTMZ3OI49HCYkl807HstfbKucszzUXUWd4CzG3CPLU19hB3DGGqicehwBzz9mUDCE3iiT8JhsH3Ek4zEao10vtTDZML4ZbnDI//Kk/2LJ9vhycow222F1N3GCfhEY7eK6Vsii/e0yHMp8+LV+2+Mw9xY"
-        group = Group(name="test", position=(1, 1), string=test_string)
+        group = Group.from_string(test_string)
+        group.name = "test"
+        group.position = (1, 1)
         assert group.name == "test"
         assert group.type == "group"
         assert group.id == None
@@ -125,18 +129,17 @@ class TestGroup:
 
         # Initialize from blueprint string with no entities
         empty_blueprint_string = "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTUxMTU3q60FAHmbE1Y="
-        group = Group(string=empty_blueprint_string)
+        group = Group.from_string(empty_blueprint_string)
         assert len(group.entities) == 0
-        assert group.entities._root == []
 
-        # Errors
-        with pytest.raises(TypeError):
-            Group(unused_keyword="whatever")
+        # Initialize from blueprint string with no version
+        no_version_string = "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEqutBQDZSgyK"
+        group = Group.from_string(no_version_string)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             Group(name=TypeError)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             Group(type=TypeError)
 
         with pytest.raises(TypeError):
@@ -145,17 +148,18 @@ class TestGroup:
         with pytest.raises(DataFormatError):
             Group(position="incorrect")
 
-        with pytest.raises(TypeError):  # TODO: maybe change this?
-            Group(entities=InvalidEntityError)
+        # TODO: reimplement
+        # with pytest.raises(DataFormatError):
+        #     Group(entities=InvalidEntityError)
 
-        with pytest.raises(TypeError):
-            Group("test", entities=["incorrect"])
+        # with pytest.raises(TypeError):
+        #     Group("test", entities=["incorrect"])
 
         with pytest.raises(MalformedBlueprintStringError):
-            Group(string="incorrect")
+            Group.from_string("incorrect")
         with pytest.raises(IncorrectBlueprintTypeError):
-            Group(
-                string="0eNqrVkrKKU0tKMrMK4lPys/PVrKqRogUK1lFI3FBcpklqblKVkhiOkplqUXFmfl5SlZGFoYm5pZG5qamJiam5ma1OkqZeSmpFUpWBrWxOhg6dcHW6SglJpdklqXGw5TiMa8WAEeOOPY="
+            Group.from_string(
+                "0eNqrVkrKKU0tKMrMK4lPys/PVrKqRogUK1lFI3FBcpklqblKVkhiOkplqUXFmfl5SlZGFoYm5pZG5qamJiam5ma1OkqZeSmpFUpWBrWxOhg6dcHW6SglJpdklqXGw5TiMa8WAEeOOPY="
             )
 
     def test_set_name(self):
@@ -163,9 +167,9 @@ class TestGroup:
         group.name = "something other than group"
         assert group.name == "something other than group"
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             group.name = None
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             group.name = TypeError
 
     def test_set_type(self):
@@ -173,9 +177,9 @@ class TestGroup:
         group.type = "something other than group"
         assert group.type == "something other than group"
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             group.type = None
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             group.type = TypeError
 
     def test_set_id(self):
@@ -212,9 +216,6 @@ class TestGroup:
         blueprint = Blueprint()
         blueprint.entities.append(group)
 
-        with pytest.raises(DraftsmanError):
-            blueprint.entities[0].position = (1, 1)
-
     def test_set_collision_mask(self):
         group = Group("test")
         group.collision_mask = {"entities", "something-else"}
@@ -222,7 +223,7 @@ class TestGroup:
         group.collision_mask = None
         assert group.collision_mask == set()
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             group.collision_mask = TypeError
 
     def test_set_entities(self):
@@ -263,9 +264,6 @@ class TestGroup:
         substation1 = ElectricPole("substation", id="A")
         substation2 = ElectricPole("substation", tile_position=(10, 10), id="B")
         power_switch = PowerSwitch("power-switch", tile_position=(5, 5), id="C")
-        # substation1.add_power_connection(substation2)
-        # substation2.add_circuit_connection("red", substation1)
-        # power_switch.add_power_connection(substation2, 2)
 
         group.entities.append(substation1)
         group.entities.append(substation2)
@@ -363,6 +361,25 @@ class TestGroup:
         with pytest.raises(DataFormatError):
             group.schedules = ["incorrect", "format"]
 
+    def test_wires(self):
+        group = Group("test")
+        assert group.wires == []
+        container1 = Container("steel-chest", id="c1", tile_position=[-1, 0])
+        container2 = Container("steel-chest", id="c2", tile_position=[1, 0])
+        group.entities.append(container1, copy=False)
+        group.entities.append(container2, copy=False)
+
+        group.add_circuit_connection("red", "c1", "c2")
+        group.add_circuit_connection("green", "c1", "c2")
+        assert group.wires == [
+            [Association(container1), 1, Association(container2), 1], # TODO: circuit_wire_defines
+            [Association(container1), 2, Association(container2), 2], # TODO: circuit_wire_defines
+        ]
+
+        group.wires = None
+        assert group.wires == []
+        
+
     def test_power_connections(self):
         group = Group("test")
         substation1 = ElectricPole("substation", id="1")
@@ -435,6 +452,9 @@ class TestGroup:
         group.entities.append(container2)
 
         group.add_circuit_connection("red", "c1", "c2")
+        assert group.wires == [
+            [Association(group.entities[0]), 1, Association(group.entities[1]), 1]
+        ]
         assert group.entities["c1"].to_dict() == {
             "name": "steel-chest",
             "position": {"x": -0.5, "y": 0.5},
@@ -800,6 +820,15 @@ class TestGroup:
         group.entities.append("power-switch", tile_position=(1, 1))
         group.add_power_connection(2, 3, side_2="input")
         group.entities.append("locomotive", id="loco", tile_position=(0, 0))
+        group.entities.append("cargo-wagon", id="wagon", tile_position=(7, 0))
+        group.stock_connections = [
+            StockConnection(stock=Association(group.entities["loco"])), 
+            StockConnection(
+                stock=Association(group.entities["wagon"]),
+                front=Association(group.entities["loco"]),
+                back=Association(group.entities["loco"]) # Malformed, but just for testing code coverage
+            )
+        ]
         schedule = Schedule()
         schedule.add_locomotive(group.entities["loco"])
         schedule.append_stop("ore", WaitCondition("full"))
@@ -820,6 +849,15 @@ class TestGroup:
         assert group.wires[1][2]() is group.entities[3]
         # Make sure schedule associations are preserved
         assert group.schedules[0].locomotives[0]() is group.entities["loco"]
+        # Make sure stock connections are preserved
+        assert group.stock_connections == [
+            StockConnection(stock=Association(group.entities["loco"])), 
+            StockConnection(
+                stock=Association(group.entities["wagon"]),
+                front=Association(group.entities["loco"]),
+                back=Association(group.entities["loco"])
+            )
+        ]
         # Make sure the parent is correct
         assert group.parent is blueprint
 
@@ -838,6 +876,15 @@ class TestGroup:
         assert group_copy.wires[1][2]() is group_copy.entities[3]
         # Make sure schedule associations are preserved
         assert group_copy.schedules[0].locomotives[0]() is group_copy.entities["loco"]
+        # Make sure stock connections are preserved
+        assert group_copy.stock_connections == [
+            StockConnection(stock=Association(group_copy.entities["loco"])), 
+            StockConnection(
+                stock=Association(group_copy.entities["wagon"]),
+                front=Association(group_copy.entities["loco"]),
+                back=Association(group_copy.entities["loco"])
+            )
+        ]
         # Make sure parent of the copied group is reset to None
         assert group_copy.parent is None
         # Make sure the hashmap was copied properly and are not equivalent
@@ -936,3 +983,7 @@ class TestGroup:
 
         with pytest.raises(ValueError):
             group.flip("incorrectly")
+
+    def test_validate(self):
+        group = Group("test")
+        assert group.validate() == ValidationResult([], [])

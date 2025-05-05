@@ -2149,3 +2149,23 @@ draftsman_converters.add_schema(
         "position": fields.position.name,
     },
 )
+
+@attrs.define
+class StockConnection:
+    # TODO: all of these should probably have converters which take EntityLikes and wrap them with Association
+    stock: Association = attrs.field(
+        # TODO: validators
+    )
+    front: Optional[Association] = attrs.field(default=None)
+    back: Optional[Association] = attrs.field(default=None)
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:stock_connection"},
+    StockConnection,
+    lambda fields: {
+        "stock": fields.stock.name,
+        "front": fields.front.name,
+        "back": fields.back.name,
+    },
+)

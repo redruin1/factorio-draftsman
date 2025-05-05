@@ -101,12 +101,7 @@ from draftsman.error import (
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    AttrsColor,
-    Color,
-    DraftsmanBaseModel,
-    IntPosition,
-    uint16,
-    uint64,
+    StockConnection
 )
 from draftsman.entity import Entity
 from draftsman.tile import Tile
@@ -134,26 +129,6 @@ from pydantic import (
     field_validator,
     field_serializer,
     model_validator,
-)
-
-
-@attrs.define
-class StockConnection:
-    stock: Association = attrs.field(
-        # TODO: validators
-    )
-    front: Optional[Association] = attrs.field(default=None)
-    back: Optional[Association] = attrs.field(default=None)
-
-
-draftsman_converters.add_schema(
-    {"$id": "factorio:stock_connection"},
-    StockConnection,
-    lambda fields: {
-        "stock": fields.stock.name,
-        "front": fields.front.name,
-        "back": fields.back.name,
-    },
 )
 
 
@@ -983,28 +958,28 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     # =========================================================================
 
-    def _set_entities(self, _: attrs.Attribute, value: Any):
-        if value is None:
-            return EntityList(self)
-        elif isinstance(value, EntityList):
-            return EntityList(self, value._root)
-        else:
-            return EntityList(self, value)
+    # def _set_entities(self, _: attrs.Attribute, value: Any):
+    #     if value is None:
+    #         return EntityList(self)
+    #     elif isinstance(value, EntityList):
+    #         return EntityList(self, value._root)
+    #     else:
+    #         return EntityList(self, value)
 
-    entities: EntityList = attrs.field(
-        on_setattr=_set_entities,
-    )
-    """
-    The list of the Blueprint's entities. Internally the list is a custom
-    class named :py:class:`.EntityList`, which has all the normal properties
-    of a regular list, as well as some extra features. For more information
-    on ``EntityList``, check out this writeup
-    :ref:`here <handbook.blueprints.blueprint_differences>`.
-    """
+    # entities: EntityList = attrs.field(
+    #     on_setattr=_set_entities,
+    # )
+    # """
+    # The list of the Blueprint's entities. Internally the list is a custom
+    # class named :py:class:`.EntityList`, which has all the normal properties
+    # of a regular list, as well as some extra features. For more information
+    # on ``EntityList``, check out this writeup
+    # :ref:`here <handbook.blueprints.blueprint_differences>`.
+    # """
 
-    @entities.default
-    def get_entities_default(self) -> EntityList:
-        return EntityList(self)
+    # @entities.default
+    # def get_entities_default(self) -> EntityList:
+    #     return EntityList(self)
 
     # @property
     # def entities(self) -> EntityList:
@@ -1114,38 +1089,38 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     # =========================================================================
 
-    def _set_schedules(self, _: attrs.Attribute, value: Any):
-        # TODO: this needs to be more complex. What about associations already
-        # set to one blueprint being copied over to another? Should probably
-        # wipe the locomotives of each schedule when doing so
-        if value is None:
-            return ScheduleList()
-        elif isinstance(value, ScheduleList):
-            return value
-        else:
-            return ScheduleList(value)
+    # def _set_schedules(self, _: attrs.Attribute, value: Any):
+    #     # TODO: this needs to be more complex. What about associations already
+    #     # set to one blueprint being copied over to another? Should probably
+    #     # wipe the locomotives of each schedule when doing so
+    #     if value is None:
+    #         return ScheduleList()
+    #     elif isinstance(value, ScheduleList):
+    #         return value
+    #     else:
+    #         return ScheduleList(value)
 
-    schedules: ScheduleList = attrs.field(
-        on_setattr=_set_schedules,
-    )
-    """
-    A list of the Blueprint's train schedules.
+    # schedules: ScheduleList = attrs.field(
+    #     on_setattr=_set_schedules,
+    # )
+    # """
+    # A list of the Blueprint's train schedules.
 
-    .. seealso::
+    # .. seealso::
 
-        `<https://wiki.factorio.com/Blueprint_string_format#Schedule_object>`_
+    #     `<https://wiki.factorio.com/Blueprint_string_format#Schedule_object>`_
 
-    :getter: Gets the schedules of the Blueprint.
-    :setter: Sets the schedules of the Blueprint. Defaults to an empty
-        :py:class:`.ScheduleList` if set to ``None``.
+    # :getter: Gets the schedules of the Blueprint.
+    # :setter: Sets the schedules of the Blueprint. Defaults to an empty
+    #     :py:class:`.ScheduleList` if set to ``None``.
 
-    :exception ValueError: If set to anything other than a ``list`` of
-        :py:class:`.Schedule` or .
-    """
+    # :exception ValueError: If set to anything other than a ``list`` of
+    #     :py:class:`.Schedule` or .
+    # """
 
-    @schedules.default
-    def _(self) -> ScheduleList:
-        return ScheduleList()
+    # @schedules.default
+    # def _(self) -> ScheduleList:
+    #     return ScheduleList()
 
     # @property
     # def schedules(self) -> ScheduleList:
@@ -1184,9 +1159,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     # =========================================================================
 
-    wires: list[list[int, int, int, int]] = attrs.field(
+    wires: list[list[Association, int, Association, int]] = attrs.field(
         factory=list,
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "wires")},
     )
     """
     A list of the wire connections in this blueprint.
@@ -1196,6 +1170,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     entity. The first number of each pair represents the ``entity_number``
     of the corresponding entity in the list, and the second number indicates
     what type of connection it is.
+
+    When exported to JSON, the associations in each wire are resolved to 
+    integers corresponding to the given ``"entity_number"`` in the resulting
+    ``"entities"`` list.
 
     TODO: more detail
 
@@ -1444,7 +1422,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             copied_entity = memo[id(original_entity)]
             return Association(copied_entity)
 
-        memo["new_parent"] = result
+        memo["new_parent"] = result # TODO: this should really be fixed, because then we can use "deepcopy_func"
         for attr in attrs.fields(cls):
             if attr.name == "wires":  # special
                 new_wires = copy.deepcopy(getattr(self, attr.name), memo)
@@ -1453,6 +1431,13 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                     wire[2] = swap_association(wire[2])
 
                 object.__setattr__(result, attr.name, new_wires)
+            elif attr.name == "schedules":
+                new_schedules = copy.deepcopy(getattr(self, attr.name), memo)
+                for schedule in new_schedules:
+                    schedule: Schedule
+                    schedule.locomotives = [swap_association(loco) for loco in schedule.locomotives]
+
+                object.__setattr__(result, attr.name, new_schedules)
             elif attr.name == "stock_connections":  # special
                 new_connections: list[StockConnection] = copy.deepcopy(
                     getattr(self, attr.name), memo
@@ -1499,153 +1484,155 @@ draftsman_converters.add_schema(
 )
 
 
-_default_blueprint_hook = (
-    draftsman_converters.get_version((1, 0))
-    .converters[(False, False)]
-    .get_structure_hook(Blueprint)
-)  # TODO: FIXME
+def structure_blueprint_1_0_factory(t: type):
+    default_blueprint_hook = (
+        draftsman_converters.get_version((1, 0))
+        .converters[(False, False)]
+        .get_structure_hook(t)
+    )
 
+    def structure_blueprint_1_0(d: dict, _: type) -> Blueprint:
+        """
+        Converts a 1.0 Factorio blueprint string into Draftsman internal form,
+        preferring modern format where possible.
+        """
+        # Swapping old entity names to new ones is not actually "conversion", this
+        # would instead be "migration"
+        # For example, these entities would exist just fine if we had an old version
+        # of `factorio-data` loaded
+        # In practice, we should just load these objects as generic `Entity`
+        # instances with all of their data intact, and then the user would call a
+        # separate function `migrate(version)` which would then swap/remove/update
+        # entities
+        legacy_entity_conversions = {
+            "curved-rail": "legacy-curved-rail",
+            "straight-rail": "legacy-straight-rail",
+            "logistic-chest-requester": "requester-chest",
+            "logistic-chest-buffer": "buffer-chest",
+            "logistic-chest-storage": "storage-chest",
+            "logistic-chest-active-provider": "active-provider-chest",
+            "logistic-chest-passive-provider": "passive-provider-chest",
+            "filter-inserter": "inserter",  # TODO: LegacyFilterInserter(?)
+            "stack-inserter": "bulk-inserter",
+            "stack-filter-inserter": "bulk-inserter",
+        }
+        # TODO: just use defines already...
+        wire_types = {
+            ("1", "red"): 1,
+            ("1", "green"): 2,
+            ("2", "red"): 3,
+            ("2", "green"): 4,
+            "Cu0": 5,
+            "Cu1": 6,
+        }
+        # TODO: modifying in-place might be a bad idea; investigate
+        blueprint_dict = d["blueprint"]
+        # "Backport" the wires list to Factorio 1.0
+        wires = blueprint_dict["wires"] = []
+        # Iterate over every entity with connections
+        if "entities" in blueprint_dict:
+            for entity in blueprint_dict["entities"]:
+                # Convert entities to their modern equivalents
+                if entity["name"] in legacy_entity_conversions:
+                    entity["name"] = legacy_entity_conversions[entity["name"]]
 
-def structure_blueprint_1_0(d: dict, _: type) -> Blueprint:
-    """
-    Converts a 1.0 Factorio blueprint string into Draftsman internal form,
-    preferring modern format where possible.
-    """
-    # Swapping old entity names to new ones is not actually "conversion", this
-    # would instead be "migration"
-    # For example, these entities would exist just fine if we had an old version
-    # of `factorio-data` loaded
-    # In practice, we should just load these objects as generic `Entity`
-    # instances with all of their data intact, and then the user would call a
-    # separate function `migrate(version)` which would then swap/remove/update
-    # entities
-    legacy_entity_conversions = {
-        "curved-rail": "legacy-curved-rail",
-        "straight-rail": "legacy-straight-rail",
-        "logistic-chest-requester": "requester-chest",
-        "logistic-chest-buffer": "buffer-chest",
-        "logistic-chest-storage": "storage-chest",
-        "logistic-chest-active-provider": "active-provider-chest",
-        "logistic-chest-passive-provider": "passive-provider-chest",
-        "filter-inserter": "inserter",  # TODO: LegacyFilterInserter(?)
-        "stack-inserter": "bulk-inserter",
-        "stack-filter-inserter": "bulk-inserter",
-    }
-    # TODO: just use defines already...
-    wire_types = {
-        ("1", "red"): 1,
-        ("1", "green"): 2,
-        ("2", "red"): 3,
-        ("2", "green"): 4,
-        "Cu0": 5,
-        "Cu1": 6,
-    }
-    # TODO: modifying in-place might be a bad idea; investigate
-    blueprint_dict = d["blueprint"]
-    # "Backport" the wires list to Factorio 1.0
-    wires = blueprint_dict["wires"] = []
-    # Iterate over every entity with connections
-    if "entities" in blueprint_dict:
-        for entity in blueprint_dict["entities"]:
-            # Convert entities to their modern equivalents
-            if entity["name"] in legacy_entity_conversions:
-                entity["name"] = legacy_entity_conversions[entity["name"]]
+                # Swap from old 8-direction to modern 16-direction
+                if "direction" in entity:
+                    entity["direction"] = LegacyDirection(entity["direction"]).to_modern()
 
-            # Swap from old 8-direction to modern 16-direction
-            if "direction" in entity:
-                entity["direction"] = LegacyDirection(entity["direction"]).to_modern()
+                # Move connections
+                if "connections" in entity:
+                    connections = entity["connections"]
+                    for side in {"1", "2"}:
+                        if side not in connections:
+                            continue
 
-            # Move connections
-            if "connections" in entity:
-                connections = entity["connections"]
-                for side in {"1", "2"}:
-                    if side not in connections:
-                        continue
+                        # print(connections)
+                        # print(connections[side])
+                        for color in connections[side]:
+                            connection_points = connections[side][color]
 
-                    # print(connections)
-                    # print(connections[side])
-                    for color in connections[side]:
-                        connection_points = connections[side][color]
+                            for point in connection_points:
+                                # print("point", point)
+                                # print(wires)
+                                entity_id = point["entity_id"]
+                                circuit_id = str(point.get("circuit_id", 1))
+                                # print(entity_id, circuit_id)
+                                # Make sure we don't add the reverse as a duplicate
+                                if [
+                                    entity_id,
+                                    wire_types[(circuit_id, color)],
+                                    entity["entity_number"],
+                                    wire_types[(side, color)],
+                                ] not in wires:
+                                    wires.append(
+                                        [
+                                            entity["entity_number"],
+                                            wire_types[(side, color)],
+                                            entity_id,
+                                            wire_types[(circuit_id, color)],
+                                        ]
+                                    )
 
+                    for side in {"Cu0", "Cu1"}:
+                        if side not in connections:
+                            continue
+                        connection_points = connections[side]
                         for point in connection_points:
-                            # print("point", point)
-                            # print(wires)
                             entity_id = point["entity_id"]
-                            circuit_id = str(point.get("circuit_id", 1))
-                            # print(entity_id, circuit_id)
+                            circuit_id = point.get("circuit_id", "Cu0")
                             # Make sure we don't add the reverse as a duplicate
                             if [
                                 entity_id,
-                                wire_types[(circuit_id, color)],
+                                wire_types[circuit_id],
                                 entity["entity_number"],
-                                wire_types[(side, color)],
+                                wire_types[side],
                             ] not in wires:
                                 wires.append(
                                     [
                                         entity["entity_number"],
-                                        wire_types[(side, color)],
+                                        wire_types[side],
                                         entity_id,
-                                        wire_types[(circuit_id, color)],
+                                        wire_types[circuit_id],
                                     ]
                                 )
 
-                for side in {"Cu0", "Cu1"}:
-                    if side not in connections:
-                        continue
-                    connection_points = connections[side]
-                    for point in connection_points:
-                        entity_id = point["entity_id"]
-                        circuit_id = point.get("circuit_id", "Cu0")
+                    del entity["connections"]
+
+                if "neighbours" in entity:
+                    for neighbour in entity["neighbours"]:
                         # Make sure we don't add the reverse as a duplicate
                         if [
-                            entity_id,
-                            wire_types[circuit_id],
+                            neighbour,
+                            5,
                             entity["entity_number"],
-                            wire_types[side],
+                            5,
                         ] not in wires:
                             wires.append(
                                 [
                                     entity["entity_number"],
-                                    wire_types[side],
-                                    entity_id,
-                                    wire_types[circuit_id],
+                                    5,
+                                    neighbour,
+                                    5,
                                 ]
                             )
 
-                del entity["connections"]
+                    del entity["neighbours"]
 
-            if "neighbours" in entity:
-                for neighbour in entity["neighbours"]:
-                    # Make sure we don't add the reverse as a duplicate
-                    if [
-                        neighbour,
-                        5,
-                        entity["entity_number"],
-                        5,
-                    ] not in wires:
-                        wires.append(
-                            [
-                                entity["entity_number"],
-                                5,
-                                neighbour,
-                                5,
-                            ]
-                        )
+        # Schedules are split into "records" which holds stops and the new interrupts
+        if "schedules" in blueprint_dict:
+            for schedule in blueprint_dict["schedules"]:
+                stop_data = schedule["schedule"]
+                schedule["schedule"] = {"records": stop_data}
 
-                del entity["neighbours"]
-
-    # Schedules are split into "records" which holds stops and the new interrupts
-    if "schedules" in blueprint_dict:
-        for schedule in blueprint_dict["schedules"]:
-            stop_data = schedule["schedule"]
-            schedule["schedule"] = {"records": stop_data}
-
-    # print("blueprint_dict", blueprint_dict)
-    # import inspect
-    # print(inspect.getsource(_default_blueprint_hook))
-    return _default_blueprint_hook(d, _)
+        # print("blueprint_dict", blueprint_dict)
+        # import inspect
+        # print(inspect.getsource(_default_blueprint_hook))
+        return default_blueprint_hook(d, _)
+    
+    return structure_blueprint_1_0
 
 
 draftsman_converters.get_version((1, 0)).register_structure_hook(
-    Blueprint, structure_blueprint_1_0
+    Blueprint, structure_blueprint_1_0_factory(Blueprint)
 )

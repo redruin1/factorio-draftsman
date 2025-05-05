@@ -373,10 +373,10 @@ class LegacyDirection(IntEnum):
         return mapping[self]
 
 
-draftsman_converters.get_version((1, 0)).register_structure_hook(
+draftsman_converters.get_version((1, 0)).register_structure_hook( # pragma: no branch
     Direction, lambda d, _: LegacyDirection(d).to_modern()
 )
-draftsman_converters.get_version((1, 0)).register_unstructure_hook(
+draftsman_converters.get_version((1, 0)).register_unstructure_hook( # pragma: no branch
     Direction, lambda inst: inst.to_legacy()
 )
 

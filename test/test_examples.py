@@ -4,14 +4,9 @@ Run all examples in order to ensure they're all up-to-date with any new breaking
 syntax changes.
 """
 
-
-import io
 import pytest
 
-import examples
-import sys
 import importlib
-import os
 
 
 @pytest.mark.parametrize(
