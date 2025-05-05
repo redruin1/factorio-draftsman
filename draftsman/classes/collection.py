@@ -17,7 +17,6 @@ from draftsman.error import (
     InvalidAssociationError,
     EntityNotCircuitConnectableError,
 )
-from draftsman.signatures import Connections
 from draftsman.types import RollingStock
 from draftsman.warning import (
     ConnectionSideWarning,
@@ -1568,7 +1567,7 @@ class EntityCollection(metaclass=ABCMeta):
 
         def equivalent_cars(car1, car2):
             """
-            Need this function because checking for equiality between cars also
+            Need this function because checking for equality between cars also
             includes things like orientation and position, which we don't want
             to consider in this case since a train configuration's position and
             orientation are dummy values until they're actually added to a BP.
@@ -1585,7 +1584,7 @@ class EntityCollection(metaclass=ABCMeta):
             # Get the position and orientation of where the stop should be if it
             # exists:
             forward = train[0].orientation.to_direction()
-            right = forward.next(four_way=True)
+            right = forward.next()
             pos = train[0].position + forward.to_vector(3) + right.to_vector(2)
             for stop in stops:
                 if stop.position == pos and stop.direction == forward:

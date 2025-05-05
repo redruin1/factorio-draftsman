@@ -34,12 +34,12 @@ class TileList(Exportable, MutableSequence):
     TODO
     """
 
-    class Format(DraftsmanBaseModel):
-        _root: List[Tile.Format]  # TODO: TileLike?
+    # class Format(DraftsmanBaseModel):
+    #     _root: List[Tile.Format]  # TODO: TileLike?
 
-        root: List[Any]  # TODO: there should be a way to validate this
+    #     root: List[Any]  # TODO: there should be a way to validate this
 
-        model_config = ConfigDict(revalidate_instances="always")
+    #     model_config = ConfigDict(revalidate_instances="always")
 
     def __init__(
         self,
@@ -160,9 +160,7 @@ class TileList(Exportable, MutableSequence):
 
         for tile in self:
             # TODO: more sophisticated
-            result = tile.validate(mode=mode, force=force)
-            output.error_list += result.error_list
-            output.warning_list += result.warning_list
+            output += tile.validate(mode=mode, force=force)
 
         return output
 

@@ -36,8 +36,8 @@ def add_signal(name: str, type: str):
     the user to specify custom signals so that Draftsman can deduce their type
     without having to manually specify each time or install a corresponding mod.
     More specifically, it populates :py:data:`raw` and :py:data:`type_of` with
-    the correct values, and adds the name to either :py:data:`.item`,
-    :py:data:`.fluid`, or :py:data:`.virtual` depending on ``type``.
+    the correct values, and adds the name to the corresponding signal list of
+    the specified type.
 
     Note that this is not intended as a replacement for generating proper signal
     data using ``draftsman-update``; instead it offers a fast mechanism for
@@ -51,40 +51,25 @@ def add_signal(name: str, type: str):
     :param type: The signal-dict type of the signal.
     """
     permitted_types = {
-        "item",
-        "fluid",
-        "recipe",
-        "entity",
-        "space-location",
-        "asteroid-chunk",
-        "quality",
-        "virtual",
+        "item": item,
+        "fluid": fluid,
+        "recipe": recipe,
+        "entity": entity,
+        "space-location": space_location,
+        "asteroid-chunk": asteroid_chunk,
+        "quality": quality,
+        "virtual": virtual,
     }
     if type not in permitted_types:
         raise ValueError("Signal type must be one of {}".format(permitted_types))
 
     raw[name] = {"name": name, "type": type}
     try:
-        type_of[name].add(type)
+        type_of[name].append(type)
     except KeyError:
-        type_of[name] = {type}
+        type_of[name] = [type]
     # TODO: sorting
-    if type == "virtual":
-        virtual.append(name)
-    elif type == "item":
-        item.append(name)
-    elif type == "fluid":
-        fluid.append(name)
-    elif type == "recipe":
-        recipe.append(name)
-    elif type == "entity":
-        entity.append(name)
-    elif type == "space-location":
-        space_location.append(name)
-    elif type == "asteroid-chunk":
-        asteroid_chunk.append(name)
-    elif type == "quality":
-        quality.append(name)
+    permitted_types[type].append(name)
 
 
 def get_signal_types(signal_name: str) -> list[str]:
@@ -111,25 +96,25 @@ def get_signal_types(signal_name: str) -> list[str]:
         raise InvalidSignalError(msg)
 
 
-def signal_dict(signal: str) -> dict:
-    """
-    Creates a SignalID ``dict`` from the given signal name.
+# def signal_dict(signal: str) -> dict:
+#     """
+#     Creates a SignalID ``dict`` from the given signal name.
 
-    Uses :py:func:`get_signal_type` to get the type for the dictionary.
+#     Uses :py:func:`get_signal_type` to get the type for the dictionary.
 
-    :param signal_name: The name of the signal.
+#     :param signal_name: The name of the signal.
 
-    :returns: A dict with the ``"name"`` and ``"type"`` keys set.
-    :exception InvalidSignalError: If the signal name is not contained within
-        :py:mod:`draftsman.data.signals`, and thus it's type cannot be deduced.
-    """
-    if signal is None or isinstance(signal, dict):
-        return signal
-    else:
-        if "item" in get_signal_types(signal):
-            return {"name": str(signal), "type": "item"}
-        else:
-            return {"name": str(signal), "type": next(iter(get_signal_types(signal)))}
+#     :returns: A dict with the ``"name"`` and ``"type"`` keys set.
+#     :exception InvalidSignalError: If the signal name is not contained within
+#         :py:mod:`draftsman.data.signals`, and thus it's type cannot be deduced.
+#     """
+#     if signal is None or isinstance(signal, dict):
+#         return signal
+#     else:
+#         if "item" in get_signal_types(signal):
+#             return {"name": str(signal), "type": "item"}
+#         else:
+#             return {"name": str(signal), "type": next(iter(get_signal_types(signal)))}
 
 
 def get_mapper_type(mapper_name: str) -> str:
@@ -155,7 +140,4 @@ def mapper_dict(mapper: str) -> dict:
 
     :returns: A dict with the ``"name"`` and ``"type"`` keys set.
     """
-    if mapper is None or isinstance(mapper, dict):
-        return mapper
-    else:
-        return {"name": str(mapper), "type": get_mapper_type(mapper)}
+    return {"name": str(mapper), "type": get_mapper_type(mapper)}

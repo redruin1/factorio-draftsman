@@ -4,7 +4,11 @@
 # 2.0: well, definitely now they can
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import ControlBehaviorMixin, CircuitConnectableMixin, EnergySourceMixin
+from draftsman.classes.mixins import (
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    EnergySourceMixin,
+)
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import AttrsSignalID
 from draftsman.validators import instance_of
@@ -16,7 +20,9 @@ from typing import Optional
 
 
 @attrs.define
-class Roboport(ControlBehaviorMixin, CircuitConnectableMixin, EnergySourceMixin, Entity):
+class Roboport(
+    ControlBehaviorMixin, CircuitConnectableMixin, EnergySourceMixin, Entity
+):
     """
     An entity that acts as a node in a logistics network.
     """

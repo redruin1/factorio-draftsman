@@ -1,7 +1,6 @@
 # programmable_speaker.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.classes.mixins import (
     CircuitConditionMixin,
     ControlBehaviorMixin,
@@ -14,14 +13,12 @@ from draftsman.constants import ValidationMode
 from draftsman.error import InvalidNoteID
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    Connections,
     DraftsmanBaseModel,
     AttrsSignalID,
-    SignalID,
     uint32,
 )
 from draftsman.utils import get_first
-from draftsman.validators import and_, instance_of, ge, le
+from draftsman.validators import and_, instance_of, ge
 from draftsman.warning import (
     UnknownInstrumentWarning,
     UnknownNoteWarning,
@@ -56,293 +53,293 @@ class ProgrammableSpeaker(
     signals.
     """
 
-    class Format(
-        CircuitConditionMixin.Format,
-        CircuitEnableMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        Entity.Format,
-    ):
-        class ControlBehavior(
-            CircuitConditionMixin.ControlFormat,
-            CircuitEnableMixin.ControlFormat,
-            DraftsmanBaseModel,
-        ):
-            class CircuitParameters(DraftsmanBaseModel):
-                signal_value_is_pitch: Optional[bool] = Field(
-                    False,
-                    description="""
-                    Whether or not to use the value of the input signal to 
-                    index the note in the selected instrument category. A input
-                    signal value of '1' plays the first note, '2' the second,
-                    etc. For the traditional instruments, this results in the
-                    effect that higher input values will result in higher pitch
-                    notes emitted from the speaker.
-                    """,
-                )
-                instrument_id: Optional[uint32] = Field(
-                    0,
-                    description="""
-                    The index of the instrument in the available instruments, 
-                    0-based.
-                    """,
-                )
-                instrument_name: Optional[str] = Field(
-                    None,
-                    exclude=True,
-                    description="""
-                    The human-readable name of this instrument; Not exported.
-                    """,
-                )
-                note_id: Optional[uint32] = Field(
-                    0,
-                    description="""
-                    The index of the note in the currently selected instrument's
-                    notes, 0-based.
-                    """,
-                )
-                note_name: Optional[str] = Field(
-                    None,
-                    exclude=True,
-                    description="""
-                    The human-readable name of this note; Not exported.
-                    """,
-                )
+    # class Format(
+    #     CircuitConditionMixin.Format,
+    #     CircuitEnableMixin.Format,
+    #     ControlBehaviorMixin.Format,
+    #     CircuitConnectableMixin.Format,
+    #     Entity.Format,
+    # ):
+    #     class ControlBehavior(
+    #         CircuitConditionMixin.ControlFormat,
+    #         CircuitEnableMixin.ControlFormat,
+    #         DraftsmanBaseModel,
+    #     ):
+    #         class CircuitParameters(DraftsmanBaseModel):
+    #             signal_value_is_pitch: Optional[bool] = Field(
+    #                 False,
+    #                 description="""
+    #                 Whether or not to use the value of the input signal to
+    #                 index the note in the selected instrument category. A input
+    #                 signal value of '1' plays the first note, '2' the second,
+    #                 etc. For the traditional instruments, this results in the
+    #                 effect that higher input values will result in higher pitch
+    #                 notes emitted from the speaker.
+    #                 """,
+    #             )
+    #             instrument_id: Optional[uint32] = Field(
+    #                 0,
+    #                 description="""
+    #                 The index of the instrument in the available instruments,
+    #                 0-based.
+    #                 """,
+    #             )
+    #             instrument_name: Optional[str] = Field(
+    #                 None,
+    #                 exclude=True,
+    #                 description="""
+    #                 The human-readable name of this instrument; Not exported.
+    #                 """,
+    #             )
+    #             note_id: Optional[uint32] = Field(
+    #                 0,
+    #                 description="""
+    #                 The index of the note in the currently selected instrument's
+    #                 notes, 0-based.
+    #                 """,
+    #             )
+    #             note_name: Optional[str] = Field(
+    #                 None,
+    #                 exclude=True,
+    #                 description="""
+    #                 The human-readable name of this note; Not exported.
+    #                 """,
+    #             )
 
-                @field_validator("instrument_id")
-                @classmethod
-                def ensure_instrument_id_known(
-                    cls, value: Optional[int], info: ValidationInfo
-                ):
-                    if not info.context:
-                        return value
-                    if info.context["mode"] <= ValidationMode.MINIMUM:
-                        return value
+    #             @field_validator("instrument_id")
+    #             @classmethod
+    #             def ensure_instrument_id_known(
+    #                 cls, value: Optional[int], info: ValidationInfo
+    #             ):
+    #                 if not info.context:
+    #                     return value
+    #                 if info.context["mode"] <= ValidationMode.MINIMUM:
+    #                     return value
 
-                    entity: "ProgrammableSpeaker" = info.context["object"]
-                    warning_list: list = info.context["warning_list"]
+    #                 entity: "ProgrammableSpeaker" = info.context["object"]
+    #                 warning_list: list = info.context["warning_list"]
 
-                    # If we don't recognize entity.name, then we can't know that
-                    # the ID is invalid
-                    if entity.name not in instruments_data.name_of:
-                        return value
+    #                 # If we don't recognize entity.name, then we can't know that
+    #                 # the ID is invalid
+    #                 if entity.name not in instruments_data.name_of:
+    #                     return value
 
-                    if (
-                        value is not None
-                        and value not in instruments_data.name_of[entity.name]
-                    ):
-                        warning_list.append(
-                            UnknownInstrumentWarning(
-                                "ID '{}' is not a known instrument for this programmable speaker".format(
-                                    value
-                                )
-                            )
-                        )
+    #                 if (
+    #                     value is not None
+    #                     and value not in instruments_data.name_of[entity.name]
+    #                 ):
+    #                     warning_list.append(
+    #                         UnknownInstrumentWarning(
+    #                             "ID '{}' is not a known instrument for this programmable speaker".format(
+    #                                 value
+    #                             )
+    #                         )
+    #                     )
 
-                    return value
+    #                 return value
 
-                @field_validator("instrument_name")
-                @classmethod
-                def ensure_instrument_name_known(
-                    cls, value: Optional[str], info: ValidationInfo
-                ):
-                    if not info.context:
-                        return value
-                    if info.context["mode"] <= ValidationMode.MINIMUM:
-                        return value
+    #             @field_validator("instrument_name")
+    #             @classmethod
+    #             def ensure_instrument_name_known(
+    #                 cls, value: Optional[str], info: ValidationInfo
+    #             ):
+    #                 if not info.context:
+    #                     return value
+    #                 if info.context["mode"] <= ValidationMode.MINIMUM:
+    #                     return value
 
-                    entity: "ProgrammableSpeaker" = info.context["object"]
-                    warning_list: list = info.context["warning_list"]
+    #                 entity: "ProgrammableSpeaker" = info.context["object"]
+    #                 warning_list: list = info.context["warning_list"]
 
-                    # If we don't recognize entity.name, then we can't know that
-                    # the ID is invalid
-                    if entity.name not in instruments_data.index_of:
-                        return value
+    #                 # If we don't recognize entity.name, then we can't know that
+    #                 # the ID is invalid
+    #                 if entity.name not in instruments_data.index_of:
+    #                     return value
 
-                    if (
-                        value is not None
-                        and value not in instruments_data.index_of[entity.name]
-                    ):
-                        warning_list.append(
-                            UnknownInstrumentWarning(
-                                "Name '{}' is not a known instrument for this programmable speaker".format(
-                                    value
-                                )
-                            )
-                        )
+    #                 if (
+    #                     value is not None
+    #                     and value not in instruments_data.index_of[entity.name]
+    #                 ):
+    #                     warning_list.append(
+    #                         UnknownInstrumentWarning(
+    #                             "Name '{}' is not a known instrument for this programmable speaker".format(
+    #                                 value
+    #                             )
+    #                         )
+    #                     )
 
-                    return value
+    #                 return value
 
-                @field_validator("note_id")
-                @classmethod
-                def ensure_note_id_known(
-                    cls, value: Optional[int], info: ValidationInfo
-                ):
-                    if not info.context:
-                        return value
-                    if info.context["mode"] <= ValidationMode.MINIMUM:
-                        return value
+    #             @field_validator("note_id")
+    #             @classmethod
+    #             def ensure_note_id_known(
+    #                 cls, value: Optional[int], info: ValidationInfo
+    #             ):
+    #                 if not info.context:
+    #                     return value
+    #                 if info.context["mode"] <= ValidationMode.MINIMUM:
+    #                     return value
 
-                    entity: "ProgrammableSpeaker" = info.context["object"]
-                    warning_list: list = info.context["warning_list"]
+    #                 entity: "ProgrammableSpeaker" = info.context["object"]
+    #                 warning_list: list = info.context["warning_list"]
 
-                    # If we don't recognize entity.name or instrument_id, then
-                    # we can't know that the ID is invalid
-                    if entity.name not in instruments_data.name_of:
-                        return value
-                    if (
-                        entity.instrument_id
-                        not in instruments_data.name_of[entity.name]
-                    ):
-                        return value
+    #                 # If we don't recognize entity.name or instrument_id, then
+    #                 # we can't know that the ID is invalid
+    #                 if entity.name not in instruments_data.name_of:
+    #                     return value
+    #                 if (
+    #                     entity.instrument_id
+    #                     not in instruments_data.name_of[entity.name]
+    #                 ):
+    #                     return value
 
-                    if (
-                        value is not None
-                        and value
-                        not in instruments_data.name_of[entity.name][
-                            entity.instrument_id
-                        ]
-                    ):
-                        warning_list.append(
-                            UnknownNoteWarning(
-                                "ID '{}' is not a known note for this instrument and/or programmable speaker".format(
-                                    value
-                                )
-                            )
-                        )
+    #                 if (
+    #                     value is not None
+    #                     and value
+    #                     not in instruments_data.name_of[entity.name][
+    #                         entity.instrument_id
+    #                     ]
+    #                 ):
+    #                     warning_list.append(
+    #                         UnknownNoteWarning(
+    #                             "ID '{}' is not a known note for this instrument and/or programmable speaker".format(
+    #                                 value
+    #                             )
+    #                         )
+    #                     )
 
-                    return value
+    #                 return value
 
-                @field_validator("note_name")
-                @classmethod
-                def ensure_note_name_known(
-                    cls, value: Optional[int], info: ValidationInfo
-                ):
-                    if not info.context:
-                        return value
-                    if info.context["mode"] <= ValidationMode.MINIMUM:
-                        return value
+    #             @field_validator("note_name")
+    #             @classmethod
+    #             def ensure_note_name_known(
+    #                 cls, value: Optional[int], info: ValidationInfo
+    #             ):
+    #                 if not info.context:
+    #                     return value
+    #                 if info.context["mode"] <= ValidationMode.MINIMUM:
+    #                     return value
 
-                    entity: "ProgrammableSpeaker" = info.context["object"]
-                    warning_list: list = info.context["warning_list"]
+    #                 entity: "ProgrammableSpeaker" = info.context["object"]
+    #                 warning_list: list = info.context["warning_list"]
 
-                    # If we don't recognize entity.name or instrument_id, then
-                    # we can't know that the ID is invalid
-                    if entity.name not in instruments_data.index_of:
-                        return value
-                    if (
-                        entity.instrument_name
-                        not in instruments_data.index_of[entity.name]
-                    ):
-                        return value
+    #                 # If we don't recognize entity.name or instrument_id, then
+    #                 # we can't know that the ID is invalid
+    #                 if entity.name not in instruments_data.index_of:
+    #                     return value
+    #                 if (
+    #                     entity.instrument_name
+    #                     not in instruments_data.index_of[entity.name]
+    #                 ):
+    #                     return value
 
-                    if (
-                        value is not None
-                        and value
-                        not in instruments_data.index_of[entity.name][
-                            entity.instrument_name
-                        ]
-                    ):
-                        warning_list.append(
-                            UnknownNoteWarning(
-                                "Name '{}' is not a known note for this instrument and/or programmable speaker".format(
-                                    value
-                                )
-                            )
-                        )
+    #                 if (
+    #                     value is not None
+    #                     and value
+    #                     not in instruments_data.index_of[entity.name][
+    #                         entity.instrument_name
+    #                     ]
+    #                 ):
+    #                     warning_list.append(
+    #                         UnknownNoteWarning(
+    #                             "Name '{}' is not a known note for this instrument and/or programmable speaker".format(
+    #                                 value
+    #                             )
+    #                         )
+    #                     )
 
-                    return value
+    #                 return value
 
-            circuit_parameters: Optional[CircuitParameters] = CircuitParameters()
+    #         circuit_parameters: Optional[CircuitParameters] = CircuitParameters()
 
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
-        class Parameters(DraftsmanBaseModel):
-            playback_volume: Optional[float] = Field(
-                1.0,
-                description="""
-                The volume with which to broadcast all sounds emitted by this
-                programmable speaker, in the range [0.0, 1.0]. Values outside of
-                this range are clipped to it.
-                """,
-            )
-            playback_globally: Optional[bool] = Field(
-                False,
-                description="""
-                Whether or not to have the programmable speaker distribute it's
-                sound evenly across the entire surface, or only locally to the
-                area it's placed.
-                """,
-            )
-            allow_polyphony: Optional[bool] = Field(
-                False,
-                description="""
-                Allows up to 10 sounds to be played at the same time, allowing
-                for layering sounds. When false, notes will wait until their
-                entire sound has played before repeating.
-                """,
-            )
+    #     class Parameters(DraftsmanBaseModel):
+    #         playback_volume: Optional[float] = Field(
+    #             1.0,
+    #             description="""
+    #             The volume with which to broadcast all sounds emitted by this
+    #             programmable speaker, in the range [0.0, 1.0]. Values outside of
+    #             this range are clipped to it.
+    #             """,
+    #         )
+    #         playback_globally: Optional[bool] = Field(
+    #             False,
+    #             description="""
+    #             Whether or not to have the programmable speaker distribute it's
+    #             sound evenly across the entire surface, or only locally to the
+    #             area it's placed.
+    #             """,
+    #         )
+    #         allow_polyphony: Optional[bool] = Field(
+    #             False,
+    #             description="""
+    #             Allows up to 10 sounds to be played at the same time, allowing
+    #             for layering sounds. When false, notes will wait until their
+    #             entire sound has played before repeating.
+    #             """,
+    #         )
 
-            @field_validator("playback_volume")
-            @classmethod
-            def volume_in_range(cls, value: Optional[float], info: ValidationInfo):
-                if not info.context:
-                    return value
-                if info.context["mode"] is ValidationMode.MINIMUM:
-                    return value
+    #         @field_validator("playback_volume")
+    #         @classmethod
+    #         def volume_in_range(cls, value: Optional[float], info: ValidationInfo):
+    #             if not info.context:
+    #                 return value
+    #             if info.context["mode"] is ValidationMode.MINIMUM:
+    #                 return value
 
-                warning_list: list = info.context["warning_list"]
-                if value is not None and not 0.0 <= value <= 1.0:
-                    issue = VolumeRangeWarning(
-                        "'playback_volume' ({}) not in range [0.0, 1.0]".format(value)
-                    )
+    #             warning_list: list = info.context["warning_list"]
+    #             if value is not None and not 0.0 <= value <= 1.0:
+    #                 issue = VolumeRangeWarning(
+    #                     "'playback_volume' ({}) not in range [0.0, 1.0]".format(value)
+    #                 )
 
-                    if info.context["mode"] is ValidationMode.PEDANTIC:
-                        raise ValueError(issue) from None
-                    else:
-                        warning_list.append(issue)
+    #                 if info.context["mode"] is ValidationMode.PEDANTIC:
+    #                     raise ValueError(issue) from None
+    #                 else:
+    #                     warning_list.append(issue)
 
-                return value
+    #             return value
 
-        parameters: Optional[Parameters] = Parameters()
+    #     parameters: Optional[Parameters] = Parameters()
 
-        class AlertParameters(DraftsmanBaseModel):
-            show_alert: Optional[bool] = Field(
-                False,
-                description="""
-                Whether or not to show any kind of alert when this speaker is
-                in operation. At minimum, enabling this feature will generate an
-                alert icon in the bottom right corner which will direct the 
-                player to the programmable speaker.
-                """,
-            )
-            show_on_map: Optional[bool] = Field(
-                True,
-                description="""
-                Whether or not to show the 'icon_signal_id' icon as a flashing
-                icon on the map surface, if 'show_alert' is true.
-                """,
-            )
-            icon_signal_id: Optional[SignalID] = Field(
-                None,
-                description="""
-                The signal icon image to broadcast the alert as, if 'show_alert'
-                is true. This is used both for the alert in the bottom right 
-                corner as well as the map view icon, if applicable.
-                """,
-            )
-            alert_message: Optional[str] = Field(
-                None,
-                description="""
-                A custom message to distribute alongside an alert, if 
-                'show_alert' is true. If no message is provided the alert will
-                simply point to the speakers location on the map.
-                """,
-            )
+    #     class AlertParameters(DraftsmanBaseModel):
+    #         show_alert: Optional[bool] = Field(
+    #             False,
+    #             description="""
+    #             Whether or not to show any kind of alert when this speaker is
+    #             in operation. At minimum, enabling this feature will generate an
+    #             alert icon in the bottom right corner which will direct the
+    #             player to the programmable speaker.
+    #             """,
+    #         )
+    #         show_on_map: Optional[bool] = Field(
+    #             True,
+    #             description="""
+    #             Whether or not to show the 'icon_signal_id' icon as a flashing
+    #             icon on the map surface, if 'show_alert' is true.
+    #             """,
+    #         )
+    #         icon_signal_id: Optional[SignalID] = Field(
+    #             None,
+    #             description="""
+    #             The signal icon image to broadcast the alert as, if 'show_alert'
+    #             is true. This is used both for the alert in the bottom right
+    #             corner as well as the map view icon, if applicable.
+    #             """,
+    #         )
+    #         alert_message: Optional[str] = Field(
+    #             None,
+    #             description="""
+    #             A custom message to distribute alongside an alert, if
+    #             'show_alert' is true. If no message is provided the alert will
+    #             simply point to the speakers location on the map.
+    #             """,
+    #         )
 
-        alert_parameters: Optional[AlertParameters] = AlertParameters()
+    #     alert_parameters: Optional[AlertParameters] = AlertParameters()
 
-        model_config = ConfigDict(title="ProgrammableSpeaker")
+    #     model_config = ConfigDict(title="ProgrammableSpeaker")
 
     # def __init__(
     #     self,
@@ -909,9 +906,9 @@ class ProgrammableSpeaker(
             # If we don't recognize entity.name or instrument_id, then
             # we can't know that the ID is invalid
             if self.name not in instruments_data.name_of:
-                return value
+                return
             if self.instrument_id not in instruments_data.name_of[self.name]:
-                return value
+                return
 
             if (
                 value is not None

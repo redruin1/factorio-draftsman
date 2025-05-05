@@ -1,7 +1,7 @@
 # constant_combinator.py
 
+from draftsman import __factorio_version_info__
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     PlayerDescriptionMixin,
     ControlBehaviorMixin,
@@ -14,10 +14,7 @@ from draftsman.data.signals import get_signal_types
 from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    Connections,
-    DraftsmanBaseModel,
-    Sections,
-    AttrsSection,
+    ManualSection,
     uint32,
 )
 from draftsman.utils import fix_incorrect_pre_init
@@ -148,18 +145,29 @@ class ConstantCombinator(
     # =========================================================================
 
     @property
-    def item_slot_count(self) -> uint32:
+    def max_signal_count(self) -> uint32:
         """
-        The total number of signal slots that this ``ConstantCombinator`` can
+        The total number of signals that this ``ConstantCombinator`` can
         hold. Equivalent to ``"item_slot_count"`` from Factorio's ``data.raw``.
         Returns ``None`` if the entity's name is not recognized by Draftsman.
         Not exported; read only.
 
-        Note: Deprecated in Factorio 2.0; each combinator signal section can
-        hold up to 1000 signals, and a combinator can as many signal sections as
-        desired.
+        .. NOTE::
+
+            In Factorio 1.0, this value returns the value of the
+            ``"item_slot_count"`` key in ``data.raw``, which is usually 20
+            signals. In Factorio 2.0, this value is 100 signal sections * 1000
+            signals per section, for a total of 100,000 signals possible. Which
+            value is returned is based on Draftsman's current environment
+            version, which can be queried with TODO.
         """
-        return entities.raw.get(self.name, {"item_slot_count": None})["item_slot_count"]
+        # TODO: better version query method
+        if __factorio_version_info__ < (2, 0):  # pragma: no coverage
+            return entities.raw.get(self.name, {"item_slot_count": None}).get(
+                "item_slot_count", 20
+            )
+        else:
+            return 100_000
 
     # =========================================================================
 
@@ -207,15 +215,12 @@ class ConstantCombinator(
     #         self.control_behavior.sections.filters = value
 
     def _sections_converter(value):
-        print("sections converter")
-        print(value)
         if isinstance(value, list):
             for i, elem in enumerate(value):
-                value[i] = AttrsSection.converter(elem)
-        print(value)
+                value[i] = ManualSection.converter(elem)
         return value
 
-    sections: list[AttrsSection] = attrs.field(
+    sections: list[ManualSection] = attrs.field(
         factory=list,
         converter=_sections_converter,
         validator=instance_of(list),  # TODO: validator
@@ -284,7 +289,7 @@ class ConstantCombinator(
         group: Union[str, None] = None,
         index: Optional[int] = None,  # TODO: integer size
         active: bool = True,
-    ) -> AttrsSection:
+    ) -> ManualSection:
         """
         Adds a new section to the constant combinator.
 
@@ -305,15 +310,13 @@ class ConstantCombinator(
 
         :returns: A reference to the :class:`.Section` just added.
         """
-        section = {"active": active}
-        if group is not None:
-            section["group"] = group
-        if index is not None:
-            section["index"] = index + 1
-        else:
-            section["index"] = len(self.sections) + 1
-        section = AttrsSection(**section)
-        self.sections.append(section)
+        self.sections += [
+            ManualSection(
+                group=group,
+                index=index + 1 if index is not None else len(self.sections) + 1,
+                active=active
+            )
+        ]
         return self.sections[-1]
 
     # =========================================================================

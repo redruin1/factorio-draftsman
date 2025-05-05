@@ -65,7 +65,9 @@ class TestTransportBelt:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            belt = TransportBelt.from_dict({"name": "fast-transport-belt", "invalid_param": 100})
+            belt = TransportBelt.from_dict(
+                {"name": "fast-transport-belt", "invalid_param": 100}
+            )
             belt.validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
@@ -261,10 +263,7 @@ class TestTransportBelt:
             },
             "connect_to_logistic_network": True,
             "logistic_condition": {
-                "first_signal": {
-                    "name": "fast-underground-belt",
-                    "type": "item"
-                },
+                "first_signal": {"name": "fast-underground-belt", "type": "item"},
                 "comparator": "≥",
                 # "constant": 0, # Default
             },

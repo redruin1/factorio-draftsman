@@ -7,7 +7,7 @@ from draftsman.entity import (
 )
 from draftsman.error import DataFormatError
 from draftsman.classes.mixins import RequestFiltersMixin
-from draftsman.signatures import RequestFilter, AttrsSection
+from draftsman.signatures import RequestFilter, ManualSection, SignalFilter
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from draftsman.data import mods
@@ -77,7 +77,7 @@ class TestLogisticBufferContainer:
             assert container.dual_circuit_connectable == False
 
     @pytest.mark.skipif(
-        "quality" not in mods.mod_list, reason="Quality mod not enabled"
+        "quality" not in mods.versions, reason="Quality mod not enabled"
     )
     def test_quality_inventory_size(self):
         qualities = {
@@ -99,7 +99,9 @@ class TestLogisticBufferContainer:
             sections=[
                 {
                     "index": 1,
-                    "filters": [{"name": "utility-science-pack", "index": 1, "count": 10}],
+                    "filters": [
+                        {"name": "utility-science-pack", "index": 1, "count": 10}
+                    ],
                 }
             ],
             tags={"some": "stuff"},
@@ -140,17 +142,19 @@ class TestLogisticBufferContainer:
 
         assert container1.bar == 10
         assert container1.sections == [
-            AttrsSection(**{
-                "index": 1,
-                "filters": [
-                    {
-                        "name": "utility-science-pack",
-                        "index": 1,
-                        "count": 10,
-                        "comparator": "=",
-                    }
-                ],
-            })
+            ManualSection(
+                **{
+                    "index": 1,
+                    "filters": [
+                        {
+                            "name": "utility-science-pack",
+                            "index": 1,
+                            "count": 10,
+                            "comparator": "=",
+                        }
+                    ],
+                }
+            )
         ]
         assert container1.tags == {"some": "stuff"}
 
@@ -171,3 +175,36 @@ class TestLogisticBufferContainer:
 
         # hashable
         assert isinstance(container1, Hashable)
+
+    def test_old_format_conversion(self):
+        old_dict = {"name": "buffer-chest", "position": {"x": 0.5, "y": 0.5}}
+        chest = LogisticBufferContainer.from_dict(old_dict, version=(1, 0))
+        assert chest.to_dict(version=(1, 0)) == old_dict
+
+        old_dict_with_filters = {  # TODO: actually validate this
+            "name": "buffer-chest",
+            "position": {"x": 0.5, "y": 0.5},
+            "request_filters": [
+                {
+                    "index": 1,
+                    "name": "iron-plate",
+                    "count": 50,
+                }
+            ],
+        }
+        chest = LogisticBufferContainer.from_dict(old_dict_with_filters, version=(1, 0))
+        assert len(chest.sections) == 1
+        assert chest.sections == [
+            ManualSection(
+                index=1,
+                filters=[
+                    SignalFilter(
+                        index=1,
+                        name="iron-plate",
+                        count=50,
+                    )
+                ],
+            )
+        ]
+
+        # TODO: unstructure hook

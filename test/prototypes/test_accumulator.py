@@ -13,10 +13,7 @@ import pytest
 
 class TestAccumulator:
     def test_constructor_init(self):
-        accumulator = Accumulator(
-            "accumulator",
-            output_signal="signal-B"
-        )
+        accumulator = Accumulator("accumulator", output_signal="signal-B")
         assert accumulator.to_dict() == {
             "name": accumulators[0],
             "position": accumulator.position.to_dict(),
@@ -25,8 +22,7 @@ class TestAccumulator:
             },
         }
         accumulator = Accumulator(
-            "accumulator",
-            output_signal={"name": "signal-B", "type": "virtual"}
+            "accumulator", output_signal={"name": "signal-B", "type": "virtual"}
         )
         assert accumulator.to_dict() == {
             "name": accumulators[0],
@@ -42,9 +38,7 @@ class TestAccumulator:
 
         # Errors
         with pytest.raises(IncompleteSignalError):
-            Accumulator(
-                output_signal="incorrect"
-            ).validate().reissue_all()
+            Accumulator(output_signal="incorrect").validate().reissue_all()
 
     def test_output_signal(self):
         accumulator = Accumulator()

@@ -47,9 +47,7 @@ class TestLamp:
 
     def test_mergable_with(self):
         lamp1 = Lamp("small-lamp")
-        lamp2 = Lamp(
-            "small-lamp", use_colors=True, tags={"some": "stuff"}
-        )
+        lamp2 = Lamp("small-lamp", use_colors=True, tags={"some": "stuff"})
 
         assert lamp1.mergable_with(lamp1)
 
@@ -61,9 +59,7 @@ class TestLamp:
 
     def test_merge(self):
         lamp1 = Lamp("small-lamp")
-        lamp2 = Lamp(
-            "small-lamp", use_colors=True, tags={"some": "stuff"}
-        )
+        lamp2 = Lamp("small-lamp", use_colors=True, tags={"some": "stuff"})
 
         lamp1.merge(lamp2)
         del lamp2

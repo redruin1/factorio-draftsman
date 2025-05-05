@@ -1,19 +1,11 @@
 # circuit_connectable.py
 
 from draftsman.classes.association import Association
-from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import DraftsmanBaseModel, Connections
+from draftsman.signatures import DraftsmanBaseModel
 
 import attrs
-from pydantic import (
-    Field,
-    ValidationInfo,
-    ValidatorFunctionWrapHandler,
-    field_validator,
-)
-from typing import Any, Optional
 
 
 @attrs.define(slots=False)
@@ -22,18 +14,18 @@ class CircuitConnectableMixin:
     Enables the Entity to be connected to circuit networks.
     """
 
-    class Format(DraftsmanBaseModel):
-        # 1.0
-        # connections: Optional[Connections] = Field(
-        #     Connections(),
-        #     description="""
-        #     All circuit and copper wire connections that this entity has. Note
-        #     that copper wire connections in this field are exclusively for
-        #     power-switch connections; for power-pole to power-pole connections
-        #     see the 'neighbours' key.
-        #     """,
-        # )
-        pass
+    # class Format(DraftsmanBaseModel):
+    #     # 1.0
+    #     # connections: Optional[Connections] = Field(
+    #     #     Connections(),
+    #     #     description="""
+    #     #     All circuit and copper wire connections that this entity has. Note
+    #     #     that copper wire connections in this field are exclusively for
+    #     #     power-switch connections; for power-pole to power-pole connections
+    #     #     see the 'neighbours' key.
+    #     #     """,
+    #     # )
+    #     pass
 
     # def __init__(self, name: str, similar_entities: list[str], **kwargs):
     #     self._root: __class__.Format
@@ -46,6 +38,10 @@ class CircuitConnectableMixin:
 
     @property
     def circuit_connectable(self) -> bool:
+        """
+        Whether or not this entity can be connected with either red or green
+        circuit wires.
+        """
         return True
 
     # =========================================================================
@@ -54,9 +50,10 @@ class CircuitConnectableMixin:
     def circuit_wire_max_distance(self) -> float:
         """
         The maximum distance that this entity can reach for circuit connections.
-        Returns ``None`` if the entity's name is not recognized by Draftsman.
-        Not exported; read only.
+        Returns ``None`` if the entity's name is not recognized under the
+        current environment. Not exported; read only.
         """
+        # TODO: modify this based on quality
         return entities.raw.get(self.name, {"circuit_wire_max_distance": None}).get(
             "circuit_wire_max_distance", 0
         )
@@ -71,7 +68,13 @@ class CircuitConnectableMixin:
         Connections dictionary. Primarily holds information about the Entity's
         circuit connections (as well as copper wire connections).
 
-        Deprecated in Factorio 2.0.
+        Deprecated in Factorio 2.0. On blueprint string import, this field will
+        be converted to the blueprint's :py:attr:`.Blueprint.wires` attribute.
+        This value is only ever populated when loading from a pre-Factorio 1.0
+        entity dictionary with the method :py:meth:`.from_dict`. This is 
+        provided so that users may manually try and reconstruct wire connections
+        with incomplete data, and such that round-trip import/exporting retains
+        all given keys.
         """
         return self._connections
 
@@ -95,7 +98,7 @@ class CircuitConnectableMixin:
 
     # =========================================================================
 
-    def merge(self, other: Format):
+    def merge(self, other: "CircuitConnectableMixin"):
         super().merge(other)
 
         # def merge_circuit_connection(self, side, color, point, other):

@@ -84,7 +84,7 @@ from draftsman.classes.association import Association
 from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.entity_list import EntityList
-from draftsman.classes.exportable import ValidationResult, attempt_and_reissue
+from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.tile_list import TileList
 from draftsman.classes.transformable import Transformable
 from draftsman.classes.collection import EntityCollection, TileCollection
@@ -103,9 +103,7 @@ from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     AttrsColor,
     Color,
-    Connections,
     DraftsmanBaseModel,
-    Icon,
     IntPosition,
     uint16,
     uint64,
@@ -207,16 +205,14 @@ def _normalize_internal_structure(
     for i, entity in enumerate(flattened_entities):
         # Get a copy of the dict representation of the Entity
         # (At this point, Associations are not copied and still point to original)
-        # result = entity.to_dict() # copy.deepcopy?
-        # result = copy.deepcopy(entity.to_dict())
-        result = entity.to_dict()
+        result = entity.to_dict(entity_number=i + 1) # TODO: needs arguments from parent
         if not isinstance(result, dict):
             raise DraftsmanError(
                 "{}.to_dict() must return a dict".format(type(entity).__name__)
             )
         # Add this to the output's entities and set it's entity_number
         entities_out.append(result)
-        entities_out[i]["entity_number"] = i + 1
+        # entities_out[i]["entity_number"] = i + 1
 
     # for entity in entities_out:
     #     if "connections" in entity:  # Wire connections
@@ -359,7 +355,6 @@ def _normalize_internal_structure(
                 stock_connection["back"] = get_index(stock_connection["back"])
 
 
-
 @draftsman.define
 class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     """
@@ -372,168 +367,168 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     # Format
     # =========================================================================
 
-    class Format(DraftsmanBaseModel):
-        # Private Internals (Not exported)
-        _entities: EntityList = PrivateAttr()
-        _tiles: TileList = PrivateAttr()
-        _schedules: ScheduleList = PrivateAttr()
-        _wires: list[tuple[Association, int, Association, int]] = PrivateAttr()
+    # class Format(DraftsmanBaseModel):
+    #     # Private Internals (Not exported)
+    #     _entities: EntityList = PrivateAttr()
+    #     _tiles: TileList = PrivateAttr()
+    #     _schedules: ScheduleList = PrivateAttr()
+    #     _wires: list[tuple[Association, int, Association, int]] = PrivateAttr()
 
-        class BlueprintObject(DraftsmanBaseModel):
-            # Private Internals (Not exported)
-            _snap_to_grid: Vector = PrivateAttr(Vector(0, 0))
-            _snapping_grid_position: Vector = PrivateAttr(Vector(0, 0))
-            _position_relative_to_grid: Vector = PrivateAttr(Vector(0, 0))
+    #     class BlueprintObject(DraftsmanBaseModel):
+    #         # Private Internals (Not exported)
+    #         _snap_to_grid: Vector = PrivateAttr(Vector(0, 0))
+    #         _snapping_grid_position: Vector = PrivateAttr(Vector(0, 0))
+    #         _position_relative_to_grid: Vector = PrivateAttr(Vector(0, 0))
 
-            item: Literal["blueprint"] = Field(
-                ...,
-                description="""
-                The item that this BlueprintItem object is associated with. 
-                Always equivalent to 'blueprint'.
-                """,
-            )
-            label: Optional[str] = Field(
-                None,
-                description="""
-                A string title for this Blueprint.
-                """,
-            )
-            label_color: Optional[Color] = Field(
-                None,
-                description="""
-                The color to draw the label of this blueprint with, if 'label'
-                is present. Defaults to white if omitted.
-                """,
-            )
-            description: Optional[str] = Field(
-                None,
-                description="""
-                A string description given to this Blueprint.
-                """,
-            )
-            icons: Optional[list[Icon]] = Field(
-                None,
-                description="""
-                A set of signal pictures to associate with this Blueprint.
-                """,
-                max_length=4,
-            )
-            version: Optional[uint64] = Field(
-                None,
-                description="""
-                What version of Factorio this UpgradePlanner was made 
-                in/intended for. Specified as 4 unsigned 16-bit numbers combined, 
-                representing the major version, the minor version, the patch 
-                number, and the internal development version respectively. The 
-                most significant digits correspond to the major version, and the 
-                least to the development number. 
-                """,
-            )
+    #         item: Literal["blueprint"] = Field(
+    #             ...,
+    #             description="""
+    #             The item that this BlueprintItem object is associated with.
+    #             Always equivalent to 'blueprint'.
+    #             """,
+    #         )
+    #         label: Optional[str] = Field(
+    #             None,
+    #             description="""
+    #             A string title for this Blueprint.
+    #             """,
+    #         )
+    #         label_color: Optional[Color] = Field(
+    #             None,
+    #             description="""
+    #             The color to draw the label of this blueprint with, if 'label'
+    #             is present. Defaults to white if omitted.
+    #             """,
+    #         )
+    #         description: Optional[str] = Field(
+    #             None,
+    #             description="""
+    #             A string description given to this Blueprint.
+    #             """,
+    #         )
+    #         icons: Optional[list[Icon]] = Field(
+    #             None,
+    #             description="""
+    #             A set of signal pictures to associate with this Blueprint.
+    #             """,
+    #             max_length=4,
+    #         )
+    #         version: Optional[uint64] = Field(
+    #             None,
+    #             description="""
+    #             What version of Factorio this UpgradePlanner was made
+    #             in/intended for. Specified as 4 unsigned 16-bit numbers combined,
+    #             representing the major version, the minor version, the patch
+    #             number, and the internal development version respectively. The
+    #             most significant digits correspond to the major version, and the
+    #             least to the development number.
+    #             """,
+    #         )
 
-            snap_to_grid: Optional[IntPosition] = Field(
-                IntPosition(x=1, y=1),
-                alias="snap-to-grid",
-                description="""
-                The dimension of a square grid to snap this blueprint to, if
-                present.
-                """,
-            )
-            absolute_snapping: Optional[bool] = Field(
-                True,
-                alias="absolute-snapping",
-                description="""
-                Whether or not 'snap-to-grid' is relative to the global map
-                coordinates, or to the position of the first blueprint built.
-                """,
-            )
-            position_relative_to_grid: Optional[IntPosition] = Field(
-                IntPosition(x=0, y=0),
-                alias="position-relative-to-grid",
-                description="""
-                Any positional offset that the snapping grid has if 
-                'absolute-snapping' is true.
-                """,
-            )
+    #         snap_to_grid: Optional[IntPosition] = Field(
+    #             IntPosition(x=1, y=1),
+    #             alias="snap-to-grid",
+    #             description="""
+    #             The dimension of a square grid to snap this blueprint to, if
+    #             present.
+    #             """,
+    #         )
+    #         absolute_snapping: Optional[bool] = Field(
+    #             True,
+    #             alias="absolute-snapping",
+    #             description="""
+    #             Whether or not 'snap-to-grid' is relative to the global map
+    #             coordinates, or to the position of the first blueprint built.
+    #             """,
+    #         )
+    #         position_relative_to_grid: Optional[IntPosition] = Field(
+    #             IntPosition(x=0, y=0),
+    #             alias="position-relative-to-grid",
+    #             description="""
+    #             Any positional offset that the snapping grid has if
+    #             'absolute-snapping' is true.
+    #             """,
+    #         )
 
-            entities: Optional[list[dict]] = Field(
-                [],
-                description="""
-                The list of all entities contained in the blueprint.
-                """,
-            )
-            tiles: Optional[list[dict]] = Field(
-                [],
-                description="""
-                The list of all tiles contained in the blueprint.
-                """,
-            )
-            schedules: Optional[list[dict]] = Field(
-                [],
-                description="""
-                The list of all schedules contained in the blueprint.
-                """,
-            )
-            wires: Optional[list[list[int]]] = Field(
-                [],
-                description="""
-                (2.0) The definitions of all wires in the blueprint, including
-                both power and circuit connections.
-                """,
-            )
-            stock_connections: Optional[list[dict]] = []  # TODO
+    #         entities: Optional[list[dict]] = Field(
+    #             [],
+    #             description="""
+    #             The list of all entities contained in the blueprint.
+    #             """,
+    #         )
+    #         tiles: Optional[list[dict]] = Field(
+    #             [],
+    #             description="""
+    #             The list of all tiles contained in the blueprint.
+    #             """,
+    #         )
+    #         schedules: Optional[list[dict]] = Field(
+    #             [],
+    #             description="""
+    #             The list of all schedules contained in the blueprint.
+    #             """,
+    #         )
+    #         wires: Optional[list[list[int]]] = Field(
+    #             [],
+    #             description="""
+    #             (2.0) The definitions of all wires in the blueprint, including
+    #             both power and circuit connections.
+    #             """,
+    #         )
+    #         stock_connections: Optional[list[dict]] = []  # TODO
 
-            @field_validator("icons", mode="before")
-            @classmethod
-            def init_icons_from_list(cls, value: Any):
-                if isinstance(value, (tuple, list)):
-                    result = []
-                    for i, elem in enumerate(value):
-                        if isinstance(elem, str):
-                            result.append({"signal": elem, "index": i + 1})
-                        else:
-                            result.append(elem)
-                    return result
-                else:
-                    return value
+    #         @field_validator("icons", mode="before")
+    #         @classmethod
+    #         def init_icons_from_list(cls, value: Any):
+    #             if isinstance(value, (tuple, list)):
+    #                 result = []
+    #                 for i, elem in enumerate(value):
+    #                     if isinstance(elem, str):
+    #                         result.append({"signal": elem, "index": i + 1})
+    #                     else:
+    #                         result.append(elem)
+    #                 return result
+    #             else:
+    #                 return value
 
-            @field_serializer("snap_to_grid", when_used="unless-none")
-            def serialize_snapping_grid(self, _):
-                return self._snap_to_grid.to_dict()
+    #         @field_serializer("snap_to_grid", when_used="unless-none")
+    #         def serialize_snapping_grid(self, _):
+    #             return self._snap_to_grid.to_dict()
 
-            @field_serializer("position_relative_to_grid", when_used="unless-none")
-            def serialize_position_relative(self, _):
-                return self._position_relative_to_grid.to_dict()
+    #         @field_serializer("position_relative_to_grid", when_used="unless-none")
+    #         def serialize_position_relative(self, _):
+    #             return self._position_relative_to_grid.to_dict()
 
-        blueprint: BlueprintObject
-        index: Optional[uint16] = Field(
-            None,
-            description="""
-            The index of the blueprint inside a parent BlueprintBook's blueprint
-            list. Only meaningful when this object is inside a BlueprintBook.
-            """,
-        )
+    #     blueprint: BlueprintObject
+    #     index: Optional[uint16] = Field(
+    #         None,
+    #         description="""
+    #         The index of the blueprint inside a parent BlueprintBook's blueprint
+    #         list. Only meaningful when this object is inside a BlueprintBook.
+    #         """,
+    #     )
 
-        @model_validator(mode="after")
-        def check_if_unreasonable_size(self, info: ValidationInfo):
-            if not info.context:  # pragma: no coverage
-                return self
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return self
+    #     @model_validator(mode="after")
+    #     def check_if_unreasonable_size(self, info: ValidationInfo):
+    #         if not info.context:  # pragma: no coverage
+    #             return self
+    #         if info.context["mode"] <= ValidationMode.MINIMUM:
+    #             return self
 
-            blueprint: Blueprint = info.context["object"]
+    #         blueprint: Blueprint = info.context["object"]
 
-            # Check the blueprint for unreasonable size
-            tile_width, tile_height = blueprint.get_dimensions()
-            if tile_width > 10000 or tile_height > 10000:
-                raise UnreasonablySizedBlueprintError(
-                    "Current blueprint dimensions ({}, {}) exceeds the maximum size permitted by Factorio (10000, 10000)".format(
-                        tile_width, tile_height
-                    )
-                )
+    #         # Check the blueprint for unreasonable size
+    #         tile_width, tile_height = blueprint.get_dimensions()
+    #         if tile_width > 10000 or tile_height > 10000:
+    #             raise UnreasonablySizedBlueprintError(
+    #                 "Current blueprint dimensions ({}, {}) exceeds the maximum size permitted by Factorio (10000, 10000)".format(
+    #                     tile_width, tile_height
+    #                 )
+    #             )
 
-            return self
+    #         return self
 
-        model_config = ConfigDict(title="Blueprint")
+    #     model_config = ConfigDict(title="Blueprint")
 
     # =========================================================================
     # Constructors
@@ -1451,27 +1446,25 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
         memo["new_parent"] = result
         for attr in attrs.fields(cls):
-            if attr.name == "wires": # special
+            if attr.name == "wires":  # special
                 new_wires = copy.deepcopy(getattr(self, attr.name), memo)
                 for wire in new_wires:
                     wire[0] = swap_association(wire[0])
                     wire[2] = swap_association(wire[2])
 
-                object.__setattr__(
-                    result, attr.name, new_wires
+                object.__setattr__(result, attr.name, new_wires)
+            elif attr.name == "stock_connections":  # special
+                new_connections: list[StockConnection] = copy.deepcopy(
+                    getattr(self, attr.name), memo
                 )
-            elif attr.name == "stock_connections": # special
-                new_connections: list[StockConnection] = copy.deepcopy(getattr(self, attr.name), memo)
                 for connection in new_connections:
                     connection.stock = swap_association(connection.stock)
                     if connection.front is not None:
                         connection.front = swap_association(connection.front)
                     if connection.back is not None:
                         connection.back = swap_association(connection.back)
-                
-                object.__setattr__(
-                    result, attr.name, new_connections
-                )
+
+                object.__setattr__(result, attr.name, new_connections)
             else:
                 object.__setattr__(
                     result, attr.name, copy.deepcopy(getattr(self, attr.name), memo)

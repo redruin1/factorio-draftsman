@@ -1,6 +1,5 @@
 # vehicle.py
 
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.serialization import instance_of
 from draftsman.signatures import uint32
 
@@ -74,8 +73,7 @@ class VehicleMixin:
     # =========================================================================
 
     driver_is_main_gunner: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
+        default=False, validator=instance_of(bool)
     )
     """
     Whether or not the driver or the passenger has control of the vehicle's 
@@ -101,10 +99,7 @@ class VehicleMixin:
 
     # =========================================================================
 
-    selected_gun_index: uint32 = attrs.field(
-        default=1,
-        validator=instance_of(uint32)
-    )
+    selected_gun_index: uint32 = attrs.field(default=1, validator=instance_of(uint32))
     """
     Which gun is currently selected by the gunner. Defaults to ``1`` for 
     vehicles with only one gun.

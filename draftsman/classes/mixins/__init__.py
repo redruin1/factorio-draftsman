@@ -11,13 +11,13 @@ from draftsman.classes.mixins.color import ColorMixin
 from draftsman.classes.mixins.control_behavior import ControlBehaviorMixin
 from draftsman.classes.mixins.directional import DirectionalMixin
 from draftsman.classes.mixins.double_grid_aligned import DoubleGridAlignedMixin
-from draftsman.classes.mixins.eight_way_directional import EightWayDirectionalMixin
+# from draftsman.classes.mixins.eight_way_directional import EightWayDirectionalMixin
 from draftsman.classes.mixins.energy_source import EnergySourceMixin
 from draftsman.classes.mixins.equipment_grid import EquipmentGridMixin
 from draftsman.classes.mixins.circuit_enable import CircuitEnableMixin
+from draftsman.classes.mixins.filtered_inventory import FilteredInventoryMixin
 from draftsman.classes.mixins.filters import FiltersMixin
 from draftsman.classes.mixins.input_ingredients import InputIngredientsMixin
-from draftsman.classes.mixins.inventory_filter import InventoryFilterMixin
 from draftsman.classes.mixins.inventory import InventoryMixin
 from draftsman.classes.mixins.io_type import IOTypeMixin
 from draftsman.classes.mixins.logistic_condition import LogisticConditionMixin

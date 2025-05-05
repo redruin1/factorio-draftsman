@@ -4,7 +4,11 @@ import pickle
 
 import importlib.resources as pkg_resources
 
+from draftsman import __factorio_version_info__
 from draftsman import data
+from draftsman.data import recipes
+
+from typing import Optional
 
 
 with pkg_resources.open_binary(data, "modules.pkl") as inp:
@@ -48,7 +52,9 @@ def add_module(module_name: str, category_name: str, **kwargs):
     categories[category_name].append(module_name)
 
 
-def get_modules_from_effects(allowed_effects: set[str], recipe: str = None) -> set[str]:
+def get_modules_from_effects(
+    allowed_effects: set[str], recipe_name: str = None
+) -> Optional[set[str]]:
     """
     Given a set of string effect names, provide the set of available modules
     under the current Draftsman configuration that would fit in an entity with
@@ -57,18 +63,37 @@ def get_modules_from_effects(allowed_effects: set[str], recipe: str = None) -> s
     """
     if allowed_effects is None:
         return None
+    if recipe_name is not None:
+        recipe = recipes.raw.get(recipe_name, None)
+        if recipe is None:
+            return None
     output = set()
     for module_name, module in raw.items():
-        if recipe is not None:
+        if recipe_name is not None:
             # Skip adding this module if the recipe provided does not fit within
             # this module's limitations
-            if "limitation" in module and recipe not in module["limitation"]:
-                continue
-            elif (  # pragma: no branch
-                "limitation_blacklist" in module
-                and recipe in module["limitation_blacklist"]
-            ):
-                continue  # pragma: no coverage
+            if __factorio_version_info__ < (2, 0):  # pragma: no coverage
+                if "limitation" in module and recipe_name not in module["limitation"]:
+                    continue
+                elif (
+                    "limitation_blacklist" in module
+                    and recipe_name in module["limitation_blacklist"]
+                ):
+                    continue
+            else:
+
+                allowed_effects = {
+                    effect
+                    for effect, allowed in (
+                        ("consumption", recipe.get("allow_consumption", True)),
+                        ("speed", recipe.get("allow_speed", True)),
+                        ("productivity", recipe.get("allow_productivity", False)),
+                        ("pollution", recipe.get("allow_pollution", True)),
+                        ("quality", recipe.get("allow_quality", True)),
+                    )
+                    if allowed
+                }
+
         # I think the module's positive effects has to be a subset of the
         # set of allowed effects
         positive_effects = {

@@ -17,7 +17,6 @@ from draftsman.error import (
     DraftsmanError,
     IncorrectBlueprintTypeError,
 )
-from draftsman.signatures import Connections
 from draftsman.utils import (
     AABB,
     aabb_to_dimensions,

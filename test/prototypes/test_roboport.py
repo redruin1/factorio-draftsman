@@ -3,7 +3,7 @@
 from draftsman.constants import ValidationMode
 from draftsman.entity import Roboport, roboports, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
-from draftsman.signatures import SignalID, AttrsSignalID
+from draftsman.signatures import AttrsSignalID
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -16,9 +16,7 @@ import pytest
 
 class TestRoboport:
     def test_constructor_init(self):
-        roboport = Roboport(
-            "roboport", tile_position=[1, 1], read_logistics=False
-        )
+        roboport = Roboport("roboport", tile_position=[1, 1], read_logistics=False)
         assert roboport.to_dict() == {
             "name": "roboport",
             "position": {"x": 3.0, "y": 3.0},
@@ -98,7 +96,9 @@ class TestRoboport:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Roboport.from_dict({"name": "roboport", "unused_keyword": "whatever"}).validate().reissue_all()
+            Roboport.from_dict(
+                {"name": "roboport", "unused_keyword": "whatever"}
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Roboport("this is not a roboport").validate().reissue_all()
 
@@ -291,10 +291,18 @@ class TestRoboport:
 
         assert roboport1.read_logistics == True
         assert roboport1.read_robot_stats == True
-        assert roboport1.available_logistic_signal == AttrsSignalID(name="signal-A", type="virtual")
-        assert roboport1.total_logistic_signal == AttrsSignalID(name="signal-B", type="virtual")
-        assert roboport1.available_construction_signal == AttrsSignalID(name="signal-C", type="virtual")
-        assert roboport1.total_construction_signal == AttrsSignalID(name="signal-D", type="virtual")
+        assert roboport1.available_logistic_signal == AttrsSignalID(
+            name="signal-A", type="virtual"
+        )
+        assert roboport1.total_logistic_signal == AttrsSignalID(
+            name="signal-B", type="virtual"
+        )
+        assert roboport1.available_construction_signal == AttrsSignalID(
+            name="signal-C", type="virtual"
+        )
+        assert roboport1.total_construction_signal == AttrsSignalID(
+            name="signal-D", type="virtual"
+        )
         assert roboport1.tags == {"some": "stuff"}
 
         assert roboport1.to_dict(exclude_defaults=False)["control_behavior"] == {

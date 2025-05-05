@@ -69,8 +69,19 @@ class TestContainer:
             assert container.circuit_connectable == True
             assert container.dual_circuit_connectable == False
 
+    def test_inventory_size(self):
+        chest = LogisticActiveContainer("active-provider-chest")
+        assert chest.inventory_size == 48
+
+        assert (
+            LogisticActiveContainer(
+                "unknown-chest", validate_assignment="none"
+            ).inventory_size
+            == None
+        )
+
     @pytest.mark.skipif(
-        "quality" not in mods.mod_list, reason="Quality mod not enabled"
+        "quality" not in mods.versions, reason="Quality mod not enabled"
     )
     def test_quality_inventory_size(self):
         qualities = {

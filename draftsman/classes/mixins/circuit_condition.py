@@ -1,8 +1,7 @@
 # circuit_condition.py
 
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import Condition, AttrsSimpleCondition, AttrsSignalID, int32
+from draftsman.signatures import AttrsSimpleCondition, AttrsSignalID, int32
 from draftsman.validators import instance_of
 
 import attrs
@@ -17,25 +16,6 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
     Allows the Entity to have an circuit enable condition, such as when the
     value of some signal exceeds some constant.
     """
-
-    class ControlFormat(BaseModel):
-        circuit_condition_enabled: Optional[bool] = Field(
-            False,
-            description="""
-            Whether or not the entity is controlled by the specified circuit
-            condition, if present.
-            """,
-        )
-        circuit_condition: Optional[Condition] = Field(
-            Condition(first_signal=None, comparator="<", constant=0),
-            description="""
-            The circuit condition that must be passed in order for this entity
-            to function, if configured to do so.
-            """,
-        )
-
-    class Format(BaseModel):
-        pass
 
     # =========================================================================
 
@@ -83,7 +63,9 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
     # =========================================================================
 
     circuit_condition: AttrsSimpleCondition = attrs.field(
-        default=AttrsSimpleCondition(first_signal=None, comparator="<", constant=0),
+        factory=lambda: AttrsSimpleCondition(
+            first_signal=None, comparator="<", constant=0
+        ),
         converter=AttrsSimpleCondition.converter,
         validator=instance_of(AttrsSimpleCondition),
     )
@@ -125,16 +107,17 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
             "circuit_condition", first_operand, comparator, second_operand
         )
 
-    def remove_circuit_condition(self):
-        """
-        Removes the circuit condition of the Entity. Does nothing if the Entity
-        has no circuit condition to remove.
-        """
-        # self.control_behavior.pop("circuit_condition", None)
-        self.control_behavior.circuit_condition = None
+    # def remove_circuit_condition(self):
+    #     """
+    #     Removes the circuit condition of the Entity. Does nothing if the Entity
+    #     has no circuit condition to remove.
+    #     """
+    #     # self.control_behavior.pop("circuit_condition", None)
+    #     self.circuit_condition = None
 
     def merge(self, other: "CircuitConditionMixin"):
         super().merge(other)
+
         self.circuit_condition = other.circuit_condition
 
 
@@ -157,7 +140,7 @@ draftsman_converters.add_schema(
     },
     CircuitConditionMixin,
     lambda fields: {
-        # fields.circuit_enabled.name: ("control_behavior", "circuit_enabled"),
+        # ("control_behavior", "circuit_enabled"): fields.circuit_enabled.name,
         ("control_behavior", "circuit_condition"): fields.circuit_condition.name,
     },
 )

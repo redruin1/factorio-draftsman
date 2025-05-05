@@ -9,7 +9,7 @@ from draftsman.error import (
     InvalidSignalError,
     IncorrectBlueprintTypeError,
     DataFormatError,
-    IncompleteSignalError
+    IncompleteSignalError,
 )
 from draftsman.signatures import AttrsColor, AttrsIcon
 from draftsman.utils import encode_version, string_to_JSON
@@ -228,6 +228,18 @@ class TestBlueprintBook:
         }
         # None
         blueprint_book.label = None
+        assert blueprint_book.label is None
+        assert blueprint_book.to_dict() == {
+            "blueprint_book": {
+                "item": "blueprint-book",
+                # "active_index": 0,
+                "version": encode_version(1, 1, 54, 0),
+            }
+        }
+        # None (no validation)
+        blueprint_book.validate_assignment = "none"
+        blueprint_book.label = None
+        assert blueprint_book.label is None
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
@@ -242,7 +254,9 @@ class TestBlueprintBook:
         # Valid 3 args
         # Test for floating point conversion error by using 0.1
         blueprint_book.label_color = (0.5, 0.1, 0.5)
-        assert blueprint_book.label_color == AttrsColor(**{"r": 0.5, "g": 0.1, "b": 0.5})
+        assert blueprint_book.label_color == AttrsColor(
+            **{"r": 0.5, "g": 0.1, "b": 0.5}
+        )
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
@@ -290,9 +304,15 @@ class TestBlueprintBook:
         # Multiple Icons
         blueprint_book.set_icons("signal-A", "signal-B", "signal-C")
         assert blueprint_book.icons == [
-            AttrsIcon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}),
-            AttrsIcon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}),
-            AttrsIcon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}),
+            AttrsIcon(
+                **{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
+            ),
+            AttrsIcon(
+                **{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}
+            ),
+            AttrsIcon(
+                **{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}
+            ),
         ]
 
         # Raw signal dicts
@@ -304,7 +324,9 @@ class TestBlueprintBook:
         with pytest.warns(UnknownSignalWarning):
             blueprint_book.set_icons({"name": "some-signal", "type": "virtual"})
             assert blueprint_book.icons == [
-                AttrsIcon(**{"signal": {"name": "some-signal", "type": "virtual"}, "index": 1})
+                AttrsIcon(
+                    **{"signal": {"name": "some-signal", "type": "virtual"}, "index": 1}
+                )
             ]
 
         # None

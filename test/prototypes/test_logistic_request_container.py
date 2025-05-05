@@ -8,7 +8,7 @@ from draftsman.entity import (
     Container,
 )
 from draftsman.error import DataFormatError
-from draftsman.signatures import AttrsSignalFilter, AttrsSection
+from draftsman.signatures import SignalFilter, ManualSection
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownItemWarning,
@@ -75,9 +75,7 @@ class TestLogisticRequestContainer:
             sections=[
                 {
                     "index": 1,
-                    "filters": [
-                        {"index": 1, "name": "iron-ore", "count": 100}
-                    ]
+                    "filters": [{"index": 1, "name": "iron-ore", "count": 100}],
                 }
             ]
         )
@@ -89,8 +87,13 @@ class TestLogisticRequestContainer:
                     {
                         "index": 1,
                         "filters": [
-                            {"index": 1, "name": "iron-ore", "count": 100, "comparator": "="}
-                        ]
+                            {
+                                "index": 1,
+                                "name": "iron-ore",
+                                "count": 100,
+                                "comparator": "=",
+                            }
+                        ],
                     }
                 ]
             },
@@ -120,9 +123,7 @@ class TestLogisticRequestContainer:
                 sections=["very", "wrong"],
             ).validate().reissue_all()
         with pytest.raises(DataFormatError):
-            LogisticRequestContainer(
-                tags="incorrect"
-            ).validate().reissue_all()
+            LogisticRequestContainer(tags="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in logistic_request_containers:
@@ -133,7 +134,7 @@ class TestLogisticRequestContainer:
             assert container.dual_circuit_connectable == False
 
     @pytest.mark.skipif(
-        "quality" not in mods.mod_list, reason="Quality mod not enabled"
+        "quality" not in mods.versions, reason="Quality mod not enabled"
     )
     def test_quality_inventory_size(self):
         qualities = {
@@ -184,9 +185,9 @@ class TestLogisticRequestContainer:
             ("coal", 300),
         ]
         assert container.sections[-1].filters == [
-            AttrsSignalFilter(index=1, name="iron-ore", count=100, comparator="="),
-            AttrsSignalFilter(index=2, name="copper-ore", count=200, comparator="="),
-            AttrsSignalFilter(index=3, name="coal", count=300, comparator="="),
+            SignalFilter(index=1, name="iron-ore", count=100, comparator="="),
+            SignalFilter(index=2, name="copper-ore", count=200, comparator="="),
+            SignalFilter(index=3, name="coal", count=300, comparator="="),
         ]
 
         # Longhand
@@ -196,10 +197,14 @@ class TestLogisticRequestContainer:
             {"index": 3, "name": "coal", "count": 300, "comparator": "="},
         ]
         assert container.sections[-1].filters == [
-            AttrsSignalFilter(index=1, name="iron-ore", count=100, comparator="="),
-            AttrsSignalFilter(index=2, name="copper-ore", count=200, comparator="="),
-            AttrsSignalFilter(index=3, name="coal", count=300, comparator="="),
+            SignalFilter(index=1, name="iron-ore", count=100, comparator="="),
+            SignalFilter(index=2, name="copper-ore", count=200, comparator="="),
+            SignalFilter(index=3, name="coal", count=300, comparator="="),
         ]
+
+        # Error
+        with pytest.raises(DataFormatError):
+            container.sections = "incorrect"
 
     # def test_set_request_filter(self): # TODO: reimplement
     #     container = LogisticRequestContainer("requester-chest")
@@ -375,9 +380,9 @@ class TestLogisticRequestContainer:
         del container2
 
         assert container1.bar == 10
-        assert (
-            container1.sections == [
-                AttrsSection(**{
+        assert container1.sections == [
+            ManualSection(
+                **{
                     "index": 1,
                     "filters": [
                         {
@@ -387,9 +392,9 @@ class TestLogisticRequestContainer:
                             "comparator": "=",
                         }
                     ],
-                })
-            ]
-        )
+                }
+            )
+        ]
         assert container1.tags == {"some": "stuff"}
 
     def test_eq(self):
@@ -409,3 +414,38 @@ class TestLogisticRequestContainer:
 
         # hashable
         assert isinstance(container1, Hashable)
+
+    def test_old_format_conversion(self):
+        old_dict = {"name": "requester-chest", "position": {"x": 0.5, "y": 0.5}}
+        chest = LogisticRequestContainer.from_dict(old_dict, version=(1, 0))
+        assert chest.to_dict(version=(1, 0)) == old_dict
+
+        old_dict_with_filters = {  # TODO: actually validate this
+            "name": "requester-chest",
+            "position": {"x": 0.5, "y": 0.5},
+            "request_filters": [
+                {
+                    "index": 1,
+                    "name": "iron-plate",
+                    "count": 50,
+                }
+            ],
+        }
+        chest = LogisticRequestContainer.from_dict(
+            old_dict_with_filters, version=(1, 0)
+        )
+        assert len(chest.sections) == 1
+        assert chest.sections == [
+            ManualSection(
+                index=1,
+                filters=[
+                    SignalFilter(
+                        index=1,
+                        name="iron-plate",
+                        count=50,
+                    )
+                ],
+            )
+        ]
+
+        # TODO: unstructure hook

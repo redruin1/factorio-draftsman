@@ -24,7 +24,7 @@ def add_recipe(name: str, ingredients: list[str], result: str, **kwargs):
 
 
 def get_recipe_ingredients(
-    recipe_name: str, recipe_quality: str, expensive: bool = False
+    recipe_name: str, expensive: bool = False
 ):
     """
     Returns a ``set`` of all item types that ``recipe_name`` requires. Discards
@@ -33,13 +33,6 @@ def get_recipe_ingredients(
     First attempts to get the ``"ingredients"`` key from the recipe. If that
     fails, we then attempt to get the contents of the ``"normal"`` key from
     recipe (which is the list of ingredients under non-expensive map settings).
-
-    .. NOTE::
-
-        Assumes that the items required for 'normal' mode are the same as
-        'expensive' mode. This is unlikely true under all circumstances, but how
-        will we issue warnings for invalid item requests if we dont know what
-        mode the world save is in?
 
     :param recipe_name: The name of the recipe to get the ingredients of.
     :param expensive: Whether or not to return the expensive recipe if available.

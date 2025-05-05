@@ -1,6 +1,5 @@
 # filters.py
 
-from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.data import items, entities
 from draftsman.error import InvalidItemError, DataFormatError
 from draftsman.serialization import draftsman_converters
@@ -245,6 +244,9 @@ draftsman_converters.add_schema(
     },
     lambda fields, converter: {
         "use_filters": fields.use_filters.name,
-        "filters": (fields.filters, lambda inst: [converter.unstructure(e) for e in inst.filters]),
-    }
+        "filters": (
+            fields.filters,
+            lambda inst: [converter.unstructure(e) for e in inst.filters],
+        ),
+    },
 )

@@ -1,8 +1,7 @@
 # stack_size.py
 
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import SignalID, AttrsSignalID, uint8
+from draftsman.signatures import AttrsSignalID, uint8
 from draftsman.validators import instance_of
 
 import attrs
@@ -25,40 +24,6 @@ class StackSizeMixin:  # (ControlBehaviorMixin)
     Gives the entity a stack size attribute. Allows it to give a constant,
     overridden stack size and a circuit-set stack size.
     """
-
-    class ControlFormat(BaseModel):
-        circuit_set_stack_size: Optional[bool] = Field(
-            None,
-            description="""
-            Whether or not the circuit network should affect the stack size of 
-            this entity.
-            """,
-        )
-        stack_control_input_signal: Optional[SignalID] = Field(
-            None,
-            description="""
-            What circuit signal should be used to override the stack size of 
-            this entity, if 'circuit_set_stack_size' is true.
-            """,
-        )
-
-    class Format(BaseModel):
-        override_stack_size: Optional[uint8] = Field(
-            None,
-            description="""
-            The constant stack size override for this entity. Superseded by 
-            'stack_control_input_signal', if present and enabled.
-            """,
-        )
-
-    # def __init__(self, name: str, similar_entities: list[str], **kwargs):
-    #     self._root: __class__.Format
-
-    #     super().__init__(name, similar_entities, **kwargs)
-
-    #     self.override_stack_size = kwargs.get("override_stack_size", None)
-
-    # =========================================================================
 
     override_stack_size: Optional[uint8] = attrs.field(
         default=None, validator=instance_of(Optional[uint8])

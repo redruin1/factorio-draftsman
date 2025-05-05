@@ -1,9 +1,9 @@
 # elevated_half_diagonal_rail.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import DoubleGridAlignedMixin, EightWayDirectionalMixin
+from draftsman.classes.mixins import DoubleGridAlignedMixin, DirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
+from draftsman.constants import Direction, ValidationMode, EIGHT_WAY_DIRECTIONS
 from draftsman.utils import get_first
 
 from draftsman.data.entities import elevated_half_diagonal_rails
@@ -15,7 +15,7 @@ from typing import Any, Literal, Optional, Union
 
 @attrs.define
 class ElevatedHalfDiagonalRail(
-    DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity
+    DoubleGridAlignedMixin, DirectionalMixin, Entity
 ):
     """
     Elevated rail entities which lie halfway inbetween the classic 45 degree diagonals. (TODO)
@@ -57,6 +57,12 @@ class ElevatedHalfDiagonalRail(
     @property
     def similar_entities(self) -> list[str]:
         return elevated_half_diagonal_rails
+
+    # =========================================================================
+
+    @property
+    def valid_directions(self) -> set[Direction]:
+        return EIGHT_WAY_DIRECTIONS
 
     # =========================================================================
 

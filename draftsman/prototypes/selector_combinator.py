@@ -1,7 +1,6 @@
 # selector_combinator.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     PlayerDescriptionMixin,
     ControlBehaviorMixin,
@@ -11,7 +10,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import DraftsmanBaseModel, QualityFilter, SignalID, uint32
+from draftsman.signatures import DraftsmanBaseModel, QualityFilter, uint32
 from draftsman.utils import get_first
 
 from draftsman.data.entities import selector_combinators

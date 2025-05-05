@@ -14,9 +14,29 @@ import pytest
 
 
 class TestEntity:
+    def test_similar_entities(self):
+        assert Entity("entity", validate_assignment="none").similar_entities == []
+
     def test_get_type(self):
+        assert Entity("entity", validate_assignment="none").type is None
+
         container = Container("wooden-chest")
         assert container.type == "container"
+
+    def test_entity_number_retained(self):
+        container = Container.from_dict(
+            {
+                "name": "wooden-chest",
+                "position": {"x": 0.5, "y": 0.5},
+                "entity_number": 10
+            }
+        )
+        assert container.entity_number == 10
+        # Stripped on output
+        assert container.to_dict() == {
+            "name": "wooden-chest",
+            "position": {"x": 0.5, "y": 0.5},
+        }
 
     def test_flags(self):
         container = Container("wooden-chest")
@@ -71,9 +91,7 @@ class TestEntity:
         ):
             iron_chest.name = "electric-furnace"
 
-        with pytest.warns(
-            UnknownEntityWarning, match="Unknown entity 'unknown'"
-        ):
+        with pytest.warns(UnknownEntityWarning, match="Unknown entity 'unknown'"):
             iron_chest.name = "unknown"
 
         assert iron_chest.collision_set == None
@@ -417,9 +435,21 @@ class TestEntityFactory:
     def test_player_port(self):
         assert isinstance(new_entity("player-port"), PlayerPort)
 
+    def test_new_entity_from_dict(self):
+        e = new_entity_from_dict({
+            "name": "wooden-chest",
+            "position": {"x": 0.5, "y": 0.5},
+            "bar": 5
+        })
+        assert isinstance(e, Container)
+        assert e.name == "wooden-chest"
+        assert e.position.x == 0.5 and e.position.y == 0.5
+        assert e.bar == 5
+
     def test_unknown(self):
         # Try and treat as a generic entity
-        result = new_entity("unknown", position=(0.5, 0.5))
+        with pytest.warns(UnknownEntityWarning):
+            result = new_entity("unknown", position=(0.5, 0.5))
         assert isinstance(result, Entity)
         
         # Generic entities should be able to handle attribute access and serialization
@@ -432,7 +462,8 @@ class TestEntityFactory:
         
         # You should also be able to set new attributes to them without Draftsman
         # complaining
-        result = new_entity("unknown", position=(0.5, 0.5), direction=4)
+        with pytest.warns(UnknownEntityWarning):
+            result = new_entity("unknown", position=(0.5, 0.5), direction=4)
         assert result.to_dict() == {
             "name": "unknown",
             "position": {"x": 0.5, "y": 0.5},

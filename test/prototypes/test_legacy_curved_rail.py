@@ -1,4 +1,4 @@
-# # test_curved_rail.py
+# # test_legacy_curved_rail.py
 
 # from draftsman.constants import Direction
 # from draftsman.entity import CurvedRail, curved_rails, Container

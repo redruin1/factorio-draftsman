@@ -6,7 +6,6 @@
 # Currently we just override to_dict, but this is far from elegant
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import EnergySourceMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode

@@ -9,19 +9,11 @@ from draftsman.classes.mixins import (
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import AttrsSignalID
 from draftsman.validators import instance_of
-from draftsman.utils import get_first
 
 from draftsman.data.entities import walls
 
 import attrs
 from typing import Optional
-
-
-# TODO: gimme gimme
-# def schema(version=None):
-#     def inner(wrapped_object):
-#         pass
-#     return inner
 
 
 @attrs.define

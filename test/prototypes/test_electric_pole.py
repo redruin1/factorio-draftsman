@@ -26,12 +26,12 @@ class TestElectricPole:
             "position": {"x": 0.5, "y": 0.5},
             "neighbours": [2, 3],
             # TODO: connections
-            "entity_number": 1
+            "entity_number": 1,
         }
         electric_pole = ElectricPole.from_dict(d_1_0, version=(1, 0))
         assert electric_pole.extra_keys == None
-        
-        # Since this entity is not contained within a blueprint (that we know 
+
+        # Since this entity is not contained within a blueprint (that we know
         # of) we cannot modernize neighbours/connections to use blueprint.wires
         # with associations; so we leave everything inplace
         assert electric_pole.neighbours == [2, 3]
@@ -40,7 +40,7 @@ class TestElectricPole:
         # Round trip should be preserved (minus entity number)
         del d_1_0["entity_number"]
         assert electric_pole.to_dict(version=(1, 0)) == d_1_0
-        
+
         # 2.0 should omit neighbours + connections even if they were originally
         # specified
         assert electric_pole.to_dict(version=(2, 0)) == {

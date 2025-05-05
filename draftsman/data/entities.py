@@ -123,7 +123,7 @@ try:
         walls: list[str] = of_type["wall"]
 
 
-except FileNotFoundError:
+except FileNotFoundError:  # pragma: no coverage
     raw: dict[str, dict] = {}
     of_type: dict[str, list[dict]] = {}
     flippable: dict[str, bool] = {}

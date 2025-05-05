@@ -16,13 +16,7 @@ from draftsman.classes.association import Association
 from draftsman.classes.exportable import Exportable
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
-from draftsman.data.signals import (
-    signal_dict,
-    mapper_dict,
-    get_signal_types,
-    pure_virtual,
-)
-from draftsman.data import entities, fluids, items, signals, tiles, recipes
+from draftsman.data import entities, fluids, items, signals, tiles, recipes, modules
 from draftsman.error import (
     InvalidMapperError,
     InvalidSignalError,
@@ -34,6 +28,7 @@ from draftsman.utils import encode_version, get_suggestion
 from draftsman.validators import (
     and_,
     lt,
+    # le,
     ge,
     one_of,
     is_none,
@@ -52,6 +47,7 @@ from draftsman.warning import (
     UnknownSignalWarning,
     UnknownTileWarning,
     UnknownRecipeWarning,
+    UnknownModuleWarning,
 )
 
 from typing_extensions import Annotated
@@ -83,6 +79,8 @@ import warnings
 int32 = Annotated[int, and_(ge(-(2**31)), lt(2**31))]
 # TODO: description about floating point issues
 int64 = Annotated[int, and_(ge(-(2**63)), lt(2**63))]
+# Maximum size of Lua double before you lose integer precision
+LuaDouble = Annotated[int, and_(ge(-(2**53)), lt(2**53))]
 
 uint8 = Annotated[int, and_(ge(0), lt(2**8))]
 uint16 = Annotated[int, and_(ge(0), lt(2**16))]
@@ -120,6 +118,7 @@ EntityName = Annotated[str, known_name("entity", entities.raw, UnknownEntityWarn
 FluidName = Annotated[str, known_name("fluid", fluids.raw, UnknownFluidWarning)]
 TileName = Annotated[str, known_name("tile", tiles.raw, UnknownTileWarning)]
 RecipeName = Annotated[str, known_name("recipe", recipes.raw, UnknownRecipeWarning)]
+ModuleName = Annotated[str, known_name("module", modules.raw, UnknownModuleWarning)]
 QualityName = Literal[
     "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
 ]
@@ -270,7 +269,7 @@ class AttrsMapperID(Exportable):
     def converter(cls, value):
         if isinstance(value, str):
             try:
-                return cls(**mapper_dict(value))
+                return cls(**signals.mapper_dict(value))  # FIXME
             except InvalidMapperError as e:
                 raise InvalidMapperError(
                     "Unknown mapping target {}; either specify the full dictionary, or update your environment".format(
@@ -314,7 +313,7 @@ class MapperID(DraftsmanBaseModel):
         """
         if isinstance(value, str):
             try:
-                return mapper_dict(value)
+                return signals.mapper_dict(value)  # FIXME
             except InvalidMapperError as e:
                 raise ValueError(
                     "Unknown mapping target {}; either specify the full dictionary, or update your environment".format(
@@ -328,12 +327,14 @@ class MapperID(DraftsmanBaseModel):
 @attrs.define
 class AttrsMapper(Exportable):
     index: uint64 = attrs.field(validator=instance_of(uint64))
-    from_: Optional[AttrsMapperID] = attrs.field(
+    from_: Optional[
+        AttrsMapperID
+    ] = attrs.field(  # TODO: this has quality + any quality + comparator
         default=None,
         converter=AttrsMapperID.converter,
         validator=instance_of(Optional[AttrsMapperID]),
     )
-    to: Optional[AttrsMapperID] = attrs.field(
+    to: Optional[AttrsMapperID] = attrs.field(  # TODO: this has quality
         default=None,
         converter=AttrsMapperID.converter,
         validator=instance_of(Optional[AttrsMapperID]),
@@ -360,206 +361,6 @@ draftsman_converters.add_schema(
         "to": fields.to.name,
     },
 )
-
-
-class Mapper(DraftsmanBaseModel):
-    # _alias_map: ClassVar[dict] = PrivateAttr(
-    #     {"from": "from_", "to": "to", "index": "index"}
-    # )
-
-    from_: Optional[MapperID] = Field(
-        None,
-        alias="from",
-        description="""
-        Entity/Item to replace with 'to'. Remains blank in the GUI if omitted.
-        """,
-    )
-    to: Optional[MapperID] = Field(
-        None,
-        description="""
-        Entity/item to replace 'from'. Remains blank in the GUI if omitted.
-        """,
-    )
-    index: uint64 = Field(
-        ...,
-        description="""
-        Numeric index of the mapping in the UpgradePlanner's GUI, 0-based. 
-        Value defaults to the index of this mapping in the parent 'mappers' list,
-        but this behavior is not strictly enforced.
-        """,
-    )
-
-    # Add the dict-like `get` function
-    # def get(self, key, default):
-    #     return super().get(self._alias_map[key], default)
-
-    # def __getitem__(self, key):
-    #     return super().__getitem__(self._alias_map[key])
-
-    # def __setitem__(self, key, value):
-    #     super().__setitem__(self._alias_map[key], value)
-
-
-# class Mappers(DraftsmanRootModel):
-#     root: list[Mapper]
-
-#     # @model_validator(mode="before")
-#     # @classmethod
-#     # def normalize_mappers(cls, value: Any):
-#     #     if isinstance(value, Sequence):
-#     #         for i, mapper in enumerate(value):
-#     #             if isinstance(value, (tuple, list)):
-#     #                 value[i] = {"index": i}
-#     #                 if mapper[0]:
-#     #                     value[i]["from"] = mapper_dict(mapper[0])
-#     #                 if mapper[1]:
-#     #                     value[i]["to"] = mapper_dict(mapper[1])
-
-#     # @validator("__root__", pre=True)
-#     # def normalize_mappers(cls, mappers):
-#     #     if mappers is None:
-#     #         return mappers
-#     #     for i, mapper in enumerate(mappers):
-#     #         if isinstance(mapper, (tuple, list)):
-#     #             mappers[i] = {"index": i}
-#     #             if mapper[0]:
-#     #                 mappers[i]["from"] = mapping_dict(mapper[0])
-#     #             if mapper[1]:
-#     #                 mappers[i]["to"] = mapping_dict(mapper[1])
-#     #     return mappers
-
-
-class SignalID(DraftsmanBaseModel):
-    name: Optional[SignalName] = Field(
-        ...,
-        description="""
-        Name of the signal. If omitted, the signal is treated as no signal and 
-        removed on import/export cycle.
-        """,
-    )
-    type: Literal[
-        "virtual",
-        "item",
-        "fluid",
-        "recipe",
-        "entity",
-        "space-location",
-        "asteroid-chunk",
-        "quality",
-    ] = Field("item", description="""Category of the signal.""")
-    quality: Optional[
-        Literal[
-            "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
-        ]
-    ] = Field(
-        "normal",
-        description="""
-        Quality flag of the signal.
-        """,
-    )
-
-    @model_validator(mode="before")
-    @classmethod
-    def init_from_string(cls, input):
-        """
-        Attempt to convert an input string name into a dict representation.
-        Raises a ValueError if unable to determine the type of a signal's name,
-        likely if the signal is misspelled or used in a modded configuration
-        that differs from Draftsman's current one.
-        """
-        if isinstance(input, str):
-            try:
-                return signal_dict(input)
-            except InvalidSignalError as e:
-                raise ValueError(
-                    "Unknown signal name {}; either specify the full dictionary, or update your environment".format(
-                        e
-                    )
-                ) from None
-        else:
-            return input
-
-    # TODO: add routine to create SignalID from tuple like ("epic", "signal-A")?
-
-    # @field_validator("name")
-    # @classmethod
-    # def check_name_recognized(cls, value: str, info: ValidationInfo):
-    #     """
-    #     We might be provided with a signal which has all the information
-    #     necessary to pass validation, but will be otherwise unrecognized by
-    #     Draftsman (in it's current configuration at least). Issue a warning
-    #     for every unknown signal.
-    #     """
-    #     # TODO: check a table to make sure we don't warn about the same unknown
-    #     # signal multiple times
-    #     if not info.context:
-    #         return value
-    #     if info.context["mode"] is ValidationMode.MINIMUM:
-    #         return value
-
-    #     warning_list: list = info.context["warning_list"]
-
-    #     if value not in signals.raw:
-    #         issue = UnknownSignalWarning(
-    #             "Unknown signal '{}'{}".format(
-    #                 value, get_suggestion(value, signals.raw.keys(), n=1)
-    #             )
-    #         )
-
-    #         if info.context["mode"] is ValidationMode.PEDANTIC:
-    #             raise ValueError(issue) from None
-    #         else:
-    #             warning_list.append(issue)
-
-    #     return value
-
-    @model_validator(mode="after")
-    @classmethod
-    def check_type_matches_name(cls, value: "SignalID", info: ValidationInfo):
-        """
-        Idiot-check to make sure that the ``type`` of a known signal actually
-        corresponds to it's ``name``; prevents silly mistakes like::
-
-            {"name": "signal-A", "type": "fluid"}
-        """
-        if not info.context:
-            return value
-        if info.context["mode"] <= ValidationMode.MINIMUM:
-            return value
-
-        warning_list: list = info.context["warning_list"]
-
-        if value["name"] in signals.raw:
-            expected_types = get_signal_types(value["name"])
-            if value["type"] not in expected_types:
-                warning_list.append(
-                    MalformedSignalWarning(
-                        "Known signal '{}' was given a mismatching type (expected one of {}, found '{}')".format(
-                            value["name"], expected_types, value["type"]
-                        )
-                    )
-                )
-
-        return value
-
-    # @model_serializer
-    # def serialize_signal_id(self):
-    #     """
-    #     Try exporting the object as a dict if it was set as a string. Useful if
-    #     someone sets a signal to it's name without running validation at any
-    #     point, this method will convert it to it's correct output (provided it
-    #     can determine it's type).
-    #     """
-    #     if isinstance(self, str):
-    #         try:
-    #             return signal_dict(self)
-    #         except InvalidSignalError as e:
-    #             raise ValueError(
-    #                 "Unknown signal name {}; either specify the full dictionary, or update your environment to include it"
-    #                 .format(e)
-    #             ) from None
-    #     else:
-    #         return {"name": self["name"], "type": self["type"]}
 
 
 @attrs.define
@@ -604,11 +405,11 @@ class AttrsSignalID(Exportable):
         if isinstance(value, str):
             try:
                 # TODO: make function to grab default signal type
-                if "item" in get_signal_types(value):
+                if "item" in signals.get_signal_types(value):
                     return AttrsSignalID(name=value, type="item")
                 else:
                     return AttrsSignalID(
-                        name=value, type=next(iter(get_signal_types(value)))
+                        name=value, type=signals.get_signal_types(value)[0]
                     )
             except InvalidSignalError as e:
                 msg = "Unknown signal name {}; either specify the full dictionary, or update your environment".format(
@@ -641,7 +442,7 @@ class AttrsSignalID(Exportable):
         mode = mode if mode is not None else self.validate_assignment
         if mode >= ValidationMode.STRICT:
             if self.name in signals.raw:
-                expected_types = get_signal_types(self.name)
+                expected_types = signals.get_signal_types(self.name)
                 if value not in expected_types:
                     msg = "Known signal '{}' was given a mismatching type (expected one of {}, found '{}')".format(
                         self.name, expected_types, value
@@ -709,37 +510,6 @@ class AsteroidChunkID(DraftsmanBaseModel):
     name: str = Field(..., description="TODO")  # TODO: ChunkName?
 
 
-class Icon(DraftsmanBaseModel):
-    signal: SignalID = Field(..., description="""Which signal's icon to display.""")
-    index: uint8 = Field(
-        ..., description="""Numerical index of the icon, 1-based."""
-    )  # TODO: is it numerical order which determines appearance, or order in parent list?
-
-    @classmethod
-    def resolve_shorthand(cls, value):
-        try:
-            result = []
-            for i, signal in enumerate(value):
-                if isinstance(signal, str):
-                    result.append({"index": i + 1, "signal": signal})
-                else:
-                    result.append(signal)
-            return result
-        except Exception:
-            return value
-
-        # if isinstance(value, Sequence):
-        #     result = [None] * len(value)
-        #     for i, signal in enumerate(value):
-        #         if isinstance(signal, str):
-        #             result[i] = signal_dict(signal)
-        #         else:
-        #             result[i] = signal
-        #     return result
-        # else:
-        #     return value
-
-
 @attrs.define
 class AttrsIcon(Exportable):
     signal: AttrsSignalID = attrs.field(
@@ -770,21 +540,21 @@ draftsman_converters.add_schema(
 )
 
 
-def normalize_icons(value: Any):
-    if isinstance(value, str):
-        return value
-    elif isinstance(value, Sequence):
-        result = []
-        for i, signal in enumerate(value):
-            if isinstance(signal, str):
-                result.append({"index": i + 1, "signal": signal_dict(signal)})
-            elif isinstance(signal, dict) and "type" in signal:
-                result.append({"index": i + 1, "signal": signal})
-            else:
-                result.append(signal)
-        return result
-    else:
-        return value
+# def normalize_icons(value: Any):
+#     if isinstance(value, str):
+#         return value
+#     elif isinstance(value, Sequence):
+#         result = []
+#         for i, signal in enumerate(value):
+#             if isinstance(signal, str):
+#                 result.append({"index": i + 1, "signal": signal_dict(signal)})
+#             elif isinstance(signal, dict) and "type" in signal:
+#                 result.append({"index": i + 1, "signal": signal})
+#             else:
+#                 result.append(signal)
+#         return result
+#     else:
+#         return value
 
 
 def normalize_version(value: Any):
@@ -1038,8 +808,9 @@ class AttrsNetworkSpecification(Exportable):
     @classmethod
     def converter(cls, value):
         if isinstance(value, set):
-            d = {k: k in value for k in ("red", "green")}
-            return cls(**d)
+            return cls(**{k: k in value for k in ("red", "green")})
+        elif isinstance(value, dict):
+            return cls(**value)
         else:
             return value
 
@@ -1052,81 +823,6 @@ draftsman_converters.add_schema(
         "green": fields.green.name,
     },
 )
-
-
-class Condition(
-    DraftsmanBaseModel
-):  # TODO: split into SimpleCondition (no circuit network selection) and CombinatorCondition (circuit network selection)
-    first_signal: Optional[SignalID] = Field(
-        None,
-        description="""
-        The first signal to specify for this condition. A null value results
-        in an empty slot.
-        """,
-    )
-    first_signal_networks: Optional[NetworkSpecification] = Field(
-        NetworkSpecification(red=True, green=True),
-        description="Wire input specification for the first signal, if present.",
-    )
-    comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
-        "<",
-        description="""
-        The comparison operation to perform, where 'first_signal' is on the left
-        and 'second_signal' or 'constant' is on the right.
-        """,
-    )
-    constant: Optional[int32] = Field(
-        0,
-        description="""
-        A constant value to compare against. Can only be set in the
-        rightmost condition slot. The rightmost slot will be empty if neither
-        'constant' nor 'second_signal' are set.
-        """,
-    )
-    second_signal: Optional[SignalID] = Field(
-        None,
-        description="""
-        The second signal of the condition, if applicable. Takes 
-        precedence over 'constant', if both are set at the same time.
-        """,
-    )
-    second_signal_networks: Optional[NetworkSpecification] = Field(
-        NetworkSpecification(red=True, green=True),
-        description="Wire input specification for the second signal, if present.",
-    )
-
-    @model_validator(mode="before")
-    @classmethod
-    def convert_sequence_to_condition(cls, value: Any):
-        if isinstance(value, Sequence):
-            result = {
-                "first_signal": value[0],
-                "comparator": value[1],
-            }
-            if isinstance(value[2], int):
-                result["constant"] = value[2]
-            else:
-                result["second_signal"] = value[2]
-            return result
-        else:
-            return value
-
-    # @field_validator("first_signal_networks", "second_signal_networks", mode="before")
-    # @classmethod
-    # def convert_from_set(cls, value: Any):
-    #     if isinstance(value, set):
-    #         return {elem: True for elem in value}
-    #     else:
-    #         return value
-
-    @field_validator("comparator", mode="before")
-    @classmethod
-    def normalize_comparator_python_equivalents(cls, input: Any):
-        conversions = {"==": "=", ">=": "≥", "<=": "≤", "!=": "≠"}
-        if input in conversions:
-            return conversions[input]
-        else:
-            return input
 
 
 class EntityFilter(DraftsmanBaseModel):
@@ -1163,46 +859,46 @@ class TileFilter(DraftsmanBaseModel):
     )
 
 
-class CircuitConnectionPoint(DraftsmanBaseModel):
-    entity_id: Association.Format
-    circuit_id: Optional[Literal[1, 2]] = None
+# class CircuitConnectionPoint(DraftsmanBaseModel):
+#     entity_id: Association.Format
+#     circuit_id: Optional[Literal[1, 2]] = None
 
 
-class WireConnectionPoint(DraftsmanBaseModel):
-    entity_id: Association.Format
-    wire_id: Optional[Literal[0, 1]] = None
+# class WireConnectionPoint(DraftsmanBaseModel):
+#     entity_id: Association.Format
+#     wire_id: Optional[Literal[0, 1]] = None
 
 
-class Connections(DraftsmanBaseModel):
-    # _alias_map: ClassVar[dict] = PrivateAttr(
-    #     {
-    #         "1": "Wr1",
-    #         "2": "Wr2",
-    #         "Cu0": "Cu0",
-    #         "Cu1": "Cu1",
-    #     }
-    # )
+# class Connections(DraftsmanBaseModel):
+#     # _alias_map: ClassVar[dict] = PrivateAttr(
+#     #     {
+#     #         "1": "Wr1",
+#     #         "2": "Wr2",
+#     #         "Cu0": "Cu0",
+#     #         "Cu1": "Cu1",
+#     #     }
+#     # )
 
-    def export_key_values(self):
-        return {k: getattr(self, v) for k, v in self.true_model_fields().items()}
+#     def export_key_values(self):
+#         return {k: getattr(self, v) for k, v in self.true_model_fields().items()}
 
-    class CircuitConnections(DraftsmanBaseModel):
-        red: Optional[list[CircuitConnectionPoint]] = None
-        green: Optional[list[CircuitConnectionPoint]] = None
+#     class CircuitConnections(DraftsmanBaseModel):
+#         red: Optional[list[CircuitConnectionPoint]] = None
+#         green: Optional[list[CircuitConnectionPoint]] = None
 
-    Wr1: Optional[CircuitConnections] = Field(CircuitConnections(), alias="1")
-    Wr2: Optional[CircuitConnections] = Field(CircuitConnections(), alias="2")
-    Cu0: Optional[list[WireConnectionPoint]] = None
-    Cu1: Optional[list[WireConnectionPoint]] = None
+#     Wr1: Optional[CircuitConnections] = Field(CircuitConnections(), alias="1")
+#     Wr2: Optional[CircuitConnections] = Field(CircuitConnections(), alias="2")
+#     Cu0: Optional[list[WireConnectionPoint]] = None
+#     Cu1: Optional[list[WireConnectionPoint]] = None
 
-    # def __getitem__(self, key):
-    #     return super().__getitem__(self._alias_map[key])
+#     # def __getitem__(self, key):
+#     #     return super().__getitem__(self._alias_map[key])
 
-    # def __setitem__(self, key, value):
-    #     super().__setitem__(self._alias_map[key], value)
+#     # def __setitem__(self, key, value):
+#     #     super().__setitem__(self._alias_map[key], value)
 
-    # def __contains__(self, item):
-    #     return item in self._alias_map and
+#     # def __contains__(self, item):
+#     #     return item in self._alias_map and
 
 
 # class Filters(DraftsmanRootModel):
@@ -1282,9 +978,9 @@ class AttrsItemFilter(Exportable):
     Quality flag of the item.
     """
     comparator: Comparator = attrs.field(
-        default="=", 
+        default="=",
         converter=try_convert(normalize_comparator),
-        validator=one_of(Comparator)
+        validator=one_of(Comparator),
     )
     """
     Comparator if filtering a range of different qualities.
@@ -1482,9 +1178,17 @@ class RequestFilter(DraftsmanBaseModel):
 
 
 @attrs.define
-class AttrsSignalFilter(Exportable):
+class SignalFilter(Exportable):
     index: int64 = attrs.field(
-        converter=try_convert(lambda index: index + 1),
+        # TODO: handle indexes properly
+        # I want to perform the + 1 step inside of the Exportable object so
+        # that if it fails due to invalid type it gets wrapped by the error
+        # handler, but it introduces overlap between "importing from dict" and
+        # "constructing python object"
+        # This makes mes think that the true ideal would be to customize cattrs
+        # so that the value only changes on import/export (but that means the
+        # cattrs side needs to be more error robust)
+        # converter=try_convert(lambda index: index + 1),
         validator=instance_of(int64),
     )
     """
@@ -1517,7 +1221,7 @@ class AttrsSignalFilter(Exportable):
     ] = attrs.field(
         # default="item",
         # TODO: validators
-        metadata={"omit": False}
+        # metadata={"omit": False}
     )
     """
     Type of the signal.
@@ -1537,9 +1241,9 @@ class AttrsSignalFilter(Exportable):
         "quality",
     ]:
         try:
-            return get_signal_types(self.name)[0]
+            return signals.get_signal_types(self.name)[0]
         except InvalidSignalError:
-            return None
+            return "item"
 
     # signal: Optional[SignalID] = Field(
     #     None,
@@ -1552,10 +1256,7 @@ class AttrsSignalFilter(Exportable):
     #     """,
     # )
     # TODO: make this dynamic based on current environment?
-    quality: QualityName = attrs.field(
-        default="any",
-        validator=one_of(QualityName)
-    )
+    quality: QualityName = attrs.field(default="any", validator=one_of(QualityName))
     """
     Quality flag of the signal. Defaults to special "any" quality signal, rather
     than "normal" quality.
@@ -1641,169 +1342,201 @@ class AttrsSignalFilter(Exportable):
             return value
 
 
+@attrs.define
+class _ExportSignalFilter:
+    type: str = "item"
+
+
 draftsman_converters.add_schema(
     {"$id": "factorio:signal_filter"},
-    AttrsSignalFilter,
+    SignalFilter,
     lambda fields: {
-        fields.index.name: "index",
-        fields.name.name: "name",
-        fields.count.name: "count",
-        fields.type.name: "type",
-        fields.quality.name: "quality",
-        fields.comparator.name: "comparator",
-        fields.max_count.name: "max_count",
+        "index": fields.index.name,
+        "name": fields.name.name,
+        "count": fields.count.name,
+        "type": fields.type.name,
+        "quality": fields.quality.name,
+        "comparator": fields.comparator.name,
+        "max_count": fields.max_count.name,
+    },
+    lambda fields, converter: {
+        "index": fields.index.name,
+        "name": fields.name.name,
+        "count": fields.count.name,
+        "type": attrs.fields(_ExportSignalFilter).type,
+        "quality": fields.quality.name,
+        "comparator": fields.comparator.name,
+        "max_count": fields.max_count.name,
     },
 )
 
 
-class SignalFilter(DraftsmanBaseModel):
-    index: int64 = Field(
-        ...,
-        description="""
-        Numeric index of the signal in the combinator, 1-based. Typically the 
-        index of the signal in the parent 'filters' key, but this is not 
-        strictly enforced. Will result in an import error if this value exceeds 
-        the maximum number of slots that this constant combinator can contain.
-        """,
-    )
-    name: str = Field(
-        ...,
-        description="""
-        Name of the signal.
-        """,
-    )
-    type: Optional[
-        Literal[
-            "virtual",
-            "item",
-            "fluid",
-            "recipe",
-            "entity",
-            "space-location",
-            "asteroid-chunk",
-            "quality",
-        ]
-    ] = Field("item", description="Type of the signal.")
-    # signal: Optional[SignalID] = Field(
-    #     None,
-    #     description="""
-    #     Signal to broadcast. If this value is omitted the occupied slot will
-    #     behave as if no signal exists within it. Cannot be a pure virtual
-    #     (logic) signal like "signal-each", "signal-any", or
-    #     "signal-everything"; if such signals are set they will be removed
-    #     on import.
-    #     """,
-    # )
-    # TODO: make this dynamic based on current environment?
-    quality: Optional[
-        Literal[
-            "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
-        ]
-    ] = Field(
-        "any",
-        description="""
-        Quality flag of the signal. If unspecified, this value is effectively 
-        equal to 'any' quality level.
-        """,
-    )
-    # TODO: comparator should have a user default, but should always be exported
-    comparator: Literal[">", "<", "=", "≥", "≤", "≠"] = Field(
-        ...,
-        description="Comparison operator when deducing the quality type.",
-    )
-    count: int32 = Field(
-        ...,
-        description="""
-        Value of the signal to emit.
-        """,
-    )
-    max_count: Optional[int32] = Field(
-        None,
-        description="""
-        The maximum value of the signal to emit. Only used with logistics-type
-        requests.
-        """,
-    )
+# class SignalFilter(DraftsmanBaseModel):
+#     index: int64 = Field(
+#         ...,
+#         description="""
+#         Numeric index of the signal in the combinator, 1-based. Typically the
+#         index of the signal in the parent 'filters' key, but this is not
+#         strictly enforced. Will result in an import error if this value exceeds
+#         the maximum number of slots that this constant combinator can contain.
+#         """,
+#     )
+#     name: str = Field(
+#         ...,
+#         description="""
+#         Name of the signal.
+#         """,
+#     )
+#     type: Optional[
+#         Literal[
+#             "virtual",
+#             "item",
+#             "fluid",
+#             "recipe",
+#             "entity",
+#             "space-location",
+#             "asteroid-chunk",
+#             "quality",
+#         ]
+#     ] = Field("item", description="Type of the signal.")
+#     # signal: Optional[SignalID] = Field(
+#     #     None,
+#     #     description="""
+#     #     Signal to broadcast. If this value is omitted the occupied slot will
+#     #     behave as if no signal exists within it. Cannot be a pure virtual
+#     #     (logic) signal like "signal-each", "signal-any", or
+#     #     "signal-everything"; if such signals are set they will be removed
+#     #     on import.
+#     #     """,
+#     # )
+#     # TODO: make this dynamic based on current environment?
+#     quality: Optional[
+#         Literal[
+#             "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
+#         ]
+#     ] = Field(
+#         "any",
+#         description="""
+#         Quality flag of the signal. If unspecified, this value is effectively
+#         equal to 'any' quality level.
+#         """,
+#     )
+#     # TODO: comparator should have a user default, but should always be exported
+#     comparator: Literal[">", "<", "=", "≥", "≤", "≠"] = Field(
+#         ...,
+#         description="Comparison operator when deducing the quality type.",
+#     )
+#     count: int32 = Field(
+#         ...,
+#         description="""
+#         Value of the signal to emit.
+#         """,
+#     )
+#     max_count: Optional[int32] = Field(
+#         None,
+#         description="""
+#         The maximum value of the signal to emit. Only used with logistics-type
+#         requests.
+#         """,
+#     )
 
-    # Deprecated in 2.0
-    # @field_validator("index")
-    # @classmethod
-    # def ensure_index_within_range(cls, value: int64, info: ValidationInfo):
-    #     """
-    #     Factorio does not permit signal values outside the range of it's item
-    #     slot count; this method raises an error IF item slot count is known.
-    #     """
-    #     if not info.context:
-    #         return value
-    #     if info.context["mode"] <= ValidationMode.MINIMUM:
-    #         return value
+#     # Deprecated in 2.0
+#     # @field_validator("index")
+#     # @classmethod
+#     # def ensure_index_within_range(cls, value: int64, info: ValidationInfo):
+#     #     """
+#     #     Factorio does not permit signal values outside the range of it's item
+#     #     slot count; this method raises an error IF item slot count is known.
+#     #     """
+#     #     if not info.context:
+#     #         return value
+#     #     if info.context["mode"] <= ValidationMode.MINIMUM:
+#     #         return value
 
-    #     entity = info.context["object"]
+#     #     entity = info.context["object"]
 
-    #     # If Draftsman doesn't recognize entity, early exit
-    #     if entity.item_slot_count is None:
-    #         return value
+#     #     # If Draftsman doesn't recognize entity, early exit
+#     #     if entity.item_slot_count is None:
+#     #         return value
 
-    #     # TODO: what happens if index is 0?
-    #     if not 0 < value <= entity.item_slot_count:
-    #         raise ValueError(
-    #             "Signal 'index' ({}) must be in the range [0, {})".format(
-    #                 value, entity.item_slot_count
-    #             )
-    #         )
+#     #     # TODO: what happens if index is 0?
+#     #     if not 0 < value <= entity.item_slot_count:
+#     #         raise ValueError(
+#     #             "Signal 'index' ({}) must be in the range [0, {})".format(
+#     #                 value, entity.item_slot_count
+#     #             )
+#     #         )
 
-    #     return value
+#     #     return value
 
-    @field_validator("name")
-    @classmethod
-    def ensure_not_pure_virtual(cls, value: Optional[str], info: ValidationInfo):
-        """
-        Warn if pure virtual signals (like "signal-each", "signal-any", and
-        "signal-everything") are entered inside of a constant combinator.
-        """
-        if not info.context or value is None:
-            return value
-        if info.context["mode"] <= ValidationMode.MINIMUM:
-            return value
+#     @field_validator("name")
+#     @classmethod
+#     def ensure_not_pure_virtual(cls, value: Optional[str], info: ValidationInfo):
+#         """
+#         Warn if pure virtual signals (like "signal-each", "signal-any", and
+#         "signal-everything") are entered inside of a constant combinator.
+#         """
+#         if not info.context or value is None:
+#             return value
+#         if info.context["mode"] <= ValidationMode.MINIMUM:
+#             return value
 
-        warning_list: list = info.context["warning_list"]
+#         warning_list: list = info.context["warning_list"]
 
-        if value in pure_virtual:
-            warning_list.append(
-                PureVirtualDisallowedWarning(
-                    "Cannot set pure virtual signal '{}' in a constant combinator".format(
-                        value.name
-                    )
-                )
-            )
+#         if value in pure_virtual:
+#             warning_list.append(
+#                 PureVirtualDisallowedWarning(
+#                     "Cannot set pure virtual signal '{}' in a constant combinator".format(
+#                         value.name
+#                     )
+#                 )
+#             )
 
-        return value
+#         return value
 
 
 @attrs.define
-class AttrsSection(Exportable):
-    index: uint32 = attrs.field(validator=instance_of(uint32))
+class ManualSection(Exportable):
     """
-    Location of the logistics section within the entity, 1-indexed.
+    A "manually" (player) defined collection of signals, typically used for
+    logistics sections as well as constant combinators signal groups.
     """
 
-    def _filters_converter(value: list[Any]) -> list[AttrsSignalFilter]:
+    def _index_in_range(self, attr, value, mode: Optional[ValidationMode] = None):
+        mode = mode if mode is not None else self.validate_assignment
+
+        if mode >= ValidationMode.MINIMUM:
+            if not (1 <= value <= 100):
+                msg = "Index ({}) must be in range [1, 100]; cannot have more than 100 signal sections at one time".format(
+                    value
+                )
+                raise IndexError(msg)
+
+    index: LuaDouble = attrs.field(
+        validator=and_(instance_of(LuaDouble), _index_in_range)
+    )
+    """
+    Location of the logistics section within the entity, 1-indexed. Hard capped
+    to 100 manual sections per entity.
+    """
+
+    def _filters_converter(value: list[Any]) -> list[SignalFilter]:
         # TODO: more robust testing
         if isinstance(value, list):
             for i, entry in enumerate(value):
                 if isinstance(entry, tuple):
-                    value[i] = AttrsSignalFilter(
+                    value[i] = SignalFilter(
                         index=i + 1,
                         name=entry[0],
                         count=entry[1],
                     )
                 else:
-                    value[i] = AttrsSignalFilter.converter(entry)
+                    value[i] = SignalFilter.converter(entry)
             return value
         else:
             return value
 
-    filters: list[AttrsSignalFilter] = attrs.field(
+    filters: list[SignalFilter] = attrs.field(
         factory=list, converter=_filters_converter, validator=instance_of(list)
     )
     """
@@ -1844,7 +1577,7 @@ class AttrsSection(Exportable):
         """
         TODO
         """
-        new_entry = AttrsSignalFilter(
+        new_entry = SignalFilter(
             index=index,
             name=name,
             type=type,
@@ -1867,7 +1600,7 @@ class AttrsSection(Exportable):
         if existing_index is None:
             self.filters.append(new_entry)
 
-    def get_signal(self, index: int64) -> Optional[AttrsSignalFilter]:
+    def get_signal(self, index: int64) -> Optional[SignalFilter]:
         """
         Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
         if it exists.
@@ -1914,7 +1647,7 @@ class AttrsSection(Exportable):
 
 draftsman_converters.add_schema(
     {"$id": "factorio:signal_section"},
-    AttrsSection,
+    ManualSection,
     lambda fields: {
         fields.index.name: "index",
         fields.filters.name: "filters",
@@ -1924,100 +1657,100 @@ draftsman_converters.add_schema(
 )
 
 
-class Section(DraftsmanBaseModel):
-    index: uint32  # TODO: 0-based or 1-based?
-    filters: Optional[list[SignalFilter]] = []
-    group: Optional[str] = Field(
-        None,
-        description="Name of this particular signal section group.",
-    )
+# class Section(DraftsmanBaseModel):
+#     index: uint32  # TODO: 0-based or 1-based?
+#     filters: Optional[list[SignalFilter]] = []
+#     group: Optional[str] = Field(
+#         None,
+#         description="Name of this particular signal section group.",
+#     )
 
-    def set_signal(
-        self,
-        index: int64,
-        name: Union[str, None],
-        count: int32 = 0,
-        quality: Literal[
-            "normal",
-            "uncommon",
-            "rare",
-            "epic",
-            "legendary",
-            "quality-unknown",
-            "any",
-        ] = "normal",
-        type: Optional[str] = None,
-    ) -> None:
-        try:
-            new_entry = SignalFilter(
-                index=index,
-                name=name,
-                type=type,
-                quality=quality,
-                comparator="=",
-                count=count,
-            )
-            new_entry.index += 1
-        except ValidationError as e:
-            raise DataFormatError(e) from None
+#     def set_signal(
+#         self,
+#         index: int64,
+#         name: Union[str, None],
+#         count: int32 = 0,
+#         quality: Literal[
+#             "normal",
+#             "uncommon",
+#             "rare",
+#             "epic",
+#             "legendary",
+#             "quality-unknown",
+#             "any",
+#         ] = "normal",
+#         type: Optional[str] = None,
+#     ) -> None:
+#         try:
+#             new_entry = SignalFilter(
+#                 index=index,
+#                 name=name,
+#                 type=type,
+#                 quality=quality,
+#                 comparator="=",
+#                 count=count,
+#             )
+#             new_entry.index += 1
+#         except ValidationError as e:
+#             raise DataFormatError(e) from None
 
-        new_filters = [] if self.filters is None else self.filters
+#         new_filters = [] if self.filters is None else self.filters
 
-        # Check to see if filters already contains an entry with the same index
-        existing_index = None
-        for i, signal_filter in enumerate(new_filters):
-            if index + 1 == signal_filter["index"]:  # Index already exists in the list
-                if name is None:  # Delete the entry
-                    del new_filters[i]
-                else:
-                    new_filters[i] = new_entry
-                existing_index = i
-                break
+#         # Check to see if filters already contains an entry with the same index
+#         existing_index = None
+#         for i, signal_filter in enumerate(new_filters):
+#             if index + 1 == signal_filter["index"]:  # Index already exists in the list
+#                 if name is None:  # Delete the entry
+#                     del new_filters[i]
+#                 else:
+#                     new_filters[i] = new_entry
+#                 existing_index = i
+#                 break
 
-        if existing_index is None:
-            new_filters.append(new_entry)
+#         if existing_index is None:
+#             new_filters.append(new_entry)
 
-    def get_signal(self, index):
-        """
-        Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
-        if it exists.
+#     def get_signal(self, index):
+#         """
+#         Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
+#         if it exists.
 
-        :param index: The index of the signal to analyze.
+#         :param index: The index of the signal to analyze.
 
-        :returns: A ``dict`` that conforms to :py:data:`.SIGNAL_FILTER`, or
-            ``None`` if nothing was found at that index.
-        """
-        if not self.filters:
-            return None
+#         :returns: A ``dict`` that conforms to :py:data:`.SIGNAL_FILTER`, or
+#             ``None`` if nothing was found at that index.
+#         """
+#         if not self.filters:
+#             return None
 
-        return next(
-            (item for item in self.filters if item["index"] == index + 1),
-            None,
-        )
+#         return next(
+#             (item for item in self.filters if item["index"] == index + 1),
+#             None,
+#         )
 
-    @field_validator("filters", mode="before")
-    @classmethod
-    def normalize_input(cls, value: Any):
-        if isinstance(value, list):
-            for i, entry in enumerate(value):
-                if isinstance(entry, tuple):
-                    # TODO: perhaps it would be better to modify the format so
-                    # you must specify the signal type... or maybe not...
-                    signal_types = get_signal_types(entry[0])
-                    filter_type = (
-                        "item" if "item" in signal_types else next(iter(signal_types))
-                    )
-                    value[i] = {
-                        "index": i + 1,
-                        "name": entry[0],
-                        "type": filter_type,
-                        "comparator": "=",
-                        "count": entry[1],
-                    }
+#     @field_validator("filters", mode="before")
+#     @classmethod
+#     def normalize_input(cls, value: Any):
+#         if isinstance(value, list):
+#             for i, entry in enumerate(value):
+#                 if isinstance(entry, tuple):
+#                     # TODO: perhaps it would be better to modify the format so
+#                     # you must specify the signal type... or maybe not...
+#                     signal_types = get_signal_types(entry[0])
+#                     filter_type = (
+#                         "item" if "item" in signal_types else next(iter(signal_types))
+#                     )
+#                     value[i] = {
+#                         "index": i + 1,
+#                         "name": entry[0],
+#                         "type": filter_type,
+#                         "comparator": "=",
+#                         "count": entry[1],
+#                     }
 
-        return value
+#         return value
 
-    model_config = ConfigDict(validate_assignment=True)
+#     model_config = ConfigDict(validate_assignment=True)
 
 
 # class SignalSection(Section):
@@ -2203,17 +1936,6 @@ draftsman_converters.add_schema(
 )
 
 
-class ItemRequest(DraftsmanBaseModel):
-    id: SignalID = Field(..., description="The name of the item to request.")
-    items: ItemSpecification = Field(
-        ...,
-        description="""
-        A list of all requested items and their locations within the 
-        entity.
-        """,
-    )
-
-
 @attrs.define
 class AttrsInfinityFilter(Exportable):
     index: uint16 = attrs.field(validator=instance_of(uint16))
@@ -2260,123 +1982,170 @@ draftsman_converters.add_schema(
 )
 
 
-class Sections(DraftsmanBaseModel):
-    # class Section(DraftsmanBaseModel):
-    #     index: uint32
-    #     filters: Optional[list[SignalFilter]] = []
-    #     group: Optional[str] = Field(
-    #         None,
-    #         description="Name of this particular signal section group.",
-    #     )
+# class Sections(DraftsmanBaseModel):
+#     # class Section(DraftsmanBaseModel):
+#     #     index: uint32
+#     #     filters: Optional[list[SignalFilter]] = []
+#     #     group: Optional[str] = Field(
+#     #         None,
+#     #         description="Name of this particular signal section group.",
+#     #     )
 
-    #     def set_signal(
-    #         self,
-    #         index: int64,
-    #         name: Union[str, None],
-    #         count: int32 = 0,
-    #         quality: Literal[
-    #             "normal",
-    #             "uncommon",
-    #             "rare",
-    #             "epic",
-    #             "legendary",
-    #             "quality-unknown",
-    #             "any",
-    #         ] = "normal",
-    #         type: Optional[str] = None,
-    #     ) -> None:
-    #         try:
-    #             new_entry = SignalFilter(
-    #                 index=index,
-    #                 name=name,
-    #                 type=type,
-    #                 quality=quality,
-    #                 comparator="=",
-    #                 count=count,
-    #             )
-    #             new_entry.index += 1
-    #         except ValidationError as e:
-    #             raise DataFormatError(e) from None
+#     #     def set_signal(
+#     #         self,
+#     #         index: int64,
+#     #         name: Union[str, None],
+#     #         count: int32 = 0,
+#     #         quality: Literal[
+#     #             "normal",
+#     #             "uncommon",
+#     #             "rare",
+#     #             "epic",
+#     #             "legendary",
+#     #             "quality-unknown",
+#     #             "any",
+#     #         ] = "normal",
+#     #         type: Optional[str] = None,
+#     #     ) -> None:
+#     #         try:
+#     #             new_entry = SignalFilter(
+#     #                 index=index,
+#     #                 name=name,
+#     #                 type=type,
+#     #                 quality=quality,
+#     #                 comparator="=",
+#     #                 count=count,
+#     #             )
+#     #             new_entry.index += 1
+#     #         except ValidationError as e:
+#     #             raise DataFormatError(e) from None
 
-    #         new_filters = [] if self.filters is None else self.filters
+#     #         new_filters = [] if self.filters is None else self.filters
 
-    #         # Check to see if filters already contains an entry with the same index
-    #         existing_index = None
-    #         for i, signal_filter in enumerate(new_filters):
-    #             if (
-    #                 index + 1 == signal_filter["index"]
-    #             ):  # Index already exists in the list
-    #                 if name is None:  # Delete the entry
-    #                     del new_filters[i]
-    #                 else:
-    #                     new_filters[i] = new_entry
-    #                 existing_index = i
-    #                 break
+#     #         # Check to see if filters already contains an entry with the same index
+#     #         existing_index = None
+#     #         for i, signal_filter in enumerate(new_filters):
+#     #             if (
+#     #                 index + 1 == signal_filter["index"]
+#     #             ):  # Index already exists in the list
+#     #                 if name is None:  # Delete the entry
+#     #                     del new_filters[i]
+#     #                 else:
+#     #                     new_filters[i] = new_entry
+#     #                 existing_index = i
+#     #                 break
 
-    #         if existing_index is None:
-    #             new_filters.append(new_entry)
+#     #         if existing_index is None:
+#     #             new_filters.append(new_entry)
 
-    #     def get_signal(self, index):
-    #         """
-    #         Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
-    #         if it exists.
+#     #     def get_signal(self, index):
+#     #         """
+#     #         Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
+#     #         if it exists.
 
-    #         :param index: The index of the signal to analyze.
+#     #         :param index: The index of the signal to analyze.
 
-    #         :returns: A ``dict`` that conforms to :py:data:`.SIGNAL_FILTER`, or
-    #             ``None`` if nothing was found at that index.
-    #         """
-    #         if not self.filters:
-    #             return None
+#     #         :returns: A ``dict`` that conforms to :py:data:`.SIGNAL_FILTER`, or
+#     #             ``None`` if nothing was found at that index.
+#     #         """
+#     #         if not self.filters:
+#     #             return None
 
-    #         return next(
-    #             (item for item in self.filters if item["index"] == index + 1),
-    #             None,
-    #         )
+#     #         return next(
+#     #             (item for item in self.filters if item["index"] == index + 1),
+#     #             None,
+#     #         )
 
-    #     @field_validator("filters", mode="before")
-    #     @classmethod
-    #     def normalize_input(cls, value: Any):
-    #         if isinstance(value, list):
-    #             for i, entry in enumerate(value):
-    #                 if isinstance(entry, tuple):
-    #                     value[i] = {
-    #                         "index": i + 1,
-    #                         "name": entry[0],
-    #                         "type": next(iter(get_signal_types(entry[0]))),
-    #                         "comparator": "=",
-    #                         "count": entry[1],
-    #                         "max_count": entry[1],
-    #                     }
+#     #     @field_validator("filters", mode="before")
+#     #     @classmethod
+#     #     def normalize_input(cls, value: Any):
+#     #         if isinstance(value, list):
+#     #             for i, entry in enumerate(value):
+#     #                 if isinstance(entry, tuple):
+#     #                     value[i] = {
+#     #                         "index": i + 1,
+#     #                         "name": entry[0],
+#     #                         "type": next(iter(get_signal_types(entry[0]))),
+#     #                         "comparator": "=",
+#     #                         "count": entry[1],
+#     #                         "max_count": entry[1],
+#     #                     }
 
-    #         return value
+#     #         return value
 
-    #     model_config = ConfigDict(validate_assignment=True)
+#     #     model_config = ConfigDict(validate_assignment=True)
 
-    sections: Optional[list[Section]] = Field([], description="""TODO""")
+#     sections: Optional[list[Section]] = Field([], description="""TODO""")
 
-    def __getitem__(self, key):
-        # Custom getitem for this thing specfically
-        # return self.sections[key]
-        if isinstance(key, str):
-            return next(section for section in self.sections if section.group == key)
-        else:
-            return self.sections[key]
+#     def __getitem__(self, key):
+#         # Custom getitem for this thing specfically
+#         # return self.sections[key]
+#         if isinstance(key, str):
+#             return next(section for section in self.sections if section.group == key)
+#         else:
+#             return self.sections[key]
 
 
 @attrs.define
-class EquipmentID:
+class EquipmentID(Exportable):
     name: str = attrs.field()  # TODO: validators, EquipmentName
-    quality: QualityName = attrs.field(default="normal")  # TODO: validators
+    """
+    The name of the equipment.
+    """
+    quality: QualityName = attrs.field(
+        default="normal", validator=one_of(QualityName)
+    )  # TODO: validators
+    """
+    The quality of the quipment
+    """
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(**value)
+        return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:equipment_id"},
+    EquipmentID,
+    lambda fields: {
+        "name": fields.name.name,
+        "quality": fields.quality.name,
+    },
+)
 
 
 @attrs.define
-class EquipmentComponent:
-    equipment: EquipmentID = attrs.field()  # TODO: validators
+class EquipmentComponent(Exportable):
+    equipment: EquipmentID = attrs.field(
+        converter=EquipmentID.converter, validator=instance_of(EquipmentID)
+    )
     """
     The type of equipment to add.
     """
-    position: IntPosition = attrs.field()  # TODO: validators
+
+    position: Vector = attrs.field(
+        converter=lambda v: Vector.from_other(v, type_cast=int),
+        validator=instance_of(Vector),
+    )
     """
-    The top leftmost tile in which this item sits, 0-based.
+    The integer coordinate of the top leftmost tile in which this item sits, 
+    0-based.
     """
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(**value)
+        return value
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:equipment_component"},
+    EquipmentComponent,
+    lambda fields: {
+        "equipment": fields.equipment.name,
+        "position": fields.position.name,
+    },
+)

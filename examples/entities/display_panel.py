@@ -1,5 +1,10 @@
 # display_panel.py
 
+"""
+Manipulating the Factorio 2.0 display panel, as well as creating a (simple)
+circuit-controllable text display.
+"""
+
 import string
 
 from draftsman.blueprintable import Blueprint, BlueprintBook
@@ -82,19 +87,17 @@ def main():
     # Make a row of len(text_to_display) display panels
     display_panel = DisplayPanel("display-panel")
     for i in range(len(text_to_display)):
-        input_signal = input_signals[i]
-
         display_panel.tile_position = (i, 0)
         display_panel.messages = [
             DisplayPanel.Message(
                 icon=display_icon,
                 condition=AttrsSimpleCondition(
-                    first_signal=input_signal,
+                    first_signal=input_signals[i],
                     comparator="=",
-                    constant=number,
+                    constant=code_point,
                 ),
             )
-            for display_icon, number in display_icons.items()
+            for display_icon, code_point in display_icons.items()
         ]
         string_display_bp.entities.append(display_panel)
 
@@ -121,8 +124,7 @@ def main():
 
     # Add both blueprints to a blueprint book for packaging
     book = BlueprintBook(
-        active_index=0, 
-        blueprints=[simple_blueprint, string_display_bp]
+        active_index=0, blueprints=[simple_blueprint, string_display_bp]
     )
     print(book.to_string())
 

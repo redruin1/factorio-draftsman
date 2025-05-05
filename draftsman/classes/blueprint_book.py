@@ -62,12 +62,11 @@ from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.deconstruction_planner import DeconstructionPlanner
-from draftsman.classes.exportable import ValidationResult, attempt_and_reissue
 from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import Color, DraftsmanBaseModel, Icon, uint16, uint64
+from draftsman.signatures import Color, DraftsmanBaseModel, uint16, uint64
 from draftsman.utils import encode_version, reissue_warnings
 from draftsman.validators import instance_of
 from draftsman.warning import DraftsmanWarning, IndexWarning
@@ -155,7 +154,7 @@ def blueprintable_list_unstructure_factory(_: type, converter: cattrs.Converter)
         res = [None] * len(inst)
         for i, elem in enumerate(inst):
             # d = converter.unstructure(elem)
-            d = elem.to_dict() # TODO: this is a problem because we lose the
+            d = elem.to_dict()  # TODO: this is a problem because we lose the
             # information stored in converter; plus, what arguments would you
             # call `to_dict()` with here?
             if "index" not in d:
@@ -602,5 +601,5 @@ draftsman_converters.add_schema(
         ("blueprint_book", "version"): fields.version.name,
         ("blueprint_book", "active_index"): fields.active_index.name,
         ("blueprint_book", "blueprints"): fields.blueprints.name,
-    }
+    },
 )

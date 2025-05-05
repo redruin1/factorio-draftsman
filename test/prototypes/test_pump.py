@@ -14,7 +14,9 @@ class TestPump:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Pump.from_dict({"name": "pump", "unused_keyword": 10}).validate().reissue_all()
+            Pump.from_dict(
+                {"name": "pump", "unused_keyword": 10}
+            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Pump("this is not a pump").validate().reissue_all()
 

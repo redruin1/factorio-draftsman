@@ -6,9 +6,6 @@ from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.exportable import (
     Exportable,
-    ValidationResult,
-    attempt_and_reissue,
-    custom_define,
 )
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
@@ -69,14 +66,6 @@ class _PosVector(Vector):
             value - self.entity().tile_height / 2
         )
 
-    # @classmethod
-    # def __get_pydantic_core_schema__(
-    #     cls, _source_type: Any, handler: GetCoreSchemaHandler
-    # ) -> CoreSchema:
-    #     return core_schema.no_info_after_validator_function(
-    #         cls, handler(FloatPosition)
-    #     )  # TODO: correct annotation
-
 
 class _TileVector(Vector):
     def __init__(self, x, y, entity):
@@ -94,144 +83,144 @@ class _TileVector(Vector):
         self.entity().position._data[1] = value + self.entity().tile_height / 2
 
 
-def strip_entity_number(cls):
-    """
-    Removes "entity_number" from the input signature so that attrs doesn't
-    complain. Editing entity number is better done by moving the location of the
-    entity within the parent "entities" list, as this just makes more intuitive
-    sense (and makes life much simpler).
-    """
-    original_init = cls.__init__
+# def strip_entity_number(cls):
+#     """
+#     Removes "entity_number" from the input signature so that attrs doesn't
+#     complain. Editing entity number is better done by moving the location of the
+#     entity within the parent "entities" list, as this just makes more intuitive
+#     sense (and makes life much simpler).
+#     """
+#     original_init = cls.__init__
 
-    @wraps(original_init)
-    def new_init(*args, **kwargs):
-        kwargs.pop("entity_number", None)
-        original_init(*args, **kwargs)
+#     @wraps(original_init)
+#     def new_init(*args, **kwargs):
+#         kwargs.pop("entity_number", None)
+#         original_init(*args, **kwargs)
 
-    cls.__init__ = new_init
+#     cls.__init__ = new_init
 
 
-class MyMeta(ABCMeta):
-    def __init__(self, classname, superclasses, attributedict):
-        super().__init__(classname, superclasses, attributedict)
-        if "similar_entities" not in self.__dict__:
-            raise TypeError(
-                "{} does not have attribute 'similar_entities'".format(classname)
-            )
+# class MyMeta(ABCMeta):
+#     def __init__(self, classname, superclasses, attributedict):
+#         super().__init__(classname, superclasses, attributedict)
+#         if "similar_entities" not in self.__dict__:
+#             raise TypeError(
+#                 "{} does not have attribute 'similar_entities'".format(classname)
+#             )
 
 
 @attrs.define
-class Entity(EntityLike, Exportable, metaclass=MyMeta):
+class Entity(EntityLike, Exportable):
     """
     Entity base-class. Used for all entity types that are specified in Factorio.
     Categorizes entities into "types" based on their class, each of which is
     implemented in :py:mod:`draftsman.prototypes`.
     """
 
-    class Format(DraftsmanBaseModel):
-        """
-        The overarching format of this Entity. TODO more
+    # class Format(DraftsmanBaseModel):
+    #     """
+    #     The overarching format of this Entity. TODO more
 
-        .. NOTE::
-            This is the schema for the Factorio format of the data, not the
-            internal format of each entity, which varies in a number of ways.
-        """
+    #     .. NOTE::
+    #         This is the schema for the Factorio format of the data, not the
+    #         internal format of each entity, which varies in a number of ways.
+    #     """
 
-        # Private attributes, managed internally by Draftsman
-        _entity: weakref.ReferenceType["Entity"] = PrivateAttr()
-        _position: Vector = PrivateAttr()
-        _tile_position: Vector = PrivateAttr()
+    #     # Private attributes, managed internally by Draftsman
+    #     _entity: weakref.ReferenceType["Entity"] = PrivateAttr()
+    #     _position: Vector = PrivateAttr()
+    #     _tile_position: Vector = PrivateAttr()
 
-        # Exported fields
-        name: str = Field(
-            ...,
-            description="""
-            The internal ID of the entity.
-            """,
-        )
-        quality: Literal[
-            "normal", "uncommon", "rare", "epic", "legendary"
-        ] = Field(  # TODO: determine these automatically
-            "normal",
-            description="""
-            The quality of the entity. Defaults to 'normal' when not specified,
-            or when quality is not present in the save being imported to /
-            exported from.
-            """,
-        )
-        position: FloatPosition = Field(
-            ...,
-            description="""
-            The position of the entity, almost always measured from it's center. 
-            Uses Factorio tiles as its unit.
-            """,
-        )
-        entity_number: uint64 = Field(
-            ...,
-            exclude=True,
-            description="""
-            The number of the entity in it's parent blueprint, 1-based. In
-            practice this is the index of the dictionary in the blueprint's 
-            'entities' list, but this is not enforced.
-            """,
-        )
-        tags: Optional[dict[str, Any]] = Field(
-            {},
-            description="""
-            Any other additional metadata associated with this blueprint entity. 
-            Frequently used by mods.
-            """,
-        )
+    #     # Exported fields
+    #     name: str = Field(
+    #         ...,
+    #         description="""
+    #         The internal ID of the entity.
+    #         """,
+    #     )
+    #     quality: Literal[
+    #         "normal", "uncommon", "rare", "epic", "legendary"
+    #     ] = Field(  # TODO: determine these automatically
+    #         "normal",
+    #         description="""
+    #         The quality of the entity. Defaults to 'normal' when not specified,
+    #         or when quality is not present in the save being imported to /
+    #         exported from.
+    #         """,
+    #     )
+    #     position: FloatPosition = Field(
+    #         ...,
+    #         description="""
+    #         The position of the entity, almost always measured from it's center. 
+    #         Uses Factorio tiles as its unit.
+    #         """,
+    #     )
+    #     entity_number: uint64 = Field(
+    #         ...,
+    #         exclude=True,
+    #         description="""
+    #         The number of the entity in it's parent blueprint, 1-based. In
+    #         practice this is the index of the dictionary in the blueprint's 
+    #         'entities' list, but this is not enforced.
+    #         """,
+    #     )
+    #     tags: Optional[dict[str, Any]] = Field(
+    #         {},
+    #         description="""
+    #         Any other additional metadata associated with this blueprint entity. 
+    #         Frequently used by mods.
+    #         """,
+    #     )
 
-        @field_validator("name")
-        @classmethod
-        def check_unknown_name(cls, value: str, info: ValidationInfo):
-            """
-            Warn if the name is not any known Draftsman entity name, either for
-            this specific entity class or any entity at all.
-            """
-            if not info.context:
-                return value
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
+    #     @field_validator("name")
+    #     @classmethod
+    #     def check_unknown_name(cls, value: str, info: ValidationInfo):
+    #         """
+    #         Warn if the name is not any known Draftsman entity name, either for
+    #         this specific entity class or any entity at all.
+    #         """
+    #         if not info.context:
+    #             return value
+    #         if info.context["mode"] <= ValidationMode.MINIMUM:
+    #             return value
 
-            warning_list: list = info.context["warning_list"]
-            entity: Entity = info.context["object"]
+    #         warning_list: list = info.context["warning_list"]
+    #         entity: Entity = info.context["object"]
 
-            # Similar entities exists on all entities EXCEPT generic `Entity`
-            # instances, for which we're trying to ignore validation on
-            # if entity.similar_entities is None:
-            #     return value
+    #         # Similar entities exists on all entities EXCEPT generic `Entity`
+    #         # instances, for which we're trying to ignore validation on
+    #         # if entity.similar_entities is None:
+    #         #     return value
 
-            if (
-                entity.similar_entities is not None
-                and value not in entity.similar_entities
-            ):
-                warning_list.append(
-                    UnknownEntityWarning(
-                        "'{}' is not a known name for a {}{}".format(
-                            value,
-                            type(entity).__name__,
-                            get_suggestion(value, entity.similar_entities, n=1),
-                        )
-                    )
-                )
-            elif value not in entities.raw:
-                warning_list.append(
-                    UnknownEntityWarning(
-                        "Unknown entity '{}'{}".format(
-                            value, get_suggestion(value, entities.raw.keys(), n=1)
-                        )
-                    )
-                )
+    #         if (
+    #             entity.similar_entities is not None
+    #             and value not in entity.similar_entities
+    #         ):
+    #             warning_list.append(
+    #                 UnknownEntityWarning(
+    #                     "'{}' is not a known name for a {}{}".format(
+    #                         value,
+    #                         type(entity).__name__,
+    #                         get_suggestion(value, entity.similar_entities, n=1),
+    #                     )
+    #                 )
+    #             )
+    #         elif value not in entities.raw:
+    #             warning_list.append(
+    #                 UnknownEntityWarning(
+    #                     "Unknown entity '{}'{}".format(
+    #                         value, get_suggestion(value, entities.raw.keys(), n=1)
+    #                     )
+    #                 )
+    #             )
 
-            return value
+    #         return value
 
-        @field_serializer("position")
-        def serialize_position(self, _):
-            return self._entity().global_position.to_dict()
+    #     @field_serializer("position")
+    #     def serialize_position(self, _):
+    #         return self._entity().global_position.to_dict()
 
-        model_config = ConfigDict(title="Entity", revalidate_instances="always")
+    #     model_config = ConfigDict(title="Entity", revalidate_instances="always")
 
     # =========================================================================
 
@@ -899,6 +888,26 @@ class Entity(EntityLike, Exportable, metaclass=MyMeta):
     # =========================================================================
 
     @property
+    def static_tile_width(self) -> int:
+        """
+        The width of the entity irrespective of it's current orientation.
+        Equivalent to the :py:attr:`.tile_width` when the entity is facing north.
+        """
+        return Entity.tile_width.fget(self)
+
+    # =========================================================================
+
+    @property
+    def static_tile_height(self) -> int:
+        """
+        The height of the entity irrespective of it's current orientation.
+        Equivalent to the :py:attr:`.tile_width` when the entity is facing north.
+        """
+        return Entity.tile_height.fget(self)
+
+    # =========================================================================
+
+    @property
     def flags(self) -> Optional[list[str]]:
         """
         A set of string flags which indicate a number of behaviors of this
@@ -1165,7 +1174,7 @@ class Entity(EntityLike, Exportable, metaclass=MyMeta):
 
         if id(self) in memo:
             return memo[id(self)]
-        print(super().__deepcopy__)
+        # print(super().__deepcopy__)
         result = self.__class__.__new__(self.__class__)
         # This is very cursed
         # We need a reference to the parent entity stored in `_root` so that we

@@ -1,8 +1,7 @@
 # read_rail_signal.py
 
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsSignalID, SignalID
+from draftsman.signatures import AttrsSignalID
 from draftsman.validators import instance_of
 
 import attrs
@@ -22,24 +21,6 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
 
     Allows the Entity to set red, yellow, and green circuit output signals.
     """
-
-    class ControlFormat(BaseModel):
-        red_output_signal: Optional[SignalID] = Field(
-            SignalID(name="signal-red", type="virtual"),
-            description="""Circuit signal to output when the train signal reads red.""",
-        )
-        yellow_output_signal: Optional[SignalID] = Field(
-            SignalID(name="signal-yellow", type="virtual"),
-            alias="orange_output_signal",
-            description="""Circuit signal to output when the train signal reads yellow/orange.""",
-        )
-        green_output_signal: Optional[SignalID] = Field(
-            SignalID(name="signal-green", type="virtual"),
-            description="""Circuit signal to output when the train signal reads green.""",
-        )
-
-    class Format(BaseModel):
-        pass
 
     # =========================================================================
 

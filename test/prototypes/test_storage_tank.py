@@ -40,7 +40,7 @@ class TestStorageTank:
                     "name": "storage-tank",
                     "position": {"x": 16.5, "y": 4.5},
                     "direction": Direction.WEST,
-                    "invalid_keyword": 5
+                    "invalid_keyword": 5,
                 }
             ).validate().reissue_all()
 

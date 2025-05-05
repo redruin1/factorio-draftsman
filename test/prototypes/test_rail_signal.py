@@ -154,7 +154,9 @@ class TestRailSignal:
 
         with pytest.warns(UnknownSignalWarning):
             rail_signal.red_output_signal = {"name": "unknown", "type": "virtual"}
-            assert rail_signal.red_output_signal == AttrsSignalID(name="unknown", type="virtual")
+            assert rail_signal.red_output_signal == AttrsSignalID(
+                name="unknown", type="virtual"
+            )
         assert rail_signal.to_dict() == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
@@ -297,9 +299,15 @@ class TestRailSignal:
         signal1.merge(signal2)
         del signal2
 
-        assert signal1.red_output_signal == AttrsSignalID(name="signal-A", type="virtual")
-        assert signal1.yellow_output_signal == AttrsSignalID(name="signal-B", type="virtual")
-        assert signal1.green_output_signal == AttrsSignalID(name="signal-C", type="virtual")
+        assert signal1.red_output_signal == AttrsSignalID(
+            name="signal-A", type="virtual"
+        )
+        assert signal1.yellow_output_signal == AttrsSignalID(
+            name="signal-B", type="virtual"
+        )
+        assert signal1.green_output_signal == AttrsSignalID(
+            name="signal-C", type="virtual"
+        )
         assert signal1.tags == {"some": "stuff"}
 
         assert signal1.to_dict()["control_behavior"] == {

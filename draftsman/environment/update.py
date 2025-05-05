@@ -786,7 +786,7 @@ def extract_mods(
 
     # print(out_mods)
     out_mods = {
-        key: value
+        key: version_string_to_tuple(value)
         for key, value in convert_table_to_dict(lua.globals().mods).items()
         if key != "core"
     }
@@ -1081,6 +1081,31 @@ def extract_entities(
 
     if verbose:
         print("Extracted entities...")
+
+
+# =============================================================================
+
+
+def extract_equipment(
+    lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool = False
+) -> None:
+    """
+    Extracts equipment to ``equipment.pkl`` in :py:mod:`draftsman.data`.
+    """
+    data = lua.globals().data
+
+    unordered_equipment_raw = convert_table_to_dict(data.raw["equipment-grid"])
+    raw_order = get_order(unordered_equipment_raw, *sort_tuple)
+
+    equipment_raw = {}
+    for name in raw_order:
+        equipment_raw[name] = unordered_equipment_raw[name]
+
+    with open(os.path.join(draftsman_path, "data", "equipment.pkl"), "wb") as out:
+        pickle.dump((equipment_raw,), out, 4)
+
+    if verbose:
+        print("Extracted equipment...")
 
 
 # =============================================================================
@@ -1592,6 +1617,9 @@ def extract_data(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = Fals
     # translate it into their desired form
     # That seems to make the most sense, and is essentially what we're already
     # doing on the Draftsman side.
+    # Or, perhaps more rudementarily, we could just pickle the entire data.raw
+    # unchanged, and have every attribute calculate what it needs at runtime
+    # (which would certainly be easiest to maintain...)
 
     # Preferrably as well I would like to reuse the `entity.add_entity`, etc.
     # functions to keep everything consistent for both my end and the end user's
@@ -1607,6 +1635,7 @@ def extract_data(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = Fals
     items = get_items(lua)
 
     extract_entities(lua, draftsman_path, items, verbose)
+    extract_equipment(lua, draftsman_path, items, verbose)
     extract_fluids(lua, draftsman_path, items, verbose)
     extract_instruments(lua, draftsman_path, verbose)
     extract_items(lua, draftsman_path, items, verbose)

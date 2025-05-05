@@ -5,7 +5,7 @@ from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.exportable import Exportable, ValidationResult
 from draftsman.classes.spatial_hashmap import SpatialDataStructure, SpatialHashMap
 from draftsman.constants import ValidationMode
-from draftsman.entity import get_class, new_entity
+from draftsman.entity import get_entity_class, new_entity
 from draftsman.error import (
     DataFormatError,
     DuplicateIDError,
@@ -14,7 +14,6 @@ from draftsman.error import (
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import reissue_warnings
-from draftsman.signatures import Connections, DraftsmanBaseModel
 from draftsman.validators import classvalidator
 from draftsman.warning import HiddenEntityWarning
 from draftsman import utils
@@ -47,27 +46,27 @@ class EntityList(Exportable, MutableSequence):
     :py:class:`.EntityCollection` classes.
     """
 
-    class Format(DraftsmanBaseModel):
-        _root: List[EntityLike]
+    # class Format(DraftsmanBaseModel):
+    #     _root: List[EntityLike]
 
-        root: List[Any]  # should be a better way to validate this
+    #     root: List[Any]  # should be a better way to validate this
 
-        @model_validator(mode="after")
-        def ensure_no_duplicate_ids(self, info):  # TODO
-            known_ids = set()
-            for entitylike in self.root:
-                if entitylike.id in known_ids:  # pragma: no coverage
-                    raise AssertionError(
-                        "Cannot have two entities with the same id"
-                    )  # TODO better
-                if entitylike.id is not None:
-                    known_ids.add(entitylike.id)
-            return self
+    #     @model_validator(mode="after")
+    #     def ensure_no_duplicate_ids(self, info):  # TODO
+    #         known_ids = set()
+    #         for entitylike in self.root:
+    #             if entitylike.id in known_ids:  # pragma: no coverage
+    #                 raise AssertionError(
+    #                     "Cannot have two entities with the same id"
+    #                 )  # TODO better
+    #             if entitylike.id is not None:
+    #                 known_ids.add(entitylike.id)
+    #         return self
 
-        # TODO: issue OverlappingObjectsWarnings
+    #     # TODO: issue OverlappingObjectsWarnings
 
-        # TODO: determine a way to check if entities can be placed in a blueprint
-        # ("hidden" flag, "not-blueprintable" flag, etc.)
+    #     # TODO: determine a way to check if entities can be placed in a blueprint
+    #     # ("hidden" flag, "not-blueprintable" flag, etc.)
 
     @reissue_warnings
     def __init__(
@@ -101,18 +100,17 @@ class EntityList(Exportable, MutableSequence):
 
         self._parent = parent
 
-        if initlist is not None:
-            for elem in initlist:
-                if isinstance(elem, EntityLike):
-                    self.append(elem, copy=copy)
-                elif isinstance(elem, dict):
-                    name = elem.pop("name")
-                    # self.append(new_entity(name, **elem))
-                    self.append(name, **elem)
-                else:
-                    raise TypeError(
-                        "Constructor either takes EntityLike or dict entries"
-                    )
+        for elem in initlist:
+            if isinstance(elem, EntityLike):
+                self.append(elem, copy=copy)
+            elif isinstance(elem, dict):
+                name = elem.pop("name")
+                # self.append(new_entity(name, **elem))
+                self.append(name, **elem)
+            else:
+                raise TypeError(
+                    "Constructor either takes EntityLike or dict entries"
+                )
 
         self.validate_assignment = validate_assignment
 
@@ -125,7 +123,7 @@ class EntityList(Exportable, MutableSequence):
         **kwargs
     ) -> EntityLike:
         """
-        Appends the ``EntityLike`` to the end of the sequence. Returns a 
+        Appends the ``EntityLike`` to the end of the sequence. Returns a
         reference to the appended entity, if successful.
 
         Supports an optional shorthand where you can specify the string name of
@@ -276,8 +274,6 @@ class EntityList(Exportable, MutableSequence):
         new = False
         if isinstance(name, str):
             entitylike = new_entity(name, **kwargs)
-            if entitylike is None:
-                return
             new = True
         else:
             entitylike = name
@@ -487,9 +483,7 @@ class EntityList(Exportable, MutableSequence):
 
         for entity in self:
             # TODO: more sophisticated
-            result = entity.validate(mode=mode, force=force)
-            output.error_list += result.error_list
-            output.warning_list += result.warning_list
+            output += entity.validate(mode=mode, force=force)
 
         return output
 
@@ -810,7 +804,7 @@ def _entity_list_structure_factory(cls, converter: cattrs.Converter):
     def structure_hook(l: list, t: type):
         # print("l", l)
         return EntityList(
-            None, [converter.structure(elem, get_class(elem)) for elem in l], copy=False
+            None, [converter.structure(elem, get_entity_class(elem.get("name", None))) for elem in l], copy=False
         )
 
     return structure_hook
@@ -820,14 +814,16 @@ draftsman_converters.register_structure_hook_factory(
     lambda cls: issubclass(cls, EntityList), _entity_list_structure_factory
 )
 
+
 def _entity_list_unstructure_factory(cls, converter: cattrs.Converter):
     def unstructure_hook(inst):
         return [converter.unstructure(entity) for entity in inst._root]
+
     return unstructure_hook
 
+
 draftsman_converters.register_unstructure_hook_factory(
-    lambda cls: issubclass(cls, EntityList),
-    _entity_list_unstructure_factory
+    lambda cls: issubclass(cls, EntityList), _entity_list_unstructure_factory
 )
 
 # draftsman_converters.register_unstructure_hook(

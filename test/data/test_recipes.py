@@ -13,20 +13,24 @@ class TestRecipeData:
 
     def test_get_recipe_ingredients(self):
         # Normal, list-type
-        assert recipes.get_recipe_ingredients("wooden-chest", "normal") == {"wood"}
+        assert recipes.get_recipe_ingredients("wooden-chest") == {"wood"}
         # Normal, dict-type
-        assert recipes.get_recipe_ingredients("plastic-bar", "normal") == {
+        assert recipes.get_recipe_ingredients("plastic-bar") == {
             "petroleum-gas",
             "coal",
         }
         # Expensive, list-type
-        assert recipes.get_recipe_ingredients("iron-gear-wheel", "normal") == {
+        assert recipes.get_recipe_ingredients("iron-gear-wheel", expensive=True) == {
             "iron-plate"
         }
         # Custom examples
         recipes.raw["test-1"] = {"ingredients": [["iron-plate", 2]]}
-        assert recipes.get_recipe_ingredients("test-1", "normal") == {"iron-plate"}
+        assert recipes.get_recipe_ingredients("test-1") == {"iron-plate"}
         recipes.raw["test-2"] = {"normal": {"ingredients": [{"name": "iron-plate"}]}}
-        assert recipes.get_recipe_ingredients("test-2", "normal") == {"iron-plate"}
+        assert recipes.get_recipe_ingredients("test-2") == {"iron-plate"}
 
         # TODO: higher quality recipes
+
+        # Unrecognized cases
+        assert recipes.get_recipe_ingredients(None) is None
+        assert recipes.get_recipe_ingredients("unknown recipe") is None

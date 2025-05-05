@@ -1,7 +1,6 @@
 # asteroid_collector.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     CircuitSetFiltersMixin,
     CircuitConditionMixin,

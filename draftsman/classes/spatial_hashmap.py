@@ -5,6 +5,7 @@ from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.vector import PrimitiveVector, PrimitiveIntVector
 from draftsman.prototypes.straight_rail import StraightRail
+from draftsman.prototypes.legacy_straight_rail import LegacyStraightRail
 from draftsman.prototypes.legacy_curved_rail import LegacyCurvedRail
 from draftsman.prototypes.gate import Gate
 from draftsman.utils import (
@@ -143,13 +144,15 @@ class SpatialHashMap(SpatialDataStructure):
 
                 # StraightRails and Gates collide with each other ONLY IF the
                 # direction of the gate and rail are parallel
+                print(item, overlapping_item)
                 if (
-                    isinstance(item, StraightRail)
+                    isinstance(item, (StraightRail, LegacyStraightRail))
                     and isinstance(overlapping_item, Gate)
                     or isinstance(item, Gate)
-                    and isinstance(overlapping_item, StraightRail)
+                    and isinstance(overlapping_item, (StraightRail, LegacyStraightRail))
                 ):
-                    parallel = (item.direction - overlapping_item.direction) % 4 == 0
+                    parallel = (item.direction - overlapping_item.direction) % 8 == 0
+                    print(parallel)
                     if not parallel:
                         continue
 
@@ -219,7 +222,7 @@ class SpatialHashMap(SpatialDataStructure):
         for cell_coord in cell_coords:
             if cell_coord in self.map:
                 for item in self.map[cell_coord]:
-                    print(item)
+                    # print(item)
                     if aabb_overlaps_aabb(item.get_world_bounding_box(), aabb):
                         if limit is not None and len(items) >= limit:
                             break

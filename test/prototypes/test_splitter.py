@@ -40,7 +40,7 @@ class TestSplitter:
                     "name": "splitter",
                     "position": {"x": 0.5, "y": 1.0},
                     "direction": Direction.WEST,
-                    "invalid_keyword": 5
+                    "invalid_keyword": 5,
                 }
             ).validate().reissue_all()
 
@@ -83,6 +83,19 @@ class TestSplitter:
             assert splitter.dual_power_connectable == False
             assert splitter.circuit_connectable == False
             assert splitter.dual_circuit_connectable == False
+
+    def test_tile_width_height(self):
+        splitter = Splitter()
+        assert splitter.tile_width == 2
+        assert splitter.tile_height == 1
+        assert splitter.static_tile_width == 2
+        assert splitter.static_tile_height == 1
+
+        splitter.direction = Direction.EAST
+        assert splitter.tile_width == 1
+        assert splitter.tile_height == 2
+        assert splitter.static_tile_width == 2
+        assert splitter.static_tile_height == 1
 
     def test_mergable_with(self):
         splitter1 = Splitter("splitter")

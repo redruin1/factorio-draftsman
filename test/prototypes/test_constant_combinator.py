@@ -14,93 +14,69 @@ from collections.abc import Hashable
 import pytest
 
 
-class TestConstantCombinator:  # TODO: reimplement
-    # def test_constructor_init(self):
-    #     combinator = ConstantCombinator(
-    #         "constant-combinator",
-    #         tile_position=[0, 2],
-    #         control_behavior={
-    #             "filters": [("signal-A", 100), ("signal-B", 200), ("signal-C", 300)]
-    #         },
-    #     )
-    #     assert combinator.to_dict() == {
-    #         "name": "constant-combinator",
-    #         "position": {"x": 0.5, "y": 2.5},
-    #         "control_behavior": {
-    #             "filters": [
-    #                 {
-    #                     "index": 1,
-    #                     "signal": {"name": "signal-A", "type": "virtual"},
-    #                     "count": 100,
-    #                 },
-    #                 {
-    #                     "index": 2,
-    #                     "signal": {"name": "signal-B", "type": "virtual"},
-    #                     "count": 200,
-    #                 },
-    #                 {
-    #                     "index": 3,
-    #                     "signal": {"name": "signal-C", "type": "virtual"},
-    #                     "count": 300,
-    #                 },
-    #             ]
-    #         },
-    #     }
+class TestConstantCombinator:
+    def test_constructor_init(self):
+        combinator = ConstantCombinator(
+            "constant-combinator",
+            tile_position=[0, 2],
+            sections=[
+                {
+                    "index": 1,
+                    "filters": [
+                        ("signal-A", 100),
+                        ("signal-B", 200),
+                        ("signal-C", 300),
+                    ],
+                }
+            ],
+        )
+        print(combinator.to_dict())
+        assert combinator.to_dict() == {
+            "name": "constant-combinator",
+            "position": {"x": 0.5, "y": 2.5},
+            "control_behavior": {
+                "sections": {
+                    "sections": [
+                        {
+                            "index": 1,
+                            "filters": [
+                                {
+                                    "index": 1,
+                                    "name": "signal-A",
+                                    "type": "virtual",
+                                    "count": 100,
+                                    "comparator": "=",
+                                },
+                                {
+                                    "index": 2,
+                                    "name": "signal-B",
+                                    "type": "virtual",
+                                    "count": 200,
+                                    "comparator": "=",
+                                },
+                                {
+                                    "index": 3,
+                                    "name": "signal-C",
+                                    "type": "virtual",
+                                    "count": 300,
+                                    "comparator": "=",
+                                },
+                            ],
+                        }
+                    ]
+                }
+            },
+        }
 
-    #     combinator = ConstantCombinator(
-    #         "constant-combinator",
-    #         tile_position=[0, 2],
-    #         control_behavior={
-    #             "filters": [
-    #                 {
-    #                     "index": 1,
-    #                     "signal": {"name": "signal-A", "type": "virtual"},
-    #                     "count": 100,
-    #                 },
-    #                 {"index": 2, "signal": "signal-B", "count": 200},
-    #                 {
-    #                     "index": 3,
-    #                     "signal": {"name": "signal-C", "type": "virtual"},
-    #                     "count": 300,
-    #                 },
-    #             ]
-    #         },
-    #     )
-    #     assert combinator.to_dict() == {
-    #         "name": "constant-combinator",
-    #         "position": {"x": 0.5, "y": 2.5},
-    #         "control_behavior": {
-    #             "filters": [
-    #                 {
-    #                     "index": 1,
-    #                     "signal": {"name": "signal-A", "type": "virtual"},
-    #                     "count": 100,
-    #                 },
-    #                 {
-    #                     "index": 2,
-    #                     "signal": {"name": "signal-B", "type": "virtual"},
-    #                     "count": 200,
-    #                 },
-    #                 {
-    #                     "index": 3,
-    #                     "signal": {"name": "signal-C", "type": "virtual"},
-    #                     "count": 300,
-    #                 },
-    #             ]
-    #         },
-    #     }
+        # Warnings
+        with pytest.warns(UnknownEntityWarning):
+            ConstantCombinator(
+                "this is not a constant combinator"
+            ).validate().reissue_all()
 
-    #     # Warnings
-    #     with pytest.warns(UnknownKeywordWarning):
-    #         ConstantCombinator(unused_keyword="whatever").validate().reissue_all()
-    #     with pytest.warns(UnknownKeywordWarning):
-    #         ConstantCombinator(control_behavior={"unused_key": "something"}).validate().reissue_all()
-    #     with pytest.warns(UnknownEntityWarning):
-    #         ConstantCombinator("this is not a constant combinator").validate().reissue_all()
-
-    #     # Errors
-    #     with pytest.raises(DataFormatError):
-    #         ConstantCombinator(control_behavior="incorrect").validate().reissue_all()
+        # Errors
+        with pytest.raises(DataFormatError):
+            ConstantCombinator(sections="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in constant_combinators:
@@ -110,9 +86,28 @@ class TestConstantCombinator:  # TODO: reimplement
             assert combinator.circuit_connectable == True
             assert combinator.dual_circuit_connectable == False
 
-    # def test_item_slot_count(self):
-    #     combinator = ConstantCombinator()
-    #     assert combinator.item_slot_count == 20
+    def test_max_signal_count(self):
+        combinator = ConstantCombinator()
+        assert combinator.max_signal_count == 100_000
+
+    def test_add_section(self):
+        combinator = ConstantCombinator()
+
+        combinator.add_section(group="Some group name", index=2)
+        assert combinator.to_dict() == {
+            "name": combinator.name,
+            "position": combinator.position.to_dict(),
+            "control_behavior": {
+                "sections": {
+                    "sections": [
+                        {
+                            "index": 3,
+                            "group": "Some group name",
+                        }
+                    ]
+                }
+            },
+        }
 
     # def test_set_signal(self):
     #     combinator = ConstantCombinator()
@@ -419,7 +414,7 @@ class TestConstantCombinator:  # TODO: reimplement
                         }
                     ],
                 }
-            ]
+            ],
         )
         assert cc.to_dict() == {
             "name": "constant-combinator",
@@ -433,7 +428,7 @@ class TestConstantCombinator:  # TODO: reimplement
                                 {
                                     "index": 1,
                                     "name": "iron-plate",
-                                    # "quality": "normal",
+                                    "quality": "normal",
                                     "comparator": "=",  # Must exist, otherwise error
                                     "count": 1,
                                 }

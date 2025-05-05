@@ -69,7 +69,7 @@ class TestLogisticPassiveContainer:
             assert container.dual_circuit_connectable == False
 
     @pytest.mark.skipif(
-        "quality" not in mods.mod_list, reason="Quality mod not enabled"
+        "quality" not in mods.versions, reason="Quality mod not enabled"
     )
     def test_quality_inventory_size(self):
         qualities = {

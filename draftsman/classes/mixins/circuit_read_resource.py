@@ -1,6 +1,5 @@
 # circuit_read_resource.py
 
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import MiningDrillReadMode
 from draftsman.serialization import draftsman_converters
 from draftsman.validators import instance_of

@@ -1,7 +1,7 @@
 # orientation.py
 
 from draftsman.classes.collision_set import CollisionSet
-from draftsman.classes.exportable import Exportable, attempt_and_reissue
+from draftsman.classes.exportable import Exportable
 from draftsman.constants import Orientation
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import Rectangle

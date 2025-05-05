@@ -85,9 +85,7 @@ class TestAsteroidCollector:
 
     def test_mergable_with(self):
         collector1 = AsteroidCollector("asteroid-collector")
-        collector2 = AsteroidCollector(
-            "asteroid-collector", tags={"some": "stuff"}
-        )
+        collector2 = AsteroidCollector("asteroid-collector", tags={"some": "stuff"})
 
         assert collector1.mergable_with(collector2)
         assert collector2.mergable_with(collector1)
@@ -98,11 +96,11 @@ class TestAsteroidCollector:
     def test_merge(self):
         collector1 = AsteroidCollector("asteroid-collector")
         collector2 = AsteroidCollector(
-            "asteroid-collector", 
+            "asteroid-collector",
             tags={"some": "stuff"},
             chunk_filter=["oxide-asteroid-chunk"],
             read_contents=True,
-            read_hands=False
+            read_hands=False,
         )
 
         collector1.merge(collector2)

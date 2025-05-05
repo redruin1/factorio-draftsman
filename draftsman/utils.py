@@ -1009,3 +1009,16 @@ def fix_incorrect_pre_init(cls):
     cls.__init__ = new_init
 
     return cls
+
+
+def calculate_occupied_slots(item_requests: list, inventory_id: int) -> int:
+    """
+    Calculates the number of slots occupied by ``item_requests`` for a 
+    particular inventory ``inventory_id``.
+    """
+    return len({
+        location.stack
+        for item_request in item_requests
+        for location in item_request.items.in_inventory
+        if location.inventory == inventory_id # <- Entity specific
+    })

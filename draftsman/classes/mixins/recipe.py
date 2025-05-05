@@ -1,13 +1,18 @@
 # recipe.py
 
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import ValidationMode
 from draftsman.data import modules, recipes
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import QualityName, RecipeName, get_suggestion
-from draftsman.validators import instance_of, is_none, one_of, or_
+from draftsman.signatures import (
+    QualityName,
+    RecipeName,
+    get_suggestion,
+    AttrsItemRequest,
+)
+from draftsman.validators import instance_of, is_none, one_of, or_, and_
 from draftsman.warning import (
     ItemLimitationWarning,
+    ModuleLimitationWarning,
     RecipeLimitationWarning,
     UnknownRecipeWarning,
 )
@@ -15,6 +20,7 @@ from draftsman.warning import (
 import attrs
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 from typing import TYPE_CHECKING, Literal, Optional
+import warnings
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity import Entity
@@ -147,8 +153,49 @@ class RecipeMixin:
 
     # =========================================================================
 
+    def _ensure_allowed_recipe(
+        self, attr, value, mode: Optional[ValidationMode] = None
+    ):
+        mode = mode if mode is not None else self.validate_assignment
+
+        if mode >= ValidationMode.STRICT:
+            if value is None:  # Nothing to validate if empty
+                return
+            if self.allowed_recipes is None:  # This entity is not currently known
+                return
+            if value not in self.allowed_recipes:
+                msg = "'{}' is not a valid recipe for '{}'; allowed recipes are: {}".format(
+                    value, self.name, self.allowed_recipes
+                )
+                warnings.warn(RecipeLimitationWarning(msg))
+
+    # TODO: this should be in ModulesMixin
+    def _ensure_modules_permitted_with_recipe(
+        self, attr, value, mode: Optional[ValidationMode] = None
+    ):
+        mode = mode if mode is not None else self.validate_assignment
+
+        if mode >= ValidationMode.STRICT:
+            allowed_modules = modules.get_modules_from_effects(
+                self.allowed_effects, value
+            )
+            if allowed_modules is None:
+                return
+            for item in self.item_requests:
+                item: AttrsItemRequest
+                if item.id.name not in allowed_modules:
+                    msg = "Module '{}' cannot be inserted into a machine with recipe '{}'".format(
+                        item.id.name, value
+                    )
+                    warnings.warn(ItemLimitationWarning(msg))
+
     recipe: Optional[RecipeName] = attrs.field(
-        default=None, validator=instance_of(Optional[RecipeName])
+        default=None,
+        validator=and_(
+            instance_of(Optional[RecipeName]),
+            _ensure_allowed_recipe,
+            _ensure_modules_permitted_with_recipe,
+        ),
     )
     """
     The recipe that this Entity is currently set to make.

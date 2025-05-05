@@ -56,7 +56,7 @@ class TestInserter:
 
         inserter = Inserter(
             "inserter",
-            stack_size_control_signal={"name": "signal-A", "type": "virtual"}
+            stack_size_control_signal={"name": "signal-A", "type": "virtual"},
         )
         assert inserter.to_dict() == {
             "name": "inserter",
@@ -101,7 +101,9 @@ class TestInserter:
         with pytest.raises(DataFormatError):
             inserter.filters = "wrong"
 
-        inserter.set_item_filter(0, item="transport-belt", quality="uncommon", comparator=">=")
+        inserter.set_item_filter(
+            0, item="transport-belt", quality="uncommon", comparator=">="
+        )
         assert inserter.to_dict() == {
             "name": "inserter",
             "position": {"x": 0.5, "y": 0.5},
@@ -110,9 +112,9 @@ class TestInserter:
                     "index": 1,
                     "name": "transport-belt",
                     "quality": "uncommon",
-                    "comparator": "≥"
+                    "comparator": "≥",
                 }
-            ]
+            ],
         }
 
         inserter.set_item_filter(0, item="fast-transport-belt")
@@ -124,7 +126,7 @@ class TestInserter:
                     "index": 1,
                     "name": "fast-transport-belt",
                 }
-            ]
+            ],
         }
 
         inserter.set_item_filter(1, item="express-transport-belt")
@@ -137,9 +139,8 @@ class TestInserter:
                     "index": 1,
                     "name": "fast-transport-belt",
                 }
-            ]
+            ],
         }
-
 
     def test_set_spoil_priority(self):
         inserter = Inserter("stack-inserter")
@@ -367,7 +368,9 @@ class TestInserter:
         assert inserter.to_dict() == {
             "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"stack_control_input_signal": {"name": "unknown", "type": "item"}},
+            "control_behavior": {
+                "stack_control_input_signal": {"name": "unknown", "type": "item"}
+            },
         }
 
         with pytest.raises(DataFormatError):

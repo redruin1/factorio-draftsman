@@ -1,6 +1,5 @@
 # control_behavior.py
 
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
     AttrsSimpleCondition,

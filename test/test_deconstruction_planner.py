@@ -1,7 +1,11 @@
 # test_deconstruction_planner.py
 
 from draftsman import __factorio_version_info__
-from draftsman.classes.deconstruction_planner import DeconstructionPlanner, EntityFilter, TileFilter
+from draftsman.classes.deconstruction_planner import (
+    DeconstructionPlanner,
+    EntityFilter,
+    TileFilter,
+)
 from draftsman.constants import FilterMode, TileSelectionMode, ValidationMode
 from draftsman.error import DataFormatError
 from draftsman.signatures import AttrsIcon

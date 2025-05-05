@@ -23,7 +23,6 @@ from draftsman.error import (
     MalformedBlueprintStringError,
     IncorrectBlueprintTypeError,
 )
-from draftsman.signatures import Connections
 from draftsman.utils import encode_version, AABB
 from draftsman.warning import (
     ConnectionSideWarning,

@@ -1,10 +1,11 @@
 # test_container.py
 
-from draftsman.constants import ValidationMode
+from draftsman.constants import Inventory, ValidationMode
 from draftsman.entity import Container, containers, Accumulator
 from draftsman.error import (
     DataFormatError,
 )
+from draftsman.signatures import AttrsItemRequest, AttrsItemID, AttrsItemSpecification, AttrsInventoryLocation
 from draftsman.warning import (
     BarWarning,
     ItemCapacityWarning,
@@ -78,53 +79,105 @@ class TestContainer:
         assert container.bar == 100
 
         # Disabled bar
-        # container = Container("crash-site-chest-1") # TODO: find chest with disabled bar...
-        # with pytest.warns(BarWarning):
-        #     container.bar = 2
+        # Since no chest with disabled bar exists, we coerce the data to fit
+        container = Container("crash-site-chest-1")
+        container.prototype["inventory_type"] = "normal"
+        with pytest.warns(BarWarning):
+            container.bar = 2
 
-        # container.validate_assignment = "none"
-        # assert container.validate_assignment == ValidationMode.NONE
+        container.validate_assignment = "minimum"
+        assert container.validate_assignment == ValidationMode.MINIMUM
 
-        # container.bar = 2
-        # assert container.bar == 2
+        container.bar = 2
+        assert container.bar == 2
 
-    # def test_set_item_request(self): # TODO: reimplement
-    #     container = Container("wooden-chest")
+    def test_set_item_request(self): # TODO: reimplement
+        container = Container("wooden-chest")
 
-    #     container.set_item_request("iron-plate", 50)
-    #     assert container.items == {"iron-plate": 50}
-    #     assert container.inventory_slots_occupied == 1
+        container.set_item_request("iron-plate", 50, inventory=Inventory.chest, slot=0)
+        container.set_item_request("iron-plate", 50, inventory=Inventory.chest, slot=3)
+        assert container.item_requests == [
+            AttrsItemRequest(
+                id=AttrsItemID(name="iron-plate"),
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.chest,
+                            stack=0,
+                            count=50
+                        ),
+                        AttrsInventoryLocation(
+                            inventory=Inventory.chest,
+                            stack=3,
+                            count=50
+                        )
+                    ]
+                )
+            )
+        ]
+        assert container.inventory_slots_occupied == 2
 
-    #     container.set_item_request("iron-plate", 100)
-    #     assert container.items == {"iron-plate": 100}
-    #     assert container.inventory_slots_occupied == 1
+        container.set_item_request("iron-ore", 50, inventory=Inventory.chest, slot=0)
+        assert container.item_requests == [
+            AttrsItemRequest(
+                id=AttrsItemID(name="iron-plate"),
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.chest,
+                            stack=0,
+                            count=50
+                        ),
+                        AttrsInventoryLocation(
+                            inventory=Inventory.chest,
+                            stack=3,
+                            count=50
+                        )
+                    ]
+                )
+            ),
+            AttrsItemRequest(
+                id=AttrsItemID(name="iron-ore"),
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.chest,
+                            stack=0,
+                            count=50
+                        )
+                    ]
+                )
+            )
+        ]
+        assert container.inventory_slots_occupied == 2
 
-    #     with pytest.warns(ItemCapacityWarning):
-    #         container.set_item_request("copper-plate", 10000)
+        # TODO: reimplement
+        # with pytest.warns(ItemCapacityWarning):
+        #     container.set_item_request("copper-plate", 50, slot=100)
 
-    #     assert container.items == {"iron-plate": 100, "copper-plate": 10000}
-    #     assert container.inventory_slots_occupied == 101
+        # assert container.items == {"iron-plate": 100, "copper-plate": 10000}
+        # assert container.inventory_slots_occupied == 101
 
-    #     # container.set_item_requests(None)
-    #     container.items = {}
-    #     assert container.items == {}
-    #     assert container.inventory_slots_occupied == 0
+        # # container.set_item_requests(None)
+        # container.items = {}
+        # assert container.items == {}
+        # assert container.inventory_slots_occupied == 0
 
-    #     with pytest.raises(DataFormatError):
-    #         container.set_item_request(TypeError, 100)
-    #     with pytest.warns(UnknownItemWarning):
-    #         container.set_item_request("unknown", 100)
-    #     with pytest.raises(DataFormatError):
-    #         container.set_item_request("iron-plate", TypeError)
-    #     with pytest.raises(DataFormatError):
-    #         container.set_item_request("iron-plate", -1)
+        # with pytest.raises(DataFormatError):
+        #     container.set_item_request(TypeError, 100)
+        # with pytest.warns(UnknownItemWarning):
+        #     container.set_item_request("unknown", 100)
+        # with pytest.raises(DataFormatError):
+        #     container.set_item_request("iron-plate", TypeError)
+        # with pytest.raises(DataFormatError):
+        #     container.set_item_request("iron-plate", -1)
 
-    #     assert container.items == {"unknown": 100}
-    #     assert container.inventory_slots_occupied == 0
+        # assert container.items == {"unknown": 100}
+        # assert container.inventory_slots_occupied == 0
 
-    #     with pytest.raises(DataFormatError):
-    #         container.items = {"incorrect", "format"}
-    #     assert container.items == {"unknown": 100}
+        # with pytest.raises(DataFormatError):
+        #     container.items = {"incorrect", "format"}
+        # assert container.items == {"unknown": 100}
 
     def test_mergable_with(self):
         container1 = Container("wooden-chest")

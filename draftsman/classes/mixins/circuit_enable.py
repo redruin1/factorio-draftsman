@@ -1,6 +1,5 @@
 # circuit_enable.py
 
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.serialization import draftsman_converters
 from draftsman.validators import instance_of
 

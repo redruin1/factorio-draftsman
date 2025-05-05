@@ -1,7 +1,6 @@
 # decider_combinator.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     PlayerDescriptionMixin,
     ControlBehaviorMixin,
@@ -9,16 +8,9 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
-from draftsman.error import DataFormatError, DraftsmanError
+from draftsman.classes.exportable import Exportable
 from draftsman.serialization import instance_of
 from draftsman.signatures import (
-    Condition,
-    Connections,
-    DraftsmanBaseModel,
-    NetworkSpecification,
-    SignalID,
     int32,
 )
 from draftsman.utils import fix_incorrect_pre_init
@@ -26,8 +18,15 @@ from draftsman.warning import DraftsmanWarning, PureVirtualDisallowedWarning
 
 from draftsman.data.entities import decider_combinators
 from draftsman.data import signals
-from draftsman.signatures import int32
+from draftsman.signatures import (
+    AttrsNetworkSpecification,
+    AttrsSignalID,
+    Comparator,
+    int32,
+    normalize_comparator,
+)
 from draftsman.utils import reissue_warnings
+from draftsman.validators import instance_of, one_of, try_convert
 
 import attrs
 from pydantic import ConfigDict, Field, ValidationInfo, model_validator, validate_call
@@ -52,138 +51,168 @@ _signal_blacklist = {
 }
 
 
-from pydantic_core import core_schema
+@attrs.define
+class DeciderCondition(Exportable):
+    # class Format(Condition):
+    #     compare_type: Optional[Literal["or", "and"]] = Field(
+    #         "or",
+    #         description="""
+    #         Whether or not to boolean OR or AND this condition
+    #         with the previous one in the list.
+    #         """,
+    #     )
 
+    #     model_config = ConfigDict(title="DeciderCondition")
 
-class Temp:  # TODO: fixme
-    @classmethod
-    def __get_pydantic_core_schema__(cls, source_type: Any, handler):
-        """
-        Dict instances get converted to cls.Format instances
-        cls.Format instances get passed through unchanged
-        everything else is a validation failure
-        """
+    # def __init__(
+    #     self,
+    #     first_signal,
+    #     first_signal_networks={"red", "green"},
+    #     comparator=">",
+    #     constant=None,
+    #     second_signal=None,
+    #     second_signal_networks={"red", "green"},
+    #     compare_type="or",
+    # ):
+    #     # self.first_signal = first_signal
+    #     # self.first_signal_networks = first_signal_networks
+    #     # self.comparator = comparator
+    #     # self.constant = constant
+    #     # self.second_signal = second_signal
+    #     # self.second_signal_networks = second_signal_networks
+    #     # self.compare_type = compare_type
 
-        def validate_from_dict(value: dict):
-            result = source_type(**value)
-            return result
+    #     self._root = self.Format.model_validate(
+    #         {
+    #             "first_signal": first_signal,
+    #             "first_signal_networks": first_signal_networks,
+    #             "comparator": comparator,
+    #             "constant": constant,
+    #             "second_signal": second_signal,
+    #             "second_signal_networks": second_signal_networks,
+    #             "compare_type": compare_type,
+    #         },
+    #         strict=False,
+    #         context={"construction": True, "mode": ValidationMode.NONE},
+    #     )
 
-        from_dict_schema = core_schema.chain_schema(
-            [
-                core_schema.dict_schema(),
-                core_schema.no_info_plain_validator_function(validate_from_dict),
-            ]
-        )
+    first_signal: Optional[AttrsSignalID] = attrs.field(
+        default=None,
+        converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID]),
+    )
+    """
+    The left-most signal of the condition.
+    """
 
-        return core_schema.json_or_python_schema(
-            json_schema=source_type.Format.__pydantic_core_schema__,
-            python_schema=core_schema.union_schema(
-                [
-                    # check if it's an instance first before doing any further work
-                    core_schema.is_instance_schema(source_type),
-                    from_dict_schema,
-                ]
-            ),
-            serialization=core_schema.plain_serializer_function_ser_schema(
-                lambda instance: instance._root
-            ),
-        )
+    first_signal_networks: AttrsNetworkSpecification = attrs.field(
+        factory=AttrsNetworkSpecification,
+        converter=AttrsNetworkSpecification.converter,
+        validator=instance_of(AttrsNetworkSpecification),
+    )
+    """
+    The signal networks (red/green) to sample for the value of the left-most
+    signal.
+    """
 
+    comparator: Comparator = attrs.field(
+        default="<",
+        converter=try_convert(normalize_comparator),
+        validator=one_of(Comparator),
+    )
+    """
+    TODO
+    """
 
-class DeciderCondition(Temp):
-    class Format(Condition):
-        compare_type: Optional[Literal["or", "and"]] = Field(
-            "or",
-            description="""
-            Whether or not to boolean OR or AND this condition
-            with the previous one in the list.
-            """,
-        )
+    constant: Optional[int32] = attrs.field(
+        default=None, validator=instance_of(Optional[int32])
+    )
+    """
+    An optional constant value, which always lies on the right side of the 
+    condition.
+    """
 
-        model_config = ConfigDict(title="DeciderCondition")
+    second_signal: Optional[AttrsSignalID] = attrs.field(
+        default=None,
+        converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID]),
+    )
+    """
+    The right-most signal of the condition.
+    """
 
-    def __init__(
-        self,
-        first_signal,
-        first_signal_networks={"red", "green"},
-        comparator=">",
-        constant=None,
-        second_signal=None,
-        second_signal_networks={"red", "green"},
-        compare_type="or",
-    ):
-        # self.first_signal = first_signal
-        # self.first_signal_networks = first_signal_networks
-        # self.comparator = comparator
-        # self.constant = constant
-        # self.second_signal = second_signal
-        # self.second_signal_networks = second_signal_networks
-        # self.compare_type = compare_type
+    second_signal_networks: AttrsNetworkSpecification = attrs.field(
+        factory=AttrsNetworkSpecification,
+        converter=AttrsNetworkSpecification.converter,
+        validator=instance_of(AttrsNetworkSpecification),
+    )
+    """
+    The signal networks (red/green) to sample for the value of the right-most
+    signal.
+    """
 
-        self._root = self.Format.model_validate(
-            {
-                "first_signal": first_signal,
-                "first_signal_networks": first_signal_networks,
-                "comparator": comparator,
-                "constant": constant,
-                "second_signal": second_signal,
-                "second_signal_networks": second_signal_networks,
-                "compare_type": compare_type,
-            },
-            strict=False,
-            context={"construction": True, "mode": ValidationMode.NONE},
-        )
+    compare_type: Literal["or", "and"] = attrs.field(
+        default="or", validator=one_of("or", "and")
+    )
 
     def __or__(self, other):
         if isinstance(other, DeciderCondition):
-            other._root.compare_type = "or"
+            other.compare_type = "or"
             return [self, other]
         elif isinstance(other, list):
-            other[0]._root.compare_type = "or"
+            other[0].compare_type = "or"
             return [self] + other
         else:
             return NotImplemented
 
     def __ror__(self, other):
         if isinstance(other, DeciderCondition):
-            self._root.compare_type = "or"
+            self.compare_type = "or"
             return [other, self]
         elif isinstance(other, list):
-            self._root.compare_type = "or"
+            self.compare_type = "or"
             return other + [self]
         else:
             return NotImplemented
 
     def __and__(self, other):
         if isinstance(other, DeciderCondition):
-            other._root.compare_type = "and"
+            other.compare_type = "and"
             return [self, other]
         elif isinstance(other, list):
-            other[0]._root.compare_type = "and"
+            other[0].compare_type = "and"
             return [self] + other
         else:
             return NotImplemented
 
     def __rand__(self, other):
         if isinstance(other, DeciderCondition):
-            self._root.compare_type = "and"
+            self.compare_type = "and"
             return [other, self]
         elif isinstance(other, list):
-            self._root.compare_type = "and"
+            self.compare_type = "and"
             return other + [self]
         else:
             return NotImplemented
 
-    def __repr__(self):
-        return repr(self._root)
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(**value)
+        return value
 
 
-class DeciderInput:
+class DeciderInput:  # TODO: does this need to be an attrs class? we probably do want validation at least...
+    """
+    Purely abstract helper object useful for defining complex decider conditions
+    ergonomically.
+    """
+
     def __init__(self, signal, networks: set[str] = {"red", "green"}):
         self.signal = signal
         self.networks = networks
 
-    def _output_condition(self, comparator, other):
+    def _output_condition(self, comparator, other) -> DeciderCondition:
         if isinstance(other, DeciderInput):
             return DeciderCondition(
                 first_signal=self.signal,
@@ -202,7 +231,7 @@ class DeciderInput:
         else:
             return NotImplemented
 
-    def __eq__(self, other: "DeciderInput") -> Condition:
+    def __eq__(self, other: "DeciderInput") -> DeciderCondition:
         return self._output_condition("=", other)
 
     def __ne__(self, other) -> DeciderCondition:
@@ -221,61 +250,99 @@ class DeciderInput:
         return self._output_condition(">=", other)
 
 
-class DeciderOutput(Temp):  # TODO: Exportable
-    class Format(DraftsmanBaseModel):
-        signal: SignalID = Field(..., description="""The signal type to output.""")
-        copy_count_from_input: Optional[bool] = Field(
-            True,
-            description="""
-            Broadcasts the given input value to the output if true, or a unit
-            value if false.
-            """,
-        )
-        networks: Optional[NetworkSpecification] = Field(
-            NetworkSpecification(red=True, green=True),
-            description="""What wires this output should be broadcast to.""",
-        )
-        constant: Optional[int32] = Field(
-            1,
-            description="""
-            What value the constant output should be if "copy_count_from_input"
-            is false. Always specified as 1 in game, but can be overwritten
-            externally and will be respected.
-            """,
-        )
+@attrs.define
+class DeciderOutput(Exportable):  # TODO: Exportable
+    # class Format(DraftsmanBaseModel):
+    #     signal: AttrsSignalID = Field(..., description="""The signal type to output.""")
+    #     copy_count_from_input: Optional[bool] = Field(
+    #         True,
+    #         description="""
+    #         Broadcasts the given input value to the output if true, or a unit
+    #         value if false.
+    #         """,
+    #     )
+    #     networks: Optional[NetworkSpecification] = Field(
+    #         NetworkSpecification(red=True, green=True),
+    #         description="""What wires this output should be broadcast to.""",
+    #     )
+    #     constant: Optional[int32] = Field(
+    #         1,
+    #         description="""
+    #         What value the constant output should be if "copy_count_from_input"
+    #         is false. Always specified as 1 in game, but can be overwritten
+    #         externally and will be respected.
+    #         """,
+    #     )
 
-        model_config = ConfigDict(title="DeciderOutput")
+    #     model_config = ConfigDict(title="DeciderOutput")
 
-    def __init__(
-        self, signal, copy_count_from_input=True, constant=1, networks={"red", "green"}
-    ):
-        self._root: DeciderOutput.Format
-        self._root = self.__class__.Format.model_validate(
-            {
-                "signal": signal,
-                "copy_count_from_input": copy_count_from_input,
-                "constant": constant,
-                "networks": networks,
-            },
-            strict=False,
-            context={"construction": True, "mode": ValidationMode.NONE},
-        )
+    signal: Optional[AttrsSignalID] = attrs.field(
+        default=None,
+        converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID]),
+    )
+    """
+    The output signal type.
+    """
 
-    @property
-    def signal(self):
-        return self._root.signal
+    copy_count_from_input: bool = attrs.field(default=True, validator=instance_of(bool))
+    """
+    Whether or not to source the output signal(s) value from the input wires, or
+    to output them with constant values as specified by :py:attr:`.constant`.
+    """
 
-    @property
-    def copy_count_from_input(self):
-        return self._root.copy_count_from_input
+    networks: AttrsNetworkSpecification = attrs.field(
+        factory=AttrsNetworkSpecification,
+        converter=AttrsNetworkSpecification.converter,
+        validator=instance_of(AttrsNetworkSpecification),
+    )
+    """
+    Which wire networks to sample values from (red/green).
+    """
 
-    @property
-    def constant(self):
-        return self._root.constant
+    constant: int32 = attrs.field(default=1, validator=instance_of(int32))
+    """
+    The constant value to output to the network, if 
+    :py:attr:`.copy_count_from_input` is ``False``. Can be any signed 32-bit 
+    number.
+    """
 
-    @property
-    def networks(self):
-        return self._root.networks
+    # def __init__(
+    #     self, signal, copy_count_from_input=True, constant=1, networks={"red", "green"}
+    # ):
+    #     self._root: DeciderOutput.Format
+    #     self._root = self.__class__.Format.model_validate(
+    #         {
+    #             "signal": signal,
+    #             "copy_count_from_input": copy_count_from_input,
+    #             "constant": constant,
+    #             "networks": networks,
+    #         },
+    #         strict=False,
+    #         context={"construction": True, "mode": ValidationMode.NONE},
+    #     )
+
+    # @property
+    # def signal(self):
+    #     return self._root.signal
+
+    # @property
+    # def copy_count_from_input(self):
+    #     return self._root.copy_count_from_input
+
+    # @property
+    # def constant(self):
+    #     return self._root.constant
+
+    # @property
+    # def networks(self):
+    #     return self._root.networks
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(**value)
+        return value
 
 
 @fix_incorrect_pre_init
@@ -296,6 +363,14 @@ class DeciderCombinator(
     Input = DeciderInput
     Condition = DeciderCondition
     Output = DeciderOutput
+
+    # @attrs.define
+    # class Input:
+    #     pass
+
+    # @attrs.define
+    # class Condition:
+    #     pass
 
     # 1.0 format
     # class Format(
@@ -517,9 +592,17 @@ class DeciderCombinator(
 
     # =========================================================================
 
+    def _conditions_converter(value):
+        if isinstance(value, list):
+            res = [None] * len(value)
+            for i, elem in enumerate(value):
+                res[i] = DeciderCondition.converter(elem)
+            return res
+        return value
+
     conditions: list[Condition] = attrs.field(
         factory=list,
-        # TODO: converter
+        converter=_conditions_converter,
         validator=instance_of(list),  # TODO: validators
     )
 
@@ -543,9 +626,17 @@ class DeciderCombinator(
 
     # =========================================================================
 
+    def _outputs_converter(value):
+        if isinstance(value, list):
+            res = [None] * len(value)
+            for i, elem in enumerate(value):
+                res[i] = DeciderOutput.converter(elem)
+            return res
+        return value
+
     outputs: list[Output] = attrs.field(
         factory=list,
-        # TODO: converter
+        converter=_outputs_converter,
         validator=instance_of(list),  # TODO: validators
     )
 

@@ -1,8 +1,9 @@
 # test_reactor.py
 
+from draftsman.constants import Inventory
 from draftsman.entity import Reactor, reactors, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import ItemRequest, AttrsItemRequest
+from draftsman.signatures import AttrsItemRequest
 from draftsman.warning import (
     FuelLimitationWarning,
     FuelCapacityWarning,
@@ -32,8 +33,8 @@ class TestReactor:
         assert reactor.allowed_fuel_items == {"uranium-fuel-cell"}
         assert reactor.fuel_input_size == 1
 
-        reactor.set_item_request("uranium-fuel-cell", 50)
-        assert reactor.items == [
+        reactor.set_item_request("uranium-fuel-cell", 50, inventory=Inventory.fuel)
+        assert reactor.item_requests == [
             AttrsItemRequest(
                 **{
                     "id": "uranium-fuel-cell",

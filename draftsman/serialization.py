@@ -363,10 +363,12 @@ class DraftsmanConverters:
         if version not in self.versions:
             # Get the version just "below" the specified version
             sorted_versions = list(sorted([*self.versions.keys(), version]))
-            try:
-                version = sorted_versions[sorted_versions.index(version) - 1]
-            except KeyError:
-                raise ValueError("No converter exists for version {}".format(version))
+            prev_version_index = sorted_versions.index(version) - 1
+            if prev_version_index < 0:
+                msg = "No converter exists for version {}".format(version)
+                raise ValueError(msg)
+            version = sorted_versions[sorted_versions.index(version) - 1]
+
         return self.versions[version]
 
 
@@ -528,7 +530,7 @@ def make_unstructure_function_from_schema(
             populate_invocate_tree(invocation_tree["children"][loc[0]], loc[1:], invoke)
 
     for dict_loc, inst_loc in schema.items():
-        print(dict_loc, inst_loc)
+        # print(dict_loc, inst_loc)
         if dict_loc is None or inst_loc is None:
             continue
         handler = None
@@ -581,7 +583,7 @@ def make_unstructure_function_from_schema(
                     t = a.default.__class__
                 try:
                     handler = converter.get_unstructure_hook(t, cache_result=False)
-                except RecursionError: # pragma: no coverage
+                except RecursionError:  # pragma: no coverage
                     # There's a circular reference somewhere down the line
                     handler = converter.unstructure
             else:

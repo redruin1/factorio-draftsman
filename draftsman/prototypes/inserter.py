@@ -1,8 +1,8 @@
 # inserter.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
+    CircuitSetFiltersMixin,
     FiltersMixin,
     StackSizeMixin,
     CircuitReadHandMixin,
@@ -31,6 +31,7 @@ from typing import Any, Literal, Optional, Union
 @fix_incorrect_pre_init
 @attrs.define
 class Inserter(
+    CircuitSetFiltersMixin,
     FiltersMixin,
     StackSizeMixin,
     CircuitReadHandMixin,
@@ -302,13 +303,13 @@ class Inserter(
 
     # =========================================================================
 
-    circuit_set_filters: bool = attrs.field(default=False, validator=instance_of(bool))
-    """
-    Whether or not the inserter should have its filters determined via
-    signals on connected circuit networks.
+    # circuit_set_filters: bool = attrs.field(default=False, validator=instance_of(bool))
+    # """
+    # Whether or not the inserter should have its filters determined via
+    # signals on connected circuit networks.
 
-    :raises DataFormatError: If set to anything other than a ``bool``.
-    """
+    # :raises DataFormatError: If set to anything other than a ``bool``.
+    # """
 
     # @property
     # def circuit_set_filters(self) -> Optional[bool]:
@@ -358,7 +359,7 @@ draftsman_converters.get_version((1, 0)).add_schema(
     },
     Inserter,
     lambda fields: {
-        fields.circuit_set_filters.name: ("control_behavior", "circuit_set_filters"),
+        # fields.circuit_set_filters.name: ("control_behavior", "circuit_set_filters"),
         fields.pickup_position.name: "pickup_position",
         fields.drop_position.name: "drop_position",
         fields.filter_mode.name: "filter_mode",

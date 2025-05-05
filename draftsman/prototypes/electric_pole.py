@@ -5,7 +5,7 @@ from draftsman.classes.mixins import CircuitConnectableMixin, PowerConnectableMi
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.data import entities
-from draftsman.signatures import Connections, uint64
+from draftsman.signatures import uint64
 from draftsman.utils import get_first
 
 from draftsman.data.entities import electric_poles

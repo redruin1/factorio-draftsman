@@ -15,18 +15,17 @@ import warnings
 
 
 def main():
-    blueprint = Blueprint(validate_assignment=ValidationMode.NONE)
+    blueprint = Blueprint()
     blueprint.label = "Huge Pumpjacks"
     blueprint.set_icons("pumpjack")
+
+    # We turn off validation since we know we're creating an "invalid" blueprint
+    blueprint.entities.validate_assignment = ValidationMode.NONE
 
     dimension = 64
     for y in range(dimension):
         for x in range(dimension):
-            blueprint.entities.append("pumpjack", position=[x, y])
-
-    # If you want to see all the OverlappingObjectsWarning, do this:
-    # for warning in blueprint.inspect():
-    #    warning.show()
+            blueprint.entities.append("pumpjack", tile_position=(x, y))
 
     print(blueprint.to_string())
 

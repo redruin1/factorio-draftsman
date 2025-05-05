@@ -1,10 +1,6 @@
 # Examples
 
-## [`1KiB_sector_ROM.py`](1KiB_sector_ROM.py)
-
-![1KiB_sector_ROM.png](images/1KiB_sector_ROM.png)
-
-A script for encoding arbitrary amounts of data into a particular Read-Only Memory design. Shows off a number of Draftsman features, including using IDs, using `Group`s, nested-wiring, as well as creating a custom `Group` object to help structure blueprints in meaningful ways.
+[Entities](entities/)
 
 ## [`blueprint_operands.py`](blueprint_operands.py)
 

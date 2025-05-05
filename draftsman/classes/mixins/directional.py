@@ -1,7 +1,7 @@
 # directional.py
 
 from draftsman.classes.collision_set import CollisionSet
-from draftsman.constants import Direction, ValidationMode
+from draftsman.constants import Direction, ValidationMode, FOUR_WAY_DIRECTIONS
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
 from draftsman.validators import and_, enum_converter, instance_of
@@ -47,45 +47,6 @@ class DirectionalMixin:
         :py:class:`~.mixins.eight_way_directional.EightWayDirectionalMixin`
     """
 
-    class Format(BaseModel):
-        direction: Optional[Direction] = Field(
-            Direction.NORTH,
-            ge=0,
-            lt=256,
-            description="""
-            The grid-aligned direction this entity is facing. Direction can only
-            be one of 4 distinct (cardinal) directions, which differs from 
-            'orientation' which is used for RollingStock.
-            """,
-        )
-
-        @field_validator("direction")
-        @classmethod
-        def ensure_4_way(cls, input: Optional[Direction], info: ValidationInfo):
-            if not info.context:
-                return input
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return input
-
-            warning_list: list = info.context["warning_list"]
-            entity: Entity = info.context["object"]
-
-            if input not in {0, 4, 8, 12}:
-                # Default to a known orientation
-                output = Direction(int(input / 4) * 4)
-
-                warning_list.append(
-                    DirectionWarning(
-                        "'{}' only has 4-way rotation; defaulting to {}".format(
-                            type(entity).__name__, output
-                        ),
-                    )
-                )
-
-                return output
-            else:
-                return input
-
     def __attrs_pre_init__(self, name=attrs.NOTHING, first_call=None, **kwargs):
         # Make sure this is the first time calling pre-init (bugfix until attrs
         # is patched)
@@ -102,31 +63,22 @@ class DirectionalMixin:
         # entity that is instantiated
         # Automatically generate a set of rotated collision sets for every
         # orientation
-        try:
-            _rotated_collision_sets[name]
-        except KeyError:
-            # Automatically generate a set of rotated collision sets for every
-            # orientation
-            # TODO: would probably be better to do this in env.py, but how?
-            known_collision_set = entities.collision_sets.get(name, None)
-            if known_collision_set:
-                _rotated_collision_sets[name] = {}
-                for i in {
-                    Direction.NORTH,
-                    Direction.EAST,
-                    Direction.SOUTH,
-                    Direction.WEST,
-                }:
-                    _rotated_collision_sets[name][i] = known_collision_set.rotate(i)
-            else:
-                _rotated_collision_sets[name] = {}
-                for i in {
-                    Direction.NORTH,
-                    Direction.EAST,
-                    Direction.SOUTH,
-                    Direction.WEST,
-                }:
-                    _rotated_collision_sets[name][i] = None
+        if self.collision_set_rotated:
+            try:
+                _rotated_collision_sets[name]
+            except KeyError:
+                # Automatically generate a set of rotated collision sets for every
+                # orientation
+                # TODO: would probably be better to do this in env.py, but how?
+                known_collision_set = entities.collision_sets.get(name, None)
+                if known_collision_set:
+                    _rotated_collision_sets[name] = {}
+                    for i in self.valid_directions:
+                        _rotated_collision_sets[name][i] = known_collision_set.rotate(i)
+                else:
+                    _rotated_collision_sets[name] = {}
+                    for i in self.valid_directions:
+                        _rotated_collision_sets[name][i] = None
 
         # The default position function uses `tile_width`/`tile_height`, which
         # use `collision_set`, which for rotatable entities is derived from the
@@ -211,6 +163,18 @@ class DirectionalMixin:
     # =========================================================================
 
     @property
+    def collision_set_rotated(self) -> bool:
+        """
+        Whether or not this entity actually has their collision set rotated by
+        their direction. Some entities (such as rail signals) have many valid
+        directions they can exist as but reuse the same collision set for all of 
+        them. Not exported; read only.
+        """
+        return True
+
+    # =========================================================================
+
+    @property
     def square(self) -> bool:
         """
         Whether or not the tile width of this entity matches it's tile height.
@@ -221,29 +185,21 @@ class DirectionalMixin:
     # =========================================================================
 
     @property
-    def static_tile_width(self) -> int:
+    def valid_directions(self) -> set[Direction]:
         """
-        The width of the entity irrespective of it's current orientation.
-        Equivalent to the :py:attr:`.tile_width` when the entity is facing north.
+        A set containing all directions that this entity can face. Not exported;
+        read only.
         """
-        return super().tile_width
-
-    # =========================================================================
-
-    @property
-    def static_tile_height(self) -> int:
-        """
-        The height of the entity irrespective of it's current orientation.
-        Equivalent to the :py:attr:`.tile_width` when the entity is facing north.
-        """
-        return super().tile_height
+        return FOUR_WAY_DIRECTIONS
 
     # =========================================================================
 
     @property
     def collision_set(self) -> Optional[CollisionSet]:
         try:
-            return _rotated_collision_sets.get(self.name, {}).get(self.direction.to_4_way(), None)
+            return _rotated_collision_sets.get(self.name, {}).get(
+                self.direction.to_4_way(), None
+            )
         except AttributeError:
             return None
 
@@ -278,10 +234,8 @@ class DirectionalMixin:
     # =========================================================================
 
     def _set_direction(self, attr: attrs.Attribute, value: Any):
-        # self.direction = value
         value = attr.converter(value)
         attr.validator(self, attr, value, mode=self.validate_assignment)
-        value: Direction
         object.__setattr__(self, "direction", value)  # Prevent recursion
 
         if not self.square:
@@ -290,21 +244,19 @@ class DirectionalMixin:
         return value
 
     def ensure_4_way_direction(
-        self, _: attrs.Attribute, value: Any, mode: Optional[ValidationMode] = None
+        self,
+        _: attrs.Attribute,
+        value: Direction,
+        mode: Optional[ValidationMode] = None,
     ):
         mode = mode if mode is not None else self.validate_assignment
         if mode >= ValidationMode.STRICT:
-            if value not in {
-                Direction.NORTH,
-                Direction.EAST,
-                Direction.SOUTH,
-                Direction.WEST,
-            }:
+            if value not in self.valid_directions:
                 # TODO: should we convert it for the user, or let it be wrong?
                 warnings.warn(
                     DirectionWarning(
-                        "'{}' only has 4-way rotation; will be converted to the value '{}' on import".format(
-                            type(self).__name__, Direction(int(value / 4) * 4)
+                        "'{}' only has 4-way rotation; will be converted to '{}' on import".format(
+                            type(self).__name__, value.to_4_way()
                         ),
                     )
                 )

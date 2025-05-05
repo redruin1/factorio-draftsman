@@ -2,15 +2,11 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
 from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import underground_pipes
 
 import attrs
-from pydantic import ConfigDict
-from typing import Any, Literal, Optional, Union
 
 
 @fix_incorrect_pre_init

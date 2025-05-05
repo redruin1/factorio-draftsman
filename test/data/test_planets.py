@@ -4,6 +4,7 @@ from draftsman.data import planets
 
 import pytest
 
+
 class TestPlanets:
     def test_unknown_surface_properties(self):
         assert planets.get_surface_properties("unknown") == {}

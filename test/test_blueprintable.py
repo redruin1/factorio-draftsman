@@ -80,7 +80,7 @@ class TestBlueprintUtils:
                         "entity_number": 1,
                         "name": "electric-energy-interface",
                         "position": {"x": 368, "y": 139},
-                        "buffer_size": 10000000000 # Default
+                        # "buffer_size": 10000000000,  # Default
                     },
                     {
                         "entity_number": 2,

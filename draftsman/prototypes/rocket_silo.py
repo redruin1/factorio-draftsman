@@ -1,7 +1,6 @@
 # rocket_silo.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     ModulesMixin,
     RequestItemsMixin,

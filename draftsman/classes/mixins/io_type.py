@@ -2,7 +2,6 @@
 
 # TODO: make this an enum?
 
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters

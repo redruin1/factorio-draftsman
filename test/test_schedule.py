@@ -32,7 +32,9 @@ class TestWaitCondition:
         assert w.ticks == None
         assert w.condition == AttrsSimpleCondition()
 
-        w = WaitCondition("incorrect", compare_type="incorrect", validate_assignment="none")
+        w = WaitCondition(
+            "incorrect", compare_type="incorrect", validate_assignment="none"
+        )
         assert w.type == "incorrect"
         assert w.compare_type == "incorrect"
         assert w.ticks == None
@@ -45,7 +47,9 @@ class TestWaitCondition:
     def test_to_dict(self):
         w = WaitCondition(
             "circuit",
-            condition=AttrsSimpleCondition(first_signal="signal-A", comparator="!=", second_signal="signal-B"),
+            condition=AttrsSimpleCondition(
+                first_signal="signal-A", comparator="!=", second_signal="signal-B"
+            ),
         )
         assert isinstance(w.condition, AttrsSimpleCondition)
         assert w.to_dict() == {
@@ -58,7 +62,12 @@ class TestWaitCondition:
             },
         }
 
-        w = WaitCondition("circuit", condition=AttrsSimpleCondition(first_signal="signal-A", comparator="<", constant=100))
+        w = WaitCondition(
+            "circuit",
+            condition=AttrsSimpleCondition(
+                first_signal="signal-A", comparator="<", constant=100
+            ),
+        )
         assert w.to_dict() == {
             "type": "circuit",
             # "compare_type": "or", # Default
@@ -140,7 +149,12 @@ class TestWaitCondition:
         )
 
         # WaitCondition and WaitConditions
-        signal_sent = WaitCondition("circuit", condition=AttrsSimpleCondition(first_signal="signal-A", comparator="==", constant=100))
+        signal_sent = WaitCondition(
+            "circuit",
+            condition=AttrsSimpleCondition(
+                first_signal="signal-A", comparator="==", constant=100
+            ),
+        )
         sum1 = signal_sent & conditions
         assert isinstance(sum1, WaitConditions)
         assert len(sum1) == 3
@@ -148,7 +162,9 @@ class TestWaitCondition:
             [
                 WaitCondition(
                     "circuit",
-                    condition=AttrsSimpleCondition(first_signal="signal-A", comparator="==", constant=100),
+                    condition=AttrsSimpleCondition(
+                        first_signal="signal-A", comparator="==", constant=100
+                    ),
                 ),
                 WaitCondition("full", compare_type="and"),
                 WaitCondition("inactivity", compare_type="and"),
@@ -175,7 +191,9 @@ class TestWaitCondition:
                 WaitCondition(
                     "circuit",
                     compare_type="and",
-                    condition=AttrsSimpleCondition(first_signal="signal-A", comparator="==", constant=100),
+                    condition=AttrsSimpleCondition(
+                        first_signal="signal-A", comparator="==", constant=100
+                    ),
                 ),
             ]
         )
@@ -205,7 +223,12 @@ class TestWaitCondition:
         )
 
         # WaitCondition and WaitConditions
-        signal_sent = WaitCondition("circuit", condition=AttrsSimpleCondition(first_signal="signal-A", comparator="==", constant=100))
+        signal_sent = WaitCondition(
+            "circuit",
+            condition=AttrsSimpleCondition(
+                first_signal="signal-A", comparator="==", constant=100
+            ),
+        )
         sum1 = signal_sent | conditions
         assert isinstance(sum1, WaitConditions)
         assert len(sum1) == 3
@@ -213,7 +236,9 @@ class TestWaitCondition:
             [
                 WaitCondition(
                     "circuit",
-                    condition=AttrsSimpleCondition(first_signal="signal-A", comparator="==", constant=100),
+                    condition=AttrsSimpleCondition(
+                        first_signal="signal-A", comparator="==", constant=100
+                    ),
                 ),
                 WaitCondition("full"),
                 WaitCondition("inactivity"),
@@ -237,7 +262,9 @@ class TestWaitCondition:
                 WaitCondition("inactivity"),
                 WaitCondition(
                     "circuit",
-                    condition=AttrsSimpleCondition(first_signal="signal-A", comparator="==", constant=100),
+                    condition=AttrsSimpleCondition(
+                        first_signal="signal-A", comparator="==", constant=100
+                    ),
                 ),
             ]
         )

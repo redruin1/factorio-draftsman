@@ -13,7 +13,7 @@ class TestRocketSilo:
     def test_constructor_init(self):
         silo = RocketSilo(
             transitional_request_index=12,
-            read_items_mode=SiloReadMode.READ_ORBITAL_REQUESTS
+            read_items_mode=SiloReadMode.READ_ORBITAL_REQUESTS,
         )
         assert silo.to_dict() == {
             "name": "rocket-silo",

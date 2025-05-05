@@ -1,7 +1,6 @@
 # lamp.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     ColorMixin,
     LogisticConditionMixin,
@@ -15,7 +14,7 @@ from draftsman.constants import ValidationMode, LampColorMode
 from draftsman.serialization import (
     draftsman_converters,
 )
-from draftsman.signatures import AttrsColor, Connections, DraftsmanBaseModel
+from draftsman.signatures import AttrsColor, DraftsmanBaseModel
 from draftsman.utils import get_first
 from draftsman.validators import instance_of
 

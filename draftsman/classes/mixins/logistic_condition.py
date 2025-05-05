@@ -1,8 +1,7 @@
 # logistic_condition.py
 
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsSimpleCondition, Condition, SignalID, int32
+from draftsman.signatures import AttrsSimpleCondition, AttrsSignalID, int32
 from draftsman.validators import instance_of
 
 import attrs
@@ -18,25 +17,6 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
     Allows the Entity to have an logistic enable condition, such as when the
     amount of some item in the logistic network exceeds some constant.
     """
-
-    class ControlFormat(BaseModel):
-        connect_to_logistic_network: Optional[bool] = Field(
-            False,
-            description="""
-            Whether or not this entity will be controlled from the associated 
-            logistic condition.
-            """,
-        )
-        logistic_condition: Optional[Condition] = Field(
-            Condition(first_signal=None, comparator="<", constant=0),
-            description="""
-            The logistic condition that must be passed in order for this entity
-            to function, if 'connect_to_logistic_network' is true.
-            """,
-        )
-
-    class Format(BaseModel):
-        pass
 
     # =========================================================================
 
@@ -93,9 +73,9 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
 
     def set_logistic_condition(
         self,
-        first_operand: Union[SignalID, None] = None,
+        first_operand: Union[AttrsSignalID, None] = None,
         comparator: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "<",
-        second_operand: Union[SignalID, int32] = 0,
+        second_operand: Union[AttrsSignalID, int32] = 0,
     ):
         """
         Sets the logistic condition of the Entity.

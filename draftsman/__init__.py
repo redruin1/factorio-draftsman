@@ -18,9 +18,10 @@ from draftsman._factorio_version import __factorio_version__, __factorio_version
 
 import attrs
 
+
 def define(cls):
     """
-    Custom `attrs.define` wrapper. Handles Draftsman-specific boilerplate to 
+    Custom `attrs.define` wrapper. Handles Draftsman-specific boilerplate to
     reduce repetition.
     """
     # Grab all specified validators
@@ -33,8 +34,9 @@ def define(cls):
     # conjoin that with any existing class implementation
     return cls
 
-def field(*, default=attrs.NOTHING, omittable=True):
-    """
-    TODO
-    """
-    pass
+
+# def field(*, default=attrs.NOTHING, omittable=True):
+#     """
+#     TODO
+#     """
+#     pass

@@ -1,7 +1,6 @@
 # infinity_pipe.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError

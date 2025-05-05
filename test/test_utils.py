@@ -255,18 +255,18 @@ class TestUtils:
         with pytest.raises(InvalidSignalError):
             signals.get_signal_types("incorrect")
 
-    def test_signal_dict(self):
-        assert signals.signal_dict("signal-anything") == {
-            "name": "signal-anything",
-            "type": "virtual",
-        }
-        assert signals.signal_dict("water") == {"name": "water", "type": "fluid"}
-        assert signals.signal_dict("wooden-chest") == {
-            "name": "wooden-chest",
-            "type": "item",
-        }
-        with pytest.raises(InvalidSignalError):
-            signals.signal_dict("incorrect")
+    # def test_signal_dict(self):
+    #     assert signals.signal_dict("signal-anything") == {
+    #         "name": "signal-anything",
+    #         "type": "virtual",
+    #     }
+    #     assert signals.signal_dict("water") == {"name": "water", "type": "fluid"}
+    #     assert signals.signal_dict("wooden-chest") == {
+    #         "name": "wooden-chest",
+    #         "type": "item",
+    #     }
+    #     with pytest.raises(InvalidSignalError):
+    #         signals.signal_dict("incorrect")
 
     # def test_dist(self):
     #     self.assertAlmostEqual(

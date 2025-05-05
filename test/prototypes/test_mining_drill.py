@@ -1,9 +1,9 @@
 # test_mining_drill.py
 
-from draftsman.constants import MiningDrillReadMode, ValidationMode
+from draftsman.constants import MiningDrillReadMode, ValidationMode, Inventory
 from draftsman.entity import MiningDrill, mining_drills, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import AttrsItemRequest
+from draftsman.signatures import AttrsItemRequest, AttrsItemSpecification, AttrsInventoryLocation
 from draftsman.warning import (
     ModuleCapacityWarning,
     ItemLimitationWarning,
@@ -35,13 +35,13 @@ class TestMiningDrill:
 
         # Errors
         with pytest.raises(DataFormatError):
-            MiningDrill(items="incorrect").validate().reissue_all()
+            MiningDrill(item_requests="incorrect").validate().reissue_all()
         with pytest.raises(DataFormatError):
             MiningDrill(tags="incorrect").validate().reissue_all()
 
     def test_set_item_request(self):
         mining_drill = MiningDrill("electric-mining-drill")
-        mining_drill.set_item_request("speed-module-3", 3)
+        mining_drill.set_item_request("speed-module-3", 3, inventory=Inventory.mining_drill_modules)
         assert mining_drill.to_dict() == {
             "name": "electric-mining-drill",
             "position": {"x": 1.5, "y": 1.5},
@@ -51,7 +51,7 @@ class TestMiningDrill:
                     "items": {
                         "in_inventory": [
                             {
-                                "inventory": 1,
+                                "inventory": 2,
                                 "stack": 0,
                                 "count": 3,
                             }
@@ -81,6 +81,77 @@ class TestMiningDrill:
 
         # with pytest.warns(UnknownItemWarning):
         #     mining_drill.set_item_request("incorrect", 2)
+
+    def test_set_modules(self):
+        mining_drill = MiningDrill("electric-mining-drill")
+
+        mining_drill.request_modules("speed-module-3", 0)
+        assert mining_drill.item_requests == [
+            AttrsItemRequest(
+                id={"name": "speed-module-3"},
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.mining_drill_modules,
+                            stack=0,
+                            count=1,
+                        ),
+                    ],
+                )
+            )
+        ]
+
+        mining_drill.request_modules("speed-module-3", (1, 2))
+        assert mining_drill.item_requests == [
+            AttrsItemRequest(
+                id={"name": "speed-module-3"},
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.mining_drill_modules,
+                            stack=0,
+                            count=1,
+                        ),
+                        AttrsInventoryLocation(
+                            inventory=Inventory.mining_drill_modules,
+                            stack=1,
+                            count=1,
+                        ),
+                        AttrsInventoryLocation(
+                            inventory=Inventory.mining_drill_modules,
+                            stack=2,
+                            count=1,
+                        )
+                    ],
+                )
+            )
+        ]
+
+        mining_drill.request_modules("efficiency-module-3", range(3), "legendary")
+        assert mining_drill.item_requests == [
+            AttrsItemRequest(
+                id={"name": "efficiency-module-3", "quality": "legendary"},
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.mining_drill_modules,
+                            stack=0,
+                            count=1,
+                        ),
+                        AttrsInventoryLocation(
+                            inventory=Inventory.mining_drill_modules,
+                            stack=1,
+                            count=1,
+                        ),
+                        AttrsInventoryLocation(
+                            inventory=Inventory.mining_drill_modules,
+                            stack=2,
+                            count=1,
+                        )
+                    ],
+                )
+            )
+        ]
 
     def test_set_read_resources(self):
         mining_drill = MiningDrill("burner-mining-drill")
@@ -149,7 +220,7 @@ class TestMiningDrill:
         }
         drill2 = MiningDrill(
             "electric-mining-drill",
-            items=[
+            item_requests=[
                 {
                     "id": {"name": "productivity-module"},
                     "items": {
@@ -169,19 +240,23 @@ class TestMiningDrill:
         drill1.merge(drill2)
         del drill2
 
-        assert drill1.items == [
-            AttrsItemRequest(**{
-                "id": "productivity-module",
-                "items": {
-                    "in_inventory": [{"inventory": 1, "stack": 0, "count": 1}]
-                },
-            }),
-            AttrsItemRequest(**{
-                "id": "productivity-module-2",
-                "items": {
-                    "in_inventory": [{"inventory": 1, "stack": 1, "count": 1}]
+        assert drill1.item_requests == [
+            AttrsItemRequest(
+                **{
+                    "id": "productivity-module",
+                    "items": {
+                        "in_inventory": [{"inventory": 1, "stack": 0, "count": 1}]
+                    },
                 }
-            }),
+            ),
+            AttrsItemRequest(
+                **{
+                    "id": "productivity-module-2",
+                    "items": {
+                        "in_inventory": [{"inventory": 1, "stack": 1, "count": 1}]
+                    },
+                }
+            ),
         ]
         assert drill1.tags == {"some": "stuff"}
 

@@ -42,7 +42,7 @@ class TestElectricEnergyInterface:
 
         interface.buffer_size = 100
         assert interface.buffer_size == 100
-        
+
         with pytest.raises(DataFormatError):
             interface.buffer_size = "incorrect"
 
@@ -59,7 +59,7 @@ class TestElectricEnergyInterface:
     def test_set_power_usage(self):
         interface = ElectricEnergyInterface("electric-energy-interface")
         assert interface.power_usage == interface.default_power_usage
-        
+
         interface.power_usage = 100
         assert interface.power_usage == 100
 

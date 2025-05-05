@@ -1,6 +1,5 @@
 # circuit_read_hand.py
 
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.constants import InserterReadMode
 from draftsman.serialization import draftsman_converters
 from draftsman.validators import instance_of

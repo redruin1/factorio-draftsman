@@ -1,7 +1,6 @@
 # splitter.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import DirectionalMixin
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import ItemName
@@ -28,33 +27,33 @@ class Splitter(DirectionalMixin, Entity):
     belts.
     """
 
-    class Format(DirectionalMixin.Format, Entity.Format):
-        input_priority: Optional[
-            Literal["left", "none", "right"]
-        ] = Field(  # TODO: make this priority side or similar
-            "none",
-            description="""
-            The side to prioritize pulling items into the splitter. 'none' means 
-            no preference.
-            """,
-        )
-        output_priority: Optional[Literal["left", "none", "right"]] = Field(
-            "none",
-            description="""
-            The side to prioritize pushing items out of the splitter. Obeys
-            'filter', if set. 'none' means no preference and no filtering.
-            """,
-        )
-        filter: Optional[ItemName] = Field(
-            None,
-            description="""
-            The item that this splitter will filter, output on the 
-            'output_priority' side. Any item that does not exactly match this
-            filter (when it is set) will get loaded on the opposite belt output.
-            """,
-        )
+    # class Format(DirectionalMixin.Format, Entity.Format):
+    #     input_priority: Optional[
+    #         Literal["left", "none", "right"]
+    #     ] = Field(  # TODO: make this priority side or similar
+    #         "none",
+    #         description="""
+    #         The side to prioritize pulling items into the splitter. 'none' means
+    #         no preference.
+    #         """,
+    #     )
+    #     output_priority: Optional[Literal["left", "none", "right"]] = Field(
+    #         "none",
+    #         description="""
+    #         The side to prioritize pushing items out of the splitter. Obeys
+    #         'filter', if set. 'none' means no preference and no filtering.
+    #         """,
+    #     )
+    #     filter: Optional[ItemName] = Field(
+    #         None,
+    #         description="""
+    #         The item that this splitter will filter, output on the
+    #         'output_priority' side. Any item that does not exactly match this
+    #         filter (when it is set) will get loaded on the opposite belt output.
+    #         """,
+    #     )
 
-        model_config = ConfigDict(title="Splitter")
+    #     model_config = ConfigDict(title="Splitter")
 
     # def __init__(
     #     self,

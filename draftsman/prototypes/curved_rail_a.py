@@ -1,9 +1,9 @@
 # curved_rail_a.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import DoubleGridAlignedMixin, EightWayDirectionalMixin
+from draftsman.classes.mixins import DoubleGridAlignedMixin, DirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
+from draftsman.constants import Direction, ValidationMode, EIGHT_WAY_DIRECTIONS
 from draftsman.utils import get_first
 
 from draftsman.data.entities import curved_rails_a
@@ -14,7 +14,7 @@ from typing import Any, Literal, Optional, Union
 
 
 @attrs.define
-class CurvedRailA(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
+class CurvedRailA(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     """
     First set of curved rail entities with 2.0 rails. (TODO)
     """
@@ -55,6 +55,12 @@ class CurvedRailA(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
     @property
     def similar_entities(self) -> list[str]:
         return curved_rails_a
+    
+    # =========================================================================
+
+    @property
+    def valid_directions(self) -> set[Direction]:
+        return EIGHT_WAY_DIRECTIONS
 
     # =========================================================================
 

@@ -4,7 +4,9 @@ from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     DraftsmanBaseModel,
     AttrsItemRequest,
-    ItemRequest,
+    AttrsItemID,
+    AttrsItemSpecification,
+    AttrsInventoryLocation,
     uint32,
 )
 from draftsman.utils import reissue_warnings
@@ -30,57 +32,6 @@ class RequestItemsMixin:
     machines.
     """
 
-    class Format(DraftsmanBaseModel):
-        items: Optional[list[ItemRequest]] = Field(
-            [],
-            description="""
-            List of construction item requests (such as delivering modules for 
-            beacons). Distinct from logistics requests, which are a separate 
-            system.
-            """,
-        )
-
-        # @field_validator("items")
-        # @classmethod
-        # def ensure_in_allowed_items( # TODO: reimplment
-        #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-        # ):
-        #     """
-        #     Warn the user if they set a fuel item that is disallowed for this
-        #     particular entity.
-        #     """
-        #     if not info.context or value is None:
-        #         return value
-        #     if info.context["mode"] <= ValidationMode.MINIMUM:
-        #         return value
-
-        #     entity: "RequestItemsMixin" = info.context["object"]
-        #     warning_list: list = info.context["warning_list"]
-
-        #     if entity.allowed_items is None:  # entity not recognized
-        #         return value
-
-        #     for item in entity.items:
-        #         if item["id"]["name"] not in entity.allowed_items:
-        #             warning_list.append(
-        #                 ItemLimitationWarning(
-        #                     "Cannot request item '{}' to '{}'; this entity cannot recieve it".format(
-        #                         item["id"]["name"], entity.name
-        #                     )
-        #                 )
-        #             )
-
-        #     return value
-
-    # def __init__(self, name: str, similar_entities: list[str], **kwargs):
-    #     self._root: __class__.Format
-
-    #     super().__init__(name, similar_entities, **kwargs)
-
-    #     self.items = kwargs.get("items", {})
-
-    # =========================================================================
-
     @property  # TODO abstractproperty
     def allowed_items(self) -> Optional[set[str]]:
         pass  # return set()
@@ -88,7 +39,9 @@ class RequestItemsMixin:
     # =========================================================================
 
     def _items_converter(value):
-        if isinstance(value, list):
+        if value is None:
+            return []
+        elif isinstance(value, list):
             res = [None] * len(value)
             for i, elem in enumerate(value):
                 res[i] = AttrsItemRequest.converter(elem)
@@ -96,43 +49,19 @@ class RequestItemsMixin:
         else:
             return value
 
-    items: Optional[list[AttrsItemRequest]] = attrs.field(
-        factory=list, converter=_items_converter, validator=instance_of(Optional[list])
+    item_requests: list[AttrsItemRequest] = attrs.field(
+        factory=list,
+        converter=_items_converter,
+        validator=instance_of(list),  # TODO: validators
     )
     """
-    TODO
+    A list of items to deliver to the entity. Not to be confused with logistics
+    requests (which are persistent), item requests are only fulfilled once when
+    the entity is first constructed. Most notably, modules are requested to
+    entities with this field.
+
+    For user-friendly ways to modify this array, see TODO and TODO.
     """
-
-    # @property
-    # def items(self) -> Optional[list[ItemRequest]]:
-    #     """
-    #     TODO
-    #     """
-    #     return self._root.items
-
-    # @items.setter
-    # def items(self, value: Optional[list[ItemRequest]]) -> None:
-    #     if self.validate_assignment:
-    #         # In the validator functions for `items`, we use a lot of internal
-    #         # properties that operate on the current items value instead of the
-    #         # items value that we're setting
-    #         # Thus, in order for those to work, we set the items to the new
-    #         # value first, check for errors, and revert it back to the original
-    #         # value if it fails for whatever reason
-    #         try:
-    #             original_items = self._root.items
-    #             self._root.items = value
-    #             value = attempt_and_reissue(
-    #                 self, type(self).Format, self._root, "items", value
-    #             )
-    #         except DataFormatError as e:
-    #             self._root.items = original_items
-    #             raise e
-
-    #     if value is None:
-    #         self._root.items = []
-    #     else:
-    #         self._root.items = value
 
     # =========================================================================
 
@@ -173,70 +102,69 @@ class RequestItemsMixin:
         if count is None:
             count = 0
 
-        # TODO: inefficient
-        new_items = deepcopy(self.items)
-
         if count == 0:
-            # new_items.pop(item, None)
-            new_items = [i_item for i_item in new_items if i_item["id"]["name"] != item]
+            # TODO: better removal across multiple categories
+            # (Might be better to abstract this into `remove_item_request` or similar)
+            self.item_requests = [
+                i_item for i_item in self.item_requests if i_item.id.name != item
+            ]
         else:
             # Try to find an existing entry for `item` with the same quality
             existing_spec = next(
                 filter(
-                    lambda x: x["id"]["name"] == item
-                    and x["id"].get("quality", "normal") == quality,
-                    new_items,
+                    lambda x: x.id.name == item and x.id.quality == quality,
+                    self.item_requests,
                 ),
                 None,
             )
             if existing_spec is None:
                 # If not, add a new item entry
                 if slot is None:
-                    slot = len(new_items)
-                new_items.append(
+                    slot = len(self.item_requests)
+                self.item_requests += [
                     AttrsItemRequest(
-                        **{
-                            "id": {"name": item, "quality": quality},
-                            "items": {
-                                "in_inventory": [
-                                    {
-                                        "inventory": inventory + 1,
-                                        "stack": slot,
-                                        "count": count,
-                                    }
-                                ]
-                            },
-                        }
+                        id=AttrsItemID(name=item, quality=quality),
+                        items=AttrsItemSpecification(
+                            in_inventory=[
+                                AttrsInventoryLocation(
+                                    inventory=inventory,
+                                    stack=slot,
+                                    count=count,
+                                )
+                            ]
+                        )
                     )
-                )
+                ]
             else:
                 # Try to find an existing entry at the same slot in the same inventory
                 # TODO: what if there's an entry, but slot is None? Do we just pick
                 # the first valid entry?
+                if slot is None:
+                    slot = 0
                 existing_slot = next(
                     filter(
-                        lambda x: x["inventory"] == inventory and x["stack"] == slot,
-                        existing_spec["items"]["in_inventory"],
+                        lambda x: x.inventory == inventory and x.stack == slot,
+                        existing_spec.items.in_inventory,
                     ),
                     None,
                 )
                 if existing_slot is None:
                     # If not, make a new one
-                    existing_spec["items"]["in_inventory"].append(
-                        {"inventory": inventory + 1, "stack": slot, "count": count}
+                    existing_spec.items.in_inventory.append(
+                        AttrsInventoryLocation(
+                            inventory=inventory, stack=slot, count=count
+                        )
                     )
                 else:
                     # If so, simply modify the count
-                    existing_slot["count"] = count
-
-        self.items = new_items
+                    existing_slot.count = count
 
     # =========================================================================
 
     def merge(self, other: "RequestItemsMixin"):
         super().merge(other)
 
-        self.items = deepcopy(other.items)
+        self.item_requests = deepcopy(other.item_requests)
 
     # =========================================================================
 
@@ -244,10 +172,11 @@ class RequestItemsMixin:
     #     return super().__eq__(other) and self.items == other.items
 
 
+# TODO: versioning
 draftsman_converters.add_schema(
     {
         "$id": "factorio:request_items_mixin",
     },
     RequestItemsMixin,
-    lambda fields: {"items": fields.items.name},
+    lambda fields: {"items": fields.item_requests.name},
 )

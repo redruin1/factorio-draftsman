@@ -1,38 +1,30 @@
 # blueprintable.py
 
-from draftsman import __factorio_version_info__
 from draftsman.classes.exportable import (
     Exportable,
-    ValidationResult,
-    attempt_and_reissue,
-    apply_assignment,
-    test_replace_me,
-    custom_define,
 )
-from draftsman.constants import ValidationMode
-from draftsman.error import DataFormatError, IncorrectBlueprintTypeError
+from draftsman.error import IncorrectBlueprintTypeError
 from draftsman.signatures import (
     AttrsColor,
-    DraftsmanBaseModel,
     AttrsIcon,
-    normalize_version,
     uint16,
     uint64,
 )
-from draftsman.data.signals import signal_dict
+
+# from draftsman.data.signals import signal_dict
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import (
     encode_version,
     decode_version,
     JSON_to_string,
     string_to_JSON,
-    reissue_warnings,
     version_tuple_to_string,
 )
 from draftsman.validators import instance_of, try_convert
 
+from draftsman.data import mods
+
 import attrs
-import cattrs
 
 from abc import ABCMeta, abstractmethod
 
@@ -71,6 +63,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         """
         The "root" key of this Blueprintable's dictionary form. For example,
         blueprints have the ``root_item`` key "blueprint":
+
         ```
         {
             "blueprint": { # <- this is the "root_item"
@@ -78,8 +71,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             }
         }
         ```
+
+        All keys (except for :py:attr:`index`) are contained within this sub-
+        dictionary. 
         """
-        pass
+        pass # pragma: no coverage
 
     # @reissue_warnings
     # def __init__(
@@ -182,7 +178,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         if "version" in json_dict[root_item]:
             version = decode_version(json_dict[root_item]["version"])
         else:
-            version = __factorio_version_info__
+            version = mods.versions["base"]
 
         # print(version)
         version_info = draftsman_converters.get_version(version)
@@ -258,15 +254,13 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> BlueprintBook().item
             'blueprint-book'
         """
-        # return self._root[self.root_item]["item"]
-        pass
+        pass # pragma: no coverage
 
     # =========================================================================
 
     label: Optional[str] = attrs.field(
         default=None,
-        # TODO: validators
-        metadata={"location": (lambda cls: cls.root_item.fget(cls), "label")},  # FIXME
+        validator=instance_of(Optional[str])
     )
     """
     The user given name (title) of the blueprintable.
@@ -520,7 +514,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     # =========================================================================
 
     version: uint64 = attrs.field(
-        default=encode_version(*__factorio_version_info__),
+        factory=lambda: encode_version(*mods.versions["base"]),
         converter=try_convert(
             lambda value: encode_version(*value)
             if isinstance(value, Sequence)
@@ -783,7 +777,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     #     return out_dict
 
     def to_string(
-        self, version: tuple[int] = __factorio_version_info__
+        self, version: Optional[tuple[int]] = None
     ) -> str:  # pragma: no coverage
         """
         Returns this object as an encoded Factorio blueprint string.
@@ -806,6 +800,8 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> BlueprintBook({"version": (1, 0)}).to_string()
             '0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MTSzNzcwNDcxMzWprAVWGHQI='
         """
+        if version is None:
+            version = mods.versions["base"]
         return JSON_to_string(self.to_dict(version=version))
 
     def __str__(self) -> str:  # pragma: no coverage

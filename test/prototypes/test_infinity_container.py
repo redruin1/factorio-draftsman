@@ -18,7 +18,7 @@ class TestInfinityContainer:
             remove_unfiltered_items=True,
             filters=[
                 {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
-            ]
+            ],
         )
         assert container.to_dict() == {
             "name": "infinity-chest",
@@ -61,34 +61,49 @@ class TestInfinityContainer:
     def test_set_infinity_filter(self):
         container = InfinityContainer()
 
-
         container.set_infinity_filter(0, "iron-ore", "at-least", 100)
         assert container.filters == [
-            AttrsInfinityFilter(**{"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"})
+            AttrsInfinityFilter(
+                **{"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
+            )
         ]
 
         container.set_infinity_filter(1, "copper-ore", "exactly", 200)
         assert container.filters == [
-            AttrsInfinityFilter(**{"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}),
-            AttrsInfinityFilter(**{"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}),
+            AttrsInfinityFilter(
+                **{"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
+            ),
+            AttrsInfinityFilter(
+                **{"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}
+            ),
         ]
 
         container.set_infinity_filter(0, "uranium-ore", "at-least", 1000)
         assert container.filters == [
-            AttrsInfinityFilter(**{"index": 1, "name": "uranium-ore", "count": 1000, "mode": "at-least"}),
-            AttrsInfinityFilter(**{"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}),
+            AttrsInfinityFilter(
+                **{"index": 1, "name": "uranium-ore", "count": 1000, "mode": "at-least"}
+            ),
+            AttrsInfinityFilter(
+                **{"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}
+            ),
         ]
 
         container.set_infinity_filter(0, None)
         assert container.filters == [
-            AttrsInfinityFilter(**{"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}),
+            AttrsInfinityFilter(
+                **{"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}
+            ),
         ]
 
         # Default count
         container.set_infinity_filter(0, "iron-ore", "at-least")
         assert container.filters == [
-            AttrsInfinityFilter(**{"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}),
-            AttrsInfinityFilter(**{"index": 1, "name": "iron-ore", "count": 50, "mode": "at-least"}),
+            AttrsInfinityFilter(
+                **{"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}
+            ),
+            AttrsInfinityFilter(
+                **{"index": 1, "name": "iron-ore", "count": 50, "mode": "at-least"}
+            ),
         ]
 
         with pytest.raises(ValueError):  # TODO fix
@@ -118,7 +133,7 @@ class TestInfinityContainer:
             remove_unfiltered_items=True,
             filters=[
                 {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
-            ]
+            ],
         )
 
         assert container1.mergable_with(container1)
@@ -136,7 +151,7 @@ class TestInfinityContainer:
             remove_unfiltered_items=True,
             filters=[
                 {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
-            ]
+            ],
         )
 
         container1.merge(container2)

@@ -19,6 +19,7 @@ from draftsman.constants import (
     WaitConditionType,
     ValidationMode,
 )
+from draftsman.data import mods
 from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.tile import Tile, new_tile
 from draftsman.error import (
@@ -47,6 +48,7 @@ from draftsman.warning import (
     UnknownEntityWarning,
     UnknownSignalWarning,
     UnknownTileWarning,
+    OverlappingObjectsWarning,
 )
 
 import pytest
@@ -105,15 +107,24 @@ class TestBlueprint:
             "version": encode_version(1, 1, 50, 1),
         }
 
-        # # Valid format, but blueprint book string
-        # with self.assertRaises(IncorrectBlueprintTypeError):
-        #     blueprint = Blueprint(
-        #         "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
-        #     )
+        # Valid format, but missing version
+        blueprint = Blueprint.from_string(
+            "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEqutBQDZSgyK"
+        )
+        assert blueprint.to_dict()["blueprint"] == {
+            "item": "blueprint",
+            "version": encode_version(*mods.versions["base"])
+        }
 
-        # # Invalid format
-        # with self.assertRaises(MalformedBlueprintStringError):
-        #     blueprint = get_blueprintable_from_string("0lmaothisiswrong")
+        # Valid format, but blueprint book string
+        with pytest.raises(IncorrectBlueprintTypeError):
+            blueprint = Blueprint.from_string(
+                "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
+            )
+
+        # Invalid format
+        with pytest.raises(MalformedBlueprintStringError):
+            blueprint = Blueprint.from_string("0lmaothisiswrong")
 
     # =========================================================================
 
@@ -250,9 +261,15 @@ class TestBlueprint:
         # Multiple Icon
         blueprint.icons = ("signal-A", "signal-B", "signal-C")
         assert blueprint.icons == [
-            AttrsIcon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}),
-            AttrsIcon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}),
-            AttrsIcon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}),
+            AttrsIcon(
+                **{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
+            ),
+            AttrsIcon(
+                **{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}
+            ),
+            AttrsIcon(
+                **{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}
+            ),
         ]
 
         # Raw signal dicts:
@@ -268,7 +285,9 @@ class TestBlueprint:
                 {"signal": {"name": "some-signal", "type": "item"}, "index": 1}
             ]
             assert blueprint.icons == [
-                AttrsIcon(**{"signal": {"name": "some-signal", "type": "item"}, "index": 1})
+                AttrsIcon(
+                    **{"signal": {"name": "some-signal", "type": "item"}, "index": 1}
+                )
             ]
 
         # None
@@ -449,7 +468,7 @@ class TestBlueprint:
 
         # Warn unknown entity (list)
         blueprint.validate_assignment = "none"
-        blueprint.entities = [new_entity("undocumented-entity")]  # No warning
+        blueprint.entities = [new_entity("undocumented-entity", validate_assignment="none")]  # No warning
         with pytest.warns(UnknownEntityWarning):
             blueprint.validate_assignment = "strict"
             blueprint.entities = [new_entity("undocumented-entity")]
@@ -457,7 +476,7 @@ class TestBlueprint:
 
         # Warn unknown entity (individual)
         blueprint.entities.validate_assignment = "none"
-        blueprint.entities[-1] = new_entity("undocumented-entity")  # No warning
+        blueprint.entities[-1] = new_entity("undocumented-entity", validate_assignment="none")  # No warning
         with pytest.warns(UnknownEntityWarning):
             blueprint.validate_assignment = "strict"
             blueprint.entities[-1] = new_entity("undocumented-entity")
@@ -606,11 +625,25 @@ class TestBlueprint:
             "position": {"x": 1.0, "y": 1.0},
         }
 
-        # Test broadphase positive, but narrowphase negative
-        # TODO: catch warnings
+        # Test attempted merge, but failed
+        with pytest.warns(OverlappingObjectsWarning):
+            blueprint.entities.append("accumulator", tile_position=(1, 0), merge=True)
+        assert len(blueprint.entities) == 2
+        assert blueprint.entities[0].to_dict() == {
+            "name": "accumulator",
+            "position": {"x": 1.0, "y": 1.0},
+        }
+        assert blueprint.entities[1].to_dict() == {
+            "name": "accumulator",
+            "position": {"x": 2.0, "y": 1.0}
+        }
+
         blueprint = Blueprint()
         blueprint.entities.append("rail-chain-signal")
-        blueprint.entities.append("straight-rail", direction=Direction.SOUTHEAST)
+        with pytest.warns(OverlappingObjectsWarning):
+            blueprint.entities.append("straight-rail", direction=Direction.SOUTHEAST)
+
+        # TODO: Test broadphase positive, but narrowphase negative
 
         # Unreasonable size
         blueprint = Blueprint()
@@ -961,7 +994,7 @@ class TestBlueprint:
             def validate(self, mode):
                 return ValidationResult([], [])
 
-            def to_dict(self):  # pragma: no coverage
+            def to_dict(self, entity_number=None):  # pragma: no coverage
                 return "incorrect"
 
         test = TestClass()
@@ -1816,7 +1849,7 @@ class TestBlueprint:
         # TODO
 
         # Errors
-        blueprint.entities.append("lightning-attractor", tile_position=(0, 6), id="3")
+        blueprint.entities.append("lightning-rod", tile_position=(0, 6), id="3")
 
         with pytest.raises(EntityNotCircuitConnectableError):
             blueprint.add_circuit_connection("green", "3", "1")

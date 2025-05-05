@@ -122,10 +122,18 @@ class TestRailChainSignal:
         signal1.merge(signal2)
         del signal2
 
-        assert signal1.red_output_signal == AttrsSignalID(name="signal-A", type="virtual")
-        assert signal1.yellow_output_signal == AttrsSignalID(name="signal-B", type="virtual")
-        assert signal1.green_output_signal == AttrsSignalID(name="signal-C", type="virtual")
-        assert signal1.blue_output_signal == AttrsSignalID(name="signal-D", type="virtual")
+        assert signal1.red_output_signal == AttrsSignalID(
+            name="signal-A", type="virtual"
+        )
+        assert signal1.yellow_output_signal == AttrsSignalID(
+            name="signal-B", type="virtual"
+        )
+        assert signal1.green_output_signal == AttrsSignalID(
+            name="signal-C", type="virtual"
+        )
+        assert signal1.blue_output_signal == AttrsSignalID(
+            name="signal-D", type="virtual"
+        )
         assert signal1.tags == {"some": "stuff"}
 
         assert signal1.to_dict()["control_behavior"] == {

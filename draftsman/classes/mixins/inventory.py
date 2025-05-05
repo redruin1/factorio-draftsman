@@ -1,8 +1,7 @@
 # inventory.py
 
-from draftsman.data import entities, items
-from draftsman.classes.exportable import attempt_and_reissue
-from draftsman.constants import ValidationMode
+from draftsman.data import entities, mods
+from draftsman.constants import Inventory, ValidationMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     DraftsmanBaseModel,
@@ -10,12 +9,13 @@ from draftsman.signatures import (
     uint16,
     uint32,
 )
+from draftsman.utils import calculate_occupied_slots
 from draftsman.validators import and_, instance_of
 from draftsman.warning import BarWarning, IndexWarning, ItemCapacityWarning
 
 import attrs
+
 import math
-from pydantic import Field, ValidationInfo, field_validator
 import warnings
 
 from typing import Optional, TYPE_CHECKING
@@ -32,64 +32,26 @@ class InventoryMixin:
     amount exceeds the inventory size of the entity.
     """
 
-    class Format(DraftsmanBaseModel):
-        bar: Optional[uint16] = Field(
-            None,
-            description="""
-            Limiting bar on this entity's inventory.
-            """,
-        )
-
-        @field_validator("bar")
-        @classmethod
-        def ensure_inventory_bar_enabled(
-            cls, bar: Optional[uint16], info: ValidationInfo
-        ):
-            if not info.context or bar is None:
-                return bar
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return bar
-
-            warning_list: list = info.context["warning_list"]
-            entity: InventoryMixin = info.context["object"]
-
-            # Make sure to check that it's `False`; this attribute can return
-            # `None` if it doesn't recognize the entity, and in that case we
-            # don't want to issue a warning at all
-            if entity.inventory_bar_enabled is False:
-                warning_list.append(BarWarning("This entity does not have bar control"))
-
-            return bar
-
-        @field_validator("bar")
-        @classmethod
-        def ensure_less_than_inventory_size(
-            cls, bar: Optional[uint16], info: ValidationInfo
-        ):
-            return ensure_bar_less_than_inventory_size(cls, bar, info)
-
-    # def __init__(self, name, similar_entities, **kwargs):
-    #     self._root: __class__.Format
-
-    #     # self._inventory_slots_occupied = 0
-
-    #     super().__init__(name, similar_entities, **kwargs)
-
-    #     self._root.bar = kwargs.get("bar", None)
-
-    # =========================================================================
-
     @property
     def inventory_bar_enabled(self) -> Optional[bool]:
         """
         Whether or not this Entity has its inventory limiting bar enabled.
-        Equivalent to the ``"enable_inventory_bar"`` key in Factorio's
-        ``data.raw``, or ``True`` if not present. Returns ``None`` if this
-        entity is not recognized by Draftsman. Not exported; read only.
+        Returns ``None`` if this entity is not recognized by Draftsman. Not
+        exported; read only.
         """
-        return entities.raw.get(self.name, {"enable_inventory_bar": None}).get(
-            "enable_inventory_bar", True
-        )
+        if mods.versions["base"] < (2, 0):  # pragma: no coverage
+            # "enable_inventory_bar"
+            return entities.raw.get(self.name, {"enable_inventory_bar": None}).get(
+                "enable_inventory_bar", True
+            )
+        else:
+            # "inventory_type"
+            inventory_type = entities.raw.get(self.name, {"inventory_type": None}).get(
+                "inventory_type", "with_bar"
+            )
+            if inventory_type is None:
+                return None
+            return inventory_type in ("with_bar", "with_filters_and_bar")
 
     # =========================================================================
 
@@ -132,24 +94,10 @@ class InventoryMixin:
     def inventory_slots_occupied(self) -> int:
         """
         The number of inventory slots filled by the item requests for this
-        entity. Used to keep track of requested items and issue warnings if the
-        amount inside the container exceeds the inventory size of the entity.
-        Requested items that are not recognized by Draftsman are not added to
-        this total, since it cannot deduce their stack size. Not exported; read
-        only.
+        entity. Useful for quickly investigating the capacity of the chest after
+        the item requests have been delivered. Not exported; read only.
         """
-        # TODO: this grabs every item, which in some cases like furnaces is
-        # undesireable, since the fuel we can request to those entities goes to
-        # a different inventory that should not affect this one
-        # I believe the best course of action would be to store a private
-        # `container_items` object alonside `items` which would only contain
-        # these specific items; subclasses could then implement `fuel_items`,
-        # `module_items`, etc. and keep them up to date alongside `items`
-        return sum(
-            int(math.ceil(count / float(items.raw[item]["stack_size"])))
-            for item, count in self.items.items()
-            if item in items.raw
-        )
+        return calculate_occupied_slots(self.item_requests, Inventory.chest)
 
     # =========================================================================
 
@@ -217,27 +165,27 @@ class InventoryMixin:
 
     # =========================================================================
 
-    def set_item_request(self, item: str, count: uint32):  # TODO: ItemID
-        """
-        Issues warnings if the set item exceeds the inventory size of the entity.
-        """
-        # if item in items.raw:
-        #     stack_size = items.raw[item]["stack_size"]
-        #     num_slots_add = int(math.ceil(count / float(stack_size)))
-        #     num_slots_old = int(math.ceil(self.items.get(item, 0) / float(stack_size)))
+    # def set_item_request(self, item: str, count: uint32):  # TODO: ItemID
+    #     """
+    #     Issues warnings if the set item exceeds the inventory size of the entity.
+    #     """
+    #     # if item in items.raw:
+    #     #     stack_size = items.raw[item]["stack_size"]
+    #     #     num_slots_add = int(math.ceil(count / float(stack_size)))
+    #     #     num_slots_old = int(math.ceil(self.items.get(item, 0) / float(stack_size)))
 
-        #     self._inventory_slots_occupied -= num_slots_old
-        #     self._inventory_slots_occupied += num_slots_add
+    #     #     self._inventory_slots_occupied -= num_slots_old
+    #     #     self._inventory_slots_occupied += num_slots_add
 
-        super().set_item_request(item, count)
+    #     super().set_item_request(item, count)
 
-        # TODO: move this into validator function for "items"
-        if self.inventory_slots_occupied > self.inventory_size:
-            warnings.warn(
-                "Current item requests exceeds the inventory size of this entity",
-                ItemCapacityWarning,
-                stacklevel=2,
-            )
+    #     # TODO: move this into validator function for "items"
+    #     if self.inventory_slots_occupied > self.inventory_size:
+    #         warnings.warn(
+    #             "Current item requests exceeds the inventory size of this entity",
+    #             ItemCapacityWarning,
+    #             stacklevel=2,
+    #         )
 
     # =========================================================================
 
@@ -245,11 +193,6 @@ class InventoryMixin:
         super().merge(other)
 
         self.bar = other.bar
-
-    # =========================================================================
-
-    def __eq__(self, other) -> bool:
-        return super().__eq__(other) and self.bar == other.bar
 
 
 draftsman_converters.add_schema(

@@ -40,6 +40,10 @@ class TestLab:
             "promethium-science-pack",
         ]
 
+        with pytest.warns(UnknownEntityWarning):
+            lab = Lab("unknown")
+        assert lab.inputs is None
+
     # def test_set_item_request(self): # TODO: reimplement
     #     lab = Lab("lab")
 

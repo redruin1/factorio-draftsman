@@ -1,5 +1,6 @@
 # test_furnace.py
 
+from draftsman.constants import Inventory
 from draftsman.entity import Furnace, furnaces, Container
 from draftsman.error import DataFormatError
 from draftsman.warning import (
@@ -13,6 +14,7 @@ from draftsman.warning import (
     UnknownItemWarning,
     UnknownKeywordWarning,
 )
+from draftsman.signatures import AttrsItemRequest, AttrsItemID, AttrsItemSpecification, AttrsInventoryLocation
 
 from collections.abc import Hashable
 import pytest
@@ -32,7 +34,13 @@ class TestFurnace:
         furnace = Furnace("stone-furnace")
         assert furnace.allowed_effects == {"consumption", "speed", "pollution"}
         furnace = Furnace("electric-furnace")
-        assert furnace.allowed_effects == {"speed", "productivity", "quality", "pollution", "consumption"}
+        assert furnace.allowed_effects == {
+            "speed",
+            "productivity",
+            "quality",
+            "pollution",
+            "consumption",
+        }
 
         with pytest.warns(UnknownEntityWarning):
             furnace = Furnace("unknown-furance")
@@ -41,108 +49,99 @@ class TestFurnace:
     def test_allowed_input_ingredients(self):
         furnace = Furnace("stone-furnace")
         assert furnace.allowed_input_ingredients == {
-            "iron-plate", "stone", "iron-ore", "lithium", "copper-ore"
+            "iron-plate",
+            "stone",
+            "iron-ore",
+            "lithium",
+            "copper-ore",
         }
         furnace = Furnace("electric-furnace")
         assert furnace.allowed_input_ingredients == {
-            "iron-plate", "stone", "iron-ore", "lithium", "copper-ore"
+            "iron-plate",
+            "stone",
+            "iron-ore",
+            "lithium",
+            "copper-ore",
         }
 
         with pytest.warns(UnknownEntityWarning):
             furnace = Furnace("unknown-furance")
         assert furnace.allowed_input_ingredients == None
 
-    # def test_set_item_request(self):
-    #     furnace = Furnace("stone-furnace")
-    #     assert furnace.allowed_modules == {
-    #         "efficiency-module",
-    #         "efficiency-module-2",
-    #         "efficiency-module-3",
-    #         "speed-module",
-    #         "speed-module-2",
-    #         "speed-module-3",
-    #     }
-    #     assert furnace.total_module_slots == 0
+    def test_fuel_input_size(self):
+        furnace = Furnace("stone-furnace")
+        assert furnace.energy_source["type"] == "burner"
+        assert furnace.fuel_input_size == 1
+        assert furnace.fuel_output_size == 0
 
-    #     # No slots on stone furnace for modules
-    #     with pytest.warns(ModuleCapacityWarning):
-    #         furnace.set_item_request("speed-module", 2)
-    #     assert furnace.items == {"speed-module": 2}
+        furnace = Furnace("electric-furnace")
+        assert furnace.energy_source["type"] == "electric"
+        assert furnace.fuel_input_size == 0
+        assert furnace.fuel_output_size == 0
 
-    #     # Too much fuel
-    #     with pytest.warns(FuelCapacityWarning):
-    #         furnace.items = {"coal": 100}
-    #     assert furnace.items == {"coal": 100}
+        furnace = Furnace("unknown-furnace", validate_assignment="none")
+        assert furnace.energy_source is None
+        assert furnace.fuel_input_size is None
+        assert furnace.fuel_output_size is None 
 
-    #     # Fuel, but not used
-    #     with pytest.warns(FuelLimitationWarning):
-    #         furnace.items = {"uranium-fuel-cell": 1}
-    #     assert furnace.items == {"uranium-fuel-cell": 1}
+    def test_set_item_request(self):
+        furnace = Furnace("stone-furnace")
+        assert furnace.allowed_modules == {
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+        }
+        assert furnace.total_module_slots == 0
 
-    #     furnace = Furnace("electric-furnace")
-    #     assert furnace.allowed_modules == {
-    #         "speed-module",
-    #         "speed-module-2",
-    #         "speed-module-3",
-    #         "efficiency-module",
-    #         "efficiency-module-2",
-    #         "efficiency-module-3",
-    #         "productivity-module",
-    #         "productivity-module-2",
-    #         "productivity-module-3",
-    #         "quality-module",
-    #         "quality-module-2",
-    #         "quality-module-3",
-    #     }
-    #     assert furnace.total_module_slots == 2
-    #     # Module on electric furnace
-    #     furnace.set_item_request("productivity-module-3", 2)
-    #     assert furnace.items == {"productivity-module-3": 2}
-    #     assert furnace.module_slots_occupied == 2
+        # # No slots on stone furnace for modules
+        # with pytest.warns(ModuleCapacityWarning):
+        #     furnace.set_item_request("speed-module", 2)
+        # assert furnace.items == {"speed-module": 2}
 
-    #     with pytest.warns(ModuleCapacityWarning):
-    #         furnace.set_item_request("speed-module", 2)
-    #     assert furnace.items == {"productivity-module-3": 2, "speed-module": 2}
-    #     assert furnace.module_slots_occupied == 4
+        # # Too much fuel
+        # with pytest.warns(FuelCapacityWarning):
+        #     furnace.items = {"coal": 100}
+        # assert furnace.items == {"coal": 100}
 
-    #     furnace.items = None
+        # # Fuel, but not used
+        # with pytest.warns(FuelLimitationWarning):
+        #     furnace.items = {"uranium-fuel-cell": 1}
+        # assert furnace.items == {"uranium-fuel-cell": 1}
 
-    #     # Fuel on electric furnace
-    #     with pytest.warns(ItemLimitationWarning):
-    #         furnace.set_item_request("coal", 100)
-    #     assert furnace.items == {"coal": 100}
+        furnace = Furnace("electric-furnace")
+        
+        # Test setting to None removes
+        furnace.set_item_request("coal", 50, inventory=Inventory.fuel)
+        furnace.set_item_request("coal", None)
+        assert furnace.item_requests == []
 
-    #     # Too much of valid ingredient input
-    #     with pytest.warns(ItemCapacityWarning):
-    #         furnace.items = {"iron-ore": 100}  # 2 stacks instead of 1
-    #     assert furnace.items == {"iron-ore": 100}
+        # Test resetting count of existing request
+        furnace.set_item_request("coal", 25, inventory=Inventory.fuel, quality="legendary")
+        furnace.set_item_request("coal", 50, inventory=Inventory.fuel, quality="legendary")
+        assert furnace.item_requests == [
+            AttrsItemRequest(
+                id=AttrsItemID(
+                    name="coal",
+                    quality="legendary"
+                ),
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.fuel,
+                            stack=0,
+                            count=50
+                        )
+                    ]
+                )
+            )
+        ]
 
-    #     # Non smeltable item and not fuel
-    #     furnace.items = {}
-    #     with pytest.warns(ItemLimitationWarning):
-    #         furnace.set_item_request("copper-plate", 100)
-    #     assert furnace.items == {"copper-plate": 100}
-    #     assert furnace.module_slots_occupied == 0
-    #     # assert furnace.fuel_slots_occupied == 0
-
-    #     furnace.items = {}
-    #     assert furnace.items == {}
-    #     assert furnace.module_slots_occupied == 0
-    #     # assert furnace.fuel_slots_occupied == 0
-
-    #     # Errors
-    #     with pytest.raises(DataFormatError):
-    #         furnace.set_item_request("unknown", "incorrect")
-    #     with pytest.warns(UnknownItemWarning):
-    #         furnace.set_item_request("unknown", 100)
-    #     with pytest.raises(DataFormatError):
-    #         furnace.set_item_request("speed-module-2", TypeError)
-    #     with pytest.raises(DataFormatError):
-    #         furnace.set_item_request("speed-module-2", -1)
-
-    #     assert furnace.items == {"unknown": 100}
-    #     assert furnace.module_slots_occupied == 0
-    #     assert furnace.fuel_slots_occupied == 0
+        # Test setting to None resets to empty list
+        furnace.item_requests = None
+        assert furnace.item_requests == []
 
     def test_mergable_with(self):
         furnace1 = Furnace("stone-furnace")

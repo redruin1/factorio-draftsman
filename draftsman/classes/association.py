@@ -17,18 +17,8 @@ class Association(weakref.ref):
     A loose wrapper around weakref that permits deepcopying. Used to represent
     wire and circuit connections, as well as associating train entities with
     specific schedules. Leads to better memory management, more flexibilty when
-    creating blueprints, and better visual representation.
+    creating blueprints, and a better visual representation.
     """
-
-    Format = Annotated[
-        int,
-        Field(ge=0, lt=2**64),
-        WrapValidator(
-            lambda value, handler: value
-            if isinstance(value, Association)
-            else handler(value)
-        ),
-    ]
 
     def __init__(self, entity: "Entity"):
         super(Association, self).__init__(entity)
@@ -77,10 +67,7 @@ class Association(weakref.ref):
             " '{}'".format(self().id) if self().id is not None else "",
             id(self()),
         )
+    
 
-    # @classmethod
-    # def __get_pydantic_core_schema__(cls, _):
-    #     return core_schema.int_schema()
-
-
+# If something is labeled as an Association, pass the value through when structuring
 draftsman_converters.register_structure_hook(Association, lambda v, _: v)

@@ -16,10 +16,10 @@ from pydantic_core import core_schema
 
 class Direction(IntEnum):
     """
-    Factorio direction enum. Encompasses all 8 cardinal directions and diagonals
-    in the range [0, 7] where north is 0 and increments clockwise. Provides a
-    number of convenience constants and functions over working with a raw int
-    value.
+    Factorio direction enum. Encompasses all 16 cardinal directions, diagonals,
+    and half-dagonals in the range [0, 15] where north is 0 and increments 
+    clockwise. Provides a number of convenience constants and functions over 
+    working with a raw int value.
 
     * ``NORTH     (0)`` (Default)
     * ``NORTHEAST (1)``
@@ -61,7 +61,7 @@ class Direction(IntEnum):
         """
         return Direction((self.value + 8) % 16)
 
-    def next(self, four_way: bool = True) -> "Direction":
+    def next(self, eight_way: bool = False) -> "Direction":
         """
         Returns the direction one unit clockwise from the current direction.
         ``eight_way`` determines whether or not to treat the next-most direction
@@ -70,18 +70,18 @@ class Direction(IntEnum):
         .. doctest:: [constants]
 
             >>> Direction.NORTH.next(eight_way=False)
-            <Direction.EAST: 2>
+            <Direction.EAST: 4>
             >>> Direction.NORTH.next(eight_way=True)
-            <Direction.NORTHEAST: 1>
+            <Direction.NORTHEAST: 2>
 
-        :param eight_way: Whether to increment the current direction by 1 or 2
+        :param eight_way: Whether to increment the current direction by 2 or 4
             units.
 
         :returns: A new :py:class:`Direction` object.
         """
-        return Direction((self.value + (4 if four_way else 1)) % 16)
+        return Direction((self.value + (4 if not eight_way else 2)) % 16)
 
-    def previous(self, four_way: bool = True) -> "Direction":
+    def previous(self, eight_way: bool = False) -> "Direction":
         """
         Returns the direction one unit counter-clockwise from the current
         direction. ``eight_way`` determines whether or not to treat the
@@ -100,11 +100,12 @@ class Direction(IntEnum):
 
         :returns: A new :py:class:`Direction` object.
         """
-        return Direction((self.value - (4 if four_way else 1)) % 16)
+        return Direction((self.value - (4 if not eight_way else 2)) % 16)
 
     def to_4_way(self) -> "Direction":
         """
-        Floor this direction to the closest 4-way direction below its current.
+        Floor this direction to the closest 4-way direction below its current
+        value.
         """
         return Direction(int(self / 4) * 4)
 
@@ -195,6 +196,24 @@ class Direction(IntEnum):
         return mapping[self]
 
 
+FOUR_WAY_DIRECTIONS = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST}
+
+EIGHT_WAY_DIRECTIONS = {
+    Direction.NORTH, 
+    Direction.NORTHEAST,
+    Direction.EAST, 
+    Direction.SOUTHEAST,
+    Direction.SOUTH, 
+    Direction.SOUTHWEST,
+    Direction.WEST,
+    Direction.NORTHWEST
+}
+
+SIXTEEN_WAY_DIRECTIONS = {
+    direction for direction in Direction
+}
+
+
 class LegacyDirection(IntEnum):
     """
     Factorio direction enum. Encompasses all 8 cardinal directions and diagonals
@@ -232,7 +251,7 @@ class LegacyDirection(IntEnum):
 
         :returns: A new :py:class:`Direction`.
         """
-        return Direction((self.value + 4) % 8)
+        return LegacyDirection((self.value + 4) % 8)
 
     def next(self, eight_way: bool = False) -> "LegacyDirection":
         """
@@ -252,7 +271,7 @@ class LegacyDirection(IntEnum):
 
         :returns: A new :py:class:`Direction` object.
         """
-        return Direction((self.value + 1 + (not eight_way)) % 8)
+        return LegacyDirection((self.value + 1 + (not eight_way)) % 8)
 
     def previous(self, eight_way: bool = False) -> "LegacyDirection":
         """
@@ -273,7 +292,7 @@ class LegacyDirection(IntEnum):
 
         :returns: A new :py:class:`Direction` object.
         """
-        return Direction((self.value - 1 - (not eight_way)) % 8)
+        return LegacyDirection((self.value - 1 - (not eight_way)) % 8)
 
     def to_orientation(self) -> "Orientation":
         """
@@ -897,3 +916,57 @@ class ValidationMode(Enum):
                 other.name
             )
         return NotImplemented
+
+
+class Inventory(IntEnum):
+    artillery_turret_ammo = 1
+    artillery_wagon_ammo = 1
+    assembling_machine_dump = 7
+    assembling_machine_input = 2
+    assembling_machine_modules = 4
+    assembling_machine_output = 3
+    beacon_modules = 1
+    burnt_result = 6
+    car_ammo = 3
+    car_trunk = 2
+    cargo_landing_pad_main = 1
+    cargo_landing_pad_trash = 2
+    cargo_unit = 1
+    cargo_wagon = 1
+    character_ammo = 4
+    character_armor = 5
+    character_corpse = 1
+    character_guns = 3
+    character_main = 1
+    character_trash = 8
+    character_vehicle = 7
+    chest = 1
+    editor_ammo = 4
+    editor_armor = 5
+    editor_guns = 3
+    editor_main = 1
+    fuel = 1
+    furnace_modules = 4
+    furnace_result = 3
+    furnace_source = 2
+    god_main = 2
+    hub_main = 1
+    hub_trash = 2
+    item_main = 1
+    lab_input = 2
+    lab_modules = 3
+    logistic_container_trash = 2
+    mining_drill_modules = 2
+    roboport_material = 2
+    roboport_robot = 1
+    robot_cargo = 1
+    robot_repair = 2
+    rocket_silo_input = 2
+    rocket_silo_modules = 4
+    rocket_silo_output = 3
+    rocket_silo_rocket = 9
+    rocket_silo_trash = 11
+    spider_ammo = 3
+    spider_trash = 4
+    spider_trunk = 2
+    turret_ammo = 1

@@ -166,12 +166,7 @@ class TestWall:
 
         # Import from incorrect dictionary
         with pytest.raises(DataFormatError):
-            wall = Wall.from_dict(
-                {
-                    "name": "stone-wall",
-                    "tags": "incorrect"
-                }
-            )
+            wall = Wall.from_dict({"name": "stone-wall", "tags": "incorrect"})
 
         # =================
         # Strict validation
@@ -243,12 +238,7 @@ class TestWall:
 
         # Import from incorrect dictionary
         with pytest.raises(DataFormatError):
-            wall = Wall.from_dict(
-                {
-                    "name": "stone-wall",
-                    "tags": "incorrect"
-                }
-            )
+            wall = Wall.from_dict({"name": "stone-wall", "tags": "incorrect"})
 
         # ===================
         # Pedantic validation
@@ -311,12 +301,7 @@ class TestWall:
 
         # Import from incorrect dictionary
         with pytest.raises(DataFormatError):
-            wall = Wall.from_dict(
-                {
-                    "name": "stone-wall",
-                    "tags": "incorrect"
-                }
-            )
+            wall = Wall.from_dict({"name": "stone-wall", "tags": "incorrect"})
 
     def test_versioning(self):
         d_1_0 = {
@@ -353,7 +338,7 @@ class TestWall:
                 "circuit_read_gate": True,
                 "output_signal": {
                     "name": "signal-B",
-                    "quality": "normal", 
+                    "quality": "normal",
                     "type": "virtual",
                 },
             },
@@ -518,7 +503,9 @@ class TestWall:
         # Unknown dict
         with pytest.warns(UnknownSignalWarning):
             wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-            assert wall.output_signal == AttrsSignalID(name="unknown-signal", type="virtual")
+            assert wall.output_signal == AttrsSignalID(
+                name="unknown-signal", type="virtual"
+            )
 
         # Incorrect Type
         wall.output_signal = DataFormatError
@@ -553,7 +540,9 @@ class TestWall:
         # Unknown dict
         with pytest.warns(UnknownSignalWarning):
             wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-            assert wall.output_signal == AttrsSignalID(name="unknown-signal", type="virtual")
+            assert wall.output_signal == AttrsSignalID(
+                name="unknown-signal", type="virtual"
+            )
 
         # Incorrect Type
         with pytest.raises(DataFormatError):
@@ -588,7 +577,9 @@ class TestWall:
         # Unknown dict
         with pytest.warns(UnknownSignalWarning):
             wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-            assert wall.output_signal == AttrsSignalID(name="unknown-signal", type="virtual")
+            assert wall.output_signal == AttrsSignalID(
+                name="unknown-signal", type="virtual"
+            )
 
         # Incorrect Type
         with pytest.raises(DataFormatError):
@@ -623,7 +614,9 @@ class TestWall:
         # Unknown dict
         with pytest.warns(UnknownSignalWarning):
             wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-            assert wall.output_signal == AttrsSignalID(name="unknown-signal", type="virtual")
+            assert wall.output_signal == AttrsSignalID(
+                name="unknown-signal", type="virtual"
+            )
 
         # Incorrect Type
         with pytest.raises(DataFormatError):
@@ -661,10 +654,9 @@ class TestWall:
         wall3 = Wall("stone-wall", enable_disable=True, output_signal="signal-A")
         wall1.merge(wall3)
 
-        assert wall1.tags == {} # Overwritten by blank
+        assert wall1.tags == {}  # Overwritten by blank
         assert wall1.enable_disable == True
         assert wall1.output_signal == AttrsSignalID(name="signal-A", type="virtual")
-        
 
     def test_eq(self):
         wall1 = Wall("stone-wall")

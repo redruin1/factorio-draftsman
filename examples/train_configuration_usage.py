@@ -2,56 +2,77 @@
 
 from draftsman.blueprintable import Blueprint
 from draftsman.classes.train_configuration import TrainConfiguration
-from draftsman.constants import Direction
+from draftsman.constants import Direction, Inventory
 from draftsman.data import mods, entities
 
 
 def main():
     blueprint = Blueprint()
-
-    # fmt: off
     
     # In order to specify a specific train format, we construct a helper object
     # called `TrainConfiguration`
     # The notable thing about TrainConfiguration is that you can specify your
     # overall train format in a variant of the common community-accepted syntax:
-    config = TrainConfiguration("1-4")  # 1 Locomotive followed by 4 cargo wagons
-    config = TrainConfiguration("1-4-0")  # Same as above
-    config = TrainConfiguration("1-4-1")  # 1 Locomotive pointing forward, 4 cargo wagons, and 1 loco pointing backwards
-    config = TrainConfiguration("1<-4-1>")  # Same as above, but explicit loco direction
-    config = TrainConfiguration("1<-4-1<")  # Same as above, but both locomotives are pointing forward
-    config = TrainConfiguration("1<-4C-1<")  # Same as above, but cargo wagons are explicitly specified
-    config = TrainConfiguration("1<-4F-1<")  # Same as above, but each cargo wagon is instead a fluid wagon
-    config = TrainConfiguration("1<-4-<1", wagons="fluid")  # Same as above, converts all non-locomotive cars to cars of that type
-    config = TrainConfiguration("1-4-1", direction="forward")  # Specify that all locomotive should point forward regardless of order
-    config = TrainConfiguration("1-4-1-4-1")  # In this case all locomotives point "forward" when there's more than 2 locomotive cells
+
+    # 1 Locomotive followed by 4 cargo wagons
+    config = TrainConfiguration("1-4")  
+
+    # Same as above
+    config = TrainConfiguration("1-4-0")  
+    
+    # 1 Locomotive pointing forward, 4 cargo wagons, and 1 loco pointing backwards
+    config = TrainConfiguration("1-4-1")  
+
+    # Same as above, but explicit loco direction
+    config = TrainConfiguration("1<-4-1>")  
+
+    # Same as above, but both locomotives are pointing forward
+    config = TrainConfiguration("1<-4-1<")  
+
+    # Same as above, but cargo wagons are explicitly specified
+    config = TrainConfiguration("1<-4C-1<")  
+
+    # Same as above, but each cargo wagon is instead a fluid wagon
+    config = TrainConfiguration("1<-4F-1<")  
+
+    # Same as above, converts all non-locomotive cars to cars of that type
+    config = TrainConfiguration("1<-4-<1", wagons="fluid")  
+
+    # Specify that all locomotive should point forward regardless of order
+    config = TrainConfiguration("1-4-1", direction="forward")  
+
+    # In this case all locomotives point "forward" when there's more than 2 locomotive cells
     # More specifically, "dual" direction is only used when there's only 2 locomotive blocks and they exist at the start and end
-    config = TrainConfiguration("<-4-<-4->")  # unless, of course, you manually specify
-    config = TrainConfiguration("<<<FFFCCCAAA<<<")  # Configurations can also be entirely explicit, no hyphens necessary
-    config = TrainConfiguration("<<<-FFFCCCAAA-<<<")  # hyphens can also be added just for clarity
+    config = TrainConfiguration("1-4-1-4-1")  
+
+    # Unless, of course, you manually specify their directions
+    config = TrainConfiguration("<-4-<-4->")  
+
+    # Configurations can also be entirely explicit, no hyphens necessary
+    config = TrainConfiguration("<<<FFFCCCAAA<<<")  
+
+    # Or you can add hyphens just for clarity
+    config = TrainConfiguration("<<<-FFFCCCAAA-<<<")  
     # C is for cargo wagons, F is for fluid wagons, A for artillery, and can be
     # specified in either upper or lowercase
 
-    # fmt: on
-
-    # With the syntax explained, let's create an final configuration, a dual-
-    # headed configuration with one of each wagon type
+    # With the syntax explained, let's create a final configuration: a dual-
+    # headed train with one of each wagon type
     config = TrainConfiguration("1-CFA-1")
 
     # `config` contains a list of rolling stock under the attribute `cars`:
     assert len(config.cars) == 5
 
     # The benefit of this is that you can customize any properties about the
-    # config before adding it to a blueprint. For example:
-    # Fuel the locomotive
+    # config even further before adding it to a blueprint. For example:
+    # Fuel the first locomotive
     config.cars[0].set_item_request("nuclear-fuel", 3)
     # Set cargo filters
-    # config.cars[1].set_inventory_filters(["iron-ore", "copper-ore", "stone", "coal"])
     config.cars[1].inventory_filters = ["iron-ore", "copper-ore", "stone", "coal"]
     # Set the modding tags for them
     config.cars[2].tags = {"some": "stuff"}
     # Even preload the artillery wagons on construction
-    config.cars[3].set_item_request("artillery-shell", 25)
+    config.cars[3].set_item_request("artillery-shell", 25, inventory=Inventory.artillery_wagon_ammo)
 
     # Cars are specified from the left of the right, so the 0th
     # car is the leftmost character in the string.
@@ -100,8 +121,8 @@ def main():
     if False:
         blueprint.add_train_at_station("2-4", ...)
         blueprint.add_train_at_position("2-4-2", ...)
-    # Doing this, you of course lose the added customization at the benefit of
-    # brevity.
+    # Doing this, you of course lose the added customization options at the 
+    # benefit of brevity.
 
     print(blueprint.to_string())
 
@@ -111,7 +132,7 @@ def main():
     # Let's check to see if the FactorioExtended mod is installed in draftsman,
     # and then upgrade our current train configuration to use the mk3 train
     # variants:
-    if "FactorioExtended-Plus-Transport" in mods.mod_list:  # pragma: no coverage
+    if "FactorioExtended-Plus-Transport" in mods.versions:  # pragma: no coverage
         assert "locomotive-mk3" in entities.locomotives
         assert "cargo-wagon-mk3" in entities.cargo_wagons
         assert "fluid-wagon-mk3" in entities.fluid_wagons

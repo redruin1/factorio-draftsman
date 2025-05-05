@@ -2,10 +2,11 @@
 
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import DoubleGridAlignedMixin, EightWayDirectionalMixin
+from draftsman.classes.mixins import DoubleGridAlignedMixin, DirectionalMixin
+from draftsman.classes.mixins.directional import _rotated_collision_sets
 from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
-from draftsman.utils import AABB, Rectangle, get_first
+from draftsman.constants import Direction, ValidationMode, EIGHT_WAY_DIRECTIONS
+from draftsman.utils import AABB, Rectangle, fix_incorrect_pre_init
 
 from draftsman.data.entities import legacy_straight_rails
 
@@ -13,38 +14,28 @@ import attrs
 from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
-# TODO: currently hardcoded just for straight rail
+
+# Manually specified collision sets
 eps = 0.001
 _vertical_collision = CollisionSet([AABB(-0.75, -1.0 + eps, 0.75, 1.0 - eps)])
 _horizontal_collision = _vertical_collision.rotate(4)
 _diagonal_collision = CollisionSet([Rectangle((-0.5, -0.5), 1.25, 1.40, 45)])
-_collision_set_rotation = {}
-_collision_set_rotation[Direction.NORTH] = _vertical_collision
-_collision_set_rotation[Direction.NORTHEAST] = _diagonal_collision.rotate(4)
-_collision_set_rotation[Direction.EAST] = _horizontal_collision
-_collision_set_rotation[Direction.SOUTHEAST] = _diagonal_collision.rotate(8)
-_collision_set_rotation[Direction.SOUTH] = _vertical_collision
-_collision_set_rotation[Direction.SOUTHWEST] = _diagonal_collision.rotate(-4)
-_collision_set_rotation[Direction.WEST] = _horizontal_collision
-_collision_set_rotation[Direction.NORTHWEST] = _diagonal_collision
 
-eps = 0.001
-_vertical_collision = CollisionSet([AABB(-0.75, -1.0 + eps, 0.75, 1.0 - eps)])
-_horizontal_collision = _vertical_collision.rotate(4)
-_diagonal_collision = CollisionSet([Rectangle((-0.5, -0.5), 1.25, 1.40, 45)])
-_collision_set_rotation = {}
-_collision_set_rotation[Direction.NORTH] = _vertical_collision
-_collision_set_rotation[Direction.NORTHEAST] = _diagonal_collision.rotate(4)
-_collision_set_rotation[Direction.EAST] = _horizontal_collision
-_collision_set_rotation[Direction.SOUTHEAST] = _diagonal_collision.rotate(8)
-_collision_set_rotation[Direction.SOUTH] = _vertical_collision
-_collision_set_rotation[Direction.SOUTHWEST] = _diagonal_collision.rotate(-4)
-_collision_set_rotation[Direction.WEST] = _horizontal_collision
-_collision_set_rotation[Direction.NORTHWEST] = _diagonal_collision
+_rotated_collision_sets["legacy-straight-rail"] = {
+    Direction.NORTH: _vertical_collision,
+    Direction.NORTHEAST: _diagonal_collision.rotate(4),
+    Direction.EAST: _horizontal_collision,
+    Direction.SOUTHEAST: _diagonal_collision.rotate(8),
+    Direction.SOUTH: _vertical_collision,
+    Direction.SOUTHWEST: _diagonal_collision.rotate(-4),
+    Direction.WEST: _horizontal_collision,
+    Direction.NORTHWEST: _diagonal_collision
+}
 
 
+@fix_incorrect_pre_init
 @attrs.define
-class LegacyStraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
+class LegacyStraightRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     """
     An old, 1.0 straight rail entity.
     """
@@ -105,14 +96,8 @@ class LegacyStraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entit
     # =========================================================================
 
     @property
-    def static_collision_set(self) -> Optional[CollisionSet]:
-        return _collision_set_rotation.get(Direction.NORTH, None)
-
-    # =========================================================================
-
-    @property
-    def collision_set(self) -> Optional[CollisionSet]:
-        return _collision_set_rotation.get(self.direction, None)
+    def valid_directions(self) -> set[Direction]:
+        return EIGHT_WAY_DIRECTIONS
 
     # =========================================================================
 

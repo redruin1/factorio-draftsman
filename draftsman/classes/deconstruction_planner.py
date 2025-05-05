@@ -46,18 +46,17 @@
 
 from draftsman import __factorio_version_info__
 from draftsman.classes.blueprintable import Blueprintable
-from draftsman.classes.exportable import Exportable, attempt_and_reissue
+from draftsman.classes.exportable import Exportable
 from draftsman.constants import FilterMode, TileSelectionMode, ValidationMode
 from draftsman.data import items
 from draftsman.error import DataFormatError
 from draftsman.warning import IndexWarning, UnknownEntityWarning, UnknownTileWarning
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    Icon,
     DraftsmanBaseModel,
     # EntityFilter,
     # TileFilter,
-    normalize_icons,
+    # normalize_icons,
     uint8,
     uint16,
     uint64,

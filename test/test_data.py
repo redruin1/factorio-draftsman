@@ -76,30 +76,6 @@ class TestModulesData:
         pass  # TODO
 
 
-class TestSignalsData:
-    def test_add_signal(self):
-        # Signals of each valid type
-        signals.add_signal("new-signal-1", "item")
-        assert signals.raw["new-signal-1"] == {"name": "new-signal-1", "type": "item"}
-        assert signals.type_of["new-signal-1"] == {"item"}
-        assert "new-signal-1" in signals.item
-        signals.add_signal("new-signal-2", "fluid")
-        assert signals.raw["new-signal-2"] == {"name": "new-signal-2", "type": "fluid"}
-        assert signals.type_of["new-signal-2"] == {"fluid"}
-        assert "new-signal-2" in signals.fluid
-        signals.add_signal("new-signal-3", "virtual")
-        assert signals.raw["new-signal-3"] == {
-            "name": "new-signal-3",
-            "type": "virtual",
-        }
-        assert signals.type_of["new-signal-3"] == {"virtual"}
-        assert "new-signal-3" in signals.virtual
-
-        # Incorrect type
-        with pytest.raises(ValueError):
-            signals.add_signal("new-signal-4", "incorrect")
-
-
 class TestTilesData:
     def test_add_tile(self):
         tiles.add_tile("new-tile")

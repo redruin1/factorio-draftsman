@@ -1,4 +1,4 @@
-# rail_planner_usage.py
+# legacy_rail_planner_usage.py
 
 """
 Illustation of how to use the RailPlanner class. It is a child class of Group,

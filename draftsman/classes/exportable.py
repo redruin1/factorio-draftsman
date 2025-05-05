@@ -1,18 +1,18 @@
 # exportable.py
 from draftsman import __factorio_version_info__
 from draftsman.constants import ValidationMode
+from draftsman.error import DataFormatError
 from draftsman.serialization import (
     draftsman_converters,
     make_unstructure_function_from_schema,
 )
 from draftsman.utils import dict_merge
-
-from draftsman.error import DataFormatError
-from draftsman import validators
+from draftsman.validators import instance_of
 from draftsman.warning import UnknownKeywordWarning
 
+from draftsman.data import mods
+
 import attrs
-from attr._make import _CountingAttr
 import cattrs
 from cattrs.gen._shared import find_structure_handler
 
@@ -26,172 +26,172 @@ import warnings
 import pprint  # TODO: think about
 
 
-def convert_to_countingattr(attr):
-    """
-    Convert an `Attribute` instance to an equivalent `_CountingAttr` instance.
-    """
-    return attrs.field(
-        **{
-            slot: getattr(attr, slot)
-            for slot in attr.__slots__
-            if slot not in {"name", "eq_key", "order_key", "inherited"}
-        }
-    )
+# def convert_to_countingattr(attr):
+#     """
+#     Convert an `Attribute` instance to an equivalent `_CountingAttr` instance.
+#     """
+#     return attrs.field(
+#         **{
+#             slot: getattr(attr, slot)
+#             for slot in attr.__slots__
+#             if slot not in {"name", "eq_key", "order_key", "inherited"}
+#         }
+#     )
 
 
-def custom_define(field_order: list[str], **kwargs):
-    import inspect
+# def custom_define(field_order: list[str], **kwargs):
+#     import inspect
 
-    @wraps(attrs.define)
-    def wrapper(cls):
-        # Pre-attrs definition
-        these = {}
-        for field_name in field_order:
-            field = getattr(cls, field_name, attrs.field())
+#     @wraps(attrs.define)
+#     def wrapper(cls):
+#         # Pre-attrs definition
+#         these = {}
+#         for field_name in field_order:
+#             field = getattr(cls, field_name, attrs.field())
 
-            # Grabbing fields from already `@define`d classes return memberdescriptors
-            if inspect.ismemberdescriptor(field):
-                # If so, grab it using attrs plumbing and convert it to _CountingAttr
-                field = getattr(attrs.fields(cls), field_name)
-                field = convert_to_countingattr(field)
-            # If it's not a _CountingAttr, then it must be the default value
-            elif not isinstance(field, _CountingAttr):
-                field = attrs.field(default=field)
+#             # Grabbing fields from already `@define`d classes return memberdescriptors
+#             if inspect.ismemberdescriptor(field):
+#                 # If so, grab it using attrs plumbing and convert it to _CountingAttr
+#                 field = getattr(attrs.fields(cls), field_name)
+#                 field = convert_to_countingattr(field)
+#             # If it's not a _CountingAttr, then it must be the default value
+#             elif not isinstance(field, _CountingAttr):
+#                 field = attrs.field(default=field)
 
-            these[field_name] = field
+#             these[field_name] = field
 
-        # # Post-attrs definition
-        # original_init = res.__init__
+#         # # Post-attrs definition
+#         # original_init = res.__init__
 
-        # @wraps(original_init)
-        # def new_init(*args, **kwargs):
-        #     kwargs.pop("entity_number", None)
-        #     original_init(*args, **kwargs)
+#         # @wraps(original_init)
+#         # def new_init(*args, **kwargs):
+#         #     kwargs.pop("entity_number", None)
+#         #     original_init(*args, **kwargs)
 
-        # cls.__init__ = new_init
+#         # cls.__init__ = new_init
 
-        return attrs.define(cls, these=these, **kwargs)
+#         return attrs.define(cls, these=these, **kwargs)
 
-    return wrapper
-
-
-def attempt_and_reissue(
-    object: Any, format_model: Any, target: Any, name: str, value: Any, **kwargs
-):
-    """
-    Helper function that normalizes assignment validation
-    """
-    context = {
-        "mode": object.validate_assignment,
-        "object": object,
-        "warning_list": [],
-        "assignment": True,
-        "environment_version": __factorio_version_info__,
-        **kwargs,
-    }
-    if object.validate_assignment == ValidationMode.NONE:
-        context["construction"] = True
-    try:
-        result = format_model.__pydantic_validator__.validate_assignment(
-            target,
-            name,
-            value,
-            strict=False,  # TODO: disallow any weird string -> int / string -> bool conversions
-            context=context,
-        )
-    except ValidationError as e:
-        raise DataFormatError(e) from None
-    for warning in context["warning_list"]:
-        warnings.warn(warning, stacklevel=4)
-    # result = result.model_dump(warnings=False)
-    # return result[name]
-    return getattr(result, name)
+#     return wrapper
 
 
-def apply_assignment(
-    object: "Exportable",
-    format_model: BaseModel,
-    target: BaseModel,
-    name: str,
-    value: Any,
-    **kwargs
-):
-    """
-    TODO
-    """
-    context = {
-        "mode": ValidationMode.NONE,
-        "object": object,
-        "warning_list": [],
-        "assignment": True,
-        "construction": True,
-        **kwargs,
-    }
-    # try:
-    result = format_model.__pydantic_validator__.validate_assignment(
-        target,
-        name,
-        value,
-        strict=True,  # TODO: disallow any weird string -> int / string -> bool conversions
-        context=context,
-    )
-    # except ValidationError as e:
-    #     raise DataFormatError(e) from None
-    # for warning in context["warning_list"]:
-    #     warnings.warn(warning, stacklevel=4)
-    return getattr(result, name)
+# def attempt_and_reissue(
+#     object: Any, format_model: Any, target: Any, name: str, value: Any, **kwargs
+# ):
+#     """
+#     Helper function that normalizes assignment validation
+#     """
+#     context = {
+#         "mode": object.validate_assignment,
+#         "object": object,
+#         "warning_list": [],
+#         "assignment": True,
+#         "environment_version": __factorio_version_info__,
+#         **kwargs,
+#     }
+#     if object.validate_assignment == ValidationMode.NONE:
+#         context["construction"] = True
+#     try:
+#         result = format_model.__pydantic_validator__.validate_assignment(
+#             target,
+#             name,
+#             value,
+#             strict=False,  # TODO: disallow any weird string -> int / string -> bool conversions
+#             context=context,
+#         )
+#     except ValidationError as e:
+#         raise DataFormatError(e) from None
+#     for warning in context["warning_list"]:
+#         warnings.warn(warning, stacklevel=4)
+#     # result = result.model_dump(warnings=False)
+#     # return result[name]
+#     return getattr(result, name)
 
 
-def test_replace_me(
-    object: "Exportable",
-    format_model: BaseModel,
-    target: BaseModel,
-    name: str,
-    value: Any,
-    mode: ValidationMode,
-    **kwargs
-):
-    """
-    Attempts to coerce a input value to a particular Pydantic model format, and
-    run validation at the same time if requested by the caller. Utility function
-    to increase code reuse.
+# def apply_assignment(
+#     object: "Exportable",
+#     format_model: BaseModel,
+#     target: BaseModel,
+#     name: str,
+#     value: Any,
+#     **kwargs
+# ):
+#     """
+#     TODO
+#     """
+#     context = {
+#         "mode": ValidationMode.NONE,
+#         "object": object,
+#         "warning_list": [],
+#         "assignment": True,
+#         "construction": True,
+#         **kwargs,
+#     }
+#     # try:
+#     result = format_model.__pydantic_validator__.validate_assignment(
+#         target,
+#         name,
+#         value,
+#         strict=True,  # TODO: disallow any weird string -> int / string -> bool conversions
+#         context=context,
+#     )
+#     # except ValidationError as e:
+#     #     raise DataFormatError(e) from None
+#     # for warning in context["warning_list"]:
+#     #     warnings.warn(warning, stacklevel=4)
+#     return getattr(result, name)
 
-    The input value is expected to be in a standard JSON format, what you would
-    expect a regular input to look like. Any shorthand formats should be handled
-    *before* passing to this function.
 
-    If the passed in mode is `ValidationMode.NONE`, then this function attempts
-    to just coerce the input to a Pydantic BaseModel using the "construction"
-    key. Because using this key should generate no errors or warnings, the
-    original value will just be returned when it is indeterminate. Under any
-    other passed in `mode`, the validation suite is run corresponding to that
-    mode.
-    """
-    context = {
-        "mode": mode,
-        "object": object,
-        "warning_list": [],
-        "assignment": True,  # Do not revalidate the entire object; just this attr
-        "environment_version": __factorio_version_info__,
-        **kwargs,
-    }
-    # Functions check for presence, not value; so we only add it when necessary
-    if mode is ValidationMode.NONE:
-        context["construction"] = True
+# def test_replace_me(
+#     object: "Exportable",
+#     format_model: BaseModel,
+#     target: BaseModel,
+#     name: str,
+#     value: Any,
+#     mode: ValidationMode,
+#     **kwargs
+# ):
+#     """
+#     Attempts to coerce a input value to a particular Pydantic model format, and
+#     run validation at the same time if requested by the caller. Utility function
+#     to increase code reuse.
 
-    try:
-        result = format_model.__pydantic_validator__.validate_assignment(
-            target,
-            name,
-            value,
-            strict=True,  # TODO: disallow any weird str to int or str to bool conversions
-            context=context,
-        )
-    except ValidationError as e:
-        raise DataFormatError(e) from None
-    for warning in context["warning_list"]:
-        warnings.warn(warning, stacklevel=4)
-    target[name] = getattr(result, name)
+#     The input value is expected to be in a standard JSON format, what you would
+#     expect a regular input to look like. Any shorthand formats should be handled
+#     *before* passing to this function.
+
+#     If the passed in mode is `ValidationMode.NONE`, then this function attempts
+#     to just coerce the input to a Pydantic BaseModel using the "construction"
+#     key. Because using this key should generate no errors or warnings, the
+#     original value will just be returned when it is indeterminate. Under any
+#     other passed in `mode`, the validation suite is run corresponding to that
+#     mode.
+#     """
+#     context = {
+#         "mode": mode,
+#         "object": object,
+#         "warning_list": [],
+#         "assignment": True,  # Do not revalidate the entire object; just this attr
+#         "environment_version": __factorio_version_info__,
+#         **kwargs,
+#     }
+#     # Functions check for presence, not value; so we only add it when necessary
+#     if mode is ValidationMode.NONE:
+#         context["construction"] = True
+
+#     try:
+#         result = format_model.__pydantic_validator__.validate_assignment(
+#             target,
+#             name,
+#             value,
+#             strict=True,  # TODO: disallow any weird str to int or str to bool conversions
+#             context=context,
+#         )
+#     except ValidationError as e:
+#         raise DataFormatError(e) from None
+#     for warning in context["warning_list"]:
+#         warnings.warn(warning, stacklevel=4)
+#     target[name] = getattr(result, name)
 
 
 class ValidationResult:
@@ -308,7 +308,7 @@ class Exportable:
     validate_assignment: ValidationMode = attrs.field(
         default=ValidationMode.STRICT,
         converter=ValidationMode,
-        validator=validators.instance_of(ValidationMode),
+        validator=instance_of(ValidationMode),
         repr=False,
         eq=False,
         kw_only=True,
@@ -453,7 +453,7 @@ class Exportable:
     def from_dict(
         cls,
         d: dict,
-        version: tuple[int, ...] = __factorio_version_info__,
+        version: Optional[tuple[int, ...]] = None,
         validation: ValidationMode = ValidationMode.NONE,
     ) -> Self:
         """
@@ -465,6 +465,9 @@ class Exportable:
         # print(
         #     inspect.getsource(draftsman_converters.get_version(version).get_converter().get_structure_hook(cls))
         # )
+        if version is None:
+            version = __factorio_version_info__ # TODO: replace with `mods.versions["base"]`
+            
         version_info = draftsman_converters.get_version(version)
         return version_info.get_converter().structure(
             copy.deepcopy(d), cls
@@ -478,19 +481,21 @@ class Exportable:
 
     def to_dict(
         self,
-        version: tuple[int, ...] = __factorio_version_info__,
+        version: Optional[tuple[int, ...]] = None,
         exclude_none: bool = True,
         exclude_defaults: bool = True,
     ) -> dict:
         """
         TODO
         """
+        if version is None:
+            version = mods.versions["base"]
         version_info = draftsman_converters.get_version(version)
         converter = version_info.get_converter(exclude_none, exclude_defaults)
         # print(converter)
         # print(converter.omit_if_default)
-        import inspect
-        print(inspect.getsource(converter.get_unstructure_hook(type(self))))
+        # import inspect
+        # print(inspect.getsource(converter.get_unstructure_hook(type(self))))
         # print(getattr(attrs.fields(type(self)), "always_on").default)
         # defaults = {field.name: field.default for field in attrs.fields(type(self))}
         # print(defaults)
@@ -603,7 +608,7 @@ def make_exportable_structure_factory_func(
         def structure_hook(input_dict: dict, _: type):
             res = {}
             for dict_loc, attr_name in structure_dict.items():
-                print(dict_loc, attr_name)
+                # print(dict_loc, attr_name)
                 # if not hasattr(class_attrs, attr_name):
                 #     continue
                 if attr_name is None:
@@ -614,7 +619,7 @@ def make_exportable_structure_factory_func(
                 attr_name = attr.alias if attr.alias != attr.name else attr.name
 
                 value = try_pop_location(input_dict, dict_loc)
-                print(value)
+                # print(value)
                 if value is None:
                     continue
                 handler = find_structure_handler(attr, attr.type, converter)
@@ -681,8 +686,8 @@ def make_exportable_unstructure_factory_func(
         # excluded_keys = version_data.get_excluded_keys(cls)
 
         def unstructure_hook(inst):
-            import inspect
-            print(inspect.getsource(parent_hook))
+            # import inspect
+            # print(inspect.getsource(parent_hook))
             # TODO: should be wrapped in a try block with a better error message
             res = parent_hook(inst)
             # We want to preserve round-trip consistency, even with keys we

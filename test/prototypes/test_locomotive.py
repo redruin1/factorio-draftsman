@@ -37,7 +37,9 @@ class TestLocomotive:
             Locomotive("locomotive", color="also wrong").validate().reissue_all()
 
     def test_color(self):
-        assert Locomotive("locomotive").color == AttrsColor(234/255, 17/255, 0, 127/255)
+        assert Locomotive("locomotive").color == AttrsColor(
+            234 / 255, 17 / 255, 0, 127 / 255
+        )
 
     def test_mergable_with(self):
         train1 = Locomotive("locomotive")

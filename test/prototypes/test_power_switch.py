@@ -44,7 +44,7 @@ class TestPowerSwitch:
 
         power_switch.switch_state = True
         assert power_switch.switch_state == True
-        
+
         with pytest.raises(DataFormatError):
             power_switch.switch_state = TypeError
 

@@ -174,9 +174,15 @@ class TestUpgradePlanner:
         # Multiple known
         upgrade_planner.icons = ["signal-A", "signal-B", "signal-C"]
         assert upgrade_planner.icons == [
-            AttrsIcon(**{"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}),
-            AttrsIcon(**{"index": 2, "signal": {"name": "signal-B", "type": "virtual"}}),
-            AttrsIcon(**{"index": 3, "signal": {"name": "signal-C", "type": "virtual"}}),
+            AttrsIcon(
+                **{"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}
+            ),
+            AttrsIcon(
+                **{"index": 2, "signal": {"name": "signal-B", "type": "virtual"}}
+            ),
+            AttrsIcon(
+                **{"index": 3, "signal": {"name": "signal-C", "type": "virtual"}}
+            ),
         ]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
@@ -241,13 +247,13 @@ class TestUpgradePlanner:
             AttrsMapper(
                 index=0,
                 from_={"name": "transport-belt", "type": "entity"},
-                to={"name": "fast-transport-belt", "type": "entity"}
+                to={"name": "fast-transport-belt", "type": "entity"},
             ),
             AttrsMapper(
                 index=1,
                 from_={"name": "transport-belt", "type": "entity"},
-                to={"name": "express-transport-belt", "type": "entity"}
-            )
+                to={"name": "express-transport-belt", "type": "entity"},
+            ),
         ]
 
         # Test replace
@@ -256,13 +262,13 @@ class TestUpgradePlanner:
             AttrsMapper(
                 index=0,
                 from_={"name": "transport-belt", "type": "entity"},
-                to={"name": "fast-transport-belt", "type": "entity"}
+                to={"name": "fast-transport-belt", "type": "entity"},
             ),
             AttrsMapper(
                 index=1,
                 from_={"name": "transport-belt", "type": "entity"},
-                to={"name": "express-transport-belt", "type": "entity"}
-            )
+                to={"name": "express-transport-belt", "type": "entity"},
+            ),
         ]
 
         # None as argument values at specified index
@@ -271,13 +277,9 @@ class TestUpgradePlanner:
             AttrsMapper(
                 index=0,
                 from_={"name": "transport-belt", "type": "entity"},
-                to={"name": "fast-transport-belt", "type": "entity"}
+                to={"name": "fast-transport-belt", "type": "entity"},
             ),
-            AttrsMapper(
-                index=1,
-                from_=None,
-                to=None
-            )
+            AttrsMapper(index=1, from_=None, to=None),
         ]
         assert upgrade_planner.to_dict()["upgrade_planner"]["settings"]["mappers"] == [
             {
@@ -291,7 +293,7 @@ class TestUpgradePlanner:
         ]
 
         # Errors
-        with pytest.raises(InvalidMapperError):
+        with pytest.raises(DataFormatError):
             upgrade_planner.set_mapping(TypeError, TypeError, TypeError)
 
         # =====================================================================
@@ -300,50 +302,28 @@ class TestUpgradePlanner:
 
         # Normal
         upgrade_planner.remove_mapping("transport-belt", "fast-transport-belt", 0)
-        assert upgrade_planner.mappers == [
-            AttrsMapper(
-                index=1,
-                from_=None,
-                to=None
-            )
-        ]
+        assert upgrade_planner.mappers == [AttrsMapper(index=1, from_=None, to=None)]
 
         # Remove missing at index
         with pytest.raises(ValueError):
             upgrade_planner.remove_mapping("transport-belt", "fast-transport-belt", 0)
-        assert upgrade_planner.mappers == [
-            AttrsMapper(
-                index=1,
-                from_=None,
-                to=None
-            )
-        ]
+        assert upgrade_planner.mappers == [AttrsMapper(index=1, from_=None, to=None)]
 
         # Remove missing at any index
         with pytest.raises(ValueError):
             upgrade_planner.remove_mapping("transport-belt", "fast-transport-belt")
-        assert upgrade_planner.mappers == [
-            AttrsMapper(
-                index=1,
-                from_=None,
-                to=None
-            )
-        ]
+        assert upgrade_planner.mappers == [AttrsMapper(index=1, from_=None, to=None)]
 
         # Remove first occurence of multiple
         upgrade_planner.set_mapping("inserter", "fast-inserter", 2)
         upgrade_planner.set_mapping("inserter", "fast-inserter", 3)
         upgrade_planner.remove_mapping("inserter", "fast-inserter")
         assert upgrade_planner.mappers == [
-            AttrsMapper(
-                index=1,
-                from_=None,
-                to=None
-            ),
+            AttrsMapper(index=1, from_=None, to=None),
             AttrsMapper(
                 index=3,
                 from_={"name": "inserter", "type": "entity"},
-                to={"name": "fast-inserter", "type": "entity"}
+                to={"name": "fast-inserter", "type": "entity"},
             ),
         ]
 
@@ -428,9 +408,7 @@ class TestUpgradePlanner:
 
         # Errors
         with pytest.raises(DataFormatError):
-            upgrade_planner.mappers = [
-                {"from": TypeError, "to": TypeError, "index": 1}
-            ]
+            upgrade_planner.mappers = [{"from": TypeError, "to": TypeError, "index": 1}]
 
         with pytest.raises(DataFormatError):
             upgrade_planner.mappers = ("incorrect", "incorrect")
@@ -443,26 +421,14 @@ class TestUpgradePlanner:
             (None, "assembling-machine-3"),
         ]
         assert upgrade_planner.mappers == [
-            AttrsMapper(
-                index=0,
-                from_="assembling-machine-3",
-                to=None
-            ),
-            AttrsMapper(
-                index=1,
-                from_=None,
-                to="assembling-machine-3"
-            ),
+            AttrsMapper(index=0, from_="assembling-machine-3", to=None),
+            AttrsMapper(index=1, from_=None, to="assembling-machine-3"),
         ]
 
         # Test items
         upgrade_planner.mappers = [("speed-module", "speed-module-3")]
         assert upgrade_planner.mappers == [
-            AttrsMapper(
-                index=0,
-                from_="speed-module",
-                to="speed-module-3"
-            )
+            AttrsMapper(index=0, from_="speed-module", to="speed-module-3")
         ]
 
         # Test validation failure

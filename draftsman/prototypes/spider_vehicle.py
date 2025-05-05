@@ -1,7 +1,6 @@
 # spider_vehicle.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     VehicleMixin,
     EquipmentGridMixin,
@@ -13,9 +12,9 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Orientation, ValidationMode
-from draftsman.serialization import instance_of
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import AttrsColor
-from draftsman.utils import Vector, PrimitiveVector, get_first
+from draftsman.validators import instance_of
 
 from draftsman.data.entities import spider_vehicles
 
@@ -136,7 +135,7 @@ class SpiderVehicle(
 
     # TODO: just want to evolve the default
     color: Optional[AttrsColor] = attrs.field(
-        default=AttrsColor(r=255/255, g=127/255, b=0.0, a=127/255),
+        factory=lambda: AttrsColor(r=255 / 255, g=127 / 255, b=0.0, a=127 / 255),
         converter=AttrsColor.converter,
         validator=instance_of(Optional[AttrsColor]),
     )
@@ -168,50 +167,82 @@ class SpiderVehicle(
 
     # =========================================================================
 
-    @property
-    def auto_target_without_gunner(self) -> Optional[bool]:
-        """
-        TODO
-        """
-        return self.automatic_targeting_parameters.auto_target_without_gunner
+    auto_target_without_gunner: bool = attrs.field(
+        default=True, validator=instance_of(bool)
+    )
+    """
+    Whether or not this spidertron should automatically target enemies when
+    there is no passenger in the vehicle.
+    """
 
-    @auto_target_without_gunner.setter
-    def auto_target_without_gunner(self, value: Optional[bool]) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.AutoTargetParameters,
-                self.automatic_targeting_parameters,
-                "auto_target_without_gunner",
-                value,
-            )
-            self.automatic_targeting_parameters.auto_target_without_gunner = result
-        else:
-            self.automatic_targeting_parameters.auto_target_without_gunner = value
+    # @property
+    # def auto_target_without_gunner(self) -> Optional[bool]:
+    #     """
+    #     TODO
+    #     """
+    #     return self.automatic_targeting_parameters.auto_target_without_gunner
+
+    # @auto_target_without_gunner.setter
+    # def auto_target_without_gunner(self, value: Optional[bool]) -> None:
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.AutoTargetParameters,
+    #             self.automatic_targeting_parameters,
+    #             "auto_target_without_gunner",
+    #             value,
+    #         )
+    #         self.automatic_targeting_parameters.auto_target_without_gunner = result
+    #     else:
+    #         self.automatic_targeting_parameters.auto_target_without_gunner = value
 
     # =========================================================================
 
-    @property
-    def auto_target_with_gunner(self) -> Optional[bool]:
-        """
-        TODO
-        """
-        return self.automatic_targeting_parameters.auto_target_with_gunner
+    auto_target_with_gunner: bool = attrs.field(
+        default=False, validator=instance_of(bool)
+    )
+    """
+    Whether or not this spidertron should automatically target enemies when
+    there is a passenger in the vehicle.
+    """
 
-    @auto_target_with_gunner.setter
-    def auto_target_with_gunner(self, value: Optional[bool]) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.AutoTargetParameters,
-                self.automatic_targeting_parameters,
-                "auto_target_with_gunner",
-                value,
-            )
-            self.automatic_targeting_parameters.auto_target_with_gunner = result
-        else:
-            self.automatic_targeting_parameters.auto_target_with_gunner = value
+    # @property
+    # def auto_target_with_gunner(self) -> Optional[bool]:
+    #     """
+    #     TODO
+    #     """
+    #     return self.automatic_targeting_parameters.auto_target_with_gunner
+
+    # @auto_target_with_gunner.setter
+    # def auto_target_with_gunner(self, value: Optional[bool]) -> None:
+    #     if self.validate_assignment:
+    #         result = attempt_and_reissue(
+    #             self,
+    #             type(self).Format.AutoTargetParameters,
+    #             self.automatic_targeting_parameters,
+    #             "auto_target_with_gunner",
+    #             value,
+    #         )
+    #         self.automatic_targeting_parameters.auto_target_with_gunner = result
+    #     else:
+    #         self.automatic_targeting_parameters.auto_target_with_gunner = value
 
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+draftsman_converters.add_schema(
+    {"$id": "factorio:entity:spider_vehicle"},
+    SpiderVehicle,
+    lambda fields: {
+        (
+            "automatic_targeting_parameters",
+            "auto_target_without_gunner",
+        ): fields.auto_target_without_gunner.name,
+        (
+            "automatic_targeting_parameters",
+            "auto_target_with_gunner",
+        ): fields.auto_target_with_gunner.name,
+    },
+)

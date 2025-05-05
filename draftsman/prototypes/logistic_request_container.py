@@ -1,7 +1,6 @@
 # logistic_request_container.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     RequestItemsMixin,
     LogisticModeOfOperationMixin,
@@ -125,22 +124,31 @@ class LogisticRequestContainer(
     #     )
 
 
+_parent_hook = (
+    draftsman_converters.get_version((1, 0))
+    .get_converter()
+    .get_structure_hook(LogisticRequestContainer)
+)
+
+
 def make_structure_hook(cls, converter: cattrs.Converter):
-    parent_hook = converter.get_structure_hook(LogisticRequestContainer)
+    # parent_hook = converter.get_structure_hook(LogisticRequestContainer)
 
     def structure_hook(d: dict, type: type):
         # print(d)
         if "request_filters" in d:
             # Populate with a single section
             filters = d["request_filters"]
-            d["request_filters"] = {"sections": [{"index": 0, "filters": filters}]}
+            d["request_filters"] = {"sections": [{"index": 1, "filters": filters}]}
         # TODO: what about request_from_buffers?
         # print(d)
-        return parent_hook(d, type)
+        return _parent_hook(d, type)
 
     return structure_hook
 
 
 draftsman_converters.get_version((1, 0)).register_structure_hook_factory(
-    lambda cls: isinstance(cls, LogisticRequestContainer), make_structure_hook
+    lambda cls: issubclass(cls, LogisticRequestContainer), make_structure_hook
 )
+
+# TODO: unstructure hook

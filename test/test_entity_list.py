@@ -64,8 +64,10 @@ class TestEntityList:
         with pytest.raises(ValueError):
             blueprint.entities.append(Container(), copy=False, merge=True)
 
-    def test_remove(self):
-        pass  # TODO
+    def test_extend(self):
+        blueprint = Blueprint()
+        blueprint.entities.extend([new_entity("wooden-chest")])
+        assert len(blueprint.entities) == 1
 
     def test_recursive_remove(self):
         # Test regular remove functionality
@@ -137,15 +139,14 @@ class TestEntityList:
 
     def test_union(self):
         blueprint1 = Blueprint()
-
         blueprint1.entities.append("wooden-chest")
 
         blueprint2 = Blueprint()
-
-        blueprint2.entities.append("inserter", direction=Direction.EAST, tile_position=(1, 0))
+        blueprint2.entities.append(
+            "inserter", direction=Direction.EAST, tile_position=(1, 0)
+        )
 
         blueprint3 = Blueprint()
-
         blueprint3.entities = blueprint1.entities | blueprint2.entities
 
         assert len(blueprint3.entities) == 2
@@ -157,11 +158,92 @@ class TestEntityList:
             },
             {
                 "name": "inserter",
-                "position": {"x": 1.5, "y": 0.5},
                 "direction": Direction.EAST,
+                "position": {"x": 1.5, "y": 0.5},
                 "entity_number": 2,
+            }
+        ]
+
+        # Test equivalent entities
+        blueprint2.entities.append("wooden-chest")
+
+        blueprint4 = Blueprint()
+        blueprint4.entities = blueprint1.entities | blueprint2.entities
+
+        assert len(blueprint4.entities) == 2
+        assert blueprint4.to_dict()["blueprint"]["entities"] == [
+            {
+                "name": "wooden-chest",
+                "position": {"x": 0.5, "y": 0.5},
+                "entity_number": 1,
+            },
+            {
+                "name": "inserter",
+                "direction": Direction.EAST,
+                "position": {"x": 1.5, "y": 0.5},
+                "entity_number": 2,
+            }
+        ]
+
+    def test_intersection(self):
+        blueprint1 = Blueprint()
+        blueprint1.entities.append("wooden-chest")
+
+        blueprint2 = Blueprint()
+        blueprint2.entities.append(
+            "inserter", direction=Direction.EAST, tile_position=(1, 0)
+        )
+
+        blueprint3 = Blueprint()
+        blueprint3.entities = blueprint1.entities & blueprint2.entities
+
+        assert len(blueprint3.entities) == 0
+        assert "entities" not in blueprint3.to_dict()["blueprint"]
+
+        # Test equivalent entities
+        blueprint2.entities.append("wooden-chest")
+
+        blueprint4 = Blueprint()
+        blueprint4.entities = blueprint1.entities & blueprint2.entities
+
+        assert len(blueprint4.entities) == 1
+        assert blueprint4.to_dict()["blueprint"]["entities"] == [
+            {
+                "name": "wooden-chest",
+                "position": {"x": 0.5, "y": 0.5},
+                "entity_number": 1,
+            }
+        ]
+
+    def test_difference(self):
+        blueprint1 = Blueprint()
+        blueprint1.entities.append("wooden-chest")
+
+        blueprint2 = Blueprint()
+        blueprint2.entities.append(
+            "inserter", direction=Direction.EAST, tile_position=(1, 0)
+        )
+
+        blueprint3 = Blueprint()
+        blueprint3.entities = blueprint1.entities - blueprint2.entities
+
+        assert len(blueprint3.entities) == 1
+        assert blueprint3.to_dict()["blueprint"]["entities"] == [
+            {
+                "name": "wooden-chest",
+                "position": {"x": 0.5, "y": 0.5},
+                "entity_number": 1,
             },
         ]
+
+        # Test equivalent entities
+        blueprint2.entities.append("wooden-chest")
+
+        blueprint4 = Blueprint()
+        blueprint4.entities = blueprint1.entities - blueprint2.entities
+
+        assert len(blueprint4.entities) == 0
+        assert "entities" not in blueprint4.to_dict()["blueprint"]
 
     def test_getitem(self):
         blueprint = Blueprint()

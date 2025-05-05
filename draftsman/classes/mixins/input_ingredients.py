@@ -9,77 +9,77 @@ from typing import Optional
 
 
 class InputIngredientsMixin:
-    class Format(BaseModel):
-        # @field_validator("items", check_fields=False)
-        # @classmethod
-        # def ensure_in_allowed_ingredients(
-        #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-        # ):
-        #     """
-        #     Warn the user if they set a fuel item that is disallowed for this
-        #     particular entity.
-        #     """
-        #     if not info.context or value is None:
-        #         return value
-        #     if info.context["mode"] <= ValidationMode.MINIMUM:
-        #         return value
+    # class Format(BaseModel):
+    #     # @field_validator("items", check_fields=False)
+    #     # @classmethod
+    #     # def ensure_in_allowed_ingredients(
+    #     #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+    #     # ):
+    #     #     """
+    #     #     Warn the user if they set a fuel item that is disallowed for this
+    #     #     particular entity.
+    #     #     """
+    #     #     if not info.context or value is None:
+    #     #         return value
+    #     #     if info.context["mode"] <= ValidationMode.MINIMUM:
+    #     #         return value
 
-        #     entity: "InputIngredientsMixin" = info.context["object"]
-        #     warning_list: list = info.context["warning_list"]
+    #     #     entity: "InputIngredientsMixin" = info.context["object"]
+    #     #     warning_list: list = info.context["warning_list"]
 
-        #     if entity.allowed_input_ingredients is None:  # entity not recognized
-        #         return value
+    #     #     if entity.allowed_input_ingredients is None:  # entity not recognized
+    #     #         return value
 
-        #     for item in entity.items:
-        #         # Skip these cases so we can issue better warnings elsewhere
-        #         if item in entity.allowed_modules:
-        #             continue
-        #         if item not in entity.allowed_input_ingredients:
-        #             warning_list.append(
-        #                 ItemLimitationWarning(
-        #                     "Cannot request item '{}' to '{}'; this recipe cannot consume it".format(
-        #                         item, entity.name
-        #                     )
-        #                 )
-        #             )
+    #     #     for item in entity.items:
+    #     #         # Skip these cases so we can issue better warnings elsewhere
+    #     #         if item in entity.allowed_modules:
+    #     #             continue
+    #     #         if item not in entity.allowed_input_ingredients:
+    #     #             warning_list.append(
+    #     #                 ItemLimitationWarning(
+    #     #                     "Cannot request item '{}' to '{}'; this recipe cannot consume it".format(
+    #     #                         item, entity.name
+    #     #                     )
+    #     #                 )
+    #     #             )
 
-        #     return value
+    #     #     return value
 
-        # @field_validator("items", check_fields=False)
-        # @classmethod
-        # def ensure_fuel_doesnt_exceed_slots(
-        #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-        # ):
-        #     """
-        #     Warn the user if they request valid burnable fuel, but the amount
-        #     they request will exceed the number if internal fuel slots for this
-        #     entity.
-        #     """
-        #     if not info.context or value is None:
-        #         return value
-        #     if info.context["mode"] is ValidationMode.MINIMUM:
-        #         return value
+    #     # @field_validator("items", check_fields=False)
+    #     # @classmethod
+    #     # def ensure_fuel_doesnt_exceed_slots(
+    #     #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
+    #     # ):
+    #     #     """
+    #     #     Warn the user if they request valid burnable fuel, but the amount
+    #     #     they request will exceed the number if internal fuel slots for this
+    #     #     entity.
+    #     #     """
+    #     #     if not info.context or value is None:
+    #     #         return value
+    #     #     if info.context["mode"] is ValidationMode.MINIMUM:
+    #     #         return value
 
-        #     entity: "InputIngredientsMixin" = info.context["entity"]
-        #     warning_list: list = info.context["warning_list"]
+    #     #     entity: "InputIngredientsMixin" = info.context["entity"]
+    #     #     warning_list: list = info.context["warning_list"]
 
-        #     if entity.total_fuel_slots is None:  # entity not recognized
-        #         return value
+    #     #     if entity.total_fuel_slots is None:  # entity not recognized
+    #     #         return value
 
-        #     if entity.occupied_fuel_slots > entity.total_fuel_slots:
-        #         issue = ItemCapacityWarning(
-        #             "Amount of slots occupied by current fuel requested ({}) exceeds available fuel slots ({}) for entity '{}'".format(
-        #                 entity.occupied_fuel_slots, entity.total_fuel_slots, entity.name
-        #             )
-        #         )
+    #     #     if entity.occupied_fuel_slots > entity.total_fuel_slots:
+    #     #         issue = ItemCapacityWarning(
+    #     #             "Amount of slots occupied by current fuel requested ({}) exceeds available fuel slots ({}) for entity '{}'".format(
+    #     #                 entity.occupied_fuel_slots, entity.total_fuel_slots, entity.name
+    #     #             )
+    #     #         )
 
-        #         warning_list.append(issue)
+    #     #         warning_list.append(issue)
 
-        #     return value
-        pass
+    #     #     return value
+    #     pass
 
-    def __init__(self, name: str, similar_entities: list[str], **kwargs):
-        super().__init__(name, similar_entities, **kwargs)
+    # def __init__(self, name: str, similar_entities: list[str], **kwargs):
+    #     super().__init__(name, similar_entities, **kwargs)
 
     # @property
     # def allowed_input_ingredients(self) -> set[str]:
@@ -99,8 +99,8 @@ class InputIngredientsMixin:
         consumes cannot be deduced with the current data configuration. Not
         exported; read only.
         """
-        return {
-            item
-            for item in self.items
-            if item["id"]["name"] in self.allowed_input_ingredients
-        }
+        return [
+            item_request
+            for item_request in self.item_requests
+            if item_request.id.name in self.allowed_input_ingredients
+        ]

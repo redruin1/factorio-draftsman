@@ -2,7 +2,6 @@
 # TODO: remove this class
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     FiltersMixin,
     StackSizeMixin,
@@ -10,7 +9,6 @@ from draftsman.classes.mixins import (
     InserterModeOfOperationMixin,
     CircuitConditionMixin,
     LogisticConditionMixin,
-    EnableDisableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
@@ -34,7 +32,6 @@ class FilterInserter(
     InserterModeOfOperationMixin,
     CircuitConditionMixin,
     LogisticConditionMixin,
-    EnableDisableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
@@ -59,7 +56,6 @@ class FilterInserter(
         InserterModeOfOperationMixin.Format,
         CircuitConditionMixin.Format,
         LogisticConditionMixin.Format,
-        EnableDisableMixin.Format,
         ControlBehaviorMixin.Format,
         CircuitConnectableMixin.Format,
         DirectionalMixin.Format,
@@ -71,7 +67,6 @@ class FilterInserter(
             InserterModeOfOperationMixin.ControlFormat,
             CircuitConditionMixin.ControlFormat,
             LogisticConditionMixin.ControlFormat,
-            EnableDisableMixin.ControlFormat,
             DraftsmanBaseModel,
         ):
             pass

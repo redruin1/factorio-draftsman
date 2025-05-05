@@ -34,22 +34,19 @@ class DisplayPanel(
         icon: Optional[AttrsSignalID] = attrs.field(
             default=None,
             converter=AttrsSignalID.converter,
-            validator=instance_of(Optional[AttrsSignalID])
+            validator=instance_of(Optional[AttrsSignalID]),
         )
         """
         The message's display icon.
         """
-        text: str = attrs.field(
-            default="",
-            validator=instance_of(str)
-        )
+        text: str = attrs.field(default="", validator=instance_of(str))
         """
         The message's text label.
         """
         condition: AttrsSimpleCondition = attrs.field(
             factory=AttrsSimpleCondition,
             converter=AttrsSimpleCondition.converter,
-            validator=instance_of(AttrsSimpleCondition)
+            validator=instance_of(AttrsSimpleCondition),
         )
         """
         The condition that must be satisfied in order for this messsage to be
@@ -139,10 +136,7 @@ class DisplayPanel(
 
     # =========================================================================
 
-    text: str = attrs.field(
-        default="",
-        validator=instance_of(str)
-    )
+    text: str = attrs.field(default="", validator=instance_of(str))
     """
     The (static) text that this display panel is configured to show. This value
     is wiped and overridden by the list of :py:attr:`.messages` if the display 
@@ -168,7 +162,7 @@ class DisplayPanel(
     icon: Optional[AttrsSignalID] = attrs.field(
         default=None,
         converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
     The (static) visual icon to display on the surface of the display panel. 
@@ -193,8 +187,7 @@ class DisplayPanel(
     # =========================================================================
 
     always_show_in_alt_mode: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
+        default=False, validator=instance_of(bool)
     )
     """
     Whether or not to always display the panels :py:attr:`.text` when alt-mode 
@@ -217,10 +210,7 @@ class DisplayPanel(
 
     # =========================================================================
 
-    show_in_chart: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    show_in_chart: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not to render the display panel's configured :py:attr:`.icon` on
     the map like a map tag.
@@ -245,7 +235,7 @@ class DisplayPanel(
     messages: list[Message] = attrs.field(
         factory=list,
         # TODO: converter
-        validator=instance_of(list) # TODO: validators
+        validator=instance_of(list),  # TODO: validators
     )
     """
     A list of :py:class:`.DisplayPanel.Message` objects, where each one has 
@@ -259,14 +249,6 @@ class DisplayPanel(
 
     # =========================================================================
 
-    def add_conditional_message(self):
-        pass  # TODO
-
-    def remove_conditional_message(self):
-        pass  # TODO
-
-    # =========================================================================
-
     __hash__ = Entity.__hash__
 
 
@@ -277,7 +259,7 @@ draftsman_converters.add_schema(
         "text": fields.text.name,
         "icon": fields.icon.name,
         "condition": fields.condition.name,
-    }
+    },
 )
 
 draftsman_converters.add_schema(
@@ -289,5 +271,5 @@ draftsman_converters.add_schema(
         "always_show": fields.always_show_in_alt_mode.name,
         "show_in_chart": fields.show_in_chart.name,
         ("control_behavior", "parameters"): fields.messages.name,
-    }
+    },
 )

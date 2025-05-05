@@ -18,9 +18,7 @@ import pytest
 class TestTrainStop:
     def test_constructor_init(self):
         train_stop = TrainStop(
-            "train-stop",
-            tile_position=[0, 0],
-            direction=Direction.EAST
+            "train-stop", tile_position=[0, 0], direction=Direction.EAST
         )
         assert train_stop.to_dict() == {
             "name": "train-stop",
@@ -43,7 +41,10 @@ class TestTrainStop:
                     "set_trains_limit": True,
                     "trains_limit_signal": {"name": "signal-B", "type": "virtual"},
                     "read_trains_count": True,
-                    "trains_count_signal": {"name": "signal-C", "type": "virtual"}, # Default
+                    "trains_count_signal": {
+                        "name": "signal-C",
+                        "type": "virtual",
+                    },  # Default
                 },
             }
         )
@@ -76,7 +77,7 @@ class TestTrainStop:
                 "control_behavior": {
                     "train_stopped_signal": {"name": "signal-A", "type": "virtual"},
                     "trains_limit_signal": {"name": "signal-B", "type": "virtual"},
-                    "trains_count_signal": {"name": "signal-C", "type": "virtual"}
+                    "trains_count_signal": {"name": "signal-C", "type": "virtual"},
                 },
             }
         )
@@ -96,17 +97,19 @@ class TestTrainStop:
 
         # Warnings:
         with pytest.warns(UnknownKeywordWarning):
-            stop = TrainStop.from_dict({"name": "train-stop", "invalid_keyword": "whatever"})
-            stop.validate().reissue_all()
-        # If entity is not on a grid pos / 2, then warn the user of the incoming
-        # shift
-        with pytest.warns(GridAlignmentWarning):
-            stop = TrainStop("train-stop", tile_position=(1, 1))
+            stop = TrainStop.from_dict(
+                {"name": "train-stop", "invalid_keyword": "whatever"}
+            )
             stop.validate().reissue_all()
         # Incorrect direction
         with pytest.warns(DirectionWarning):
             stop = TrainStop("train-stop", direction=Direction.NORTHWEST)
             stop.validate().reissue_all()
+        # Ignore incorrect direction
+        stop = TrainStop("train-stop", direction=Direction.NORTHWEST, validate_assignment="none")
+        assert stop.direction is Direction.NORTHWEST
+        stop.direction = Direction.SOUTHSOUTHEAST
+        assert stop.direction is Direction.SOUTHSOUTHEAST
 
         # Errors
         with pytest.raises(DataFormatError):
@@ -118,10 +121,35 @@ class TestTrainStop:
             stop.validate().reissue_all()
 
     def test_color(self):
-        assert TrainStop("train-stop").color == AttrsColor(242/255, 0, 0, 127/255)
+        assert TrainStop("train-stop").color == AttrsColor(242 / 255, 0, 0, 127 / 255)
+
+    def test_double_grid_position(self):
+        train_stop = TrainStop("train-stop")
+
+        # Position
+
+        # No warning
+        train_stop.position = (1.0, 1.0) 
+        assert train_stop.position.x == 1.0
+        assert train_stop.position.y == 1.0
+
+        # Warning
+        with pytest.warns(GridAlignmentWarning):
+            train_stop.position = (2.0, 2.0)
+
+        # Tile position
+
+        # No warning
+        train_stop.tile_position = (2, 2) 
+        assert train_stop.tile_position.x == 2
+        assert train_stop.tile_position.y == 2
+
+        # Warning
+        with pytest.warns(GridAlignmentWarning):
+            train_stop.tile_position = (1, 1)
 
     def test_set_manual_trains_limit(self):
-        train_stop = TrainStop()
+        train_stop = TrainStop("train-stop")
         train_stop.manual_trains_limit = None
         assert train_stop.manual_trains_limit == None
 

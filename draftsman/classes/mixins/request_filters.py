@@ -8,8 +8,7 @@ from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     DraftsmanBaseModel,
     RequestFilter,
-    Section,
-    AttrsSection,
+    ManualSection,
     int32,
     int64,
     uint32,
@@ -29,49 +28,49 @@ class RequestFiltersMixin(Exportable):
     network.
     """
 
-    class Format(BaseModel):
-        class RequestFilters(DraftsmanBaseModel):
-            sections: Optional[list[Section]] = Field(
-                [], description="""The logistics groups requested to this spidertron."""
-            )
-            trash_not_requested: Optional[bool] = Field(
-                False,
-                description="""Moves any unrequested item to trash slots if enabled.""",
-            )
-            request_from_buffers: Optional[bool] = Field(
-                True,
-                description="""Whether or not to request from buffer chests.""",
-            )
-            enabled: Optional[bool] = Field(
-                True,
-                description="""Master switch to enable/disble logistics requests to this spidertron.""",
-            )
+    # class Format(BaseModel):
+    #     class RequestFilters(DraftsmanBaseModel):
+    #         sections: Optional[list[Section]] = Field(
+    #             [], description="""The logistics groups requested to this spidertron."""
+    #         )
+    #         trash_not_requested: Optional[bool] = Field(
+    #             False,
+    #             description="""Moves any unrequested item to trash slots if enabled.""",
+    #         )
+    #         request_from_buffers: Optional[bool] = Field(
+    #             True,
+    #             description="""Whether or not to request from buffer chests.""",
+    #         )
+    #         enabled: Optional[bool] = Field(
+    #             True,
+    #             description="""Master switch to enable/disble logistics requests to this entity.""",
+    #         )
 
-        request_filters: Optional[RequestFilters] = RequestFilters()
+    #     request_filters: Optional[RequestFilters] = RequestFilters()
 
-        # request_filters: Optional[list[RequestFilter]] = Field(
-        #     [],
-        #     description="""
-        #     Key which holds all of the logistics requests that this entity
-        #     has.
-        #     """,
-        # )
+    #     # request_filters: Optional[list[RequestFilter]] = Field(
+    #     #     [],
+    #     #     description="""
+    #     #     Key which holds all of the logistics requests that this entity
+    #     #     has.
+    #     #     """,
+    #     # )
 
-        # @field_validator("request_filters", mode="before")
-        # @classmethod
-        # def normalize_validate(cls, value: Any):
-        #     if isinstance(value, Sequence):
-        #         result = []
-        #         for i, entry in enumerate(value):
-        #             if isinstance(entry, (list, tuple)):
-        #                 result.append(
-        #                     {"index": i + 1, "name": entry[0], "count": entry[1]}
-        #                 )
-        #             else:
-        #                 result.append(entry)
-        #         return result
-        #     else:
-        #         return value
+    #     # @field_validator("request_filters", mode="before")
+    #     # @classmethod
+    #     # def normalize_validate(cls, value: Any):
+    #     #     if isinstance(value, Sequence):
+    #     #         result = []
+    #     #         for i, entry in enumerate(value):
+    #     #             if isinstance(entry, (list, tuple)):
+    #     #                 result.append(
+    #     #                     {"index": i + 1, "name": entry[0], "count": entry[1]}
+    #     #                 )
+    #     #             else:
+    #     #                 result.append(entry)
+    #     #         return result
+    #     #     else:
+    #     #         return value
 
     # def __init__(self, name: str, similar_entities: list[str], **kwargs):
     #     self._root: __class__.Format
@@ -284,23 +283,23 @@ class RequestFiltersMixin(Exportable):
 
     def _sections_converter(value):
         if isinstance(value, list):
+            res = [None] * len(value)
             for i, elem in enumerate(value):
-                value[i] = AttrsSection.converter(elem)
-            return value
-        else:
-            return value
+                res[i] = ManualSection.converter(elem)
+            return res
+        return value
 
     def _sections_validator(self, attr, value, mode=None):  # TODO: should be better
         mode = mode if mode is not None else self.validate_assignment
         if mode:
             for i, elem in enumerate(value):
-                if not isinstance(elem, AttrsSection):
+                if not isinstance(elem, ManualSection):
                     msg = "Element {} in list ({}) is not an instance of {}".format(
-                        i, repr(elem), AttrsSection.__name__
+                        i, repr(elem), ManualSection.__name__
                     )
                     raise DataFormatError(msg)
 
-    sections: list[AttrsSection] = attrs.field(
+    sections: list[ManualSection] = attrs.field(
         factory=list,
         converter=_sections_converter,
         validator=and_(instance_of(list), _sections_validator),
@@ -309,27 +308,6 @@ class RequestFiltersMixin(Exportable):
     The list of logistics sections that this entity is configured to request.
     """
 
-    # @property
-    # def sections(self) -> Optional[list[Section]]:
-    #     """
-    #     TODO
-    #     """
-    #     return self.request_filters.sections
-
-    # @sections.setter
-    # def sections(self, value: Optional[list[Section]]) -> None:
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.RequestFilters,
-    #             self.request_filters,
-    #             "sections",
-    #             value,
-    #         )
-    #         self.request_filters.sections = result
-    #     else:
-    #         self.request_filters.sections = value
-
     # =========================================================================
 
     def add_section(
@@ -337,13 +315,15 @@ class RequestFiltersMixin(Exportable):
         group: Union[str, None] = None,
         index: Optional[int] = None,  # TODO: integer size
         active: bool = True,
-    ) -> AttrsSection:
+    ) -> ManualSection:
         """
         Adds a new section of request/signal entries to the entity.
 
-        NOTE:: Beware of giving sections the same or existing names! If a named
-            group already exists within a save, then that group will take
-            precedence over a newly added group.
+        .. NOTE:: 
+            
+            Beware of giving sections the same names; if a named group already 
+            exists within the save you are importing into, then that group will 
+            take precedence over the group inside of the blueprint.
 
         :param group: The name to give this group. The group will have no name
             if omitted.
@@ -352,18 +332,15 @@ class RequestFiltersMixin(Exportable):
         :param active: Whether or not this particular group is contributing its
             contents to the output in this specific combinator.
 
-        :returns: A reference to the :class:`.Section` just added.
+        :returns: A reference to the :class:`.ManualSection` just added.
         """
-        # TODO: update
-        section = {"active": active}
-        if group is not None:
-            section["group"] = group
-        if index is not None:
-            section["index"] = index + 1
-        else:
-            section["index"] = len(self.sections) + 1
-        section = AttrsSection(**section)
-        self.sections.append(section)
+        self.sections += [
+            ManualSection(
+                group=group,
+                index=index + 1 if index is not None else len(self.sections) + 1,
+                active=active
+            )
+        ]
         return self.sections[-1]
 
     # =========================================================================
@@ -372,23 +349,6 @@ class RequestFiltersMixin(Exportable):
         super().merge(other)
 
         self.sections = other.sections
-
-    # =========================================================================
-
-    # def to_dict(
-    #     self, exclude_none: bool = True, exclude_defaults: bool = True
-    # ) -> dict:  # TODO: FIXME
-    #     result = super().to_dict(
-    #         exclude_none=exclude_none, exclude_defaults=exclude_defaults
-    #     )
-    #     if "request_filters" in result and result["request_filters"] == {}:
-    #         del result["request_filters"]
-    #     return result
-
-    # =========================================================================
-
-    # def __eq__(self, other) -> bool:
-    #     return super().__eq__(other) and self.request_filters == other.request_filters
 
 
 draftsman_converters.add_schema(

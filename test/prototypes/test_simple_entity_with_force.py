@@ -37,7 +37,7 @@ class TestSimpleEntityWithForce:
         assert entity.to_dict() == {
             "name": "simple-entity-with-force",
             "position": {"x": 0.5, "y": 0.5},
-            "variation": 10
+            "variation": 10,
         }
 
     def test_power_and_circuit_flags(self):

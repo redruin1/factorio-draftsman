@@ -16,7 +16,6 @@ from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     DraftsmanBaseModel,
-    ItemRequest,
     uint16,
 )
 from draftsman.utils import get_first
@@ -110,22 +109,27 @@ class LogisticBufferContainer(
     __hash__ = Entity.__hash__
 
 
-def make_structure_hook(cls, converter: cattrs.Converter):
-    parent_hook = converter.get_structure_hook(LogisticBufferContainer)
+_parent_hook = (
+    draftsman_converters.get_version((1, 0))
+    .get_converter()
+    .get_structure_hook(LogisticBufferContainer)
+)
 
+
+def make_structure_hook(cls, converter: cattrs.Converter):
     def structure_hook(d: dict, type: type):
-        # print(d)
         if "request_filters" in d:
             # Populate with a single section
             filters = d["request_filters"]
-            d["request_filters"] = {"sections": [{"index": 0, "filters": filters}]}
+            d["request_filters"] = {"sections": [{"index": 1, "filters": filters}]}
         # TODO: what about request_from_buffers?
-        # print(d)
-        return parent_hook(d, type)
+        return _parent_hook(d, type)
 
     return structure_hook
 
 
 draftsman_converters.get_version((1, 0)).register_structure_hook_factory(
-    lambda cls: isinstance(cls, LogisticBufferContainer), make_structure_hook
+    lambda cls: issubclass(cls, LogisticBufferContainer), make_structure_hook
 )
+
+# TODO: unstructure hook

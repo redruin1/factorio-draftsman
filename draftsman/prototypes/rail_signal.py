@@ -1,33 +1,37 @@
 # rail_signal.py
 
+from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     ReadRailSignalMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
-    EightWayDirectionalMixin,
+    # EightWayDirectionalMixin,
+    DirectionalMixin
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
+from draftsman.constants import Direction, ValidationMode, SIXTEEN_WAY_DIRECTIONS
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import Connections, DraftsmanBaseModel
+from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 
-from draftsman.data.entities import rail_signals
+from draftsman.data.entities import collision_sets, rail_signals
 
 import attrs
 from pydantic import ConfigDict, Field
 from typing import Any, Literal, Optional, Union
 
 
+@fix_incorrect_pre_init
 @attrs.define
 class RailSignal(
     ReadRailSignalMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
-    EightWayDirectionalMixin,
+    # EightWayDirectionalMixin,
+    DirectionalMixin,
     Entity,
 ):
     """
@@ -109,6 +113,25 @@ class RailSignal(
     @property
     def similar_entities(self) -> list[str]:
         return rail_signals
+
+    # =========================================================================
+
+    @property
+    def collision_set_rotated(self) -> bool:
+        return False
+
+    # =========================================================================
+
+    @property
+    def valid_directions(self) -> set[Direction]:
+        return SIXTEEN_WAY_DIRECTIONS
+
+    # =========================================================================
+
+    @property
+    def collision_set(self) -> Optional[CollisionSet]:
+        # This entity doesn't actually rotate it's collision box
+        return self.static_collision_set
 
     # =========================================================================
 

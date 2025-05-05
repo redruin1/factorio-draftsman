@@ -13,7 +13,6 @@ from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.exportable import (
     Exportable,
     ValidationResult,
-    attempt_and_reissue,
 )
 from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.vector import Vector, PrimitiveVector
@@ -51,104 +50,12 @@ if TYPE_CHECKING:  # pragma: no coverage
 
 _TILE_COLLISION_SET = CollisionSet([AABB(0, 0, 1, 1)])
 
-_TILE_COLLISION_SET = CollisionSet([AABB(0, 0, 1, 1)])
-
 
 @attrs.define
 class Tile(SpatialLike, Exportable):
     """
     Tile class. Used for keeping track of tiles in Blueprints.
     """
-
-    class Format(DraftsmanBaseModel):
-        _position: Vector = PrivateAttr()
-
-        name: TileName = Field(..., description="""The Factorio ID of the tile.""")
-        position: IntPosition = Field(
-            IntPosition(x=0, y=0),
-            description="""
-            The position of the tile in the blueprint. Specified in integer, 
-            tile coordinates.
-            """,
-        )
-
-        @field_validator("name")
-        @classmethod
-        def check_unknown_name(cls, value: str, info: ValidationInfo):
-            """
-            Warn if the name is not any known Draftsman tile name.
-            """
-            if not info.context:
-                return value
-            if info.context["mode"] <= ValidationMode.MINIMUM:
-                return value
-
-            warning_list: list = info.context["warning_list"]
-
-            if value not in tiles.raw:
-                warning_list.append(
-                    UnknownTileWarning(
-                        "Unknown tile '{}'{}".format(
-                            value, get_suggestion(value, tiles.raw.keys(), n=1)
-                        )
-                    )
-                )
-
-            return value
-
-        @field_serializer("position")
-        def serialize_position(self, _):
-            # TODO: make this use global position for when we add this to groups
-            return self._position.to_dict()
-
-        model_config = ConfigDict(
-            title="Tile",
-        )
-
-    # def __init__(
-    #     self,
-    #     name: str,
-    #     position=(0, 0),
-    #     validate_assignment: Union[
-    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-    #     ] = ValidationMode.STRICT,
-    #     **kwargs,
-    # ):
-    #     """
-    #     Create a new Tile with ``name`` at ``position``. ``position`` defaults
-    #     to ``(0, 0)``.
-
-    #     :param name: Name of the Tile to create.
-    #     :param position: Position of the tile, in grid-coordinates.
-
-    #     :exception InvalidTileError: If the name is not a valid Factorio tile id.
-    #     :exception IndexError: If the position does not match the correct
-    #         specification.
-    #     """
-    #     self._root: __class__.Format
-
-    #     super().__init__()
-
-    #     # self._root = __class__.Format.model_construct({**kwargs})
-    #     self._root = type(self).Format.model_validate(
-    #         {"name": name, "position": {"x": 0, "y": 0}, **kwargs},
-    #         strict=False,
-    #         context={"construction": True, "mode": ValidationMode.NONE},
-    #     )
-
-    #     # Setup private attributes
-    #     self._root._position = Vector(0, 0)
-
-    #     # Reference to parent blueprint
-    #     self._parent = None
-
-    #     # Tile name
-    #     self.name = name
-
-    #     # Tile positions are in integer grid coordinates
-    #     self.position = position
-
-    #     self.validate_assignment = validate_assignment
 
     # =========================================================================
 

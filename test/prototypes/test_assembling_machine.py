@@ -1,6 +1,6 @@
 # test_assembling_machine.py
 
-from draftsman.constants import Direction
+from draftsman.constants import Direction, Inventory
 from draftsman.entity import AssemblingMachine, assembling_machines, Container
 from draftsman.error import (
     InvalidEntityError,
@@ -8,6 +8,7 @@ from draftsman.error import (
     InvalidItemError,
     DataFormatError,
 )
+from draftsman.signatures import AttrsItemRequest
 from draftsman.warning import (
     ModuleCapacityWarning,
     ModuleLimitationWarning,
@@ -74,51 +75,94 @@ class TestAssemblingMachine:
             "quality-module-2",
             "quality-module-3",
         }
-        # machine.set_item_request("productivity-module-3", 2)
+        machine.set_item_request(
+            "productivity-module-3",
+            1,
+            inventory=Inventory.assembling_machine_modules,
+            slot=0,
+        )
+        machine.set_item_request(
+            "productivity-module-3",
+            1,
+            inventory=Inventory.assembling_machine_modules,
+            slot=1,
+        )
+        # TODO: make a `set_module_request()` method
 
-        # machine.recipe = "iron-gear-wheel"
-        # assert machine.recipe == "iron-gear-wheel"
-        # assert machine.allowed_modules == {
-        #     "speed-module",
-        #     "speed-module-2",
-        #     "speed-module-3",
-        #     "effectivity-module",
-        #     "effectivity-module-2",
-        #     "effectivity-module-3",
-        #     "productivity-module",
-        #     "productivity-module-2",
-        #     "productivity-module-3",
-        # }
+        machine.recipe = "iron-gear-wheel"
+        assert machine.recipe == "iron-gear-wheel"
+        assert machine.allowed_modules == {
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
+            "productivity-module",
+            "productivity-module-2",
+            "productivity-module-3",
+            "quality-module",
+            "quality-module-2",
+            "quality-module-3",
+        }
 
-        # with pytest.warns(ItemLimitationWarning):
-        #     machine.recipe = "wooden-chest"
-        # assert machine.allowed_modules == {
-        #     "speed-module",
-        #     "speed-module-2",
-        #     "speed-module-3",
-        #     "effectivity-module",
-        #     "effectivity-module-2",
-        #     "effectivity-module-3",
-        # }
+        with pytest.warns(ItemLimitationWarning):
+            machine.recipe = "wooden-chest"
+        assert machine.recipe == "wooden-chest"
+        assert machine.allowed_modules == {
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
+            "quality-module",
+            "quality-module-2",
+            "quality-module-3",
+        }
 
         # machine.items = None
         # with pytest.warns(ModuleCapacityWarning):
-        #     machine.set_item_request("speed-module-3", 10)
-        # # with pytest.warns(ModuleLimitationWarning):
-        # #     machine.recipe = "iron-chest"
+        #     machine.set_item_request("speed-module-3", 10, inventory=Inventory.assembling_machine_modules)
+        # with pytest.warns(ModuleLimitationWarning):
+        #     machine.recipe = "iron-chest"
 
-        # # particular recipe not allowed in machine
-        # with pytest.warns(RecipeLimitationWarning):
-        #     machine.recipe = "sulfur"
-        # assert machine.recipe == "sulfur"
+        # particular recipe not allowed in machine
+        with pytest.warns(RecipeLimitationWarning):
+            machine.recipe = "sulfur"
+        assert machine.recipe == "sulfur"
 
-        # # Unknown recipe in an unknown machine
-        # machine = AssemblingMachine("unknown", validate="none")
-        # with pytest.warns(UnknownRecipeWarning):
-        #     machine.recipe = "unknown"
+        # Unknown recipe in an known machine
+        machine = AssemblingMachine("assembling-machine-3")
+        with pytest.warns(UnknownRecipeWarning):
+            machine.recipe = "unknown"
 
-        # # Known recipe in an unknown machine
-        # machine.recipe = "sulfur"
+        # Known recipe in an unknown machine
+        with pytest.warns(UnknownEntityWarning):
+            machine = AssemblingMachine("unknown")
+        machine.recipe = "sulfur"
+
+    def test_ingredient_items(self):
+        machine = AssemblingMachine("assembling-machine-3")
+        machine.recipe = "wooden-chest"
+        assert machine.allowed_input_ingredients == {
+            "wood"
+        }
+        machine.set_item_request("wood", 20, inventory=Inventory.assembling_machine_input)
+        assert machine.ingredient_items == [
+            AttrsItemRequest(
+                id = {"name": "wood"},
+                items={
+                    "in_inventory": [
+                        {
+                            "inventory": 2,
+                            "stack": 0,
+                            "count": 20
+                        }
+                    ]
+                }
+            )
+        ]
 
     # def test_set_item_request(self): # TODO: reimplement
     #     machine = AssemblingMachine("assembling-machine-3")

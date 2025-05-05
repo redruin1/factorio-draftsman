@@ -1,7 +1,6 @@
 # reactor.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     RequestItemsMixin,
     ControlBehaviorMixin,
@@ -10,7 +9,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
-from draftsman.signatures import AttrsSignalID, SignalID
+from draftsman.signatures import AttrsSignalID
 from draftsman.utils import get_first
 from draftsman.validators import instance_of
 

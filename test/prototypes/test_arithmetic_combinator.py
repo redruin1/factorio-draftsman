@@ -4,10 +4,7 @@ from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.group import Group
 from draftsman.constants import Direction, ValidationMode
 from draftsman.entity import ArithmeticCombinator, arithmetic_combinators, Container
-from draftsman.error import (
-    DataFormatError,
-    IncompleteSignalError
-)
+from draftsman.error import DataFormatError, IncompleteSignalError
 from draftsman.signatures import AttrsSignalID
 from draftsman.warning import (
     UnknownEntityWarning,
@@ -141,12 +138,18 @@ class TestArithmeticCombinator:
         combinator.set_arithmetic_conditions()
         combinator.first_operand = "signal-each"
         combinator.output_signal = "signal-each"
-        assert combinator.first_operand == AttrsSignalID(name="signal-each", type="virtual")
-        assert combinator.output_signal == AttrsSignalID(name="signal-each", type="virtual")
+        assert combinator.first_operand == AttrsSignalID(
+            name="signal-each", type="virtual"
+        )
+        assert combinator.output_signal == AttrsSignalID(
+            name="signal-each", type="virtual"
+        )
 
         # Setting to the same signal should issue no warnings
         combinator.first_operand = "signal-each"
-        assert combinator.first_operand == AttrsSignalID(name="signal-each", type="virtual")
+        assert combinator.first_operand == AttrsSignalID(
+            name="signal-each", type="virtual"
+        )
 
         # Setting to non special should issue a warning, but not remove the output
         # TODO: reimplement
@@ -207,12 +210,18 @@ class TestArithmeticCombinator:
         combinator.set_arithmetic_conditions()
         combinator.second_operand = "signal-each"
         combinator.output_signal = "signal-each"
-        assert combinator.second_operand == AttrsSignalID(name="signal-each", type="virtual")
-        assert combinator.output_signal == AttrsSignalID(name="signal-each", type="virtual")
+        assert combinator.second_operand == AttrsSignalID(
+            name="signal-each", type="virtual"
+        )
+        assert combinator.output_signal == AttrsSignalID(
+            name="signal-each", type="virtual"
+        )
 
         # Setting to the same signal should issue no warnings
         combinator.second_operand = "signal-each"
-        assert combinator.second_operand == AttrsSignalID(name="signal-each", type="virtual")
+        assert combinator.second_operand == AttrsSignalID(
+            name="signal-each", type="virtual"
+        )
 
         # Setting to non special should issue a warning, but not remove the output
         # TODO: reimplement
@@ -293,7 +302,7 @@ class TestArithmeticCombinator:
                 "output_signal": {"name": "signal-B", "type": "virtual"},
             }
         }
-        
+
         combinator.set_arithmetic_conditions(
             first_operand=10,
             operation="and",
@@ -344,16 +353,32 @@ class TestArithmeticCombinator:
         with pytest.raises(IncompleteSignalError):
             combinator.set_arithmetic_conditions(first_operand="incorrect")
         with pytest.raises(DataFormatError):
-            combinator.set_arithmetic_conditions(first_operand="signal-A", operation="incorrect", second_operand="signal-D")
+            combinator.set_arithmetic_conditions(
+                first_operand="signal-A",
+                operation="incorrect",
+                second_operand="signal-D",
+            )
         with pytest.raises(DataFormatError):
-            combinator.set_arithmetic_conditions(first_operand="signal-A", operation="+", second_operand=TypeError)
-        with pytest.raises(IncompleteSignalError):
-            combinator.set_arithmetic_conditions(first_operand="signal-A", operation="+", second_operand="incorrect")
-        with pytest.raises(DataFormatError):
-            combinator.set_arithmetic_conditions(first_operand="signal-A", operation="+", second_operand="signal-D", output_signal=TypeError)
+            combinator.set_arithmetic_conditions(
+                first_operand="signal-A", operation="+", second_operand=TypeError
+            )
         with pytest.raises(IncompleteSignalError):
             combinator.set_arithmetic_conditions(
-                first_operand="signal-A", operation="+", second_operand="signal-D", output_signal="incorrect"
+                first_operand="signal-A", operation="+", second_operand="incorrect"
+            )
+        with pytest.raises(DataFormatError):
+            combinator.set_arithmetic_conditions(
+                first_operand="signal-A",
+                operation="+",
+                second_operand="signal-D",
+                output_signal=TypeError,
+            )
+        with pytest.raises(IncompleteSignalError):
+            combinator.set_arithmetic_conditions(
+                first_operand="signal-A",
+                operation="+",
+                second_operand="signal-D",
+                output_signal="incorrect",
             )
 
         combinator.set_arithmetic_conditions()
@@ -417,9 +442,7 @@ class TestArithmeticCombinator:
         blueprint.entities.append(entity_to_merge, merge=True)
 
         assert len(blueprint.entities) == 1
-        assert blueprint.entities[
-            0
-        ].to_dict()["control_behavior"] == {
+        assert blueprint.entities[0].to_dict()["control_behavior"] == {
             "arithmetic_conditions": {
                 "first_signal": {"name": "signal-A", "type": "virtual"},
                 "first_signal_networks": {"green": False},

@@ -14,7 +14,9 @@ class TestUndergroundPipe:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            pipe = UndergroundPipe.from_dict({"name": "pipe-to-ground", "unused_keyword": 10})
+            pipe = UndergroundPipe.from_dict(
+                {"name": "pipe-to-ground", "unused_keyword": 10}
+            )
             pipe.validate().reissue_all()
 
         # Errors

@@ -7,13 +7,14 @@ import attrs
 import operator
 from typing import Annotated, Any, Literal, Union, TYPE_CHECKING, get_origin, get_args
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.exportable import Exportable
 
 
 def classvalidator(func):
     """
-    Decorator which marks the given function as a validator for the whole instance.
+    Decorator which marks the given function as a validator for the class rather
+    than for one of the fields.
     """
     func.__attrs_class_validator__ = True
     return func
@@ -34,11 +35,8 @@ class _AndValidator:
         self.validators = validators
 
     def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
-        mode = kwargs.get("mode", None)
-        mode = mode if mode is not None else inst.validate_assignment
-        if mode:
-            for validator in self.validators:
-                validator(inst, attr, value, **kwargs)
+        for validator in self.validators:
+            validator(inst, attr, value, **kwargs)
 
 
 def and_(*validators):
@@ -50,22 +48,20 @@ class _OrValidator:
         self.validators = validators
 
     def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
-        mode = kwargs.get("mode", None)
-        mode = mode if mode is not None else inst.validate_assignment
-        if mode:
-            messages = []
-            for validator in self.validators:
-                try:
-                    validator(inst, attr, value, **kwargs)
-                    return
-                except DataFormatError as e:
-                    messages.append(str(e))
-            msg = "{} did not match any of {}\n\t{}".format(
-                repr(value),
-                repr(self.validators),
-                "\n\t".join(message for message in messages),
-            )
-            raise DataFormatError(msg)
+        messages = []
+        for i, validator in enumerate(self.validators):
+            try:
+                validator(inst, attr, value, **kwargs)
+                return
+            except DataFormatError as e:
+                messages.append(str(e))
+            
+        msg = "{} did not match any of {}\n\t{}".format(
+            repr(value),
+            repr(self.validators),
+            "\n\t".join(message for message in messages),
+        )
+        raise DataFormatError(msg)
 
 
 def or_(*validators):
@@ -75,7 +71,7 @@ def or_(*validators):
 def is_none(inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
     mode = kwargs.get("mode", None)
     mode = mode if mode is not None else inst.validate_assignment
-    if mode:
+    if mode:  # pragma: no branch
         if not value is None:
             msg = "{} was not None".format(repr(value))
             raise DataFormatError(msg)
@@ -110,7 +106,7 @@ def instance_of(cls: type):
     if get_origin(cls) is Union:
         vs = []
         for u in get_args(cls):
-            if u is None:
+            if u is type(None): # schizo
                 vs.append(is_none)
             else:
                 vs.append(_InstanceOfValidator(u))
@@ -156,7 +152,7 @@ class _NumberValidator:
                 msg = f"'{attr.name}' must be {self.compare_op} {self.bound}: {value}"
                 raise DataFormatError(msg)
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no coverage
         return f"<Validator for x {self.compare_op} {self.bound}>"
 
 
@@ -175,19 +171,19 @@ def lt(val):
     return _NumberValidator(val, "<", operator.lt)
 
 
-def le(val):
-    """
-    A validator that raises `ValueError` if the initializer is called with a
-    number greater than *val*.
+# def le(val):
+#     """
+#     A validator that raises `ValueError` if the initializer is called with a
+#     number greater than *val*.
 
-    The validator uses `operator.le` to compare the values.
+#     The validator uses `operator.le` to compare the values.
 
-    Args:
-        val: Inclusive upper bound for values.
+#     Args:
+#         val: Inclusive upper bound for values.
 
-    .. versionadded:: 21.3.0
-    """
-    return _NumberValidator(val, "<=", operator.le)
+#     .. versionadded:: 21.3.0
+#     """
+#     return _NumberValidator(val, "<=", operator.le)
 
 
 def ge(val):
@@ -205,19 +201,19 @@ def ge(val):
     return _NumberValidator(val, ">=", operator.ge)
 
 
-def gt(val):
-    """
-    A validator that raises `ValueError` if the initializer is called with a
-    number smaller or equal to *val*.
+# def gt(val):
+#     """
+#     A validator that raises `ValueError` if the initializer is called with a
+#     number smaller or equal to *val*.
 
-    The validator uses `operator.ge` to compare the values.
+#     The validator uses `operator.ge` to compare the values.
 
-    Args:
-       val: Exclusive lower bound for values
+#     Args:
+#        val: Exclusive lower bound for values
 
-    .. versionadded:: 21.3.0
-    """
-    return _NumberValidator(val, ">", operator.gt)
+#     .. versionadded:: 21.3.0
+#     """
+#     return _NumberValidator(val, ">", operator.gt)
 
 
 def try_convert(func):

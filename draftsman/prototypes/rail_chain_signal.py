@@ -1,12 +1,15 @@
 # rail_chain_signal.py
 
+from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     ReadRailSignalMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
-    EightWayDirectionalMixin,
+    # EightWayDirectionalMixin,
+    DirectionalMixin
 )
+from draftsman.constants import Direction, SIXTEEN_WAY_DIRECTIONS
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import AttrsSignalID
 from draftsman.validators import instance_of
@@ -22,7 +25,8 @@ class RailChainSignal(
     ReadRailSignalMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
-    EightWayDirectionalMixin,
+    # EightWayDirectionalMixin,
+    DirectionalMixin,
     Entity,
 ):
     """
@@ -91,6 +95,26 @@ class RailChainSignal(
     @property
     def similar_entities(self) -> list[str]:
         return rail_chain_signals
+    
+
+    # =========================================================================
+
+    @property
+    def collision_set_rotated(self) -> bool:
+        return False
+
+    # =========================================================================
+
+    @property
+    def valid_directions(self) -> set[Direction]:
+        return SIXTEEN_WAY_DIRECTIONS
+    
+    # =========================================================================
+
+    @property
+    def collision_set(self) -> Optional[CollisionSet]:
+        # This entity doesn't actually rotate it's collision box
+        return self.static_collision_set
 
     # =========================================================================
 

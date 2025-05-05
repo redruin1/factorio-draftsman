@@ -3,9 +3,6 @@
 from draftsman.classes.association import Association
 from draftsman.classes.exportable import (
     Exportable,
-    ValidationResult,
-    attempt_and_reissue,
-    custom_define,
 )
 from draftsman.constants import (
     Ticks,
@@ -18,7 +15,6 @@ from draftsman.prototypes.locomotive import Locomotive
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     AttrsSimpleCondition,
-    Condition,
     DraftsmanBaseModel,
     uint32,
 )
@@ -61,140 +57,10 @@ class WaitCondition(Exportable):
         inactivity = WaitCondition(WaitConditionType.INACTIVITY, ticks=1 * Ticks.MINUTE)
         run_signal = WaitCondition(WaitConditionType.CIRCUIT_SIGNAL, condition=("signal-R", "=", 1))
 
-        # (If the cargo is full and been inactive for 1 minute) or signal sent
+        # (If the cargo is full and inactive for 1 minute) or signal sent
         conditions = cargo_full & inactivity | run_signal
         assert isinstance(conditions, WaitConditions)
     """
-
-    class Format(DraftsmanBaseModel):
-        type: WaitConditionType = Field(
-            ..., description="""The type of wait condition."""
-        )
-        compare_type: WaitConditionCompareType = Field(
-            "or",
-            description="""
-            The boolean operation to perform in relation to the next condition
-            in the list of wait conditions. Contrary to what you might expect,
-            the 'compare_type' of a wait condition indicates it's relation to 
-            the *previous* wait condition, not the following. This means that if
-            you want to 'and' two wait conditions together, you need to set the
-            'compare_type' of the second condition to 'and'; the 'compare_type' 
-            of the first condition is effectively ignored.
-            """,
-        )
-        ticks: Optional[uint32] = Field(
-            None,
-            description="""
-            The amount of game ticks to wait, if the 'type' of the wait 
-            condition is set to either 'time' or 'inactivity'. Defaults to 30 
-            seconds if type is 'time', 5 seconds if type is  'inactivity', and 
-            null for everything else.
-            """,
-        )
-        condition: Optional[Condition] = Field(
-            Condition(),
-            description="""
-            A condition that must be satisfied in order for the schedule to 
-            progress; only used if 'type' is set to 'item_count', 'fluid_count',
-            or 'circuit'.
-            """,
-        )
-
-        @model_validator(mode="wrap")
-        @classmethod
-        def handle_class_instance(cls, value: Any, handler):
-            if isinstance(value, WaitCondition):
-                return value
-            else:
-                return handler(value)
-
-        model_config = ConfigDict(title="WaitCondition")
-
-    # def __init__(
-    #     self,
-    #     type: Literal[
-    #         "time",
-    #         "inactivity",
-    #         "full",
-    #         "empty",
-    #         "item_count",
-    #         "fluid_count",
-    #         "circuit",
-    #         "passenger_present",
-    #         "passenger_not_present",
-    #     ],
-    #     compare_type: Literal["and", "or"] = "or",
-    #     ticks: Optional[uint32] = None,
-    #     condition: Condition = None,
-    #     validate: Union[
-    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-    #     ] = ValidationMode.STRICT,
-    #     validate_assignment: Union[
-    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-    #     ] = ValidationMode.STRICT,
-    # ):
-    #     """
-    #     Constructs a new :py:class:`WaitCondition` object.
-
-    #     :param type: A ``str`` value equivalent to one of the members of
-    #         :py:class:`WaitConditionType`.
-    #     :param compare_type: A ``str`` value equivalent to one of the members of
-    #         :py:class:`WaitConditionCompareType`.
-    #     :param ticks: The number of in-game ticks to wait for on conditions of
-    #         type ``TIME_PASSED`` and ``INACTIVITY``.
-    #     :param condition: The condition to use for conditions of type
-    #         ``ITEM_COUNT``, ``FLUID_COUNT``, and ``CIRCUIT_CONDITION``.
-    #         Specified as a sequence of the format
-    #         ``(first_signal, comparator, second_signal_or_constant)``.
-    #     """
-    #     self._root: __class__.Format
-
-    #     super().__init__()
-
-    #     if type == WaitConditionType.TIME_PASSED and ticks is None:
-    #         ticks = 30 * Ticks.SECOND
-    #     elif type == WaitConditionType.INACTIVITY and ticks is None:
-    #         ticks = 5 * Ticks.SECOND
-    #     if type in {
-    #         WaitConditionType.ITEM_COUNT,
-    #         WaitConditionType.FLUID_COUNT,
-    #         WaitConditionType.CIRCUIT_CONDITION,
-    #     }:
-    #         condition = Condition() if condition is None else condition
-
-    #     self._root = self.Format.model_validate(
-    #         {
-    #             "type": type,
-    #             "compare_type": compare_type,
-    #             "ticks": ticks,
-    #             "condition": condition,
-    #         },
-    #         strict=False,
-    #         context={"construction": True, "mode": ValidationMode.NONE},
-    #     )
-
-    #     self.validate_assignment = validate_assignment
-
-    #     self.validate(mode=validate).reissue_all(stacklevel=3)
-
-    # def to_dict(self) -> dict:
-    #     result = {"type": self.type, "compare_type": self.compare_type}
-    #     if self.ticks:
-    #         result["ticks"] = self.ticks
-    #     if self.condition:
-    #         result["condition"] = {
-    #             "first_signal": self.condition[0],
-    #             "comparator": self.condition[1],
-    #         }
-    #         b = self.condition[2]
-    #         if isinstance(b, int):
-    #             result["condition"]["constant"] = b
-    #         else:
-    #             result["condition"]["second_signal"] = b
-
-    #     return result
-
-    # =========================================================================
 
     type: WaitConditionType = attrs.field(
         converter=try_convert(WaitConditionType),
@@ -280,7 +146,6 @@ class WaitCondition(Exportable):
 
     @condition.default
     def _(self):
-        print(self.type)
         if self.type in {
             WaitConditionType.ITEM_COUNT,
             WaitConditionType.FLUID_COUNT,

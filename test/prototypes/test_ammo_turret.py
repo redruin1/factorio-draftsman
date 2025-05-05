@@ -1,6 +1,7 @@
 # test_ammo_turret.py
 
 from draftsman.entity import AmmoTurret, ammo_turrets, Container
+from draftsman.signatures import AttrsSimpleCondition
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -24,6 +25,15 @@ class TestAmmoTurret:
         # turret = AmmoTurret("flamethrower-turret")
         # assert turret.rotatable == True
         # assert turret.square == False
+
+    def test_priority_condition(self):
+        turret = AmmoTurret("gun-turret")
+        turret.set_ignore_unlisted_targets_condition("signal-A", ">", "signal-B")
+        assert turret.ignore_unlisted_targets_condition == AttrsSimpleCondition(
+            first_signal="signal-A",
+            comparator=">",
+            second_signal="signal-B"
+        )
 
     def test_mergable_with(self):
         turret1 = AmmoTurret("gun-turret")

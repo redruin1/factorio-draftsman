@@ -144,6 +144,10 @@ class TestProgrammableSpeakerTesting:
 
         # Only warns on PEDANTIC
         speaker.validate_assignment = ValidationMode.PEDANTIC
+
+        speaker.volume = 0.5
+        assert speaker.volume == 0.5
+
         with pytest.warns(VolumeRangeWarning):
             speaker.volume = 10.0
         assert speaker.volume == 10.0
@@ -357,7 +361,9 @@ class TestProgrammableSpeakerTesting:
         }
 
         # Test validation with unknown programmable speaker
-        unknown = ProgrammableSpeaker("programmable-speaker-2", validate_assignment="none")
+        unknown = ProgrammableSpeaker(
+            "programmable-speaker-2", validate_assignment="none"
+        )
         unknown.instrument_id = 10
         assert unknown.instrument_id == 10
 
@@ -410,6 +416,13 @@ class TestProgrammableSpeakerTesting:
         assert speaker.note_id == 100
         assert speaker.note_name == None
 
+        # No warning
+        speaker.validate_assignment = "minimum"
+        assert speaker.validate_assignment is ValidationMode.MINIMUM
+        speaker.note_id = 100
+        assert speaker.note_id == 100
+
+        speaker.validate_assignment = "strict"
         # Handle the case where the instrument is unknown
         with pytest.warns(UnknownInstrumentWarning):
             speaker.instrument_id = 100

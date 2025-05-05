@@ -1,16 +1,8 @@
-# inventory_filter.py
+# filtered_inventory.py
 
-from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.data import entities
-from draftsman.data import items
-from draftsman.error import (
-    InvalidItemError,
-    DataFormatError,
-)
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    DraftsmanBaseModel,
-    ItemFilter,
     AttrsItemFilter,
     ItemName,
     QualityName,
@@ -22,81 +14,14 @@ from draftsman.signatures import (
 from draftsman.validators import and_, instance_of
 
 import attrs
-from pydantic import (
-    BaseModel,
-    Field,
-    ValidationError,
-    ValidationInfo,
-    validate_call,
-    field_validator,
-)
-from typing import Any, Literal, Optional
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.entity import Entity
+from typing import Optional
 
 
 @attrs.define(slots=False)
-class InventoryFilterMixin:  # TODO: rename to `FilteredInventoryMixin`
+class FilteredInventoryMixin:  # TODO: rename to `FilteredInventoryMixin`
     """
-    Allows an Entity to set inventory filters. Only used on :py:class:`.CargoWagon`.
+    Allows an Entity to set inventory filters.
     """
-
-    class Format(BaseModel):
-        class InventoryFilters(DraftsmanBaseModel):
-            filters: Optional[list[ItemFilter]] = Field(
-                None,
-                description="""
-                Any reserved item filter slots in the container's inventory.
-                """,
-            )
-            bar: Optional[uint16] = Field(
-                None,
-                description="""
-                Limiting bar on this container's inventory.
-                """,
-            )
-
-            @field_validator("filters", mode="before")
-            @classmethod
-            def normalize_validate(cls, value: Any):
-                if isinstance(value, (list, tuple)):
-                    result = []
-                    for i, entry in enumerate(value):
-                        if isinstance(entry, str):
-                            result.append({"index": i + 1, "name": entry})
-                        else:
-                            result.append(entry)
-                    return result
-                else:
-                    return value
-
-            @field_validator("bar")
-            @classmethod
-            def ensure_less_than_inventory_size(
-                cls, bar: Optional[uint16], info: ValidationInfo
-            ):
-                return ensure_bar_less_than_inventory_size(cls, bar, info)
-
-        inventory: Optional[InventoryFilters] = Field(
-            InventoryFilters(),
-            description="""
-            Custom inventory object just for cargo wagons. Note that this 
-            contains the 'bar' key for this entity type specifically, which 
-            differs from all other containers.
-            """,
-        )
-
-    # def __init__(self, name: str, similar_entities: list[str], **kwargs):
-    #     self._root: __class__.Format
-
-    #     super().__init__(name, similar_entities, **kwargs)
-
-    #     self.inventory = kwargs.get("inventory", self.Format.InventoryFilters())
-
-    # =========================================================================
 
     @property
     def inventory_size(self) -> Optional[uint16]:
@@ -157,19 +82,7 @@ class InventoryFilterMixin:  # TODO: rename to `FilteredInventoryMixin`
 
     # =========================================================================
 
-    @property
-    def filter_count(self) -> Optional[uint16]:
-        """
-        The number of filter slots that this entity has. In this case, is
-        equivalent to the number of inventory slots of the CargoWagon. Returns
-        ``None`` if this entity's name is not recognized by Draftsman. Not
-        exported; read only.
-        """
-        return self.inventory_size
-
-    # =========================================================================
-
-    def _filters_converter(value):
+    def _inventory_filters_converter(value):
         if isinstance(value, list):
             for i, elem in enumerate(value):
                 if isinstance(elem, str):
@@ -178,13 +91,13 @@ class InventoryFilterMixin:  # TODO: rename to `FilteredInventoryMixin`
                     value[i] = AttrsItemFilter.converter(elem)
         return value
 
-    filters: list[AttrsItemFilter] = attrs.field(
+    inventory_filters: list[AttrsItemFilter] = attrs.field(
         factory=list,
-        converter=_filters_converter,
+        converter=_inventory_filters_converter,
         validator=instance_of(list),  # TODO: validators
     )
     """
-    TODO
+    The list of filters applied to this entity's inventory slots.
     """
 
     # @property
@@ -312,22 +225,22 @@ class InventoryFilterMixin:  # TODO: rename to `FilteredInventoryMixin`
 
         # Check to see if filters already contains an entry with the same index
         found_index = None
-        for i, filter in enumerate(self.filters):
+        for i, filter in enumerate(self.inventory_filters):
             if filter.index == index + 1:  # Index already exists in the list
                 if item is None:
                     # Delete the entry
-                    del self.filters[i]
+                    del self.inventory_filters[i]
                 else:
                     # Modify the existing value inplace
-                    self.filters[i].name = item
-                    self.filters[i].quality = quality
-                    self.filters[i].comparator = comparator
+                    self.inventory_filters[i].name = item
+                    self.inventory_filters[i].quality = quality
+                    self.inventory_filters[i].comparator = comparator
                 found_index = i
                 break
 
         if found_index is None:
             # If no entry with the same index was found
-            self.filters.append(new_entry)
+            self.inventory_filters.append(new_entry)
 
     # def set_inventory_filters(self, filters: list):
     #     """
@@ -361,18 +274,18 @@ class InventoryFilterMixin:  # TODO: rename to `FilteredInventoryMixin`
 
     # =========================================================================
 
-    def merge(self, other: "InventoryFilterMixin"):
+    def merge(self, other: "FilteredInventoryMixin"):
         super().merge(other)
 
-        self.filters = other.filters  # TODO: copy?
+        self.inventory_filters = other.inventory_filters  # TODO: copy?
         self.bar = other.bar
 
 
 draftsman_converters.add_schema(
     {"$id": "factorio:filtered_inventory_mixin"},
-    InventoryFilterMixin,
+    FilteredInventoryMixin,
     lambda fields: {
-        ("inventory", "filters"): fields.filters.name,
+        ("inventory", "filters"): fields.inventory_filters.name,
         ("inventory", "bar"): fields.bar.name,
     },
 )

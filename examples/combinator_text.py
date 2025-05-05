@@ -1,9 +1,9 @@
-# combinator_ascii.py
+# combinator_text.py
 
 """
 Creates two sets of constant combinators. The first one is a conversion of nixie
-tube signals to ASCII codes, where the signal ID is the symbol it represents and
-the value is it's ASCII value.
+tube signals to UTF-8 codes, where the signal ID is the symbol it represents and
+the value is it's UTF-8 value.
 
 The second one is a set of ordered unique signals where the value of each 
 corresponds to the letter of some text phrase. Here the types of the signals are
@@ -18,22 +18,26 @@ dense, compressed signal frame instead of many duplicate frames, and perhaps
 even multiple letters could be stored in a single 32-bit number.
 """
 
+from draftsman import __factorio_version_info__
 from draftsman.blueprintable import Blueprint
 from draftsman.entity import ConstantCombinator
 from draftsman.error import MissingModError
-from draftsman.data.mods import mod_list
+from draftsman.data import mods
 
 import math
 
 
 def main():
+    if __factorio_version_info__ >= (1, 1):
+        return  # This script is only meant for Factorio 1.0
+
     letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     translations = {}
 
     # We allow Nixie-tubes symbols as well, since we might want to make those
     # visible
     # https://mods.factorio.com/mod/nixie-tubes
-    if mod_list.get("nixie-tubes", False):
+    if mods.versions.get("nixie-tubes", False):
         letters += "[]{}()!.?@*-%+/"
         translations.update(
             {
@@ -65,17 +69,17 @@ def main():
     blueprint = Blueprint()
 
     combinator = ConstantCombinator("constant-combinator")
-    num_combinators = math.ceil(len(letter_list) / combinator.item_slot_count)
+    num_combinators = math.ceil(len(letter_list) / combinator.slot_count)
     for i in range(num_combinators):
         combinator.tile_position = (i, 0)
         blueprint.entities.append(combinator)
 
     for i, letter in enumerate(letter_list):
-        current_entity = int(i / combinator.item_slot_count)
-        index = i % combinator.item_slot_count
+        current_entity = int(i / combinator.slot_count)
+        index = i % combinator.slot_count
         id = "signal-{}".format(translations[letter])
         value = ord(letter)
-        blueprint.entities[current_entity].set_signal(index, id, value)
+        blueprint.entities[current_entity].sections[0].set_signal(index, id, value)
 
     print(blueprint.to_string(), "\n")
 
@@ -90,7 +94,7 @@ def main():
         index = i
         id = "signal-{}".format(i)
         value = ord(letter)
-        blueprint.entities[0].set_signal(index, id, value)
+        blueprint.entities[0].sections[0].set_signal(index, id, value)
 
     print(blueprint.to_string())
 
