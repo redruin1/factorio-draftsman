@@ -223,7 +223,7 @@ class ConstantCombinator(
     sections: list[ManualSection] = attrs.field(
         factory=list,
         converter=_sections_converter,
-        validator=instance_of(list),  # TODO: validator
+        validator=instance_of(list[ManualSection]),
     )
     """
     TODO

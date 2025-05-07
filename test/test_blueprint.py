@@ -245,6 +245,8 @@ class TestBlueprint:
         # Invalid Data
         with pytest.raises(DataFormatError):
             blueprint.label_color = "wrong"
+        with pytest.raises(ValueError):
+            blueprint.label_color.a = 1000
 
     # =========================================================================
 
@@ -643,7 +645,10 @@ class TestBlueprint:
         with pytest.warns(OverlappingObjectsWarning):
             blueprint.entities.append("straight-rail", direction=Direction.SOUTHEAST)
 
-        # TODO: Test broadphase positive, but narrowphase negative
+        # Test broadphase positive, but narrowphase negative
+        blueprint = Blueprint()
+        blueprint.entities.append("legacy-curved-rail")
+        blueprint.entities.append("wooden-chest", tile_position=(0, 4))
 
         # Unreasonable size
         blueprint = Blueprint()
@@ -1382,7 +1387,9 @@ class TestBlueprint:
         blueprint.entities.append("power-switch", tile_position=(10, 10), id="p")
 
         with pytest.raises(InvalidConnectionSideError):
-            blueprint.add_power_connection("1", "p", 3)
+            blueprint.add_power_connection("1", "p", "wrong")
+        with pytest.raises(InvalidConnectionSideError):
+            blueprint.add_power_connection("1", "p", "input", "wrong")
 
         blueprint.entities.append("radar", tile_position=(0, 6), id="3")
 
@@ -1643,19 +1650,9 @@ class TestBlueprint:
                     [2, 5, 3, 5],
                     [2, 5, 5, 5],
                     [2, 5, 4, 5],
-                    [2, 5, 1, 5],
-                    [3, 5, 2, 5],
                     [3, 5, 5, 5],
                     [3, 5, 4, 5],
-                    [3, 5, 1, 5],
-                    [4, 5, 1, 5],
                     [4, 5, 5, 5],
-                    [4, 5, 3, 5],
-                    [4, 5, 2, 5],
-                    [5, 5, 4, 5],
-                    [5, 5, 3, 5],
-                    [5, 5, 2, 5],
-                    [5, 5, 1, 5],
                 ],
                 "version": encode_version(*__factorio_version_info__),
             }
@@ -1697,47 +1694,46 @@ class TestBlueprint:
                     [1, 5, 3, 5],
                     [1, 5, 2, 5],
                     [2, 5, 4, 5],
-                    [2, 5, 1, 5],
                     [3, 5, 4, 5],
-                    [3, 5, 1, 5],
-                    [4, 5, 3, 5],
-                    [4, 5, 2, 5],
                 ],
                 "version": encode_version(*__factorio_version_info__),
             }
         }
         # Test prefer_axis
-        # blueprint.entities = None
-        # blueprint.entities.append("medium-electric-pole")
-        # blueprint.entities.append("medium-electric-pole", tile_position=(5, 0))
-        # blueprint.entities.append("medium-electric-pole", tile_position=(1, 1))
-        # blueprint.generate_power_connections(prefer_axis=False)
-        # assert blueprint.to_dict() == {
-        #     "blueprint": {
-        #         "item": "blueprint",
-        #         "entities": [
-        #             {
-        #                 "name": "medium-electric-pole",
-        #                 "position": {"x": 0.5, "y": 0.5},
-        #                 "neighbours": [2, 3],
-        #                 "entity_number": 1,
-        #             },
-        #             {
-        #                 "name": "medium-electric-pole",
-        #                 "position": {"x": 5.5, "y": 0.5},
-        #                 "neighbours": [1, 3],
-        #                 "entity_number": 2,
-        #             },
-        #             {
-        #                 "name": "medium-electric-pole",
-        #                 "position": {"x": 1.5, "y": 1.5},
-        #                 "neighbours": [1, 2],
-        #                 "entity_number": 3,
-        #             },
-        #         ],
-        #         "version": encode_version(*__factorio_version_info__),
-        #     }
-        # }
+        blueprint.entities = None
+        blueprint.wires = None
+        blueprint.entities.append("medium-electric-pole")
+        blueprint.entities.append("medium-electric-pole", tile_position=(5, 0))
+        blueprint.entities.append("medium-electric-pole", tile_position=(1, 1))
+        blueprint.generate_power_connections(prefer_axis=False)
+        assert blueprint.to_dict() == {
+            "blueprint": {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "name": "medium-electric-pole",
+                        "position": {"x": 0.5, "y": 0.5},
+                        "entity_number": 1,
+                    },
+                    {
+                        "name": "medium-electric-pole",
+                        "position": {"x": 5.5, "y": 0.5},
+                        "entity_number": 2,
+                    },
+                    {
+                        "name": "medium-electric-pole",
+                        "position": {"x": 1.5, "y": 1.5},
+                        "entity_number": 3,
+                    },
+                ],
+                "wires": [
+                    [1, 5, 2, 5],
+                    [1, 5, 3, 5],
+                    [2, 5, 3, 5],
+                ],
+                "version": encode_version(*__factorio_version_info__),
+            },
+        }
 
         # Test too many power connections
         # blueprint.entities = None
@@ -1847,6 +1843,11 @@ class TestBlueprint:
 
         # Test adjacent gate warning
         # TODO
+
+        with pytest.raises(InvalidConnectionSideError):
+            blueprint.remove_circuit_connection("red", substationA, substationB, "incorrect")
+        with pytest.raises(InvalidConnectionSideError):
+            blueprint.remove_circuit_connection("red", substationA, substationB, side_2="incorrect")
 
         # Errors
         blueprint.entities.append("lightning-rod", tile_position=(0, 6), id="3")
@@ -2908,10 +2909,15 @@ class TestBlueprint:
     def test_unreasonable_size(self):
         blueprint = Blueprint()
 
+        # No issues
+        blueprint.validate().reissue_all()
+
         blueprint.entities.append("transport-belt")
         blueprint.entities.append("transport-belt", tile_position=(15000, 0))
         with pytest.raises(UnreasonablySizedBlueprintError):
             blueprint.validate().reissue_all()
+
+        blueprint.validate(mode=ValidationMode.NONE).reissue_all()
 
         blueprint.entities.clear()
 
@@ -2920,3 +2926,5 @@ class TestBlueprint:
         blueprint.tiles.append("landfill", position=(15000, 0))
         with pytest.raises(UnreasonablySizedBlueprintError):
             blueprint.validate().reissue_all()
+
+        blueprint.validate(mode=ValidationMode.NONE).reissue_all()

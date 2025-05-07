@@ -404,7 +404,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     icons: list[AttrsIcon] = attrs.field(
         factory=list,
         converter=_icons_converter,
-        validator=instance_of(list),  # TODO: validators
+        validator=instance_of(list[AttrsIcon]),  # TODO: validators
     )
     """
     The visible icons of the blueprintable, as shown in the icon in

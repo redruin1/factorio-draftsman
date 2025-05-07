@@ -3,23 +3,13 @@
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
     AttrsSimpleCondition,
-    DraftsmanBaseModel,
     AttrsSignalID,
     int32,
 )
 
-import attrs
-from pydantic import (
-    ValidationInfo,
-    ValidationError,
-    ValidatorFunctionWrapHandler,
-    field_validator,
-    validate_call,
-)
-from typing import Any, Literal, Union
+from typing import Literal, Union
 
 
-# @attrs.define(slots=False)
 class ControlBehaviorMixin:
     """
     Enables the entity to specify control behavior.
@@ -46,12 +36,12 @@ class ControlBehaviorMixin:
     * :py:class:`.mixins.stack_size.StackSizeMixin`
     """
 
-    class Format(DraftsmanBaseModel):
-        # TODO: It would be nice if we could specify "control_behavior" as an
-        # abstract field, so that any sub-Format that inherits ControlBehavior
-        # must implement it
-        # `control_behavior: AbstractField` or something
-        pass
+    # class Format(DraftsmanBaseModel):
+    #     # TODO: It would be nice if we could specify "control_behavior" as an
+    #     # abstract field, so that any sub-Format that inherits ControlBehavior
+    #     # must implement it
+    #     # `control_behavior: AbstractField` or something
+    #     pass
 
     # def __init__(self, name: str, similar_entities: list[str], **kwargs):
     #     self._root: __class__.Format
@@ -110,7 +100,6 @@ class ControlBehaviorMixin:
 
     # =========================================================================
 
-    # @validate_call
     def _set_condition(
         self,
         condition_name: str,
@@ -142,8 +131,3 @@ class ControlBehaviorMixin:
             condition.second_signal = b
 
         setattr(self, condition_name, condition)
-
-    # =========================================================================
-
-    # def __eq__(self, other) -> bool:
-    #     return super().__eq__(other) and self.control_behavior == other.control_behavior

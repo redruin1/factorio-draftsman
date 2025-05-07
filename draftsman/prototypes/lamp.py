@@ -9,21 +9,17 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     EnergySourceMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode, LampColorMode
+from draftsman.constants import LampColorMode
 from draftsman.serialization import (
     draftsman_converters,
 )
-from draftsman.signatures import AttrsColor, DraftsmanBaseModel
-from draftsman.utils import get_first
+from draftsman.signatures import AttrsColor
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import lamps
 
 import attrs
-import cattrs
-from pydantic import ConfigDict, Field
-from typing import Any, Literal, Optional, Union
+from typing import Optional
 
 
 @attrs.define

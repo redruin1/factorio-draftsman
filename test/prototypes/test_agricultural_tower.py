@@ -11,6 +11,10 @@ import pytest
 
 def test_constructor():
     tower = AgriculturalTower("agricultural-tower")
+    assert tower.to_dict() == {
+        "name": "agricultural-tower",
+        "position": {"x": 1.5, "y": 1.5}
+    }
 
     with pytest.warns(UnknownEntityWarning):
         AgriculturalTower("unknown agricultural tower")

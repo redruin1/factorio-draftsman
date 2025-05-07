@@ -94,7 +94,7 @@ class FilteredInventoryMixin:  # TODO: rename to `FilteredInventoryMixin`
     inventory_filters: list[AttrsItemFilter] = attrs.field(
         factory=list,
         converter=_inventory_filters_converter,
-        validator=instance_of(list),  # TODO: validators
+        validator=instance_of(list[AttrsItemFilter]),
     )
     """
     The list of filters applied to this entity's inventory slots.

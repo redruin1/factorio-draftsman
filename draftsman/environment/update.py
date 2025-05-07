@@ -731,6 +731,7 @@ def get_items(lua):
     add_items(data.raw["spidertron-remote"])
     add_items(data.raw["repair-tool"])  # not an item somehow
     add_items(data.raw["rail-planner"])
+    add_items(data.raw["copy-paste-tool"])
 
     # Sort everything
     for i, _ in enumerate(group_list):

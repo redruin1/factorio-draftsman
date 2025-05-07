@@ -93,6 +93,18 @@ class TestArithmeticCombinator:
         with pytest.raises(DataFormatError):
             ArithmeticCombinator(tags="incorrect").validate().reissue_all()
 
+    def test_1_0_serialization(self):
+        combinator = ArithmeticCombinator(player_description="Wanna see a magic trick?")
+        assert combinator.to_dict(version=(2, 0)) == {
+            "name": "arithmetic-combinator",
+            "position": {"x": 0.5, "y": 1.0},
+            "player_description": "Wanna see a magic trick?",
+        }
+        assert combinator.to_dict(version=(1, 0)) == {
+            "name": "arithmetic-combinator",
+            "position": {"x": 0.5, "y": 1.0},
+        }
+
     def test_power_and_circuit_flags(self):
         for name in arithmetic_combinators:
             combinator = ArithmeticCombinator(name)
@@ -254,6 +266,15 @@ class TestArithmeticCombinator:
         # All info is known, but Draftsman doesn't recognize
         with pytest.warns(UnknownSignalWarning):
             combinator.output_signal = {"name": "unknown", "type": "virtual"}
+
+        combinator.validate_assignment = "minimum"
+        assert combinator.validate_assignment is ValidationMode.MINIMUM
+        
+        # No warnings
+        combinator.output_signal = "signal-everything"
+        assert combinator.output_signal == AttrsSignalID(name="signal-everything", type="virtual")
+        combinator.output_signal = "signal-each"
+        assert combinator.output_signal == AttrsSignalID(name="signal-each", type="virtual")
 
         # Errors
         with pytest.raises(DataFormatError):

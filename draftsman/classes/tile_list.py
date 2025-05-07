@@ -5,11 +5,8 @@ from draftsman.classes.spatial_hashmap import SpatialDataStructure, SpatialHashM
 from draftsman.classes.exportable import Exportable, ValidationResult
 from draftsman.constants import ValidationMode
 from draftsman.tile import Tile, new_tile
-from draftsman.data import tiles
 from draftsman.error import DataFormatError, InvalidTileError
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import DraftsmanBaseModel
-from draftsman.validators import classvalidator
 
 import attrs
 from collections.abc import MutableSequence
@@ -113,8 +110,6 @@ class TileList(Exportable, MutableSequence):
         new = False
         if isinstance(name, str):
             tile = new_tile(name, **kwargs)
-            if tile is None:
-                return
             new = True
         else:
             tile = name
@@ -155,10 +150,6 @@ class TileList(Exportable, MutableSequence):
 
         # Keep a reference of the parent blueprint in the tile
         tile._parent = self._parent
-
-    def clear(self) -> None:
-        del self._root[:]
-        self.spatial_map.clear()
 
     def validate(
         self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False

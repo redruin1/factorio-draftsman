@@ -21,14 +21,12 @@ from draftsman.error import (
     InvalidMapperError,
     InvalidSignalError,
     IncompleteSignalError,
-    DataFormatError,
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import encode_version, get_suggestion
 from draftsman.validators import (
     and_,
     lt,
-    # le,
     ge,
     one_of,
     is_none,
@@ -39,10 +37,8 @@ from draftsman.validators import (
 from draftsman.warning import (
     BarWarning,
     MalformedSignalWarning,
-    PureVirtualDisallowedWarning,
     UnknownEntityWarning,
     UnknownFluidWarning,
-    UnknownKeywordWarning,
     UnknownItemWarning,
     UnknownSignalWarning,
     UnknownTileWarning,
@@ -53,23 +49,6 @@ from draftsman.warning import (
 from typing_extensions import Annotated
 
 import attrs
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    Field,
-    GetJsonSchemaHandler,
-    RootModel,
-    ValidationInfo,
-    ValidationError,
-    ValidatorFunctionWrapHandler,
-    field_validator,
-    model_validator,
-)
-from pydantic.functional_validators import AfterValidator
-from pydantic.json_schema import JsonSchemaValue
-from pydantic_core import CoreSchema
-from textwrap import dedent
-from thefuzz import process
 from typing import Any, Literal, Optional, Sequence, Union
 import warnings
 
@@ -128,136 +107,6 @@ ArithmeticOperation = Literal[
 ]
 
 
-class DraftsmanBaseModel(BaseModel):
-    """
-    A custom wrapper around Pydantic's ``BaseModel``.
-
-    Includes things like arbitrary construction, warning of unused attributes,
-    and adds getters and setters so that it blends in more seamlessly with
-    unvalidated dicts.
-    """
-
-    @classmethod
-    # @lru_cache(maxsize=None)  # maybe excessive...
-    # def get_model_aliases(cls) -> list[str]:
-    #     """
-    #     Similar to ``cls.model_fields``, but converts everything to their
-    #     aliases if present.
-    #     """
-    #     return [
-    #         v.alias if v.alias is not None else k for k, v in cls.model_fields.items()
-    #     ]
-    def true_model_fields(cls):
-        return {
-            (v.alias if v.alias is not None else k): k
-            for k, v in cls.model_fields.items()
-        }
-
-    @field_validator("*", mode="wrap")
-    def construct_fields(
-        cls, value: Any, handler: ValidatorFunctionWrapHandler, info: ValidationInfo
-    ):
-        if info.context and "construction" in info.context:
-            try:
-                return handler(value)
-            except ValidationError:
-                return value
-            # TODO: swap the above with just returning the value
-            # Currently we're doing the validation twice, first a minimum pass to coerce
-            # everything we can to their respective BaseModels, and the second time to
-            # actually validate all the data and run the custom validation functions
-            # Ideally, this could all happen in one step if we copy the code from
-            # validate/add the "construction" keyword to the context of validate
-        else:
-            return handler(value)
-
-    @model_validator(mode="after")
-    def warn_unused_arguments(self, info: ValidationInfo):
-        """
-        Populates the warning list when an input BaseModel is given a field it
-        does not recognize. Because Factorio (seems to) permit extra keys, doing
-        so will issue warnings instead of exceptions.
-        """
-        if not info.context:
-            return self
-        if info.context["mode"] <= ValidationMode.MINIMUM:
-            return self
-
-        obj = info.context["object"]
-
-        # If we're creating a generic `Entity` (in the case where Draftsman
-        # cannot really know what entity is being imported) then we don't want
-        # to issue the following warnings, since we don't want to make
-        # assertions where we don't have enough information
-        if obj.extra_keys:
-            return self
-
-        # We also only want to issue this particular warning if we're setting an
-        # assignment of a subfield, or if we're doing a full scale `validate()`
-        # function call
-        if type(obj).Format is type(self) and info.context["assignment"]:
-            return self
-
-        if self.model_extra:
-            warning_list: list = info.context["warning_list"]
-
-            warning_list.append(
-                UnknownKeywordWarning(
-                    "'{}' object has no attribute(s) {}; allowed fields are {}".format(
-                        self.model_config.get("title", type(self).__name__),
-                        list(self.model_extra.keys()),
-                        list(self.true_model_fields().keys()),
-                    )
-                )
-            )
-
-        return self
-
-    # Permit accessing via indexing
-    def __getitem__(self, key):
-        return getattr(self, self.true_model_fields().get(key, key))
-
-    def __setitem__(self, key, value):
-        setattr(self, self.true_model_fields().get(key, key), value)
-
-    def __contains__(self, key: str) -> bool:
-        return self.true_model_fields().get(key, key) in self.__dict__
-
-    # Add a number of dict-like functions:
-    def get(self, key, default):
-        return self.__dict__.get(self.true_model_fields().get(key, key), default)
-
-    # Strip indentation and newlines from description strings when generating
-    # JSON schemas
-    @classmethod
-    def __get_pydantic_json_schema__(
-        cls, core_schema: CoreSchema, handler: GetJsonSchemaHandler
-    ) -> JsonSchemaValue:
-        json_schema = handler(core_schema)
-        json_schema = handler.resolve_ref_schema(json_schema)
-
-        def normalize_description(input_obj: str) -> str:
-            if "description" in input_obj:
-                input_obj["description"] = dedent(input_obj["description"]).strip()
-
-        normalize_description(json_schema)
-        if "properties" in json_schema:  # Maybe not needed?
-            for property_spec in json_schema["properties"].values():
-                normalize_description(property_spec)
-        # if "items" in json_schema: # Maybe not needed?
-        #     normalize_description(json_schema["items"])
-
-        return json_schema
-
-    # Factorio seems to be permissive when it comes to extra keys, so we allow
-    # them and issue warnings if desired
-    model_config = ConfigDict(
-        extra="allow",
-        revalidate_instances="always",
-        populate_by_name=True,  # Allow to pass either internal or alias to constructor
-    )
-
-
 @attrs.define
 class AttrsMapperID(Exportable):
     name: str = attrs.field()  # TODO: optional? # TODO: validators
@@ -290,38 +139,6 @@ draftsman_converters.add_schema(
         "type": fields.type.name,
     },
 )
-
-
-class MapperID(DraftsmanBaseModel):
-    name: str  # TODO: optional?
-    type: Literal["entity", "item"] = Field(
-        ...,
-        description="""
-        The type of mapping taking place; can be one of 'entity' for entity
-        replacement or 'item' for item (typically module) replacement.
-        """,
-    )  # TODO: optional?
-
-    @model_validator(mode="before")
-    @classmethod
-    def init_from_string(cls, value: Any):
-        """
-        Attempt to convert an input string name into a dict representation.
-        Raises a ValueError if unable to determine the type of a signal's name,
-        likely if the signal is misspelled or used in a modded configuration
-        that differs from Draftsman's current one.
-        """
-        if isinstance(value, str):
-            try:
-                return signals.mapper_dict(value)  # FIXME
-            except InvalidMapperError as e:
-                raise ValueError(
-                    "Unknown mapping target {}; either specify the full dictionary, or update your environment".format(
-                        e
-                    )
-                ) from None
-        else:
-            return value
 
 
 @attrs.define
@@ -365,6 +182,22 @@ draftsman_converters.add_schema(
 
 @attrs.define
 class AttrsSignalID(Exportable):
+    """
+    A signal ID.
+
+    For convenience, a SignalID object can be constructed with just the string
+    name:
+
+    TODO
+
+    In this case, the signal ``type`` is equivalent to the first entry in the
+    return result of ``get_valid_types(name)``. For most applications, this 
+    defaults to ``"item"``, but notable exceptions include fluids (``"fluid"``)
+    and virtual signals (``"virtual"``). In cases where signals have more than
+    one valid type and you wish to use one other than the default, the full 
+    constructor must be used.
+    """
+    
     name: Optional[SignalName] = attrs.field(
         default=None, validator=instance_of(Optional[SignalName])
     )
@@ -477,9 +310,20 @@ draftsman_converters.get_version((2, 0)).add_schema(
 )
 
 
-class TargetID(DraftsmanBaseModel):
-    index: uint32 = Field(..., description="TODO")  # TODO: size
-    name: str = Field(..., description="TODO")  # TODO: TargetName?
+@attrs.define
+class TargetID(Exportable):
+    index: uint32 = attrs.field( # TODO: size, 0 or 1 based
+        validator=instance_of(uint32)
+    )
+    """
+    Index of the target in the GUI, 0-based.
+    """
+    name: str = attrs.field( # TODO: TargetName?
+        validator=instance_of(str)
+    )
+    """
+    Name of the target.
+    """
 
 
 @attrs.define
@@ -503,11 +347,6 @@ draftsman_converters.add_schema(
         fields.name.name: "name",
     },
 )
-
-
-class AsteroidChunkID(DraftsmanBaseModel):
-    index: uint32 = Field(..., description="TODO")  # TODO: size
-    name: str = Field(..., description="TODO")  # TODO: ChunkName?
 
 
 @attrs.define
@@ -557,28 +396,6 @@ draftsman_converters.add_schema(
 #         return value
 
 
-def normalize_version(value: Any):
-    try:
-        return encode_version(*value)
-    except Exception:
-        return value
-
-
-def normalize_color(value: Any):
-    try:
-        color_dict = {}
-        color_dict["r"] = value[0]
-        color_dict["g"] = value[1]
-        color_dict["b"] = value[2]
-        try:
-            color_dict["a"] = value[3]
-        except IndexError:
-            pass
-        return color_dict
-    except Exception:
-        return value
-
-
 # class Icons(DraftsmanRootModel):
 #     root: list[Icon] = Field(
 #         ...,
@@ -618,131 +435,11 @@ class AttrsColor:
             raise ValueError("value {} outside of range [0, 255]".format(value))
 
     @classmethod
-    def from_sequence(cls, sequence: Sequence) -> "AttrsColor":
-        return cls(*sequence)
-
-    @classmethod
     def converter(cls, value) -> "AttrsColor":
         if isinstance(value, (tuple, list)):  # TODO: sequence
             return cls(*value)
         elif isinstance(value, dict):
             return cls(**value)
-        else:
-            return value
-
-
-class Color(DraftsmanBaseModel):
-    r: float = Field(..., ge=0, le=255)
-    g: float = Field(..., ge=0, le=255)
-    b: float = Field(..., ge=0, le=255)
-    a: Optional[float] = Field(None, ge=0, le=255)
-
-    @model_validator(mode="before")
-    @classmethod
-    def normalize_from_sequence(cls, value: Any):
-        if isinstance(value, (list, tuple)):
-            new_color = {}
-            new_color["r"] = value[0]
-            new_color["g"] = value[1]
-            new_color["b"] = value[2]
-            try:
-                new_color["a"] = value[3]
-            except IndexError:
-                pass
-            return new_color
-        else:
-            return value
-
-    # @model_serializer
-    # def normalize(self):  # FIXME: scuffed
-    #     if isinstance(self, (list, tuple)):
-    #         new_color = {}
-    #         new_color["r"] = self[0]
-    #         new_color["g"] = self[1]
-    #         new_color["b"] = self[2]
-    #         try:
-    #             new_color["a"] = self[3]
-    #         except IndexError:
-    #             pass
-    #         return new_color
-    #     elif isinstance(self, dict):
-    #         return {k: v for k, v in self.items() if v is not None}
-    #     else:
-    #         return {k: v for k, v in self.__dict__.items() if v is not None}
-
-
-class FloatPosition(DraftsmanBaseModel):
-    x: float
-    y: float
-
-    @model_validator(mode="before")
-    @classmethod
-    def model_validator(cls, data):
-        # likely a Vector or Primitive vector
-        try:
-            data = Vector.from_other(data, float)
-            return data.to_dict()
-        except TypeError:
-            return data
-
-
-class IntPosition(DraftsmanBaseModel):
-    x: int
-    y: int
-
-    @model_validator(mode="before")
-    @classmethod
-    def model_validator(cls, data):
-        # likely a Vector or Primitive vector
-        try:
-            data = Vector.from_other(data, int)
-            return data.to_dict()
-        except TypeError:
-            return data
-
-
-# factorio_comparator_choices = {">", "<", "=", "≥", "≤", "≠"}
-# python_comparator_choices = {"==", "<=", ">=", "!="}
-# class Comparator(DraftsmanRootModel):
-#     root: Literal[">", "<", "=", "≥", "≤", "≠"]
-
-#     @model_validator(mode="before")
-#     @classmethod
-#     def normalize(cls, input: str):
-#         conversions = {"==": "=", ">=": "≥", "<=": "≤", "!=": "≠"}
-#         if input in conversions:
-#             return conversions[input]
-#         else:
-#             return input
-
-# @model_serializer
-# def normalize(self):
-#     conversions = {
-#         "==": "=",
-#         ">=": "≥",
-#         "<=": "≤",
-#         "!=": "≠"
-#     }
-#     if self.root in conversions:
-#         return conversions[self.root]
-#     else:
-#         return self.root
-
-
-class NetworkSpecification(DraftsmanBaseModel):
-    red: Optional[bool] = Field(
-        True, description="Whether or not inputs from the red wire are permitted."
-    )
-
-    green: Optional[bool] = Field(
-        True, description="Whether or not inputs from the green wire are permitted."
-    )
-
-    @model_validator(mode="before")
-    @classmethod
-    def convert_from_set(cls, value: Any):
-        if isinstance(value, set):
-            return {elem: False for elem in ("red", "green") if elem not in value}
         else:
             return value
 
@@ -825,40 +522,6 @@ draftsman_converters.add_schema(
 )
 
 
-class EntityFilter(DraftsmanBaseModel):
-    name: EntityName = Field(
-        ...,
-        description="""
-        The name of a valid deconstructable entity.
-        """,
-    )
-    index: Optional[uint64] = Field(
-        description="""
-        Position of the filter in the DeconstructionPlanner, 0-based. Seems to 
-        behave more like a sorting key rather than a numeric index; if omitted, 
-        entities will be sorted by their Factorio order when imported instead
-        of specific slots in the GUI, contrary to what index would seem to imply.
-        """
-    )
-
-
-class TileFilter(DraftsmanBaseModel):
-    name: TileName = Field(
-        ...,
-        description="""
-        The name of a valid deconstructable tile.
-        """,
-    )
-    index: Optional[uint64] = Field(
-        description="""
-        Position of the filter in the DeconstructionPlanner, 0-based. Seems to 
-        behave more like a sorting key rather than a numeric index; if omitted, 
-        entities will be sorted by their Factorio order when imported instead
-        of specific slots in the GUI, contrary to what index would seem to imply.
-        """
-    )
-
-
 # class CircuitConnectionPoint(DraftsmanBaseModel):
 #     entity_id: Association.Format
 #     circuit_id: Optional[Literal[1, 2]] = None
@@ -899,60 +562,6 @@ class TileFilter(DraftsmanBaseModel):
 
 #     # def __contains__(self, item):
 #     #     return item in self._alias_map and
-
-
-# class Filters(DraftsmanRootModel):
-class FilterEntry(DraftsmanBaseModel):
-    index: int64 = Field(
-        ..., description="""Numeric index of a filter entry, 1-based."""
-    )
-    name: ItemName = Field(..., description="""Name of the item to filter.""")
-
-    @field_validator("index")
-    @classmethod
-    def ensure_within_filter_count(cls, value: int, info: ValidationInfo):
-        """ """
-        if not info.context:
-            return value
-        if info.context["mode"] <= ValidationMode.MINIMUM:
-            return value
-
-        entity = info.context["object"]
-
-        if entity.filter_count is not None and value > entity.filter_count:
-            raise ValueError(
-                "'{}' exceeds the allowable range for filter slot indices [0, {}) for this entity ('{}')".format(
-                    value, entity.filter_count, entity.name
-                )
-            )
-
-        return value
-
-    # root: list[FilterEntry]
-
-    # @model_validator(mode="before")
-    # @classmethod
-    # def normalize_validate(cls, value: Any):
-    #     if isinstance(value, (list, tuple)):
-    #         result = []
-    #         for i, entry in enumerate(value):
-    #             if isinstance(entry, str):
-    #                 result.append({"index": i + 1, "name": entry})
-    #             else:
-    #                 result.append(entry)
-    #         return result
-    #     else:
-    #         return value
-
-    # @model_serializer
-    # def normalize_construct(self):
-    #     result = []
-    #     for i, entry in enumerate(self.root):
-    #         if isinstance(entry, str):
-    #             result.append({"index": i + 1, "name": entry})
-    #         else:
-    #             result.append(entry)
-    #     return result
 
 
 @attrs.define
@@ -1004,49 +613,6 @@ draftsman_converters.add_schema(
         fields.comparator.name: "comparator",
     },
 )
-
-
-class ItemFilter(DraftsmanBaseModel):
-    index: int64 = Field(
-        ..., description="""Numeric index of a filter entry, 1-based."""
-    )
-    name: ItemName = Field(..., description="""Name of the item to filter.""")
-    quality: Optional[
-        Literal[
-            "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
-        ]
-    ] = Field(
-        "any",
-        description="""
-        Quality flag of the signal. If unspecified, this value is effectively 
-        equal to 'any' quality level.
-        """,
-    )
-    comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
-        None, description="Comparison operator when deducing the quality type."
-    )
-
-
-def ensure_bar_less_than_inventory_size(
-    cls, value: Optional[uint16], info: ValidationInfo
-):
-    if not info.context or value is None:
-        return value
-    if info.context["mode"] <= ValidationMode.STRICT:
-        return value
-
-    warning_list: list = info.context["warning_list"]
-    entity = info.context["object"]
-    if entity.inventory_size and value >= entity.inventory_size:
-        warning_list.append(
-            BarWarning(
-                "Bar index ({}) exceeds the container's inventory size ({})".format(
-                    value, entity.inventory_size
-                ),
-            )
-        )
-
-    return value
 
 
 def ensure_bar_less_than_inventory_size(
@@ -1128,53 +694,6 @@ def ensure_bar_less_than_inventory_size(
 #         cls, bar: Optional[uint16], info: ValidationInfo
 #     ):
 #         return ensure_bar_less_than_inventory_size(cls, bar, info)
-
-
-# class RequestFilters(DraftsmanRootModel):
-class RequestFilter(DraftsmanBaseModel):
-    index: int64 = Field(
-        ..., description="""Numeric index of the logistics request, 1-based."""
-    )
-    name: ItemName = Field(
-        ..., description="""The name of the item to request from logistics."""
-    )
-    count: Optional[int64] = Field(
-        1,
-        description="""
-        The amount of the item to request. Optional on import to Factorio, 
-        but always included on export from Factorio. If omitted, will 
-        default to a count of 1.
-        """,
-    )
-
-    # root: list[Request]
-
-    # @model_validator(mode="before")
-    # @classmethod
-    # def normalize_validate(cls, value: Any):
-    #     if value is None:
-    #         return value
-
-    #     result = []
-    #     if isinstance(value, list):
-    #         for i, entry in enumerate(value):
-    #             if isinstance(entry, (tuple, list)):
-    #                 result.append({"index": i + 1, "name": entry[0], "count": entry[1]})
-    #             else:
-    #                 result.append(entry)
-    #         return result
-    #     else:
-    #         return value
-
-    # @model_serializer
-    # def normalize_construct(self):
-    #     result = []
-    #     for i, entry in enumerate(self.root):
-    #         if isinstance(entry, (tuple, list)):
-    #             result.append({"index": i + 1, "name": entry[0], "count": entry[1]})
-    #         else:
-    #             result.append(entry)
-    #     return result
 
 
 @attrs.define
@@ -1537,7 +1056,7 @@ class ManualSection(Exportable):
             return value
 
     filters: list[SignalFilter] = attrs.field(
-        factory=list, converter=_filters_converter, validator=instance_of(list)
+        factory=list, converter=_filters_converter, validator=instance_of(list[SignalFilter])
     )
     """
     List of item requests for this section.
@@ -1761,23 +1280,52 @@ draftsman_converters.add_schema(
 #     filters: Optional[list[RequestFilter]] = []
 
 
-class QualityFilter(DraftsmanBaseModel):
-    quality: Optional[QualityName] = Field(
-        "any", description="""The quality of the signal to compare against."""
-    )
-    comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
-        "=",
-        description="""The comparison operator to use when evaluating signal comparisons.""",
-    )
+# class QualityFilter(DraftsmanBaseModel):
+#     quality: Optional[QualityName] = Field(
+#         "any", description="""The quality of the signal to compare against."""
+#     )
+#     comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
+#         "=",
+#         description="""The comparison operator to use when evaluating signal comparisons.""",
+#     )
 
-    @field_validator("comparator", mode="before")
-    @classmethod
-    def normalize_comparator_python_equivalents(cls, input: Any):
-        conversions = {"==": "=", ">=": "≥", "<=": "≤", "!=": "≠"}
-        if input in conversions:
-            return conversions[input]
-        else:
-            return input
+#     @field_validator("comparator", mode="before")
+#     @classmethod
+#     def normalize_comparator_python_equivalents(cls, input: Any):
+#         conversions = {"==": "=", ">=": "≥", "<=": "≤", "!=": "≠"}
+#         if input in conversions:
+#             return conversions[input]
+#         else:
+#             return input
+
+@attrs.define
+class QualityFilter(Exportable):
+    quality: QualityName = attrs.field(
+        default="any",
+        validator=one_of(QualityName)
+    )
+    """
+    The signal quality to compare against.
+    """
+    comparator: Comparator = attrs.field(
+        default="=",
+        converter=try_convert(normalize_comparator),
+        validator=one_of(Comparator)
+    )
+    """
+    The comparison operation to perform.
+    """
+
+draftsman_converters.add_schema(
+    {
+        "$id": "factorio:quality_filter"
+    },
+    QualityFilter,
+    lambda fields: {
+        "quality": fields.quality.name,
+        "comparator": fields.comparator.name,
+    }
+)
 
 
 @attrs.define
@@ -1831,7 +1379,7 @@ class AttrsItemSpecification(Exportable):
     in_inventory: list[AttrsInventoryLocation] = attrs.field(
         factory=list,
         converter=_convert_inventory_location_list,
-        validator=instance_of(list),
+        validator=instance_of(list[AttrsInventoryLocation]),
     )
     """
     The list of all locations that the selected item should go.
@@ -1857,27 +1405,6 @@ draftsman_converters.add_schema(
         fields.grid_count.name: "grid_count",
     },
 )
-
-
-class ItemSpecification(DraftsmanBaseModel):
-    class InventoryLocation(DraftsmanBaseModel):
-        inventory: uint32 = Field(  # TODO: size
-            ..., description="Which inventory this item sits in, 1-indexed."
-        )
-        stack: uint32 = Field(  # TODO: size
-            ...,
-            description="Which slot in the inventory it lies in, 0-indexed.",
-        )
-        count: Optional[uint32] = Field(  # TODO: size
-            1, description="The amount of the item to request to that slot."
-        )
-
-    in_inventory: Optional[list[InventoryLocation]] = Field(
-        [], description="Which slots this item should occupy"
-    )
-    grid_count: Optional[uint32] = Field(
-        0, description="The amount to request to the associated grid."
-    )
 
 
 @attrs.define

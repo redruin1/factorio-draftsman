@@ -1,19 +1,17 @@
 # infinity_pipe.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import DraftsmanBaseModel, int64, FluidName
+from draftsman.signatures import int64, FluidName
 from draftsman.validators import and_, instance_of, ge, one_of
 
 from draftsman.data.entities import infinity_pipes
 from draftsman.data import fluids
 
 import attrs
-from pydantic import ConfigDict, Field, ValidationInfo, model_validator
-from typing import Any, Literal, Optional, Union
+from typing import Literal, Optional
 
 
 @attrs.define

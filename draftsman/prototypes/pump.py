@@ -9,14 +9,11 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.signatures import DraftsmanBaseModel
 from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import pumps
 
 import attrs
-from pydantic import ConfigDict
-from typing import Optional
 
 
 @fix_incorrect_pre_init

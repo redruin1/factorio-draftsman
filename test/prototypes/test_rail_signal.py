@@ -66,6 +66,23 @@ class TestRailSignal:
         with pytest.raises(DataFormatError):
             RailSignal(tags="incorrect").validate().reissue_all()
 
+    def test_1_0_serialization(self):
+        signal = RailSignal("rail-signal", yellow_output_signal="signal-T")
+        assert signal.to_dict(version=(2, 0)) == {
+            "name": "rail-signal",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {
+                "yellow_output_signal": {"name": "signal-T", "type": "virtual"},
+            },
+        }
+        assert signal.to_dict(version=(1, 0)) == {
+            "name": "rail-signal",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {
+                "orange_output_signal": {"name": "signal-T", "type": "virtual"},
+            },
+        }
+
     def test_flags(self):
         for name in rail_signals:
             signal = RailSignal(name)

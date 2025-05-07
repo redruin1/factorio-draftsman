@@ -7,7 +7,7 @@ from draftsman.entity import (
 )
 from draftsman.error import DataFormatError
 from draftsman.classes.mixins import RequestFiltersMixin
-from draftsman.signatures import RequestFilter, ManualSection, SignalFilter
+from draftsman.signatures import ManualSection, SignalFilter
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from draftsman.data import mods

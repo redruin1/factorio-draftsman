@@ -528,7 +528,7 @@ def make_unstructure_function_from_schema(
             populate_invocate_tree(invocation_tree["children"][loc[0]], loc[1:], invoke)
 
     for dict_loc, inst_loc in schema.items():
-        # print(dict_loc, inst_loc)
+        print(dict_loc, inst_loc)
         if dict_loc is None or inst_loc is None:
             continue
         handler = None

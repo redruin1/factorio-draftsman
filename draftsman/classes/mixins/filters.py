@@ -4,8 +4,6 @@ from draftsman.data import items, entities
 from draftsman.error import InvalidItemError, DataFormatError
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    DraftsmanBaseModel,
-    ItemFilter,
     AttrsItemFilter,
     ItemName,
     int64,
@@ -109,10 +107,10 @@ class FiltersMixin:
         else:
             return value
 
-    filters: list[ItemFilter] = attrs.field(
+    filters: list[AttrsItemFilter] = attrs.field(
         factory=list,
         converter=_filters_converter,
-        validator=instance_of(list),  # TODO: more validators
+        validator=instance_of(list[AttrsItemFilter]),
     )
     """
     The manually-set item filters that this inserter/loader will abide by. These

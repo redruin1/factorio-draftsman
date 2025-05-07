@@ -18,11 +18,8 @@ from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     AttrsColor,
-    Color,
-    DraftsmanBaseModel,
     AttrsMapper,
     AttrsMapperID,
-    MapperID,
     # normalize_icons,
     uint8,
     uint16,
@@ -264,18 +261,6 @@ class UpgradePlanner(Blueprintable):
         else:
             return value
 
-    def _instance_of_mappers_validator(
-        self, attr, value, mode=None
-    ):  # TODO: should be better
-        mode = mode if mode is not None else self.validate_assignment
-        if mode:
-            for i, elem in enumerate(value):
-                if not isinstance(elem, AttrsMapper):
-                    msg = "Element {} in list ({}) is not an instance of {}".format(
-                        i, repr(elem), AttrsMapper.__name__
-                    )
-                    raise DataFormatError(msg)
-
     def _ensure_valid_mappings(self, attr, value: list[AttrsMapper], mode=None):
         mode = mode if mode is not None else self.validate_assignment
         if mode >= ValidationMode.STRICT:
@@ -341,7 +326,7 @@ class UpgradePlanner(Blueprintable):
         factory=list,
         converter=_convert_mappers,
         validator=and_(
-            instance_of(list), _instance_of_mappers_validator, _ensure_valid_mappings
+            instance_of(list[AttrsMapper]), _ensure_valid_mappings
         ),
     )
     """

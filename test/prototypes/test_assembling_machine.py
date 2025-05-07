@@ -50,6 +50,20 @@ class TestAssemblingMachine:
         with pytest.raises(DataFormatError):
             AssemblingMachine(recipe=100).validate().reissue_all()
 
+    def test_1_0_serialization(self):
+        assembler = AssemblingMachine("assembling-machine-1", recipe="iron-gear-wheel", recipe_quality="legendary")
+        assert assembler.to_dict(version=(2, 0)) == {
+            "name": "assembling-machine-1",
+            "position": {"x": 1.5, "y": 1.5},
+            "recipe": "iron-gear-wheel",
+            "recipe_quality": "legendary",
+        }
+        assert assembler.to_dict(version=(1, 0)) == {
+            "name": "assembling-machine-1",
+            "position": {"x": 1.5, "y": 1.5},
+            "recipe": "iron-gear-wheel",
+        }
+
     def test_power_and_circuit_flags(self):
         # TODO: what about different versions?
         for name in assembling_machines:

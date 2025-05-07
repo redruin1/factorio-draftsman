@@ -519,9 +519,9 @@ class TestGroup:
         #     container1.add_circuit_connection("red", container_with_no_id)
 
         with pytest.raises(InvalidConnectionSideError):
-            group.add_circuit_connection("red", "c1", "c2", "fish", 2)
+            group.add_circuit_connection("red", "c1", "c2", "wrong", "wrong")
         with pytest.raises(InvalidConnectionSideError):
-            group.add_circuit_connection("red", "c1", "c2", 2, "fish")
+            group.add_circuit_connection("red", "c1", "c2", "input", "wrong")
 
         with pytest.raises(EntityNotCircuitConnectableError):
             not_circuit_connectable = Splitter(

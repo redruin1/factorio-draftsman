@@ -10,22 +10,12 @@ from draftsman.classes.mixins import (
     RequestFiltersMixin,
     InventoryMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import LogisticModeOfOperation, ValidationMode
-from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import (
-    DraftsmanBaseModel,
-    uint16,
-)
-from draftsman.utils import get_first
 
 from draftsman.data.entities import logistic_buffer_containers
 
 import attrs
 import cattrs
-from pydantic import ConfigDict
-from typing import Any, Literal, Optional, Union
 
 
 @attrs.define

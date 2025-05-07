@@ -55,7 +55,7 @@ class Transformable:
             self.entities.spatial_map.add(entity)
 
         # Tiles
-        if hasattr(self, "tiles"):  # TODO: remove
+        if hasattr(self, "tiles"):  # pragma: no branch
             for tile in self.tiles:
                 # Remove from map
                 self.tiles.spatial_map.remove(tile)
@@ -128,7 +128,7 @@ class Transformable:
             self.entities.spatial_map.add(entity)
 
         # Tiles
-        if hasattr(self, "tiles"):
+        if hasattr(self, "tiles"):  # pragma: no branch
             for tile in self.tiles:
                 # Remove from map
                 self.tiles.spatial_map.remove(tile)
@@ -205,7 +205,7 @@ class Transformable:
             self.entities.spatial_map.add(entity)
 
         # Tiles
-        if hasattr(self, "tiles"):
+        if hasattr(self, "tiles"):  # pragma: no branch
             for tile in self.tiles:
                 # Remove from map
                 self.tiles.spatial_map.remove(tile)

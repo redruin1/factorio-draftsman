@@ -144,7 +144,6 @@ class SpatialHashMap(SpatialDataStructure):
 
                 # StraightRails and Gates collide with each other ONLY IF the
                 # direction of the gate and rail are parallel
-                print(item, overlapping_item)
                 if (
                     isinstance(item, (StraightRail, LegacyStraightRail))
                     and isinstance(overlapping_item, Gate)

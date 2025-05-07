@@ -17,7 +17,7 @@ class TargetPrioritiesMixin:
     priority_list: list[TargetID] = attrs.field(
         factory=list,
         # TODO: converter
-        validator=instance_of(list),
+        validator=instance_of(list[TargetID]),
     )
     """
     A (static) list of entities to prefer targeting. Overwritten by values given

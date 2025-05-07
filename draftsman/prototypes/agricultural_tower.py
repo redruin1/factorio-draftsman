@@ -8,17 +8,12 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     EnergySourceMixin,
 )
-from draftsman.constants import Direction, ValidationMode
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import DraftsmanBaseModel, uint8, uint32
-from draftsman.utils import Vector, PrimitiveVector, get_first
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import agricultural_towers
 
 import attrs
-from pydantic import ConfigDict, Field
-from typing import Any, Literal, Optional, Union
 
 
 @attrs.define
@@ -135,7 +130,7 @@ class AgriculturalTower(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(  # pragma: no branch
+draftsman_converters.add_schema(
     {"$id": "factorio:entity:agricultural_tower"},
     AgriculturalTower,
     lambda fields: {("control_behavior", "read_contents"): fields.read_contents.name},

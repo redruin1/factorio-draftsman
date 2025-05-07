@@ -137,8 +137,11 @@ class TestDeconstructionPlannerTesting:
                 EntityFilter(**{"name": "unknown-thingy", "index": 0}),
             ]
 
+        # Test incorrect
         with pytest.raises(DataFormatError):
             decon_planner.entity_filters = "incorrect"
+        with pytest.raises(DataFormatError):
+            decon_planner.entity_filters = [TypeError]
 
     def test_set_trees_and_rocks_only(self):
         decon_planner = DeconstructionPlanner()
@@ -191,8 +194,11 @@ class TestDeconstructionPlannerTesting:
                 TileFilter(**{"name": "unknown-thingy", "index": 0}),
             ]
 
+        # Test incorrect
         with pytest.raises(DataFormatError):
             decon_planner.tile_filters = "incorrect"
+        with pytest.raises(DataFormatError):
+            decon_planner.tile_filters = [TypeError]
 
     def test_tile_selection_mode(self):
         decon_planner = DeconstructionPlanner()

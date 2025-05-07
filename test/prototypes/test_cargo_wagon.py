@@ -119,6 +119,9 @@ class TestCargoWagon:
             "position": {"x": 0.0, "y": 0.0},
         }
 
+        wagon.orientation = Orientation.WEST
+        assert wagon.orientation == Orientation.WEST
+
         with pytest.raises(DataFormatError):
             wagon.orientation = "incorrect"
 

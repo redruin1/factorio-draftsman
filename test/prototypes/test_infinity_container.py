@@ -106,6 +106,9 @@ class TestInfinityContainer:
             ),
         ]
 
+        with pytest.raises(DataFormatError):
+            container.filters = "incorrect"
+
         with pytest.raises(ValueError):  # TODO fix
             container.set_infinity_filter("incorrect", "iron-ore")
         with pytest.raises(DataFormatError):

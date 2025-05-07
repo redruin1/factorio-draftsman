@@ -99,6 +99,32 @@ class _InstanceOfValidator:
                 self.extra_validator(inst, attr, value, **kwargs)
 
 
+class _ArgsAreValidator:
+    def __init__(self, cls: type):
+        # if get_origin(cls) is Annotated:
+        #     args = get_args(cls)
+        #     self.cls = args[0]
+        #     self.extra_validator = args[1]
+        # else:
+        #     self.cls = cls
+        #     self.extra_validator = None
+        self.cls = cls
+
+    def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: list, **kwargs):
+        mode = kwargs.get("mode", None)
+        mode = mode if mode is not None else inst.validate_assignment
+        if mode:
+            for i, v in enumerate(value):
+                if not isinstance(v, self.cls):
+                    name = self.cls if isinstance(self.cls, tuple) else self.cls.__name__
+                    msg = "Element {} in list ({}) is not an instance of {}".format(
+                        i, repr(v), name
+                    )
+                    raise DataFormatError(msg)
+                # if self.extra_validator:
+                #     self.extra_validator(inst, attr, value, **kwargs)
+
+
 def instance_of(cls: type):
     """
     Ensures that a given input matches the type of the given class.
@@ -111,6 +137,8 @@ def instance_of(cls: type):
             else:
                 vs.append(_InstanceOfValidator(u))
         return _OrValidator(*vs)
+    if get_origin(cls) is list:
+        return _AndValidator(_InstanceOfValidator(get_origin(cls)), _ArgsAreValidator(get_args(cls)[0]))
     else:
         return _InstanceOfValidator(cls)
 

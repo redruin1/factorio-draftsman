@@ -10,18 +10,14 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode, Direction
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import DraftsmanBaseModel, AttrsAsteroidChunkID
+from draftsman.signatures import AttrsAsteroidChunkID
 from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import asteroid_collectors
 
 import attrs
-from pydantic import ConfigDict, Field, field_validator
-from typing import Any, Literal, Optional, Sequence, Union
 
 
 @fix_incorrect_pre_init
@@ -173,7 +169,7 @@ class AsteroidCollector(
     chunk_filter: list[AttrsAsteroidChunkID] = attrs.field(
         factory=list,
         converter=_chunk_filter_converter,
-        validator=instance_of(list),  # TODO: validators
+        validator=instance_of(list[AttrsAsteroidChunkID]),
     )
     """
     The set of manually specified chunk filters for this asteroid collector.

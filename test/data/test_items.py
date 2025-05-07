@@ -73,9 +73,6 @@ class TestItemsData:
         del items.groups["new-item-group"]["subgroups"][0]
         del items.groups["new-item-group"]
 
-    def test_modify_existing_item(self):
-        pass
-
     def test_get_stack_size(self):
         assert items.get_stack_size("artillery-shell") == 1
         assert items.get_stack_size("nuclear-fuel") == 1
@@ -87,3 +84,19 @@ class TestItemsData:
 
         # TODO: should this raise an error instead?
         assert items.get_stack_size("unknown!") == None
+
+    def test_get_weight(self):
+        # Unrecognized
+        assert items.get_weight("unknown thingy") is None
+        # Cursor item
+        assert items.get_weight("copy-paste-tool") == 0
+        # Weight manually specified
+        assert items.get_weight("iron-ore") == 2000
+        # Item with no recipe
+        assert items.get_weight("burner-generator") == 100
+        # Item with fluid ingredients
+        assert items.get_weight("accumulator") == 20_000
+        # Not simple result
+        assert items.get_weight("stone-brick") == 2_000
+        # Floored size
+        assert items.get_weight("electronic-circuit") == 500

@@ -6,8 +6,6 @@ from draftsman.data.signals import get_signal_types
 from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    DraftsmanBaseModel,
-    RequestFilter,
     ManualSection,
     int32,
     int64,
@@ -289,20 +287,10 @@ class RequestFiltersMixin(Exportable):
             return res
         return value
 
-    def _sections_validator(self, attr, value, mode=None):  # TODO: should be better
-        mode = mode if mode is not None else self.validate_assignment
-        if mode:
-            for i, elem in enumerate(value):
-                if not isinstance(elem, ManualSection):
-                    msg = "Element {} in list ({}) is not an instance of {}".format(
-                        i, repr(elem), ManualSection.__name__
-                    )
-                    raise DataFormatError(msg)
-
     sections: list[ManualSection] = attrs.field(
         factory=list,
         converter=_sections_converter,
-        validator=and_(instance_of(list), _sections_validator),
+        validator=instance_of(list[ManualSection]),
     )
     """
     The list of logistics sections that this entity is configured to request.

@@ -12,6 +12,10 @@ class TestAmmoTurret:
     def test_constructor_init(self):
         turret = AmmoTurret("gun-turret")
         turret.validate().reissue_all()
+        assert turret.to_dict() == {
+            "name": "gun-turret",
+            "position": {"x": 1.0, "y": 1.0}
+        }
 
         with pytest.warns(UnknownEntityWarning):
             turret = AmmoTurret("this is not a turret")

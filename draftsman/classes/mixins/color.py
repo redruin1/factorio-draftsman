@@ -2,18 +2,11 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsColor, Color
+from draftsman.signatures import AttrsColor
 from draftsman.validators import instance_of
 
 import attrs
-from pydantic import (
-    BaseModel,
-    Field,
-    ValidationInfo,
-    ValidatorFunctionWrapHandler,
-    field_validator,
-)
-from typing import Any, Optional
+from typing import Optional
 
 
 @attrs.define(slots=False)
@@ -22,13 +15,13 @@ class ColorMixin(Exportable):
     Gives the entity an editable color.
     """
 
-    class Format(BaseModel):
-        color: Optional[Color] = Field(
-            None,
-            description="""
-            The color modifier used to alter this entity's appearence.            
-            """,
-        )
+    # class Format(BaseModel):
+    #     color: Optional[Color] = Field(
+    #         None,
+    #         description="""
+    #         The color modifier used to alter this entity's appearence.            
+    #         """,
+    #     )
 
     # def __init__(self, name: str, similar_entities: list[str], **kwargs):
     #     self._root: __class__.Format

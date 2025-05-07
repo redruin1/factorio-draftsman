@@ -21,69 +21,46 @@ from pydantic import ValidationError
 import pytest
 
 
-class TestDeciderCombinator:  # TODO: reimplement
-    # def test_constructor_init(self):
-    #     combinator = DeciderCombinator(
-    #         "decider-combinator",
-    #         tile_position=[3, 3],
-    #         direction=Direction.EAST,
-    #         control_behavior={
-    #             "decider_conditions": {
-    #                 "first_signal": "signal-A",
-    #                 "comparator": ">=",
-    #                 "second_signal": "signal-B",
-    #             }
-    #         },
-    #     )
-    #     assert combinator.to_dict() == {
-    #         "name": "decider-combinator",
-    #         "position": {"x": 4.0, "y": 3.5},
-    #         "direction": Direction.EAST,
-    #         "control_behavior": {
-    #             "decider_conditions": {
-    #                 "first_signal": {"name": "signal-A", "type": "virtual"},
-    #                 "comparator": "≥",
-    #                 "second_signal": {"name": "signal-B", "type": "virtual"},
-    #             }
-    #         },
-    #     }
+class TestDeciderCombinator:
+    def test_constructor_init(self):
+        combinator = DeciderCombinator(
+            "decider-combinator",
+            tile_position=[3, 3],
+            direction=Direction.EAST,
+            conditions=[
+                DeciderCombinator.Condition(
+                    first_signal="signal-A",
+                    comparator=">=",
+                    second_signal="signal-B"
+                )
+            ]
+        )
+        assert combinator.to_dict() == {
+            "name": "decider-combinator",
+            "position": {"x": 4.0, "y": 3.5},
+            "direction": Direction.EAST,
+            "control_behavior": {
+                "decider_conditions": {
+                    "conditions": [
+                        {
+                            "first_signal": {"name": "signal-A", "type": "virtual"},
+                            "comparator": "≥",
+                            "second_signal": {"name": "signal-B", "type": "virtual"},
+                        }
+                    ]
+                }
+            },
+        }
 
-    #     combinator = DeciderCombinator(
-    #         "decider-combinator",
-    #         tile_position=[3, 3],
-    #         direction=Direction.EAST,
-    #         control_behavior={
-    #             "decider_conditions": {
-    #                 "first_signal": {"name": "signal-A", "type": "virtual"},
-    #                 "comparator": "<=",
-    #                 "second_signal": {"name": "signal-B", "type": "virtual"},
-    #             }
-    #         },
-    #     )
-    #     assert combinator.to_dict() == {
-    #         "name": "decider-combinator",
-    #         "position": {"x": 4.0, "y": 3.5},
-    #         "direction": Direction.EAST,
-    #         "control_behavior": {
-    #             "decider_conditions": {
-    #                 "first_signal": {"name": "signal-A", "type": "virtual"},
-    #                 "comparator": "≤",
-    #                 "second_signal": {"name": "signal-B", "type": "virtual"},
-    #             }
-    #         },
-    #     }
+        # Warnings
+        with pytest.warns(UnknownEntityWarning):
+            DeciderCombinator("this is not an arithmetic combinator").validate().reissue_all()
 
-    #     # Warnings
-    #     with pytest.warns(UnknownKeywordWarning):
-    #         DeciderCombinator(unused_keyword="whatever").validate().reissue_all()
-    #     with pytest.warns(UnknownKeywordWarning):
-    #         DeciderCombinator(control_behavior={"unused_key": "something"}).validate().reissue_all()
-    #     with pytest.warns(UnknownEntityWarning):
-    #         DeciderCombinator("this is not an arithmetic combinator").validate().reissue_all()
-
-    #     # Errors
-    #     with pytest.raises(DataFormatError):
-    #         DeciderCombinator(control_behavior="incorrect").validate().reissue_all()
+        # Errors
+        with pytest.raises(DataFormatError):
+            DeciderCombinator(conditions="incorrect").validate().reissue_all()
+        with pytest.raises(DataFormatError):
+            DeciderCombinator(outputs="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in decider_combinators:
@@ -92,6 +69,140 @@ class TestDeciderCombinator:  # TODO: reimplement
             assert combinator.dual_power_connectable == False
             assert combinator.circuit_connectable == True
             assert combinator.dual_circuit_connectable == True
+
+    def test_input_shorthands(self):
+        a = DeciderCombinator.Input(signal="signal-A")
+        b = DeciderCombinator.Input(signal="signal-B")
+
+        assert (a < b) == DeciderCombinator.Condition(
+            first_signal="signal-A",
+            comparator="<",
+            second_signal="signal-B"
+        )
+
+        assert (a >= b) == DeciderCombinator.Condition(
+            first_signal="signal-A",
+            comparator=">=",
+            second_signal="signal-B"
+        )
+
+        with pytest.raises(TypeError):
+            cond = a < TypeError
+
+    def test_conditions_shorthands(self):
+        a = DeciderCombinator.Input(signal="signal-A")
+        b = DeciderCombinator.Input(signal="signal-B")
+
+        cond1 = a > b
+        cond2 = b <= a
+
+        decider = DeciderCombinator("decider-combinator")
+        decider.conditions = cond1 | cond2
+        assert decider.conditions == [
+            DeciderCombinator.Condition(
+                first_signal="signal-A",
+                comparator=">",
+                second_signal="signal-B",
+            ),
+            DeciderCombinator.Condition(
+                first_signal="signal-B",
+                comparator="<=",
+                second_signal="signal-A",
+            ),
+        ]
+
+        decider.conditions = cond1 | decider.conditions 
+        assert decider.conditions == [
+            DeciderCombinator.Condition(
+                first_signal="signal-A",
+                comparator=">",
+                second_signal="signal-B",
+            ),
+            DeciderCombinator.Condition(
+                first_signal="signal-A",
+                comparator=">",
+                second_signal="signal-B",
+            ),
+            DeciderCombinator.Condition(
+                first_signal="signal-B",
+                comparator="<=",
+                second_signal="signal-A",
+            ),
+        ]
+
+        with pytest.raises(TypeError):
+            cond1 | TypeError
+        with pytest.raises(TypeError):
+            TypeError | cond1
+
+        decider.conditions = []
+        decider.conditions = cond1 & cond2
+        assert decider.conditions == [
+            DeciderCombinator.Condition(
+                first_signal="signal-A",
+                comparator=">",
+                second_signal="signal-B",
+            ),
+            DeciderCombinator.Condition(
+                first_signal="signal-B",
+                comparator="<=",
+                second_signal="signal-A",
+                compare_type="and",
+            ),
+        ]
+
+        decider.conditions = cond1 & decider.conditions 
+        assert decider.conditions == [
+            DeciderCombinator.Condition(
+                first_signal="signal-A",
+                comparator=">",
+                second_signal="signal-B",
+            ),
+            DeciderCombinator.Condition(
+                first_signal="signal-A",
+                comparator=">",
+                second_signal="signal-B",
+                compare_type="and",
+            ),
+            DeciderCombinator.Condition(
+                first_signal="signal-B",
+                comparator="<=",
+                second_signal="signal-A",
+                compare_type="and",
+            ),
+        ]
+
+        decider.conditions &= cond2
+        assert decider.conditions == [
+            DeciderCombinator.Condition(
+                first_signal="signal-A",
+                comparator=">",
+                second_signal="signal-B",
+            ),
+            DeciderCombinator.Condition(
+                first_signal="signal-A",
+                comparator=">",
+                second_signal="signal-B",
+                compare_type="and",
+            ),
+            DeciderCombinator.Condition(
+                first_signal="signal-B",
+                comparator="<=",
+                second_signal="signal-A",
+                compare_type="and",
+            ),
+            DeciderCombinator.Condition(
+                first_signal="signal-B",
+                comparator="<=",
+                second_signal="signal-A",
+                compare_type="and",
+            ),
+        ]
+
+        with pytest.raises(TypeError):
+            cond1 & TypeError
+        with pytest.raises(TypeError):
+            TypeError & cond1
 
     # def test_set_first_operand(self):
     #     combinator = DeciderCombinator("decider-combinator")
@@ -449,49 +560,68 @@ class TestDeciderCombinator:  # TODO: reimplement
     #     comb2.direction = Direction.NORTH
     #     assert not comb1.mergable_with(comb2)
 
-    # def test_merge(self):
-    #     comb1 = DeciderCombinator(
-    #         "decider-combinator",
-    #         direction=Direction.SOUTH,
-    #         control_behavior={
-    #             "decider_conditions": {
-    #                 "first_signal": {"name": "signal-A", "type": "virtual"},
-    #                 "comparator": "=",
-    #                 "second_signal": {"name": "copper-ore", "type": "item"},
-    #                 "output_signal": {"name": "signal-B", "type": "virtual"},
-    #             }
-    #         },
-    #         tags={"original": "tags"},
-    #     )
-    #     comb2 = DeciderCombinator(
-    #         "decider-combinator",
-    #         direction=Direction.SOUTH,
-    #         control_behavior={
-    #             "decider_conditions": {
-    #                 "first_signal": {"name": "signal-D", "type": "virtual"},
-    #                 "comparator": "<",
-    #                 "constant": 10,
-    #                 "output_signal": {"name": "signal-E", "type": "virtual"},
-    #                 "copy_count_from_input": False,
-    #             }
-    #         },
-    #     )
+    def test_merge(self):
+        comb1 = DeciderCombinator(
+            "decider-combinator",
+            direction=Direction.SOUTH,
+            conditions=[
+                DeciderCombinator.Condition(
+                    first_signal="signal-A",
+                    comparator="=",
+                    second_signal="copper-ore"
+                )
+            ],
+            outputs=[
+                DeciderCombinator.Output(
+                    signal="signal-B"
+                )
+            ],
+            tags={"original": "tags"},
+        )
+        comb2 = DeciderCombinator(
+            "decider-combinator",
+            direction=Direction.SOUTH,
+            conditions=[
+                DeciderCombinator.Condition(
+                    first_signal="signal-D",
+                    comparator="<",
+                    constant=10,
+                )
+            ],
+            outputs=[
+                DeciderCombinator.Output(
+                    signal="signal-E",
+                    copy_count_from_input=False
+                )
+            ],
+        )
 
-    #     comb1.merge(comb2)
-    #     del comb2
+        comb1.merge(comb2)
+        del comb2
 
-    #     assert comb1.control_behavior == DeciderCombinator.Format.ControlBehavior(
-    #         **{
-    #             "decider_conditions": {
-    #                 "first_signal": {"name": "signal-D", "type": "virtual"},
-    #                 "comparator": "<",
-    #                 "constant": 10,
-    #                 "output_signal": {"name": "signal-E", "type": "virtual"},
-    #                 "copy_count_from_input": False,
-    #             }
-    #         }
-    #     )
-    #     assert comb1.tags == {}  # Overwritten by comb2
+        assert comb1.to_dict() == {
+            "name": "decider-combinator",
+            "position": {"x": 0.5, "y": 1.0},
+            "direction": Direction.SOUTH,
+            "control_behavior": {
+                "decider_conditions": {
+                    "conditions": [
+                        {
+                            "first_signal": {"name": "signal-D", "type": "virtual"},
+                            # "comparator": "<", # default
+                            "constant": 10,
+                        }
+                    ],
+                    "outputs": [
+                        {
+                            "signal": {"name": "signal-E", "type": "virtual"},
+                            "copy_count_from_input": False,
+                        }
+                    ]
+                }
+            }
+        }
+        assert comb1.tags == {}  # Overwritten by comb2
 
     def test_eq(self):
         decider1 = DeciderCombinator("decider-combinator")

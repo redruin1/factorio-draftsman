@@ -7,16 +7,11 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import FilterEntry
 from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import loaders
 
 import attrs
-from pydantic import ConfigDict
-from typing import Any, Literal, Optional, Union
 
 
 @fix_incorrect_pre_init

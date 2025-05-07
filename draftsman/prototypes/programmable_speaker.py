@@ -8,12 +8,9 @@ from draftsman.classes.mixins import (
     CircuitEnableMixin,
     EnergySourceMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
-from draftsman.error import InvalidNoteID
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    DraftsmanBaseModel,
     AttrsSignalID,
     uint32,
 )
@@ -29,13 +26,7 @@ from draftsman.data.entities import programmable_speakers
 import draftsman.data.instruments as instruments_data
 
 import attrs
-from pydantic import (
-    ConfigDict,
-    Field,
-    ValidationInfo,
-    field_validator,
-)
-from typing import Any, Literal, Optional, Union
+from typing import Optional
 import warnings
 
 

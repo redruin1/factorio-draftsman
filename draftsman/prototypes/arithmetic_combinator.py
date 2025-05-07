@@ -8,27 +8,22 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
+from draftsman.constants import ValidationMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     ArithmeticOperation,
-    DraftsmanBaseModel,
-    NetworkSpecification,
     AttrsNetworkSpecification,
     AttrsSignalID,
     int32,
 )
-from draftsman.utils import get_first, reissue_warnings, fix_incorrect_pre_init
+from draftsman.utils import reissue_warnings, fix_incorrect_pre_init
 from draftsman.validators import and_, instance_of, one_of, try_convert
 from draftsman.warning import PureVirtualDisallowedWarning, SignalConfigurationWarning
 
 from draftsman.data.entities import arithmetic_combinators
 
 import attrs
-from pydantic import ConfigDict, Field, ValidationInfo, field_validator, model_validator
-from typing import Any, Literal, Optional, Union
-from typing_extensions import TypedDict
+from typing import Literal, Optional, Union
 import warnings
 
 
@@ -622,16 +617,22 @@ draftsman_converters.get_version((1, 0)).add_schema(
             "control_behavior",
             "arithmetic_conditions",
             "first_constant",
-        ): lambda inst: inst.first_operand
-        if isinstance(inst.first_operand, int)
-        else None,
+        ): (
+            _export_fields.first_constant,
+            lambda inst: inst.first_operand
+            if isinstance(inst.first_operand, int)
+            else None
+        ),
         (
             "control_behavior",
             "arithmetic_conditions",
             "first_signal",
-        ): lambda inst: converter.unstructure(inst.first_operand)
-        if not isinstance(inst.first_operand, int)
-        else None,
+        ): (
+            _export_fields.first_signal,
+            lambda inst: converter.unstructure(inst.first_operand)
+            if not isinstance(inst.first_operand, int)
+            else None
+        ),
         None: fields.first_operand_wires.name,
         (
             "control_behavior",
@@ -642,16 +643,22 @@ draftsman_converters.get_version((1, 0)).add_schema(
             "control_behavior",
             "arithmetic_conditions",
             "second_constant",
-        ): lambda inst: inst.second_operand
-        if isinstance(inst.second_operand, int)
-        else None,
+        ): (
+            _export_fields.second_constant, 
+            lambda inst: inst.second_operand
+            if isinstance(inst.second_operand, int)
+            else None
+        ),
         (
             "control_behavior",
             "arithmetic_conditions",
             "second_signal_signal",
-        ): lambda inst: converter.unstructure(inst.second_operand)
-        if not isinstance(inst.second_operand, int)
-        else None,
+        ): (
+            _export_fields.second_signal,
+            lambda inst: converter.unstructure(inst.second_operand)
+            if not isinstance(inst.second_operand, int)
+            else None
+        ),
         None: fields.second_operand_wires.name,
         (
             "control_behavior",

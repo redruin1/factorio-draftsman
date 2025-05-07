@@ -15,23 +15,12 @@ from draftsman.prototypes.locomotive import Locomotive
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     AttrsSimpleCondition,
-    DraftsmanBaseModel,
     uint32,
 )
 from draftsman.validators import instance_of, one_of, try_convert
 
 import attrs
 import copy
-from pydantic import (
-    ConfigDict,
-    Field,
-    GetCoreSchemaHandler,
-    ValidationError,
-    field_serializer,
-    field_validator,
-    model_validator,
-)
-from pydantic_core import CoreSchema, core_schema
 from typing import Any, Literal, Mapping, Optional, Union
 
 
@@ -369,7 +358,7 @@ class Schedule(Exportable):
         records: list[Stop] = attrs.field(
             factory=list,
             converter=_records_converter,
-            validator=instance_of(list),  # TODO: validators
+            validator=instance_of(list[Stop]),
         )
         # TODO: interrupts
 
@@ -477,7 +466,7 @@ class Schedule(Exportable):
     # =========================================================================
 
     locomotives: list[Association] = attrs.field(
-        factory=list, validator=instance_of(list)  # TODO: validators
+        factory=list, validator=instance_of(list[Association])
     )
     """
     The list of :py:class:`Association`s to each :py:class:`Locomotive` that

@@ -53,7 +53,6 @@ from draftsman.error import DataFormatError
 from draftsman.warning import IndexWarning, UnknownEntityWarning, UnknownTileWarning
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    DraftsmanBaseModel,
     # EntityFilter,
     # TileFilter,
     # normalize_icons,
@@ -483,7 +482,7 @@ class DeconstructionPlanner(Blueprintable):
     entity_filters: list[EntityFilter] = attrs.field(
         factory=list,
         converter=_convert_entity_filters,
-        validator=instance_of(list),  # TODO: validators
+        validator=instance_of(list[EntityFilter]),
     )
     """
     The list of entity filters.
@@ -612,7 +611,7 @@ class DeconstructionPlanner(Blueprintable):
     tile_filters: list[TileFilter] = attrs.field(
         factory=list,
         converter=_convert_tile_filters,
-        validator=instance_of(list),  # TODO: validators
+        validator=instance_of(list[TileFilter]),
     )
     """
     The list of tile filters.

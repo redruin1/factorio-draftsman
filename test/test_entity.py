@@ -446,6 +446,18 @@ class TestEntityFactory:
         assert e.position.x == 0.5 and e.position.y == 0.5
         assert e.bar == 5
 
+        e = new_entity_from_dict(
+            {
+                "name": "who knows",
+                "position": {"x": 0.5, "y": 0.5},
+                "bar": 5,
+            }
+        )
+        assert isinstance(e, Entity)
+        assert e.name == "who knows"
+        assert e.position.x == 0.5 and e.position.y == 0.5
+        assert e.extra_keys["bar"] == 5
+
     def test_unknown(self):
         # Try and treat as a generic entity
         with pytest.warns(UnknownEntityWarning):

@@ -22,9 +22,6 @@ from pydantic import BaseModel, Field, ValidationInfo, field_validator
 from typing import TYPE_CHECKING, Literal, Optional
 import warnings
 
-if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.entity import Entity
-
 
 @attrs.define(slots=False)
 class RecipeMixin:
@@ -299,10 +296,10 @@ draftsman_converters.get_version((1, 0)).add_schema(
     {"$id": "factorio:recipe_mixin"},
     RecipeMixin,
     lambda fields: {
-        fields.recipe.name: "recipe",
-        fields.recipe_quality: "recipe_quality",  # TODO: Should this go to extra keys?
+        "recipe": fields.recipe.name,
+        "recipe_quality": fields.recipe_quality,
     },
-    lambda fields: {
+    lambda fields, converter: {
         "recipe": fields.recipe.name,
         "recipe_quality": None,
     },
@@ -313,7 +310,7 @@ draftsman_converters.get_version((2, 0)).add_schema(
     {"$id": "factorio:recipe_mixin"},
     RecipeMixin,
     lambda fields: {
-        fields.recipe.name: "recipe",
-        fields.recipe_quality.name: "recipe_quality",
+        "recipe": fields.recipe.name,
+        "recipe_quality": fields.recipe_quality.name,
     },
 )

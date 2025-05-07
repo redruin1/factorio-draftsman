@@ -163,7 +163,7 @@ class InfinityContainer(RequestItemsMixin, InventoryMixin, Entity):
     filters: list[AttrsInfinityFilter] = attrs.field(
         factory=list,
         converter=_filters_converter,
-        validator=instance_of(list),  # TODO: validators
+        validator=instance_of(list[AttrsInfinityFilter]),
     )
     """
     The list of items to infinitely create or remove from this 

@@ -597,9 +597,15 @@ class EntityCollection(metaclass=ABCMeta):
         wire_type_1 = dir_value[side_1]
         wire_type_2 = dir_value[side_2]
 
-        self.wires.append(
-            [Association(entity_1), wire_type_1, Association(entity_2), wire_type_2]
-        )
+        # Make sure connection (nor its reverse) already exists in the wires list
+        # TODO: just make this a dict, dammit; WE HAVE THE POWER
+        if (
+            [Association(entity_1), wire_type_1, Association(entity_2), wire_type_2] not in self.wires and
+            [Association(entity_2), wire_type_2, Association(entity_1), wire_type_1] not in self.wires
+        ):
+            self.wires.append(
+                [Association(entity_1), wire_type_1, Association(entity_2), wire_type_2]
+            )
 
     def remove_power_connection(
         self,

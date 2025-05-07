@@ -3,7 +3,6 @@
 from draftsman.classes.association import Association
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import DraftsmanBaseModel
 
 import attrs
 

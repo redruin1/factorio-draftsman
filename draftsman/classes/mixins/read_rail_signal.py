@@ -179,7 +179,7 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
         self.green_output_signal = other.green_output_signal
 
 
-draftsman_converters.get_version((1, 0)).add_schema( # pragma: no branch
+draftsman_converters.get_version((1, 0)).add_schema(
     {"$id": "factorio:read_rail_signals_mixin_v1.0"},
     ReadRailSignalMixin,
     lambda fields: {

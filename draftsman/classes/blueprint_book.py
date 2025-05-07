@@ -66,7 +66,7 @@ from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import Color, DraftsmanBaseModel, uint16, uint64
+from draftsman.signatures import uint16, uint64
 from draftsman.utils import encode_version, reissue_warnings
 from draftsman.validators import instance_of
 from draftsman.warning import DraftsmanWarning, IndexWarning
@@ -75,15 +75,6 @@ import draftsman.blueprintable
 import attrs
 import cattrs
 from collections.abc import MutableSequence
-from pydantic import (
-    ConfigDict,
-    Field,
-    PrivateAttr,
-    ValidatorFunctionWrapHandler,
-    ValidationInfo,
-    field_validator,
-    ValidationError,
-)
 from typing import Any, Literal, Optional, Union
 
 

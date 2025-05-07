@@ -2,7 +2,6 @@
 
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    DraftsmanBaseModel,
     AttrsItemRequest,
     AttrsItemID,
     AttrsItemSpecification,
@@ -52,7 +51,7 @@ class RequestItemsMixin:
     item_requests: list[AttrsItemRequest] = attrs.field(
         factory=list,
         converter=_items_converter,
-        validator=instance_of(list),  # TODO: validators
+        validator=instance_of(list[AttrsItemRequest]),
     )
     """
     A list of items to deliver to the entity. Not to be confused with logistics

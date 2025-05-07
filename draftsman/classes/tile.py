@@ -12,37 +12,20 @@
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.exportable import (
     Exportable,
-    ValidationResult,
 )
 from draftsman.classes.spatial_like import SpatialLike
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode
-from draftsman.error import DataFormatError, DraftsmanError, InvalidTileError
+from draftsman.classes.vector import Vector
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    DraftsmanBaseModel,
-    IntPosition,
     TileName,
     get_suggestion,
 )
 from draftsman.utils import AABB
 from draftsman.validators import instance_of
-from draftsman.warning import UnknownTileWarning
 
 import draftsman.data.tiles as tiles
 
 import attrs
-from pydantic import (
-    ConfigDict,
-    GetCoreSchemaHandler,
-    Field,
-    PrivateAttr,
-    ValidationError,
-    ValidationInfo,
-    field_serializer,
-    field_validator,
-)
-from pydantic_core import CoreSchema, core_schema
 from typing import Any, Literal, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage

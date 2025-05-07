@@ -155,12 +155,12 @@ class EquipmentGridMixin(Exportable):  # (RequestItemsMixin)
                 msg = "This entity does not have an equipment grid to modify"
                 warnings.warn(EquipmentGridWarning(msg))
 
-    equipment: Optional[list[EquipmentComponent]] = attrs.field(
+    equipment: list[EquipmentComponent] = attrs.field(
         factory=list,
         converter=_equipment_converter,
         validator=and_(
-            instance_of(list), _ensure_has_equipment_grid
-        ),  # TODO: validator
+            instance_of(list[EquipmentComponent]), _ensure_has_equipment_grid
+        ),
     )
     """
     The equipment specification of this particular entity, defining what 

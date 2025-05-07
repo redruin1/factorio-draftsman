@@ -4,7 +4,6 @@ from draftsman.data import entities, mods
 from draftsman.constants import Inventory, ValidationMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    DraftsmanBaseModel,
     ensure_bar_less_than_inventory_size,
     uint16,
     uint32,

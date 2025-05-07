@@ -233,7 +233,7 @@ class ValidationResult:
         return True
 
     def __iadd__(self, other):
-        if not isinstance(other, ValidationResult):
+        if not isinstance(other, ValidationResult):  # pragma: no coverage
             raise NotImplemented
         self.warning_list += other.warning_list
         self.error_list += other.error_list
@@ -599,10 +599,7 @@ class Exportable:
         #     print(slot)
         #     setattr(result, slot, copy.deepcopy(getattr(self, slot), memo))
 
-        print("Exportable deepcopy")
-
         for attr in attrs.fields(cls):
-            print("\t", attr)
             # Making the copy of an entity directly "removes" its parent, as there
             # is no guarantee that that cloned entity will actually lie in some
             # EntityCollection
@@ -668,17 +665,14 @@ def make_exportable_structure_factory_func(
                 if value is None:
                     continue
                 handler = find_structure_handler(attr, attr.type, converter)
-                if handler is not None:
-                    # import inspect
-                    # print(inspect.getsource(handler))
-                    try:
-                        res[attr_name] = handler(value, attr.type)
-                    except Exception as e:
-                        # res[attr_name] = value
-                        # raise e
-                        raise DataFormatError(e)
-                else:
-                    res[attr_name] = value
+                # import inspect
+                # print(inspect.getsource(handler))
+                try:
+                    res[attr_name] = handler(value, attr.type)
+                except Exception as e:
+                    # res[attr_name] = value
+                    # raise e
+                    raise DataFormatError(e)
 
             # for attr in class_attrs:
             #     # print("attr name:", attr.name, attr.alias)

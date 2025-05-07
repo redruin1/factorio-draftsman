@@ -10,12 +10,9 @@ from draftsman.classes.exportable import (
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.data import entities
-from draftsman.error import DraftsmanError, DataFormatError
-from draftsman.serialization import draftsman_converters, regular_structure_factory
+from draftsman.error import DataFormatError
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    DraftsmanBaseModel,
-    FloatPosition,
-    IntPosition,
     QualityName,
     get_suggestion,
     uint64,
@@ -26,23 +23,10 @@ from draftsman.warning import GridAlignmentWarning, UnknownEntityWarning
 
 from draftsman.data.planets import get_surface_properties
 
-from abc import ABCMeta, abstractmethod
 import attrs
-import cattrs
 import copy
-from itertools import chain
-from functools import wraps
 import math
-from pydantic import (
-    ConfigDict,
-    Field,
-    ValidationError,
-    ValidationInfo,
-    field_validator,
-    field_serializer,
-    PrivateAttr,
-)
-from typing import Any, Literal, Optional, Union
+from typing import Any, Optional
 import warnings
 import weakref
 

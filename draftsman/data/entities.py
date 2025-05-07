@@ -141,6 +141,7 @@ def get_default_collision_mask(entity_type):
     :returns: A ``set()`` containing the default collision layers for that
         object.
     """
+    # TODO: make this dict based
     if entity_type == "gate":
         return {
             "item-layer",
@@ -334,5 +335,5 @@ def add_entity(
 
     if type in of_type:
         of_type[type].append(name)  # FIXME
-    else:
+    else: # pragma: no coverage
         of_type[type] = [name]

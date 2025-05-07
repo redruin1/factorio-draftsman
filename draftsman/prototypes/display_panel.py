@@ -235,7 +235,7 @@ class DisplayPanel(
     messages: list[Message] = attrs.field(
         factory=list,
         # TODO: converter
-        validator=instance_of(list),  # TODO: validators
+        validator=instance_of(list[Message]),
     )
     """
     A list of :py:class:`.DisplayPanel.Message` objects, where each one has 
