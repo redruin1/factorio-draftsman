@@ -515,8 +515,8 @@ class TrainStop(
 
 
 # TODO: versioning
-draftsman_converters.add_schema(
-    {"$id": "factorio:train_stop"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:train_stop"},
     TrainStop,
     lambda fields: {
         "station": fields.station.name,

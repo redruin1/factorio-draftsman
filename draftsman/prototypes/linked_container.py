@@ -162,8 +162,8 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:linked_container"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:linked_container"},
     LinkedContainer,
     lambda fields: {"link_id": fields.link_id.name},
 )

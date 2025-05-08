@@ -125,10 +125,10 @@ class CircuitReadContentsMixin:  # (ControlBehaviorMixin)
 
 
 # TODO: versioning
-draftsman_converters.add_schema(
-    {
-        "$id": "factorio:circuit_read_contents_mixin",
-    },
+draftsman_converters.add_hook_fns(
+    # {
+    #     "$id": "factorio:circuit_read_contents_mixin",
+    # },
     CircuitReadContentsMixin,
     lambda fields: {
         ("control_behavior", "circuit_read_hand_contents"): fields.read_contents.name,

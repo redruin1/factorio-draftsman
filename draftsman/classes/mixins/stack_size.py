@@ -159,10 +159,10 @@ class StackSizeMixin:  # (ControlBehaviorMixin)
         self.stack_size_control_signal = other.stack_size_control_signal
 
 
-draftsman_converters.add_schema(
-    {
-        "$id": "factorio:stack_size_mixin",
-    },
+draftsman_converters.add_hook_fns(
+    # {
+    #     "$id": "factorio:stack_size_mixin",
+    # },
     StackSizeMixin,
     lambda fields: {
         "override_stack_size": fields.override_stack_size.name,

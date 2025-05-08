@@ -579,8 +579,8 @@ class BlueprintBook(Blueprintable):
 
 
 # TODO: versioning
-draftsman_converters.add_schema(
-    {"$schema": "TODO", "$id": "factorio:blueprint_book"},  # TODO
+draftsman_converters.add_hook_fns(
+    # {"$schema": "TODO", "$id": "factorio:blueprint_book"},  # TODO
     BlueprintBook,
     lambda fields: {
         ("blueprint_book", "item"): fields.item.name,

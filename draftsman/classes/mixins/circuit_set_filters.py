@@ -55,8 +55,8 @@ class CircuitSetFiltersMixin:
     #         self.control_behavior.circuit_set_filters = value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:circuit_set_filters_mixin"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:circuit_set_filters_mixin"},
     CircuitSetFiltersMixin,
     lambda fields: {
         ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name

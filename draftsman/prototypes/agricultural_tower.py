@@ -130,8 +130,8 @@ class AgriculturalTower(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:entity:agricultural_tower"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:entity:agricultural_tower"},
     AgriculturalTower,
     lambda fields: {("control_behavior", "read_contents"): fields.read_contents.name},
 )

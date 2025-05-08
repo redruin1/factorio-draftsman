@@ -125,8 +125,8 @@ class CircuitReadResourceMixin:  # (ControlBehaviorMixin)
     #         self.control_behavior.circuit_resource_read_mode = value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:circuit_read_resources_mixin"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:circuit_read_resources_mixin"},
     CircuitReadResourceMixin,
     lambda fields: {
         ("control_behavior", "circuit_read_resources"): fields.read_resources.name,

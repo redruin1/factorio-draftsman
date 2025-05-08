@@ -1031,8 +1031,8 @@ class ProgrammableSpeaker(
     #     )
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:programmable_speaker"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:programmable_speaker"},
     ProgrammableSpeaker,
     lambda fields: {
         (

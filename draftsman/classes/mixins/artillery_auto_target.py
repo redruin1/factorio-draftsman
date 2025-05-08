@@ -1,5 +1,6 @@
 # artillery_auto_target.py
 
+from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
 from draftsman.validators import instance_of
 
@@ -7,7 +8,7 @@ import attrs
 
 
 @attrs.define(slots=False)
-class ArtilleryAutoTargetMixin:
+class ArtilleryAutoTargetMixin(Exportable):
     """
     Gives the entity the "artillery_auto_targeting" parameter. Used by artillery
     turrets and artillery wagons.
@@ -56,9 +57,16 @@ class ArtilleryAutoTargetMixin:
     #     else:
     #         self._root.artillery_auto_targeting = value
 
+ArtilleryAutoTargetMixin.add_schema(
+    {
+        "properties": {
+            "artillery_auto_targeting": {"type": "boolean"}
+        }
+    }
+)
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:artillery_auto_target_mixin"},
+
+draftsman_converters.add_hook_fns(
     ArtilleryAutoTargetMixin,
     lambda fields: {"artillery_auto_targeting": fields.auto_target.name},
 )

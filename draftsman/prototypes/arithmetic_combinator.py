@@ -575,8 +575,8 @@ class _ExportArithmeticConditions:
 _export_fields = attrs.fields(_ExportArithmeticConditions)
 
 
-draftsman_converters.get_version((1, 0)).add_schema(
-    {"$id": "factorio:arithmetic_combinator"},
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    # {"$id": "factorio:arithmetic_combinator"},
     ArithmeticCombinator,
     lambda fields: {
         (
@@ -674,8 +674,8 @@ draftsman_converters.get_version((1, 0)).add_schema(
 #         "position": _unstr_position(instance.global_position)
 #     }
 
-draftsman_converters.get_version((2, 0)).add_schema(
-    {"$id": "factorio:arithmetic_combinator"},
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    # {"$id": "factorio:arithmetic_combinator"},
     ArithmeticCombinator,
     lambda fields: {
         (

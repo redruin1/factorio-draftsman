@@ -281,8 +281,8 @@ class FilteredInventoryMixin:  # TODO: rename to `FilteredInventoryMixin`
         self.bar = other.bar
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:filtered_inventory_mixin"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:filtered_inventory_mixin"},
     FilteredInventoryMixin,
     lambda fields: {
         ("inventory", "filters"): fields.inventory_filters.name,

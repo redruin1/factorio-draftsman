@@ -7,6 +7,21 @@ from typing import Optional
 
 
 import copy
+import jsonschema
+import referencing
+
+_schemas: dict[str, referencing.Resource] = {}
+_cls_schemas: dict[type, referencing.Resource] = {}
+
+def add_schema(cls, version, schema):
+    # finialize the schema by traversing the MRO
+    res = referencing.Resource.from_contents(schema)
+    _schemas[schema["$id"]] = res
+    _cls_schemas[cls] = res
+
+
+def get_schema(cls):
+    return _cls_schemas[cls], referencing.Registry().with_resources(_schemas.items())
 
 
 # def resolve_schema(schema):

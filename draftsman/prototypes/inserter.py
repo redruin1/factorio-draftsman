@@ -353,10 +353,10 @@ class Inserter(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.get_version((1, 0)).add_schema(  # pragma: no branch
-    {
-        "$id": "factorio:inserter",
-    },
+draftsman_converters.get_version((1, 0)).add_hook_fns(  # pragma: no branch
+    # {
+    #     "$id": "factorio:inserter",
+    # },
     Inserter,
     lambda fields: {
         ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
@@ -368,10 +368,10 @@ draftsman_converters.get_version((1, 0)).add_schema(  # pragma: no branch
 )
 
 
-draftsman_converters.get_version((2, 0)).add_schema(
-    {
-        "$id": "factorio:inserter",
-    },
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    # {
+    #     "$id": "factorio:inserter",
+    # },
     Inserter,
     lambda fields: {
         ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,

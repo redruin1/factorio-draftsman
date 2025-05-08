@@ -819,11 +819,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
 
 # TODO: versioning
-draftsman_converters.add_schema(
-    {
-        "$schema": "TODO",  # TODO
-        "$id": "factorio:blueprintable",
-    },
+draftsman_converters.add_hook_fns(
+    # {
+    #     "$schema": "TODO",  # TODO
+    #     "$id": "factorio:blueprintable",
+    # },
     Blueprintable,
     lambda fields: {fields.index.name: "index"},
 )

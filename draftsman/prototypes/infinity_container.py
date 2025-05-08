@@ -269,8 +269,8 @@ class InfinityContainer(RequestItemsMixin, InventoryMixin, Entity):
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:infinity_container"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:infinity_container"},
     InfinityContainer,
     lambda fields: {
         ("infinity_settings", "filters"): fields.filters.name,

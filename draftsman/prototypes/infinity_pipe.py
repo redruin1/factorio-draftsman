@@ -468,8 +468,8 @@ class InfinityPipe(Entity):
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:infinity_pipe"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:infinity_pipe"},
     InfinityPipe,
     lambda fields: {
         ("infinity_settings", "name"): fields.fluid_name.name,

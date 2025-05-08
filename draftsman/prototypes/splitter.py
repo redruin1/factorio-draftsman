@@ -227,8 +227,8 @@ class Splitter(DirectionalMixin, Entity):
     #     )
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:splitter"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:splitter"},
     Splitter,
     lambda fields: {
         "input_priority": fields.input_priority.name,

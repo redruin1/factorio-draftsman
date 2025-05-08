@@ -233,8 +233,8 @@ class FiltersMixin:
     #     return super().__eq__(other) and self.filters == other.filters
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:item_filters_mixin"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:item_filters_mixin"},
     FiltersMixin,
     lambda fields: {
         "use_filters": fields.use_filters.name,

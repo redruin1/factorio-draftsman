@@ -241,8 +241,8 @@ class Tile(SpatialLike, Exportable):
     #     return core_schema.no_info_after_validator_function(cls, handler(Tile.Format))
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:tile"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:tile"},
     Tile,
     lambda fields: {
         "name": fields.name.name,

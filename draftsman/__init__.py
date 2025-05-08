@@ -19,24 +19,29 @@ from draftsman._factorio_version import __factorio_version__, __factorio_version
 import attrs
 
 
-def define(cls):
-    """
-    Custom `attrs.define` wrapper. Handles Draftsman-specific boilerplate to
-    reduce repetition.
-    """
-    # Grab all specified validators
-    model_validators = [
-        v for _, v in cls.__dict__.items() if hasattr(v, "__attrs_class_validator__")
-    ]
-    cls = attrs.define(cls)
-    cls.__attrs_class_validators__ = model_validators
-    # TODO: we could patch __attrs_post_init__ to run the model validators and
-    # conjoin that with any existing class implementation
-    return cls
-
-
 # def field(*, default=attrs.NOTHING, omittable=True):
 #     """
 #     TODO
 #     """
 #     pass
+
+def define(cls):
+    """
+    Custom `attrs.define` wrapper. Handles Draftsman-specific boilerplate to
+    reduce repetition.
+    """
+    def field_transformer(cls, fields):
+        pass
+
+    # Grab all specified class validators
+    model_validators = [
+        v for _, v in cls.__dict__.items() if hasattr(v, "__attrs_class_validator__")
+    ]
+    cls = attrs.define(cls) # field_transformer=field_transformer
+    
+    # Attach class validators to the instance
+    cls.__attrs_class_validators__ = model_validators
+
+    # TODO: we could patch __attrs_post_init__ to run the model validators and
+    # conjoin that with any existing class implementation
+    return cls

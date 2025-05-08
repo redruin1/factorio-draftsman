@@ -908,10 +908,10 @@ class DeciderCombinator(
 # )
 # Or, we write a pre hook that converts the old format into the new format, but that doesn't work both ways
 
-draftsman_converters.add_schema(
-    {
-        "$id": "factorio:entity:decider_combinator:condition"
-    },
+draftsman_converters.add_hook_fns(
+    # {
+    #     "$id": "factorio:entity:decider_combinator:condition"
+    # },
     DeciderCombinator.Condition,
     lambda fields: {
         "first_signal": fields.first_signal.name,
@@ -925,10 +925,10 @@ draftsman_converters.add_schema(
 )
 
 
-draftsman_converters.add_schema(
-    {
-        "$id": "factorio:entity:decider_combinator:output"
-    },
+draftsman_converters.add_hook_fns(
+    # {
+    #     "$id": "factorio:entity:decider_combinator:output"
+    # },
     DeciderCombinator.Output,
     lambda fields: {
         "signal": fields.signal.name,
@@ -939,10 +939,10 @@ draftsman_converters.add_schema(
 )
 
 
-draftsman_converters.add_schema(
-    {
-        "$id": "factorio:entity:decider_combinator"
-    },
+draftsman_converters.add_hook_fns(
+    # {
+    #     "$id": "factorio:entity:decider_combinator"
+    # },
     DeciderCombinator,
     lambda fields: {
         ("control_behavior", "decider_conditions", "conditions"): fields.conditions.name,

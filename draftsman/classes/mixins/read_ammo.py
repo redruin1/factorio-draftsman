@@ -21,8 +21,8 @@ class ReadAmmoMixin:
     """
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:read_ammo_mixin"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:read_ammo_mixin"},
     ReadAmmoMixin,
     lambda fields: {("control_behavior", "read_ammo"): fields.read_ammo.name},
 )

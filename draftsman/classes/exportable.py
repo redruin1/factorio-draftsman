@@ -522,6 +522,25 @@ class Exportable:
         # )
 
     @classmethod
+    def add_schema(cls, schema, version: tuple[int, ...] = None):
+        schema["$schema"] = "https://json-schema.org/draft/2020-12/schema",
+        # TODO 
+        if version is None:
+            for version in draftsman_converters.versions:
+                # merge the dicts of inherited classes together
+                res = {}
+                for subcls in reversed(cls.__mro__[:-1]):
+                    try:
+                        subschema = draftsman_converters.get_version(version).get_schema(subcls)
+                        dict_merge(res, subschema)
+                    except KeyError:
+                        pass
+                dict_merge(res, schema)
+                draftsman_converters.get_version(version).add_schema(res, cls)
+        else:
+            draftsman_converters.get_version(version).add_schema(schema, cls)
+
+    @classmethod
     def json_schema(
         cls, version: tuple[int, ...] = __factorio_version_info__
     ) -> dict[str, Any]:

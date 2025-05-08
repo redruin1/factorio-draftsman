@@ -108,8 +108,8 @@ class IOTypeMixin:
     #     return super().__eq__(other) and self.io_type == other.io_type
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:io_type_mixin"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:io_type_mixin"},
     IOTypeMixin,
     lambda fields: {"type": fields.io_type.name},
 )

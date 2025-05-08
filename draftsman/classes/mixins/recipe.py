@@ -292,8 +292,8 @@ class RecipeMixin:
         super().merge(other)
 
 
-draftsman_converters.get_version((1, 0)).add_schema(
-    {"$id": "factorio:recipe_mixin"},
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    # {"$id": "factorio:recipe_mixin"},
     RecipeMixin,
     lambda fields: {
         "recipe": fields.recipe.name,
@@ -306,8 +306,8 @@ draftsman_converters.get_version((1, 0)).add_schema(
 )
 
 
-draftsman_converters.get_version((2, 0)).add_schema(
-    {"$id": "factorio:recipe_mixin"},
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    # {"$id": "factorio:recipe_mixin"},
     RecipeMixin,
     lambda fields: {
         "recipe": fields.recipe.name,

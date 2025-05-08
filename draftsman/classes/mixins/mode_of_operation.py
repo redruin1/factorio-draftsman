@@ -74,6 +74,8 @@ class InserterModeOfOperationMixin:  # (ControlBehaviorMixin)
     #     else:
     #         self.control_behavior.circuit_mode_of_operation = value
 
+# TODO: logi mode of operations hook functions
+
 
 @attrs.define(slots=False)
 class LogisticModeOfOperationMixin(Exportable):  # (ControlBehaviorMixin)
@@ -137,8 +139,8 @@ class LogisticModeOfOperationMixin(Exportable):  # (ControlBehaviorMixin)
     #         self.control_behavior.circuit_mode_of_operation = value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:mode_of_operation_mixin"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:mode_of_operation_mixin"},
     LogisticModeOfOperationMixin,
     lambda fields: {
         ("control_behavior", "circuit_mode_of_operation"): fields.mode_of_operation.name
@@ -206,3 +208,6 @@ class CargoHubModeOfOperationMixin:
     #         self.control_behavior.circuit_mode_of_operation = result
     #     else:
     #         self.control_behavior.circuit_mode_of_operation = value
+
+
+# TODO: cargo hub mode of operation hook functions

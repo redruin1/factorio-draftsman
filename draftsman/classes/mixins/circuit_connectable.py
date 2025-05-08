@@ -1,5 +1,6 @@
 # circuit_connectable.py
 
+from draftsman.classes.exportable import Exportable
 from draftsman.classes.association import Association
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
@@ -8,7 +9,7 @@ import attrs
 
 
 @attrs.define(slots=False)
-class CircuitConnectableMixin:
+class CircuitConnectableMixin(Exportable):
     """
     Enables the Entity to be connected to circuit networks.
     """
@@ -219,11 +220,73 @@ class CircuitConnectableMixin:
     #     return super().__eq__(other) and self.connections == other.connections
 
 
-draftsman_converters.get_version((1, 0)).add_schema(
+CircuitConnectableMixin.add_schema(
     {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "$id": "factorio:circuit_connectable_mixin",
+        "definitions": {
+            "circuit-connection-point": {
+                "type": "object",
+                "properties": {
+                    "entity_id": {"$ref": "urn:uint64"},
+                    "circuit_id": {"enum": [1, 2]},
+                },
+                "required": ["entity_id"]
+            },
+            "wire-connection-point": {
+                "properties": {
+                    "entity_id": {"$ref": "urn:uint64"},
+                    "wire_id": {"enum": [0, 1]},
+                },
+                "required": ["entity_id"]
+            }
+        },
+        "properties": {
+            "connections": {
+                "1": {
+                    "type": "object",
+                    "properties": {
+                        "red": {
+                            "type": "array",
+                            "items": {"$ref": "#/definitions/circuit-connection-point"}
+                        },
+                        "green": {
+                            "type": "array",
+                            "items": {"$ref": "#/definitions/circuit-connection-point"}
+                        },
+                    }
+                },
+                "2": {
+                    "type": "object",
+                    "properties": {
+                        "red": {
+                            "type": "array",
+                            "items": {"$ref": "#/definitions/circuit-connection-point"}
+                        },
+                        "green": {
+                            "type": "array",
+                            "items": {"$ref": "#/definitions/circuit-connection-point"}
+                        },
+                    }
+                },
+                "Cu0": {
+                    "type": "array",
+                    "items": {"$ref": "#/definitions/wire-connection-point"}
+                },
+                "Cu1": {
+                    "type": "array",
+                    "items": {"$ref": "#/definitions/wire-connection-point"}
+                },
+            }
+        }
     },
+    version=(1, 0)
+)
+
+CircuitConnectableMixin.add_schema(
+    {},
+    version=(2, 0)
+)
+
+draftsman_converters.get_version((1, 0)).add_hook_fns(
     CircuitConnectableMixin,
     lambda fields: {
         "connections": fields._connections.name,
@@ -233,11 +296,7 @@ draftsman_converters.get_version((1, 0)).add_schema(
     },
 )
 
-draftsman_converters.get_version((2, 0)).add_schema(
-    {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "$id": "factorio:circuit_connectable_mixin",
-    },
+draftsman_converters.get_version((2, 0)).add_hook_fns(
     CircuitConnectableMixin,
     lambda fields: {
         "connections": fields._connections.name,

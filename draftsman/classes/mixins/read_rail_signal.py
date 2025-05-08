@@ -179,8 +179,8 @@ class ReadRailSignalMixin:  # (ControlBehaviorMixin)
         self.green_output_signal = other.green_output_signal
 
 
-draftsman_converters.get_version((1, 0)).add_schema(
-    {"$id": "factorio:read_rail_signals_mixin_v1.0"},
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    # {"$id": "factorio:read_rail_signals_mixin_v1.0"},
     ReadRailSignalMixin,
     lambda fields: {
         ("control_behavior", "red_output_signal"): fields.red_output_signal.name,
@@ -189,8 +189,8 @@ draftsman_converters.get_version((1, 0)).add_schema(
     },
 )
 
-draftsman_converters.get_version((2, 0)).add_schema(
-    {"$id": "factorio:read_rail_signals_mixin_v2.0"},
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    # {"$id": "factorio:read_rail_signals_mixin_v2.0"},
     ReadRailSignalMixin,
     lambda fields: {
         ("control_behavior", "red_output_signal"): fields.red_output_signal.name,

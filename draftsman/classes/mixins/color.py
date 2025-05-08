@@ -108,8 +108,8 @@ class ColorMixin(Exportable):
     #     return super().__eq__(other) and self.color == other.color
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:color_mixin"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:color_mixin"},
     ColorMixin,
     lambda fields: {"color": fields.color.name},
 )

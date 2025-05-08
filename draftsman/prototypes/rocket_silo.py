@@ -232,8 +232,8 @@ class RocketSilo(
     #     )
 
 
-draftsman_converters.get_version((1, 0)).add_schema( # pragma: no branch
-    {"$id": "factorio:rocket_silo_v1.0"},
+draftsman_converters.get_version((1, 0)).add_hook_fns( # pragma: no branch
+    # {"$id": "factorio:rocket_silo_v1.0"},
     RocketSilo,
     lambda fields: {
         "auto_launch": fields.auto_launch.name,
@@ -242,8 +242,8 @@ draftsman_converters.get_version((1, 0)).add_schema( # pragma: no branch
     },
 )
 
-draftsman_converters.get_version((2, 0)).add_schema(
-    {"$id": "factorio:rocket_silo_v2.0"},
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    # {"$id": "factorio:rocket_silo_v2.0"},
     RocketSilo,
     lambda fields: {
         None: fields.auto_launch.name,

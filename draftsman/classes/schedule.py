@@ -256,8 +256,8 @@ class WaitCondition(Exportable):
     #     )
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:wait_condition"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:wait_condition"},
     WaitCondition,
     lambda fields: {
         "type": fields.type.name,
@@ -696,8 +696,8 @@ class Schedule(Exportable):
         return "<Schedule>{}".format(self.to_dict())
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:schedule:specification:stop"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:schedule:specification:stop"},
     Schedule.Specification.Stop,
     lambda fields: {
         "station": fields.station.name,
@@ -705,16 +705,16 @@ draftsman_converters.add_schema(
     },
 )
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:schedule:specification"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:schedule:specification"},
     Schedule.Specification,
     lambda fields: {
         "records": fields.records.name,
     },
 )
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:schedule"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:schedule"},
     Schedule,
     lambda fields: {
         "locomotives": fields.locomotives.name,

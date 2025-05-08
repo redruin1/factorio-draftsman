@@ -20,8 +20,8 @@ class VariationMixin:
     """
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:simple_entity_with_owner"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:simple_entity_with_owner"},
     VariationMixin,
     lambda fields: {"variation": fields.variation.name},
 )

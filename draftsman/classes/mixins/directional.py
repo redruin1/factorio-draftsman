@@ -368,8 +368,8 @@ class DirectionalMixin:
     #     return super().__eq__(other) and self.direction == other.direction
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:directional_mixin"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:directional_mixin"},
     DirectionalMixin,
     lambda fields: {"direction": fields.direction.name},
 )

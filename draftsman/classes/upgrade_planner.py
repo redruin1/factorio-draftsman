@@ -506,8 +506,8 @@ class UpgradePlanner(Blueprintable):
         raise ValueError("Unable to find mapper with index '{}'".format(index))
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:upgrade_planner"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:upgrade_planner"},
     UpgradePlanner,
     lambda fields: {
         ("upgrade_planner", "item"): fields.item.name,

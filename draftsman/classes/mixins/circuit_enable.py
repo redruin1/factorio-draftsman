@@ -83,8 +83,8 @@ class CircuitEnableMixin:  # (ControlBehaviorMixin)
         self.circuit_enabled = other.circuit_enabled
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:circuit_enable_mixin"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:circuit_enable_mixin"},
     CircuitEnableMixin,
     lambda fields: {
         ("control_behavior", "circuit_enabled"): fields.circuit_enabled.name

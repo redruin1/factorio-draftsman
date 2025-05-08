@@ -914,8 +914,8 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
 
     #     return result
 
-draftsman_converters.add_schema(
-    {"$id": "draftsman:group"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "draftsman:group"},
     Group,
     lambda fields: {
         ("blueprint", "entities"): fields.entities.name,

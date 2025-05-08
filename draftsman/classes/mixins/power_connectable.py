@@ -159,21 +159,21 @@ class PowerConnectableMixin:
     #     return super().__eq__(other) and self.neighbours == other.neighbours
 
 
-draftsman_converters.get_version((1, 0)).add_schema(
-    {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "$id": "factorio:power_connectable_mixin",
-    },
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    # {
+    #     "$schema": "http://json-schema.org/draft-07/schema#",
+    #     "$id": "factorio:power_connectable_mixin",
+    # },
     PowerConnectableMixin,
     lambda fields: {"neighbours": fields._neighbours.name},
     lambda fields, converter: {"neighbours": fields._neighbours.name},
 )
 
-draftsman_converters.get_version((2, 0)).add_schema(
-    {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "$id": "factorio:power_connectable_mixin",
-    },
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    # {
+    #     "$schema": "http://json-schema.org/draft-07/schema#",
+    #     "$id": "factorio:power_connectable_mixin",
+    # },
     PowerConnectableMixin,
     lambda fields: {
         "neighbours": fields._neighbours.name,

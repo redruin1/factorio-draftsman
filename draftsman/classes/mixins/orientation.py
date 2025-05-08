@@ -164,8 +164,8 @@ class OrientationMixin(Exportable):
     #     return super().__eq__(other) and self.orientation == other.orientation
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:orientation_mixin"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:orientation_mixin"},
     OrientationMixin,
     lambda fields: {fields.orientation.name: "orientation"},
 )

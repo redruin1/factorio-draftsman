@@ -98,8 +98,8 @@ class EntityFilter(Exportable):
         return value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:deconstruction_planner:entity_filter"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:deconstruction_planner:entity_filter"},
     EntityFilter,
     lambda fields: {
         "name": fields.name.name,
@@ -129,8 +129,8 @@ class TileFilter(Exportable):
         return value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:deconstruction_planner:tile_filter"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:deconstruction_planner:tile_filter"},
     TileFilter,
     lambda fields: {
         "name": fields.name.name,
@@ -774,8 +774,8 @@ class DeconstructionPlanner(Blueprintable):
             self.set_tile_filter(i, tile_name)
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:deconstruction_planner"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:deconstruction_planner"},
     DeconstructionPlanner,
     lambda fields: {
         ("deconstruction_planner", "item"): fields.item.name,

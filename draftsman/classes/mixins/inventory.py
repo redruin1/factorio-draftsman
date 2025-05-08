@@ -194,8 +194,8 @@ class InventoryMixin:
         self.bar = other.bar
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:inventory_mixin"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:inventory_mixin"},
     InventoryMixin,
     lambda fields: {"bar": fields.bar.name},
 )

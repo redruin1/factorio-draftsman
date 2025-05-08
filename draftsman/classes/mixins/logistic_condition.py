@@ -118,23 +118,23 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
 
 
 # TODO: versioning
-draftsman_converters.add_schema(
-    {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "$id": "factorio:logistic_condition",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "connect_to_logistic_network": {
-                        "type": "boolean",
-                        "default": "false",
-                    },
-                    "logistic_condition": {"$ref": "factorio:simple_condition"},
-                },
-            }
-        },
-    },
+draftsman_converters.add_hook_fns(
+    # {
+    #     "$schema": "http://json-schema.org/draft-07/schema#",
+    #     "$id": "factorio:logistic_condition",
+    #     "properties": {
+    #         "control_behavior": {
+    #             "type": "object",
+    #             "properties": {
+    #                 "connect_to_logistic_network": {
+    #                     "type": "boolean",
+    #                     "default": "false",
+    #                 },
+    #                 "logistic_condition": {"$ref": "factorio:simple_condition"},
+    #             },
+    #         }
+    #     },
+    # },
     LogisticConditionMixin,
     lambda fields: {
         (

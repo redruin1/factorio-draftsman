@@ -207,8 +207,8 @@ class RailSignal(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:lamp"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:lamp"},
     RailSignal,
     lambda fields: {
         ("control_behavior", "circuit_close_signal"): fields.enable_disable.name,

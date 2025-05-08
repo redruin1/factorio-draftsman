@@ -134,10 +134,10 @@ class SpacePlatformHub(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
-    {
-        "$id": "factorio:space_platform_hub"
-    },
+draftsman_converters.add_hook_fns(
+    # {
+    #     "$id": "factorio:space_platform_hub"
+    # },
     SpacePlatformHub,
     lambda fields: {
         ("control_behavior", "read_contents"): fields.read_contents.name,

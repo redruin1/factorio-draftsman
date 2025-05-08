@@ -232,8 +232,8 @@ class SpiderVehicle(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:entity:spider_vehicle"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:entity:spider_vehicle"},
     SpiderVehicle,
     lambda fields: {
         (

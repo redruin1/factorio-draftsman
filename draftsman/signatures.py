@@ -122,6 +122,7 @@ class AttrsMapperID(Exportable):
     type: Literal["entity", "item"] = attrs.field(  # TODO: optional?
         validator=one_of("entity", "item")
     )
+    # TODO: has quality now
 
     @classmethod
     def converter(cls, value):
@@ -140,8 +141,17 @@ class AttrsMapperID(Exportable):
             return value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:mapper_id"},
+AttrsMapperID.add_schema(
+    {
+        "$id": "urn:factorio:upgrade-planner:mapper-id",
+        "properties": {
+            "name": {"type": "string"},
+            "type": {"enum": ["entity", "item"]}
+        }
+    }
+)
+
+draftsman_converters.add_hook_fns(
     AttrsMapperID,
     lambda fields: {
         "name": fields.name.name,
@@ -178,8 +188,19 @@ class AttrsMapper(Exportable):
             return value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:mapper"},
+AttrsMapper.add_schema(
+    {
+        "$id": "urn:factorio:upgrade-planner:mapper",
+        "properties": {
+            "index": {"$ref": "urn:uint64"},
+            "from": {"$ref": "urn:factorio:upgrade-planner:mapper-id"},
+            "to": {"$ref": "urn:factorio:upgrade-planner:mapper-id"},
+        }
+    }
+)
+
+
+draftsman_converters.add_hook_fns(
     AttrsMapper,
     lambda fields: {
         "index": fields.index.name,
@@ -280,11 +301,60 @@ class AttrsSignalID(Exportable):
                     warnings.warn(MalformedSignalWarning(msg))
 
 
-draftsman_converters.get_version((1, 0)).add_schema(
+AttrsSignalID.add_schema(
     {
-        "$id": "factorio:signal_id"
-        # TODO
+        "$id": "urn:factorio:signal-id",
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "type": {
+                "enum": [
+                    "item",
+                    "fluid",
+                    "virtual",
+                ]
+            }
+        }
     },
+    version=(1, 0)
+)
+
+AttrsSignalID.add_schema(
+    {
+        "$id": "urn:factorio:signal-id",
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "type": {
+                "enum": [
+                    "item",
+                    "fluid",
+                    "virtual",
+                    "recipe",
+                    "entity",
+                    "space-location",
+                    "asteroid-chunk",
+                    "quality",
+                ]
+            },
+            "quality": {
+                "enum": [
+                    "normal", 
+                    "uncommon", 
+                    "rare", 
+                    "epic", 
+                    "legendary", 
+                    "quality-unknown", 
+                    "any"
+                ]
+            }
+        }
+    },
+    version=(2, 0)
+)
+
+
+draftsman_converters.get_version((1, 0)).add_hook_fns(
     AttrsSignalID,
     lambda fields: {
         "name": fields.name.name,
@@ -293,11 +363,7 @@ draftsman_converters.get_version((1, 0)).add_schema(
     },
 )
 
-draftsman_converters.get_version((2, 0)).add_schema(
-    {
-        "$id": "factorio:signal_id"
-        # TODO
-    },
+draftsman_converters.get_version((2, 0)).add_hook_fns(
     AttrsSignalID,
     lambda fields: {
         "name": fields.name.name,
@@ -333,6 +399,25 @@ class TargetID(Exportable):
     Name of the target.
     """
 
+TargetID.add_schema(
+    {
+        "$id": "urn:factorio:target-id",
+        "type": "object",
+        "properties": {
+            "index": {"$ref": "urn:uint32"},
+            "name": {"type": "string"}
+        }
+    }
+)
+
+draftsman_converters.add_hook_fns(
+    TargetID,
+    lambda fields: {
+        "index": fields.index.name,
+        "name": fields.name.name
+    }
+)
+
 
 @attrs.define
 class AttrsAsteroidChunkID(Exportable):
@@ -345,10 +430,21 @@ class AttrsAsteroidChunkID(Exportable):
             return cls(**value)
         else:
             return value
+        
+
+AttrsAsteroidChunkID.add_schema(
+    {
+        "$id": "urn:factorio:asteroid-chunk-id",
+        "type": "object",
+        "properties": {
+            "index": {"$ref": "urn:uint32"},
+            "name": {"type": "string"}
+        }
+    }
+)
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:asteroid_chunk_id"},
+draftsman_converters.add_hook_fns(
     AttrsAsteroidChunkID,
     lambda fields: {
         fields.index.name: "index",
@@ -377,8 +473,19 @@ class AttrsIcon(Exportable):
         return value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:icon"},
+AttrsIcon.add_schema(
+    {
+        "$id": "urn:factorio:icon",
+        "type": "object",
+        "properties": {
+            "index": {"$ref": "urn:uint8"},
+            "signal": {"$ref": "urn:factorio:signal-id"},
+        }
+    }
+)
+
+
+draftsman_converters.add_hook_fns(
     AttrsIcon,
     lambda fields: {
         "signal": fields.signal.name,
@@ -492,9 +599,31 @@ class AttrsSimpleCondition(Exportable):
         else:
             return value
 
+AttrsSimpleCondition.add_schema(
+    {
+        "$id": "urn:factorio:simple-condition",
+        "type": "object",
+        "properties": {
+            "first_signal": {
+                "anyOf": [
+                    {"$ref": "urn:factorio:signal-id"},
+                    {"type": "null"}
+                ]
+            },
+            "comparator": {"$ref": "urn:factorio:comparator"},
+            "constant": {"$ref": "urn:int32"},
+            "second_signal": {
+                "anyOf": [
+                    {"$ref": "urn:factorio:signal-id"},
+                    {"type": "null"}
+                ]
+            },
+        }
+    },
+)
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:simple_condition"},
+
+draftsman_converters.add_hook_fns(
     AttrsSimpleCondition,
     lambda fields: {
         "first_signal": fields.first_signal.name,
@@ -519,9 +648,19 @@ class AttrsNetworkSpecification(Exportable):
         else:
             return value
 
+AttrsNetworkSpecification.add_schema(
+    {
+        "$id": "factorio:network_specification",
+        "type": "object",
+        "properties": {
+            "red": {"type": "boolean"},
+            "green": {"type": "boolean"}
+        }
+    },
+)
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:network_specification"},
+
+draftsman_converters.add_hook_fns(
     AttrsNetworkSpecification,
     lambda fields: {
         "red": fields.red.name,
@@ -611,8 +750,31 @@ class AttrsItemFilter(Exportable):
             return value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:item_filter"},
+AttrsItemFilter.add_schema(
+    {
+        "$id": "urn:factorio:item-filter",
+        "type": "object",
+        "properties": {
+            "index": {"$ref": "urn:int64"},
+            "name": {"type": "string"},
+            "quality": {
+                "enum": [
+                    "normal", 
+                    "uncommon", 
+                    "rare", 
+                    "epic", 
+                    "legendary", 
+                    "quality-unknown", 
+                    "any"
+                ]
+            },
+            "comparator": {"$ref": "urn:factorio:comparator"}
+        }
+    }
+)
+
+
+draftsman_converters.add_hook_fns(
     AttrsItemFilter,
     lambda fields: {
         fields.index.name: "index",
@@ -848,13 +1010,61 @@ class SignalFilter(Exportable):
             return value
 
 
+SignalFilter.add_schema(
+    {
+        "$id": "urn:factorio:signal-filter",
+        "type": "object",
+        "properties": {
+            "index": {"$ref": "urn:int64"},
+            "name": {"type": "string"},
+            "type": {
+                "enum": [
+                    "item",
+                    "fluid",
+                    "virtual",
+                ]
+            },
+            "count": {"$ref": "urn:int32"}
+        }
+    },
+    version=(1, 0)
+)
+
+SignalFilter.add_schema(
+    {
+        "$id": "urn:factorio:signal-filter",
+        "type": "object",
+        "type": "object",
+        "properties": {
+            "index": {"$ref": "urn:int64"},
+            "name": {"type": "string"},
+            "type": {
+                "enum": [
+                    "item",
+                    "fluid",
+                    "virtual",
+                    "recipe",
+                    "entity",
+                    "space-location",
+                    "asteroid-chunk",
+                    "quality",
+                ]
+            },
+            "count": {"$ref": "urn:int32"},
+            "quality": {"$ref": "urn:factorio:quality-name"},
+            "comparator": {"$ref": "urn:factorio:comparator"},
+            "max_count": {"$ref": "urn:int32"}
+        }
+    },
+    version=(2, 0)
+)
+
 @attrs.define
 class _ExportSignalFilter:
     type: str = "item"
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:signal_filter"},
+draftsman_converters.add_hook_fns(
     SignalFilter,
     lambda fields: {
         "index": fields.index.name,
@@ -1152,8 +1362,29 @@ class ManualSection(Exportable):
             return value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:signal_section"},
+ManualSection.add_schema(
+    {
+        "$id": "urn:factorio:manual-section",
+        "type": "object",
+        "properties": {
+            "index": {
+                "$ref": "urn:lua-double",
+                "min": 1,
+                "max": 100,
+            },
+            "filters": {
+                "type": "array",
+                "items": {"$ref": "urn:factorio:signal-filter"},
+                "maxItems": 1000,
+            },
+            "group": {"type": "string"},
+            "active": {"type": "boolean"},
+        },
+        "required": ["index"]
+    }
+)
+
+draftsman_converters.add_hook_fns(
     ManualSection,
     lambda fields: {
         fields.index.name: "index",
@@ -1304,10 +1535,18 @@ class QualityFilter(Exportable):
     The comparison operation to perform.
     """
 
-draftsman_converters.add_schema(
+QualityFilter.add_schema(
     {
-        "$id": "factorio:quality_filter"
-    },
+        "$id": "urn:factorio:quality-filter",
+        "type": "object",
+        "properties": {
+            "quality": {"$ref": "urn:factorio:quality-name"},
+            "comparator": {"$ref": "urn:factorio:comparator"},
+        }
+    }
+)
+
+draftsman_converters.add_hook_fns(
     QualityFilter,
     lambda fields: {
         "quality": fields.quality.name,
@@ -1342,13 +1581,24 @@ class AttrsInventoryLocation(Exportable):
             return value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:item_specification"},
+AttrsInventoryLocation.add_schema(
+    {
+        "$id": "urn:factorio:inventory-location",
+        "type": "object",
+        "properties": {
+            "inventory": {"$ref": "urn:uint32"},
+            "stack": {"$ref": "urn:uint32"},
+            "count": {"$ref": "urn:uint32"},
+        }
+    }
+)
+
+draftsman_converters.add_hook_fns(
     AttrsInventoryLocation,
     lambda fields: {
-        fields.inventory.name: "inventory",
-        fields.stack.name: "stack",
-        fields.count.name: "count",
+        "inventory": fields.inventory.name,
+        "stack": fields.stack.name,
+        "count": fields.count.name,
     },
 )
 
@@ -1374,7 +1624,8 @@ class AttrsItemSpecification(Exportable):
     """
     grid_count: uint32 = attrs.field(default=0, validator=instance_of(uint32))
     """
-    The total amount of items being requested to all locations.
+    The total amount of this item being requested to the attached equipment grid,
+    if applicable. Always zero if the entity has no equipment grid to request to.
     """
 
     @classmethod
@@ -1385,8 +1636,23 @@ class AttrsItemSpecification(Exportable):
             return value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:item_specification"},
+AttrsItemSpecification.add_schema(
+    {
+        "$id": "urn:factorio:item-specification",
+        "type": "object",
+        "properties": {
+            "in_inventory": {
+                "type": "array",
+                "items": {"$ref": "urn:factorio:inventory-location"},
+            },
+            "grid_count": {
+                "$ref": "urn:uint32",
+            }
+        }
+    }
+)
+
+draftsman_converters.add_hook_fns(
     AttrsItemSpecification,
     lambda fields: {
         fields.in_inventory.name: "in_inventory",
@@ -1409,8 +1675,18 @@ class AttrsItemID(Exportable):
         return value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:item_id"},
+AttrsItemID.add_schema(
+    {
+        "$id": "urn:factorio:item-id",
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "quality": {"$ref": "urn:factorio:quality-name"}
+        }
+    }
+)
+
+draftsman_converters.add_hook_fns(
     AttrsItemID,
     lambda fields: {"name": fields.name.name, "quality": fields.quality.name},
 )
@@ -1441,8 +1717,19 @@ class AttrsItemRequest(Exportable):
             return value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:item_request"},
+AttrsItemRequest.add_schema(
+    {
+        "$id": "urn:factorio:item-request",
+        "type": "object",
+        "properties": {
+            "id": {"$ref": "urn:factorio:item-id"},
+            "items": {"$ref": "urn:factorio:item-specification"}
+        }
+    }
+)
+
+
+draftsman_converters.add_hook_fns(
     AttrsItemRequest,
     lambda fields: {
         fields.id.name: "id",
@@ -1485,8 +1772,25 @@ class AttrsInfinityFilter(Exportable):
             return value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:infinity_filter"},
+AttrsInfinityFilter.add_schema(
+    {
+        "$id": "urn:factorio:infinity_filter",
+        "type": "object",
+        "properties": {
+            "index": {"$ref": "urn:uint16"},
+            "name": {"type": "string"},
+            "count": {"$ref": "urn:uint32", "default": 0},
+            "mode": {
+                "enum": ["at-least", "at-most", "exactly"],
+                "default": "at-least",
+            }
+        },
+        "required": ["index", "name"]
+    }
+)
+
+
+draftsman_converters.add_hook_fns(
     AttrsInfinityFilter,
     lambda fields: {
         fields.index.name: "index",
@@ -1621,8 +1925,18 @@ class EquipmentID(Exportable):
         return value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:equipment_id"},
+EquipmentID.add_schema(
+    {
+        "$id": "urn:factorio:equipment-id",
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "quality": {"$ref": "urn:factorio:quality-name"}
+        }
+    }
+)
+
+draftsman_converters.add_hook_fns(
     EquipmentID,
     lambda fields: {
         "name": fields.name.name,
@@ -1654,10 +1968,22 @@ class EquipmentComponent(Exportable):
         if isinstance(value, dict):
             return cls(**value)
         return value
+    
+
+EquipmentComponent.add_schema(
+    {
+        "$id": "urn:factorio:equipment-component",
+        "type": "object",
+        "properties": {
+            "equipment": {"$ref": "urn:factorio:equipment-id"},
+            "position": {"$ref": "urn:factorio:position"}
+        },
+        "required": ["equipment", "position"]
+    }
+)
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:equipment_component"},
+draftsman_converters.add_hook_fns(
     EquipmentComponent,
     lambda fields: {
         "equipment": fields.equipment.name,
@@ -1666,7 +1992,7 @@ draftsman_converters.add_schema(
 )
 
 @attrs.define
-class StockConnection:
+class StockConnection(Exportable):
     # TODO: all of these should probably have converters which take EntityLikes and wrap them with Association
     stock: Association = attrs.field(
         # TODO: validators
@@ -1675,9 +2001,22 @@ class StockConnection:
     back: Optional[Association] = attrs.field(default=None)
 
 
+StockConnection.add_schema(
+    {
+        "$id": "urn:factorio:blueprint:stock-connection",
+        "type": "object",
+        "properties": {
+            "stock": {"$ref": "urn:uint64"},
+            "front": {"$ref": "urn:uint64"},
+            "back": {"$ref": "urn:uint64"},
+        },
+        "required": ["stock"]
+    }
+)
+
+
 # TODO: test
-draftsman_converters.add_schema( # pragma: no branch
-    {"$id": "factorio:stock_connection"},
+draftsman_converters.add_hook_fns( # pragma: no branch
     StockConnection,
     lambda fields: {
         "stock": fields.stock.name,

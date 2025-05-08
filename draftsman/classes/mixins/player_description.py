@@ -67,14 +67,14 @@ class PlayerDescriptionMixin:
     #         self._root.player_description = value
 
 
-draftsman_converters.get_version((1, 0)).add_schema(
-    {"$id": "factorio:player_description_mixin"},
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    # {"$id": "factorio:player_description_mixin"},
     PlayerDescriptionMixin,
     lambda fields: {None: fields.player_description.name},
 )
 
-draftsman_converters.get_version((2, 0)).add_schema(
-    {"$id": "factorio:player_description_mixin"},
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    # {"$id": "factorio:player_description_mixin"},
     PlayerDescriptionMixin,
     lambda fields: {"player_description": fields.player_description.name},
 )

@@ -339,8 +339,8 @@ class RequestFiltersMixin(Exportable):
         self.sections = other.sections
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:request_filters_mixin"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:request_filters_mixin"},
     RequestFiltersMixin,
     lambda fields: {
         ("request_filters", "trash_not_requested"): fields.trash_not_requested.name,

@@ -284,8 +284,8 @@ class AsteroidCollector(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:asteroid_collector"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:asteroid_collector"},
     AsteroidCollector,
     lambda fields: {
         "result_inventory": fields.result_inventory.name,

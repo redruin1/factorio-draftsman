@@ -92,8 +92,8 @@ class HeatInterface(Entity):
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:heat_interface"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:heat_interface"},
     HeatInterface,
     lambda fields: {
         "temperature": fields.temperature.name,

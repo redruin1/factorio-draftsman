@@ -172,10 +172,10 @@ class RequestItemsMixin:
 
 
 # TODO: versioning
-draftsman_converters.add_schema(
-    {
-        "$id": "factorio:request_items_mixin",
-    },
+draftsman_converters.add_hook_fns(
+    # {
+    #     "$id": "factorio:request_items_mixin",
+    # },
     RequestItemsMixin,
     lambda fields: {"items": fields.item_requests.name},
 )

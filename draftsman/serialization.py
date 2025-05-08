@@ -243,11 +243,17 @@ class ConverterVersion:
         self,
         schema: dict,
         cls: type,
-        structure_func: Optional[Callable] = None,
+    ):
+        if "$id" in schema:
+            self.schemas[schema["$id"]] = schema
+        self.schemas[cls] = schema
+
+    def add_hook_fns(
+        self,
+        cls: type,
+        structure_func: Optional[Callable],
         unstructure_func: Optional[Callable] = None,
     ):
-        self.schemas[schema["$id"]] = schema
-        self.schemas[cls] = schema
         self.structure_funcs[cls] = structure_func
         if unstructure_func is not None:
             self.unstructure_funcs[cls] = unstructure_func
@@ -321,12 +327,20 @@ class DraftsmanConverters:
     def add_schema(
         self,
         schema: dict,
-        cls: Optional[type] = None,
-        structure_func: Optional[Callable] = None,
+        cls: Optional[type],
+    ):
+        # Normalize references and IDs to always use versions at end
+        for version in self.versions.values():
+            version.add_schema(schema, cls)
+
+    def add_hook_fns(
+        self,
+        cls: type,
+        structure_func: Callable,
         unstructure_func: Optional[Callable] = None,
     ):
         for version in self.versions.values():
-            version.add_schema(schema, cls, structure_func, unstructure_func)
+            version.add_hook_fns(cls, structure_func, unstructure_func)
 
     # @functools.cache
     # def __getitem__(self, item: tuple[int, ...]) -> cattrs.Converter:
@@ -575,10 +589,10 @@ def make_unstructure_function_from_schema(
                     is_bare_final(t)
                     and a.default is not attrs.NOTHING
                     and not isinstance(a.default, attrs.Factory)
-                ):
+                ): # pragma: no branch
                     # This is a special case where we can use the
                     # type of the default to dispatch on.
-                    t = a.default.__class__
+                    t = a.default.__class__ # pragma: no coverage
                 try:
                     handler = converter.get_unstructure_hook(t, cache_result=False)
                 except RecursionError:  # pragma: no coverage

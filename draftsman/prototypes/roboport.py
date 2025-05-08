@@ -387,8 +387,8 @@ class Roboport(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:roboport"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:roboport"},
     Roboport,
     lambda fields: {
         ("control_behavior", "read_logistics"): fields.read_logistics.name,

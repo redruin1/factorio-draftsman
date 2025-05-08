@@ -40,6 +40,54 @@ class TestArithmeticCombinator:
                 }
             },
         }
+        assert combinator.to_dict(exclude_none=False) == {
+            "name": "arithmetic-combinator",
+            "position": {"x": 4.0, "y": 3.5},
+            "direction": 4,
+            "control_behavior": {
+                "arithmetic_conditions": {
+                    "first_constant": 10,
+                    "operation": "+",
+                    "second_constant": 10,
+                }
+            },
+        }
+        assert combinator.to_dict(exclude_defaults=False) == {
+            "name": "arithmetic-combinator",
+            "position": {"x": 4.0, "y": 3.5},
+            "quality": "normal",
+            "direction": 4,
+            "control_behavior": {
+                "arithmetic_conditions": {
+                    "first_constant": 10,
+                    "first_signal_networks": {"green": True, "red": True},
+                    "operation": "+",
+                    "second_constant": 10,
+                    "second_signal_networks": {"green": True, "red": True},
+                }
+            },
+            "tags": {},
+        }
+        assert combinator.to_dict(exclude_none=False, exclude_defaults=False) == {
+            "name": "arithmetic-combinator",
+            "position": {"x": 4.0, "y": 3.5},
+            "quality": "normal",
+            "direction": 4,
+            "player_description": None,
+            "control_behavior": {
+                "arithmetic_conditions": {
+                    "first_constant": 10,
+                    "first_signal_networks": {"green": True, "red": True},
+                    "first_signal": None,
+                    "operation": "+",
+                    "second_constant": 10,
+                    "second_signal_networks": {"green": True, "red": True},
+                    "second_signal": None,
+                    "output_signal": None,
+                }
+            },
+            "tags": {},
+        }
 
         combinator = ArithmeticCombinator(
             "arithmetic-combinator",

@@ -121,3 +121,6 @@ class VehicleMixin:
     #         self._root.selected_gun_index = result
     #     else:
     #         self._root.selected_gun_index = value
+
+
+# TODO: add hook functions

@@ -1455,8 +1455,8 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
 
 # TODO: this should be version 2.0
-draftsman_converters.add_schema(
-    {"$id": "factorio:blueprint"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:blueprint"},
     Blueprint,
     lambda fields: {
         ("blueprint", "item"): fields.item.name,

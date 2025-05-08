@@ -387,8 +387,8 @@ class ConstantCombinator(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:constant_combinator"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:constant_combinator"},
     ConstantCombinator,
     lambda fields: {
         ("control_behavior", "is_on"): fields.enabled.name,

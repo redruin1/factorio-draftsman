@@ -159,8 +159,8 @@ class PowerSwitch(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:power_switch"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:power_switch"},
     PowerSwitch,
     lambda fields: {"switch_state": fields.switch_state.name},
 )

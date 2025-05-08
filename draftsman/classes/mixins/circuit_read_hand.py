@@ -129,8 +129,8 @@ class CircuitReadHandMixin:  # (ControlBehaviorMixin)
     #         self.control_behavior.circuit_hand_read_mode = value
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:circuit_read_hand_mixin"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:circuit_read_hand_mixin"},
     CircuitReadHandMixin,
     lambda fields: {
         (

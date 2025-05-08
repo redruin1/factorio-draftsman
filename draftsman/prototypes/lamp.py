@@ -238,45 +238,47 @@ class Lamp(
     __hash__ = Entity.__hash__
 
 
+
+
 # TODO: versioning
-draftsman_converters.get_version((2, 0)).add_schema(
-    {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "$id": "factorio:lamp_v2.0",
-        "$ref": "factorio:entity_v2.0",
-        "allOf": [
-            {"$ref": "factorio:circuit_condition"},
-            {"$ref": "factorio:logistic_condition"},
-        ],
-        "type": "object",
-        "properties": {
-            "control_behavior": {
-                "properties": {
-                    "use_colors": {
-                        "type": "boolean",
-                        "default": "true",
-                    },
-                    "color_mode": {
-                        "type": "integer",
-                        "enum": [
-                            LampColorMode.COLOR_MAPPING,
-                            LampColorMode.COMPONENTS,
-                            LampColorMode.PACKED_RGB,
-                        ],
-                        "default": LampColorMode.COLOR_MAPPING,
-                    },
-                }
-            },
-            "always_on": {
-                "type": "boolean",
-                "default": "false",
-            },
-            "color": {
-                "$ref": "factorio:color",
-                "default": {"r": 255, "g": 255, "b": 191, "a": 255},
-            },
-        },
-    },
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    # {
+    #     "$schema": "http://json-schema.org/draft-07/schema#",
+    #     "$id": "factorio:lamp_v2.0",
+    #     "$ref": "factorio:entity_v2.0",
+    #     "allOf": [
+    #         {"$ref": "factorio:circuit_condition"},
+    #         {"$ref": "factorio:logistic_condition"},
+    #     ],
+    #     "type": "object",
+    #     "properties": {
+    #         "control_behavior": {
+    #             "properties": {
+    #                 "use_colors": {
+    #                     "type": "boolean",
+    #                     "default": "true",
+    #                 },
+    #                 "color_mode": {
+    #                     "type": "integer",
+    #                     "enum": [
+    #                         LampColorMode.COLOR_MAPPING,
+    #                         LampColorMode.COMPONENTS,
+    #                         LampColorMode.PACKED_RGB,
+    #                     ],
+    #                     "default": LampColorMode.COLOR_MAPPING,
+    #                 },
+    #             }
+    #         },
+    #         "always_on": {
+    #             "type": "boolean",
+    #             "default": "false",
+    #         },
+    #         "color": {
+    #             "$ref": "factorio:color",
+    #             "default": {"r": 255, "g": 255, "b": 191, "a": 255},
+    #         },
+    #     },
+    # },
     Lamp,
     lambda fields: {
         ("control_behavior", "use_colors"): fields.use_colors.name,

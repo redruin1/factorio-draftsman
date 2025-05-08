@@ -1175,6 +1175,46 @@ class Entity(EntityLike, Exportable):
         return result
 
 
+Entity.add_schema(
+    {
+        "$id": "factorio:entity",
+        "type": "object",
+        "properties": {
+            "entity_number": {"$ref": "urn:uint64"},
+            "name": {"type": "string"},
+            "position": {
+                "$ref": "factorio:position",
+            },
+            "tags": {"type": "object"},
+        },
+        "required": [
+            "entity_number", "name", "position"
+        ]
+    },
+    version=(1, 0)
+)
+
+Entity.add_schema(
+    {
+        "$id": "factorio:entity",
+        "type": "object",
+        "properties": {
+            "entity_number": {"$ref": "urn:uint64"},
+            "name": {"type": "string"},
+            "position": {
+                "$ref": "factorio:position",
+            },
+            "quality": {"$ref": "urn:factorio:quality-name"},
+            "tags": {"type": "object"},
+        },
+        "required": [
+            "entity_number", "name", "position"
+        ]
+    },
+    version=(2, 0)
+)
+
+
 @attrs.define
 class _ExportEntity:
     global_position: Vector = attrs.field(metadata={"omit": False})
@@ -1183,24 +1223,7 @@ class _ExportEntity:
 _export_fields = attrs.fields(_ExportEntity)
 
 
-draftsman_converters.get_version((1, 0)).add_schema(
-    {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "$id": "factorio:entity_v1.0",
-        "type": "object",
-        "properties": {
-            "entity_number": {
-                "type": "integer",
-                "minimum": 0,
-                "exclusiveMaximum": 2 ^ 64,
-            },
-            "name": {"type": "string"},
-            "position": {
-                "$ref": "factorio:position",
-            },
-            "tags": {"type": "object"},
-        },
-    },
+draftsman_converters.get_version((1, 0)).add_hook_fns(
     Entity,
     lambda fields: {
         "name": fields.name.name,
@@ -1217,25 +1240,7 @@ draftsman_converters.get_version((1, 0)).add_schema(
     },
 )
 
-draftsman_converters.get_version((2, 0)).add_schema(
-    {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "$id": "factorio:entity_v2.0",
-        "type": "object",
-        "properties": {
-            "entity_number": {
-                "type": "integer",
-                "minimum": 0,
-                "exclusiveMaximum": 2 ^ 64,
-            },
-            "name": {"type": "string"},
-            "position": {
-                "$ref": "factorio:position",
-            },
-            "quality": {"enum": ["normal", "uncommon", "rare", "epic", "legendary"]},
-            "tags": {"type": "object"},
-        },
-    },
+draftsman_converters.get_version((2, 0)).add_hook_fns(
     Entity,
     lambda fields: {
         "name": fields.name.name,

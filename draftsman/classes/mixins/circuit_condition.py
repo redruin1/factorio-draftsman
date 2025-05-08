@@ -1,5 +1,6 @@
 # circuit_condition.py
 
+from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import AttrsSimpleCondition, AttrsSignalID, int32
 from draftsman.validators import instance_of
@@ -10,7 +11,7 @@ from typing import Literal, Optional, Union
 
 
 @attrs.define(slots=False)
-class CircuitConditionMixin:  # (ControlBehaviorMixin)
+class CircuitConditionMixin(Exportable):  # (ControlBehaviorMixin)
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
     Allows the Entity to have an circuit enable condition, such as when the
@@ -121,26 +122,22 @@ class CircuitConditionMixin:  # (ControlBehaviorMixin)
         self.circuit_condition = other.circuit_condition
 
 
-draftsman_converters.add_schema(
+CircuitConditionMixin.add_schema(
     {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "$id": "factorio:circuit_condition",
         "properties": {
             "control_behavior": {
                 "type": "object",
                 "properties": {
-                    # "circuit_enabled": {
-                    #     "type": "boolean",
-                    #     "default": "false",
-                    # },
-                    "circuit_condition": {"$ref": "factorio:simple_condition"},
+                    "circuit_condition": {"$ref": "urn:factorio:simple-condition"},
                 },
             }
         },
-    },
+    }
+)
+
+draftsman_converters.add_hook_fns(
     CircuitConditionMixin,
     lambda fields: {
-        # ("control_behavior", "circuit_enabled"): fields.circuit_enabled.name,
         ("control_behavior", "circuit_condition"): fields.circuit_condition.name,
     },
 )

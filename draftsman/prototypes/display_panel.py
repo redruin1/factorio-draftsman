@@ -252,8 +252,8 @@ class DisplayPanel(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:display_panel:message"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:display_panel:message"},
     DisplayPanel.Message,
     lambda fields: {
         "text": fields.text.name,
@@ -262,8 +262,8 @@ draftsman_converters.add_schema(
     },
 )
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:display_panel"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:display_panel"},
     DisplayPanel,
     lambda fields: {
         "text": fields.text.name,

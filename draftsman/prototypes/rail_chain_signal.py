@@ -36,6 +36,9 @@ class RailChainSignal(
     forward rail block.
     """
 
+    # TODO: does this entity have rail signal control via circuit network? If so
+    # abstract the code from RailSignal out and use it in both
+
     # class Format(
     #     ReadRailSignalMixin.Format,
     #     ControlBehaviorMixin.Format,
@@ -179,8 +182,8 @@ class RailChainSignal(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_schema(
-    {"$id": "factorio:rail_chain_signal"},
+draftsman_converters.add_hook_fns(
+    # {"$id": "factorio:rail_chain_signal"},
     RailChainSignal,
     lambda fields: {
         ("control_behavior", "blue_output_signal"): fields.blue_output_signal.name
