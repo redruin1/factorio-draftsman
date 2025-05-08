@@ -109,49 +109,59 @@ class TestConstantCombinator:
             },
         }
 
-    # def test_set_signal(self):
-    #     combinator = ConstantCombinator()
-    #     combinator.set_signal(0, "signal-A", 100)
-    #     assert combinator.signals == [
-    #         SignalFilter(index=1, signal="signal-A", count=100)
-    #     ]
+        with pytest.raises(IndexError):
+            combinator.add_section(index=100)
 
-    #     combinator.set_signal(1, "signal-B", 200)
-    #     assert combinator.signals == [
-    #         SignalFilter(index=1, signal="signal-A", count=100),
-    #         SignalFilter(index=2, signal="signal-B", count=200),
-    #     ]
+    def test_set_signal(self):
+        combinator = ConstantCombinator()
+        section = combinator.add_section()
+        section.set_signal(0, "signal-A", 100)
+        assert section.filters == [
+            SignalFilter(index=1, name="signal-A", count=100, quality="normal")
+        ]
 
-    #     combinator.set_signal(0, "signal-C", 300)
-    #     assert combinator.signals == [
-    #         SignalFilter(index=1, signal="signal-C", count=300),
-    #         SignalFilter(index=2, signal="signal-B", count=200),
-    #     ]
+        section.set_signal(1, "signal-B", 200)
+        assert section.filters == [
+            SignalFilter(index=1, name="signal-A", count=100, quality="normal"),
+            SignalFilter(index=2, name="signal-B", count=200, quality="normal"),
+        ]
 
-    #     combinator.set_signal(1, None)
-    #     assert combinator.signals == [
-    #         SignalFilter(index=1, signal="signal-C", count=300)
-    #     ]
+        section.set_signal(0, "signal-C", 300)
+        assert section.filters == [
+            SignalFilter(index=1, name="signal-C", count=300, quality="normal"),
+            SignalFilter(index=2, name="signal-B", count=200, quality="normal"),
+        ]
 
-    #     with pytest.raises(DataFormatError):
-    #         combinator.set_signal(TypeError, "something")
-    #     with pytest.raises(DataFormatError):
-    #         combinator.set_signal(1, TypeError)
-    #     with pytest.raises(DataFormatError):
-    #         combinator.set_signal(1, "iron-ore", TypeError)
-    #     # with pytest.raises(DataFormatError): # TODO: is this an error?
-    #     #     combinator.set_signal(-1, "iron-ore", 0)
+        section.set_signal(1, None)
+        assert section.filters == [
+            SignalFilter(index=1, name="signal-C", count=300, quality="normal")
+        ]
 
-    #     assert combinator.item_slot_count == 20
-    #     with pytest.raises(DataFormatError):
-    #         combinator.set_signal(100, "iron-ore", 1000)
+        with pytest.raises(TypeError):
+            section.set_signal(TypeError, "something")
+        with pytest.raises(DataFormatError):
+            section.set_signal(1, TypeError)
+        with pytest.raises(DataFormatError):
+            section.set_signal(1, "iron-ore", TypeError)
+        # with pytest.raises(DataFormatError): # TODO: is this an error?
+        #     combinator.set_signal(-1, "iron-ore", 0)
 
-    #     combinator = ConstantCombinator("unknown-combinator", validate="none")
-    #     assert combinator.item_slot_count == None
-    #     combinator.set_signal(100, "iron-ore", 1000)
-    #     assert combinator.signals == [
-    #         SignalFilter(index=101, signal="iron-ore", count=1000)
-    #     ]
+        assert combinator.max_signal_count == 100_000
+
+        # 1.0 limitation
+        # with pytest.raises(DataFormatError): 
+        #     combinator.set_signal(100, "iron-ore", 1000)
+
+        # 1.0 limitation
+        # combinator = ConstantCombinator("unknown-combinator", validate="none")
+        # assert combinator.item_slot_count == None
+        # combinator.set_signal(100, "iron-ore", 1000)
+        # assert combinator.signals == [
+        #     SignalFilter(index=101, signal="iron-ore", count=1000)
+        # ]
+
+        with pytest.raises(DataFormatError):
+            section.filters = "incorrect thingy"
 
     # def test_set_signals(self):
     #     combinator = ConstantCombinator()
@@ -245,37 +255,37 @@ class TestConstantCombinator:
     #         "control_behavior": {"filters": {"something", "wrong"}},
     #     }
 
-    # def test_get_signal(self):
-    #     combinator = ConstantCombinator()
+    def test_get_signal(self):
+        combinator = ConstantCombinator()
 
-    #     section = combinator.add_section()
-    #     section.filters = [
-    #         SignalFilter(**{
-    #             "index": 1,
-    #             "name": "signal-A",
-    #             "type": "virtual",
-    #             "comparator": "=",
-    #             "count": 100,
-    #             "max_count": 100
-    #         })
-    #     ]
+        section = combinator.add_section()
+        section.filters = [
+            SignalFilter(**{
+                "index": 1,
+                "name": "signal-A",
+                "type": "virtual",
+                "comparator": "=",
+                "count": 100,
+                "max_count": 100
+            })
+        ]
 
-    #     print(section.filters)
+        print(section.filters)
 
-    #     signal = section.get_signal(0)
-    #     assert signal == SignalFilter(
-    #         **{
-    #             "index": 1,
-    #             "name": "signal-A",
-    #             "type": "virtual",
-    #             "comparator": "=",
-    #             "count": 100,
-    #             "max_count": 100
-    #         }
-    #     )
+        signal = section.get_signal(0)
+        assert signal == SignalFilter(
+            **{
+                "index": 1,
+                "name": "signal-A",
+                "type": "virtual",
+                "comparator": "=",
+                "count": 100,
+                "max_count": 100
+            }
+        )
 
-    #     signal = section.get_signal(50)
-    #     assert signal == None
+        signal = section.get_signal(50)
+        assert signal == None
 
     # def test_is_on(self):
     #     combinator = ConstantCombinator()

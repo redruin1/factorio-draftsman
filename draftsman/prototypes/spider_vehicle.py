@@ -31,7 +31,7 @@ class SpiderVehicle(
     RequestItemsMixin,
     ColorMixin,
     EnergySourceMixin,
-    OrientationMixin,
+    # OrientationMixin, # Don't think there actually is an orientation here
     Entity,
 ):
     """

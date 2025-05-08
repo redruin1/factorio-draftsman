@@ -125,6 +125,7 @@ def get_entity_class(name: str) -> type[Entity]:
         "artillery-turret": ArtilleryTurret,
         "artillery-wagon": ArtilleryWagon,
         "assembling-machine": AssemblingMachine,
+        "asteroid-collector": AsteroidCollector,
         "beacon": Beacon,
         "boiler": Boiler,
         "burner-generator": BurnerGenerator,

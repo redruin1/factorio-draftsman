@@ -24,6 +24,36 @@ def test_constructor():
         },
     }
 
+    assert vehicle.to_dict(exclude_none=False) == {
+        "name": "spidertron",
+        "position": {"x": 1.0, "y": 1.0},
+        "automatic_targeting_parameters": {
+            "auto_target_without_gunner": False,
+            "auto_target_with_gunner": True,
+        },
+    }
+    
+    assert vehicle.to_dict(exclude_defaults=False) == {
+        "name": "spidertron",
+        "position": {"x": 1.0, "y": 1.0},
+        "quality": "normal",
+        "automatic_targeting_parameters": {
+            "auto_target_without_gunner": False,
+            "auto_target_with_gunner": True,
+        },
+        "color": {"r": 255/255, "g": 127/255, "b": 0.0, "a": 127/255},
+        "enable_logistics_while_moving": True,
+        "grid": [],
+        "items": [],
+        "request_filters": {
+            "enabled": True,
+            "request_from_buffers": True,
+            "sections": [],
+            "trash_not_requested": False,
+        },
+        "tags": {},
+    }
+
     with pytest.warns(UnknownEntityWarning):
         SpiderVehicle("unknown vehicle")
 
@@ -152,10 +182,10 @@ def test_equipment_grid():
     spider_copy.remove_equipment(quality="normal")
     assert spider_copy.equipment == [
         EquipmentComponent(
-            equipment=EquipmentID(
-                name="battery-equipment",
-                quality="legendary"
-            ),
+            equipment={
+                "name": "battery-equipment",
+                "quality": "legendary",
+            },
             position=(2, 0)
         ),
     ]
@@ -168,6 +198,24 @@ def test_equipment_grid():
             items=AttrsItemSpecification(
                 grid_count=1
             )
+        ),
+    ]
+
+    # Test full dict conversion
+    spider_copy.equipment = [{
+        "equipment": {
+            "name": "battery-equipment",
+            "quality": "legendary",
+        },
+        "position": {"x": 2, "y": 0}
+    }]
+    assert spider_copy.equipment == [
+        EquipmentComponent(
+            equipment=EquipmentID(
+                name="battery-equipment",
+                quality="legendary"
+            ),
+            position=(2, 0)
         ),
     ]
 

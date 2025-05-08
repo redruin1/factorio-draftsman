@@ -371,11 +371,14 @@ class TestTrainStop:
                 "control_behavior": {
                     "read_from_train": True,
                     "read_stopped_train": True,
-                    "train_stopped_signal": "signal-A",
+                    "train_stopped_signal": {"name": "signal-A", "type": "virtual"},
                     "set_trains_limit": True,
-                    "trains_limit_signal": "signal-B",
+                    "trains_limit_signal": {"name": "signal-B", "type": "virtual"},
                     "read_trains_count": True,
-                    "trains_count_signal": "signal-C",
+                    "trains_count_signal": {
+                        "name": "signal-C",
+                        "type": "virtual",
+                    },  # Default
                 },
                 "tags": {"some": "stuff"},
             }
@@ -400,11 +403,14 @@ class TestTrainStop:
                 "control_behavior": {
                     "read_from_train": True,
                     "read_stopped_train": True,
-                    "train_stopped_signal": "signal-A",
+                    "train_stopped_signal": {"name": "signal-A", "type": "virtual"},
                     "set_trains_limit": True,
-                    "trains_limit_signal": "signal-B",
+                    "trains_limit_signal": {"name": "signal-B", "type": "virtual"},
                     "read_trains_count": True,
-                    "trains_count_signal": "signal-C",
+                    "trains_count_signal": {
+                        "name": "signal-C",
+                        "type": "virtual",
+                    },  # Default
                 },
                 "tags": {"some": "stuff"},
             }

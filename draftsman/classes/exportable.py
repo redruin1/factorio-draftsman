@@ -702,7 +702,7 @@ def make_exportable_structure_factory_func(
                 res["extra_keys"] = input_dict
 
             # print(location_dict)
-            # print(res)
+            print(res)
             # return res
             return cls(**res, validate_assignment=ValidationMode.NONE)
 

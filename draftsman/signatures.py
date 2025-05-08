@@ -49,12 +49,11 @@ from draftsman.warning import (
 from typing_extensions import Annotated
 
 import attrs
+from attrs import NOTHING
 from typing import Any, Literal, Optional, Sequence, Union
 import warnings
 
 
-# TODO: might make sense to move this into another file, so other files can use
-# them without recursive imports
 int32 = Annotated[int, and_(ge(-(2**31)), lt(2**31))]
 # TODO: description about floating point issues
 int64 = Annotated[int, and_(ge(-(2**63)), lt(2**63))]
@@ -100,6 +99,16 @@ RecipeName = Annotated[str, known_name("recipe", recipes.raw, UnknownRecipeWarni
 ModuleName = Annotated[str, known_name("module", modules.raw, UnknownModuleWarning)]
 QualityName = Literal[
     "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
+]
+SignalType = Literal[
+    "virtual",
+    "item",
+    "fluid",
+    "recipe",
+    "entity",
+    "space-location",
+    "asteroid-chunk",
+    "quality",
 ]
 
 ArithmeticOperation = Literal[
@@ -205,21 +214,22 @@ class AttrsSignalID(Exportable):
     Name of the signal. If omitted, the signal is treated as no signal and 
     removed on import/export cycle.
     """
-    type: Literal[
-        "virtual",
-        "item",
-        "fluid",
-        "recipe",
-        "entity",
-        "space-location",
-        "asteroid-chunk",
-        "quality",
-    ] = attrs.field(
-        default="item", metadata={"omit": False}
-    )  # TODO: validators, name-specific default
+
+    type: Literal[SignalType] = attrs.field(
+        validator=one_of(SignalType),
+        metadata={"omit": False}
+    )
     """
     Category of the signal.
     """
+
+    @type.default
+    def _(self):
+        try:
+            return signals.get_signal_types(self.name)[0]
+        except InvalidSignalError:
+            return "item"
+        
     quality: Optional[QualityName] = attrs.field(
         default="normal", validator=or_(one_of(QualityName), is_none)
     )
@@ -244,6 +254,7 @@ class AttrsSignalID(Exportable):
                     return AttrsSignalID(
                         name=value, type=signals.get_signal_types(value)[0]
                     )
+            # return AttrsSignalID(name=value)
             except InvalidSignalError as e:
                 msg = "Unknown signal name {}; either specify the full dictionary, or update your environment".format(
                     repr(value)
@@ -253,20 +264,6 @@ class AttrsSignalID(Exportable):
             return AttrsSignalID(**value)
         else:
             return value
-
-    @name.validator
-    def check_name_recognized(
-        self, attribute, value, mode: Optional[ValidationMode] = None
-    ):
-        mode = mode if mode is not None else self.validate_assignment
-        if mode >= ValidationMode.STRICT:
-            if value not in signals.raw:
-                msg = "Unknown {} '{}'{}".format(
-                    type(self).__name__,
-                    value,
-                    get_suggestion(value, signals.raw.keys(), n=1),
-                )
-                warnings.warn(UnknownSignalWarning(msg))
 
     @type.validator
     def check_type_matches_name(
@@ -308,6 +305,17 @@ draftsman_converters.get_version((2, 0)).add_schema(
         "quality": fields.quality.name,
     },
 )
+
+# def interpret_signal_id_string_factory(cls: type, converter: cattrs.Converter):
+#     parent_hook = converter.get_structure_hook(Exportable)
+#     def structure_hook(v, _):
+#         print("wrapped hook")
+#         return AttrsSignalID(name=v) if isinstance(v, str) else parent_hook(v, _)
+#     return structure_hook
+
+# draftsman_converters.register_structure_hook_factory(
+#     lambda cls: issubclass(cls, AttrsSignalID), interpret_signal_id_string_factory
+# )
 
 
 @attrs.define
@@ -721,25 +729,15 @@ class SignalFilter(Exportable):
     """
     Name of the signal.
     """
-    count: int32 = attrs.field()
+    count: int32 = attrs.field(
+        validator=instance_of(int32)
+    )
     """
     Value of the signal filter, or the lower bound of a range if ``max_count`` 
     is also specified.
     """
-    type: Optional[
-        Literal[
-            "virtual",
-            "item",
-            "fluid",
-            "recipe",
-            "entity",
-            "space-location",
-            "asteroid-chunk",
-            "quality",
-        ]
-    ] = attrs.field(
-        # default="item",
-        # TODO: validators
+    type: Optional[SignalType] = attrs.field(
+        validator=or_(is_none, one_of(SignalType))
         # metadata={"omit": False}
     )
     """
@@ -747,24 +745,13 @@ class SignalFilter(Exportable):
     """
 
     @type.default
-    def get_type_default(
-        self,
-    ) -> Literal[
-        "virtual",
-        "item",
-        "fluid",
-        "recipe",
-        "entity",
-        "space-location",
-        "asteroid-chunk",
-        "quality",
-    ]:
+    def _(self) -> SignalType:
         try:
             return signals.get_signal_types(self.name)[0]
         except InvalidSignalError:
             return "item"
 
-    # signal: Optional[SignalID] = Field(
+    # signal: Optional[SignalID] = Field( # 1.0
     #     None,
     #     description="""
     #     Signal to broadcast. If this value is omitted the occupied slot will
@@ -774,7 +761,7 @@ class SignalFilter(Exportable):
     #     on import.
     #     """,
     # )
-    # TODO: make this dynamic based on current environment?
+    # TODO: make quality dynamic based on current environment?
     quality: QualityName = attrs.field(default="any", validator=one_of(QualityName))
     """
     Quality flag of the signal. Defaults to special "any" quality signal, rather
@@ -791,7 +778,7 @@ class SignalFilter(Exportable):
     """
     max_count: Optional[int32] = attrs.field(
         default=None,
-        # TODO: validators
+        validator=instance_of(Optional[int32])
     )
     """
     The maximum amount of the signal to request of the signal to emit. Only used
@@ -1080,7 +1067,7 @@ class ManualSection(Exportable):
     def set_signal(
         self,
         index: int64,
-        name: Union[str, None],
+        name: Optional[SignalName],
         count: int32 = 0,
         quality: Literal[
             "normal",
@@ -1096,14 +1083,15 @@ class ManualSection(Exportable):
         """
         TODO
         """
-        new_entry = SignalFilter(
-            index=index,
-            name=name,
-            type=type,
-            quality=quality,
-            comparator="=",
-            count=count,
-        )
+        if name is not None:
+            new_entry = SignalFilter(
+                index=index + 1, # TODO: perform this transformation on export
+                name=name,
+                type=type if type is not None else NOTHING,
+                quality=quality,
+                comparator="=",
+                count=count,
+            )
 
         # Check to see if filters already contains an entry with the same index
         existing_index = None
@@ -1130,7 +1118,7 @@ class ManualSection(Exportable):
             ``None`` if nothing was found at that index.
         """
         return next(
-            (item for item in self.filters if item["index"] == index + 1),
+            (item for item in self.filters if item.index == index + 1),
             None,
         )
 
@@ -1687,7 +1675,8 @@ class StockConnection:
     back: Optional[Association] = attrs.field(default=None)
 
 
-draftsman_converters.add_schema(
+# TODO: test
+draftsman_converters.add_schema( # pragma: no branch
     {"$id": "factorio:stock_connection"},
     StockConnection,
     lambda fields: {

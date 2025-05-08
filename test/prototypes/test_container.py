@@ -179,6 +179,11 @@ class TestContainer:
         #     container.items = {"incorrect", "format"}
         # assert container.items == {"unknown": 100}
 
+        with pytest.raises(DataFormatError):
+            AttrsItemSpecification(
+                in_inventory="incorrect"
+            )
+
     def test_mergable_with(self):
         container1 = Container("wooden-chest")
         container2 = Container("wooden-chest", bar=10)
