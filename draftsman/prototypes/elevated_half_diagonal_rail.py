@@ -14,9 +14,7 @@ from typing import Any, Literal, Optional, Union
 
 
 @attrs.define
-class ElevatedHalfDiagonalRail(
-    DoubleGridAlignedMixin, DirectionalMixin, Entity
-):
+class ElevatedHalfDiagonalRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     """
     Elevated rail entities which lie halfway inbetween the classic 45 degree diagonals. (TODO)
     """

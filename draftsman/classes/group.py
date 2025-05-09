@@ -7,9 +7,9 @@ from draftsman.classes.association import Association
 from draftsman.classes.blueprint import (
     Blueprint,
     structure_blueprint_1_0_factory,
-    _convert_wires_to_associations, 
-    _convert_schedules_to_associations, 
-    _convert_stock_connections_to_associations
+    _convert_wires_to_associations,
+    _convert_schedules_to_associations,
+    _convert_stock_connections_to_associations,
 )
 from draftsman.classes.collection import EntityCollection, TileCollection
 from draftsman.classes.collision_set import CollisionSet
@@ -168,7 +168,7 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
         # ] = ValidationMode.NONE,
     ):
         """
-        Creates a :py:class:`.Group` with the contents of a 
+        Creates a :py:class:`.Group` with the contents of a
         :py:class:`.Blueprint` ``string``.
 
         Raises :py:class:`.UnknownKeywordWarning` if there are any unrecognized
@@ -322,9 +322,7 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
         return value
 
     # TODO: does an ID have to be a string? Is it not being a string ever useful?
-    id: Optional[str] = attrs.field(
-        default=None, on_setattr=_set_id
-    )
+    id: Optional[str] = attrs.field(default=None, on_setattr=_set_id)
     """
     The ID of the Group. The most local form of identification between
     Groups.
@@ -362,11 +360,7 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
 
     # =========================================================================
 
-    name: str = attrs.field(
-        default="group",
-        validator=instance_of(str),
-        kw_only=True
-    )
+    name: str = attrs.field(default="group", validator=instance_of(str), kw_only=True)
     """
     The name of the Group. Defaults to ``"group"``. Can be specified to any
     string to aid in organization. For example:
@@ -470,9 +464,9 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
 
     position: Vector = attrs.field(
         factory=lambda: Vector(0.0, 0.0),
-        converter=try_convert(Vector.from_other), 
+        converter=try_convert(Vector.from_other),
         validator=instance_of(Vector),
-        kw_only=True, 
+        kw_only=True,
         # metadata={"omit": True}
     )
     """
@@ -802,8 +796,7 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
     def __repr__(self) -> str:  # pragma: no coverage
         return "<Group>{}".format(self.entities._root)
 
-
-    def __deepcopy__(self, memo: Optional[dict[int, Any]]=None):
+    def __deepcopy__(self, memo: Optional[dict[int, Any]] = None):
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
@@ -817,9 +810,9 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
             copied_entity = memo[id(original_entity)]
             return Association(copied_entity)
 
-        memo["new_parent"] = result # TODO: this should really be fixed
+        memo["new_parent"] = result  # TODO: this should really be fixed
         for attr in attrs.fields(cls):
-            if attr.name == "_parent": # special
+            if attr.name == "_parent":  # special
                 object.__setattr__(result, attr.name, None)
             elif attr.name == "wires":  # special
                 new_wires = copy.deepcopy(getattr(self, attr.name), memo)
@@ -832,7 +825,9 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
                 new_schedules = copy.deepcopy(getattr(self, attr.name), memo)
                 for schedule in new_schedules:
                     schedule: Schedule
-                    schedule.locomotives = [swap_association(loco) for loco in schedule.locomotives]
+                    schedule.locomotives = [
+                        swap_association(loco) for loco in schedule.locomotives
+                    ]
 
                 object.__setattr__(result, attr.name, new_schedules)
             elif attr.name == "stock_connections":  # special
@@ -913,6 +908,7 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
     #         result.wires[i][2] = Association(memo[id(old_entity_2())])
 
     #     return result
+
 
 draftsman_converters.add_hook_fns(
     # {"$id": "draftsman:group"},

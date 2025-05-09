@@ -149,7 +149,7 @@ class TestConstantCombinator:
         assert combinator.max_signal_count == 100_000
 
         # 1.0 limitation
-        # with pytest.raises(DataFormatError): 
+        # with pytest.raises(DataFormatError):
         #     combinator.set_signal(100, "iron-ore", 1000)
 
         # 1.0 limitation
@@ -260,14 +260,16 @@ class TestConstantCombinator:
 
         section = combinator.add_section()
         section.filters = [
-            SignalFilter(**{
-                "index": 1,
-                "name": "signal-A",
-                "type": "virtual",
-                "comparator": "=",
-                "count": 100,
-                "max_count": 100
-            })
+            SignalFilter(
+                **{
+                    "index": 1,
+                    "name": "signal-A",
+                    "type": "virtual",
+                    "comparator": "=",
+                    "count": 100,
+                    "max_count": 100,
+                }
+            )
         ]
 
         print(section.filters)
@@ -280,7 +282,7 @@ class TestConstantCombinator:
                 "type": "virtual",
                 "comparator": "=",
                 "count": 100,
-                "max_count": 100
+                "max_count": 100,
             }
         )
 

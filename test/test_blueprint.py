@@ -113,7 +113,7 @@ class TestBlueprint:
         )
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "version": encode_version(*mods.versions["base"])
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Valid format, but blueprint book string
@@ -470,7 +470,9 @@ class TestBlueprint:
 
         # Warn unknown entity (list)
         blueprint.validate_assignment = "none"
-        blueprint.entities = [new_entity("undocumented-entity", validate_assignment="none")]  # No warning
+        blueprint.entities = [
+            new_entity("undocumented-entity", validate_assignment="none")
+        ]  # No warning
         with pytest.warns(UnknownEntityWarning):
             blueprint.validate_assignment = "strict"
             blueprint.entities = [new_entity("undocumented-entity")]
@@ -478,7 +480,9 @@ class TestBlueprint:
 
         # Warn unknown entity (individual)
         blueprint.entities.validate_assignment = "none"
-        blueprint.entities[-1] = new_entity("undocumented-entity", validate_assignment="none")  # No warning
+        blueprint.entities[-1] = new_entity(
+            "undocumented-entity", validate_assignment="none"
+        )  # No warning
         with pytest.warns(UnknownEntityWarning):
             blueprint.validate_assignment = "strict"
             blueprint.entities[-1] = new_entity("undocumented-entity")
@@ -637,7 +641,7 @@ class TestBlueprint:
         }
         assert blueprint.entities[1].to_dict() == {
             "name": "accumulator",
-            "position": {"x": 2.0, "y": 1.0}
+            "position": {"x": 2.0, "y": 1.0},
         }
 
         blueprint = Blueprint()
@@ -1845,9 +1849,13 @@ class TestBlueprint:
         # TODO
 
         with pytest.raises(InvalidConnectionSideError):
-            blueprint.remove_circuit_connection("red", substationA, substationB, "incorrect")
+            blueprint.remove_circuit_connection(
+                "red", substationA, substationB, "incorrect"
+            )
         with pytest.raises(InvalidConnectionSideError):
-            blueprint.remove_circuit_connection("red", substationA, substationB, side_2="incorrect")
+            blueprint.remove_circuit_connection(
+                "red", substationA, substationB, side_2="incorrect"
+            )
 
         # Errors
         blueprint.entities.append("lightning-rod", tile_position=(0, 6), id="3")

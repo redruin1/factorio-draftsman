@@ -148,12 +148,17 @@ class EquipmentGridMixin(Exportable):  # (RequestItemsMixin)
             return [EquipmentComponent.converter(elem) for elem in value]
         return value
 
-    def _ensure_has_equipment_grid(self, attr, value, mode=None):
+    def _ensure_has_equipment_grid(
+        self, attr, value, mode=None, warning_list: Optional[list] = None
+    ):
         mode = mode if mode is not None else self.validate_assignment
         if mode >= ValidationMode.STRICT:
             if self.equipment_grid is None and value != []:
                 msg = "This entity does not have an equipment grid to modify"
-                warnings.warn(EquipmentGridWarning(msg))
+                if warning_list is None:
+                    warnings.warn(EquipmentGridWarning(msg))
+                else:
+                    warning_list.append(EquipmentComponent(msg))
 
     equipment: list[EquipmentComponent] = attrs.field(
         factory=list,

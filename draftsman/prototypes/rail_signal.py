@@ -8,7 +8,7 @@ from draftsman.classes.mixins import (
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     # EightWayDirectionalMixin,
-    DirectionalMixin
+    DirectionalMixin,
 )
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode, SIXTEEN_WAY_DIRECTIONS

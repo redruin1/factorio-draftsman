@@ -26,7 +26,7 @@ from draftsman.signatures import (
     uint64,
 )
 from draftsman.utils import encode_version, reissue_warnings
-from draftsman.validators import and_, instance_of
+from draftsman.validators import and_, conditional, instance_of
 from draftsman.warning import (
     IndexWarning,
     NoEffectWarning,
@@ -261,73 +261,10 @@ class UpgradePlanner(Blueprintable):
         else:
             return value
 
-    def _ensure_valid_mappings(self, attr, value: list[AttrsMapper], mode=None):
-        mode = mode if mode is not None else self.validate_assignment
-        if mode >= ValidationMode.STRICT:
-            occupied_indices = {}
-            warning_list = []
-            for mapper in value:
-                # Ensure that "from" and "to" are a valid pair
-                # We assert that index must exist in each mapper, but both "from"
-                # and "to" may be omitted
-                reasons = check_valid_upgrade_pair(mapper.from_, mapper.to)
-                if reasons is not None:
-                    warning_list.extend(reasons)
-
-                # 1.0
-                # # If the index is greater than mapper_count, then the mapping will
-                # # be redundant
-                # if not mapper["index"] < upgrade_planner.mapper_count:
-                #     warning_list.append(
-                #         IndexWarning(
-                #             "'index' ({}) for mapping '{}' to '{}' must be in range [0, {}) or else it will have no effect".format(
-                #                 mapper["index"],
-                #                 mapper["from"]["name"],
-                #                 mapper["to"]["name"],
-                #                 upgrade_planner.mapper_count,
-                #             )
-                #         )
-                #     )
-
-                # Keep track of entries that occupy the same index (only the last
-                # mapping is used)
-                if mapper.index in occupied_indices:
-                    occupied_indices[mapper.index]["count"] += 1
-                    occupied_indices[mapper.index]["mapper"] = mapper
-                else:
-                    occupied_indices[mapper.index] = {
-                        "count": 0,
-                        "mapper": mapper,
-                    }
-
-            # Issue warnings if multiple mappers occupy the same index
-            for spot in occupied_indices:
-                entry = occupied_indices[spot]
-                if entry["count"] > 0:
-                    from_name = entry["mapper"].from_
-                    from_name = from_name.name if from_name is not None else from_name
-                    to_name = entry["mapper"].to
-                    to_name = to_name.name if to_name is not None else to_name
-                    warning_list.append(
-                        IndexWarning(
-                            "Mapping at index {} was overwritten {} time(s); final mapping is '{}' to '{}'".format(
-                                spot,
-                                entry["count"],
-                                from_name,
-                                to_name,
-                            )
-                        )
-                    )
-
-            for warning in warning_list:
-                warnings.warn(warning)
-
     mappers: list[AttrsMapper] = attrs.field(
         factory=list,
         converter=_convert_mappers,
-        validator=and_(
-            instance_of(list[AttrsMapper]), _ensure_valid_mappings
-        ),
+        validator=instance_of(list[AttrsMapper]),
     )
     """
     The list of mappings of one entity or item type to the other entity or
@@ -341,6 +278,64 @@ class UpgradePlanner(Blueprintable):
     :setter: Sets the mappers dictionary, or deletes the dictionary if set
         to ``None``
     """
+
+    @mappers.validator
+    @conditional(ValidationMode.STRICT)
+    def _ensure_valid_mappings(self, attr: attrs.Attribute, value: list[AttrsMapper]):
+        occupied_indices = {}
+        # warning_list = []
+        for mapper in value:
+            # Ensure that "from" and "to" are a valid pair
+            # We assert that index must exist in each mapper, but both "from"
+            # and "to" may be omitted
+            reasons = check_valid_upgrade_pair(mapper.from_, mapper.to)
+            if reasons is not None:
+                [warnings.warn(w) for w in reasons] # :)
+
+            # 1.0
+            # # If the index is greater than mapper_count, then the mapping will
+            # # be redundant
+            # if not mapper["index"] < upgrade_planner.mapper_count:
+            #     warning_list.append(
+            #         IndexWarning(
+            #             "'index' ({}) for mapping '{}' to '{}' must be in range [0, {}) or else it will have no effect".format(
+            #                 mapper["index"],
+            #                 mapper["from"]["name"],
+            #                 mapper["to"]["name"],
+            #                 upgrade_planner.mapper_count,
+            #             )
+            #         )
+            #     )
+
+            # Keep track of entries that occupy the same index (only the last
+            # mapping is used)
+            if mapper.index in occupied_indices:
+                occupied_indices[mapper.index]["count"] += 1
+                occupied_indices[mapper.index]["mapper"] = mapper
+            else:
+                occupied_indices[mapper.index] = {
+                    "count": 0,
+                    "mapper": mapper,
+                }
+
+        # Issue warnings if multiple mappers occupy the same index
+        for spot in occupied_indices:
+            entry = occupied_indices[spot]
+            if entry["count"] > 0:
+                from_name = entry["mapper"].from_
+                from_name = from_name.name if from_name is not None else from_name
+                to_name = entry["mapper"].to
+                to_name = to_name.name if to_name is not None else to_name
+                warnings.warn(
+                    IndexWarning(
+                        "Mapping at index {} was overwritten {} time(s); final mapping is '{}' to '{}'".format(
+                            spot,
+                            entry["count"],
+                            from_name,
+                            to_name,
+                        )
+                    )
+                )
 
     # @property
     # def mappers(self) -> Optional[list[Mapper]]:

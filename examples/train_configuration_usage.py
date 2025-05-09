@@ -8,51 +8,51 @@ from draftsman.data import mods, entities
 
 def main():
     blueprint = Blueprint()
-    
+
     # In order to specify a specific train format, we construct a helper object
     # called `TrainConfiguration`
     # The notable thing about TrainConfiguration is that you can specify your
     # overall train format in a variant of the common community-accepted syntax:
 
     # 1 Locomotive followed by 4 cargo wagons
-    config = TrainConfiguration("1-4")  
+    config = TrainConfiguration("1-4")
 
     # Same as above
-    config = TrainConfiguration("1-4-0")  
-    
+    config = TrainConfiguration("1-4-0")
+
     # 1 Locomotive pointing forward, 4 cargo wagons, and 1 loco pointing backwards
-    config = TrainConfiguration("1-4-1")  
+    config = TrainConfiguration("1-4-1")
 
     # Same as above, but explicit loco direction
-    config = TrainConfiguration("1<-4-1>")  
+    config = TrainConfiguration("1<-4-1>")
 
     # Same as above, but both locomotives are pointing forward
-    config = TrainConfiguration("1<-4-1<")  
+    config = TrainConfiguration("1<-4-1<")
 
     # Same as above, but cargo wagons are explicitly specified
-    config = TrainConfiguration("1<-4C-1<")  
+    config = TrainConfiguration("1<-4C-1<")
 
     # Same as above, but each cargo wagon is instead a fluid wagon
-    config = TrainConfiguration("1<-4F-1<")  
+    config = TrainConfiguration("1<-4F-1<")
 
     # Same as above, converts all non-locomotive cars to cars of that type
-    config = TrainConfiguration("1<-4-<1", wagons="fluid")  
+    config = TrainConfiguration("1<-4-<1", wagons="fluid")
 
     # Specify that all locomotive should point forward regardless of order
-    config = TrainConfiguration("1-4-1", direction="forward")  
+    config = TrainConfiguration("1-4-1", direction="forward")
 
     # In this case all locomotives point "forward" when there's more than 2 locomotive cells
     # More specifically, "dual" direction is only used when there's only 2 locomotive blocks and they exist at the start and end
-    config = TrainConfiguration("1-4-1-4-1")  
+    config = TrainConfiguration("1-4-1-4-1")
 
     # Unless, of course, you manually specify their directions
-    config = TrainConfiguration("<-4-<-4->")  
+    config = TrainConfiguration("<-4-<-4->")
 
     # Configurations can also be entirely explicit, no hyphens necessary
-    config = TrainConfiguration("<<<FFFCCCAAA<<<")  
+    config = TrainConfiguration("<<<FFFCCCAAA<<<")
 
     # Or you can add hyphens just for clarity
-    config = TrainConfiguration("<<<-FFFCCCAAA-<<<")  
+    config = TrainConfiguration("<<<-FFFCCCAAA-<<<")
     # C is for cargo wagons, F is for fluid wagons, A for artillery, and can be
     # specified in either upper or lowercase
 
@@ -72,7 +72,9 @@ def main():
     # Set the modding tags for them
     config.cars[2].tags = {"some": "stuff"}
     # Even preload the artillery wagons on construction
-    config.cars[3].set_item_request("artillery-shell", 25, inventory=Inventory.artillery_wagon_ammo)
+    config.cars[3].set_item_request(
+        "artillery-shell", 25, inventory=Inventory.artillery_wagon_ammo
+    )
 
     # Cars are specified from the left of the right, so the 0th
     # car is the leftmost character in the string.
@@ -121,7 +123,7 @@ def main():
     if False:
         blueprint.add_train_at_station("2-4", ...)
         blueprint.add_train_at_position("2-4-2", ...)
-    # Doing this, you of course lose the added customization options at the 
+    # Doing this, you of course lose the added customization options at the
     # benefit of brevity.
 
     print(blueprint.to_string())

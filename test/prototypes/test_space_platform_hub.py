@@ -33,7 +33,7 @@ def test_constructor():
             "read_speed": True,
             "speed_signal": {"name": "signal-A", "type": "virtual"},
             "read_damage_taken": True,
-            "damage_taken_signal": {"name": "signal-B", "type": "virtual"}
+            "damage_taken_signal": {"name": "signal-B", "type": "virtual"},
         },
         "request_missing_construction_materials": False,
     }

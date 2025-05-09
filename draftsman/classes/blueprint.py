@@ -100,9 +100,7 @@ from draftsman.error import (
     InvalidAssociationError,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import (
-    StockConnection
-)
+from draftsman.signatures import StockConnection
 from draftsman.entity import Entity
 from draftsman.tile import Tile
 from draftsman.classes.schedule import Schedule
@@ -175,7 +173,9 @@ def _normalize_internal_structure(
     for i, entity in enumerate(flattened_entities):
         # Get a copy of the dict representation of the Entity
         # (At this point, Associations are not copied and still point to original)
-        result = entity.to_dict(entity_number=i + 1) # TODO: needs arguments from parent
+        result = entity.to_dict(
+            entity_number=i + 1
+        )  # TODO: needs arguments from parent
         if not isinstance(result, dict):
             raise DraftsmanError(
                 "{}.to_dict() must return a dict".format(type(entity).__name__)
@@ -251,7 +251,7 @@ def _normalize_internal_structure(
     # Change all locomotive associations to use number
     for schedule in schedules_out:
         # Technically a schedule can have no locomotives:
-        if "locomotives" in schedule: # pragma: no branch
+        if "locomotives" in schedule:  # pragma: no branch
             for i, locomotive in enumerate(schedule["locomotives"]):
                 if locomotive() is None:  # pragma: no coverage
                     _throw_invalid_association(locomotive)
@@ -278,7 +278,7 @@ def _normalize_internal_structure(
     flattened_wires.extend(flatten_wires(entities_in))
 
     def get_index(assoc):
-        if not isinstance(assoc, int): # pragma: no branch
+        if not isinstance(assoc, int):  # pragma: no branch
             # We would normally use index, but index uses `==` for comparisons,
             # wheras we want to use `is` for strict checking:
             try:
@@ -295,7 +295,7 @@ def _normalize_internal_structure(
                     assoc()
                 )
                 raise InvalidAssociationError(msg)
-        return assoc # pragma: no coverage
+        return assoc  # pragma: no coverage
 
     wires_out = []
     for wire in flattened_wires:
@@ -316,7 +316,7 @@ def _normalize_internal_structure(
 
     # TODO: needs to be recursive, since theoretically groups could have stock
     # connections
-    if "stock_connections" in input_root: # pragma: no coverage
+    if "stock_connections" in input_root:  # pragma: no coverage
         for stock_connection in input_root["stock_connections"]:
             stock_connection["stock"] = get_index(stock_connection["stock"])
             if "front" in stock_connection:
@@ -1418,7 +1418,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             copied_entity = memo[id(original_entity)]
             return Association(copied_entity)
 
-        memo["new_parent"] = result # TODO: this should really be fixed, because then we can use "deepcopy_func"
+        memo[
+            "new_parent"
+        ] = result  # TODO: this should really be fixed, because then we can use "deepcopy_func"
         for attr in attrs.fields(cls):
             if attr.name == "wires":  # special
                 new_wires = copy.deepcopy(getattr(self, attr.name), memo)
@@ -1429,16 +1431,18 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
                 object.__setattr__(result, attr.name, new_wires)
             elif attr.name == "schedules":
                 new_schedules = copy.deepcopy(getattr(self, attr.name), memo)
-                for schedule in new_schedules: # pragma: no coverage
+                for schedule in new_schedules:  # pragma: no coverage
                     schedule: Schedule
-                    schedule.locomotives = [swap_association(loco) for loco in schedule.locomotives]
+                    schedule.locomotives = [
+                        swap_association(loco) for loco in schedule.locomotives
+                    ]
 
                 object.__setattr__(result, attr.name, new_schedules)
             elif attr.name == "stock_connections":  # special
                 new_connections: list[StockConnection] = copy.deepcopy(
                     getattr(self, attr.name), memo
                 )
-                for connection in new_connections: # pragma: no coverage
+                for connection in new_connections:  # pragma: no coverage
                     connection.stock = swap_association(connection.stock)
                     if connection.front is not None:
                         connection.front = swap_association(connection.front)
@@ -1529,12 +1533,14 @@ def structure_blueprint_1_0_factory(t: type):
         if "entities" in blueprint_dict:
             for entity in blueprint_dict["entities"]:
                 # Convert entities to their modern equivalents
-                if entity["name"] in legacy_entity_conversions: # pragma: no coverage
+                if entity["name"] in legacy_entity_conversions:  # pragma: no coverage
                     entity["name"] = legacy_entity_conversions[entity["name"]]
 
                 # Swap from old 8-direction to modern 16-direction
-                if "direction" in entity: # pragma: no coverage
-                    entity["direction"] = LegacyDirection(entity["direction"]).to_modern()
+                if "direction" in entity:  # pragma: no coverage
+                    entity["direction"] = LegacyDirection(
+                        entity["direction"]
+                    ).to_modern()
 
                 # Move connections
                 if "connections" in entity:
@@ -1621,7 +1627,7 @@ def structure_blueprint_1_0_factory(t: type):
         # import inspect
         # print(inspect.getsource(_default_blueprint_hook))
         return default_blueprint_hook(d, _)
-    
+
     return structure_blueprint_1_0
 
 

@@ -29,7 +29,11 @@ class HeatInterface(Entity):
     # =========================================================================
 
     def _validate_temperature_range(
-        self, attr, value, mode: Optional[ValidationMode] = None
+        self,
+        attr,
+        value,
+        mode: Optional[ValidationMode] = None,
+        warning_list: Optional[list] = None,
     ):
         mode = mode if mode is not None else self.validate_assignment
 
@@ -38,7 +42,10 @@ class HeatInterface(Entity):
                 msg = "Temperature '{}' exceeds allowed range [0.0, 1000.0]; will be clamped to this range on import".format(
                     value
                 )
-                warnings.warn(TemperatureRangeWarning(msg))
+                if warning_list is None:
+                    warnings.warn(TemperatureRangeWarning(msg))
+                else:
+                    warning_list.append(TemperatureRangeWarning(msg))
 
     temperature: float = attrs.field(
         default=0.0,

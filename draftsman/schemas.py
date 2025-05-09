@@ -13,6 +13,7 @@ import referencing
 _schemas: dict[str, referencing.Resource] = {}
 _cls_schemas: dict[type, referencing.Resource] = {}
 
+
 def add_schema(cls, version, schema):
     # finialize the schema by traversing the MRO
     res = referencing.Resource.from_contents(schema)

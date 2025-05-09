@@ -307,10 +307,10 @@ class RequestFiltersMixin(Exportable):
         """
         Adds a new section of request/signal entries to the entity.
 
-        .. NOTE:: 
-            
-            Beware of giving sections the same names; if a named group already 
-            exists within the save you are importing into, then that group will 
+        .. NOTE::
+
+            Beware of giving sections the same names; if a named group already
+            exists within the save you are importing into, then that group will
             take precedence over the group inside of the blueprint.
 
         :param group: The name to give this group. The group will have no name
@@ -326,7 +326,7 @@ class RequestFiltersMixin(Exportable):
             ManualSection(
                 group=group,
                 index=index + 1 if index is not None else len(self.sections) + 1,
-                active=active
+                active=active,
             )
         ]
         return self.sections[-1]

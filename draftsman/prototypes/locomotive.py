@@ -51,7 +51,9 @@ class Locomotive(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.get_version((1, 0)).add_hook_fns( # TODO: shouldn't this be in one of the mixins?
+draftsman_converters.get_version(
+    (1, 0)
+).add_hook_fns(  # TODO: shouldn't this be in one of the mixins?
     # {"$id": "factorio:locomotive_v1.0"},
     Locomotive,
     lambda fields: {

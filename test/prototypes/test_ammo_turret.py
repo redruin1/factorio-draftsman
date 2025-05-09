@@ -1,7 +1,8 @@
 # test_ammo_turret.py
 
 from draftsman.entity import AmmoTurret, ammo_turrets, Container
-from draftsman.signatures import AttrsSimpleCondition
+from draftsman.error import DataFormatError
+from draftsman.signatures import AttrsSimpleCondition, TargetID
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -14,7 +15,7 @@ class TestAmmoTurret:
         turret.validate().reissue_all()
         assert turret.to_dict() == {
             "name": "gun-turret",
-            "position": {"x": 1.0, "y": 1.0}
+            "position": {"x": 1.0, "y": 1.0},
         }
 
         with pytest.warns(UnknownEntityWarning):
@@ -34,10 +35,53 @@ class TestAmmoTurret:
         turret = AmmoTurret("gun-turret")
         turret.set_ignore_unlisted_targets_condition("signal-A", ">", "signal-B")
         assert turret.ignore_unlisted_targets_condition == AttrsSimpleCondition(
-            first_signal="signal-A",
-            comparator=">",
-            second_signal="signal-B"
+            first_signal="signal-A", comparator=">", second_signal="signal-B"
         )
+
+    def test_target_priority_filters(self):
+        turret = AmmoTurret("gun-turret")
+        turret.priority_list = ["small-biter", "medium-biter"]
+        assert turret.priority_list == [
+            TargetID(index=0, name="small-biter"),
+            TargetID(index=1, name="medium-biter"),
+        ]
+        assert turret.to_dict() == {
+            "name": "gun-turret",
+            "position": {"x": 1.0, "y": 1.0},
+            "priority_list": [
+                {
+                    "index": 0,
+                    "name": "small-biter",
+                },
+                {"index": 1, "name": "medium-biter"},
+            ],
+        }
+
+        turret.priority_list = [
+            {
+                "index": 0,
+                "name": "small-biter",
+            },
+            {"index": 1, "name": "medium-biter"},
+        ]
+        assert turret.priority_list == [
+            TargetID(index=0, name="small-biter"),
+            TargetID(index=1, name="medium-biter"),
+        ]
+        assert turret.to_dict() == {
+            "name": "gun-turret",
+            "position": {"x": 1.0, "y": 1.0},
+            "priority_list": [
+                {
+                    "index": 0,
+                    "name": "small-biter",
+                },
+                {"index": 1, "name": "medium-biter"},
+            ],
+        }
+
+        with pytest.raises(DataFormatError):
+            turret.priority_list = [TypeError]
 
     def test_mergable_with(self):
         turret1 = AmmoTurret("gun-turret")

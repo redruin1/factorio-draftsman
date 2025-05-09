@@ -225,14 +225,18 @@ def new_entity(name: str, **kwargs) -> Entity:
     :param kwargs: A dict of all the keyword arguments to pass to the
         constructor.
 
-    :returns: A new instance of a :py:class:`.Entity` subclass, or an instance 
+    :returns: A new instance of a :py:class:`.Entity` subclass, or an instance
         of :py:class:`.Entity` if `name` could not be deduced under the current
         Factorio environment.
     """
     return get_entity_class(name)(name, **kwargs)
 
 
-def new_entity_from_dict(d: dict, version: Optional[tuple[int]] = None, validation: ValidationMode=ValidationMode.NONE) -> Entity:
+def new_entity_from_dict(
+    d: dict,
+    version: Optional[tuple[int]] = None,
+    validation: ValidationMode = ValidationMode.NONE,
+) -> Entity:
     """
     Factory function similar to :py:meth:`.new_entity`, but using `Entity.from_dict()`
     as opposed to the entity's constructor. Allows you to generically construct
@@ -241,7 +245,7 @@ def new_entity_from_dict(d: dict, version: Optional[tuple[int]] = None, validati
 
     Which :py:class:`Entity` subclass instance this method returns is based off
     of the given dictionaries ``"name"`` key. If Draftsman cannot determine
-    entity type off of this name, it returns a generic :py:class:`.Entity` 
+    entity type off of this name, it returns a generic :py:class:`.Entity`
     instance instead.
 
     :param d: The dictionary object to construct the new entity from.
@@ -249,8 +253,10 @@ def new_entity_from_dict(d: dict, version: Optional[tuple[int]] = None, validati
         as. If ``None``, defaults to the game version of the current environment.
     :param validation: The validation level to run after entity construction.
 
-    :returns: A new instance of a :py:class:`.Entity` subclass, or an instance 
+    :returns: A new instance of a :py:class:`.Entity` subclass, or an instance
         of :py:class:`.Entity` if `name` could not be deduced under the current
         Factorio environment.
     """
-    return get_entity_class(d.get("name", None)).from_dict(d, version=version, validation=validation)
+    return get_entity_class(d.get("name", None)).from_dict(
+        d, version=version, validation=validation
+    )

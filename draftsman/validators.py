@@ -5,46 +5,102 @@ from draftsman.error import DataFormatError
 import attrs
 
 import operator
-from typing import Annotated, Any, Literal, Union, TYPE_CHECKING, get_origin, get_args
+from typing import (
+    Annotated,
+    Any,
+    Literal,
+    Optional,
+    Union,
+    TYPE_CHECKING,
+    get_origin,
+    get_args,
+)
+import warnings
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.exportable import Exportable
 
 
+def conditional(severity):
+    """
+    Only run the validator if `mode` is greater than a given severity.
+    If an `errors` list is provided, mutate that instead of raising.
+    """
+
+    def decorator(meth):
+        def validator(
+            self,
+            attr,
+            value,
+            mode=None,
+            error_list: Optional[list] = None,
+            warning_list: Optional[list] = None,
+        ):
+            mode = mode if mode is not None else self.validate_assignment
+            if mode < severity:
+                return
+            
+            try:
+                with warnings.catch_warnings(record=True) as ws:
+                    meth(self, attr, value)
+            except Exception as e:
+                if error_list is None:
+                    raise e
+                else:
+                    error_list.append(e)
+            
+            if warning_list is None:
+                for w in ws:
+                    warnings.warn(w.message)
+            else:
+                warning_list.extend([w.message for w in ws])
+
+        return validator
+
+    return decorator
+
+
 def classvalidator(func):
     """
-    Decorator which marks the given function as a validator for the class rather
-    than for one of the fields.
+    Decorator which marks the given function as a validator for the class.
     """
     func.__attrs_class_validator__ = True
     return func
 
 
-def enum_converter(enum):
-    def converter(value):
-        try:
-            return enum(value)
-        except ValueError as e:
-            raise DataFormatError(e) from None
-
-    return converter
-
-
 class _AndValidator:
-    def __init__(self, *validators):
-        self.validators = validators
+    def __init__(self, validators):
+        self._validators = validators
 
     def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
-        for validator in self.validators:
+        for validator in self._validators:
             validator(inst, attr, value, **kwargs)
 
 
 def and_(*validators):
-    return _AndValidator(*validators)
+    vals = []
+    for validator in validators:
+        vals.extend(
+            validator._validators
+            if isinstance(validator, _AndValidator)
+            else [validator]
+        )
+
+    return _AndValidator(tuple(vals))
+
+
+# We overwrite the "official" `and_` method in attrs with our custom one; the
+# only difference being ours can handle **kwargs in the function signature.
+# This allows us to use the builtin `@attr.validator` decorator with our custom
+# function signatures without remorse, and (hopefully) without breaking compat
+# with any other library that happens to use the same attrs features.
+import attr
+
+attr._make.and_ = and_
 
 
 class _OrValidator:
-    def __init__(self, *validators):
+    def __init__(self, validators):
         self.validators = validators
 
     def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
@@ -55,7 +111,7 @@ class _OrValidator:
                 return
             except DataFormatError as e:
                 messages.append(str(e))
-            
+
         msg = "{} did not match any of {}\n\t{}".format(
             repr(value),
             repr(self.validators),
@@ -65,7 +121,7 @@ class _OrValidator:
 
 
 def or_(*validators):
-    return _OrValidator(*validators)
+    return _OrValidator(validators)
 
 
 def is_none(inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
@@ -110,13 +166,17 @@ class _ArgsAreValidator:
         #     self.extra_validator = None
         self.cls = cls
 
-    def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: list, **kwargs):
+    def __call__(
+        self, inst: "Exportable", attr: attrs.Attribute, value: list, **kwargs
+    ):
         mode = kwargs.get("mode", None)
         mode = mode if mode is not None else inst.validate_assignment
         if mode:
             for i, v in enumerate(value):
                 if not isinstance(v, self.cls):
-                    name = self.cls if isinstance(self.cls, tuple) else self.cls.__name__
+                    name = (
+                        self.cls if isinstance(self.cls, tuple) else self.cls.__name__
+                    )
                     msg = "Element {} in list ({}) is not an instance of {}".format(
                         i, repr(v), name
                     )
@@ -132,13 +192,15 @@ def instance_of(cls: type):
     if get_origin(cls) is Union:
         vs = []
         for u in get_args(cls):
-            if u is type(None): # schizo
+            if u is type(None):  # schizo
                 vs.append(is_none)
             else:
                 vs.append(_InstanceOfValidator(u))
-        return _OrValidator(*vs)
+        return _OrValidator(tuple(vs))
     if get_origin(cls) is list:
-        return _AndValidator(_InstanceOfValidator(get_origin(cls)), _ArgsAreValidator(get_args(cls)[0]))
+        return _AndValidator(
+            (_InstanceOfValidator(get_origin(cls)), _ArgsAreValidator(get_args(cls)[0]))
+        )
     else:
         return _InstanceOfValidator(cls)
 

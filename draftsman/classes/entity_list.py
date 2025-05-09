@@ -108,9 +108,7 @@ class EntityList(Exportable, MutableSequence):
                 # self.append(new_entity(name, **elem))
                 self.append(name, **elem)
             else:
-                raise TypeError(
-                    "Constructor either takes EntityLike or dict entries"
-                )
+                raise TypeError("Constructor either takes EntityLike or dict entries")
 
         self.validate_assignment = validate_assignment
 
@@ -804,7 +802,12 @@ def _entity_list_structure_factory(cls, converter: cattrs.Converter):
     def structure_hook(l: list, t: type):
         # print("l", l)
         return EntityList(
-            None, [converter.structure(elem, get_entity_class(elem.get("name", None))) for elem in l], copy=False
+            None,
+            [
+                converter.structure(elem, get_entity_class(elem.get("name", None)))
+                for elem in l
+            ],
+            copy=False,
         )
 
     return structure_hook

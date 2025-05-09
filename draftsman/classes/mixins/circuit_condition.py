@@ -18,51 +18,6 @@ class CircuitConditionMixin(Exportable):  # (ControlBehaviorMixin)
     value of some signal exceeds some constant.
     """
 
-    # =========================================================================
-
-    # circuit_enabled: bool = attrs.field(
-    #     default=False,
-    #     validator=attrs.validators.instance_of(bool),
-    #     metadata={"location": ("control_behavior", "circuit_enabled")},
-    # )
-    # """
-    # Whether or not the entity is controlled by the specified circuit
-    # condition, if present.
-    # """
-
-    # @property
-    # def circuit_enabled(self) -> Optional[bool]:
-    #     """
-    #     Whether or not the machine enables its operation based on a circuit
-    #     condition. Only used on entities that have multiple operation states,
-    #     including (but not limited to) a inserters, belts, train-stops,
-    #     power-switches, etc.
-
-    #     :getter: Gets the value of ``circuit_enabled``, or ``None`` if not set.
-    #     :setter: Sets the value of ``circuit_enabled``. Removes the attribute if
-    #         set to ``None``.
-
-    #     :exception TypeError: If set to anything other than a ``bool`` or
-    #         ``None``.
-    #     """
-    #     return self.control_behavior.circuit_enabled
-
-    # @circuit_enabled.setter
-    # def circuit_enabled(self, value: Optional[bool]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "circuit_enabled",
-    #             value,
-    #         )
-    #         self.control_behavior.circuit_enabled = result
-    #     else:
-    #         self.control_behavior.circuit_enabled = value
-
-    # =========================================================================
-
     circuit_condition: AttrsSimpleCondition = attrs.field(
         factory=lambda: AttrsSimpleCondition(
             first_signal=None, comparator="<", constant=0
@@ -107,14 +62,6 @@ class CircuitConditionMixin(Exportable):  # (ControlBehaviorMixin)
         self._set_condition(
             "circuit_condition", first_operand, comparator, second_operand
         )
-
-    # def remove_circuit_condition(self):
-    #     """
-    #     Removes the circuit condition of the Entity. Does nothing if the Entity
-    #     has no circuit condition to remove.
-    #     """
-    #     # self.control_behavior.pop("circuit_condition", None)
-    #     self.circuit_condition = None
 
     def merge(self, other: "CircuitConditionMixin"):
         super().merge(other)

@@ -130,7 +130,7 @@
 
 #         :param amount: The amount of rails to place going in that direction.
 #         """
-#         if self.head_direction in {LegacyDirection.NORTH, LegacyDirection.EAST, LegacyDirection.SOUTH, LegacyDirection.WEST}:  
+#         if self.head_direction in {LegacyDirection.NORTH, LegacyDirection.EAST, LegacyDirection.SOUTH, LegacyDirection.WEST}:
 #             # Straight rails, easy
 #             cardinal_matrix = {
 #                 LegacyDirection.NORTH: (0, -2),
@@ -149,7 +149,7 @@
 #                 self._last_rail_added = weakref.ref(self.entities[-1])
 #                 self.head_position.x += cardinal_offset[0]
 #                 self.head_position.y += cardinal_offset[1]
-#         else:  
+#         else:
 #             # Diagonal rails, hard
 #             diagonal_matrix: dict[
 #                 LegacyDirection, dict[LegacyDirection, tuple[int, int, LegacyDirection]]

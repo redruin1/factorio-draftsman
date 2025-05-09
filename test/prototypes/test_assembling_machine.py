@@ -51,7 +51,9 @@ class TestAssemblingMachine:
             AssemblingMachine(recipe=100).validate().reissue_all()
 
     def test_1_0_serialization(self):
-        assembler = AssemblingMachine("assembling-machine-1", recipe="iron-gear-wheel", recipe_quality="legendary")
+        assembler = AssemblingMachine(
+            "assembling-machine-1", recipe="iron-gear-wheel", recipe_quality="legendary"
+        )
         assert assembler.to_dict(version=(2, 0)) == {
             "name": "assembling-machine-1",
             "position": {"x": 1.5, "y": 1.5},
@@ -159,22 +161,14 @@ class TestAssemblingMachine:
     def test_ingredient_items(self):
         machine = AssemblingMachine("assembling-machine-3")
         machine.recipe = "wooden-chest"
-        assert machine.allowed_input_ingredients == {
-            "wood"
-        }
-        machine.set_item_request("wood", 20, inventory=Inventory.assembling_machine_input)
+        assert machine.allowed_input_ingredients == {"wood"}
+        machine.set_item_request(
+            "wood", 20, inventory=Inventory.assembling_machine_input
+        )
         assert machine.ingredient_items == [
             AttrsItemRequest(
-                id = {"name": "wood"},
-                items={
-                    "in_inventory": [
-                        {
-                            "inventory": 2,
-                            "stack": 0,
-                            "count": 20
-                        }
-                    ]
-                }
+                id={"name": "wood"},
+                items={"in_inventory": [{"inventory": 2, "stack": 0, "count": 20}]},
             )
         ]
 

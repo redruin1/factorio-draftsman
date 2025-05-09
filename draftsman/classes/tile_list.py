@@ -26,6 +26,7 @@ from typing import (
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.collection import TileCollection
 
+
 @attrs.define
 class TileList(Exportable, MutableSequence):
     """
@@ -41,15 +42,19 @@ class TileList(Exportable, MutableSequence):
 
     # FIXME: I would like to annotate this, but cattrs cannot find the location of `EntityCollection`
     _parent = attrs.field(
-        default=None, init=False, repr=False, eq=False, metadata={"deepcopy_func": lambda value, memo: None}
+        default=None,
+        init=False,
+        repr=False,
+        eq=False,
+        metadata={"deepcopy_func": lambda value, memo: None},
     )
 
-    _root: list[Tile] = attrs.field( # TODO: rename to data (perhaps use UserList?)
+    _root: list[Tile] = attrs.field(  # TODO: rename to data (perhaps use UserList?)
         factory=list,
         init=False,
     )
 
-    def __init__( # TODO: rely on attrs generated one
+    def __init__(  # TODO: rely on attrs generated one
         self,
         parent: "TileCollection",
         initlist: Optional[list[Tile]] = None,

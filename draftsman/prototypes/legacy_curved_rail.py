@@ -32,7 +32,7 @@ _rotated_collision_sets["legacy-curved-rail"] = {
     Direction.SOUTH: _left_turn.rotate(8),
     Direction.SOUTHWEST: _right_turn.rotate(8),
     Direction.WEST: _left_turn.rotate(12),
-    Direction.NORTHWEST: _right_turn.rotate(12)
+    Direction.NORTHWEST: _right_turn.rotate(12),
 }
 
 

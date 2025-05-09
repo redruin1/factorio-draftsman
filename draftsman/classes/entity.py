@@ -18,7 +18,7 @@ from draftsman.signatures import (
     uint64,
 )
 from draftsman.utils import aabb_to_dimensions, get_first, passes_surface_conditions
-from draftsman.validators import instance_of, and_
+from draftsman.validators import and_, instance_of, one_of 
 from draftsman.warning import GridAlignmentWarning, UnknownEntityWarning
 
 from draftsman.data.planets import get_surface_properties
@@ -135,7 +135,7 @@ class Entity(EntityLike, Exportable):
     #     position: FloatPosition = Field(
     #         ...,
     #         description="""
-    #         The position of the entity, almost always measured from it's center. 
+    #         The position of the entity, almost always measured from it's center.
     #         Uses Factorio tiles as its unit.
     #         """,
     #     )
@@ -144,14 +144,14 @@ class Entity(EntityLike, Exportable):
     #         exclude=True,
     #         description="""
     #         The number of the entity in it's parent blueprint, 1-based. In
-    #         practice this is the index of the dictionary in the blueprint's 
+    #         practice this is the index of the dictionary in the blueprint's
     #         'entities' list, but this is not enforced.
     #         """,
     #     )
     #     tags: Optional[dict[str, Any]] = Field(
     #         {},
     #         description="""
-    #         Any other additional metadata associated with this blueprint entity. 
+    #         Any other additional metadata associated with this blueprint entity.
     #         Frequently used by mods.
     #         """,
     #     )
@@ -400,8 +400,12 @@ class Entity(EntityLike, Exportable):
     # =========================================================================
 
     # @name.validator
-    def ensure_name_recognized(
-        self, attribute, value, mode: Optional[ValidationMode] = None
+    def _ensure_name_recognized(
+        self,
+        attribute,
+        value,
+        mode: Optional[ValidationMode] = None,
+        warning_list: Optional[list] = None,
     ):
         mode = mode if mode is not None else self.validate_assignment
         if mode >= ValidationMode.STRICT:
@@ -416,13 +420,17 @@ class Entity(EntityLike, Exportable):
                     type(self).__name__,
                     get_suggestion(value, self.similar_entities, n=1),
                 )
-                warnings.warn(UnknownEntityWarning(msg))
+
+                if warning_list is None:
+                    warnings.warn(UnknownEntityWarning(msg))
+                else:
+                    warning_list.append(UnknownEntityWarning(msg))
 
     # TODO: maybe it should be impossible to change the name of the entity after
     # it is created. This would prevent the complications that would arise from
     # such flexibility
     name: str = attrs.field(
-        validator=and_(instance_of(str), ensure_name_recognized),
+        validator=and_(instance_of(str), _ensure_name_recognized),
         metadata={"omit": False},
     )
     """The name of the entity."""
@@ -554,7 +562,7 @@ class Entity(EntityLike, Exportable):
 
     quality: QualityName = attrs.field(
         default="normal",
-        validator=instance_of(str),  # TODO: validate that it is an existant quality
+        validator=one_of(str),
     )
     """
     The quality of this entity. Can modify certain other attributes of the
@@ -934,7 +942,9 @@ class Entity(EntityLike, Exportable):
 
     # =========================================================================
 
-    tags: Optional[dict[str, Any]] = attrs.field(factory=dict)
+    tags: Optional[dict[str, Any]] = attrs.field(
+        factory=dict, validator=instance_of(Optional[dict])
+    )
     """
     Tags associated with this Entity. Commonly used by mods to add custom
     data to a particular Entity when exporting and importing Blueprint
@@ -947,17 +957,17 @@ class Entity(EntityLike, Exportable):
         or ``None``.
     """
 
-    @tags.validator
-    def _ensure_tags_correct_type(
-        self,
-        attribute: attrs.Attribute,
-        value: Any,
-        mode: Optional[ValidationMode] = None,
-    ):
-        if self.validate_assignment or mode:
-            if value is not None and not isinstance(value, dict):
-                msg = "{} is not an instance of dict nor None".format(repr(value))
-                raise DataFormatError(msg)
+    # @tags.validator
+    # def _ensure_tags_correct_type(
+    #     self,
+    #     attribute: attrs.Attribute,
+    #     value: Any,
+    #     mode: Optional[ValidationMode] = None,
+    # ):
+    #     if self.validate_assignment or mode:
+    #         if value is not None and not isinstance(value, dict):
+    #             msg = "{} is not an instance of dict nor None".format(repr(value))
+    #             raise DataFormatError(msg)
 
     # @property
     # def tags(self) -> Optional[dict[str, Any]]:
@@ -1122,40 +1132,40 @@ class Entity(EntityLike, Exportable):
             str(self.to_dict()),
         )
 
-    # def __deepcopy__(self, memo) -> "Entity":
-    #     # Perform the normal deepcopy
-    #     cls = self.__class__
-    #     result = cls.__new__(cls)
+        # def __deepcopy__(self, memo) -> "Entity":
+        #     # Perform the normal deepcopy
+        #     cls = self.__class__
+        #     result = cls.__new__(cls)
 
-    #     # Make sure we don't copy ourselves multiple times unnecessarily
-    #     memo[id(self)] = result
+        #     # Make sure we don't copy ourselves multiple times unnecessarily
+        #     memo[id(self)] = result
 
-    #     # for k, v in self.__dict__.items():
-    #     #     print("key:", k)
-    #     #     print("value:", v)
-    #     #     if k == "_parent":
-    #     #         object.__setattr__(result, "_parent", None)
-    #     #     else:
-    #     #         object.__setattr__(result, k, copy.deepcopy(v, memo))
-    #     # slots = chain.from_iterable(getattr(s, '__slots__', []) for s in self.__class__.__mro__)
+        #     # for k, v in self.__dict__.items():
+        #     #     print("key:", k)
+        #     #     print("value:", v)
+        #     #     if k == "_parent":
+        #     #         object.__setattr__(result, "_parent", None)
+        #     #     else:
+        #     #         object.__setattr__(result, k, copy.deepcopy(v, memo))
+        #     # slots = chain.from_iterable(getattr(s, '__slots__', []) for s in self.__class__.__mro__)
 
-    #     # print(slots)
-    #     # for slot in slots:
-    #     #     print(slot)
-    #     #     setattr(result, slot, copy.deepcopy(getattr(self, slot), memo))
+        #     # print(slots)
+        #     # for slot in slots:
+        #     #     print(slot)
+        #     #     setattr(result, slot, copy.deepcopy(getattr(self, slot), memo))
 
-    #     for attr in attrs.fields(cls):
-    #         # Making the copy of an entity directly "removes" its parent, as there
-    #         # is no guarantee that that cloned entity will actually lie in some
-    #         # EntityCollection
-    #         if attr.name == "_parent":
-    #             object.__setattr__(result, "_parent", None)
-    #         else:
-    #             object.__setattr__(
-    #                 result, attr.name, copy.deepcopy(getattr(self, attr.name), memo)
-    #             )
+        #     for attr in attrs.fields(cls):
+        #         # Making the copy of an entity directly "removes" its parent, as there
+        #         # is no guarantee that that cloned entity will actually lie in some
+        #         # EntityCollection
+        #         if attr.name == "_parent":
+        #             object.__setattr__(result, "_parent", None)
+        #         else:
+        #             object.__setattr__(
+        #                 result, attr.name, copy.deepcopy(getattr(self, attr.name), memo)
+        #             )
 
-    #     return result
+        #     return result
 
         if id(self) in memo:
             return memo[id(self)]
@@ -1183,15 +1193,13 @@ Entity.add_schema(
             "entity_number": {"$ref": "urn:uint64"},
             "name": {"type": "string"},
             "position": {
-                "$ref": "factorio:position",
+                "$ref": "urn:factorio:position",
             },
             "tags": {"type": "object"},
         },
-        "required": [
-            "entity_number", "name", "position"
-        ]
+        "required": ["entity_number", "name", "position"],
     },
-    version=(1, 0)
+    version=(1, 0),
 )
 
 Entity.add_schema(
@@ -1202,16 +1210,14 @@ Entity.add_schema(
             "entity_number": {"$ref": "urn:uint64"},
             "name": {"type": "string"},
             "position": {
-                "$ref": "factorio:position",
+                "$ref": "urn:factorio:position",
             },
             "quality": {"$ref": "urn:factorio:quality-name"},
             "tags": {"type": "object"},
         },
-        "required": [
-            "entity_number", "name", "position"
-        ]
+        "required": ["entity_number", "name", "position"],
     },
-    version=(2, 0)
+    version=(2, 0),
 )
 
 

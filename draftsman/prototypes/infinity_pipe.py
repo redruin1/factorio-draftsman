@@ -348,7 +348,13 @@ class InfinityPipe(Entity):
 
     # =========================================================================
 
-    def _validate_temperature(self, attr, value, mode: Optional[ValidationMode] = None):
+    def _validate_temperature(
+        self,
+        attr,
+        value,
+        mode: Optional[ValidationMode] = None,
+        warning_list: Optional[list] = None,
+    ):
         """
         Factorio errors if a fluid temperature is set when no fluid name is set
         while the temperature is set, or if the fluid temperature exceeds the

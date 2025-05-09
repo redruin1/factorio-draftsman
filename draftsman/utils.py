@@ -797,10 +797,12 @@ def dict_merge(a: dict, b: dict) -> dict:
     """
     for key in b:
         if key in a:
-            if isinstance(a[key], dict) and isinstance(b[key], dict): # pragma: no branch
+            if isinstance(a[key], dict) and isinstance(
+                b[key], dict
+            ):  # pragma: no branch
                 dict_merge(a[key], b[key])
             else:
-                a[key] = b[key] # pragma: no coverage
+                a[key] = b[key]  # pragma: no coverage
         else:
             a[key] = b[key]
     return a
@@ -1013,12 +1015,14 @@ def fix_incorrect_pre_init(cls):
 
 def calculate_occupied_slots(item_requests: list, inventory_id: int) -> int:
     """
-    Calculates the number of slots occupied by ``item_requests`` for a 
+    Calculates the number of slots occupied by ``item_requests`` for a
     particular inventory ``inventory_id``.
     """
-    return len({
-        location.stack
-        for item_request in item_requests
-        for location in item_request.items.in_inventory
-        if location.inventory == inventory_id # <- Entity specific
-    })
+    return len(
+        {
+            location.stack
+            for item_request in item_requests
+            for location in item_request.items.in_inventory
+            if location.inventory == inventory_id  # <- Entity specific
+        }
+    )

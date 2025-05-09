@@ -9,11 +9,63 @@ from draftsman.error import *
 from draftsman.warning import *
 from draftsman.utils import AABB
 from draftsman import __factorio_version_info__
+from draftsman.serialization import draftsman_converters
 
+import itertools
 import pytest
+import referencing
+from jsonschema import Draft202012Validator
 
 
-class TestEntity:
+@pytest.mark.parametrize(
+    "entity",
+    [
+        Accumulator("accumulator", quality="uncommon", output_signal="signal-B")
+        # TODO: add every entity
+    ],
+)
+@pytest.mark.parametrize(
+    "version,resources",
+    [
+        (
+            ver,
+            {
+                loc: referencing.Resource.from_contents(value)
+                for loc, value in draftsman_converters.get_version(ver).schemas.items()
+            },
+        )
+        for ver in [(1, 0), (2, 0)]
+    ],
+)
+def test_output_matches_json_schema(
+    entity: Entity, version: tuple[int, ...], resources: dict[str, referencing.Resource]
+):
+    """
+    The result from `to_dict()` should pass validation from the entity's JSON
+    schema. If not, there's either an error with `to_dict()`, the JSON schema,
+    or both.
+    """
+    entity_schema = entity.json_schema(version=version)
+    Draft202012Validator.check_schema(entity_schema)
+    validator = Draft202012Validator(
+        schema=entity_schema,
+        registry=referencing.Registry().with_resources(resources.items()),
+    )
+    # Test every `exclude_...` configuration
+    for exclude_none, exclude_defaults in itertools.product(
+        (True, False), (True, False)
+    ):
+        validator.validate(
+            entity.to_dict(
+                exclude_none=exclude_none,
+                exclude_defaults=exclude_defaults,
+                version=version,
+                entity_number=1,
+            )
+        )
+
+
+class TestEntityBase:
     def test_similar_entities(self):
         assert Entity("entity", validate_assignment="none").similar_entities == []
 
@@ -28,7 +80,7 @@ class TestEntity:
             {
                 "name": "wooden-chest",
                 "position": {"x": 0.5, "y": 0.5},
-                "entity_number": 10
+                "entity_number": 10,
             }
         )
         assert container.entity_number == 10

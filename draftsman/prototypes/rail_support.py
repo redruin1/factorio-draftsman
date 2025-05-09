@@ -19,7 +19,6 @@ class RailSupport(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     def similar_entities(self) -> list[str]:
         return rail_supports
 
-
     # =========================================================================
 
     @property

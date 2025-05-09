@@ -372,13 +372,22 @@ class TestGroup:
         group.add_circuit_connection("red", "c1", "c2")
         group.add_circuit_connection("green", "c1", "c2")
         assert group.wires == [
-            [Association(container1), 1, Association(container2), 1], # TODO: circuit_wire_defines
-            [Association(container1), 2, Association(container2), 2], # TODO: circuit_wire_defines
+            [
+                Association(container1),
+                1,
+                Association(container2),
+                1,
+            ],  # TODO: circuit_wire_defines
+            [
+                Association(container1),
+                2,
+                Association(container2),
+                2,
+            ],  # TODO: circuit_wire_defines
         ]
 
         group.wires = None
         assert group.wires == []
-        
 
     def test_power_connections(self):
         group = Group("test")
@@ -822,12 +831,14 @@ class TestGroup:
         group.entities.append("locomotive", id="loco", tile_position=(0, 0))
         group.entities.append("cargo-wagon", id="wagon", tile_position=(7, 0))
         group.stock_connections = [
-            StockConnection(stock=Association(group.entities["loco"])), 
+            StockConnection(stock=Association(group.entities["loco"])),
             StockConnection(
                 stock=Association(group.entities["wagon"]),
                 front=Association(group.entities["loco"]),
-                back=Association(group.entities["loco"]) # Malformed, but just for testing code coverage
-            )
+                back=Association(
+                    group.entities["loco"]
+                ),  # Malformed, but just for testing code coverage
+            ),
         ]
         schedule = Schedule()
         schedule.add_locomotive(group.entities["loco"])
@@ -851,12 +862,12 @@ class TestGroup:
         assert group.schedules[0].locomotives[0]() is group.entities["loco"]
         # Make sure stock connections are preserved
         assert group.stock_connections == [
-            StockConnection(stock=Association(group.entities["loco"])), 
+            StockConnection(stock=Association(group.entities["loco"])),
             StockConnection(
                 stock=Association(group.entities["wagon"]),
                 front=Association(group.entities["loco"]),
-                back=Association(group.entities["loco"])
-            )
+                back=Association(group.entities["loco"]),
+            ),
         ]
         # Make sure the parent is correct
         assert group.parent is blueprint
@@ -878,12 +889,12 @@ class TestGroup:
         assert group_copy.schedules[0].locomotives[0]() is group_copy.entities["loco"]
         # Make sure stock connections are preserved
         assert group_copy.stock_connections == [
-            StockConnection(stock=Association(group_copy.entities["loco"])), 
+            StockConnection(stock=Association(group_copy.entities["loco"])),
             StockConnection(
                 stock=Association(group_copy.entities["wagon"]),
                 front=Association(group_copy.entities["loco"]),
-                back=Association(group_copy.entities["loco"])
-            )
+                back=Association(group_copy.entities["loco"]),
+            ),
         ]
         # Make sure parent of the copied group is reset to None
         assert group_copy.parent is None

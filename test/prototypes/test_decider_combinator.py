@@ -29,11 +29,9 @@ class TestDeciderCombinator:
             direction=Direction.EAST,
             conditions=[
                 DeciderCombinator.Condition(
-                    first_signal="signal-A",
-                    comparator=">=",
-                    second_signal="signal-B"
+                    first_signal="signal-A", comparator=">=", second_signal="signal-B"
                 )
-            ]
+            ],
         )
         assert combinator.to_dict() == {
             "name": "decider-combinator",
@@ -54,7 +52,9 @@ class TestDeciderCombinator:
 
         # Warnings
         with pytest.warns(UnknownEntityWarning):
-            DeciderCombinator("this is not an arithmetic combinator").validate().reissue_all()
+            DeciderCombinator(
+                "this is not an arithmetic combinator"
+            ).validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
@@ -75,15 +75,11 @@ class TestDeciderCombinator:
         b = DeciderCombinator.Input(signal="signal-B")
 
         assert (a < b) == DeciderCombinator.Condition(
-            first_signal="signal-A",
-            comparator="<",
-            second_signal="signal-B"
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
         )
 
         assert (a >= b) == DeciderCombinator.Condition(
-            first_signal="signal-A",
-            comparator=">=",
-            second_signal="signal-B"
+            first_signal="signal-A", comparator=">=", second_signal="signal-B"
         )
 
         with pytest.raises(TypeError):
@@ -111,7 +107,7 @@ class TestDeciderCombinator:
             ),
         ]
 
-        decider.conditions = cond1 | decider.conditions 
+        decider.conditions = cond1 | decider.conditions
         assert decider.conditions == [
             DeciderCombinator.Condition(
                 first_signal="signal-A",
@@ -151,7 +147,7 @@ class TestDeciderCombinator:
             ),
         ]
 
-        decider.conditions = cond1 & decider.conditions 
+        decider.conditions = cond1 & decider.conditions
         assert decider.conditions == [
             DeciderCombinator.Condition(
                 first_signal="signal-A",
@@ -566,16 +562,10 @@ class TestDeciderCombinator:
             direction=Direction.SOUTH,
             conditions=[
                 DeciderCombinator.Condition(
-                    first_signal="signal-A",
-                    comparator="=",
-                    second_signal="copper-ore"
+                    first_signal="signal-A", comparator="=", second_signal="copper-ore"
                 )
             ],
-            outputs=[
-                DeciderCombinator.Output(
-                    signal="signal-B"
-                )
-            ],
+            outputs=[DeciderCombinator.Output(signal="signal-B")],
             tags={"original": "tags"},
         )
         comb2 = DeciderCombinator(
@@ -589,10 +579,7 @@ class TestDeciderCombinator:
                 )
             ],
             outputs=[
-                DeciderCombinator.Output(
-                    signal="signal-E",
-                    copy_count_from_input=False
-                )
+                DeciderCombinator.Output(signal="signal-E", copy_count_from_input=False)
             ],
         )
 
@@ -617,9 +604,9 @@ class TestDeciderCombinator:
                             "signal": {"name": "signal-E", "type": "virtual"},
                             "copy_count_from_input": False,
                         }
-                    ]
+                    ],
                 }
-            }
+            },
         }
         assert comb1.tags == {}  # Overwritten by comb2
 

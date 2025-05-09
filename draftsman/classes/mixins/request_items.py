@@ -131,7 +131,7 @@ class RequestItemsMixin:
                                     count=count,
                                 )
                             ]
-                        )
+                        ),
                     )
                 ]
             else:

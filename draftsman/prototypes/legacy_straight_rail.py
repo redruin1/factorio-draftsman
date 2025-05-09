@@ -29,7 +29,7 @@ _rotated_collision_sets["legacy-straight-rail"] = {
     Direction.SOUTH: _vertical_collision,
     Direction.SOUTHWEST: _diagonal_collision.rotate(-4),
     Direction.WEST: _horizontal_collision,
-    Direction.NORTHWEST: _diagonal_collision
+    Direction.NORTHWEST: _diagonal_collision,
 }
 
 

@@ -12,7 +12,7 @@ from draftsman.classes.mixins import (
 from draftsman.constants import SiloReadMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import uint32
-from draftsman.validators import enum_converter, instance_of
+from draftsman.validators import instance_of, try_convert
 
 from draftsman.data.entities import rocket_silos
 
@@ -157,7 +157,7 @@ class RocketSilo(
 
     read_items_mode: SiloReadMode = attrs.field(
         default=SiloReadMode.NONE,
-        converter=enum_converter(SiloReadMode),
+        converter=try_convert(SiloReadMode),
         validator=instance_of(SiloReadMode),
     )
     """
@@ -232,7 +232,7 @@ class RocketSilo(
     #     )
 
 
-draftsman_converters.get_version((1, 0)).add_hook_fns( # pragma: no branch
+draftsman_converters.get_version((1, 0)).add_hook_fns(  # pragma: no branch
     # {"$id": "factorio:rocket_silo_v1.0"},
     RocketSilo,
     lambda fields: {

@@ -25,6 +25,7 @@ def test_flags():
         assert selector.circuit_connectable == True
         assert selector.dual_circuit_connectable == True
 
+
 def test_set_mode():
     selector = SelectorCombinator("selector-combinator")
 
@@ -39,8 +40,8 @@ def test_set_mode():
         "control_behavior": {
             "operation": "select",
             "select_max": False,
-            "index_constant": 100
-        }
+            "index_constant": 100,
+        },
     }
 
     selector.wipe_settings()
@@ -52,8 +53,8 @@ def test_set_mode():
         "position": {"x": 0.5, "y": 1.0},
         "control_behavior": {
             "operation": "count",
-            "count_inputs_signal": {"name": "signal-C", "type": "virtual"}
-        }
+            "count_inputs_signal": {"name": "signal-C", "type": "virtual"},
+        },
     }
 
     selector.wipe_settings()
@@ -63,10 +64,7 @@ def test_set_mode():
     assert selector.to_dict() == {
         "name": "selector-combinator",
         "position": {"x": 0.5, "y": 1.0},
-        "control_behavior": {
-            "operation": "random",
-            "random_update_interval": 100
-        }
+        "control_behavior": {"operation": "random", "random_update_interval": 100},
     }
 
     selector.wipe_settings()
@@ -77,7 +75,7 @@ def test_set_mode():
         "position": {"x": 0.5, "y": 1.0},
         "control_behavior": {
             "operation": "stack-size",
-        }
+        },
     }
 
     selector.wipe_settings()
@@ -88,7 +86,7 @@ def test_set_mode():
         "position": {"x": 0.5, "y": 1.0},
         "control_behavior": {
             "operation": "rocket-capacity",
-        }
+        },
     }
 
     selector.wipe_settings()
@@ -100,29 +98,27 @@ def test_set_mode():
         "position": {"x": 0.5, "y": 1.0},
         "control_behavior": {
             "operation": "quality-filter",
-            "quality_filter": {
-                "quality": "normal",
-                "comparator": ">"
-            }
-        }
+            "quality_filter": {"quality": "normal", "comparator": ">"},
+        },
     }
 
     selector.wipe_settings()
     selector.set_mode_quality_transfer(
-        source_static="legendary",
-        destination_signal="signal-each"
+        source_static="legendary", destination_signal="signal-each"
     )
     assert selector.operation == "quality-transfer"
     assert selector.select_quality_from_signal is False
     assert selector.quality_source_static == "legendary"
     assert selector.quality_source_signal is None
-    assert selector.quality_destination_signal == AttrsSignalID(name="signal-each", type="virtual")
+    assert selector.quality_destination_signal == AttrsSignalID(
+        name="signal-each", type="virtual"
+    )
     assert selector.to_dict() == {
         "name": "selector-combinator",
         "position": {"x": 0.5, "y": 1.0},
         "control_behavior": {
             "operation": "quality-transfer",
             "quality_source_static": "legendary",
-            "quality_destination_signal": {"name": "signal-each", "type": "virtual"}
-        }
+            "quality_destination_signal": {"name": "signal-each", "type": "virtual"},
+        },
     }

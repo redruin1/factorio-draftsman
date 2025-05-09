@@ -26,7 +26,7 @@ for rail_name in straight_rails:
         Direction.SOUTH: _vertical_collision,
         Direction.SOUTHWEST: _diagonal_collision.rotate(-4),
         Direction.WEST: _horizontal_collision,
-        Direction.NORTHWEST: _diagonal_collision
+        Direction.NORTHWEST: _diagonal_collision,
     }
 
 

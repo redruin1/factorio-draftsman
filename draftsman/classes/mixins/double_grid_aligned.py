@@ -1,5 +1,6 @@
 # double_grid_aligned.py
 
+
 class DoubleGridAlignedMixin:
     """
     Makes the Entity issue warnings if set to an odd tile-position coordinate.

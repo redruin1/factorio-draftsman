@@ -1,5 +1,6 @@
 # circuit_enable.py
 
+from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
 from draftsman.validators import instance_of
 
@@ -9,7 +10,7 @@ from typing import Optional
 
 
 @attrs.define(slots=False)
-class CircuitEnableMixin:  # (ControlBehaviorMixin)
+class CircuitEnableMixin(Exportable):
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
 
@@ -83,8 +84,21 @@ class CircuitEnableMixin:  # (ControlBehaviorMixin)
         self.circuit_enabled = other.circuit_enabled
 
 
+CircuitEnableMixin.add_schema(
+    {
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "circuit_enabled": {"type": "boolean", "default": "false"}
+                },
+            }
+        }
+    }
+)
+
+
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:circuit_enable_mixin"},
     CircuitEnableMixin,
     lambda fields: {
         ("control_behavior", "circuit_enabled"): fields.circuit_enabled.name

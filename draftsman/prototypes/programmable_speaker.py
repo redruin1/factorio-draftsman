@@ -470,7 +470,11 @@ class ProgrammableSpeaker(
     # =========================================================================
 
     def _volume_in_range_validator(
-        self, attr, value, mode: Optional[ValidationMode] = None
+        self,
+        attr,
+        value,
+        mode: Optional[ValidationMode] = None,
+        warning_list: Optional[list] = None,
     ):
         mode = mode if mode is not None else self.validate_assignment
         if mode >= ValidationMode.PEDANTIC:
@@ -478,7 +482,10 @@ class ProgrammableSpeaker(
                 msg = "'volume' ({}) not in range [0.0, 1.0]; will be clamped to this range on import".format(
                     value
                 )
-                warnings.warn(VolumeRangeWarning(msg))
+                if warning_list is None:
+                    warnings.warn(VolumeRangeWarning(msg))
+                else:
+                    warning_list.append(VolumeRangeWarning(msg))
 
     volume: float = attrs.field(
         default=1.0, validator=and_(instance_of(float), _volume_in_range_validator)
@@ -776,8 +783,12 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
-    def known_instrument_validator(
-        self, attr, value, mode: Optional[ValidationMode] = None
+    def _known_instrument_validator(
+        self,
+        attr,
+        value,
+        mode: Optional[ValidationMode] = None,
+        warning_list: Optional[list] = None,
     ):
         mode = mode if mode is not None else self.validate_assignment
         if mode >= ValidationMode.STRICT:
@@ -790,11 +801,14 @@ class ProgrammableSpeaker(
                 msg = "ID '{}' is not a known instrument for this programmable speaker".format(
                     value
                 )
-                warnings.warn(UnknownInstrumentWarning(msg))
+                if warning_list is None:
+                    warnings.warn(UnknownInstrumentWarning(msg))
+                else:
+                    warning_list.append(UnknownInstrumentWarning(msg))
 
     instrument_id: Optional[uint32] = attrs.field(
         default=0,
-        validator=and_(instance_of(Optional[uint32]), known_instrument_validator),
+        validator=and_(instance_of(Optional[uint32]), _known_instrument_validator),
     )
     """
     Numeric index of the instrument, 0-indexed.
@@ -891,7 +905,13 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
-    def known_note_validator(self, attr, value, mode: Optional[ValidationMode] = None):
+    def _known_note_validator(
+        self,
+        attr,
+        value,
+        mode: Optional[ValidationMode] = None,
+        warning_list: Optional[list] = None,
+    ):
         mode = mode if mode is not None else self.validate_assignment
         if mode >= ValidationMode.STRICT:
             # If we don't recognize entity.name or instrument_id, then
@@ -908,10 +928,13 @@ class ProgrammableSpeaker(
                 msg = "ID '{}' is not a known note for this instrument and/or programmable speaker".format(
                     value
                 )
-                warnings.warn(UnknownNoteWarning(msg))
+                if warning_list is None:
+                    warnings.warn(UnknownNoteWarning(msg))
+                else:
+                    warning_list.append(UnknownNoteWarning(msg))
 
     note_id: Optional[uint32] = attrs.field(
-        default=0, validator=and_(instance_of(Optional[uint32]), known_note_validator)
+        default=0, validator=and_(instance_of(Optional[uint32]), _known_note_validator)
     )
     """
     Numeric index of the note. Updated in tandem with ``note_name``.

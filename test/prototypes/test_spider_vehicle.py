@@ -2,7 +2,14 @@
 
 from draftsman.error import DataFormatError
 from draftsman.prototypes.spider_vehicle import SpiderVehicle, spider_vehicles
-from draftsman.signatures import AttrsColor, EquipmentComponent, EquipmentID, AttrsItemRequest, AttrsItemID, AttrsItemSpecification
+from draftsman.signatures import (
+    AttrsColor,
+    EquipmentComponent,
+    EquipmentID,
+    AttrsItemRequest,
+    AttrsItemID,
+    AttrsItemSpecification,
+)
 from draftsman.warning import UnknownEntityWarning
 
 import pytest
@@ -32,7 +39,7 @@ def test_constructor():
             "auto_target_with_gunner": True,
         },
     }
-    
+
     assert vehicle.to_dict(exclude_defaults=False) == {
         "name": "spidertron",
         "position": {"x": 1.0, "y": 1.0},
@@ -41,7 +48,7 @@ def test_constructor():
             "auto_target_without_gunner": False,
             "auto_target_with_gunner": True,
         },
-        "color": {"r": 255/255, "g": 127/255, "b": 0.0, "a": 127/255},
+        "color": {"r": 255 / 255, "g": 127 / 255, "b": 0.0, "a": 127 / 255},
         "enable_logistics_while_moving": True,
         "grid": [],
         "items": [],
@@ -69,7 +76,7 @@ def test_flags():
 
 def test_equipment_grid():
     """
-    Using the equipment grid helper functions should bookkeep `equipment` as 
+    Using the equipment grid helper functions should bookkeep `equipment` as
     well as `item_requests`.
     """
     spidertron = SpiderVehicle("spidertron")
@@ -88,42 +95,27 @@ def test_equipment_grid():
     spidertron.add_equipment("energy-shield-equipment", (3, 0))
     assert spidertron.equipment == [
         EquipmentComponent(
-            equipment=EquipmentID(
-                name="energy-shield-equipment"
-            ),
-            position=(0, 0)
+            equipment=EquipmentID(name="energy-shield-equipment"), position=(0, 0)
         ),
         EquipmentComponent(
-            equipment=EquipmentID(
-                name="battery-equipment",
-                quality="legendary"
-            ),
-            position=(2, 0)
+            equipment=EquipmentID(name="battery-equipment", quality="legendary"),
+            position=(2, 0),
         ),
         EquipmentComponent(
             equipment=EquipmentID(
                 name="energy-shield-equipment",
             ),
-            position=(3, 0)
+            position=(3, 0),
         ),
     ]
     assert spidertron.item_requests == [
         AttrsItemRequest(
-            id=AttrsItemID(
-                name="energy-shield-equipment"
-            ),
-            items=AttrsItemSpecification(
-                grid_count=2
-            )
+            id=AttrsItemID(name="energy-shield-equipment"),
+            items=AttrsItemSpecification(grid_count=2),
         ),
         AttrsItemRequest(
-            id=AttrsItemID(
-                name="battery-equipment",
-                quality="legendary"
-            ),
-            items=AttrsItemSpecification(
-                grid_count=1
-            )
+            id=AttrsItemID(name="battery-equipment", quality="legendary"),
+            items=AttrsItemSpecification(grid_count=1),
         ),
     ]
     assert spidertron.to_dict() == {
@@ -134,20 +126,20 @@ def test_equipment_grid():
                 "equipment": {
                     "name": "energy-shield-equipment",
                 },
-                "position": {"x": 0, "y": 0}
+                "position": {"x": 0, "y": 0},
             },
             {
                 "equipment": {
                     "name": "battery-equipment",
                     "quality": "legendary",
                 },
-                "position": {"x": 2, "y": 0}
+                "position": {"x": 2, "y": 0},
             },
             {
                 "equipment": {
                     "name": "energy-shield-equipment",
                 },
-                "position": {"x": 3, "y": 0}
+                "position": {"x": 3, "y": 0},
             },
         ],
         "items": [
@@ -155,20 +147,16 @@ def test_equipment_grid():
                 "id": {
                     "name": "energy-shield-equipment",
                 },
-                "items": {
-                    "grid_count": 2
-                }
+                "items": {"grid_count": 2},
             },
             {
                 "id": {
                     "name": "battery-equipment",
                     "quality": "legendary",
                 },
-                "items": {
-                    "grid_count": 1
-                }
+                "items": {"grid_count": 1},
             },
-        ]
+        ],
     }
 
     # Test removal all
@@ -176,7 +164,7 @@ def test_equipment_grid():
     spider_copy.remove_equipment()
     assert spider_copy.equipment == []
     assert spider_copy.item_requests == []
-    
+
     # Test remove specific
     spider_copy = copy.deepcopy(spidertron)
     spider_copy.remove_equipment(quality="normal")
@@ -186,36 +174,30 @@ def test_equipment_grid():
                 "name": "battery-equipment",
                 "quality": "legendary",
             },
-            position=(2, 0)
+            position=(2, 0),
         ),
     ]
     assert spider_copy.item_requests == [
         AttrsItemRequest(
-            id=AttrsItemID(
-                name="battery-equipment",
-                quality="legendary"
-            ),
-            items=AttrsItemSpecification(
-                grid_count=1
-            )
+            id=AttrsItemID(name="battery-equipment", quality="legendary"),
+            items=AttrsItemSpecification(grid_count=1),
         ),
     ]
 
     # Test full dict conversion
-    spider_copy.equipment = [{
-        "equipment": {
-            "name": "battery-equipment",
-            "quality": "legendary",
-        },
-        "position": {"x": 2, "y": 0}
-    }]
+    spider_copy.equipment = [
+        {
+            "equipment": {
+                "name": "battery-equipment",
+                "quality": "legendary",
+            },
+            "position": {"x": 2, "y": 0},
+        }
+    ]
     assert spider_copy.equipment == [
         EquipmentComponent(
-            equipment=EquipmentID(
-                name="battery-equipment",
-                quality="legendary"
-            ),
-            position=(2, 0)
+            equipment=EquipmentID(name="battery-equipment", quality="legendary"),
+            position=(2, 0),
         ),
     ]
 

@@ -11,7 +11,6 @@ from draftsman.classes.mixins.color import ColorMixin
 from draftsman.classes.mixins.control_behavior import ControlBehaviorMixin
 from draftsman.classes.mixins.directional import DirectionalMixin
 from draftsman.classes.mixins.double_grid_aligned import DoubleGridAlignedMixin
-# from draftsman.classes.mixins.eight_way_directional import EightWayDirectionalMixin
 from draftsman.classes.mixins.energy_source import EnergySourceMixin
 from draftsman.classes.mixins.equipment_grid import EquipmentGridMixin
 from draftsman.classes.mixins.circuit_enable import CircuitEnableMixin

@@ -314,7 +314,7 @@ class ConstantCombinator(
             ManualSection(
                 group=group,
                 index=index + 1 if index is not None else len(self.sections) + 1,
-                active=active
+                active=active,
             )
         ]
         return self.sections[-1]

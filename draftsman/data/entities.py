@@ -335,5 +335,5 @@ def add_entity(
 
     if type in of_type:
         of_type[type].append(name)  # FIXME
-    else: # pragma: no coverage
+    else:  # pragma: no coverage
         of_type[type] = [name]

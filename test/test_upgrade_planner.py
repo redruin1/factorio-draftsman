@@ -23,6 +23,7 @@ from draftsman.warning import (
 
 from pydantic import ValidationError
 import pytest
+import warnings
 
 
 class TestUpgradePlanner:
@@ -398,6 +399,13 @@ class TestUpgradePlanner:
         ]
 
     def test_validate(self):
+        # We run the suite with `-Werror`, which works great at failing when we
+        # make uncaught errors. However, pytest uses `filterwarnings("error")`
+        # to achieve this... which causes all warnings that draftsman issues to
+        # be treated as exceptions. Under normal circumstances this is fine; but
+        # we want warnings to be actaully treated as warnings for this test
+        warnings.filterwarnings("default")
+
         upgrade_planner = UpgradePlanner()
 
         # Empty should validate

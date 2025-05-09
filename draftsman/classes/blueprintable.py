@@ -73,9 +73,9 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         ```
 
         All keys (except for :py:attr:`index`) are contained within this sub-
-        dictionary. 
+        dictionary.
         """
-        pass # pragma: no coverage
+        pass  # pragma: no coverage
 
     # @reissue_warnings
     # def __init__(
@@ -254,13 +254,12 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> BlueprintBook().item
             'blueprint-book'
         """
-        pass # pragma: no coverage
+        pass  # pragma: no coverage
 
     # =========================================================================
 
     label: Optional[str] = attrs.field(
-        default=None,
-        validator=instance_of(Optional[str])
+        default=None, validator=instance_of(Optional[str])
     )
     """
     The user given name (title) of the blueprintable.

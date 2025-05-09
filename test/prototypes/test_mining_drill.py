@@ -3,7 +3,11 @@
 from draftsman.constants import MiningDrillReadMode, ValidationMode, Inventory
 from draftsman.entity import MiningDrill, mining_drills, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import AttrsItemRequest, AttrsItemSpecification, AttrsInventoryLocation
+from draftsman.signatures import (
+    AttrsItemRequest,
+    AttrsItemSpecification,
+    AttrsInventoryLocation,
+)
 from draftsman.warning import (
     ModuleCapacityWarning,
     ItemLimitationWarning,
@@ -41,7 +45,9 @@ class TestMiningDrill:
 
     def test_set_item_request(self):
         mining_drill = MiningDrill("electric-mining-drill")
-        mining_drill.set_item_request("speed-module-3", 3, inventory=Inventory.mining_drill_modules)
+        mining_drill.set_item_request(
+            "speed-module-3", 3, inventory=Inventory.mining_drill_modules
+        )
         assert mining_drill.to_dict() == {
             "name": "electric-mining-drill",
             "position": {"x": 1.5, "y": 1.5},
@@ -97,7 +103,7 @@ class TestMiningDrill:
                             count=1,
                         ),
                     ],
-                )
+                ),
             )
         ]
 
@@ -121,9 +127,9 @@ class TestMiningDrill:
                             inventory=Inventory.mining_drill_modules,
                             stack=2,
                             count=1,
-                        )
+                        ),
                     ],
-                )
+                ),
             )
         ]
 
@@ -147,9 +153,9 @@ class TestMiningDrill:
                             inventory=Inventory.mining_drill_modules,
                             stack=2,
                             count=1,
-                        )
+                        ),
                     ],
-                )
+                ),
             )
         ]
 

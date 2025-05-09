@@ -7,7 +7,7 @@ from draftsman.classes.mixins import (
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     # EightWayDirectionalMixin,
-    DirectionalMixin
+    DirectionalMixin,
 )
 from draftsman.constants import Direction, SIXTEEN_WAY_DIRECTIONS
 from draftsman.serialization import draftsman_converters
@@ -100,7 +100,6 @@ class RailChainSignal(
     @property
     def similar_entities(self) -> list[str]:
         return rail_chain_signals
-    
 
     # =========================================================================
 
@@ -113,7 +112,7 @@ class RailChainSignal(
     @property
     def valid_directions(self) -> set[Direction]:
         return SIXTEEN_WAY_DIRECTIONS
-    
+
     # =========================================================================
 
     @property

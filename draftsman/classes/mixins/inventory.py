@@ -100,7 +100,9 @@ class InventoryMixin:
 
     # =========================================================================
 
-    def _check_bar_enabled(self, attr, value, mode=None):
+    def _check_bar_enabled(
+        self, attr, value, mode=None, warning_list: Optional[list] = None
+    ):
         mode = mode if mode is not None else self.validate_assignment
         if mode >= ValidationMode.STRICT:
             # Make sure to check that it's `False`; this attribute can return
@@ -108,7 +110,10 @@ class InventoryMixin:
             # don't want to issue a warning at all
             if self.inventory_bar_enabled is False:
                 msg = "This entity does not have bar control"
-                warnings.warn(BarWarning(msg))
+                if warning_list is None:
+                    warnings.warn(BarWarning(msg))
+                else:
+                    warning_list.append(BarWarning(msg))
 
     bar: Optional[uint16] = attrs.field(
         default=None,

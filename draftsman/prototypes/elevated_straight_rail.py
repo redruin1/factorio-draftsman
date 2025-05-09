@@ -29,8 +29,9 @@ for rail_name in elevated_straight_rails:
         Direction.SOUTH: _vertical_collision,
         Direction.SOUTHWEST: _diagonal_collision.rotate(-4),
         Direction.WEST: _horizontal_collision,
-        Direction.NORTHWEST: _diagonal_collision
+        Direction.NORTHWEST: _diagonal_collision,
     }
+
 
 @fix_incorrect_pre_init
 @attrs.define

@@ -25,11 +25,13 @@ import attrs
 #     """
 #     pass
 
+
 def define(cls):
     """
     Custom `attrs.define` wrapper. Handles Draftsman-specific boilerplate to
     reduce repetition.
     """
+
     def field_transformer(cls, fields):
         pass
 
@@ -37,8 +39,8 @@ def define(cls):
     model_validators = [
         v for _, v in cls.__dict__.items() if hasattr(v, "__attrs_class_validator__")
     ]
-    cls = attrs.define(cls) # field_transformer=field_transformer
-    
+    cls = attrs.define(cls)  # field_transformer=field_transformer
+
     # Attach class validators to the instance
     cls.__attrs_class_validators__ = model_validators
 

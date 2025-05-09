@@ -9,7 +9,14 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsSignalID, QualityFilter, QualityName, Comparator, int32, uint32
+from draftsman.signatures import (
+    AttrsSignalID,
+    QualityFilter,
+    QualityName,
+    Comparator,
+    int32,
+    uint32,
+)
 from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of, one_of
 
@@ -25,7 +32,7 @@ SelectorOperations = Literal[
     "stack-size",
     "rocket-capacity",
     "quality-filter",
-    "quality-transfer"
+    "quality-transfer",
 ]
 
 
@@ -161,9 +168,7 @@ class SelectorCombinator(
     # =========================================================================
 
     operation: SelectorOperations = attrs.field(
-        default="select",
-        validator=one_of(SelectorOperations),
-        metadata={"omit": False}
+        default="select", validator=one_of(SelectorOperations), metadata={"omit": False}
     )
     """
     The mode of operation that this selector is currently configured to perform.
@@ -173,19 +178,13 @@ class SelectorCombinator(
     # Mode: "select"
     # =========================================================================
 
-    select_max: bool = attrs.field(
-        default=True,
-        validator=instance_of(bool)
-    )
+    select_max: bool = attrs.field(default=True, validator=instance_of(bool))
     """
     Whether or not to sort the given signals in ascending or descending order
     when :py:attr:`.operation` is ``"select"``.
     """
 
-    index_constant: int32 = attrs.field(
-        default=0,
-        validator=instance_of(int32)
-    )
+    index_constant: int32 = attrs.field(default=0, validator=instance_of(int32))
     """
     Which constant signal index to output from the list of given signals when
     :py:attr:`.operation` is ``"select"``. 0-indexed; negative values are valid
@@ -196,7 +195,7 @@ class SelectorCombinator(
     index_signal: Optional[AttrsSignalID] = attrs.field(
         default=None,
         converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
     Which input signal to pull the index value from in order to select from the
@@ -212,7 +211,7 @@ class SelectorCombinator(
     count_signal: Optional[AttrsSignalID] = attrs.field(
         default=None,
         converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
     What signal to output the sum total number of unique signals on the input to.
@@ -225,8 +224,7 @@ class SelectorCombinator(
     # =========================================================================
 
     random_update_interval: uint32 = attrs.field(
-        default=0,
-        validator=instance_of(uint32)
+        default=0, validator=instance_of(uint32)
     )
     """
     Number of game ticks to wait before selecting a new random signal from the
@@ -238,8 +236,7 @@ class SelectorCombinator(
     # =========================================================================
 
     quality_filter: QualityFilter = attrs.field(
-        factory=QualityFilter,
-        validator=instance_of(QualityFilter)
+        factory=QualityFilter, validator=instance_of(QualityFilter)
     )
     """
     The specification to filter the given input signals. Can select a specific 
@@ -251,8 +248,7 @@ class SelectorCombinator(
     # =========================================================================
 
     select_quality_from_signal: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
+        default=False, validator=instance_of(bool)
     )
     """
     Whether or not to select quality from a single signal or from every input 
@@ -260,29 +256,34 @@ class SelectorCombinator(
     Selection" mode, and uses "Select from signal" when this value is ``True``.
     """
 
-    quality_source_static: QualityName = attrs.field( # TODO: should not include "any"
-        default="normal",
-        validator=one_of(QualityName)
+    quality_source_static: QualityName = attrs.field(  # TODO: should not include "any"
+        default="normal", validator=one_of(QualityName)
     )
     """
     The quality to use when :py:attr:`.select_quality_from_signal` is ``False``.
     The selector will consider all signals with this specific quality.
     """
 
-    quality_source_signal: Optional[AttrsSignalID] = attrs.field( # TODO: SignalID, but no quality!
+    quality_source_signal: Optional[
+        AttrsSignalID
+    ] = attrs.field(  # TODO: SignalID, but no quality!
         default=None,
         converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
     The input signal type to pull the quality from dynamically, if 
     :py:attr:`.select_quality_from_signal` is ``True``. 
     """
 
-    quality_destination_signal: Optional[AttrsSignalID] = attrs.field( # TODO: SignalID, but no quality!
+    quality_destination_signal: Optional[
+        AttrsSignalID
+    ] = attrs.field(  # TODO: SignalID, but no quality!
         default=None,
         converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]) # TODO: validate it can only be each
+        validator=instance_of(
+            Optional[AttrsSignalID]
+        ),  # TODO: validate it can only be each
     )
     """
     The destination signal(s) to output with the read quality value. Can be any
@@ -291,12 +292,17 @@ class SelectorCombinator(
 
     # =========================================================================
 
-    def set_mode_select(self, select_max: bool = True, index_constant: int32 = 0, index_signal: Optional[AttrsSignalID] = None):
+    def set_mode_select(
+        self,
+        select_max: bool = True,
+        index_constant: int32 = 0,
+        index_signal: Optional[AttrsSignalID] = None,
+    ):
         """
         Sets the selector combinator to "Select Inputs" mode, along with
         associated parameters.
 
-        :param select_max: Whether or not to sort signal values ascending or 
+        :param select_max: Whether or not to sort signal values ascending or
             descending.
         :param index_constant: The constant signal index to use. Overwritten by
             ``index_signal`` if specified.
@@ -324,7 +330,7 @@ class SelectorCombinator(
         Sets the selector combinator to "Random Input" mode, along with
         associated parameters.
 
-        :param interval: The amount of ticks to wait between random signal 
+        :param interval: The amount of ticks to wait between random signal
             selections.
         """
         self.operation = "random"
@@ -342,12 +348,14 @@ class SelectorCombinator(
         """
         self.operation = "rocket-capacity"
 
-    def set_mode_quality_filter(self, quality: QualityName = "any", comparator: Comparator = "="):
+    def set_mode_quality_filter(
+        self, quality: QualityName = "any", comparator: Comparator = "="
+    ):
         """
         Sets the selector combintor to "Quality Filter" mode, along with
         associated parameters.
 
-        :param quality: The quality to select, or the fixed half of the range of 
+        :param quality: The quality to select, or the fixed half of the range of
             qualities to select if comparator is not ``"="``.
         :param comparator: The comparison operator to use when selecting quality
             signals.
@@ -356,11 +364,11 @@ class SelectorCombinator(
         self.quality_filter = QualityFilter(quality=quality, comparator=comparator)
 
     def set_mode_quality_transfer(
-        self, 
-        select_quality_from_signal: bool = False, 
-        source_static: QualityName = "normal", # TODO: QualityName no "any"
-        source_signal: Optional[AttrsSignalID] = None, # TODO: SignalID no quality
-        destination_signal: Optional[AttrsSignalID] = None, # TODO: SignalID no quality
+        self,
+        select_quality_from_signal: bool = False,
+        source_static: QualityName = "normal",  # TODO: QualityName no "any"
+        source_signal: Optional[AttrsSignalID] = None,  # TODO: SignalID no quality
+        destination_signal: Optional[AttrsSignalID] = None,  # TODO: SignalID no quality
     ):
         """
         Sets the selector combintor to "Quality Transfer" mode, along with
@@ -369,9 +377,9 @@ class SelectorCombinator(
         :param select_quality_from_signal: Whether or not to use ``source_static``
             (``False``) or ``source_signal`` (``True``) when under operation.
         :param source_static: A fixed quality value to map inputs to.
-        :param source_signal: A signal to grab the quality signifier from 
+        :param source_signal: A signal to grab the quality signifier from
             dynamically during operation.
-        :param destination_signal: The target signal(s) to output with the 
+        :param destination_signal: The target signal(s) to output with the
             extraced quality flag. Can be any fixed signal or the wildcard
             ``"signal-each"``.
         """
@@ -419,11 +427,26 @@ draftsman_converters.add_hook_fns(
         ("control_behavior", "index_constant"): fields.index_constant.name,
         ("control_behavior", "index_signal"): fields.index_signal.name,
         ("control_behavior", "count_inputs_signal"): fields.count_signal.name,
-        ("control_behavior", "random_update_interval"): fields.random_update_interval.name,
+        (
+            "control_behavior",
+            "random_update_interval",
+        ): fields.random_update_interval.name,
         ("control_behavior", "quality_filter"): fields.quality_filter.name,
-        ("control_behavior", "select_quality_from_signal"): fields.select_quality_from_signal.name,
-        ("control_behavior", "quality_source_static"): fields.quality_source_static.name,
-        ("control_behavior", "quality_source_signal"): fields.quality_source_signal.name,
-        ("control_behavior", "quality_destination_signal"): fields.quality_destination_signal.name,
-    }
+        (
+            "control_behavior",
+            "select_quality_from_signal",
+        ): fields.select_quality_from_signal.name,
+        (
+            "control_behavior",
+            "quality_source_static",
+        ): fields.quality_source_static.name,
+        (
+            "control_behavior",
+            "quality_source_signal",
+        ): fields.quality_source_signal.name,
+        (
+            "control_behavior",
+            "quality_destination_signal",
+        ): fields.quality_destination_signal.name,
+    },
 )

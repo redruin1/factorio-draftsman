@@ -379,7 +379,11 @@ class Exportable:
 
     @extra_keys.validator
     def _warn_unrecognized_keys(
-        self, _, value: Optional[dict], mode: Optional[ValidationMode] = None
+        self,
+        _,
+        value: Optional[dict],
+        mode: Optional[ValidationMode] = None,
+        warning_list: Optional[list] = None,
     ):
         """Warns the user if the ``extra_keys`` dict is populated."""
         mode = mode if mode is not None else self.validate_assignment
@@ -394,7 +398,10 @@ class Exportable:
                     if not attr.name.startswith("_")
                 ],
             )
-            warnings.warn(UnknownKeywordWarning(msg))
+            if warning_list is None:
+                warnings.warn(UnknownKeywordWarning(msg))
+            else:
+                warning_list.append(UnknownKeywordWarning(msg))
 
     # =========================================================================
 
@@ -440,13 +447,17 @@ class Exportable:
         for a in attrs.fields(self.__class__):
             v = a.validator
             if v is not None:
-                with warnings.catch_warnings(record=True) as ws:
-                    try:
-                        v(self, a, getattr(self, a.name), mode=mode)
-                    except Exception as e:
-                        res.error_list.append(e)
-                for warning in ws:
-                    res.warning_list.append(warning.message)
+                # with warnings.catch_warnings(record=True) as ws:
+                try:
+                    v(
+                        self,
+                        a,
+                        getattr(self, a.name),
+                        mode=mode,
+                        warning_list=res.warning_list,
+                    )
+                except Exception as e:
+                    res.error_list.append(e)
         return res
 
     @classmethod
@@ -466,8 +477,10 @@ class Exportable:
         #     inspect.getsource(draftsman_converters.get_version(version).get_converter().get_structure_hook(cls))
         # )
         if version is None:
-            version = __factorio_version_info__ # TODO: replace with `mods.versions["base"]`
-            
+            version = (
+                __factorio_version_info__  # TODO: replace with `mods.versions["base"]`
+            )
+
         version_info = draftsman_converters.get_version(version)
         return version_info.get_converter().structure(
             copy.deepcopy(d), cls
@@ -523,15 +536,17 @@ class Exportable:
 
     @classmethod
     def add_schema(cls, schema, version: tuple[int, ...] = None):
-        schema["$schema"] = "https://json-schema.org/draft/2020-12/schema",
-        # TODO 
+        schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
+        # TODO
         if version is None:
             for version in draftsman_converters.versions:
                 # merge the dicts of inherited classes together
                 res = {}
                 for subcls in reversed(cls.__mro__[:-1]):
                     try:
-                        subschema = draftsman_converters.get_version(version).get_schema(subcls)
+                        subschema = draftsman_converters.get_version(
+                            version
+                        ).get_schema(subcls)
                         dict_merge(res, subschema)
                     except KeyError:
                         pass
@@ -542,7 +557,10 @@ class Exportable:
 
     @classmethod
     def json_schema(
-        cls, version: tuple[int, ...] = __factorio_version_info__
+        cls,
+        version: tuple[
+            int, ...
+        ] = __factorio_version_info__,  # TODO: change this to None
     ) -> dict[str, Any]:
         """
         Returns a JSON schema object that correctly validates this object. This
@@ -563,10 +581,7 @@ class Exportable:
             descriptions.
         """
         # TODO: should this be tested?
-        # TODO: should this schema be "resolved", meaning all references are
-        # flattened out? If not, how should somebody actually use the urls
-        # in practice, since they're all locally hosted?
-        # return cls.Format.model_json_schema(by_alias=True)
+        print(cls)
         return draftsman_converters.get_version(version).get_schema(cls)
 
     # TODO
@@ -596,7 +611,7 @@ class Exportable:
     # def __contains__(self, item: str) -> bool:
     #     return item in self._root
 
-    def __deepcopy__(self, memo: Optional[dict[int, Any]]={}):
+    def __deepcopy__(self, memo: Optional[dict[int, Any]] = {}):
         # Perform the normal deepcopy
         cls = self.__class__
         result = cls.__new__(cls)
@@ -624,12 +639,9 @@ class Exportable:
             # EntityCollection
             if "deepcopy_func" in attr.metadata:
                 object.__setattr__(
-                    result, 
-                    attr.name, 
-                    attr.metadata["deepcopy_func"](
-                        getattr(self, attr.name), 
-                        memo
-                    )
+                    result,
+                    attr.name,
+                    attr.metadata["deepcopy_func"](getattr(self, attr.name), memo),
                 )
             else:
                 object.__setattr__(

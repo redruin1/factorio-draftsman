@@ -31,10 +31,7 @@ class SpacePlatformHub(
 
     # =========================================================================
 
-    read_contents: bool = attrs.field(
-        default=True,
-        validator=instance_of(bool)
-    )
+    read_contents: bool = attrs.field(default=True, validator=instance_of(bool))
     """
     Whether or not to broadcast the contents of the hub to any connected circuit
     network.
@@ -42,10 +39,7 @@ class SpacePlatformHub(
 
     # =========================================================================
 
-    send_to_platform: bool = attrs.field(
-        default=True,
-        validator=instance_of(bool)
-    )
+    send_to_platform: bool = attrs.field(default=True, validator=instance_of(bool))
     """
     Whether or not to send the contents of the circuit network to the platform 
     for determining it's circuit conditions.
@@ -53,10 +47,7 @@ class SpacePlatformHub(
 
     # =========================================================================
 
-    read_moving_from: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    read_moving_from: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not to send the planet the platform is currently moving from to 
     the connected circuit network.
@@ -64,10 +55,7 @@ class SpacePlatformHub(
 
     # =========================================================================
 
-    read_moving_to: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    read_moving_to: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not to send the planet the platform is currently moving to to the 
     connected circuit network.
@@ -75,10 +63,7 @@ class SpacePlatformHub(
 
     # =========================================================================
 
-    read_speed: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    read_speed: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not to output the platforms current speed to the connected 
     circuit network.
@@ -89,7 +74,7 @@ class SpacePlatformHub(
     speed_signal: Optional[AttrsSignalID] = attrs.field(
         factory=lambda: AttrsSignalID(name="signal-V", type="virtual"),
         converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
     The signal to output the speed of the platform's current speed, if 
@@ -98,10 +83,7 @@ class SpacePlatformHub(
 
     # =========================================================================
 
-    read_damage_taken: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    read_damage_taken: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not to output the total amount of damage this platform has taken
     (since it started moving) to the connected circuit network.
@@ -112,7 +94,7 @@ class SpacePlatformHub(
     damage_taken_signal: Optional[AttrsSignalID] = attrs.field(
         factory=lambda: AttrsSignalID(name="signal-D", type="virtual"),
         converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+        validator=instance_of(Optional[AttrsSignalID]),
     )
     """
     The signal to output the total amount of damage taken, if configured to do
@@ -148,6 +130,6 @@ draftsman_converters.add_hook_fns(
         ("control_behavior", "speed_signal"): fields.speed_signal.name,
         ("control_behavior", "read_damage_taken"): fields.read_damage_taken.name,
         ("control_behavior", "damage_taken_signal"): fields.damage_taken_signal.name,
-        "request_missing_construction_materials": fields.request_missing_construction_materials.name
-    }
+        "request_missing_construction_materials": fields.request_missing_construction_materials.name,
+    },
 )

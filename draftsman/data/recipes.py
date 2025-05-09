@@ -23,9 +23,7 @@ def add_recipe(name: str, ingredients: list[str], result: str, **kwargs):
     raise NotImplementedError  # TODO
 
 
-def get_recipe_ingredients(
-    recipe_name: str, expensive: bool = False
-):
+def get_recipe_ingredients(recipe_name: str, expensive: bool = False):
     """
     Returns a ``set`` of all item types that ``recipe_name`` requires. Discards
     quantities.

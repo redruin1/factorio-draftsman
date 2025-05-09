@@ -10,6 +10,7 @@ import pytest
 # if len(player_ports) == 0:
 #     pytest.skip("No player ports to test", allow_module_level=True)
 
+
 def test_player_port_entities():
     with pytest.warns(UnknownEntityWarning):
         player_port = PlayerPort("player-port")

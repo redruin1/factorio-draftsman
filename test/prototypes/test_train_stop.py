@@ -106,7 +106,9 @@ class TestTrainStop:
             stop = TrainStop("train-stop", direction=Direction.NORTHWEST)
             stop.validate().reissue_all()
         # Ignore incorrect direction
-        stop = TrainStop("train-stop", direction=Direction.NORTHWEST, validate_assignment="none")
+        stop = TrainStop(
+            "train-stop", direction=Direction.NORTHWEST, validate_assignment="none"
+        )
         assert stop.direction is Direction.NORTHWEST
         stop.direction = Direction.SOUTHSOUTHEAST
         assert stop.direction is Direction.SOUTHSOUTHEAST
@@ -129,7 +131,7 @@ class TestTrainStop:
         # Position
 
         # No warning
-        train_stop.position = (1.0, 1.0) 
+        train_stop.position = (1.0, 1.0)
         assert train_stop.position.x == 1.0
         assert train_stop.position.y == 1.0
 
@@ -140,7 +142,7 @@ class TestTrainStop:
         # Tile position
 
         # No warning
-        train_stop.tile_position = (2, 2) 
+        train_stop.tile_position = (2, 2)
         assert train_stop.tile_position.x == 2
         assert train_stop.tile_position.y == 2
 

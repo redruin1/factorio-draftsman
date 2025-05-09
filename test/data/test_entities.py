@@ -2,6 +2,7 @@
 
 from draftsman.data.entities import get_default_collision_mask
 
+
 def test_default_collision_mask():
     assert get_default_collision_mask("gate") == {
         "item-layer",
@@ -10,8 +11,12 @@ def test_default_collision_mask():
         "water-tile",
         "train-layer",
     }
-    assert get_default_collision_mask("heat-pipe") == {"object-layer", "floor-layer", "water-tile"}
-    assert get_default_collision_mask("land-mine") == {"object-layer", "water-tile"} 
+    assert get_default_collision_mask("heat-pipe") == {
+        "object-layer",
+        "floor-layer",
+        "water-tile",
+    }
+    assert get_default_collision_mask("land-mine") == {"object-layer", "water-tile"}
     assert get_default_collision_mask("linked-belt") == {
         "object-layer",
         "item-layer",
@@ -31,7 +36,11 @@ def test_default_collision_mask():
         "floor-layer",
         "water-tile",
     }
-    assert get_default_collision_mask("rail-signal") == {"floor-layer", "rail-layer", "item-layer"}
+    assert get_default_collision_mask("rail-signal") == {
+        "floor-layer",
+        "rail-layer",
+        "item-layer",
+    }
     assert get_default_collision_mask("locomotive") == {"train-layer"}
     assert get_default_collision_mask("splitter") == {
         "object-layer",

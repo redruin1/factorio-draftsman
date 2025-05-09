@@ -60,7 +60,7 @@ class DeciderCombinator(
         """
         A condition object specifically for DeciderCombinators.
         """
-        
+
         first_signal: Optional[AttrsSignalID] = attrs.field(
             default=None,
             converter=AttrsSignalID.converter,
@@ -159,7 +159,7 @@ class DeciderCombinator(
             if isinstance(value, dict):
                 return cls(**value)
             return value
-        
+
     class Input:  # TODO: does this need to be an attrs class? we probably do want validation at least...
         """
         Purely abstract helper object useful for defining complex decider conditions
@@ -189,7 +189,9 @@ class DeciderCombinator(
             else:
                 return NotImplemented
 
-        def __eq__(self, other: "DeciderCombinator.Input") -> "DeciderCombinator.Condition":
+        def __eq__(
+            self, other: "DeciderCombinator.Input"
+        ) -> "DeciderCombinator.Condition":
             return self._output_condition("=", other)
 
         def __ne__(self, other) -> "DeciderCombinator.Condition":
@@ -242,7 +244,9 @@ class DeciderCombinator(
         The output signal type.
         """
 
-        copy_count_from_input: bool = attrs.field(default=True, validator=instance_of(bool))
+        copy_count_from_input: bool = attrs.field(
+            default=True, validator=instance_of(bool)
+        )
         """
         Whether or not to source the output signal(s) value from the input wires, or
         to output them with constant values as specified by :py:attr:`.constant`.
@@ -920,8 +924,8 @@ draftsman_converters.add_hook_fns(
         "constant": fields.constant.name,
         "second_signal": fields.second_signal.name,
         "second_signal_networks": fields.second_signal_networks.name,
-        "compare_type": fields.compare_type.name
-    }
+        "compare_type": fields.compare_type.name,
+    },
 )
 
 
@@ -934,8 +938,8 @@ draftsman_converters.add_hook_fns(
         "signal": fields.signal.name,
         "copy_count_from_input": fields.copy_count_from_input.name,
         "networks": fields.networks.name,
-        "constant": fields.constant.name
-    }
+        "constant": fields.constant.name,
+    },
 )
 
 
@@ -945,7 +949,11 @@ draftsman_converters.add_hook_fns(
     # },
     DeciderCombinator,
     lambda fields: {
-        ("control_behavior", "decider_conditions", "conditions"): fields.conditions.name,
+        (
+            "control_behavior",
+            "decider_conditions",
+            "conditions",
+        ): fields.conditions.name,
         ("control_behavior", "decider_conditions", "outputs"): fields.outputs.name,
-    }
+    },
 )

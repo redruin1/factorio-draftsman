@@ -55,7 +55,7 @@ class CurvedRailA(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     @property
     def similar_entities(self) -> list[str]:
         return curved_rails_a
-    
+
     # =========================================================================
 
     @property

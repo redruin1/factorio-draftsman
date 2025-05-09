@@ -14,7 +14,12 @@ from draftsman.warning import (
     UnknownItemWarning,
     UnknownKeywordWarning,
 )
-from draftsman.signatures import AttrsItemRequest, AttrsItemID, AttrsItemSpecification, AttrsInventoryLocation
+from draftsman.signatures import (
+    AttrsItemRequest,
+    AttrsItemID,
+    AttrsItemSpecification,
+    AttrsInventoryLocation,
+)
 
 from collections.abc import Hashable
 import pytest
@@ -82,7 +87,7 @@ class TestFurnace:
         furnace = Furnace("unknown-furnace", validate_assignment="none")
         assert furnace.energy_source is None
         assert furnace.fuel_input_size is None
-        assert furnace.fuel_output_size is None 
+        assert furnace.fuel_output_size is None
 
     def test_set_item_request(self):
         furnace = Furnace("stone-furnace")
@@ -112,30 +117,29 @@ class TestFurnace:
         # assert furnace.items == {"uranium-fuel-cell": 1}
 
         furnace = Furnace("electric-furnace")
-        
+
         # Test setting to None removes
         furnace.set_item_request("coal", 50, inventory=Inventory.fuel)
         furnace.set_item_request("coal", None)
         assert furnace.item_requests == []
 
         # Test resetting count of existing request
-        furnace.set_item_request("coal", 25, inventory=Inventory.fuel, quality="legendary")
-        furnace.set_item_request("coal", 50, inventory=Inventory.fuel, quality="legendary")
+        furnace.set_item_request(
+            "coal", 25, inventory=Inventory.fuel, quality="legendary"
+        )
+        furnace.set_item_request(
+            "coal", 50, inventory=Inventory.fuel, quality="legendary"
+        )
         assert furnace.item_requests == [
             AttrsItemRequest(
-                id=AttrsItemID(
-                    name="coal",
-                    quality="legendary"
-                ),
+                id=AttrsItemID(name="coal", quality="legendary"),
                 items=AttrsItemSpecification(
                     in_inventory=[
                         AttrsInventoryLocation(
-                            inventory=Inventory.fuel,
-                            stack=0,
-                            count=50
+                            inventory=Inventory.fuel, stack=0, count=50
                         )
                     ]
-                )
+                ),
             )
         ]
 

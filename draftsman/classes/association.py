@@ -67,7 +67,7 @@ class Association(weakref.ref):
             " '{}'".format(self().id) if self().id is not None else "",
             id(self()),
         )
-    
+
 
 # If something is labeled as an Association, pass the value through when structuring
 draftsman_converters.register_structure_hook(Association, lambda v, _: v)

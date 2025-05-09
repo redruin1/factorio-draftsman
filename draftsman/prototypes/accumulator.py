@@ -135,21 +135,18 @@ class Accumulator(
 
 Accumulator.add_schema(
     {
-        "$id": "urn:factorio:entity:accumulator", # TODO: versionize IDs
+        "$id": "urn:factorio:entity:accumulator",  # TODO: versionize IDs
         "type": "object",
         "properties": {
             "control_behavior": {
                 "type": "object",
                 "properties": {
                     "output_signal": {
-                        "anyOf": [
-                            {"$ref": "urn:factorio:signal-id"},
-                            {"type": "null"}
-                        ]
+                        "anyOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
                     }
-                }
+                },
             }
-        }
+        },
     }
 )
 

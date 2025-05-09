@@ -66,6 +66,39 @@ uint32 = Annotated[int, and_(ge(0), lt(2**32))]
 # TODO: description about floating point issues
 uint64 = Annotated[int, and_(ge(0), lt(2**64))]
 
+draftsman_converters.add_schema(
+    {
+        "$id": "urn:uint8",
+        "type": "integer",
+        "min": 0,
+        "exclusiveMax": 2**8,
+    }
+)
+draftsman_converters.add_schema(
+    {
+        "$id": "urn:uint16",
+        "type": "integer",
+        "min": 0,
+        "exclusiveMax": 2**16,
+    }
+)
+draftsman_converters.add_schema(
+    {
+        "$id": "urn:uint32",
+        "type": "integer",
+        "min": 0,
+        "exclusiveMax": 2**32,
+    }
+)
+draftsman_converters.add_schema(
+    {
+        "$id": "urn:uint64",
+        "type": "integer",
+        "min": 0,
+        "exclusiveMax": 2**64,
+    }
+)
+
 
 def known_name(type: str, structure: dict, issued_warning: Warning):
     """
@@ -77,6 +110,7 @@ def known_name(type: str, structure: dict, issued_warning: Warning):
         attr: attrs.Attribute,
         value: str,
         mode: Optional[ValidationMode] = None,
+        warning_list: Optional[list] = None,
     ) -> str:
         mode = mode if mode is not None else inst.validate_assignment
 
@@ -85,7 +119,10 @@ def known_name(type: str, structure: dict, issued_warning: Warning):
                 msg = "Unknown {} '{}'{}".format(
                     type, value, get_suggestion(value, structure.keys(), n=1)
                 )
-                warnings.warn(issued_warning(msg))
+                if warning_list is None:
+                    warnings.warn(issued_warning(msg))
+                else:
+                    warning_list.append(issued_warning(msg))
 
     return validator
 
@@ -100,6 +137,20 @@ ModuleName = Annotated[str, known_name("module", modules.raw, UnknownModuleWarni
 QualityName = Literal[
     "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
 ]
+draftsman_converters.add_schema(
+    {
+        "$id": "urn:factorio:quality-name",
+        "enum": [
+            "normal",
+            "uncommon",
+            "rare",
+            "epic",
+            "legendary",
+            "quality-unknown",
+            "any",
+        ],
+    }
+)
 SignalType = Literal[
     "virtual",
     "item",
@@ -146,8 +197,8 @@ AttrsMapperID.add_schema(
         "$id": "urn:factorio:upgrade-planner:mapper-id",
         "properties": {
             "name": {"type": "string"},
-            "type": {"enum": ["entity", "item"]}
-        }
+            "type": {"enum": ["entity", "item"]},
+        },
     }
 )
 
@@ -195,7 +246,7 @@ AttrsMapper.add_schema(
             "index": {"$ref": "urn:uint64"},
             "from": {"$ref": "urn:factorio:upgrade-planner:mapper-id"},
             "to": {"$ref": "urn:factorio:upgrade-planner:mapper-id"},
-        }
+        },
     }
 )
 
@@ -221,13 +272,13 @@ class AttrsSignalID(Exportable):
     TODO
 
     In this case, the signal ``type`` is equivalent to the first entry in the
-    return result of ``get_valid_types(name)``. For most applications, this 
+    return result of ``get_valid_types(name)``. For most applications, this
     defaults to ``"item"``, but notable exceptions include fluids (``"fluid"``)
     and virtual signals (``"virtual"``). In cases where signals have more than
-    one valid type and you wish to use one other than the default, the full 
+    one valid type and you wish to use one other than the default, the full
     constructor must be used.
     """
-    
+
     name: Optional[SignalName] = attrs.field(
         default=None, validator=instance_of(Optional[SignalName])
     )
@@ -237,8 +288,7 @@ class AttrsSignalID(Exportable):
     """
 
     type: Literal[SignalType] = attrs.field(
-        validator=one_of(SignalType),
-        metadata={"omit": False}
+        validator=one_of(SignalType), metadata={"omit": False}
     )
     """
     Category of the signal.
@@ -250,7 +300,7 @@ class AttrsSignalID(Exportable):
             return signals.get_signal_types(self.name)[0]
         except InvalidSignalError:
             return "item"
-        
+
     quality: Optional[QualityName] = attrs.field(
         default="normal", validator=or_(one_of(QualityName), is_none)
     )
@@ -313,10 +363,10 @@ AttrsSignalID.add_schema(
                     "fluid",
                     "virtual",
                 ]
-            }
-        }
+            },
+        },
     },
-    version=(1, 0)
+    version=(1, 0),
 )
 
 AttrsSignalID.add_schema(
@@ -339,18 +389,18 @@ AttrsSignalID.add_schema(
             },
             "quality": {
                 "enum": [
-                    "normal", 
-                    "uncommon", 
-                    "rare", 
-                    "epic", 
-                    "legendary", 
-                    "quality-unknown", 
-                    "any"
+                    "normal",
+                    "uncommon",
+                    "rare",
+                    "epic",
+                    "legendary",
+                    "quality-unknown",
+                    "any",
                 ]
-            }
-        }
+            },
+        },
     },
-    version=(2, 0)
+    version=(2, 0),
 )
 
 
@@ -386,36 +436,34 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
 
 @attrs.define
 class TargetID(Exportable):
-    index: uint32 = attrs.field( # TODO: size, 0 or 1 based
+    index: uint32 = attrs.field(  # TODO: size, 0 or 1 based
         validator=instance_of(uint32)
     )
     """
     Index of the target in the GUI, 0-based.
     """
-    name: str = attrs.field( # TODO: TargetName?
-        validator=instance_of(str)
-    )
+    name: str = attrs.field(validator=instance_of(str))  # TODO: TargetName?
     """
     Name of the target.
     """
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(**value)
+        return value
+
 
 TargetID.add_schema(
     {
         "$id": "urn:factorio:target-id",
         "type": "object",
-        "properties": {
-            "index": {"$ref": "urn:uint32"},
-            "name": {"type": "string"}
-        }
+        "properties": {"index": {"$ref": "urn:uint32"}, "name": {"type": "string"}},
     }
 )
 
 draftsman_converters.add_hook_fns(
-    TargetID,
-    lambda fields: {
-        "index": fields.index.name,
-        "name": fields.name.name
-    }
+    TargetID, lambda fields: {"index": fields.index.name, "name": fields.name.name}
 )
 
 
@@ -430,16 +478,13 @@ class AttrsAsteroidChunkID(Exportable):
             return cls(**value)
         else:
             return value
-        
+
 
 AttrsAsteroidChunkID.add_schema(
     {
         "$id": "urn:factorio:asteroid-chunk-id",
         "type": "object",
-        "properties": {
-            "index": {"$ref": "urn:uint32"},
-            "name": {"type": "string"}
-        }
+        "properties": {"index": {"$ref": "urn:uint32"}, "name": {"type": "string"}},
     }
 )
 
@@ -480,7 +525,7 @@ AttrsIcon.add_schema(
         "properties": {
             "index": {"$ref": "urn:uint8"},
             "signal": {"$ref": "urn:factorio:signal-id"},
-        }
+        },
     }
 )
 
@@ -599,26 +644,21 @@ class AttrsSimpleCondition(Exportable):
         else:
             return value
 
+
 AttrsSimpleCondition.add_schema(
     {
         "$id": "urn:factorio:simple-condition",
         "type": "object",
         "properties": {
             "first_signal": {
-                "anyOf": [
-                    {"$ref": "urn:factorio:signal-id"},
-                    {"type": "null"}
-                ]
+                "anyOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
             },
             "comparator": {"$ref": "urn:factorio:comparator"},
             "constant": {"$ref": "urn:int32"},
             "second_signal": {
-                "anyOf": [
-                    {"$ref": "urn:factorio:signal-id"},
-                    {"type": "null"}
-                ]
+                "anyOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
             },
-        }
+        },
     },
 )
 
@@ -648,14 +688,12 @@ class AttrsNetworkSpecification(Exportable):
         else:
             return value
 
+
 AttrsNetworkSpecification.add_schema(
     {
         "$id": "factorio:network_specification",
         "type": "object",
-        "properties": {
-            "red": {"type": "boolean"},
-            "green": {"type": "boolean"}
-        }
+        "properties": {"red": {"type": "boolean"}, "green": {"type": "boolean"}},
     },
 )
 
@@ -759,17 +797,17 @@ AttrsItemFilter.add_schema(
             "name": {"type": "string"},
             "quality": {
                 "enum": [
-                    "normal", 
-                    "uncommon", 
-                    "rare", 
-                    "epic", 
-                    "legendary", 
-                    "quality-unknown", 
-                    "any"
+                    "normal",
+                    "uncommon",
+                    "rare",
+                    "epic",
+                    "legendary",
+                    "quality-unknown",
+                    "any",
                 ]
             },
-            "comparator": {"$ref": "urn:factorio:comparator"}
-        }
+            "comparator": {"$ref": "urn:factorio:comparator"},
+        },
     }
 )
 
@@ -790,6 +828,7 @@ def ensure_bar_less_than_inventory_size(
     attr,
     value: Optional[uint16],
     mode: Optional[ValidationMode] = None,
+    warning_list: Optional[list] = None,
 ):
     mode = mode if mode is not None else self.validate_assignment
     if mode >= ValidationMode.PEDANTIC:
@@ -799,7 +838,10 @@ def ensure_bar_less_than_inventory_size(
                     value, self.inventory_size
                 ),
             )
-            warnings.warn(BarWarning(msg))
+            if warning_list is None:
+                warnings.warn(BarWarning(msg))
+            else:
+                warning_list.append(BarWarning(msg))
 
 
 # class Bar(RootModel):
@@ -891,9 +933,7 @@ class SignalFilter(Exportable):
     """
     Name of the signal.
     """
-    count: int32 = attrs.field(
-        validator=instance_of(int32)
-    )
+    count: int32 = attrs.field(validator=instance_of(int32))
     """
     Value of the signal filter, or the lower bound of a range if ``max_count`` 
     is also specified.
@@ -939,8 +979,7 @@ class SignalFilter(Exportable):
     Comparison operator when deducing the quality type.
     """
     max_count: Optional[int32] = attrs.field(
-        default=None,
-        validator=instance_of(Optional[int32])
+        default=None, validator=instance_of(Optional[int32])
     )
     """
     The maximum amount of the signal to request of the signal to emit. Only used
@@ -1024,10 +1063,10 @@ SignalFilter.add_schema(
                     "virtual",
                 ]
             },
-            "count": {"$ref": "urn:int32"}
-        }
+            "count": {"$ref": "urn:int32"},
+        },
     },
-    version=(1, 0)
+    version=(1, 0),
 )
 
 SignalFilter.add_schema(
@@ -1053,11 +1092,12 @@ SignalFilter.add_schema(
             "count": {"$ref": "urn:int32"},
             "quality": {"$ref": "urn:factorio:quality-name"},
             "comparator": {"$ref": "urn:factorio:comparator"},
-            "max_count": {"$ref": "urn:int32"}
-        }
+            "max_count": {"$ref": "urn:int32"},
+        },
     },
-    version=(2, 0)
+    version=(2, 0),
 )
+
 
 @attrs.define
 class _ExportSignalFilter:
@@ -1253,7 +1293,9 @@ class ManualSection(Exportable):
             return value
 
     filters: list[SignalFilter] = attrs.field(
-        factory=list, converter=_filters_converter, validator=instance_of(list[SignalFilter])
+        factory=list,
+        converter=_filters_converter,
+        validator=instance_of(list[SignalFilter]),
     )
     """
     List of item requests for this section.
@@ -1295,7 +1337,7 @@ class ManualSection(Exportable):
         """
         if name is not None:
             new_entry = SignalFilter(
-                index=index + 1, # TODO: perform this transformation on export
+                index=index + 1,  # TODO: perform this transformation on export
                 name=name,
                 type=type if type is not None else NOTHING,
                 quality=quality,
@@ -1380,7 +1422,7 @@ ManualSection.add_schema(
             "group": {"type": "string"},
             "active": {"type": "boolean"},
         },
-        "required": ["index"]
+        "required": ["index"],
     }
 )
 
@@ -1517,23 +1559,22 @@ draftsman_converters.add_hook_fns(
 #         else:
 #             return input
 
+
 @attrs.define
 class QualityFilter(Exportable):
-    quality: QualityName = attrs.field(
-        default="any",
-        validator=one_of(QualityName)
-    )
+    quality: QualityName = attrs.field(default="any", validator=one_of(QualityName))
     """
     The signal quality to compare against.
     """
     comparator: Comparator = attrs.field(
         default="=",
         converter=try_convert(normalize_comparator),
-        validator=one_of(Comparator)
+        validator=one_of(Comparator),
     )
     """
     The comparison operation to perform.
     """
+
 
 QualityFilter.add_schema(
     {
@@ -1542,7 +1583,7 @@ QualityFilter.add_schema(
         "properties": {
             "quality": {"$ref": "urn:factorio:quality-name"},
             "comparator": {"$ref": "urn:factorio:comparator"},
-        }
+        },
     }
 )
 
@@ -1551,7 +1592,7 @@ draftsman_converters.add_hook_fns(
     lambda fields: {
         "quality": fields.quality.name,
         "comparator": fields.comparator.name,
-    }
+    },
 )
 
 
@@ -1589,7 +1630,7 @@ AttrsInventoryLocation.add_schema(
             "inventory": {"$ref": "urn:uint32"},
             "stack": {"$ref": "urn:uint32"},
             "count": {"$ref": "urn:uint32"},
-        }
+        },
     }
 )
 
@@ -1647,8 +1688,8 @@ AttrsItemSpecification.add_schema(
             },
             "grid_count": {
                 "$ref": "urn:uint32",
-            }
-        }
+            },
+        },
     }
 )
 
@@ -1681,8 +1722,8 @@ AttrsItemID.add_schema(
         "type": "object",
         "properties": {
             "name": {"type": "string"},
-            "quality": {"$ref": "urn:factorio:quality-name"}
-        }
+            "quality": {"$ref": "urn:factorio:quality-name"},
+        },
     }
 )
 
@@ -1723,8 +1764,8 @@ AttrsItemRequest.add_schema(
         "type": "object",
         "properties": {
             "id": {"$ref": "urn:factorio:item-id"},
-            "items": {"$ref": "urn:factorio:item-specification"}
-        }
+            "items": {"$ref": "urn:factorio:item-specification"},
+        },
     }
 )
 
@@ -1783,9 +1824,9 @@ AttrsInfinityFilter.add_schema(
             "mode": {
                 "enum": ["at-least", "at-most", "exactly"],
                 "default": "at-least",
-            }
+            },
         },
-        "required": ["index", "name"]
+        "required": ["index", "name"],
     }
 )
 
@@ -1931,8 +1972,8 @@ EquipmentID.add_schema(
         "type": "object",
         "properties": {
             "name": {"type": "string"},
-            "quality": {"$ref": "urn:factorio:quality-name"}
-        }
+            "quality": {"$ref": "urn:factorio:quality-name"},
+        },
     }
 )
 
@@ -1968,7 +2009,7 @@ class EquipmentComponent(Exportable):
         if isinstance(value, dict):
             return cls(**value)
         return value
-    
+
 
 EquipmentComponent.add_schema(
     {
@@ -1976,9 +2017,9 @@ EquipmentComponent.add_schema(
         "type": "object",
         "properties": {
             "equipment": {"$ref": "urn:factorio:equipment-id"},
-            "position": {"$ref": "urn:factorio:position"}
+            "position": {"$ref": "urn:factorio:position"},
         },
-        "required": ["equipment", "position"]
+        "required": ["equipment", "position"],
     }
 )
 
@@ -1990,6 +2031,7 @@ draftsman_converters.add_hook_fns(
         "position": fields.position.name,
     },
 )
+
 
 @attrs.define
 class StockConnection(Exportable):
@@ -2010,13 +2052,13 @@ StockConnection.add_schema(
             "front": {"$ref": "urn:uint64"},
             "back": {"$ref": "urn:uint64"},
         },
-        "required": ["stock"]
+        "required": ["stock"],
     }
 )
 
 
 # TODO: test
-draftsman_converters.add_hook_fns( # pragma: no branch
+draftsman_converters.add_hook_fns(  # pragma: no branch
     StockConnection,
     lambda fields: {
         "stock": fields.stock.name,

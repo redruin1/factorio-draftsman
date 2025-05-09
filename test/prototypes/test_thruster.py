@@ -35,6 +35,7 @@ def test_surface_conditions():
     assert thruster.surface_conditions is None
     assert thruster.is_placable_on("nauvis") is True
 
+
 # TODO: make a fixture for every entity
 # def test_eq():
 #     attractor1 = LightningAttractor("inserter")

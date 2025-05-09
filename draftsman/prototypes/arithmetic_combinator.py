@@ -27,7 +27,9 @@ from typing import Literal, Optional, Union
 import warnings
 
 
-def _ensure_valid_virtual_signal(self, attr, value, mode=None):
+def _ensure_valid_virtual_signal(
+    self, attr, value, mode=None, warning_list: Optional[list] = None
+):
     mode = mode if mode is not None else self.validate_assignment
 
     if mode >= ValidationMode.STRICT:
@@ -38,10 +40,15 @@ def _ensure_valid_virtual_signal(self, attr, value, mode=None):
             msg = "signal '{}' is not allowed anywhere in an arithmetic combinator".format(
                 value.name
             )
-            warnings.warn(PureVirtualDisallowedWarning(msg))
+            if warning_list is None:
+                warnings.warn(PureVirtualDisallowedWarning(msg))
+            else:
+                warning_list.append(PureVirtualDisallowedWarning(msg))
 
 
-def _ensure_proper_each_configuration(self, attr, value, mode=None):
+def _ensure_proper_each_configuration(
+    self, attr, value, mode=None, warning_list: Optional[list] = None
+):
     mode = mode if mode is not None else self.validate_assignment
 
     if mode >= ValidationMode.STRICT:
@@ -66,7 +73,10 @@ def _ensure_proper_each_configuration(self, attr, value, mode=None):
 
         if value is not None and value.name == "signal-each" and not each_in_inputs:
             msg = "Cannot set the output signal to 'signal-each' when neither of the input signals are 'signal-each'"
-            warnings.warn(SignalConfigurationWarning(msg))
+            if warning_list is None:
+                warnings.warn(SignalConfigurationWarning(msg))
+            else:
+                warning_list.append(SignalConfigurationWarning(msg))
 
     return self
 
@@ -613,25 +623,17 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ): fields.output_signal.name,
     },
     lambda fields, converter: {
-        (
-            "control_behavior",
-            "arithmetic_conditions",
-            "first_constant",
-        ): (
+        ("control_behavior", "arithmetic_conditions", "first_constant",): (
             _export_fields.first_constant,
             lambda inst: inst.first_operand
             if isinstance(inst.first_operand, int)
-            else None
+            else None,
         ),
-        (
-            "control_behavior",
-            "arithmetic_conditions",
-            "first_signal",
-        ): (
+        ("control_behavior", "arithmetic_conditions", "first_signal",): (
             _export_fields.first_signal,
             lambda inst: converter.unstructure(inst.first_operand)
             if not isinstance(inst.first_operand, int)
-            else None
+            else None,
         ),
         None: fields.first_operand_wires.name,
         (
@@ -639,25 +641,17 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             "arithmetic_conditions",
             "operation",
         ): fields.operation.name,
-        (
-            "control_behavior",
-            "arithmetic_conditions",
-            "second_constant",
-        ): (
-            _export_fields.second_constant, 
+        ("control_behavior", "arithmetic_conditions", "second_constant",): (
+            _export_fields.second_constant,
             lambda inst: inst.second_operand
             if isinstance(inst.second_operand, int)
-            else None
+            else None,
         ),
-        (
-            "control_behavior",
-            "arithmetic_conditions",
-            "second_signal_signal",
-        ): (
+        ("control_behavior", "arithmetic_conditions", "second_signal_signal",): (
             _export_fields.second_signal,
             lambda inst: converter.unstructure(inst.second_operand)
             if not isinstance(inst.second_operand, int)
-            else None
+            else None,
         ),
         None: fields.second_operand_wires.name,
         (

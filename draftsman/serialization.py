@@ -219,6 +219,7 @@ class ConverterVersion:
         self.structure_funcs = {}
         self.unstructure_funcs = {}
         self.schemas = {}
+        self.cls_schemas = {}
 
     def register_structure_hook(self, *args, **kwargs):
         for _, converter in self.converters.items():
@@ -242,11 +243,14 @@ class ConverterVersion:
     def add_schema(
         self,
         schema: dict,
-        cls: type,
+        cls: Optional[type] = None,
     ):
+        if "$schema" not in schema:
+            schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
         if "$id" in schema:
             self.schemas[schema["$id"]] = schema
-        self.schemas[cls] = schema
+        if cls:
+            self.cls_schemas[cls] = schema
 
     def add_hook_fns(
         self,
@@ -259,7 +263,7 @@ class ConverterVersion:
             self.unstructure_funcs[cls] = unstructure_func
 
     def get_schema(self, cls):
-        return self.schemas[cls]
+        return self.cls_schemas[cls]
 
     def get_structure_dict(self, cls: type) -> dict:
         res = {}
@@ -327,7 +331,7 @@ class DraftsmanConverters:
     def add_schema(
         self,
         schema: dict,
-        cls: Optional[type],
+        cls: Optional[type] = None,
     ):
         # Normalize references and IDs to always use versions at end
         for version in self.versions.values():
@@ -589,10 +593,10 @@ def make_unstructure_function_from_schema(
                     is_bare_final(t)
                     and a.default is not attrs.NOTHING
                     and not isinstance(a.default, attrs.Factory)
-                ): # pragma: no branch
+                ):  # pragma: no branch
                     # This is a special case where we can use the
                     # type of the default to dispatch on.
-                    t = a.default.__class__ # pragma: no coverage
+                    t = a.default.__class__  # pragma: no coverage
                 try:
                     handler = converter.get_unstructure_hook(t, cache_result=False)
                 except RecursionError:  # pragma: no coverage

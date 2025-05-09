@@ -511,7 +511,7 @@ class Schedule(Exportable):
         :returns: A ``list`` of ``dict``s in the format specified above.
         """
         return self.schedule.records
-    
+
     @stops.setter
     def stops(self, value: list[Specification.Stop]):
         self.schedule.records = value

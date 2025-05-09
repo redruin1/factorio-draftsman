@@ -22,15 +22,15 @@ class IOTypeMixin:
     Gives an entity a Input/Output type.
     """
 
-    class Format(BaseModel):
-        io_type: Optional[Literal["input", "output"]] = Field(
-            "input",
-            alias="type",
-            description="""
-            The input/output type of the entity. Used on Loaders and Underground
-            Belts to indicate what direction this entity is working.
-            """,
-        )
+    # class Format(BaseModel):
+    #     io_type: Optional[Literal["input", "output"]] = Field(
+    #         "input",
+    #         alias="type",
+    #         description="""
+    #         The input/output type of the entity. Used on Loaders and Underground
+    #         Belts to indicate what direction this entity is working.
+    #         """,
+    #     )
 
     # def __init__(self, name: str, similar_entities: list[str], **kwargs):
     #     self._root: __class__.Format
@@ -59,7 +59,13 @@ class IOTypeMixin:
     """
 
     @io_type.validator
-    def io_type_validator(self, attr, value, mode: Optional[ValidationMode] = None):
+    def io_type_validator(
+        self,
+        attr,
+        value,
+        mode: Optional[ValidationMode] = None,
+        warning_list: Optional[list] = None,
+    ):
         mode = mode if mode is not None else self.validate_assignment
         if mode:
             if value not in {"input", "output"}:

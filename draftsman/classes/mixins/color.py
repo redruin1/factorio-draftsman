@@ -19,7 +19,7 @@ class ColorMixin(Exportable):
     #     color: Optional[Color] = Field(
     #         None,
     #         description="""
-    #         The color modifier used to alter this entity's appearence.            
+    #         The color modifier used to alter this entity's appearence.
     #         """,
     #     )
 

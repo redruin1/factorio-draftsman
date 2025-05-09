@@ -151,7 +151,11 @@ class RecipeMixin:
     # =========================================================================
 
     def _ensure_allowed_recipe(
-        self, attr, value, mode: Optional[ValidationMode] = None
+        self,
+        attr,
+        value,
+        mode: Optional[ValidationMode] = None,
+        warning_list: Optional[list] = None,
     ):
         mode = mode if mode is not None else self.validate_assignment
 
@@ -164,11 +168,18 @@ class RecipeMixin:
                 msg = "'{}' is not a valid recipe for '{}'; allowed recipes are: {}".format(
                     value, self.name, self.allowed_recipes
                 )
-                warnings.warn(RecipeLimitationWarning(msg))
+                if warning_list is None:
+                    warnings.warn(RecipeLimitationWarning(msg))
+                else:
+                    warning_list.append(RecipeLimitationWarning(msg))
 
     # TODO: this should be in ModulesMixin
     def _ensure_modules_permitted_with_recipe(
-        self, attr, value, mode: Optional[ValidationMode] = None
+        self,
+        attr,
+        value,
+        mode: Optional[ValidationMode] = None,
+        warning_list: Optional[list] = None,
     ):
         mode = mode if mode is not None else self.validate_assignment
 
@@ -184,7 +195,10 @@ class RecipeMixin:
                     msg = "Module '{}' cannot be inserted into a machine with recipe '{}'".format(
                         item.id.name, value
                     )
-                    warnings.warn(ItemLimitationWarning(msg))
+                    if warning_list is None:
+                        warnings.warn(ItemLimitationWarning(msg))
+                    else:
+                        warning_list.append(ItemLimitationWarning(msg))
 
     recipe: Optional[RecipeName] = attrs.field(
         default=None,

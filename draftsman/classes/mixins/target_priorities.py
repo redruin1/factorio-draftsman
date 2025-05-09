@@ -1,5 +1,6 @@
 # target_priorities.py
 
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import AttrsSimpleCondition, AttrsSignalID, TargetID, int32
 from draftsman.validators import instance_of
 
@@ -14,9 +15,21 @@ class TargetPrioritiesMixin:
     dynamically via the circuit network.
     """
 
+    def _priority_list_converter(value):
+        if isinstance(value, list):
+            res = [None] * len(value)
+            for i, elem in enumerate(value):
+                if isinstance(elem, str):
+                    res[i] = TargetID(index=i, name=elem)
+                else:
+                    res[i] = TargetID.converter(elem)
+            return res
+        return value
+
     priority_list: list[TargetID] = attrs.field(
         factory=list,
         # TODO: converter
+        converter=_priority_list_converter,
         validator=instance_of(list[TargetID]),
     )
     """
@@ -185,3 +198,15 @@ class TargetPrioritiesMixin:
     #     has no logistic condition to remove.
     #     """
     #     self.control_behavior.ignore_unlisted_targets_condition = None
+
+
+draftsman_converters.add_hook_fns(
+    TargetPrioritiesMixin,
+    lambda fields: {
+        "priority_list": fields.priority_list.name,
+        "ignore_unprioritized": fields.ignore_unprioritized.name,
+        "set_priority_list": fields.set_priority_list.name,
+        "set_ignore_unprioritized": fields.set_ignore_unprioritized.name,
+        "ignore_unlisted_targets_condition": fields.ignore_unlisted_targets_condition.name,
+    },
+)

@@ -80,7 +80,7 @@ class EntityCollection(metaclass=ABCMeta):
     @entities.default
     def _entities_default(self) -> EntityList:
         return EntityList(self)
-    
+
     # =========================================================================
 
     def _set_schedules(self, _: attrs.Attribute, value: Any):
@@ -151,7 +151,7 @@ class EntityCollection(metaclass=ABCMeta):
     stock_connections: list[StockConnection] = attrs.field(  # TODO: annotations
         factory=list,
         # TODO: validators
-        kw_only=True
+        kw_only=True,
     )
     """
     A list of connections between train cars, documenting exactly which ones
@@ -599,10 +599,17 @@ class EntityCollection(metaclass=ABCMeta):
 
         # Make sure connection (nor its reverse) already exists in the wires list
         # TODO: just make this a dict, dammit; WE HAVE THE POWER
-        if (
-            [Association(entity_1), wire_type_1, Association(entity_2), wire_type_2] not in self.wires and
-            [Association(entity_2), wire_type_2, Association(entity_1), wire_type_1] not in self.wires
-        ):
+        if [
+            Association(entity_1),
+            wire_type_1,
+            Association(entity_2),
+            wire_type_2,
+        ] not in self.wires and [
+            Association(entity_2),
+            wire_type_2,
+            Association(entity_1),
+            wire_type_1,
+        ] not in self.wires:
             self.wires.append(
                 [Association(entity_1), wire_type_1, Association(entity_2), wire_type_2]
             )

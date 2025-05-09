@@ -5,7 +5,12 @@ from draftsman.entity import Container, containers, Accumulator
 from draftsman.error import (
     DataFormatError,
 )
-from draftsman.signatures import AttrsItemRequest, AttrsItemID, AttrsItemSpecification, AttrsInventoryLocation
+from draftsman.signatures import (
+    AttrsItemRequest,
+    AttrsItemID,
+    AttrsItemSpecification,
+    AttrsInventoryLocation,
+)
 from draftsman.warning import (
     BarWarning,
     ItemCapacityWarning,
@@ -91,7 +96,7 @@ class TestContainer:
         container.bar = 2
         assert container.bar == 2
 
-    def test_set_item_request(self): # TODO: reimplement
+    def test_set_item_request(self):  # TODO: reimplement
         container = Container("wooden-chest")
 
         container.set_item_request("iron-plate", 50, inventory=Inventory.chest, slot=0)
@@ -102,17 +107,13 @@ class TestContainer:
                 items=AttrsItemSpecification(
                     in_inventory=[
                         AttrsInventoryLocation(
-                            inventory=Inventory.chest,
-                            stack=0,
-                            count=50
+                            inventory=Inventory.chest, stack=0, count=50
                         ),
                         AttrsInventoryLocation(
-                            inventory=Inventory.chest,
-                            stack=3,
-                            count=50
-                        )
+                            inventory=Inventory.chest, stack=3, count=50
+                        ),
                     ]
-                )
+                ),
             )
         ]
         assert container.inventory_slots_occupied == 2
@@ -124,30 +125,24 @@ class TestContainer:
                 items=AttrsItemSpecification(
                     in_inventory=[
                         AttrsInventoryLocation(
-                            inventory=Inventory.chest,
-                            stack=0,
-                            count=50
+                            inventory=Inventory.chest, stack=0, count=50
                         ),
                         AttrsInventoryLocation(
-                            inventory=Inventory.chest,
-                            stack=3,
-                            count=50
-                        )
+                            inventory=Inventory.chest, stack=3, count=50
+                        ),
                     ]
-                )
+                ),
             ),
             AttrsItemRequest(
                 id=AttrsItemID(name="iron-ore"),
                 items=AttrsItemSpecification(
                     in_inventory=[
                         AttrsInventoryLocation(
-                            inventory=Inventory.chest,
-                            stack=0,
-                            count=50
+                            inventory=Inventory.chest, stack=0, count=50
                         )
                     ]
-                )
-            )
+                ),
+            ),
         ]
         assert container.inventory_slots_occupied == 2
 
@@ -180,9 +175,7 @@ class TestContainer:
         # assert container.items == {"unknown": 100}
 
         with pytest.raises(DataFormatError):
-            AttrsItemSpecification(
-                in_inventory="incorrect"
-            )
+            AttrsItemSpecification(in_inventory="incorrect")
 
     def test_mergable_with(self):
         container1 = Container("wooden-chest")

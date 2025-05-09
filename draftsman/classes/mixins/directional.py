@@ -4,7 +4,7 @@ from draftsman.classes.collision_set import CollisionSet
 from draftsman.constants import Direction, ValidationMode, FOUR_WAY_DIRECTIONS
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
-from draftsman.validators import and_, enum_converter, instance_of
+from draftsman.validators import and_, instance_of, try_convert
 from draftsman.utils import aabb_to_dimensions, get_first
 from draftsman.warning import DirectionWarning
 
@@ -167,7 +167,7 @@ class DirectionalMixin:
         """
         Whether or not this entity actually has their collision set rotated by
         their direction. Some entities (such as rail signals) have many valid
-        directions they can exist as but reuse the same collision set for all of 
+        directions they can exist as but reuse the same collision set for all of
         them. Not exported; read only.
         """
         return True
@@ -243,28 +243,31 @@ class DirectionalMixin:
 
         return value
 
-    def ensure_4_way_direction(
+    def _ensure_4_way_direction(
         self,
         _: attrs.Attribute,
         value: Direction,
         mode: Optional[ValidationMode] = None,
+        warning_list: Optional[list] = None,
     ):
         mode = mode if mode is not None else self.validate_assignment
         if mode >= ValidationMode.STRICT:
             if value not in self.valid_directions:
                 # TODO: should we convert it for the user, or let it be wrong?
-                warnings.warn(
-                    DirectionWarning(
-                        "'{}' only has 4-way rotation; will be converted to '{}' on import".format(
-                            type(self).__name__, value.to_4_way()
-                        ),
-                    )
+                msg = (
+                    "'{}' only has 4-way rotation; will be converted to '{}' on import".format(
+                        type(self).__name__, value.to_4_way()
+                    ),
                 )
+                if warning_list is None:
+                    warnings.warn(DirectionWarning(msg))
+                else:
+                    warning_list.append(DirectionWarning(msg))
 
     direction: Direction = attrs.field(
         default=Direction.NORTH,
-        converter=enum_converter(Direction),
-        validator=and_(instance_of(Direction), ensure_4_way_direction),
+        converter=try_convert(Direction),
+        validator=and_(instance_of(Direction), _ensure_4_way_direction),
         on_setattr=_set_direction,
     )
     """

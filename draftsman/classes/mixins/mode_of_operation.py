@@ -74,6 +74,7 @@ class InserterModeOfOperationMixin:  # (ControlBehaviorMixin)
     #     else:
     #         self.control_behavior.circuit_mode_of_operation = value
 
+
 # TODO: logi mode of operations hook functions
 
 
@@ -140,7 +141,6 @@ class LogisticModeOfOperationMixin(Exportable):  # (ControlBehaviorMixin)
 
 
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:mode_of_operation_mixin"},
     LogisticModeOfOperationMixin,
     lambda fields: {
         ("control_behavior", "circuit_mode_of_operation"): fields.mode_of_operation.name
@@ -156,18 +156,6 @@ class CargoHubModeOfOperationMixin:
     Gives the Cargo hub a mode of operation constant.
     """
 
-    class ControlFormat(BaseModel):
-        circuit_mode_of_operation: Optional[LogisticModeOfOperation] = Field(
-            None,
-            description="""
-            The manner in which this logistics container should react when 
-            connected to a circuit network.
-            """,
-        )
-
-    class Format(BaseModel):
-        pass
-
     mode_of_operation: LogisticModeOfOperation = attrs.field(
         default=LogisticModeOfOperation.SEND_CONTENTS,
         converter=LogisticModeOfOperation,
@@ -181,33 +169,10 @@ class CargoHubModeOfOperationMixin:
         a valid ``LogisticModeOfOperation``.
     """
 
-    # @property
-    # def mode_of_operation(self) -> Optional[LogisticModeOfOperation]:
-    #     """
-    #     The behavior that the logistic container should follow when connected to
-    #     a circuit network.
 
-    #     :getter: Gets the mode of operation, or ``None`` if not set.
-    #     :setter: Sets the mode of operation. Removes the key if set to ``None``.
-
-    #     :exception ValueError: If set to a value that cannot be interpreted as a
-    #         valid ``LogisticModeOfOperation``.
-    #     """
-    #     return self.control_behavior.circuit_mode_of_operation
-
-    # @mode_of_operation.setter
-    # def mode_of_operation(self, value: Optional[LogisticModeOfOperation]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "circuit_mode_of_operation",
-    #             value,
-    #         )
-    #         self.control_behavior.circuit_mode_of_operation = result
-    #     else:
-    #         self.control_behavior.circuit_mode_of_operation = value
-
-
-# TODO: cargo hub mode of operation hook functions
+draftsman_converters.add_hook_fns(
+    CargoHubModeOfOperationMixin,
+    lambda fields: {
+        ("control_behavior", "circuit_mode_of_operation"): fields.mode_of_operation.name
+    },
+)

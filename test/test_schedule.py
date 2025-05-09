@@ -297,12 +297,7 @@ class TestWaitCondition:
 class TestWaitConditions:
     def test_constructor(self):
         # Test dict input
-        a = WaitConditions(
-            [
-                {"type": "full"},
-                {"type": "inactivity"}
-            ]
-        )
+        a = WaitConditions([{"type": "full"}, {"type": "inactivity"}])
         assert a == WaitConditions(
             [
                 WaitCondition("full"),

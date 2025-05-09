@@ -317,12 +317,16 @@ class TestArithmeticCombinator:
 
         combinator.validate_assignment = "minimum"
         assert combinator.validate_assignment is ValidationMode.MINIMUM
-        
+
         # No warnings
         combinator.output_signal = "signal-everything"
-        assert combinator.output_signal == AttrsSignalID(name="signal-everything", type="virtual")
+        assert combinator.output_signal == AttrsSignalID(
+            name="signal-everything", type="virtual"
+        )
         combinator.output_signal = "signal-each"
-        assert combinator.output_signal == AttrsSignalID(name="signal-each", type="virtual")
+        assert combinator.output_signal == AttrsSignalID(
+            name="signal-each", type="virtual"
+        )
 
         # Errors
         with pytest.raises(DataFormatError):

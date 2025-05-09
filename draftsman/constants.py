@@ -17,8 +17,8 @@ from pydantic_core import core_schema
 class Direction(IntEnum):
     """
     Factorio direction enum. Encompasses all 16 cardinal directions, diagonals,
-    and half-dagonals in the range [0, 15] where north is 0 and increments 
-    clockwise. Provides a number of convenience constants and functions over 
+    and half-dagonals in the range [0, 15] where north is 0 and increments
+    clockwise. Provides a number of convenience constants and functions over
     working with a raw int value.
 
     * ``NORTH     (0)`` (Default)
@@ -199,19 +199,17 @@ class Direction(IntEnum):
 FOUR_WAY_DIRECTIONS = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST}
 
 EIGHT_WAY_DIRECTIONS = {
-    Direction.NORTH, 
+    Direction.NORTH,
     Direction.NORTHEAST,
-    Direction.EAST, 
+    Direction.EAST,
     Direction.SOUTHEAST,
-    Direction.SOUTH, 
+    Direction.SOUTH,
     Direction.SOUTHWEST,
     Direction.WEST,
-    Direction.NORTHWEST
+    Direction.NORTHWEST,
 }
 
-SIXTEEN_WAY_DIRECTIONS = {
-    direction for direction in Direction
-}
+SIXTEEN_WAY_DIRECTIONS = {direction for direction in Direction}
 
 
 class LegacyDirection(IntEnum):
@@ -373,10 +371,10 @@ class LegacyDirection(IntEnum):
         return mapping[self]
 
 
-draftsman_converters.get_version((1, 0)).register_structure_hook( # pragma: no branch
+draftsman_converters.get_version((1, 0)).register_structure_hook(  # pragma: no branch
     Direction, lambda d, _: LegacyDirection(d).to_modern()
 )
-draftsman_converters.get_version((1, 0)).register_unstructure_hook( # pragma: no branch
+draftsman_converters.get_version((1, 0)).register_unstructure_hook(  # pragma: no branch
     Direction, lambda inst: inst.to_legacy()
 )
 

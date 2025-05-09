@@ -161,7 +161,7 @@ class TestEntityList:
                 "direction": Direction.EAST,
                 "position": {"x": 1.5, "y": 0.5},
                 "entity_number": 2,
-            }
+            },
         ]
 
         # Test equivalent entities
@@ -182,7 +182,7 @@ class TestEntityList:
                 "direction": Direction.EAST,
                 "position": {"x": 1.5, "y": 0.5},
                 "entity_number": 2,
-            }
+            },
         ]
 
     def test_intersection(self):
