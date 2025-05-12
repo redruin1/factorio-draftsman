@@ -10,7 +10,7 @@ from draftsman.data.entities import of_type
 # from draftsman.data.entities import programmable_speakers
 
 
-with pkg_resources.open_binary(data, "instruments.pkl") as inp:
+with pkg_resources.files(data).joinpath("instruments.pkl").open("rb") as inp:
     _data: list = pickle.load(inp)
     raw: dict[str, list[dict]] = _data[0]
     index_of: dict[str, dict[str, dict[str, int]]] = _data[1]

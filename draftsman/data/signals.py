@@ -9,7 +9,7 @@ import pickle
 import importlib.resources as pkg_resources
 
 
-with pkg_resources.open_binary(data, "signals.pkl") as inp:
+with pkg_resources.files(data).joinpath("signals.pkl").open("rb") as inp:
     _data = pickle.load(inp)
 
     raw: dict[str, dict] = _data["raw"]

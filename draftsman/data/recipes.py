@@ -12,7 +12,7 @@ from draftsman.data.planets import get_surface_properties
 from draftsman.utils import passes_surface_conditions
 
 
-with pkg_resources.open_binary(data, "recipes.pkl") as inp:
+with pkg_resources.files(data).joinpath("recipes.pkl").open("rb") as inp:
     _data = pickle.load(inp)
     raw: dict[str, dict] = _data[0]
     categories: dict[str, list[str]] = _data[1]
