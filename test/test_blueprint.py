@@ -1918,12 +1918,6 @@ class TestBlueprint:
                         "name": "decider-combinator",
                         "position": {"x": 4.5, "y": 1.0},
                         "entity_number": 3,
-                        "control_behavior": {
-                            "decider_conditions": {
-                                "conditions": [],
-                                "outputs": [],
-                            }
-                        },
                     },
                     {
                         "name": "transport-belt",
@@ -1965,12 +1959,6 @@ class TestBlueprint:
                         "name": "decider-combinator",
                         "position": {"x": 4.5, "y": 1.0},
                         "entity_number": 3,
-                        "control_behavior": {
-                            "decider_conditions": {
-                                "conditions": [],
-                                "outputs": [],
-                            }
-                        }
                     },
                     {
                         "name": "transport-belt",

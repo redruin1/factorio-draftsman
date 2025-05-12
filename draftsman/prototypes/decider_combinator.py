@@ -1005,9 +1005,14 @@ class DeciderCombinator(
                         o._root.model_dump(by_alias=True, exclude_none=exclude_none, exclude_defaults=exclude_defaults) if hasattr(o, '_root') else o
                         for o in getattr(dc, 'outputs', [])
                     ]
-                # Place under control_behavior['decider_conditions']
-                result.setdefault('control_behavior', {})['decider_conditions'] = decider_dict
+                # Only add decider_conditions if not both empty
+                if decider_dict.get('conditions', []) or decider_dict.get('outputs', []):
+                    result.setdefault('control_behavior', {})['decider_conditions'] = decider_dict
                 # Remove old keys if present
-                result['control_behavior'].pop('conditions', None)
-                result['control_behavior'].pop('outputs', None)
+                if 'control_behavior' in result:
+                    result['control_behavior'].pop('conditions', None)
+                    result['control_behavior'].pop('outputs', None)
+                # Remove control_behavior if now empty
+                if 'control_behavior' in result and not result['control_behavior']:
+                    del result['control_behavior']
         return result
