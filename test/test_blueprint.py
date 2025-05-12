@@ -235,7 +235,7 @@ class TestBlueprint:
 
         # Valid None
         blueprint.label_color = None
-        assert blueprint.label_color == AttrsColor(1.0, 1.0, 1.0, 1.0)
+        assert blueprint.label_color is None
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "version": encode_version(1, 1, 54, 0),
@@ -245,6 +245,7 @@ class TestBlueprint:
         with pytest.raises(DataFormatError):
             blueprint.label_color = "wrong"
         with pytest.raises(ValueError):
+            blueprint.label_color = AttrsColor(0, 0, 0, 1)
             blueprint.label_color.a = 1000
 
     # =========================================================================
@@ -317,7 +318,7 @@ class TestBlueprint:
         blueprint.description = "An example description."
         assert blueprint.description == "An example description."
         blueprint.description = None
-        assert blueprint.description == None
+        assert blueprint.description == ""
 
     # =========================================================================
 
@@ -339,9 +340,14 @@ class TestBlueprint:
         blueprint = Blueprint()
         blueprint.snapping_grid_size = (10, 10)
         assert blueprint.snapping_grid_size == Vector(10, 10)
+        assert blueprint.to_dict()["blueprint"] == {
+            "item": "blueprint",
+            "snap-to-grid": {"x": 10, "y": 10},
+            "version": encode_version(*__factorio_version_info__),
+        }
 
-        blueprint.snapping_grid_size = Vector(0, 0)
-        assert blueprint.snapping_grid_size == Vector(0, 0)
+        blueprint.snapping_grid_size = None
+        assert blueprint.snapping_grid_size is None
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "version": encode_version(*__factorio_version_info__),
@@ -1002,7 +1008,7 @@ class TestBlueprint:
             def validate(self, mode):
                 return ValidationResult([], [])
 
-            def to_dict(self, entity_number=None):  # pragma: no coverage
+            def to_dict(self, version=None, exclude_none=True, exclude_defaults=True, entity_number=None):  # pragma: no coverage
                 return "incorrect"
 
         test = TestClass()

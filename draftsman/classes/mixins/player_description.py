@@ -17,8 +17,10 @@ class PlayerDescriptionMixin(Exportable):
     or blueprint books. Used by all combinators.
     """
 
-    player_description: Optional[str] = attrs.field(
-        default=None, validator=instance_of(Optional[str])  # TODO: validate length
+    player_description: str = attrs.field(
+        default="",
+        converter=lambda v: "" if v is None else v,
+        validator=instance_of(str),  # TODO: validate length
     )
     """
     The user-facing description given to this entity, usually for documentation 
@@ -29,7 +31,6 @@ class PlayerDescriptionMixin(Exportable):
 PlayerDescriptionMixin.add_schema({}, version=(1, 0))
 
 draftsman_converters.get_version((1, 0)).add_hook_fns(
-    # {"$id": "factorio:player_description_mixin"},
     PlayerDescriptionMixin,
     lambda fields: {None: fields.player_description.name},
 )
@@ -39,7 +40,6 @@ PlayerDescriptionMixin.add_schema(
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
-    # {"$id": "factorio:player_description_mixin"},
     PlayerDescriptionMixin,
     lambda fields: {"player_description": fields.player_description.name},
 )

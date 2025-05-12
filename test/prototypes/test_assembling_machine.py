@@ -8,7 +8,7 @@ from draftsman.error import (
     InvalidItemError,
     DataFormatError,
 )
-from draftsman.signatures import AttrsItemRequest
+from draftsman.signatures import AttrsItemRequest, AttrsSimpleCondition, AttrsInventoryLocation, AttrsItemSpecification
 from draftsman.warning import (
     ModuleCapacityWarning,
     ModuleLimitationWarning,
@@ -24,6 +24,38 @@ import warnings
 
 from collections.abc import Hashable
 import pytest
+
+valid_assembling_machine = AssemblingMachine(
+    "assembling-machine-1",
+    id="test",
+    quality="uncommon",
+    tile_position=(1, 1),
+    direction=Direction.EAST,
+    recipe="iron-gear-wheel",
+    recipe_quality="uncommon",
+    circuit_enabled=True,
+    circuit_condition=AttrsSimpleCondition(
+        first_signal="signal-A", comparator="<", second_signal="signal-B"
+    ),
+    connect_to_logistic_network=True,
+    logistic_condition=AttrsSimpleCondition(
+        first_signal="signal-A", comparator="<", second_signal="signal-B"
+    ),
+    item_requests=[
+        AttrsItemRequest(
+            id={"name": "iron-plate", "quality": "uncommon"},
+            items={"in_inventory": [{"inventory": 2, "stack": 0, "count": 20}]},
+        )
+    ],
+    circuit_set_recipe=True,
+    read_contents=True,
+    include_in_crafting=False,
+    read_recipe_finished=True,
+    recipe_finished_signal="signal-C",
+    read_working=True,
+    working_signal="signal-D",
+    tags={"blah": "blah"}
+)
 
 
 class TestAssemblingMachine:
@@ -79,10 +111,13 @@ class TestAssemblingMachine:
                 },
                 "recipe": {"type": "string"},
                 "direction": {"enum": list(range(8)), "default": 0},
-                "items": {"type": "array", "items": {"$ref": "urn:factorio:item-request"}},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:item-request"},
+                },
                 "tags": {"type": "object"},
             },
-            "required": ["entity_number", "name", "position"]
+            "required": ["entity_number", "name", "position"],
         }
         assert AssemblingMachine.json_schema(version=(2, 0)) == {
             "$id": "urn:factorio:entity:assembling-machine",
@@ -95,13 +130,51 @@ class TestAssemblingMachine:
                     "$ref": "urn:factorio:position",
                 },
                 "quality": {"$ref": "urn:factorio:quality-name"},
-                "recipe": {"type": "string"},
+                "recipe": {
+                    "oneOf": [
+                        {"type": "string"},
+                        {"type": "null"}
+                    ]
+                },
                 "recipe_quality": {"$ref": "urn:factorio:quality-name"},
                 "direction": {"enum": list(range(16)), "default": 0},
-                "items": {"type": "array", "items": {"$ref": "urn:factorio:item-request"}},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:item-request"},
+                },
+                "control_behavior": {
+                    "type": "object",
+                    "properties": {
+                        "circuit_enabled": {"type": "boolean", "default": "false"},
+                        "circuit_condition": {"$ref": "urn:factorio:simple-condition"},
+                        "connect_to_logistic_network": {
+                            "type": "boolean",
+                            "default": "false",
+                        },
+                        "logistic_condition": {"$ref": "urn:factorio:simple-condition"},
+                        "set_recipe": {"type": "boolean", "default": "false"},
+                        "read_contents": {"type": "boolean", "default": "false"},
+                        "include_in_crafting": {"type": "boolean", "default": "true"},
+                        "read_recipe_finished": {"type": "boolean", "default": "false"},
+                        "recipe_finished_signal": {
+                            "anyOf": [
+                                {"$ref": "urn:factorio:signal-id"},
+                                {"type": "null"},
+                            ]
+                        },
+                        "read_working": {"type": "boolean", "default": "false"},
+                        "working_signal": {
+                            "anyOf": [
+                                {"$ref": "urn:factorio:signal-id"},
+                                {"type": "null"},
+                            ]
+                        },
+                    },
+                    "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
+                },
                 "tags": {"type": "object"},
             },
-            "required": ["entity_number", "name", "position"]
+            "required": ["entity_number", "name", "position"],
         }
 
     def test_power_and_circuit_flags(self):

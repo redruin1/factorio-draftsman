@@ -1,6 +1,6 @@
 # test_burner_generator.py
 
-from draftsman.constants import ValidationMode
+from draftsman.constants import Direction, Inventory
 from draftsman.entity import BurnerGenerator, burner_generators, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import (
@@ -14,12 +14,75 @@ from collections.abc import Hashable
 import pytest
 
 
+valid_burner_generator = BurnerGenerator(
+    "burner-generator",
+    id="test",
+    quality="uncommon",
+    tile_position=(1, 1),
+    direction=Direction.EAST,
+    item_requests=[
+        {
+            "id": {
+                "name": "coal"
+            },
+            "items": {
+                "in_inventory": [
+                    {
+                        "inventory": Inventory.fuel,
+                        "stack": 0,
+                        "count": 50
+                    }
+                ]
+            }
+        }
+    ],
+    tags={"blah": "blah"}
+)
+
+
 class TestBurnerGenerator:
     def test_contstructor_init(self):
         generator = BurnerGenerator("burner-generator")
 
         with pytest.warns(UnknownEntityWarning):
             BurnerGenerator("this is not a burner generator").validate().reissue_all()
+
+    def test_json_schema(self):
+        assert BurnerGenerator.json_schema(version=(1, 0)) == {
+            "$id": "urn:factorio:entity:burner-generator",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {"$ref": "urn:factorio:position"},
+                "direction": {"enum": list(range(8)), "default": 0},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:item-request"}
+                },
+                "tags": {"type": "object"}
+            },
+            "required": ["entity_number", "name", "position"]
+        }
+        assert BurnerGenerator.json_schema(version=(2, 0)) == {
+            "$id": "urn:factorio:entity:burner-generator",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {"$ref": "urn:factorio:position"},
+                "direction": {"enum": list(range(16)), "default": 0},
+                "quality": {"$ref": "urn:factorio:quality-name"},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:item-request"}
+                },
+                "tags": {"type": "object"}
+            },
+            "required": ["entity_number", "name", "position"]
+        }
 
     # def test_set_items(self): # TODO: reimplement
     #     generator = BurnerGenerator("burner-generator")

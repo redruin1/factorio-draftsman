@@ -36,6 +36,11 @@ class DirectionalMixin(Exportable):
         :py:class:`~.mixins.eight_way_directional.EightWayDirectionalMixin`
     """
 
+    # TODO: all entities are likely directional; whether or not direction has
+    # an effect is likely based on prototype["flags"]["not-rotatable"]
+    # Plus, this also indicates what level of rotation directions this entity
+    # supports via "building-direction-8-way" and "building-direction-16-way"
+
     def __attrs_pre_init__(self, name=attrs.NOTHING, first_call=None, **kwargs):
         # Make sure this is the first time calling pre-init (bugfix until attrs
         # is patched)

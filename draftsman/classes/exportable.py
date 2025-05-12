@@ -579,12 +579,14 @@ class Exportable:
         version: tuple[
             int, ...
         ] = __factorio_version_info__,  # TODO: change this to None
-    ) -> dict[str, Any]:
+    ) -> Optional[dict]:
         """
         Returns a JSON schema object that correctly validates this object. This
         schema can be used with any compliant JSON schema validation library to
         check if a given blueprint dict will import into Factorio as an
-        additional layer of validation.
+        additional layer of validation. If this function returns ``None``, it
+        means that that particular entity did not exist under that particular
+        version.
 
         :param version: The Factorio version for which you would like the schema
             to validate. Diff-ing these schemas between versions allows you to
@@ -781,11 +783,6 @@ def make_exportable_unstructure_factory_func(
             # don't use/recognize
             if inst.extra_keys:
                 dict_merge(res, inst.extra_keys)
-            # Certain keys we do always want to exclude in certain circumstances
-            # (such as objects like "connections" on Factorio >= 2.0)
-            # for key in excluded_keys:
-            #     if key in res:
-            #         del res[key]
             return res
 
         return unstructure_hook

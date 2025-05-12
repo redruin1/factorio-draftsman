@@ -124,7 +124,7 @@ RequestFiltersMixin.add_schema(
                     "sections": {
                         "type": "array",
                         "items": {"$ref": "urn:factorio:manual-section"},
-                        "maxLength": 100,
+                        "maxItems": 100,
                     },
                 },
             }

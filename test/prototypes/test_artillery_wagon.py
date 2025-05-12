@@ -1,12 +1,48 @@
 # test_artillery_wagon.py
 
+from draftsman.constants import Inventory, Orientation
 from draftsman.entity import ArtilleryWagon, artillery_wagons, Container
 from draftsman.error import DataFormatError
+from draftsman.signatures import AttrsItemRequest, AttrsItemSpecification, AttrsInventoryLocation, EquipmentComponent
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import sys
 import pytest
+
+
+valid_artillery_wagon = ArtilleryWagon(
+    "artillery-wagon",
+    id="test",
+    quality="uncommon",
+    tile_position=(1, 1),
+    orientation=Orientation.EAST,
+    item_requests=[
+        AttrsItemRequest(
+            id="artillery-shell",
+            items=AttrsItemSpecification(
+                in_inventory=[
+                    AttrsInventoryLocation(
+                        inventory=Inventory.artillery_wagon_ammo, stack=0, count=1
+                    )
+                ]
+            ),
+        ),
+        AttrsItemRequest(
+            id="energy-shield-equipment",
+            items=AttrsItemSpecification(
+                grid_count=1
+            ),
+        )
+    ],
+    equipment=[
+        EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+    ],
+    enable_logistics_while_moving=False,
+    auto_target=False,
+    tags={"blah": "blah"},
+    validate_assignment="none", # Ignore the fact that this item has no equipment grid
+)
 
 
 class TestArtilleryWagon:
@@ -45,11 +81,12 @@ class TestArtilleryWagon:
                 "position": {
                     "$ref": "urn:factorio:position",
                 },
-                "artillery_auto_targeting": {
-                    "type": "boolean", "default": "true"
-                },
+                "artillery_auto_targeting": {"type": "boolean", "default": "true"},
                 "orientation": {"type": "number"},
-                "items": {"type": "array", "items": {"$ref": "urn:factorio:item-request"}},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:item-request"},
+                },
                 "tags": {"type": "object"},
             },
             "required": ["entity_number", "name", "position"],
@@ -65,11 +102,12 @@ class TestArtilleryWagon:
                     "$ref": "urn:factorio:position",
                 },
                 "quality": {"$ref": "urn:factorio:quality-name"},
-                "artillery_auto_targeting": {
-                    "type": "boolean", "default": "true"
-                },
+                "artillery_auto_targeting": {"type": "boolean", "default": "true"},
                 "orientation": {"type": "number"},
-                "items": {"type": "array", "items": {"$ref": "urn:factorio:item-request"}},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:item-request"},
+                },
                 "enable_logistics_while_moving": {"type": "boolean", "default": "true"},
                 "grid": {
                     "type": "array",

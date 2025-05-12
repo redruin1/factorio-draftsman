@@ -52,7 +52,15 @@ class RecipeMixin(Exportable):
     # =========================================================================
 
     recipe: Optional[RecipeName] = attrs.field(
-        default=None, validator=instance_of(Optional[RecipeName])
+        default=None,
+        validator=instance_of(Optional[RecipeName]),
+        metadata={
+            "never_null": True
+            # If this value is ever None, always delete it from the output, even
+            # if exclude_none/defaults is False
+            # We do this because Factorio cannot cope with a null recipe value
+            # under any circumstance
+        },
     )
     """
     The recipe that this Entity is currently set to make.
@@ -111,7 +119,7 @@ class RecipeMixin(Exportable):
 
         for item in self.item_requests:
             item: AttrsItemRequest
-            if item.id.name not in allowed_modules:
+            if item.id.name in modules.raw and item.id.name not in allowed_modules:
                 msg = "Module '{}' cannot be inserted into a machine with recipe '{}'".format(
                     item.id.name, value
                 )
@@ -165,7 +173,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
 RecipeMixin.add_schema(
     {
         "properties": {
-            "recipe": {"type": "string"},
+            "recipe": {"oneOf": [{"type": "string"}, {"type": "null"}]},
             "recipe_quality": {"$ref": "urn:factorio:quality-name"},
         }
     },

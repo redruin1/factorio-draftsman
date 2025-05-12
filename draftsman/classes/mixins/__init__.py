@@ -23,7 +23,7 @@ from draftsman.classes.mixins.item_requests import ItemRequestMixin
 from draftsman.classes.mixins.logistic_condition import LogisticConditionMixin
 from draftsman.classes.mixins.mode_of_operation import InserterModeOfOperationMixin
 from draftsman.classes.mixins.mode_of_operation import LogisticModeOfOperationMixin
-from draftsman.classes.mixins.mode_of_operation import CargoHubModeOfOperationMixin
+# from draftsman.classes.mixins.mode_of_operation import CargoHubModeOfOperationMixin
 from draftsman.classes.mixins.modules import ModulesMixin
 from draftsman.classes.mixins.orientation import OrientationMixin
 from draftsman.classes.mixins.player_description import PlayerDescriptionMixin

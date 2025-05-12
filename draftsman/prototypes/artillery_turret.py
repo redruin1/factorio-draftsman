@@ -20,11 +20,11 @@ import attrs
 
 @attrs.define
 class ArtilleryTurret(
-    ArtilleryAutoTargetMixin,
     ItemRequestMixin,
+    ArtilleryAutoTargetMixin,
     ReadAmmoMixin,
-    CircuitConditionMixin,
     LogisticConditionMixin,
+    CircuitConditionMixin,
     CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
@@ -46,16 +46,11 @@ class ArtilleryTurret(
 
 
 ArtilleryTurret.add_schema(
-    {
-        "$id": "urn:factorio:entity:artillery-turret"
-    },
+    {"$id": "urn:factorio:entity:artillery-turret"},
     version=(1, 0),
-    mro=(ItemRequestMixin, DirectionalMixin, Entity)
+    mro=(ItemRequestMixin, DirectionalMixin, Entity),
 )
 
 ArtilleryTurret.add_schema(
-    {
-        "$id": "urn:factorio:entity:artillery-turret"
-    },
-    version=(2, 0)
+    {"$id": "urn:factorio:entity:artillery-turret"}, version=(2, 0)
 )

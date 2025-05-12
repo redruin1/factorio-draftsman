@@ -15,12 +15,71 @@ from collections.abc import Hashable
 import pytest
 
 
+valid_beacon = Beacon(
+    "beacon",
+    id="test",
+    quality="uncommon",
+    tile_position=(1, 1),
+    item_requests=[
+        {
+            "id": {
+                "name": "speed-module"
+            },
+            "items": {
+                "in_inventory": [
+                    {
+                        "inventory": 1,
+                        "stack": 0
+                    }
+                ]
+            }
+        }
+    ],
+    tags={"blah": "blah"},
+)
+
+
 class TestBeacon:
     def test_contstructor_init(self):
         beacon = Beacon()
 
         with pytest.warns(UnknownEntityWarning):
             Beacon("this is not a beacon").validate().reissue_all()
+
+    def test_json_schema(self):
+        assert Beacon.json_schema(version=(1, 0)) == {
+            "$id": "urn:factorio:entity:beacon",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {"$ref": "urn:factorio:position"},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:item-request"}
+                },
+                "tags": {"type": "object"}
+            },
+            "required": ["entity_number", "name", "position"]
+        }
+        assert Beacon.json_schema(version=(2, 0)) == {
+            "$id": "urn:factorio:entity:beacon",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {"$ref": "urn:factorio:position"},
+                "quality": {"$ref": "urn:factorio:quality-name"},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:item-request"}
+                },
+                "tags": {"type": "object"}
+            },
+            "required": ["entity_number", "name", "position"]
+        }
 
     # def test_set_item_request(self):
     #     beacon = Beacon()

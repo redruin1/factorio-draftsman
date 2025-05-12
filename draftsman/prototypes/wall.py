@@ -228,11 +228,12 @@ class Wall(
         self.read_gate = other.read_gate
         self.output_signal = other.output_signal
 
+    # =========================================================================
+
     __hash__ = Entity.__hash__
 
 
 draftsman_converters.get_version((1, 0)).add_hook_fns(
-    # {"$id": "factorio:wall_v1.0"},  # TODO
     Wall,
     lambda fields: {
         ("control_behavior", "circuit_open_gate"): fields.enable_disable.name,
@@ -242,9 +243,6 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
-    # {
-    #     "$id": "factorio:wall_v2.0",  # TODO
-    # },
     Wall,
     lambda fields: {
         ("control_behavior", "circuit_open_gate"): fields.enable_disable.name,

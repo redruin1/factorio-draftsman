@@ -16,9 +16,10 @@ valid_accumulator = Accumulator(
     id="test",
     quality="uncommon",
     tile_position=(1, 1),
-    tags={"blah": "blah"},
     output_signal="signal-B",
+    tags={"blah": "blah"},
 )
+
 
 class TestAccumulator:
     def test_constructor_init(self):

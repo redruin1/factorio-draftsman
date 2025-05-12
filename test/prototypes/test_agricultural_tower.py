@@ -4,9 +4,27 @@ from draftsman.prototypes.agricultural_tower import (
     AgriculturalTower,
     agricultural_towers,
 )
+from draftsman.signatures import AttrsSimpleCondition
 from draftsman.warning import UnknownEntityWarning
 
 import pytest
+
+
+valid_agricultural_tower = AgriculturalTower(
+    "agricultural-tower",
+    id="test",
+    quality="uncommon",
+    tile_position=(1, 1),
+    circuit_condition=AttrsSimpleCondition(
+        first_signal="signal-A", comparator="<", second_signal="signal-B"
+    ),
+    connect_to_logistic_network=True,
+    logistic_condition=AttrsSimpleCondition(
+        first_signal="signal-A", comparator="<", second_signal="signal-B"
+    ),
+    read_contents=True,
+    tags={"blah": "blah"}
+)
 
 
 def test_constructor():

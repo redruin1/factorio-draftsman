@@ -103,7 +103,7 @@ from draftsman.utils import (
     extend_aabb,
     flatten_entities,
 )
-from draftsman.validators import classvalidator, conditional, instance_of
+from draftsman.validators import classvalidator, conditional, instance_of, try_convert
 
 import attrs
 from builtins import int
@@ -148,7 +148,16 @@ def _convert_stock_connections_to_associations(
 
 
 def _normalize_internal_structure(
-    input_root, entities_in, tiles_in, schedules_in, wires_in, stock_connections_in
+    input_root,
+    entities_in,
+    tiles_in,
+    schedules_in,
+    wires_in,
+    stock_connections_in,
+    *,
+    version,
+    exclude_defaults,
+    exclude_none,
 ):
     # TODO make this a member of blueprint?
     def _throw_invalid_association(entity):
@@ -165,8 +174,11 @@ def _normalize_internal_structure(
         # Get a copy of the dict representation of the Entity
         # (At this point, Associations are not copied and still point to original)
         result = entity.to_dict(
-            entity_number=i + 1
-        )  # TODO: needs arguments from parent
+            version=version,
+            exclude_none=exclude_none,
+            exclude_defaults=exclude_defaults,
+            entity_number=i + 1,
+        )
         if not isinstance(result, dict):
             raise DraftsmanError(
                 "{}.to_dict() must return a dict".format(type(entity).__name__)
@@ -386,9 +398,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     # =========================================================================
 
     snapping_grid_size: Optional[Vector] = attrs.field(
-        default=Vector(0, 0),
-        converter=Vector.from_other,
-        validator=instance_of(Vector),
+        default=None,
+        converter=try_convert(Vector.from_other),
+        validator=instance_of(Optional[Vector]),
+        metadata={"never_null": True},
     )
     """
     Sets the size of the snapping grid to use. The presence of this entry
@@ -406,10 +419,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     # =========================================================================
 
     snapping_grid_position: Vector = attrs.field(
-        default=Vector(0, 0),
+        factory=lambda: Vector(0, 0),
         eq=False,
         repr=False,
-        converter=Vector.from_other,
+        converter=try_convert(Vector.from_other),
         validator=instance_of(Vector),
         metadata={"omit": True},
     )
@@ -420,7 +433,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     .. NOTE::
 
-        This function does not offset each entities position until export!
+        This attribute does not offset each entities position until export!
 
     :getter: Gets the offset amount of the snapping grid, or ``None`` if not
         set.
@@ -446,13 +459,13 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     # =========================================================================
 
     position_relative_to_grid: Vector = attrs.field(
-        default=Vector(0, 0),
-        converter=Vector.from_other,
-        validator=instance_of(Vector),  # TODO: on_setattr
+        factory=lambda: Vector(0, 0),
+        converter=try_convert(Vector.from_other),
+        validator=instance_of(Vector),
     )
     """
     The absolute position of the snapping grid in the world. Only used if
-    ``absolute_snapping`` is set to ``True`` or ``None``.
+    ``absolute_snapping`` is set to ``True``.
 
     :getter: Gets the absolute grid-position offset.
     :setter: Sets the absolute grid-position offset. Is given a value of
@@ -541,6 +554,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             self.schedules,
             self.wires,
             self.stock_connections,
+            version=version,
+            exclude_none=exclude_none,
+            exclude_defaults=exclude_defaults,
         )
 
         # Make sure that snapping_grid_position is respected
@@ -563,6 +579,16 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         #     "position-relative-to-grid"
         # ] == {"x": 0, "y": 0}:
         #     del result["blueprint"]["position-relative-to-grid"]
+
+        # Label color can never be given with a value of null; it can only either
+        # be specified with a valid color or omitted entirely (in which case is
+        # given a special default)
+        # Hence, we manually detect `None` and delete the key if so:
+        if (
+            "label_color" in result["blueprint"]
+            and result["blueprint"]["label_color"] is None
+        ):
+            del result["blueprint"]["label_color"]
 
         if len(result["blueprint"]["entities"]) == 0:
             del result["blueprint"]["entities"]

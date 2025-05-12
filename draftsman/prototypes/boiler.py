@@ -6,16 +6,11 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
 from draftsman.utils import fix_incorrect_pre_init
-from draftsman.warning import DraftsmanWarning
 
 from draftsman.data.entities import boilers
 
 import attrs
-from pydantic import ConfigDict
-from typing import Any, Literal, Optional, Union
 
 
 @fix_incorrect_pre_init
@@ -35,3 +30,6 @@ class Boiler(ItemRequestMixin, EnergySourceMixin, DirectionalMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+Boiler.add_schema({"$id": "urn:factorio:entity:boiler"})

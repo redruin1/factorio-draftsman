@@ -545,8 +545,11 @@ def make_unstructure_function_from_schema(
                 invocation_tree["lines"].append(invocation_tree["children"][loc[0]])
             populate_invocate_tree(invocation_tree["children"][loc[0]], loc[1:], invoke)
 
+    def calc_getitem(loc):
+        return "".join([f"['{l}']" for l in loc])
+
     for dict_loc, inst_loc in schema.items():
-        print(dict_loc, inst_loc)
+        # print(dict_loc, inst_loc)
         if dict_loc is None or inst_loc is None:
             continue
         handler = None
@@ -568,6 +571,7 @@ def make_unstructure_function_from_schema(
             # source_attr_name = a.name
 
         omittable = a.metadata.get("omit", True)
+        never_null = a.metadata.get("never_null", False)
 
         # override = kwargs.get(attr_name, neutral)
         # if override.omit:
@@ -629,7 +633,7 @@ def make_unstructure_function_from_schema(
                 value = f"instance.{attr_name}"
 
             conditions = []
-            if exclude_none:
+            if exclude_none or never_null:
                 conditions.append(f"{value} is not None")
             if exclude_defaults:
                 def_name = f"__c_def_{attr_name}"
@@ -649,9 +653,6 @@ def make_unstructure_function_from_schema(
             lines.append(f"  if {conditions}:")
             subloc = []
 
-            def calc_getitem(loc):
-                return "".join([f"['{l}']" for l in loc])
-
             for i, l in enumerate(dict_loc):
                 subloc.append(l)
                 if i != len(dict_loc) - 1:
@@ -663,8 +664,25 @@ def make_unstructure_function_from_schema(
                     else:
                         lines.append(f"    res{calc_getitem(subloc)} = {invoke}")
         else:
-            # No default or no override.
-            populate_invocate_tree(invocation_tree, dict_loc, invoke)
+            # If `never_null` is True, it means that (even if exclude_none/
+            # defaults is `False`) then we still have to only add the key if it's
+            # not None:
+            if never_null:
+                lines.append(f"  if instance.{attr_name} is not None:")
+                subloc = []
+
+                for i, l in enumerate(dict_loc):
+                    subloc.append(l)
+                    if i != len(dict_loc) - 1:
+                        lines.append(
+                            f"    if '{l}' not in res{calc_getitem(subloc[:-1])}:"
+                        )
+                        lines.append(f"      res{calc_getitem(subloc)} = {{}}")
+                    else:
+                        lines.append(f"    res{calc_getitem(subloc)} = {invoke}")
+            else:
+                # No default or no override.
+                populate_invocate_tree(invocation_tree, dict_loc, invoke)
 
     internal_arg_line = ", ".join([f"{i}={i}" for i in internal_arg_parts])
     if internal_arg_line:
@@ -693,6 +711,8 @@ def make_unstructure_function_from_schema(
         + ["  return res"]
     )
     script = "\n".join(total_lines)
+    # print(cls.__name__)
+    # print(script)
     fname = generate_unique_filename(cls, "unstructure", lines=total_lines)
 
     eval(compile(script, fname, "exec"), globs)

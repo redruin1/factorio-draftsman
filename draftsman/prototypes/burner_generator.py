@@ -6,14 +6,9 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import uint32
 from draftsman.utils import fix_incorrect_pre_init
-from draftsman.warning import ItemLimitationWarning
 
 from draftsman.data.entities import burner_generators
-from draftsman.data import entities
 
 import attrs
 
@@ -32,3 +27,6 @@ class BurnerGenerator(ItemRequestMixin, EnergySourceMixin, DirectionalMixin, Ent
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+BurnerGenerator.add_schema({"$id": "urn:factorio:entity:burner-generator"})

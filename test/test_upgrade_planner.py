@@ -106,7 +106,7 @@ class TestUpgradePlanner:
 
         # None case
         upgrade_planner.description = None
-        assert upgrade_planner.description == None
+        assert upgrade_planner.description == ""
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "version": encode_version(*__factorio_version_info__),

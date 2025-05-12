@@ -6,15 +6,10 @@ from draftsman.classes.mixins import (
     ItemRequestMixin,
     EnergySourceMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode
-from draftsman.utils import get_first
 
 from draftsman.data.entities import beacons
 
 import attrs
-from pydantic import ConfigDict
-from typing import Any, Literal, Optional, Union
 
 
 @attrs.define
@@ -30,3 +25,6 @@ class Beacon(ModulesMixin, ItemRequestMixin, EnergySourceMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+Beacon.add_schema({"$id": "urn:factorio:entity:beacon"})

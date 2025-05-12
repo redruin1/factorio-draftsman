@@ -8,16 +8,10 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     OrientationMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector, PrimitiveIntVector
-from draftsman.constants import Orientation, ValidationMode
-from draftsman.signatures import uint32
-from draftsman.utils import get_first
 
 from draftsman.data.entities import cars
 
 import attrs
-from pydantic import ConfigDict, Field
-from typing import Any, Literal, Optional, Union
 
 
 @attrs.define
@@ -40,3 +34,8 @@ class Car(
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+Car.add_schema(None, version=(1, 0))
+
+Car.add_schema({"$id": "urn:factorio:entity:car"}, version=(2, 0))

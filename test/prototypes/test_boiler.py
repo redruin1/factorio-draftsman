@@ -1,11 +1,36 @@
 # test_boiler.py
 
+from draftsman.constants import Inventory
 from draftsman.entity import Boiler, boilers, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
+
+valid_boiler = Boiler(
+    "boiler",
+    id="test",
+    quality="uncommon",
+    tile_position=(1, 1),
+    item_requests=[
+        {
+            "id": {
+                "name": "coal"
+            },
+            "items": {
+                "in_inventory": [
+                    {
+                        "inventory": Inventory.fuel,
+                        "stack": 0,
+                        "count": 50
+                    }
+                ]
+            }
+        }
+    ],
+    tags={"blah": "blah"},
+)
 
 
 class TestBoiler:
@@ -17,6 +42,43 @@ class TestBoiler:
             Boiler("not a boiler").validate().reissue_all()
 
         # Errors
+
+    def test_json_schema(self):
+        assert Boiler.json_schema(version=(1, 0)) == {
+            "$id": "urn:factorio:entity:boiler",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {"$ref": "urn:factorio:position"},
+                "direction": {"enum": list(range(8)), "default": 0},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:item-request"}
+                },
+                "tags": {"type": "object"}
+            },
+            "required": ["entity_number", "name", "position"]
+        }
+        assert Boiler.json_schema(version=(2, 0)) == {
+            "$id": "urn:factorio:entity:boiler",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {"$ref": "urn:factorio:position"},
+                "quality": {"$ref": "urn:factorio:quality-name"},
+                "direction": {"enum": list(range(16)), "default": 0},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:item-request"}
+                },
+                "tags": {"type": "object"}
+            },
+            "required": ["entity_number", "name", "position"]
+        }
 
     def test_mergable_with(self):
         boiler1 = Boiler("boiler")

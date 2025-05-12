@@ -228,7 +228,7 @@ class TestBlueprintBook:
         }
         # None
         blueprint_book.label = None
-        assert blueprint_book.label is None
+        assert blueprint_book.label == ""
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
@@ -239,7 +239,7 @@ class TestBlueprintBook:
         # None (no validation)
         blueprint_book.validate_assignment = "none"
         blueprint_book.label = None
-        assert blueprint_book.label is None
+        assert blueprint_book.label == ""
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
@@ -277,7 +277,7 @@ class TestBlueprintBook:
         }
         # Valid None
         blueprint_book.label_color = None
-        assert blueprint_book.label_color == AttrsColor(1.0, 1.0, 1.0, 1.0)
+        assert blueprint_book.label_color is None
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",

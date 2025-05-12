@@ -145,8 +145,10 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     # =========================================================================
 
-    label: Optional[str] = attrs.field(
-        default=None, validator=instance_of(Optional[str])
+    label: str = attrs.field(
+        default="",
+        converter=lambda v: "" if v is None else v,
+        validator=instance_of(str),
     )
     """
     The user given name (title) of the blueprintable.
@@ -157,14 +159,10 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     # =========================================================================
 
-    label_color: AttrsColor = attrs.field(
-        factory=lambda: AttrsColor(1.0, 1.0, 1.0, 1.0),
-        converter=(
-            lambda value: AttrsColor(1.0, 1.0, 1.0, 1.0)
-            if value is None
-            else AttrsColor.converter(value)
-        ),
-        validator=instance_of(AttrsColor),
+    label_color: Optional[AttrsColor] = attrs.field(
+        default=None,
+        converter=AttrsColor.converter,
+        validator=instance_of(Optional[AttrsColor]),
     )
     """
     The color of the Blueprint's label.
@@ -197,8 +195,10 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     # =========================================================================
 
-    description: Optional[str] = attrs.field(
-        default=None, validator=instance_of(Optional[str])
+    description: str = attrs.field(
+        default="",
+        converter=lambda v: "" if v is None else v,
+        validator=instance_of(str),
     )
     """
     The description of the blueprintable. Visible when hovering over it when

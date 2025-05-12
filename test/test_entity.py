@@ -17,56 +17,98 @@ import referencing
 from jsonschema import Draft202012Validator
 
 from test.prototypes.test_accumulator import valid_accumulator
+from test.prototypes.test_agricultural_tower import valid_agricultural_tower
+from test.prototypes.test_ammo_turret import valid_ammo_turret
+from test.prototypes.test_arithmetic_combinator import valid_arithmetic_combinator
+from test.prototypes.test_artillery_turret import valid_artillery_turret
+from test.prototypes.test_artillery_wagon import valid_artillery_wagon
+from test.prototypes.test_assembling_machine import valid_assembling_machine
+from test.prototypes.test_asteroid_collector import valid_asteroid_collector
+from test.prototypes.test_beacon import valid_beacon
+from test.prototypes.test_boiler import valid_boiler
+from test.prototypes.test_burner_generator import valid_burner_generator
+from test.prototypes.test_car import valid_car
+from test.prototypes.test_cargo_bay import valid_cargo_bay
+from test.prototypes.test_cargo_landing_pad import valid_cargo_landing_pad
 
 
 # TODO: make a fixture function which automatically generates one of each available
 # valid entity
 @pytest.mark.parametrize(
     "entity",
-    [valid_accumulator]
-)
-@pytest.mark.parametrize(
-    "version,resources",
     [
-        (
-            ver,
-            {
-                loc: referencing.Resource.from_contents(value)
-                for loc, value in draftsman_converters.get_version(ver).schemas.items()
-            },
-        )
-        for ver in [(1, 0), (2, 0)]
+        valid_accumulator,
+        valid_agricultural_tower,
+        valid_ammo_turret,
+        valid_arithmetic_combinator,
+        valid_artillery_turret,
+        valid_artillery_wagon,
+        valid_assembling_machine,
+        valid_asteroid_collector,
+        valid_beacon,
+        valid_boiler,
+        valid_burner_generator,
+        valid_car,
+        valid_cargo_bay,
+        valid_cargo_landing_pad,
     ],
 )
-def test_output_matches_json_schema(
-    entity: Entity, version: tuple[int, ...], resources: dict[str, referencing.Resource]
-):
-    """
-    The result from `to_dict()` should pass validation from the entity's JSON
-    schema. If not, there's either an error with `to_dict()`, the JSON schema,
-    or both.
-    """
-    entity_schema = entity.json_schema(version=version)
-    if entity_schema is None:
-        return
-
-    Draft202012Validator.check_schema(entity_schema)
-    validator = Draft202012Validator(
-        schema=entity_schema,
-        registry=referencing.Registry().with_resources(resources.items()),
-    )
-    # Test every `exclude_...` configuration
-    for exclude_none, exclude_defaults in itertools.product(
-        (True, False), (True, False)
-    ):
-        validator.validate(
-            entity.to_dict(
-                exclude_none=exclude_none,
-                exclude_defaults=exclude_defaults,
-                version=version,
-                entity_number=1,
+class TestAllEntities:
+    @pytest.mark.parametrize(
+        "version,resources",
+        [
+            (
+                ver,
+                {
+                    loc: referencing.Resource.from_contents(value)
+                    for loc, value in draftsman_converters.get_version(
+                        ver
+                    ).schemas.items()
+                },
             )
+            for ver in [(1, 0), (2, 0)]
+        ],
+    )
+    def test_output_matches_json_schema(
+        self,
+        entity: Entity,
+        version: tuple[int, ...],
+        resources: dict[str, referencing.Resource],
+    ):
+        """
+        The result from `to_dict()` should pass validation from the entity's JSON
+        schema. If not, there's either an error with `to_dict()`, the JSON schema,
+        or both.
+        """
+        entity_schema = entity.json_schema(version=version)
+        if entity_schema is None:
+            return
+
+        Draft202012Validator.check_schema(entity_schema)
+        validator = Draft202012Validator(
+            schema=entity_schema,
+            registry=referencing.Registry().with_resources(resources.items()),
         )
+        # Test every `exclude_...` configuration
+        for exclude_none, exclude_defaults in itertools.product(
+            (True, False), (True, False)
+        ):
+            validator.validate(
+                type(entity)().to_dict(
+                    exclude_none=exclude_none,
+                    exclude_defaults=exclude_defaults,
+                    version=version,
+                    entity_number=1
+                )
+            )
+            validator.validate(
+                entity.to_dict(
+                    exclude_none=exclude_none,
+                    exclude_defaults=exclude_defaults,
+                    version=version,
+                    entity_number=1,
+                )
+            )
 
 
 class TestEntityBase:

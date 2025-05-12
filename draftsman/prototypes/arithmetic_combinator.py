@@ -309,8 +309,15 @@ ArithmeticCombinator.add_schema(
                     "arithmetic_conditions": {
                         "type": "object",
                         "properties": {
-                            "first_constant": {"$ref": "urn:int32"},
-                            "first_signal": {"$ref": "urn:factorio:signal-id"},
+                            "first_constant": {
+                                "oneOf": [{"$ref": "urn:int32"}, {"type": "null"}]
+                            },
+                            "first_signal": {
+                                "oneOf": [
+                                    {"$ref": "urn:factorio:signal-id"},
+                                    {"type": "null"},
+                                ]
+                            },
                             "operation": {
                                 "enum": [
                                     "*",
@@ -327,9 +334,22 @@ ArithmeticCombinator.add_schema(
                                 ],
                                 "default": "*",
                             },
-                            "second_constant": {"$ref": "urn:int32", "default": 0},
-                            "second_signal": {"$ref": "urn:factorio:signal-id"},
-                            "output_signal": {"$ref": "urn:factorio:signal-id"},
+                            "second_constant": {
+                                "oneOf": [{"$ref": "urn:int32"}, {"type": "null"}],
+                                "default": 0,
+                            },
+                            "second_signal": {
+                                "oneOf": [
+                                    {"$ref": "urn:factorio:signal-id"},
+                                    {"type": "null"},
+                                ]
+                            },
+                            "output_signal": {
+                                "oneOf": [
+                                    {"$ref": "urn:factorio:signal-id"},
+                                    {"type": "null"},
+                                ]
+                            },
                         },
                     }
                 },
@@ -340,7 +360,6 @@ ArithmeticCombinator.add_schema(
 )
 
 draftsman_converters.get_version((1, 0)).add_hook_fns(
-    # {"$id": "factorio:arithmetic_combinator"},
     ArithmeticCombinator,
     lambda fields: {
         (
@@ -377,13 +396,21 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ): fields.output_signal.name,
     },
     lambda fields, converter: {
-        ("control_behavior", "arithmetic_conditions", "first_constant",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "first_constant",
+        ): (
             _export_fields.first_constant,
             lambda inst: inst.first_operand
             if isinstance(inst.first_operand, int)
             else None,
         ),
-        ("control_behavior", "arithmetic_conditions", "first_signal",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "first_signal",
+        ): (
             _export_fields.first_signal,
             lambda inst: converter.unstructure(inst.first_operand)
             if not isinstance(inst.first_operand, int)
@@ -395,13 +422,21 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             "arithmetic_conditions",
             "operation",
         ): fields.operation.name,
-        ("control_behavior", "arithmetic_conditions", "second_constant",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "second_constant",
+        ): (
             _export_fields.second_constant,
             lambda inst: inst.second_operand
             if isinstance(inst.second_operand, int)
             else None,
         ),
-        ("control_behavior", "arithmetic_conditions", "second_signal_signal",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "second_signal_signal",
+        ): (
             _export_fields.second_signal,
             lambda inst: converter.unstructure(inst.second_operand)
             if not isinstance(inst.second_operand, int)
@@ -427,8 +462,15 @@ ArithmeticCombinator.add_schema(
                     "arithmetic_conditions": {
                         "type": "object",
                         "properties": {
-                            "first_constant": {"$ref": "urn:int32"},
-                            "first_signal": {"$ref": "urn:factorio:signal-id"},
+                            "first_constant": {
+                                "oneOf": [{"$ref": "urn:int32"}, {"type": "null"}]
+                            },
+                            "first_signal": {
+                                "oneOf": [
+                                    {"$ref": "urn:factorio:signal-id"},
+                                    {"type": "null"},
+                                ]
+                            },
                             "first_signal_networks": {
                                 "type": "object",
                                 "properties": {
@@ -452,8 +494,16 @@ ArithmeticCombinator.add_schema(
                                 ],
                                 "default": "*",
                             },
-                            "second_constant": {"$ref": "urn:int32", "default": 0},
-                            "second_signal": {"$ref": "urn:factorio:signal-id"},
+                            "second_constant": {
+                                "oneOf": [{"$ref": "urn:int32"}, {"type": "null"}],
+                                "default": 0,
+                            },
+                            "second_signal": {
+                                "oneOf": [
+                                    {"$ref": "urn:factorio:signal-id"},
+                                    {"type": "null"},
+                                ]
+                            },
                             "second_signal_networks": {
                                 "type": "object",
                                 "properties": {
@@ -461,7 +511,12 @@ ArithmeticCombinator.add_schema(
                                     "green": {"type": "boolean", "default": "true"},
                                 },
                             },
-                            "output_signal": {"$ref": "urn:factorio:signal-id"},
+                            "output_signal": {
+                                "oneOf": [
+                                    {"$ref": "urn:factorio:signal-id"},
+                                    {"type": "null"},
+                                ]
+                            },
                         },
                     }
                 },
@@ -472,7 +527,6 @@ ArithmeticCombinator.add_schema(
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
-    # {"$id": "factorio:arithmetic_combinator"},
     ArithmeticCombinator,
     lambda fields: {
         (
@@ -517,13 +571,21 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         ): fields.output_signal.name,
     },
     lambda fields, converter: {
-        ("control_behavior", "arithmetic_conditions", "first_constant",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "first_constant",
+        ): (
             _export_fields.first_constant,
             lambda inst: converter.unstructure(inst.first_operand)
             if isinstance(inst.first_operand, int)
             else None,
         ),
-        ("control_behavior", "arithmetic_conditions", "first_signal",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "first_signal",
+        ): (
             _export_fields.first_signal,
             lambda inst: converter.unstructure(inst.first_operand)
             if not isinstance(inst.first_operand, int)
@@ -539,13 +601,21 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
             "arithmetic_conditions",
             "operation",
         ): fields.operation.name,
-        ("control_behavior", "arithmetic_conditions", "second_constant",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "second_constant",
+        ): (
             _export_fields.second_constant,
             lambda inst: converter.unstructure(inst.second_operand)
             if isinstance(inst.second_operand, int)
             else None,
         ),
-        ("control_behavior", "arithmetic_conditions", "second_signal",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "second_signal",
+        ): (
             _export_fields.second_signal,
             lambda inst: converter.unstructure(inst.second_operand)
             if not isinstance(inst.second_operand, int)

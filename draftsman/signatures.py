@@ -1004,7 +1004,9 @@ class SignalFilter(Exportable):
     Comparison operator when deducing the quality type.
     """
     max_count: Optional[int32] = attrs.field(
-        default=None, validator=instance_of(Optional[int32])
+        default=None,
+        validator=instance_of(Optional[int32]),
+        metadata={"never_null": True}
     )
     """
     The maximum amount of the signal to request of the signal to emit. Only used
@@ -1326,8 +1328,10 @@ class ManualSection(Exportable):
     List of item requests for this section.
     """
 
-    group: Optional[str] = attrs.field(
-        default=None, validator=instance_of(Optional[str])
+    group: str = attrs.field(
+        default="", 
+        converter=lambda v: "" if v is None else v,
+        validator=instance_of(str)
     )
     """
     Name of this section group. Once named, this group will become registered 
@@ -1986,6 +1990,8 @@ class EquipmentID(Exportable):
 
     @classmethod
     def converter(cls, value):
+        if isinstance(value, str):
+            return cls(name=value)
         if isinstance(value, dict):
             return cls(**value)
         return value

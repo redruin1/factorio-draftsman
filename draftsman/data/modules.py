@@ -81,7 +81,6 @@ def get_modules_from_effects(
                 ):
                     continue
             else:
-
                 allowed_effects = {
                     effect
                     for effect, allowed in (

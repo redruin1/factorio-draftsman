@@ -3,7 +3,7 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     RequestFiltersMixin,
-    CargoHubModeOfOperationMixin,
+    LogisticModeOfOperationMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
 )
@@ -16,7 +16,7 @@ import attrs
 @attrs.define
 class CargoLandingPad(
     RequestFiltersMixin,
-    CargoHubModeOfOperationMixin,
+    LogisticModeOfOperationMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     Entity,
@@ -25,50 +25,6 @@ class CargoLandingPad(
     A entity on a surface which recieves cargo from space platforms.
     """
 
-    # class Format(
-    #     RequestFiltersMixin.Format,
-    #     CargoHubModeOfOperationMixin.Format,
-    #     ControlBehaviorMixin.Format,
-    #     CircuitConnectableMixin.Format,
-    #     Entity.Format,
-    # ):
-    #     class ControlBehavior(
-    #         CargoHubModeOfOperationMixin.ControlFormat, DraftsmanBaseModel
-    #     ):
-    #         pass
-
-    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
-
-    #     model_config = ConfigDict(title="CargoLandingPad")
-
-    # def __init__(
-    #     self,
-    #     name: Optional[str] = get_first(cargo_landing_pads),
-    #     position: Union[Vector, PrimitiveVector] = None,
-    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-    #     control_behavior: Optional[Format.ControlBehavior] = {},
-    #     tags: dict[str, Any] = {},
-    #     validate_assignment: Union[
-    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-    #     ] = ValidationMode.STRICT,
-    #     **kwargs
-    # ):
-    #     """
-    #     TODO
-    #     """
-
-    #     super().__init__(
-    #         name=name,
-    #         similar_entities=cargo_landing_pads,
-    #         position=position,
-    #         tile_position=tile_position,
-    #         control_behavior=control_behavior,
-    #         tags=tags,
-    #         **kwargs
-    #     )
-
-    #     self.validate_assignment = validate_assignment
-
     @property
     def similar_entities(self) -> list[str]:
         return cargo_landing_pads
@@ -76,3 +32,13 @@ class CargoLandingPad(
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+CargoLandingPad.add_schema(None, version=(1, 0))
+
+CargoLandingPad.add_schema(
+    {
+        "$id": "urn:factorio:entity:cargo-landing-pad"
+    },
+    version=(2, 0)
+)

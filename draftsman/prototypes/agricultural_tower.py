@@ -17,7 +17,7 @@ import attrs
 
 
 @attrs.define
-class AgriculturalTower(
+class AgriculturalTower(  # TODO: this can probably request items
     LogisticConditionMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,

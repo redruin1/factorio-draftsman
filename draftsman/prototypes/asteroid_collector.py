@@ -112,6 +112,8 @@ class AsteroidCollector(
     __hash__ = Entity.__hash__
 
 
+AsteroidCollector.add_schema(None, version=(1, 0))
+
 AsteroidCollector.add_schema(
     {
         "$id": "urn:factorio:entity:asteroid-collector",
@@ -129,7 +131,8 @@ AsteroidCollector.add_schema(
                 },
             },
         },
-    }
+    },
+    version=(2, 0),
 )
 
 draftsman_converters.add_hook_fns(
