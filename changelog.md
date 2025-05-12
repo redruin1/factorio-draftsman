@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.3
+* Updated `factorio-data` to version `2.0.48` (latest)
+* Fixed #164 (Decider combinator example doesn't work)
+* Merged vjanell's pull request:
+  * Fix reversed operators in DeciderCombinator `__ge__` and `__le__` methods
+
 ## 2.0.2
 * Updated `factorio-data` to version `2.0.45` (latest)
 * Fixed #158 (Key "comparator" not found when exporting/importing Constant Combinator)
