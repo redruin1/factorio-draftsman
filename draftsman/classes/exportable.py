@@ -12,7 +12,7 @@ import pprint  # TODO: think about
 
 
 def attempt_and_reissue(
-    object: Any, format_model: Any, target: Any, name: str, value: Any, **kwargs
+    object: Any, format_model: BaseModel, target: Any, name: str, value: Any, **kwargs
 ):
     """
     Helper function that normalizes assignment validation

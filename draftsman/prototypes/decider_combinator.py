@@ -27,7 +27,7 @@ from draftsman.data import signals
 from draftsman.signatures import int32
 from draftsman.utils import reissue_warnings
 
-from pydantic import ConfigDict, Field, ValidationInfo, model_validator, validate_call
+from pydantic import ConfigDict, Field, BaseModel, ValidationInfo, model_validator, validate_call
 from typing import Any, Literal, Optional, Type, Union
 
 
@@ -40,139 +40,56 @@ _signal_blacklist = {
 }
 
 
-# Matrix of values, where keys are the name of the first_operand and
-# the values are sets of signals that cannot be set as output_signal
-_signal_blacklist = {
-    "signal-everything": {"signal-anything", "signal-each"},
-    "signal-anything": {"signal-each"},
-    "signal-each": {"signal-everything", "signal-anything"},
-}
+class DeciderCondition(Condition):
+    compare_type: Optional[Literal["or", "and"]] = Field(
+        "or",
+        description="""
+        Whether or not to boolean OR or AND this condition
+        with the previous one in the list.
+        """,
+    )
 
-
-from pydantic_core import core_schema
-
-
-class Temp:  # TODO: fixme
-    @classmethod
-    def __get_pydantic_core_schema__(cls, source_type: Any, handler):
-        """
-        Dict instances get converted to cls.Format instances
-        cls.Format instances get passed through unchanged
-        everything else is a validation failure
-        """
-
-        def validate_from_dict(value: dict):
-            result = source_type(**value)
-            return result
-
-        from_dict_schema = core_schema.chain_schema(
-            [
-                core_schema.dict_schema(),
-                core_schema.no_info_plain_validator_function(validate_from_dict),
-            ]
-        )
-
-        return core_schema.json_or_python_schema(
-            json_schema=source_type.Format.__pydantic_core_schema__,
-            python_schema=core_schema.union_schema(
-                [
-                    # check if it's an instance first before doing any further work
-                    core_schema.is_instance_schema(source_type),
-                    from_dict_schema,
-                ]
-            ),
-            serialization=core_schema.plain_serializer_function_ser_schema(
-                lambda instance: instance._root
-            ),
-        )
-
-
-class DeciderCondition(Temp):
-    class Format(Condition):
-        compare_type: Optional[Literal["or", "and"]] = Field(
-            "or",
-            description="""
-            Whether or not to boolean OR or AND this condition
-            with the previous one in the list.
-            """,
-        )
-
-        model_config = ConfigDict(title="DeciderCondition")
-
-    def __init__(
-        self,
-        first_signal,
-        first_signal_networks={"red", "green"},
-        comparator=">",
-        constant=None,
-        second_signal=None,
-        second_signal_networks={"red", "green"},
-        compare_type="or",
-    ):
-        # self.first_signal = first_signal
-        # self.first_signal_networks = first_signal_networks
-        # self.comparator = comparator
-        # self.constant = constant
-        # self.second_signal = second_signal
-        # self.second_signal_networks = second_signal_networks
-        # self.compare_type = compare_type
-
-        self._root = self.Format.model_validate(
-            {
-                "first_signal": first_signal,
-                "first_signal_networks": first_signal_networks,
-                "comparator": comparator,
-                "constant": constant,
-                "second_signal": second_signal,
-                "second_signal_networks": second_signal_networks,
-                "compare_type": compare_type,
-            },
-            strict=False,
-            context={"construction": True, "mode": ValidationMode.NONE},
-        )
+    model_config = ConfigDict(title="DeciderCondition")
 
     def __or__(self, other):
         if isinstance(other, DeciderCondition):
-            other._root.compare_type = "or"
+            other.compare_type = "or"
             return [self, other]
         elif isinstance(other, list):
-            other[0]._root.compare_type = "or"
+            other[0].compare_type = "or"
             return [self] + other
         else:
             return NotImplemented
 
     def __ror__(self, other):
         if isinstance(other, DeciderCondition):
-            self._root.compare_type = "or"
+            self.compare_type = "or"
             return [other, self]
         elif isinstance(other, list):
-            self._root.compare_type = "or"
+            self.compare_type = "or"
             return other + [self]
         else:
             return NotImplemented
 
     def __and__(self, other):
         if isinstance(other, DeciderCondition):
-            other._root.compare_type = "and"
+            other.compare_type = "and"
             return [self, other]
         elif isinstance(other, list):
-            other[0]._root.compare_type = "and"
+            other[0].compare_type = "and"
             return [self] + other
         else:
             return NotImplemented
 
     def __rand__(self, other):
         if isinstance(other, DeciderCondition):
-            self._root.compare_type = "and"
+            self.compare_type = "and"
             return [other, self]
         elif isinstance(other, list):
-            self._root.compare_type = "and"
+            self.compare_type = "and"
             return other + [self]
         else:
             return NotImplemented
-
-    def __repr__(self):
-        return repr(self._root)
 
 
 class DeciderInput:
@@ -218,61 +135,46 @@ class DeciderInput:
         return self._output_condition("<=", other)
 
 
-class DeciderOutput(Temp):  # TODO: Exportable
-    class Format(DraftsmanBaseModel):
-        signal: SignalID = Field(..., description="""The signal type to output.""")
-        copy_count_from_input: Optional[bool] = Field(
-            True,
-            description="""
-            Broadcasts the given input value to the output if true, or a unit
-            value if false.
-            """,
-        )
-        networks: Optional[NetworkSpecification] = Field(
-            NetworkSpecification(red=True, green=True),
-            description="""What wires this output should be broadcast to.""",
-        )
-        constant: Optional[int32] = Field(
-            1,
-            description="""
-            What value the constant output should be if "copy_count_from_input"
-            is false. Always specified as 1 in game, but can be overwritten
-            externally and will be respected.
-            """,
-        )
+class DeciderOutput(DraftsmanBaseModel):  # TODO: Exportable
+    signal: SignalID = Field(..., description="""The signal type to output.""")
+    copy_count_from_input: Optional[bool] = Field(
+        True,
+        description="""
+        Broadcasts the given input value to the output if true, or a unit
+        value if false.
+        """,
+    )
+    networks: Optional[NetworkSpecification] = Field(
+        NetworkSpecification(red=True, green=True),
+        description="""What wires this output should be broadcast to.""",
+    )
+    constant: Optional[int32] = Field(
+        1,
+        description="""
+        What value the constant output should be if "copy_count_from_input"
+        is false. Always specified as 1 in game, but can be overwritten
+        externally and will be respected.
+        """,
+    )
 
-        model_config = ConfigDict(title="DeciderOutput")
+    model_config = ConfigDict(title="DeciderOutput")
 
-    def __init__(
-        self, signal, copy_count_from_input=True, constant=1, networks={"red", "green"}
-    ):
-        self._root: DeciderOutput.Format
-        self._root = self.__class__.Format.model_validate(
-            {
-                "signal": signal,
-                "copy_count_from_input": copy_count_from_input,
-                "constant": constant,
-                "networks": networks,
-            },
-            strict=False,
-            context={"construction": True, "mode": ValidationMode.NONE},
-        )
 
-    @property
-    def signal(self):
-        return self._root.signal
-
-    @property
-    def copy_count_from_input(self):
-        return self._root.copy_count_from_input
-
-    @property
-    def constant(self):
-        return self._root.constant
-
-    @property
-    def networks(self):
-        return self._root.networks
+# class DeciderConditions(DraftsmanBaseModel):
+#     conditions: list[DeciderCondition] = Field(
+#         [],
+#         description="""
+#         A list of Condition objects specifying when (and what) this
+#         decider combinator should output.""",
+#     )
+#     outputs: list[DeciderOutput] = Field(
+#         [],
+#         description="""
+#         A list of Output objects specifying what signals should be
+#         passed to the output wire when the conditions evaluate to
+#         true.
+#         """,
+#     )
 
 
 class DeciderCombinator(
@@ -381,6 +283,8 @@ class DeciderCombinator(
 
     #     model_config = ConfigDict(title="DeciderCombinator")
 
+    
+
     class Format(
         PlayerDescriptionMixin.Format,
         ControlBehaviorMixin.Format,
@@ -390,23 +294,6 @@ class DeciderCombinator(
     ):
         class ControlBehavior(DraftsmanBaseModel):
             class DeciderConditions(DraftsmanBaseModel):
-                # class Output(DraftsmanBaseModel):
-                #     signal: SignalID
-                #     copy_count_from_input: bool = Field(
-                #         True,
-                #         description="""
-                #         Whether or not to copy the value of the selected output
-                #         signal from the input circuit network, or to output the
-                #         selected 'output_signal' with a value of 1.
-                #         """,
-                #     )
-                #     networks: Optional[NetworkSpecification] = Field(
-                #         NetworkSpecification(red=True, green=True),
-                #         description="""
-                #         What wires to pull values from if 'copy_count_from_input'
-                #         is true.""",
-                #     )
-
                 conditions: list[DeciderCondition] = Field(
                     [],
                     description="""
@@ -421,41 +308,6 @@ class DeciderCombinator(
                     true.
                     """,
                 )
-
-                # @model_validator(mode="after")
-                # def ensure_proper_signal_configuration(self, info: ValidationInfo):
-                #     """
-                #     The first signal and output signals can be pure virtual
-                #     signals, but only in a certain configuration as determined
-                #     by `_signal_blacklist`. If the input signal is not a pure
-                #     virtual signal, then the output signal cannot be
-                #     `"signal-anything"` or `"signal-each"`.
-                #     """
-                #     if not info.context or self.output_signal is None:
-                #         return self
-                #     if info.context["mode"] <= ValidationMode.MINIMUM:
-                #         return self
-
-                #     warning_list: list = info.context["warning_list"]
-
-                #     if self.first_signal is None:
-                #         first_signal_name = None
-                #     else:
-                #         first_signal_name = self.first_signal.name
-
-                #     current_blacklist = _signal_blacklist.get(
-                #         first_signal_name, {"signal-anything", "signal-each"}
-                #     )
-                #     if self.output_signal.name in current_blacklist:
-                #         warning_list.append(
-                #             PureVirtualDisallowedWarning(
-                #                 "'{}' cannot be an output_signal when '{}' is the first operand; 'output_signal' will be removed when imported".format(
-                #                     self.output_signal.name, first_signal_name
-                #                 ),
-                #             )
-                #         )
-
-                #     return self
 
             decider_conditions: Optional[DeciderConditions] = DeciderConditions()
 
