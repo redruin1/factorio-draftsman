@@ -212,10 +212,10 @@ class DeciderInput:
         return self._output_condition("<", other)
 
     def __ge__(self, other) -> DeciderCondition:
-        return self._output_condition("<=", other)
+        return self._output_condition(">=", other)
 
     def __le__(self, other) -> DeciderCondition:
-        return self._output_condition(">=", other)
+        return self._output_condition("<=", other)
 
 
 class DeciderOutput(Temp):  # TODO: Exportable
