@@ -12,6 +12,7 @@ from draftsman.error import MalformedBlueprintStringError
 from abc import ABCMeta, abstractmethod
 import base64
 import json
+from enum import Enum
 import math
 from functools import wraps
 
@@ -20,6 +21,27 @@ from thefuzz import process
 from typing import Optional, Union, TYPE_CHECKING
 import warnings
 import zlib
+
+def serialize(obj):
+    """
+    Recursively serializes custom objects using model_dump if available.
+    Falls back to __dict__ or __slots__ if present, otherwise returns the object.
+    Handles Enum values by returning their .value (e.g. integer for Direction).
+    """
+    if hasattr(obj, "model_dump"):
+        return serialize(obj.model_dump())
+    elif isinstance(obj, list):
+        return [serialize(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {k: serialize(v) for k, v in obj.items()}
+    elif isinstance(obj, Enum):
+        return obj.value
+    elif hasattr(obj, "__dict__"):
+        return {k: serialize(v) for k, v in obj.__dict__.items() if not k.startswith("_")}
+    elif hasattr(obj, "__slots__"):
+        return {k: serialize(getattr(obj, k)) for k in obj.__slots__ if hasattr(obj, k)}
+    else:
+        return obj
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.entity_like import EntityLike
@@ -398,6 +420,28 @@ def string_to_JSON(string: str) -> dict:
         raise MalformedBlueprintStringError(e)
 
 
+def serialize(obj):
+    """
+    Recursively serializes custom objects using model_dump if available.
+    Falls back to __dict__ or __slots__ if present, otherwise returns the object.
+    Handles Enum values by returning their .value (e.g. integer for Direction).
+    """
+    if hasattr(obj, "model_dump"):
+        return serialize(obj.model_dump())
+    elif isinstance(obj, list):
+        return [serialize(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {k: serialize(v) for k, v in obj.items()}
+    elif isinstance(obj, Enum):
+        return obj.value
+    elif hasattr(obj, "__dict__"):
+        return {k: serialize(v) for k, v in obj.__dict__.items() if not k.startswith("_")}
+    elif hasattr(obj, "__slots__"):
+        return {k: serialize(getattr(obj, k)) for k in obj.__slots__ if hasattr(obj, k)}
+    else:
+        return obj
+
+
 def JSON_to_string(JSON: dict) -> str:
     """
     Encodes a JSON dict to a Factorio-readable blueprint string.
@@ -417,6 +461,7 @@ def JSON_to_string(JSON: dict) -> str:
 
     :returns: A ``str`` which can be imported into Factorio.
     """
+    JSON = serialize(JSON)
     return "0" + base64.b64encode(
         zlib.compress(json.dumps(JSON, separators=(",", ":")).encode("utf-8"), 9)
     ).decode("utf-8")

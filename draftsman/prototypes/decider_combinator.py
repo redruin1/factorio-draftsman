@@ -87,6 +87,7 @@ class Temp:  # TODO: fixme
         )
 
 
+
 class DeciderCondition(Temp):
     class Format(Condition):
         compare_type: Optional[Literal["or", "and"]] = Field(
@@ -116,7 +117,6 @@ class DeciderCondition(Temp):
         # self.second_signal = second_signal
         # self.second_signal_networks = second_signal_networks
         # self.compare_type = compare_type
-
         self._root = self.Format.model_validate(
             {
                 "first_signal": first_signal,
@@ -130,6 +130,47 @@ class DeciderCondition(Temp):
             strict=False,
             context={"construction": True, "mode": ValidationMode.NONE},
         )
+
+    @classmethod
+    def from_dict(cls, d):
+        # Accepts a dict from deserialization and returns a DeciderCondition
+        return cls(
+            first_signal=d.get("first_signal"),
+            first_signal_networks=d.get("first_signal_networks", {"red", "green"}),
+            comparator=d.get("comparator", ">"),
+            constant=d.get("constant"),
+            second_signal=d.get("second_signal"),
+            second_signal_networks=d.get("second_signal_networks", {"red", "green"}),
+            compare_type=d.get("compare_type", "or"),
+        )
+
+    @property
+    def first_signal(self):
+        return self._root.first_signal
+
+    @property
+    def first_signal_networks(self):
+        return self._root.first_signal_networks
+
+    @property
+    def comparator(self):
+        return self._root.comparator
+
+    @property
+    def constant(self):
+        return self._root.constant
+
+    @property
+    def second_signal(self):
+        return self._root.second_signal
+
+    @property
+    def second_signal_networks(self):
+        return self._root.second_signal_networks
+
+    @property
+    def compare_type(self):
+        return self._root.compare_type
 
     def __or__(self, other):
         if isinstance(other, DeciderCondition):
@@ -256,6 +297,15 @@ class DeciderOutput(Temp):  # TODO: Exportable
             },
             strict=False,
             context={"construction": True, "mode": ValidationMode.NONE},
+        )
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls(
+            signal=d.get("signal"),
+            copy_count_from_input=d.get("copy_count_from_input", True),
+            constant=d.get("constant", 1),
+            networks=d.get("networks", {"red", "green"}),
         )
 
     @property
@@ -406,6 +456,7 @@ class DeciderCombinator(
                 #         What wires to pull values from if 'copy_count_from_input'
                 #         is true.""",
                 #     )
+                from pydantic import model_validator
 
                 conditions: list = Field(
                     [],
@@ -421,6 +472,103 @@ class DeciderCombinator(
                     true.
                     """,
                 )
+
+                @model_validator(mode="after")
+                def convert_conditions_and_outputs(cls, values):
+                    #
+                    # @model_validator(mode="after")
+                    # def ensure_proper_signal_configuration(self, info: ValidationInfo):
+                    #     """
+                    #     The first signal and output signals can be pure virtual
+                    #     signals, but only in a certain configuration as determined
+                    #     by `_signal_blacklist`. If the input signal is not a pure
+                    #     virtual signal, then the output signal cannot be
+                    #     `"signal-anything"` or `"signal-each"`.
+                    #     """
+                    #     if not info.context or self.output_signal is None:
+                    #         return self
+                    #     if info.context["mode"] <= ValidationMode.MINIMUM:
+                    #         return self
+                    #
+                    #     warning_list: list = info.context["warning_list"]
+                    #
+                    #     if self.first_signal is None:
+                    #         first_signal_name = None
+                    #     else:
+                    #         first_signal_name = self.first_signal.name
+                    #
+                    #     current_blacklist = _signal_blacklist.get(
+                    #         first_signal_name, {"signal-anything", "signal-each"}
+                    #     )
+                    #     if self.output_signal.name in current_blacklist:
+                    #         warning_list.append(
+                    #             PureVirtualDisallowedWarning(
+                    #                 "'{}' cannot be an output_signal when '{}' is the first operand; 'output_signal' will be removed when imported".format(
+                    #                     self.output_signal.name, first_signal_name
+                    #                 ),
+                    #             )
+                    #         )
+                    #
+                    #     return self
+                    #
+                    # @model_validator(mode="after")
+                    # def ensure_second_signal_is_not_pure_virtual(
+                    #     self, info: ValidationInfo
+                    # ):
+                    #     if not info.context or self.second_signal is None:
+                    #         return self
+                    #     if info.context["mode"] <= ValidationMode.MINIMUM:
+                    #         return self
+                    #
+                    #     warning_list: list = info.context["warning_list"]
+                    #
+                    #     if self.second_signal.name in signals.pure_virtual:
+                    #         warning_list.append(
+                    #             PureVirtualDisallowedWarning(
+                    #                 "'second_signal' cannot be set to pure virtual signal '{}'; will be removed when imported".format(
+                    #                     self.second_signal.name
+                    #                 )
+                    #             )
+                    #         )
+                    #
+                    #     return self
+
+                    # Use class attributes to avoid circular import
+                    Condition = cls.__module__.split('.')[0] + '.prototypes.decider_combinator.DeciderCondition'
+                    Output = cls.__module__.split('.')[0] + '.prototypes.decider_combinator.DeciderOutput'
+                    # Actually use the directly available classes
+                    condition_type = getattr(__import__(cls.__module__, fromlist=['Condition']), 'DeciderCondition')
+                    output_type = getattr(__import__(cls.__module__, fromlist=['Output']), 'DeciderOutput')
+                    def is_valid_condition_dict(d):
+                        return isinstance(d, dict) and "first_signal" in d
+
+                    def is_valid_output_dict(d):
+                        return isinstance(d, dict) and "signal" in d
+
+                    # Convert dicts to DeciderCondition/DeciderOutput objects
+                    def ensure_condition(obj):
+                        if isinstance(obj, condition_type):
+                            return obj
+                        if isinstance(obj, dict) and is_valid_condition_dict(obj):
+                            if hasattr(condition_type, 'from_dict'):
+                                return condition_type.from_dict(obj)
+                            return condition_type(**obj)
+                        return obj
+
+                    def ensure_output(obj):
+                        if isinstance(obj, output_type):
+                            return obj
+                        if isinstance(obj, dict) and is_valid_output_dict(obj):
+                            if hasattr(output_type, 'from_dict'):
+                                return output_type.from_dict(obj)
+                            return output_type(**obj)
+                        return obj
+
+                    values["conditions"] = [ensure_condition(c) for c in values["conditions"]]
+                    values["outputs"] = [ensure_output(o) for o in values["outputs"]]
+
+                    return values
+
 
                 # @model_validator(mode="after")
                 # def ensure_proper_signal_configuration(self, info: ValidationInfo):
@@ -831,3 +979,35 @@ class DeciderCombinator(
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+    def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
+        """
+        Robustly serialize the DeciderCombinator to a dictionary, ensuring all
+        control_behavior, conditions, and outputs are included and properly typed.
+        Returns a dict suitable for blueprint export/import.
+        """
+        result = super().to_dict(exclude_none=exclude_none, exclude_defaults=exclude_defaults)
+
+        # Ensure control_behavior is included and properly serialized
+        if hasattr(self, 'control_behavior') and self.control_behavior:
+            cb = self.control_behavior
+            if hasattr(cb, 'decider_conditions') and cb.decider_conditions:
+                dc = cb.decider_conditions
+                # Serialize conditions and outputs under decider_conditions
+                decider_dict = {}
+                if hasattr(dc, 'conditions'):
+                    decider_dict['conditions'] = [
+                        c._root.model_dump(by_alias=True, exclude_none=exclude_none, exclude_defaults=exclude_defaults) if hasattr(c, '_root') else c
+                        for c in getattr(dc, 'conditions', [])
+                    ]
+                if hasattr(dc, 'outputs'):
+                    decider_dict['outputs'] = [
+                        o._root.model_dump(by_alias=True, exclude_none=exclude_none, exclude_defaults=exclude_defaults) if hasattr(o, '_root') else o
+                        for o in getattr(dc, 'outputs', [])
+                    ]
+                # Place under control_behavior['decider_conditions']
+                result.setdefault('control_behavior', {})['decider_conditions'] = decider_dict
+                # Remove old keys if present
+                result['control_behavior'].pop('conditions', None)
+                result['control_behavior'].pop('outputs', None)
+        return result
