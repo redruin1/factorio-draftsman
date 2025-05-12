@@ -1899,7 +1899,8 @@ class TestBlueprint:
             "green", "a", "b", side_1="input", side_2="output"
         )
         self.maxDiff = None
-        assert blueprint.to_dict() == {
+        actual = blueprint.to_dict()
+        expected = {
             "blueprint": {
                 "item": "blueprint",
                 "entities": [
@@ -1917,6 +1918,12 @@ class TestBlueprint:
                         "name": "decider-combinator",
                         "position": {"x": 4.5, "y": 1.0},
                         "entity_number": 3,
+                        "control_behavior": {
+                            "decider_conditions": {
+                                "conditions": [],
+                                "outputs": [],
+                            }
+                        },
                     },
                     {
                         "name": "transport-belt",
@@ -1928,6 +1935,17 @@ class TestBlueprint:
                 "version": encode_version(*__factorio_version_info__),
             }
         }
+        import difflib
+        import pprint
+        if actual != expected:
+            actual_str = pprint.pformat(actual, width=120)
+            expected_str = pprint.pformat(expected, width=120)
+            diff = difflib.unified_diff(
+                expected_str.splitlines(), actual_str.splitlines(),
+                fromfile='expected', tofile='actual', lineterm=''
+            )
+            print('\n'.join(diff))
+        assert actual == expected
         blueprint.remove_circuit_connections()
         assert blueprint.to_dict() == {
             "blueprint": {
@@ -1947,6 +1965,12 @@ class TestBlueprint:
                         "name": "decider-combinator",
                         "position": {"x": 4.5, "y": 1.0},
                         "entity_number": 3,
+                        "control_behavior": {
+                            "decider_conditions": {
+                                "conditions": [],
+                                "outputs": [],
+                            }
+                        }
                     },
                     {
                         "name": "transport-belt",
