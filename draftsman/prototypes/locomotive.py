@@ -3,7 +3,7 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     EquipmentGridMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     ColorMixin,
     EnergySourceMixin,
     OrientationMixin,
@@ -23,7 +23,7 @@ from typing import Optional
 @attrs.define
 class Locomotive(
     EquipmentGridMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     ColorMixin,
     EnergySourceMixin,
     OrientationMixin,

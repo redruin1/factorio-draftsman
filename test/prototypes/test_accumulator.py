@@ -11,6 +11,15 @@ from collections.abc import Hashable
 import pytest
 
 
+valid_accumulator = Accumulator(
+    "accumulator",
+    id="test",
+    quality="uncommon",
+    tile_position=(1, 1),
+    tags={"blah": "blah"},
+    output_signal="signal-B",
+)
+
 class TestAccumulator:
     def test_constructor_init(self):
         accumulator = Accumulator("accumulator", output_signal="signal-B")
@@ -120,6 +129,7 @@ class TestAccumulator:
                             ]
                         }
                     },
+                    "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
                 },
                 "tags": {"type": "object"},
             },
@@ -144,6 +154,7 @@ class TestAccumulator:
                             ]
                         }
                     },
+                    "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
                 },
                 "tags": {"type": "object"},
             },

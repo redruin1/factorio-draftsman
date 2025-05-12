@@ -4,6 +4,7 @@ from draftsman.error import DataFormatError
 
 import attrs
 
+import inspect
 import operator
 from typing import (
     Annotated,
@@ -28,7 +29,33 @@ def conditional(severity):
     """
 
     def decorator(meth):
-        def validator(
+        def class_validator(
+            self,
+            mode=None,
+            error_list: Optional[list] = None,
+            warning_list: Optional[list] = None,
+        ):
+            """Validator wrapper for `@classvalidator`."""
+            mode = mode if mode is not None else self.validate_assignment
+            if mode < severity:
+                return
+
+            try:
+                with warnings.catch_warnings(record=True) as ws:
+                    meth(self)
+            except Exception as e:
+                if error_list is None:
+                    raise e
+                else:
+                    error_list.append(e)
+
+            if warning_list is None:
+                for w in ws:
+                    warnings.warn(w.message)
+            else:
+                warning_list.extend([w.message for w in ws])
+
+        def attr_validator(
             self,
             attr,
             value,
@@ -36,10 +63,11 @@ def conditional(severity):
             error_list: Optional[list] = None,
             warning_list: Optional[list] = None,
         ):
+            """Validator wrapper for regular attribute validators."""
             mode = mode if mode is not None else self.validate_assignment
             if mode < severity:
                 return
-            
+
             try:
                 with warnings.catch_warnings(record=True) as ws:
                     meth(self, attr, value)
@@ -48,14 +76,18 @@ def conditional(severity):
                     raise e
                 else:
                     error_list.append(e)
-            
+
             if warning_list is None:
                 for w in ws:
                     warnings.warn(w.message)
             else:
                 warning_list.extend([w.message for w in ws])
 
-        return validator
+        sig = inspect.signature(meth)
+        if len(sig.parameters) == 1:
+            return class_validator
+        else:
+            return attr_validator
 
     return decorator
 
@@ -206,7 +238,7 @@ def instance_of(cls: type):
 
 
 class _OneOfValidator:
-    def __init__(self, *values):
+    def __init__(self, values):
         self.values = values
 
     def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
@@ -223,9 +255,9 @@ def one_of(*values):
     TODO
     """
     if len(values) == 1 and get_origin(values[0]) is Literal:
-        return _OneOfValidator(*get_args(values[0]))
+        return _OneOfValidator(get_args(values[0]))
     else:
-        return _OneOfValidator(*values)
+        return _OneOfValidator(values)
 
 
 @attrs.define(repr=False, frozen=True, slots=True)

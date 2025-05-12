@@ -49,6 +49,8 @@ def test_constructor():
             "auto_target_with_gunner": True,
         },
         "color": {"r": 255 / 255, "g": 127 / 255, "b": 0.0, "a": 127 / 255},
+        "driver_is_main_gunner": False,
+        "selected_gun_index": 1,
         "enable_logistics_while_moving": True,
         "grid": [],
         "items": [],

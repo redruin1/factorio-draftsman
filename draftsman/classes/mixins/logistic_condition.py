@@ -1,16 +1,16 @@
 # logistic_condition.py
 
+from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import AttrsSimpleCondition, AttrsSignalID, int32
 from draftsman.validators import instance_of
 
 import attrs
-from pydantic import BaseModel, Field
-from typing import Literal, Optional, Union
+from typing import Literal, Union
 
 
 @attrs.define(slots=False)
-class LogisticConditionMixin:  # (ControlBehaviorMixin)
+class LogisticConditionMixin(Exportable):  # (ControlBehaviorMixin)
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
 
@@ -18,42 +18,10 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
     amount of some item in the logistic network exceeds some constant.
     """
 
-    # =========================================================================
-
     connect_to_logistic_network: bool = attrs.field(
         default=False,
         validator=instance_of(bool),
     )
-
-    # @property
-    # def connect_to_logistic_network(self) -> bool:
-    #     """
-    #     Whether or not this entity should use it's logistic network condition to
-    #     control its operation (if it has one).
-
-    #     :getter: Gets the value of ``connect_to_logistic_network``, or ``None``
-    #         if not set.
-    #     :setter: Sets the value of ``connect_to_logistic_network``. Removes the
-    #         key if set to ``None``.
-
-    #     :exception TypeError: If set to anything other than a ``bool`` or
-    #         ``None``.
-    #     """
-    #     return self.control_behavior.connect_to_logistic_network
-
-    # @connect_to_logistic_network.setter
-    # def connect_to_logistic_network(self, value: bool):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "connect_to_logistic_network",
-    #             value,
-    #         )
-    #         self.control_behavior.connect_to_logistic_network = result
-    #     else:
-    #         self.control_behavior.connect_to_logistic_network = value
 
     # =========================================================================
 
@@ -118,23 +86,25 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
 
 
 # TODO: versioning
+
+LogisticConditionMixin.add_schema(
+    {
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "connect_to_logistic_network": {
+                        "type": "boolean",
+                        "default": "false",
+                    },
+                    "logistic_condition": {"$ref": "urn:factorio:simple-condition"},
+                },
+            }
+        },
+    }
+)
+
 draftsman_converters.add_hook_fns(
-    # {
-    #     "$schema": "http://json-schema.org/draft-07/schema#",
-    #     "$id": "factorio:logistic_condition",
-    #     "properties": {
-    #         "control_behavior": {
-    #             "type": "object",
-    #             "properties": {
-    #                 "connect_to_logistic_network": {
-    #                     "type": "boolean",
-    #                     "default": "false",
-    #                 },
-    #                 "logistic_condition": {"$ref": "factorio:simple_condition"},
-    #             },
-    #         }
-    #     },
-    # },
     LogisticConditionMixin,
     lambda fields: {
         (

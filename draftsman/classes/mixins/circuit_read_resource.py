@@ -1,5 +1,6 @@
 # circuit_read_resource.py
 
+from draftsman.classes.exportable import Exportable
 from draftsman.constants import MiningDrillReadMode
 from draftsman.serialization import draftsman_converters
 from draftsman.validators import instance_of
@@ -10,7 +11,7 @@ from typing import Optional
 
 
 @attrs.define(slots=False)
-class CircuitReadResourceMixin:  # (ControlBehaviorMixin)
+class CircuitReadResourceMixin(Exportable):
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
 
@@ -22,27 +23,6 @@ class CircuitReadResourceMixin:  # (ControlBehaviorMixin)
         | :py:class:`~draftsman.classes.mixins.circuit_read_hand.CircuitReadHandMixin`
     """
 
-    class ControlFormat(BaseModel):
-        circuit_read_resources: Optional[bool] = Field(
-            None,
-            description="""
-            Whether or not this mining drill should read the amount of resources
-            below it.
-            """,
-        )
-        circuit_resource_read_mode: Optional[MiningDrillReadMode] = Field(
-            None,
-            description="""
-            How resources under this mining drill should be broadcast to any 
-            connected circuit network, if 'circuit_read_resources' is true.
-            """,
-        )
-
-    class Format(BaseModel):
-        pass
-
-    # =========================================================================
-
     read_resources: bool = attrs.field(default=True, validator=instance_of(bool))
     """
     Whether or not this Entity is set to read the resources underneath to a
@@ -50,36 +30,6 @@ class CircuitReadResourceMixin:  # (ControlBehaviorMixin)
 
     :exception DataFormatError: If set to anything other than a ``bool``.
     """
-
-    # @property
-    # def read_resources(self) -> Optional[bool]:
-    #     """
-    #     Whether or not this Entity is set to read the resources underneath to a
-    #     circuit network.
-
-    #     :getter: Gets the value of ``read_resources``, or ``None`` if not set.
-    #     :setter: Sets the value of ``read_resources``.
-
-    #     :exception TypeError: If set to anything other than a ``bool`` or
-    #         ``None``.
-    #     """
-    #     return self.control_behavior.circuit_read_resources
-
-    # @read_resources.setter
-    # def read_resources(self, value: Optional[bool]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "circuit_read_resources",
-    #             value,
-    #         )
-    #         self.control_behavior.circuit_read_resources = result
-    #     else:
-    #         self.control_behavior.circuit_read_resources = value
-
-    # =========================================================================
 
     read_mode: MiningDrillReadMode = attrs.field(
         default=MiningDrillReadMode.UNDER_DRILL,
@@ -95,35 +45,23 @@ class CircuitReadResourceMixin:  # (ControlBehaviorMixin)
         ``MiningDrillReadMode`` value or their ``int`` equivalent.
     """
 
-    # @property
-    # def read_mode(self) -> MiningDrillReadMode:
-    #     """
-    #     The mode in which the resources underneath the Entity should be read.
-    #     Either ``MiningDrillReadMode.UNDER_DRILL`` or
-    #     ``MiningDrillReadMode.TOTAL_PATCH``.
 
-    #     :getter: Gets the value of ``read_mode``, or ``None`` if not set.
-    #     :setter: Sets the value of ``read_mode``.
-
-    #     :exception ValueError: If set to anything other than a
-    #         ``MiningDrillReadMode`` value or their ``int`` equivalent.
-    #     """
-    #     return self.control_behavior.circuit_resource_read_mode
-
-    # @read_mode.setter
-    # def read_mode(self, value: MiningDrillReadMode):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "circuit_resource_read_mode",
-    #             value,
-    #         )
-    #         self.control_behavior.circuit_resource_read_mode = result
-    #     else:
-    #         self.control_behavior.circuit_resource_read_mode = value
-
+CircuitReadResourceMixin.add_schema(
+    {
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "circuit_read_resources": {"type": "boolean", "default": "true"},
+                    "circuit_resource_read_mode": {
+                        "enum": [0, 1],
+                        "default": 0,
+                    },
+                },
+            }
+        }
+    }
+)
 
 draftsman_converters.add_hook_fns(
     # {"$id": "factorio:circuit_read_resources_mixin"},

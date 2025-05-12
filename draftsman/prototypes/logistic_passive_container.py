@@ -2,7 +2,7 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    RequestItemsMixin,
+    ItemRequestMixin,
     LogisticModeOfOperationMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,
@@ -25,7 +25,7 @@ from pydantic import ConfigDict
 @attrs.define
 class LogisticPassiveContainer(
     InventoryMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     LogisticModeOfOperationMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,
@@ -39,7 +39,7 @@ class LogisticPassiveContainer(
 
     # class Format(
     #     InventoryMixin.Format,
-    #     RequestItemsMixin.Format,
+    #     ItemRequestMixin.Format,
     #     LogisticModeOfOperationMixin.Format,
     #     CircuitConditionMixin.Format,
     #     ControlBehaviorMixin.Format,

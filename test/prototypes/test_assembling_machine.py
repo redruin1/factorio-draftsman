@@ -66,6 +66,44 @@ class TestAssemblingMachine:
             "recipe": "iron-gear-wheel",
         }
 
+    def test_json_schema(self):
+        assert AssemblingMachine.json_schema(version=(1, 0)) == {
+            "$id": "urn:factorio:entity:assembling-machine",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {
+                    "$ref": "urn:factorio:position",
+                },
+                "recipe": {"type": "string"},
+                "direction": {"enum": list(range(8)), "default": 0},
+                "items": {"type": "array", "items": {"$ref": "urn:factorio:item-request"}},
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"]
+        }
+        assert AssemblingMachine.json_schema(version=(2, 0)) == {
+            "$id": "urn:factorio:entity:assembling-machine",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {
+                    "$ref": "urn:factorio:position",
+                },
+                "quality": {"$ref": "urn:factorio:quality-name"},
+                "recipe": {"type": "string"},
+                "recipe_quality": {"$ref": "urn:factorio:quality-name"},
+                "direction": {"enum": list(range(16)), "default": 0},
+                "items": {"type": "array", "items": {"$ref": "urn:factorio:item-request"}},
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"]
+        }
+
     def test_power_and_circuit_flags(self):
         # TODO: what about different versions?
         for name in assembling_machines:

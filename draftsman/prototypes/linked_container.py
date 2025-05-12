@@ -1,7 +1,7 @@
 # linked_container.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import InventoryMixin, RequestItemsMixin
+from draftsman.classes.mixins import InventoryMixin, ItemRequestMixin
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import uint32
 from draftsman.validators import instance_of
@@ -12,7 +12,7 @@ import attrs
 
 
 @attrs.define
-class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
+class LinkedContainer(InventoryMixin, ItemRequestMixin, Entity):
     """
     An entity that allows sharing it's contents with any other ``LinkedContainer``
     with the same ``link_id``.
@@ -20,7 +20,7 @@ class LinkedContainer(InventoryMixin, RequestItemsMixin, Entity):
 
     # class Format(
     #     InventoryMixin.Format,
-    #     RequestItemsMixin.Format,
+    #     ItemRequestMixin.Format,
     #     Entity.Format,
     # ):
     #     link_id: Optional[uint32] = Field(

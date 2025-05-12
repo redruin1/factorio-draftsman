@@ -1,15 +1,15 @@
 # recipe.py
 
+from draftsman.classes.exportable import Exportable
 from draftsman.constants import ValidationMode
 from draftsman.data import modules, recipes
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     QualityName,
     RecipeName,
-    get_suggestion,
     AttrsItemRequest,
 )
-from draftsman.validators import instance_of, is_none, one_of, or_, and_
+from draftsman.validators import instance_of, is_none, one_of, or_, and_, conditional
 from draftsman.warning import (
     ItemLimitationWarning,
     ModuleLimitationWarning,
@@ -18,115 +18,16 @@ from draftsman.warning import (
 )
 
 import attrs
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import Optional
 import warnings
 
 
 @attrs.define(slots=False)
-class RecipeMixin:
+class RecipeMixin(Exportable):
     """
     Enables the Entity to have a current recipe it's set to make and a set of
     recipes that it can make.
     """
-
-    # class Format(BaseModel):
-    #     recipe: Optional[str] = Field(
-    #         None, description="""The name of the entity's selected recipe."""
-    #     )
-    #     recipe_quality: Optional[
-    #         Literal["normal", "uncommon", "rare", "epic", "legendary"]
-    #     ] = Field(
-    #         "normal", description="""The specified quality of the selected recipe."""
-    #     )
-
-    #     @field_validator("recipe")
-    #     @classmethod
-    #     def ensure_recipe_known(cls, value: Optional[str], info: ValidationInfo):
-    #         if not info.context or value is None:
-    #             return value
-    #         if info.context["mode"] <= ValidationMode.MINIMUM:
-    #             return value
-
-    #         warning_list: list = info.context["warning_list"]
-
-    #         if value not in recipes.raw:
-    #             warning_list.append(
-    #                 UnknownRecipeWarning(
-    #                     "'{}' is not a known recipe{}".format(
-    #                         value, get_suggestion(value, recipes.raw.keys(), 1)
-    #                     )
-    #                 )
-    #             )
-
-    #         return value
-
-    #     @field_validator("recipe")
-    #     @classmethod
-    #     def ensure_recipe_allowed_in_machine(
-    #         cls, value: Optional[str], info: ValidationInfo
-    #     ):
-    #         if not info.context or value is None:
-    #             return value
-    #         if info.context["mode"] <= ValidationMode.MINIMUM:
-    #             return value
-
-    #         entity: "RecipeMixin" = info.context["object"]
-    #         warning_list: list = info.context["warning_list"]
-
-    #         if entity.allowed_recipes is None:  # entity not recognized
-    #             return value
-
-    #         if value in recipes.raw and value not in entity.allowed_recipes:
-    #             warning_list.append(
-    #                 RecipeLimitationWarning(
-    #                     "'{}' is not a valid recipe for '{}'; allowed recipes are: {}".format(
-    #                         value, entity.name, entity.allowed_recipes
-    #                     )
-    #                 )
-    #             )
-
-    #         return value
-
-    #     @field_validator("recipe", mode="after")
-    #     @classmethod
-    #     def check_items_fit_in_recipe(cls, value: Optional[str], info: ValidationInfo):
-    #         if not info.context or value is None:
-    #             return value
-    #         if info.context["mode"] <= ValidationMode.MINIMUM:
-    #             return value
-
-    #         entity: "RecipeMixin" = info.context["object"]
-    #         if entity.items == {}:
-    #             return value
-
-    #         warning_list: list = info.context["warning_list"]
-
-    #         # TODO: display all items that don't fit with the current recipe in
-    #         # one warnings
-    #         for item in entity.items:
-    #             if item["id"]["name"] not in entity.allowed_items:
-    #                 warning_list.append(
-    #                     ItemLimitationWarning(
-    #                         "Item '{}' is not used with the current recipe ({})".format(
-    #                             item["id"]["name"], entity.recipe
-    #                         ),
-    #                     )
-    #                 )
-    #                 break
-
-    #         return value
-
-    # def __init__(self, name: str, similar_entities: list[str], **kwargs):
-    #     self._root: __class__.Format
-
-    #     super().__init__(name, similar_entities, **kwargs)
-
-    #     # Recipe that this machine is currently set to
-    #     self.recipe = kwargs.get("recipe", None)
-    #     self.recipe_quality = kwargs.get("recipe_quality", None)
-
-    # =========================================================================
 
     @property
     def allowed_recipes(self) -> list[str]:
@@ -150,63 +51,8 @@ class RecipeMixin:
 
     # =========================================================================
 
-    def _ensure_allowed_recipe(
-        self,
-        attr,
-        value,
-        mode: Optional[ValidationMode] = None,
-        warning_list: Optional[list] = None,
-    ):
-        mode = mode if mode is not None else self.validate_assignment
-
-        if mode >= ValidationMode.STRICT:
-            if value is None:  # Nothing to validate if empty
-                return
-            if self.allowed_recipes is None:  # This entity is not currently known
-                return
-            if value not in self.allowed_recipes:
-                msg = "'{}' is not a valid recipe for '{}'; allowed recipes are: {}".format(
-                    value, self.name, self.allowed_recipes
-                )
-                if warning_list is None:
-                    warnings.warn(RecipeLimitationWarning(msg))
-                else:
-                    warning_list.append(RecipeLimitationWarning(msg))
-
-    # TODO: this should be in ModulesMixin
-    def _ensure_modules_permitted_with_recipe(
-        self,
-        attr,
-        value,
-        mode: Optional[ValidationMode] = None,
-        warning_list: Optional[list] = None,
-    ):
-        mode = mode if mode is not None else self.validate_assignment
-
-        if mode >= ValidationMode.STRICT:
-            allowed_modules = modules.get_modules_from_effects(
-                self.allowed_effects, value
-            )
-            if allowed_modules is None:
-                return
-            for item in self.item_requests:
-                item: AttrsItemRequest
-                if item.id.name not in allowed_modules:
-                    msg = "Module '{}' cannot be inserted into a machine with recipe '{}'".format(
-                        item.id.name, value
-                    )
-                    if warning_list is None:
-                        warnings.warn(ItemLimitationWarning(msg))
-                    else:
-                        warning_list.append(ItemLimitationWarning(msg))
-
     recipe: Optional[RecipeName] = attrs.field(
-        default=None,
-        validator=and_(
-            instance_of(Optional[RecipeName]),
-            _ensure_allowed_recipe,
-            _ensure_modules_permitted_with_recipe,
-        ),
+        default=None, validator=instance_of(Optional[RecipeName])
     )
     """
     The recipe that this Entity is currently set to make.
@@ -225,38 +71,51 @@ class RecipeMixin:
         ``None``.
     """
 
-    # @property
-    # def recipe(self) -> str:
-    #     """
-    #     The recipe that this Entity is currently set to make.
+    @recipe.validator
+    @conditional(ValidationMode.STRICT)
+    def _ensure_allowed_recipe(
+        self,
+        _: attrs.Attribute,
+        value: Optional[RecipeName],
+    ):
+        if value is None:  # Nothing to validate if empty
+            return
 
-    #     Raises a :py:class:`~draftsman.warning.ModuleLimitationWarning` if the
-    #     recipe changes to one that conflicts with the current module requests.
+        if self.allowed_recipes is None:  # This entity is not currently known
+            return
 
-    #     Raises a :py:class:`~draftsman.warning.ItemLimtiationWarning` if the
-    #     recipe changes to one whose input ingredients no longer match the
-    #     current item requests.
+        if value not in self.allowed_recipes:
+            msg = "'{}' is not a valid recipe for '{}'; allowed recipes are: {}".format(
+                value, self.name, self.allowed_recipes
+            )
+            warnings.warn(RecipeLimitationWarning(msg))
 
-    #     :getter: Gets the current recipe of the Entity.
-    #     :setter: Sets the current recipe of the Entity.
+    # TODO: this should be in ModulesMixin
+    @recipe.validator
+    @conditional(ValidationMode.STRICT)
+    def _(
+        self,
+        _: attrs.Attribute,
+        value: Optional[RecipeName],
+    ):
+        """
+        Ensure that the modules currently requested to this entity are permitted
+        with the currently set recipe.
+        """
+        if value is None:  # Nothing to validate if empty
+            return
 
-    #     :exception TypeError: If set to anything other than a ``str`` or
-    #         ``None``.
-    #     :exception InvalidRecipeError: If set to a string that is not contained
-    #         within this Entity's ``recipes``.
-    #     """
-    #     return self._root.recipe
+        allowed_modules = modules.get_modules_from_effects(self.allowed_effects, value)
+        if allowed_modules is None:  # This entity is not currently known
+            return
 
-    # @recipe.setter
-    # def recipe(self, value: str):
-    #     if self.validate_assignment:
-    #         self._root.recipe = value  # TODO: FIXME; this is bad practice
-    #         result = attempt_and_reissue(
-    #             self, type(self).Format, self._root, "recipe", value
-    #         )
-    #         self._root.recipe = result
-    #     else:
-    #         self._root.recipe = value
+        for item in self.item_requests:
+            item: AttrsItemRequest
+            if item.id.name not in allowed_modules:
+                msg = "Module '{}' cannot be inserted into a machine with recipe '{}'".format(
+                    item.id.name, value
+                )
+                warnings.warn(ItemLimitationWarning(msg))
 
     # =========================================================================
 
@@ -273,30 +132,6 @@ class RecipeMixin:
         ``None``.
     """
 
-    # @property
-    # def recipe_quality(self) -> Optional[str]:
-    #     """
-    #     The quality of the recipe that this Entity is selected to make.
-
-    #     :getter: Gets the current recipe quality of the Entity.
-    #     :setter: Sets the current recipe quality of the Entity.
-
-    #     :exception DataFormatError: If set to anything other than a ``str`` or
-    #         ``None``.
-    #     """
-    #     return self._root.recipe
-
-    # @recipe_quality.setter
-    # def recipe_quality(self, value: str):
-    #     if self.validate_assignment:
-    #         self._root.recipe_quality = value  # TODO: FIXME; this is bad practice
-    #         result = attempt_and_reissue(
-    #             self, type(self).Format, self._root, "recipe_quality", value
-    #         )
-    #         self._root.recipe_quality = result
-    #     else:
-    #         self._root.recipe_quality = value
-
     # =========================================================================
 
     def merge(self, other: "RecipeMixin"):
@@ -306,8 +141,16 @@ class RecipeMixin:
         super().merge(other)
 
 
+RecipeMixin.add_schema(
+    {
+        "properties": {
+            "recipe": {"type": "string"},
+        }
+    },
+    version=(1, 0),
+)
+
 draftsman_converters.get_version((1, 0)).add_hook_fns(
-    # {"$id": "factorio:recipe_mixin"},
     RecipeMixin,
     lambda fields: {
         "recipe": fields.recipe.name,
@@ -319,9 +162,17 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
     },
 )
 
+RecipeMixin.add_schema(
+    {
+        "properties": {
+            "recipe": {"type": "string"},
+            "recipe_quality": {"$ref": "urn:factorio:quality-name"},
+        }
+    },
+    version=(2, 0),
+)
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
-    # {"$id": "factorio:recipe_mixin"},
     RecipeMixin,
     lambda fields: {
         "recipe": fields.recipe.name,

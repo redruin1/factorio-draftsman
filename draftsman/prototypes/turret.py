@@ -3,7 +3,7 @@
 # TODO: remove
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import RequestItemsMixin, DirectionalMixin
+from draftsman.classes.mixins import ItemRequestMixin, DirectionalMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, ValidationMode
 from draftsman.signatures import uint32
@@ -15,14 +15,14 @@ from pydantic import ConfigDict
 from typing import Any, Literal, Optional, Union
 
 
-class Turret(RequestItemsMixin, DirectionalMixin, Entity):
+class Turret(ItemRequestMixin, DirectionalMixin, Entity):
     """
     An entity that automatically targets and attacks other forces within range.
     Catch-all class for every type of turret in Factorio.
     TODO: update to 2.0 terminology
     """
 
-    class Format(RequestItemsMixin.Format, DirectionalMixin.Format, Entity.Format):
+    class Format(ItemRequestMixin.Format, DirectionalMixin.Format, Entity.Format):
         model_config = ConfigDict(title="Turret")
 
     def __init__(

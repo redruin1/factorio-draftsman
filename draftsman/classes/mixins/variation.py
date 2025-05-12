@@ -1,5 +1,6 @@
 # variation.py
 
+from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import uint16
 from draftsman.validators import instance_of
@@ -8,7 +9,7 @@ import attrs
 
 
 @attrs.define(slots=False)
-class VariationMixin:
+class VariationMixin(Exportable):
     """
     Mixin that gives the entity a graphical variation index. Used for decorative
     entities like text-plates.
@@ -20,8 +21,11 @@ class VariationMixin:
     """
 
 
+VariationMixin.add_schema(
+    {"properties": {"variation": {"$ref": "urn:uint16", "default": 1}}}
+)
+
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:simple_entity_with_owner"},
     VariationMixin,
     lambda fields: {"variation": fields.variation.name},
 )

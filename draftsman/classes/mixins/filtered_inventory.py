@@ -1,5 +1,6 @@
 # filtered_inventory.py
 
+from draftsman.classes.exportable import Exportable
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
@@ -18,7 +19,7 @@ from typing import Optional
 
 
 @attrs.define(slots=False)
-class FilteredInventoryMixin:  # TODO: rename to `FilteredInventoryMixin`
+class FilteredInventoryMixin(Exportable):
     """
     Allows an Entity to set inventory filters.
     """
@@ -32,53 +33,6 @@ class FilteredInventoryMixin:  # TODO: rename to `FilteredInventoryMixin`
         only.
         """
         return entities.raw.get(self.name, {"inventory_size": None})["inventory_size"]
-
-    # =========================================================================
-
-    # @property
-    # def inventory(self) -> Format.InventoryFilters:
-    #     """
-    #     Inventory filter object. Contains the filter information under the
-    #     ``"filters"`` key and the inventory limiting bar under the ``"bar"`` key.
-
-    #     This attribute is in the following format::
-
-    #         {
-    #             "bar": int,
-    #             "filters": [
-    #                 {"index": int, "signal": {"name": str, "type": str}},
-    #                 ...
-    #             ]
-    #         }
-
-    #     :getter: Gets the value of the Entity's ``inventory`` object.
-    #     :setter: Sets the value of the Entity's ``inventory`` object. Defaults
-    #         to an empty ``dict`` if set to ``None``.
-
-    #     :exception DataFormatError: If the set value differs from the
-    #         ``INVENTORY_FILTER`` specification.
-    #     """
-    #     return self._root.inventory
-
-    # @inventory.setter
-    # def inventory(self, value: Format.InventoryFilters):
-    #     test_replace_me(
-    #         self,
-    #         type(self).Format,
-    #         self._root,
-    #         "inventory",
-    #         value,
-    #         self.validate_assignment,
-    #     )
-    #     # if self.validate_assignment:
-    #     #     value = attempt_and_reissue(
-    #     #         self, type(self).Format, self._root, "inventory", value
-    #     #     )
-
-    #     # if value is None:
-    #     #     self._root.inventory = __class__.Format.InventoryFilters()
-    #     # else:
-    #     #     self._root.inventory = value
 
     # =========================================================================
 
@@ -99,35 +53,6 @@ class FilteredInventoryMixin:  # TODO: rename to `FilteredInventoryMixin`
     """
     The list of filters applied to this entity's inventory slots.
     """
-
-    # @property
-    # def filters(self) -> Optional[list[ItemFilter]]:
-    #     """
-    #     TODO
-    #     """
-    #     return self.inventory.filters
-
-    # @filters.setter
-    # def filters(self, value: Optional[list[ItemFilter]]):
-    #     test_replace_me(
-    #         self,
-    #         type(self).Format.InventoryFilters,
-    #         self.inventory,
-    #         "filters",
-    #         value,
-    #         self.validate_assignment,
-    #     )
-    #     # if self.validate_assignment:
-    #     #     result = attempt_and_reissue(
-    #     #         self,
-    #     #         __class__.Format.InventoryFilters,
-    #     #         self.inventory,
-    #     #         "filters",
-    #     #         value,
-    #     #     )
-    #     #     self.inventory.filters = result
-    #     # else:
-    #     #     self.inventory.filters = value
 
     # =========================================================================
 
@@ -153,44 +78,6 @@ class FilteredInventoryMixin:  # TODO: rename to `FilteredInventoryMixin`
     :exception IndexError: If the set value lies outside of the range
         ``[0, 65536)``.
     """
-
-    # @property
-    # def bar(self) -> uint16:
-    #     """
-    #     The limiting bar of the inventory. Used to prevent a the final-most
-    #     slots in the inventory from accepting items.
-
-    #     Raises :py:class:`~draftsman.warning.IndexWarning` if the set value
-    #     exceeds the Entity's ``inventory_size`` attribute.
-
-    #     :getter: Gets the bar location of the inventory, or ``None`` if not set.
-    #     :setter: Sets the bar location of the inventory. Removes the entry from
-    #         the ``inventory`` object.
-
-    #     :exception TypeError: If set to anything other than an ``int`` or
-    #         ``None``.
-    #     :exception IndexError: If the set value lies outside of the range
-    #         ``[0, 65536)``.
-    #     """
-    #     return self.inventory.bar
-
-    # @bar.setter
-    # def bar(self, value: uint16):
-    #     test_replace_me(
-    #         self,
-    #         type(self).Format.InventoryFilters,
-    #         self.inventory,
-    #         "bar",
-    #         value,
-    #         self.validate_assignment,
-    #     )
-    #     # if self.validate_assignment:
-    #     #     result = attempt_and_reissue(
-    #     #         self, __class__.Format.InventoryFilters, self.inventory, "bar", value
-    #     #     )
-    #     #     self.inventory.bar = result
-    #     # else:
-    #     #     self.inventory.bar = value
 
     # =========================================================================
 
@@ -242,38 +129,6 @@ class FilteredInventoryMixin:  # TODO: rename to `FilteredInventoryMixin`
             # If no entry with the same index was found
             self.inventory_filters.append(new_entry)
 
-    # def set_inventory_filters(self, filters: list):
-    #     """
-    #     Sets all the inventory filters of the Entity.
-
-    #     ``filters`` can be either of the following formats::
-
-    #         [{"index": int, "signal": {"name": item_name_1, "type": "item"}}, ...]
-    #         # Or
-    #         [{"index": int, "signal": item_name_1}, ...]
-    #         # Or
-    #         [item_name_1, item_name_2, ...]
-
-    #     With the second format, the index of each item is set to it's position
-    #     in the list. ``filters`` can also be ``None``, which will wipe all
-    #     inventory filters that the Entity has.
-
-    #     :param filters: The inventory filters to give the Entity.
-
-    #     :exception DataFormatError: If the ``filters`` argument does not match
-    #         the specification above.
-    #     :exception InvalidItemError: If the item name of one of the entries is
-    #         not valid.
-    #     :exception IndexError: If the index of one of the entries lies outside
-    #         the range ``[0, inventory_size)``.
-    #     """
-    #     result = attempt_and_reissue(
-    #         self, __class__.Format.InventoryFilters, self.inventory, "filters", filters
-    #     )
-    #     self.inventory.filters = result
-
-    # =========================================================================
-
     def merge(self, other: "FilteredInventoryMixin"):
         super().merge(other)
 
@@ -281,8 +136,24 @@ class FilteredInventoryMixin:  # TODO: rename to `FilteredInventoryMixin`
         self.bar = other.bar
 
 
+FilteredInventoryMixin.add_schema(
+    {
+        "properties": {
+            "inventory": {
+                "type": "object",
+                "properties": {
+                    "filters": {
+                        "type": "array",
+                        "items": {"$ref": "urn:factorio:item-filter"},
+                    },
+                    "bar": {"oneOf": [{"type": "urn:uint16"}, {"type": "null"}]},
+                },
+            }
+        }
+    }
+)
+
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:filtered_inventory_mixin"},
     FilteredInventoryMixin,
     lambda fields: {
         ("inventory", "filters"): fields.inventory_filters.name,

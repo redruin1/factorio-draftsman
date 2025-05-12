@@ -7,7 +7,6 @@ Reference
     blueprintable.rst
     constants.rst
     entity.rst
-    env.rst
     error.rst
     extras.rst
     signatures.rst
@@ -15,5 +14,6 @@ Reference
     utils.rst
     warning.rst
     classes/index.rst
+    environment/index.rst
     data/index.rst
     prototypes/index.rst

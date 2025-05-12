@@ -39,7 +39,8 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.doctest",
     "sphinx_copybutton",
-    "sphinxcontrib.autodoc_pydantic"
+    "sphinx-jsonschema",
+    "sphinx_toolbox.collapse"
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -91,15 +92,19 @@ def setup(app):
     # Mostly just for readthedocs configuration pass
     # We check to see if the mods.pkl file exists
     # If it does, we ignore this step
-    # If not, we run draftsman.env.update()
+    # If not, we run `update_draftsman_data()`
     # This ensures that the module is always setup before running autodoc, which is a must
     # Would be nice to just add a regular command in the readthedocs config, but that would be too simple
     import os.path
     import draftsman
 
     mods_pkl = os.path.join(draftsman.__path__[0], "data", "mods.pkl")
-    print(mods_pkl)
     if not os.path.isfile(mods_pkl):
-        from draftsman.env import update
+        from draftsman.environment.update import update_draftsman_data
 
-        update(verbose=True)
+        draftsman_install_folder = os.path.dirname(os.path.abspath(draftsman.__file__))
+
+        default_game_path = os.path.join(draftsman_install_folder, "factorio-data")
+        default_mod_path = os.path.join(draftsman_install_folder, "factorio-mods")
+
+        update_draftsman_data(default_game_path, default_mod_path, verbose=True)

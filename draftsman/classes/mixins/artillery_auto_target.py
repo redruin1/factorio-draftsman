@@ -22,7 +22,7 @@ class ArtilleryAutoTargetMixin(Exportable):
 
 
 ArtilleryAutoTargetMixin.add_schema(
-    {"properties": {"artillery_auto_targeting": {"type": "boolean"}}}
+    {"properties": {"artillery_auto_targeting": {"type": "boolean", "default": "true"}}}
 )
 
 

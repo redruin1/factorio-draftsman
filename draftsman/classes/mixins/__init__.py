@@ -19,6 +19,7 @@ from draftsman.classes.mixins.filters import FiltersMixin
 from draftsman.classes.mixins.input_ingredients import InputIngredientsMixin
 from draftsman.classes.mixins.inventory import InventoryMixin
 from draftsman.classes.mixins.io_type import IOTypeMixin
+from draftsman.classes.mixins.item_requests import ItemRequestMixin
 from draftsman.classes.mixins.logistic_condition import LogisticConditionMixin
 from draftsman.classes.mixins.mode_of_operation import InserterModeOfOperationMixin
 from draftsman.classes.mixins.mode_of_operation import LogisticModeOfOperationMixin
@@ -31,7 +32,6 @@ from draftsman.classes.mixins.read_ammo import ReadAmmoMixin
 from draftsman.classes.mixins.read_rail_signal import ReadRailSignalMixin
 from draftsman.classes.mixins.recipe import RecipeMixin
 from draftsman.classes.mixins.request_filters import RequestFiltersMixin
-from draftsman.classes.mixins.request_items import RequestItemsMixin
 from draftsman.classes.mixins.stack_size import StackSizeMixin
 from draftsman.classes.mixins.target_priorities import TargetPrioritiesMixin
 from draftsman.classes.mixins.variation import VariationMixin

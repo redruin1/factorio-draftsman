@@ -573,10 +573,6 @@ class Orientation(float):
             special_name = ""
         return "<%s%s: %r>" % (self.__class__.__name__, special_name, self._value_)
 
-    @classmethod
-    def __get_pydantic_core_schema__(cls, a, b):
-        return core_schema.float_schema()
-
 
 # Note: this is a bit scuffed
 # Ideally Orientation would be the same as an Enum, but with no restriction on

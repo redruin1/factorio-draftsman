@@ -212,12 +212,6 @@ class UpgradePlanner(Blueprintable):
     """
 
     # =========================================================================
-    # Format
-    # =========================================================================
-
-    # TODO
-
-    # =========================================================================
     # Properties
     # =========================================================================
 
@@ -281,7 +275,11 @@ class UpgradePlanner(Blueprintable):
 
     @mappers.validator
     @conditional(ValidationMode.STRICT)
-    def _ensure_valid_mappings(self, attr: attrs.Attribute, value: list[AttrsMapper]):
+    def _mappers_validator(self, attr: attrs.Attribute, value: list[AttrsMapper]):
+        """
+        Ensure the given mappings are correct, and that there aren't any mappers
+        that occupy the same indices.
+        """
         occupied_indices = {}
         # warning_list = []
         for mapper in value:
@@ -290,7 +288,7 @@ class UpgradePlanner(Blueprintable):
             # and "to" may be omitted
             reasons = check_valid_upgrade_pair(mapper.from_, mapper.to)
             if reasons is not None:
-                [warnings.warn(w) for w in reasons] # :)
+                [warnings.warn(w) for w in reasons]  # :)
 
             # 1.0
             # # If the index is greater than mapper_count, then the mapping will
@@ -337,44 +335,6 @@ class UpgradePlanner(Blueprintable):
                     )
                 )
 
-    # @property
-    # def mappers(self) -> Optional[list[Mapper]]:
-    #     """
-    #     The list of mappings of one entity or item type to the other entity or
-    #     item type.
-
-    #     Using :py:meth:`.set_mapping()` will attempt to keep this list sorted
-    #     by each mapping's internal ``"index"``, but outside of this function
-    #     this  behavior is not required or enforced.
-
-    #     :getter: Gets the mappers dictionary, or ``None`` if not set.
-    #     :setter: Sets the mappers dictionary, or deletes the dictionary if set
-    #         to ``None``
-    #     """
-    #     return self._root[self._root_item]["settings"].get("mappers", None)
-
-    # @mappers.setter
-    # def mappers(self, value: Optional[list[Union[tuple[str, str], Mapper]]]):
-    #     test_replace_me(
-    #         self,
-    #         self.Format.UpgradePlannerObject.Settings,
-    #         self._root[self._root_item]["settings"],
-    #         "mappers",
-    #         value,
-    #         self.validate_assignment,
-    #     )
-    #     # if self.validate_assignment:
-    #     #     result = attempt_and_reissue(
-    #     #         self,
-    #     #         self.Format.UpgradePlannerObject.Settings,
-    #     #         self._root[self._root_item]["settings"],
-    #     #         "mappers",
-    #     #         value,
-    #     #     )
-    #     #     self._root[self._root_item]["settings"]["mappers"] = result
-    #     # else:
-    #     #     self._root[self._root_item]["settings"]["mappers"] = value
-
     # =========================================================================
 
     @reissue_warnings
@@ -402,17 +362,6 @@ class UpgradePlanner(Blueprintable):
             Can be set to ``None`` which will leave it blank.
         :param index: The location in the upgrade planner's mappers list.
         """
-        # from_obj = AttrsMapperID.converter(from_obj)
-        # to_obj = AttrsMapperID.converter(to_obj)
-        # index = int(index)
-
-        # new_mapping = {"index": index}
-        # Both 'from' and 'to' can be None and end up blank
-        # if from_obj is not None:
-        #     new_mapping["from"] = from_obj
-        # if to_obj is not None:
-        #     new_mapping["to"] = to_obj
-
         new_mapping = AttrsMapper(index=index, from_=from_obj, to=to_obj)
 
         # Iterate over indexes to see where we should place the new mapping
@@ -501,11 +450,47 @@ class UpgradePlanner(Blueprintable):
         raise ValueError("Unable to find mapper with index '{}'".format(index))
 
 
+UpgradePlanner.add_schema(
+    {
+        "$id": "urn:factorio:upgrade-planner",
+        "type": "object",
+        "description": "Upgrade planner string format.",
+        "properties": {
+            "upgrade_planner": {
+                "type": "object",
+                "properties": {
+                    "item": {"const": "deconstruction-planner"},
+                    "label": {"type": "string"},
+                    "label_color": {"$ref": "urn:factorio:color"},
+                    "settings": {
+                        "type": "object",
+                        "properties": {
+                            "description": {"type": "string"},
+                            "icons": {
+                                "type": "array",
+                                "items": {"$ref": "urn:factorio:icon"},
+                                "maxItems": 4,
+                            },
+                            "mappers": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "urn:factorio:upgrade-planner:mapper"
+                                },
+                                "maxItems": 1000,  # TODO: this is 30 on Factorio 1.0
+                            },
+                        },
+                    },
+                    "version": {"$ref": "urn:uint64"},
+                },
+            }
+        },
+    }
+)
+
+
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:upgrade_planner"},
     UpgradePlanner,
     lambda fields: {
-        ("upgrade_planner", "item"): fields.item.name,
         ("upgrade_planner", "item"): fields.item.name,
         ("upgrade_planner", "label"): fields.label.name,
         ("upgrade_planner", "label_color"): fields.label_color.name,

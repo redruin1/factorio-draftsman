@@ -535,25 +535,43 @@ class Exportable:
         # )
 
     @classmethod
-    def add_schema(cls, schema, version: tuple[int, ...] = None):
+    def add_schema(cls, schema, version: tuple[int, ...] = None, mro=None):
+        # Special case where we want to explicitly state that this object has
+        # no schema for this particular version
+        if schema is None:
+            draftsman_converters.get_version(version).cls_schemas[cls] = schema
+            return
+        if mro is None:
+            mro = cls.__mro__[1:-1]
+
         schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
-        # TODO
         if version is None:
             for version in draftsman_converters.versions:
                 # merge the dicts of inherited classes together
                 res = {}
-                for subcls in reversed(cls.__mro__[:-1]):
+                for subcls in reversed(mro):
                     try:
                         subschema = draftsman_converters.get_version(
                             version
                         ).get_schema(subcls)
-                        dict_merge(res, subschema)
+                        dict_merge(res, copy.deepcopy(subschema))
                     except KeyError:
                         pass
                 dict_merge(res, schema)
                 draftsman_converters.get_version(version).add_schema(res, cls)
         else:
-            draftsman_converters.get_version(version).add_schema(schema, cls)
+            # merge the dicts of inherited classes together
+            res = {}
+            for subcls in reversed(mro):
+                try:
+                    subschema = draftsman_converters.get_version(version).get_schema(
+                        subcls
+                    )
+                    dict_merge(res, copy.deepcopy(subschema))
+                except KeyError:
+                    pass
+            dict_merge(res, schema)
+            draftsman_converters.get_version(version).add_schema(res, cls)
 
     @classmethod
     def json_schema(
@@ -581,7 +599,6 @@ class Exportable:
             descriptions.
         """
         # TODO: should this be tested?
-        print(cls)
         return draftsman_converters.get_version(version).get_schema(cls)
 
     # TODO

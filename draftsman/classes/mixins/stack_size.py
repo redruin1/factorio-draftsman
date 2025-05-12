@@ -1,23 +1,16 @@
 # stack_size.py
 
+from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import AttrsSignalID, uint8
 from draftsman.validators import instance_of
 
 import attrs
-from pydantic import BaseModel, Field
-
-# import six
 from typing import Optional
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.entity import Entity
 
 
 @attrs.define(slots=False)
-class StackSizeMixin:  # (ControlBehaviorMixin)
+class StackSizeMixin(Exportable):
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
 
@@ -35,29 +28,6 @@ class StackSizeMixin:  # (ControlBehaviorMixin)
     :exception DataFormatError: TODO
     """
 
-    # @property
-    # def override_stack_size(self) -> Optional[uint8]:
-    #     """
-    #     The inserter's stack size override. Will use this unless a circuit
-    #     stack size is set and enabled.
-
-    #     :getter: Gets the overridden stack size.
-    #     :setter: Sets the overridden stack size.
-
-    #     :exception TypeError:
-    #     """
-    #     return self._root.override_stack_size
-
-    # @override_stack_size.setter
-    # def override_stack_size(self, value: Optional[uint8]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self, type(self).Format, self._root, "override_stack_size", value
-    #         )
-    #         self._root.override_stack_size = result
-    #     else:
-    #         self._root.override_stack_size = value
-
     # =========================================================================
 
     circuit_set_stack_size: bool = attrs.field(
@@ -68,35 +38,6 @@ class StackSizeMixin:  # (ControlBehaviorMixin)
 
     :exception DataFormatError: If set to anything other than a ``bool``.
     """
-
-    # @property
-    # def circuit_stack_size_enabled(self) -> Optional[bool]:
-    #     """
-    #     Sets if the inserter's stack size is controlled by circuit signal.
-
-    #     :getter: Gets whether or not the circuit stack size is enabled, or
-    #         ``None`` if not set.
-    #     :setter: Sets whether or not the circuit stack size is enabled. Removes
-    #         the key if set to ``None``.
-
-    #     :exception TypeError: If set to anything other than a ``bool`` or
-    #         ``None``.
-    #     """
-    #     return self.control_behavior.circuit_set_stack_size
-
-    # @circuit_stack_size_enabled.setter
-    # def circuit_stack_size_enabled(self, value: Optional[bool]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             self.Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "circuit_set_stack_size",
-    #             value,
-    #         )
-    #         self.control_behavior.circuit_set_stack_size = result
-    #     else:
-    #         self.control_behavior.circuit_set_stack_size = value
 
     # =========================================================================
 
@@ -109,46 +50,6 @@ class StackSizeMixin:  # (ControlBehaviorMixin)
     Specify the stack size input signal for the inserter, if enabled.
     """
 
-    # @property
-    # def stack_size_control_signal(self) -> Optional[SignalID]:
-    #     """
-    #     Specify the stack size input signal for the inserter. Will read from
-    #     this signal's value on any connected circuit network and will use that
-    #     value to set the maximum stack size for this entity, if enabled.
-
-    #     Stored as a ``dict`` in the format ``{"name": str, "type": str}``, where
-    #     ``name`` is the name of the signal and ``type`` is it's type, either
-    #     ``"item"``, ``"fluid"``, or ``"signal"``.
-
-    #     However, because a signal's type is always constant and can be inferred,
-    #     it is recommended to simply set the attribute to the string name of the
-    #     signal which will automatically be converted to the above format.
-
-    #     :getter: Gets the stack control signal, or ``None`` if not set.
-    #     :setter: Sets the stack control signal. Removes the key if set to
-    #         ``None``.
-
-    #     :exception InvalidSignalID: If set to a string that is not a valid
-    #         signal name.
-    #     :exception DataFormatError: If set to a dict that does not match the
-    #         dict format specified above.
-    #     """
-    #     return self.control_behavior.stack_control_input_signal
-
-    # @stack_size_control_signal.setter
-    # def stack_size_control_signal(self, value: Optional[SignalID]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             self.Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "stack_control_input_signal",
-    #             value,
-    #         )
-    #         self.control_behavior.stack_control_input_signal = result
-    #     else:
-    #         self.control_behavior.stack_control_input_signal = value
-
     # =========================================================================
 
     def merge(self, other: "StackSizeMixin"):
@@ -159,10 +60,26 @@ class StackSizeMixin:  # (ControlBehaviorMixin)
         self.stack_size_control_signal = other.stack_size_control_signal
 
 
+StackSizeMixin.add_schema(
+    {
+        "properties": {
+            "override_stack_size": {
+                "enum": ["true", "false", "null"],
+            },
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "circuit_set_stack_size": {"type": "boolean", "default": "false"},
+                    "stack_control_input_signal": {
+                        "oneOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
+                    },
+                },
+            },
+        }
+    },
+)
+
 draftsman_converters.add_hook_fns(
-    # {
-    #     "$id": "factorio:stack_size_mixin",
-    # },
     StackSizeMixin,
     lambda fields: {
         "override_stack_size": fields.override_stack_size.name,

@@ -2,7 +2,7 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    RequestItemsMixin,
+    ItemRequestMixin,
     LogisticModeOfOperationMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,
@@ -21,7 +21,7 @@ import cattrs
 @attrs.define
 class LogisticBufferContainer(
     InventoryMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     LogisticModeOfOperationMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,
@@ -35,7 +35,7 @@ class LogisticBufferContainer(
 
     # class Format(
     #     InventoryMixin.Format,
-    #     RequestItemsMixin.Format,
+    #     ItemRequestMixin.Format,
     #     LogisticModeOfOperationMixin.Format,
     #     CircuitConditionMixin.Format,
     #     ControlBehaviorMixin.Format,
@@ -100,7 +100,7 @@ class LogisticBufferContainer(
 
 
 _parent_hook = (
-    draftsman_converters.get_version((1, 0))
+    draftsman_converters.get_version((2, 0))
     .get_converter()
     .get_structure_hook(LogisticBufferContainer)
 )

@@ -1,5 +1,6 @@
 # read_ammo.py
 
+from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
 from draftsman.validators import instance_of
 
@@ -7,7 +8,7 @@ import attrs
 
 
 @attrs.define(slots=False)
-class ReadAmmoMixin:
+class ReadAmmoMixin(Exportable):
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
 
@@ -21,8 +22,22 @@ class ReadAmmoMixin:
     """
 
 
+ReadAmmoMixin.add_schema({}, version=(1, 0))
+
+ReadAmmoMixin.add_schema(
+    {
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {"read_ammo": {"type": "boolean", "default": "true"}},
+            }
+        }
+    },
+    version=(2, 0),
+)
+
+
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:read_ammo_mixin"},
     ReadAmmoMixin,
     lambda fields: {("control_behavior", "read_ammo"): fields.read_ammo.name},
 )

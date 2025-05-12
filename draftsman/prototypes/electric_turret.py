@@ -2,7 +2,7 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    RequestItemsMixin,
+    ItemRequestMixin,
     ReadAmmoMixin,
     TargetPrioritiesMixin,
     CircuitConditionMixin,
@@ -21,7 +21,7 @@ import attrs
 
 @attrs.define
 class ElectricTurret(
-    RequestItemsMixin,
+    ItemRequestMixin,
     ReadAmmoMixin,
     TargetPrioritiesMixin,
     CircuitConditionMixin,

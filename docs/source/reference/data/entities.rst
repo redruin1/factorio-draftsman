@@ -96,10 +96,6 @@
 
     A sorted list of all instances of :py:class:`.Inserter`.
 
-.. py:data:: filter_inserters
-
-    A sorted list of all instances of :py:class:`.FilterInserter`.
-
 .. py:data:: loaders
 
     A sorted list of all instances of :py:class:`.Loader`.

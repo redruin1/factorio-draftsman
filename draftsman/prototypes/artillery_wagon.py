@@ -4,7 +4,7 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     ArtilleryAutoTargetMixin,
     EquipmentGridMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     OrientationMixin,
 )
 
@@ -17,7 +17,7 @@ import attrs
 class ArtilleryWagon(
     ArtilleryAutoTargetMixin,
     EquipmentGridMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     OrientationMixin,
     Entity,
 ):
@@ -38,3 +38,10 @@ class ArtilleryWagon(
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+ArtilleryWagon.add_schema(
+    {
+        "$id": "urn:factorio:entity:artillery-wagon"
+    }
+)

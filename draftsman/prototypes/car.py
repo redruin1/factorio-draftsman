@@ -3,7 +3,7 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     VehicleMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     EquipmentGridMixin,
     EnergySourceMixin,
     OrientationMixin,
@@ -24,7 +24,7 @@ from typing import Any, Literal, Optional, Union
 class Car(
     VehicleMixin,
     EquipmentGridMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     EnergySourceMixin,
     OrientationMixin,
     Entity,

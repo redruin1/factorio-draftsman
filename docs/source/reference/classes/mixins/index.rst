@@ -16,12 +16,11 @@
     control_behavior.rst
     directional.rst
     double_grid_aligned.rst
-    eight_way_directional.rst
-    enable_disable.rst
     filters.rst
-    inventory_filter.rst
+    filtered_inventory.rst
     inventory.rst
     io_type.rst
+    item_requests.rst
     logistic_condition.rst
     mode_of_operation.rst
     modules.rst
@@ -30,5 +29,4 @@
     read_rail_signal.rst
     recipe.rst
     request_filters.rst
-    request_items.rst
     stack_size.rst

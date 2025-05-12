@@ -153,6 +153,179 @@ class TestArithmeticCombinator:
             "position": {"x": 0.5, "y": 1.0},
         }
 
+    def test_json_schema(self):
+        assert ArithmeticCombinator.json_schema(version=(1, 0)) == {
+            "$id": "urn:factorio:entity:arithmetic-combinator",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "definitions": {
+                "circuit-connection-point": {
+                    "type": "object",
+                    "properties": {
+                        "entity_id": {"$ref": "urn:uint64"},
+                        "circuit_id": {"enum": [1, 2]},
+                    },
+                    "required": ["entity_id"],
+                },
+                "wire-connection-point": {
+                    "properties": {
+                        "entity_id": {"$ref": "urn:uint64"},
+                        "wire_id": {"enum": [0, 1]},
+                    },
+                    "required": ["entity_id"],
+                },
+            },
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {
+                    "$ref": "urn:factorio:position",
+                },
+                "direction": {"enum": list(range(8)), "default": 0},
+                "connections": {
+                    "1": {
+                        "type": "object",
+                        "properties": {
+                            "red": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/circuit-connection-point"
+                                },
+                            },
+                            "green": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/circuit-connection-point"
+                                },
+                            },
+                        },
+                    },
+                    "2": {
+                        "type": "object",
+                        "properties": {
+                            "red": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/circuit-connection-point"
+                                },
+                            },
+                            "green": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/circuit-connection-point"
+                                },
+                            },
+                        },
+                    },
+                    "Cu0": {
+                        "type": "array",
+                        "items": {"$ref": "#/definitions/wire-connection-point"},
+                    },
+                    "Cu1": {
+                        "type": "array",
+                        "items": {"$ref": "#/definitions/wire-connection-point"},
+                    },
+                },
+                "control_behavior": {
+                    "type": "object",
+                    "properties": {
+                        "arithmetic_conditions": {
+                            "type": "object",
+                            "properties": {
+                                "first_constant": {"$ref": "urn:int32"},
+                                "first_signal": {"$ref": "urn:factorio:signal-id"},
+                                "operation": {
+                                    "enum": [
+                                        "*",
+                                        "/",
+                                        "+",
+                                        "-",
+                                        "%",
+                                        "^",
+                                        "<<",
+                                        ">>",
+                                        "AND",
+                                        "OR",
+                                        "XOR",
+                                    ],
+                                    "default": "*",
+                                },
+                                "second_constant": {"$ref": "urn:int32", "default": 0},
+                                "second_signal": {"$ref": "urn:factorio:signal-id"},
+                                "output_signal": {"$ref": "urn:factorio:signal-id"},
+                            },
+                        }
+                    },
+                    "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
+                },
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"],
+        }
+        assert ArithmeticCombinator.json_schema(version=(2, 0)) == {
+            "$id": "urn:factorio:entity:arithmetic-combinator",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {
+                    "$ref": "urn:factorio:position",
+                },
+                "direction": {"enum": list(range(16)), "default": 0},
+                "quality": {"$ref": "urn:factorio:quality-name"},
+                "control_behavior": {
+                    "type": "object",
+                    "properties": {
+                        "arithmetic_conditions": {
+                            "type": "object",
+                            "properties": {
+                                "first_constant": {"$ref": "urn:int32"},
+                                "first_signal": {"$ref": "urn:factorio:signal-id"},
+                                "first_signal_networks": {
+                                    "type": "object",
+                                    "properties": {
+                                        "red": {"type": "boolean", "default": "true"},
+                                        "green": {"type": "boolean", "default": "true"},
+                                    },
+                                },
+                                "operation": {
+                                    "enum": [
+                                        "*",
+                                        "/",
+                                        "+",
+                                        "-",
+                                        "%",
+                                        "^",
+                                        "<<",
+                                        ">>",
+                                        "AND",
+                                        "OR",
+                                        "XOR",
+                                    ],
+                                    "default": "*",
+                                },
+                                "second_constant": {"$ref": "urn:int32", "default": 0},
+                                "second_signal": {"$ref": "urn:factorio:signal-id"},
+                                "second_signal_networks": {
+                                    "type": "object",
+                                    "properties": {
+                                        "red": {"type": "boolean", "default": "true"},
+                                        "green": {"type": "boolean", "default": "true"},
+                                    },
+                                },
+                                "output_signal": {"$ref": "urn:factorio:signal-id"},
+                            },
+                        }
+                    },
+                    "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
+                },
+                "player_description": {"type": "string"},
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"],
+        }
+
     def test_power_and_circuit_flags(self):
         for name in arithmetic_combinators:
             combinator = ArithmeticCombinator(name)

@@ -2,7 +2,7 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    RequestItemsMixin,
+    ItemRequestMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     EnergySourceMixin,
@@ -22,7 +22,7 @@ from typing import Any, Literal, Optional, Union
 
 @attrs.define
 class Reactor(
-    RequestItemsMixin,
+    ItemRequestMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     EnergySourceMixin,
@@ -39,7 +39,7 @@ class Reactor(
 
     # class Format(
     #     BurnerEnergySourceMixin.Format,
-    #     RequestItemsMixin.Format,
+    #     ItemRequestMixin.Format,
     #     ControlBehaviorMixin.Format,
     #     CircuitConnectableMixin.Format,
     #     Entity.Format,

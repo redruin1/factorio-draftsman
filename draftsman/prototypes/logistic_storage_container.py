@@ -2,7 +2,7 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    RequestItemsMixin,
+    ItemRequestMixin,
     LogisticModeOfOperationMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,
@@ -19,7 +19,7 @@ import attrs
 @attrs.define
 class LogisticStorageContainer(
     InventoryMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     LogisticModeOfOperationMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,
@@ -34,7 +34,7 @@ class LogisticStorageContainer(
 
     # class Format(
     #     InventoryMixin.Format,
-    #     RequestItemsMixin.Format,
+    #     ItemRequestMixin.Format,
     #     LogisticModeOfOperationMixin.Format,
     #     CircuitConditionMixin.Format,
     #     ControlBehaviorMixin.Format,

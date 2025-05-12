@@ -5,7 +5,7 @@ from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import EquipmentComponent
-from draftsman.validators import and_, instance_of
+from draftsman.validators import conditional, instance_of
 from draftsman.signatures import (
     AttrsItemRequest,
     AttrsItemID,
@@ -19,12 +19,11 @@ from draftsman.warning import EquipmentGridWarning
 from draftsman.data import equipment as equipment_data
 
 import attrs
-from types import SimpleNamespace
 from typing import Optional
 import warnings
 
 
-@attrs.define
+@attrs.frozen
 class EquipmentGrid:
     id: str = attrs.field()  # TODO: equipment_grid_name
 
@@ -59,45 +58,15 @@ class EquipmentGrid:
         return equipment_data.grids[self.id].get("locked", False)
 
 
-# Only store one equipment grid and reuse across every entity
+# Only store one equipment grid per ID and reuse across every entity
 _equipment_grids = {grid: EquipmentGrid(grid) for grid in equipment_data.grids}
 
 
 @attrs.define(slots=False)
-class EquipmentGridMixin(Exportable):  # (RequestItemsMixin)
+class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
     """
     Enables the entity to have an equipment grid.
     """
-
-    # class Format(BaseModel):
-    #     class EquipmentComponent(DraftsmanBaseModel):
-    #         class EquipmentID(DraftsmanBaseModel):
-    #             name: str
-
-    #         equipment: EquipmentID = Field(..., description="TODO")
-    #         position: IntPosition = Field(
-    #             ...,
-    #             description="The top leftmost tile in which this item sits, 0-based.",
-    #         )
-
-    #     enable_logistics_while_moving: Optional[bool] = Field(  # TODO: optional?
-    #         True, description="TODO"
-    #     )
-    #     grid: list[EquipmentComponent] = Field([], description="TODO")
-
-    # =========================================================================
-
-    # def __init__(self, name: str, similar_entities: list[str], **kwargs):
-    #     self._root: __class__.Format
-
-    #     super().__init__(name, similar_entities, **kwargs)
-
-    #     self.enable_logistics_while_moving = kwargs.get(
-    #         "enable_logistics_while_moving", None
-    #     )
-    #     self.grid = kwargs.get("grid", None)
-
-    # =========================================================================
 
     @property
     def equipment_grid(self):
@@ -112,34 +81,15 @@ class EquipmentGridMixin(Exportable):  # (RequestItemsMixin)
             return None
         return _equipment_grids.get(grid_id, None)
 
-    # @property
-    # def enable_logistics_while_moving(self) -> Optional[bool]:
-    #     """
-    #     TODO
-    #     """
-    #     return self._root.enable_logistics_while_moving
-
-    # @enable_logistics_while_moving.setter
-    # def enable_logistics_while_moving(self, value: Optional[bool]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format,
-    #             self._root,
-    #             "enable_logistics_while_moving",
-    #             value,
-    #         )
-    #         self._root.enable_logistics_while_moving = result
-    #     else:
-    #         self._root.enable_logistics_while_moving = value
-
     # =========================================================================
 
-    # @property
-    # def allowed_equipment(): # TODO
-    #     """
-    #     """
-    #     return []
+    @property
+    def allowed_equipment() -> Optional[set]:  # TODO, not very easy to calculate
+        """
+        The set of equipment names that can be inserted into this entity's
+        equipment grid.
+        """
+        return None
 
     # =========================================================================
 
@@ -148,24 +98,10 @@ class EquipmentGridMixin(Exportable):  # (RequestItemsMixin)
             return [EquipmentComponent.converter(elem) for elem in value]
         return value
 
-    def _ensure_has_equipment_grid(
-        self, attr, value, mode=None, warning_list: Optional[list] = None
-    ):
-        mode = mode if mode is not None else self.validate_assignment
-        if mode >= ValidationMode.STRICT:
-            if self.equipment_grid is None and value != []:
-                msg = "This entity does not have an equipment grid to modify"
-                if warning_list is None:
-                    warnings.warn(EquipmentGridWarning(msg))
-                else:
-                    warning_list.append(EquipmentComponent(msg))
-
     equipment: list[EquipmentComponent] = attrs.field(
         factory=list,
         converter=_equipment_converter,
-        validator=and_(
-            instance_of(list[EquipmentComponent]), _ensure_has_equipment_grid
-        ),
+        validator=instance_of(list[EquipmentComponent]),
     )
     """
     The equipment specification of this particular entity, defining what 
@@ -174,7 +110,7 @@ class EquipmentGridMixin(Exportable):  # (RequestItemsMixin)
 
     .. NOTE::
 
-        This construct specifies where items should live, but on it's own it 
+        This construct specifies *where* items should live, but on it's own it 
         does nothing; you also need to *request* the items with 
         :py:attr:`.item_requests` in order for robots to actually try to fulfill
         the grid's contents. Alternativly, you can use the helper methods
@@ -182,22 +118,36 @@ class EquipmentGridMixin(Exportable):  # (RequestItemsMixin)
         will take care of this book-keeping for you.
     """
 
-    # @property
-    # def equipment_grid(self) -> Optional[bool]: # TODO: implement
-    #     """
-    #     TODO
-    #     """
-    #     return self._root.grid
+    @equipment.validator
+    @conditional(ValidationMode.STRICT)
+    def _equipment_validator(
+        self, attr, value, mode=None, warning_list: Optional[list] = None
+    ):
+        """
+        Ensure this entity actually has an equipment grid to request equipment
+        to.
+        """
+        if self.equipment_grid is None and value != []:
+            msg = "This entity does not have an equipment grid to modify."
+            warnings.warn(EquipmentGridWarning(msg))
 
-    # @equipment_grid.setter
-    # def equipment_grid(self, value: Optional[bool]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self, type(self).Format, self._root, "grid", value
-    #         )
-    #         self._root.grid = result
-    #     else:
-    #         self._root.grid = value
+    @equipment.validator
+    @conditional(ValidationMode.PEDANTIC)
+    def _equipment_validator(self, _: attrs.Attribute, value: list[EquipmentGrid]):
+        """
+        Ensure that the equipment being specified will actually fit inside of
+        this equipment grid.
+        """
+        # If we have no equipment grid or we don't know what kind of equipment
+        # should be allowed, early exit
+        if self.equipment_grid is None or self.allowed_equipment is None:
+            return
+        for equipment in value:
+            if equipment.id not in self.allowed_equipment:
+                msg = "Equipment '{}' cannot be inserted into this entity's equipment grid".format(
+                    equipment.id
+                )
+                warnings.warn(EquipmentGridWarning(msg))
 
     # =========================================================================
 
@@ -266,8 +216,9 @@ class EquipmentGridMixin(Exportable):  # (RequestItemsMixin)
         Removes all equipment matching the passed in arguments.
 
         Every time equipment is removed, any item requests associated with it
-        are also updated properly. If the item request has no items requested,
-        it is removed by the end of this method.
+        are also updated properly. If the item request has no items requested
+        after the equipment has been removed, the item request is also removed
+        by this method.
 
         :param name: The name of the equipment to remove.
         :param position: The top left coordinate of the position to remove the
@@ -315,6 +266,21 @@ class EquipmentGridMixin(Exportable):  # (RequestItemsMixin)
             if request != AttrsItemRequest(id=request.id)
         ]
 
+
+EquipmentGridMixin.add_schema({}, version=(1, 0))
+
+EquipmentGridMixin.add_schema(
+    {
+        "properties": {
+            "enable_logistics_while_moving": {"type": "boolean", "default": "true"},
+            "grid": {
+                "type": "array",
+                "items": {"$ref": "urn:factorio:equipment-component"},
+            },
+        }
+    },
+    version=(2, 0),
+)
 
 draftsman_converters.add_hook_fns(
     # {"$id": "factorio:equipment_grid_mixin"},

@@ -1,6 +1,6 @@
 # test_spatial_hash_map.py
 
-from draftsman.classes.blueprint import SpatialHashMap
+from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.tile import Tile
 from draftsman import utils
 

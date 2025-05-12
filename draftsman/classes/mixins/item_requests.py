@@ -1,5 +1,6 @@
-# request_items.py
+# item_requests.py
 
+from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     AttrsItemRequest,
@@ -12,20 +13,19 @@ from draftsman.utils import reissue_warnings
 from draftsman.validators import instance_of
 
 import attrs
-from pydantic import Field, ValidationInfo, field_validator
 from copy import deepcopy
 
 from typing import Literal, Optional
 
 
 @attrs.define(slots=False)
-class RequestItemsMixin:
+class ItemRequestMixin(Exportable):
     """
     Enables an entity to request items during its construction.
 
-    Note that this
-    is *not* for Logistics requests such as requester and buffer chests (that's
-    what :py:class:`~.mixins.request_filters.RequestFiltersMixin` is for).
+    Note that this is *not* for Logistics requests such as requester and buffer
+    chests (that's what
+    :py:class:`~.mixins.request_filters.RequestFiltersMixin` is for).
     Instead this is for specifying additional construction components, things
     like speed modules for beacons or productivity modules for assembling
     machines.
@@ -160,22 +160,23 @@ class RequestItemsMixin:
 
     # =========================================================================
 
-    def merge(self, other: "RequestItemsMixin"):
+    def merge(self, other: "ItemRequestMixin"):
         super().merge(other)
 
         self.item_requests = deepcopy(other.item_requests)
 
-    # =========================================================================
-
-    # def __eq__(self, other) -> bool:
-    #     return super().__eq__(other) and self.items == other.items
-
 
 # TODO: versioning
+
+ItemRequestMixin.add_schema(
+    {
+        "properties": {
+            "items": {"type": "array", "items": {"$ref": "urn:factorio:item-request"}}
+        }
+    }
+)
+
 draftsman_converters.add_hook_fns(
-    # {
-    #     "$id": "factorio:request_items_mixin",
-    # },
-    RequestItemsMixin,
+    ItemRequestMixin,
     lambda fields: {"items": fields.item_requests.name},
 )

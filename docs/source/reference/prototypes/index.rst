@@ -28,7 +28,6 @@ This includes things like :py:class:`.Container`, :py:class:`.TrainStop`, :py:cl
     decider_combinator.rst
     electric_energy_interface.rst
     electric_pole.rst
-    filter_inserter.rst
     fluid_wagon.rst
     furnace.rst
     gate.rst

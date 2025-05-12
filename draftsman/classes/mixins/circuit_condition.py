@@ -6,8 +6,7 @@ from draftsman.signatures import AttrsSimpleCondition, AttrsSignalID, int32
 from draftsman.validators import instance_of
 
 import attrs
-from pydantic import BaseModel, Field
-from typing import Literal, Optional, Union
+from typing import Literal, Union
 
 
 @attrs.define(slots=False)

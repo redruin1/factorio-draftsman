@@ -3,7 +3,7 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     ModulesMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RecipeMixin,
@@ -23,7 +23,7 @@ from typing import Optional
 @attrs.define
 class RocketSilo(
     ModulesMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RecipeMixin,
@@ -36,7 +36,7 @@ class RocketSilo(
 
     # class Format(
     #     ModulesMixin.Format,
-    #     RequestItemsMixin.Format,
+    #     ItemRequestMixin.Format,
     #     ControlBehaviorMixin.Format,
     #     CircuitConnectableMixin.Format,
     #     RecipeMixin.Format,

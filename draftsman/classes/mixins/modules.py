@@ -1,6 +1,5 @@
 # modules.py
 
-from draftsman.constants import ValidationMode
 from draftsman.data import entities, modules
 from draftsman.signatures import (
     AttrsItemRequest,
@@ -12,97 +11,16 @@ from draftsman.signatures import (
 )
 from draftsman.warning import ModuleCapacityWarning, ModuleNotAllowedWarning
 
-from pydantic import BaseModel, ValidationInfo, field_validator
 from typing import Iterable, Optional
 
 
-class ModulesMixin:  # (RequestItemsMixin)
+class ModulesMixin:
     """
-    (Implicitly inherits :py:class:`~.RequestItemsMixin`)
+    (Implicitly inherits :py:class:`~.ItemRequestMixin`)
 
     Allows the entity to have modules, and keep track of the amount of modules
     currently inside the entity.
     """
-
-    # class Format(BaseModel):
-    #     # @field_validator("items", check_fields=False) # TODO: reimplement
-    #     # @classmethod
-    #     # def ensure_not_too_many_modules(
-    #     #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-    #     # ):
-    #     #     if not info.context or value is None:
-    #     #         return value
-    #     #     if info.context["mode"] <= ValidationMode.MINIMUM:
-    #     #         return value
-
-    #     #     entity: "ModulesMixin" = info.context["object"]
-    #     #     warning_list: list = info.context["warning_list"]
-
-    #     #     if entity.total_module_slots is None:  # entity not recognized
-    #     #         return value
-    #     #     # if entity.total_module_slots == 0:  # Better warning issued elsewhere (where?)
-    #     #     #     return value
-
-    #     #     if entity.module_slots_occupied > entity.total_module_slots:
-    #     #         warning_list.append(
-    #     #             ModuleCapacityWarning(
-    #     #                 "Current number of module slots used ({}) greater than max module capacity ({}) for entity '{}'".format(
-    #     #                     entity.module_slots_occupied,
-    #     #                     entity.total_module_slots,
-    #     #                     entity.name,
-    #     #                 )
-    #     #             )
-    #     #         )
-
-    #     #     return value
-
-    #     # @field_validator("items", check_fields=False) # TODO: reimplement
-    #     # @classmethod
-    #     # def ensure_module_type_matches_entity(
-    #     #     cls, value: Optional[dict[str, uint32]], info: ValidationInfo
-    #     # ):
-    #     #     if not info.context or value is None:
-    #     #         return value
-    #     #     if info.context["mode"] <= ValidationMode.MINIMUM:
-    #     #         return value
-
-    #     #     entity: "ModulesMixin" = info.context["object"]
-    #     #     warning_list: list = info.context["warning_list"]
-
-    #     #     if entity.allowed_modules is None:  # entity not recognized
-    #     #         return value
-
-    #     #     for item in entity.module_items:
-    #     #         if item not in entity.allowed_modules:
-    #     #             if (
-    #     #                 entity.allowed_modules is not None
-    #     #                 and len(entity.allowed_modules) > 0
-    #     #             ):
-    #     #                 reason_string = "allowed modules are {}".format(
-    #     #                     entity.allowed_modules
-    #     #                 )
-    #     #             else:
-    #     #                 reason_string = "this machine does not accept modules"
-
-    #     #             warning_list.append(
-    #     #                 ModuleNotAllowedWarning(
-    #     #                     "Cannot add module '{}' to '{}'; {}".format(
-    #     #                         item, entity.name, reason_string
-    #     #                     )
-    #     #                 )
-    #     #             )
-
-    #     #     return value
-    #     pass
-
-    # def __init__(self, name: str, similar_entities: list[str], **kwargs):
-    #     # Keep track of the current module slots currently used
-    #     # self._module_slots_occupied = 0
-    #     # self.module_items = {}
-
-    #     super(ModulesMixin, self).__init__(name, similar_entities, **kwargs)
-
-    # =========================================================================
 
     @property
     def total_module_slots(self) -> int:

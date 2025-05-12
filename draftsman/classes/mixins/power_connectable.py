@@ -1,41 +1,18 @@
 # power_connectable.py
 
-from draftsman.classes.association import Association
+from draftsman.classes.exportable import Exportable
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import uint64
 
 import attrs
-from pydantic import BaseModel, Field
-from typing import Optional, Union
 
 
 @attrs.define(slots=False)
-class PowerConnectableMixin:
+class PowerConnectableMixin(Exportable):
     """
     Enables the Entity to be connected to power networks.
     """
-
-    class Format(BaseModel):
-        # 1.0
-        # neighbours: Optional[list[Association.Format]] = Field(
-        #     [],
-        #     description="""
-        #     The 'entity_number's of each neighbouring power pole that this power
-        #     pole is connected to. Does NOT include power switch copper
-        #     connections; see 'connections' key for that.
-        #     """,
-        # )
-        pass
-
-    # def __init__(self, name: str, similar_entities: list[str], **kwargs):
-    #     self._root: __class__.Format
-
-    #     super(PowerConnectableMixin, self).__init__(name, similar_entities, **kwargs)
-
-    #     # self.neighbours = kwargs.get("neighbours", [])
-
-    # =========================================================================
 
     @property
     def power_connectable(self) -> bool:
@@ -104,76 +81,21 @@ class PowerConnectableMixin:
         """
         return self._neighbours
 
-    # @neighbours.setter
-    # def neighbours(self, value: list[Union[int, Association]]):
-    #     if value is None:
-    #         self._root.neighbours = []
-    #     else:
-    #         self._root.neighbours = value
 
-    # =========================================================================
-
-    # def merge(self, other: Format):
-    #     super().merge(other)
-
-    #     # Power Neighbours (union of the two sets, not exceeding 5 connections)
-    #     # Iterate over every association in other (the to-be deleted entity)
-    #     for association in other.neighbours:
-    #         # Keep track of whether or not this association was added to self
-    #         association_added = False
-
-    #         # Make sure we don't add the same association multiple times
-    #         if association not in self.neighbours:
-    #             # Also make sure we don't exceed 5 connections
-    #             if len(self.neighbours) < 5:
-    #                 self.neighbours.append(association)
-    #                 association_added = True
-
-    #         # However, entities that used to point to `other` still do,
-    #         # which causes problems since `other` is usually to be deleted
-    #         # after merging
-    #         # So we now we find the entity that other used to point to and
-    #         # iterate over it's neighbours:
-    #         associated_entity = association()
-    #         for i, old_association in enumerate(associated_entity.neighbours):
-    #             # If the association used to point to `other`, make it point
-    #             # to `self`
-    #             if old_association == Association(other):
-    #                 # Only do so, however, if this association is not
-    #                 # already in the set of neighbours and we added the
-    #                 # connection before, and if we actually even merged the
-    #                 # connection in the first place
-    #                 if (
-    #                     Association(self) not in associated_entity.neighbours
-    #                     and association_added
-    #                 ):
-    #                     associated_entity.neighbours[i] = Association(self)
-    #                 else:
-    #                     # Otherwise, the association points to an entity
-    #                     # that will likely become invalid, so we remove it
-    #                     associated_entity.neighbours.remove(old_association)
-
-    # =========================================================================
-
-    # def __eq__(self, other) -> bool:
-    #     return super().__eq__(other) and self.neighbours == other.neighbours
-
+PowerConnectableMixin.add_schema(
+    {"properties": {"neighbours": {"type": "array", "items": {"$ref", "urn:uint64"}}}},
+    version=(1, 0),
+)
 
 draftsman_converters.get_version((1, 0)).add_hook_fns(
-    # {
-    #     "$schema": "http://json-schema.org/draft-07/schema#",
-    #     "$id": "factorio:power_connectable_mixin",
-    # },
     PowerConnectableMixin,
     lambda fields: {"neighbours": fields._neighbours.name},
     lambda fields, converter: {"neighbours": fields._neighbours.name},
 )
 
+PowerConnectableMixin.add_schema({}, version=(2, 0))
+
 draftsman_converters.get_version((2, 0)).add_hook_fns(
-    # {
-    #     "$schema": "http://json-schema.org/draft-07/schema#",
-    #     "$id": "factorio:power_connectable_mixin",
-    # },
     PowerConnectableMixin,
     lambda fields: {
         "neighbours": fields._neighbours.name,

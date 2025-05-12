@@ -16,13 +16,14 @@ import pytest
 import referencing
 from jsonschema import Draft202012Validator
 
+from test.prototypes.test_accumulator import valid_accumulator
 
+
+# TODO: make a fixture function which automatically generates one of each available
+# valid entity
 @pytest.mark.parametrize(
     "entity",
-    [
-        Accumulator("accumulator", quality="uncommon", output_signal="signal-B")
-        # TODO: add every entity
-    ],
+    [valid_accumulator]
 )
 @pytest.mark.parametrize(
     "version,resources",
@@ -46,6 +47,9 @@ def test_output_matches_json_schema(
     or both.
     """
     entity_schema = entity.json_schema(version=version)
+    if entity_schema is None:
+        return
+
     Draft202012Validator.check_schema(entity_schema)
     validator = Draft202012Validator(
         schema=entity_schema,

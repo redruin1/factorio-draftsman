@@ -1,7 +1,7 @@
 # infinity_container.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import RequestItemsMixin, InventoryMixin
+from draftsman.classes.mixins import ItemRequestMixin, InventoryMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
@@ -19,12 +19,12 @@ from typing import Any, Literal, Optional, Union
 
 
 @attrs.define
-class InfinityContainer(RequestItemsMixin, InventoryMixin, Entity):
+class InfinityContainer(ItemRequestMixin, InventoryMixin, Entity):
     """
     An entity used to create an infinite amount of any item.
     """
 
-    # class Format(RequestItemsMixin.Format, InventoryMixin.Format, Entity.Format):
+    # class Format(ItemRequestMixin.Format, InventoryMixin.Format, Entity.Format):
     #     class InfinitySettings(DraftsmanBaseModel):
     #         class InfinityFilter(DraftsmanBaseModel):
     #             index: uint16 = Field(

@@ -17,7 +17,7 @@ from draftsman.signatures import (
     int32,
 )
 from draftsman.utils import reissue_warnings, fix_incorrect_pre_init
-from draftsman.validators import and_, instance_of, one_of, try_convert
+from draftsman.validators import and_, conditional, instance_of, one_of, try_convert
 from draftsman.warning import PureVirtualDisallowedWarning, SignalConfigurationWarning
 
 from draftsman.data.entities import arithmetic_combinators
@@ -27,58 +27,43 @@ from typing import Literal, Optional, Union
 import warnings
 
 
-def _ensure_valid_virtual_signal(
-    self, attr, value, mode=None, warning_list: Optional[list] = None
-):
-    mode = mode if mode is not None else self.validate_assignment
-
-    if mode >= ValidationMode.STRICT:
-        if isinstance(value, AttrsSignalID) and value.name in {
-            "signal-anything",
-            "signal-everything",
-        }:
-            msg = "signal '{}' is not allowed anywhere in an arithmetic combinator".format(
-                value.name
-            )
-            if warning_list is None:
-                warnings.warn(PureVirtualDisallowedWarning(msg))
-            else:
-                warning_list.append(PureVirtualDisallowedWarning(msg))
+@conditional(ValidationMode.STRICT)
+def _ensure_valid_virtual_signal(self, attr, value):
+    if isinstance(value, AttrsSignalID) and value.name in {
+        "signal-anything",
+        "signal-everything",
+    }:
+        msg = "signal '{}' is not allowed anywhere in an arithmetic combinator".format(
+            value.name
+        )
+        warnings.warn(PureVirtualDisallowedWarning(msg))
 
 
+@conditional(ValidationMode.STRICT)
 def _ensure_proper_each_configuration(
     self, attr, value, mode=None, warning_list: Optional[list] = None
 ):
-    mode = mode if mode is not None else self.validate_assignment
+    # TODO: ensure this is only called on validation of the entire
+    # thing
 
-    if mode >= ValidationMode.STRICT:
+    # Ensure that if the output signal is set to "signal-each",
+    # one of the input signals must also be "signal-each"
+    # TODO: write this better
+    each_in_inputs = False
+    if (
+        isinstance(self.first_operand, AttrsSignalID)
+        and self.first_operand.name == "signal-each"
+    ):
+        each_in_inputs = True
+    elif (
+        isinstance(self.second_operand, AttrsSignalID)
+        and self.second_operand.name == "signal-each"
+    ):
+        each_in_inputs = True
 
-        # TODO: ensure this is only called on validation of the entire
-        # thing
-
-        # Ensure that if the output signal is set to "signal-each",
-        # one of the input signals must also be "signal-each"
-        # TODO: write this better
-        each_in_inputs = False
-        if (
-            isinstance(self.first_operand, AttrsSignalID)
-            and self.first_operand.name == "signal-each"
-        ):
-            each_in_inputs = True
-        elif (
-            isinstance(self.second_operand, AttrsSignalID)
-            and self.second_operand.name == "signal-each"
-        ):
-            each_in_inputs = True
-
-        if value is not None and value.name == "signal-each" and not each_in_inputs:
-            msg = "Cannot set the output signal to 'signal-each' when neither of the input signals are 'signal-each'"
-            if warning_list is None:
-                warnings.warn(SignalConfigurationWarning(msg))
-            else:
-                warning_list.append(SignalConfigurationWarning(msg))
-
-    return self
+    if value is not None and value.name == "signal-each" and not each_in_inputs:
+        msg = "Cannot set the output signal to 'signal-each' when neither of the input signals are 'signal-each'"
+        warnings.warn(SignalConfigurationWarning(msg))
 
 
 @fix_incorrect_pre_init
@@ -137,73 +122,6 @@ class ArithmeticCombinator(
         :py:attr:`.second_operand` is also set to ``"signal-each"``.
     """
 
-    # @property
-    # def first_operand(self) -> Union[SignalID, int32, None]:
-    #     """
-    #     The first operand of the ``ArithmeticCombinator``. Cannot be set to
-    #     ``"signal-anything"`` or ``"signal-everything"`` as those signals are
-    #     prohibited on combinators of this type. Raises an error if set to
-    #     ``"signal-each"`` while the second operand is also ``"signal-each"``, as
-    #     only one of the two can be that signal at the same time. If the
-    #     :py:attr:`.output_signal` of this combinator is set to ``"signal-each"``
-    #     and this operand is *unset* from ``"signal-each"``, the output signal is
-    #     set to ``None``.
-
-    #     :getter: Gets the first operand of the operation, or ``None`` if not set.
-    #     :setter: Sets the first operand of the operation. Removes the key if set
-    #         to ``None``.
-
-    #     :exception TypeError: If set to anything other than a ``SIGNAL_ID``, the
-    #         ``str`` name of a valid signal, an ``int``, or ``None``.
-    #     :exception DraftsmanError: If set to ``"signal-anything"`` or
-    #         ``"signal-everything"``.
-    #     :exception DraftsmanError: If set to ``"signal-each"`` when
-    #         :py:attr:`.second_operand` is also set to ``"signal-each"``.
-    #     """
-    #     arithmetic_conditions = self.control_behavior.arithmetic_conditions
-    #     if not arithmetic_conditions:
-    #         return None
-
-    #     if arithmetic_conditions.first_signal is not None:
-    #         return arithmetic_conditions.first_signal
-    #     elif arithmetic_conditions.first_constant is not None:
-    #         return arithmetic_conditions.first_constant
-    #     else:
-    #         return None
-
-    # @first_operand.setter
-    # def first_operand(self, value: Union[str, SignalID, int32, None]):
-    #     if self.control_behavior.arithmetic_conditions is None:
-    #         self.control_behavior.arithmetic_conditions = (
-    #             self.Format.ControlBehavior.ArithmeticConditions()
-    #         )
-
-    #     if value is None:  # Default
-    #         self.control_behavior.arithmetic_conditions.first_signal = None
-    #         self.control_behavior.arithmetic_conditions.first_constant = None
-    #     elif isinstance(value, int):  # constant
-    #         if self.validate_assignment:
-    #             value = attempt_and_reissue(
-    #                 self,
-    #                 type(self).Format.ControlBehavior.ArithmeticConditions,
-    #                 self.control_behavior.arithmetic_conditions,
-    #                 "first_constant",
-    #                 value,
-    #             )
-    #         self.control_behavior.arithmetic_conditions.first_constant = value
-    #         self.control_behavior.arithmetic_conditions.first_signal = None
-    #     else:  # other
-    #         if self.validate_assignment:
-    #             value = attempt_and_reissue(
-    #                 self,
-    #                 type(self).Format.ControlBehavior.ArithmeticConditions,
-    #                 self.control_behavior.arithmetic_conditions,
-    #                 "first_signal",
-    #                 value,
-    #             )
-    #         self.control_behavior.arithmetic_conditions.first_signal = value
-    #         self.control_behavior.arithmetic_conditions.first_constant = None
-
     # =========================================================================
 
     first_operand_wires: AttrsNetworkSpecification = attrs.field(
@@ -244,56 +162,6 @@ class ArithmeticCombinator(
         specified above.
     """
 
-    # @property
-    # def operation(
-    #     self,
-    # ) -> Literal["*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR", None]:
-    #     """
-    #     The operation of the ``ArithmeticCombinator`` Can be one of:
-
-    #     .. code-block:: python
-
-    #         ["*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR"]
-
-    #     or ``None``. If the letter operations are specified as lowercase, they
-    #     are automatically converted to uppercase on set.
-
-    #     :getter: Gets the current operation, or ``None`` if not set.
-    #     :setter: Sets the current operation. Removes the key if set to ``None``.
-
-    #     :exception TypeError: If set to anything other than one of the values
-    #         specified above.
-    #     """
-    #     arithmetic_conditions = self.control_behavior.get("arithmetic_conditions", None)
-    #     if not arithmetic_conditions:
-    #         return None
-
-    #     return self.control_behavior.arithmetic_conditions.operation
-
-    # @operation.setter
-    # def operation(
-    #     self,
-    #     value: Literal[
-    #         "*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR", None
-    #     ],
-    # ):
-    #     if self.control_behavior.arithmetic_conditions is None:
-    #         self.control_behavior.arithmetic_conditions = (
-    #             self.Format.ControlBehavior.ArithmeticConditions()
-    #         )
-
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior.ArithmeticConditions,
-    #             self.control_behavior.arithmetic_conditions,
-    #             "operation",
-    #             value,
-    #         )
-    #         self.control_behavior.arithmetic_conditions.operation = result
-    #     else:
-    #         self.control_behavior.arithmetic_conditions.operation = value
-
     # =========================================================================
 
     second_operand: Union[AttrsSignalID, int32, None] = attrs.field(
@@ -325,74 +193,6 @@ class ArithmeticCombinator(
     :exception DraftsmanError: If set to ``"signal-each"`` when
         :py:attr:`.first_operand` is also set to ``"signal-each"``.
     """
-
-    # @property
-    # def second_operand(self) -> Union[SignalID, int32, None]:
-    #     """
-    #     The second operand of the ``ArithmeticCombinator``. Cannot be set to
-    #     ``"signal-anything"`` or ``"signal-everything"`` as those signals are
-    #     prohibited on combinators of this type. Raises an error if set to
-    #     ``"signal-each"`` while the first operand is also ``"signal-each"``, as
-    #     only one of the two can be that signal at the same time. If the
-    #     :py:attr:`.output_signal` of this combinator is set to ``"signal-each"``
-    #     and this operand is *unset* from ``"signal-each"``, the output signal is
-    #     set to ``None``.
-
-    #     :getter: Gets the second operand of the operation, or ``None`` if not
-    #         set.
-    #     :setter: Sets the second operand of the operation. Removes the key if
-    #         set to ``None``.
-
-    #     :exception TypeError: If set to anything other than a ``SIGNAL_ID``, the
-    #         ``str`` name of a valid signal, an ``int``, or ``None``.
-    #     :exception DraftsmanError: If set to ``"signal-anything"`` or
-    #         ``"signal-everything"``.
-    #     :exception DraftsmanError: If set to ``"signal-each"`` when
-    #         :py:attr:`.first_operand` is also set to ``"signal-each"``.
-    #     """
-    #     arithmetic_conditions = self.control_behavior.arithmetic_conditions
-    #     if not arithmetic_conditions:
-    #         return None
-
-    #     if arithmetic_conditions.second_signal is not None:
-    #         return arithmetic_conditions.second_signal
-    #     elif arithmetic_conditions.second_constant is not None:
-    #         return arithmetic_conditions.second_constant
-    #     else:
-    #         return None
-
-    # @second_operand.setter
-    # def second_operand(self, value: Union[str, SignalID, int32, None]):
-    #     if self.control_behavior.arithmetic_conditions is None:
-    #         self.control_behavior.arithmetic_conditions = (
-    #             self.Format.ControlBehavior.ArithmeticConditions()
-    #         )
-
-    #     if value is None:  # Default
-    #         self.control_behavior.arithmetic_conditions.second_signal = None
-    #         self.control_behavior.arithmetic_conditions.second_constant = None
-    #     elif isinstance(value, int):  # constant
-    #         if self.validate_assignment:
-    #             value = attempt_and_reissue(
-    #                 self,
-    #                 type(self).Format.ControlBehavior.ArithmeticConditions,
-    #                 self.control_behavior.arithmetic_conditions,
-    #                 "second_constant",
-    #                 value,
-    #             )
-    #         self.control_behavior.arithmetic_conditions.second_constant = value
-    #         self.control_behavior.arithmetic_conditions.second_signal = None
-    #     else:  # other
-    #         if self.validate_assignment:
-    #             value = attempt_and_reissue(
-    #                 self,
-    #                 type(self).Format.ControlBehavior.ArithmeticConditions,
-    #                 self.control_behavior.arithmetic_conditions,
-    #                 "second_signal",
-    #                 value,
-    #             )
-    #         self.control_behavior.arithmetic_conditions.second_signal = value
-    #         self.control_behavior.arithmetic_conditions.second_constant = None
 
     # =========================================================================
 
@@ -435,51 +235,6 @@ class ArithmeticCombinator(
         ``"signal-each"``.
     """
 
-    # @property
-    # def output_signal(self) -> Optional[SignalID]:
-    #     """
-    #     The output signal of the ``ArithmeticCombinator``. Cannot be set to
-    #     ``"signal-anything"`` or ``"signal-everything"`` as those signals are
-    #     prohibited on combinators of this type. Can be set to ``"signal-each"``,
-    #     but only if one of :py:attr:`.first_operand` or :py:attr:`.second_operand`
-    #     are set to ``"signal-each"`` as well.
-
-    #     :getter: Gets the output signal, or ``None`` if not set.
-    #     :setter: Sets the output signal. Removes the key if set to ``None``.
-
-    #     :exception TypeError: If set to anything other than a ``SIGNAL_ID`` or
-    #         ``None``.
-    #     :exception InvalidSignalError: If set to ``"signal-anything"`` or
-    #         ``"signal-everything"``.
-    #     :exception DraftsmanError: If set to ``"signal-each"`` when neither
-    #         :py:attr:`.first_operand` nor :py:attr:`.second_operand` is set to
-    #         ``"signal-each"``.
-    #     """
-    #     arithmetic_conditions = self.control_behavior.arithmetic_conditions
-    #     if not arithmetic_conditions:
-    #         return None
-
-    #     return self.control_behavior.arithmetic_conditions.output_signal
-
-    # @output_signal.setter
-    # def output_signal(self, value: Union[str, SignalID, None]):
-    #     if self.control_behavior.arithmetic_conditions is None:
-    #         self.control_behavior.arithmetic_conditions = (
-    #             self.Format.ControlBehavior.ArithmeticConditions()
-    #         )
-
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior.ArithmeticConditions,
-    #             self.control_behavior.arithmetic_conditions,
-    #             "output_signal",
-    #             value,
-    #         )
-    #         self.control_behavior.arithmetic_conditions.output_signal = result
-    #     else:
-    #         self.control_behavior.arithmetic_conditions.output_signal = value
-
     # =========================================================================
 
     @reissue_warnings
@@ -507,57 +262,13 @@ class ArithmeticCombinator(
         :exception DataFormatError: If any argument fails to match the formats
             specified above.
         """
-        # new_control_behavior = {
-        #     "arithmetic_conditions": {
-        #         "first_signal_networks": {
-        #             key: key in first_wires for key in {"red", "green"}
-        #         },
-        #         "operation": "*" if operation is None else operation,
-        #         "second_signal_networks": {
-        #             key: key in second_wires for key in {"red", "green"}
-        #         },
-        #         "output_signal": output_signal,
-        #     }
-        # }
 
-        # if isinstance(first_operand, int):
-        #     new_control_behavior["arithmetic_conditions"][
-        #         "first_constant"
-        #     ] = first_operand
-        # else:
-        #     new_control_behavior["arithmetic_conditions"][
-        #         "first_signal"
-        #     ] = first_operand
-
-        # if isinstance(second_operand, int):
-        #     new_control_behavior["arithmetic_conditions"][
-        #         "second_constant"
-        #     ] = second_operand
-        # else:
-        #     new_control_behavior["arithmetic_conditions"][
-        #         "second_signal"
-        #     ] = second_operand
-
-        # # Set
-        # self.control_behavior = new_control_behavior
         self.first_operand = first_operand
         self.first_operand_wires = first_operand_wires
         self.operation = operation
         self.second_operand = second_operand
         self.second_operand_wires = second_operand_wires
         self.output_signal = output_signal
-
-    # def remove_arithmetic_conditions(self):
-    #     """
-    #     Removes the entire ``"arithmetic_conditions"`` key from the control
-    #     behavior. This is used to quickly delete the entire condition, and to
-    #     tidy up cases where all of the other attributes are set to ``None``, but
-    #     the ``"arithmetic_conditions"`` dictionary still exists, taking up space
-    #     in the exported string.
-    #     """
-    #     self.control_behavior.arithmetic_conditions = (
-    #         self.Format.ControlBehavior.ArithmeticConditions()
-    #     )
 
     # =========================================================================
 
@@ -570,6 +281,8 @@ class ArithmeticCombinator(
         self.second_operand = other.second_operand
         self.second_operand_wires = other.second_operand_wires
         self.output_signal = other.output_signal
+
+    # =========================================================================
 
     __hash__ = Entity.__hash__
 
@@ -584,6 +297,47 @@ class _ExportArithmeticConditions:
 
 _export_fields = attrs.fields(_ExportArithmeticConditions)
 
+
+ArithmeticCombinator.add_schema(
+    {
+        "$id": "urn:factorio:entity:arithmetic-combinator",
+        "type": "object",
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "arithmetic_conditions": {
+                        "type": "object",
+                        "properties": {
+                            "first_constant": {"$ref": "urn:int32"},
+                            "first_signal": {"$ref": "urn:factorio:signal-id"},
+                            "operation": {
+                                "enum": [
+                                    "*",
+                                    "/",
+                                    "+",
+                                    "-",
+                                    "%",
+                                    "^",
+                                    "<<",
+                                    ">>",
+                                    "AND",
+                                    "OR",
+                                    "XOR",
+                                ],
+                                "default": "*",
+                            },
+                            "second_constant": {"$ref": "urn:int32", "default": 0},
+                            "second_signal": {"$ref": "urn:factorio:signal-id"},
+                            "output_signal": {"$ref": "urn:factorio:signal-id"},
+                        },
+                    }
+                },
+            }
+        },
+    },
+    version=(1, 0),
+)
 
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     # {"$id": "factorio:arithmetic_combinator"},
@@ -662,11 +416,60 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
     },
 )
 
-# def test(instance: ArithmeticCombinator):
-#     res = {
-#         "name": instance.name,
-#         "position": _unstr_position(instance.global_position)
-#     }
+ArithmeticCombinator.add_schema(
+    {
+        "$id": "urn:factorio:entity:arithmetic-combinator",
+        "type": "object",
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "arithmetic_conditions": {
+                        "type": "object",
+                        "properties": {
+                            "first_constant": {"$ref": "urn:int32"},
+                            "first_signal": {"$ref": "urn:factorio:signal-id"},
+                            "first_signal_networks": {
+                                "type": "object",
+                                "properties": {
+                                    "red": {"type": "boolean", "default": "true"},
+                                    "green": {"type": "boolean", "default": "true"},
+                                },
+                            },
+                            "operation": {
+                                "enum": [
+                                    "*",
+                                    "/",
+                                    "+",
+                                    "-",
+                                    "%",
+                                    "^",
+                                    "<<",
+                                    ">>",
+                                    "AND",
+                                    "OR",
+                                    "XOR",
+                                ],
+                                "default": "*",
+                            },
+                            "second_constant": {"$ref": "urn:int32", "default": 0},
+                            "second_signal": {"$ref": "urn:factorio:signal-id"},
+                            "second_signal_networks": {
+                                "type": "object",
+                                "properties": {
+                                    "red": {"type": "boolean", "default": "true"},
+                                    "green": {"type": "boolean", "default": "true"},
+                                },
+                            },
+                            "output_signal": {"$ref": "urn:factorio:signal-id"},
+                        },
+                    }
+                },
+            }
+        },
+    },
+    version=(2, 0),
+)
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
     # {"$id": "factorio:arithmetic_combinator"},

@@ -1,7 +1,7 @@
 # lab.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import ModulesMixin, RequestItemsMixin, EnergySourceMixin
+from draftsman.classes.mixins import ModulesMixin, ItemRequestMixin, EnergySourceMixin
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.signatures import uint32
@@ -18,7 +18,7 @@ import warnings
 
 
 @attrs.define
-class Lab(ModulesMixin, RequestItemsMixin, EnergySourceMixin, Entity):
+class Lab(ModulesMixin, ItemRequestMixin, EnergySourceMixin, Entity):
     """
     An entity that consumes items and produces research.
     """
@@ -41,7 +41,7 @@ class Lab(ModulesMixin, RequestItemsMixin, EnergySourceMixin, Entity):
     # =========================================================================
 
     # TODO: in a perfect world
-    # item_requests = attrs.fields(RequestItemsMixin).item_requests.to_field()
+    # item_requests = attrs.fields(ItemRequestMixin).item_requests.to_field()
 
     # @item_requests.validator()
     # def ensure_name_recognized(self, attr, value, mode=None):

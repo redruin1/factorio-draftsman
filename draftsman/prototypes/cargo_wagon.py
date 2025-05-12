@@ -3,7 +3,7 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     EquipmentGridMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     FilteredInventoryMixin,
     OrientationMixin,
 )
@@ -21,7 +21,7 @@ from typing import Any, Literal, Optional, Union
 @attrs.define
 class CargoWagon(
     EquipmentGridMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     FilteredInventoryMixin,
     OrientationMixin,
     Entity,

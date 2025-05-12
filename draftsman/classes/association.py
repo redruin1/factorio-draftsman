@@ -2,10 +2,7 @@
 
 from draftsman.serialization import draftsman_converters
 
-from pydantic import Field, WrapValidator
-from pydantic_core import core_schema
-
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Any
 import weakref
 
 if TYPE_CHECKING:  # pragma: no coverage
@@ -53,8 +50,9 @@ class Association(weakref.ref):
 
     def __deepcopy__(self, _: dict) -> "Association":
         """
-        Deepcopying an association doesn't actually copy it; it just returns a
-        reference to the original association.
+        Deepcopying an association doesn't actually copy it; we can't do that
+        step without external information. Instead, we just returns a reference
+        to the original association to be resolved elsewhere later.
         """
         return self
 

@@ -33,6 +33,7 @@ from draftsman.validators import (
     or_,
     instance_of,
     try_convert,
+    conditional,
 )
 from draftsman.warning import (
     BarWarning,
@@ -59,6 +60,31 @@ int32 = Annotated[int, and_(ge(-(2**31)), lt(2**31))]
 int64 = Annotated[int, and_(ge(-(2**63)), lt(2**63))]
 # Maximum size of Lua double before you lose integer precision
 LuaDouble = Annotated[int, and_(ge(-(2**53)), lt(2**53))]
+
+draftsman_converters.add_schema(
+    {
+        "$id": "urn:int32",
+        "type": "integer",
+        "min": -(2**31),
+        "exclusiveMax": 2**31,
+    }
+)
+draftsman_converters.add_schema(
+    {
+        "$id": "urn:int64",
+        "type": "integer",
+        "min": -(2**63),
+        "exclusiveMax": 2**63,
+    }
+)
+draftsman_converters.add_schema(
+    {
+        "$id": "urn:lua-double",
+        "type": "integer",
+        "min": -(2**53),
+        "exclusiveMax": 2**53,
+    }
+)
 
 uint8 = Annotated[int, and_(ge(0), lt(2**8))]
 uint16 = Annotated[int, and_(ge(0), lt(2**16))]
@@ -238,6 +264,8 @@ class AttrsMapper(Exportable):
         else:
             return value
 
+
+# TODO: versioning
 
 AttrsMapper.add_schema(
     {
@@ -616,6 +644,9 @@ Comparator = Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="]
 # draftsman_converters.register_unstructure_hook(
 #     Comparator, lambda inst: normalize_comparator(inst)
 # )
+draftsman_converters.add_schema(
+    {"$id": "urn:factorio:comparator", "enum": [">", "<", "=", "≥", "≤", "≠"]}
+)
 
 
 @attrs.define
@@ -823,25 +854,19 @@ draftsman_converters.add_hook_fns(
 )
 
 
+@conditional(ValidationMode.PEDANTIC)
 def ensure_bar_less_than_inventory_size(
     self: Exportable,
-    attr,
+    _: attrs.Attribute,
     value: Optional[uint16],
-    mode: Optional[ValidationMode] = None,
-    warning_list: Optional[list] = None,
 ):
-    mode = mode if mode is not None else self.validate_assignment
-    if mode >= ValidationMode.PEDANTIC:
-        if self.inventory_size and value >= self.inventory_size:
-            msg = (
-                "Bar index ({}) exceeds the container's inventory size ({})".format(
-                    value, self.inventory_size
-                ),
-            )
-            if warning_list is None:
-                warnings.warn(BarWarning(msg))
-            else:
-                warning_list.append(BarWarning(msg))
+    if self.inventory_size and value >= self.inventory_size:
+        msg = (
+            "Bar index ({}) exceeds the container's inventory size ({})".format(
+                value, self.inventory_size
+            ),
+        )
+        warnings.warn(BarWarning(msg))
 
 
 # class Bar(RootModel):

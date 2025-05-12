@@ -4,7 +4,7 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     InputIngredientsMixin,
     ModulesMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     EnergySourceMixin,
     DirectionalMixin,
 )
@@ -30,7 +30,7 @@ from typing import Any, Literal, Optional, Union
 class Furnace(
     InputIngredientsMixin,
     ModulesMixin,
-    RequestItemsMixin,
+    ItemRequestMixin,
     EnergySourceMixin,
     DirectionalMixin,
     Entity,

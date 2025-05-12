@@ -22,6 +22,71 @@ class TestAmmoTurret:
             turret = AmmoTurret("this is not a turret")
             turret.validate().reissue_all()
 
+    def test_json_schema(self):
+        assert AmmoTurret.json_schema(version=(1, 0)) == {
+            "$id": "urn:factorio:entity:ammo-turret",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {
+                    "$ref": "urn:factorio:position",
+                },
+                "direction": {"enum": list(range(8)), "default": 0},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:item-request"},
+                },
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"],
+        }
+        assert AmmoTurret.json_schema(version=(2, 0)) == {
+            "$id": "urn:factorio:entity:ammo-turret",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {
+                    "$ref": "urn:factorio:position",
+                },
+                "quality": {"$ref": "urn:factorio:quality-name"},
+                "direction": {"enum": list(range(16)), "default": 0},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:item-request"},
+                },
+                "priority_list": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:target-id"},
+                },
+                "set_priority_list": {"type": "boolean", "default": "false"},
+                "set_ignore_unprioritized": {"type": "boolean", "default": "false"},
+                "ignore_unprioritized": {"type": "boolean", "default": "false"},
+                "ignore_unlisted_targets_condition": {
+                    "$ref": "urn:factorio:simple-condition"
+                },
+                "control_behavior": {
+                    "type": "object",
+                    "properties": {
+                        "circuit_enabled": {"type": "boolean", "default": "false"},
+                        "circuit_condition": {"$ref": "urn:factorio:simple-condition"},
+                        "connect_to_logistic_network": {
+                            "type": "boolean",
+                            "default": "false",
+                        },
+                        "logistic_condition": {"$ref": "urn:factorio:simple-condition"},
+                        "read_ammo": {"type": "boolean", "default": "true"},
+                    },
+                    "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
+                },
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"],
+        }
+
     def test_flags(self):
         turret = AmmoTurret("gun-turret")
         assert turret.rotatable == True
