@@ -7,7 +7,7 @@ import importlib.resources as pkg_resources
 from draftsman import data
 from draftsman.error import InvalidFluidError
 
-with pkg_resources.open_binary(data, "fluids.pkl") as inp:
+with pkg_resources.files(data).joinpath("fluids.pkl").open("rb") as inp:
     _data = pickle.load(inp)
     raw: dict[str, dict] = _data[0]
 

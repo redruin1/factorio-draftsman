@@ -11,7 +11,7 @@ from draftsman.utils import PrimitiveAABB, AABB
 
 
 try:
-    with pkg_resources.open_binary(data, "entities.pkl") as inp:
+    with pkg_resources.files(data).joinpath("entities.pkl").open("rb") as inp:
         _data: dict = pickle.load(inp)
 
         # Aggregation of all the the entity dicts from data.raw collected in one

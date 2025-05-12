@@ -11,7 +11,7 @@ from draftsman.utils import PrimitiveAABB, AABB
 
 
 try:
-    with pkg_resources.open_binary(data, "planets.pkl") as inp:
+    with pkg_resources.files(data).joinpath("planets.pkl").open("rb") as inp:
         _data: dict = pickle.load(inp)
 
         raw: dict[str, dict] = _data[0]

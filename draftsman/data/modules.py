@@ -7,7 +7,7 @@ import importlib.resources as pkg_resources
 from draftsman import data
 
 
-with pkg_resources.open_binary(data, "modules.pkl") as inp:
+with pkg_resources.files(data).joinpath("modules.pkl").open("rb") as inp:
     _data = pickle.load(inp)
     raw: dict[str, dict] = _data[0]
     categories: dict[str, list[str]] = _data[1]
