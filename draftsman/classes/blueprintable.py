@@ -162,6 +162,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         default=None,
         converter=AttrsColor.converter,
         validator=instance_of(Optional[AttrsColor]),
+        metadata={"never_null": True}
     )
     """
     The color of the Blueprint's label.

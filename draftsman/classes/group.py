@@ -32,7 +32,6 @@ from draftsman.utils import (
     decode_version,
     extend_aabb,
     flatten_entities,
-    reissue_warnings,
     string_to_JSON,
 )
 from draftsman.validators import instance_of, try_convert
@@ -93,71 +92,6 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
     another ``EntityCollection``.
     """
 
-    # @reissue_warnings
-    # def __init__(
-    #     self,
-    #     id: str = None,
-    #     name: str = "group",
-    #     type: str = "group",
-    #     position: Union[Vector, PrimitiveVector] = (0, 0),
-    #     entities: Union[list[EntityLike], EntityList] = [],
-    #     schedules: Union[list[Schedule], ScheduleList] = [],
-    #     wires: Optional[list[list[int]]] = None,
-    #     string: str = None,
-    #     validate_assignment: Union[
-    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-    #     ] = ValidationMode.STRICT,
-    # ):
-    #     """
-    #     :param string: A blueprint string to use as the basis for this Group;
-    #         inherits all entities and schedules and populates the Group with
-    #         them.
-    #     :param id: A unique string ID to give the group, for indexing in an
-    #         :py:class:`.EntityList`.
-    #     :param name: A string name to give this Group, to allow easier searching.
-    #     :param type: Similar to ``name``, except this one describes the type or
-    #         category of the group. Also used to aid in searching/identification.
-    #     :param position: The position to place this Group at. When resolved,
-    #         offsets all child entities contained within it by this amount. No
-    #         translation is performed until resolving into a dict or blueprint
-    #         string, and all child entities retain their specified positions as
-    #         set.
-    #     :param entities: A list of entities to contain within this Group.
-    #     :param schedules: A list of schedules to associate with this Group.
-    #     """
-    #     super().__init__()  # EntityLike
-
-    #     # TODO: better mixin inheritance
-    #     self.validate_assignment = validate_assignment
-
-    #     self.id = id
-
-    #     self.name = name
-    #     self.type = type
-
-    #     # Collision box
-    #     self._collision_set = CollisionSet([])
-
-    #     # Tile dimensions
-    #     # self.tile_width, self.tile_height = 0, 0
-
-    #     # Collision mask
-    #     self.collision_mask = None  # empty set()
-
-    #     # List of entities
-    #     if string is not None:
-    #         self.load_from_string(string)
-    #     else:
-    #         self.setup(
-    #             entities=entities,
-    #             schedules=schedules,
-    #             wires=[] if wires is None else wires,
-    #         )
-
-    #     # TODO: the position of this shouldn't matter, but in practice it does,
-    #     # investigate
-    #     self.position = position
-
     # TODO: ideally we would only define this method once
     @classmethod
     def from_string(
@@ -201,72 +135,6 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
         # import inspect
         # print(inspect.getsource(converter.get_structure_hook(cls)))
         return converter.structure(json_dict, cls)
-
-        # self.setup(
-        #     **root[self._root_item],
-        #     index=root.get("index", None),
-        #     validate=validate,
-        # )
-
-        # Convert circuit and power connections to Associations
-        # TODO: write a single function to do this and reuse
-        # for entity in self.entities:
-        #     if hasattr(entity, "connections"):  # Wire connections
-        #         connections: Connections = entity.connections
-        #         for side in connections.true_model_fields():
-        #             if connections[side] is None:
-        #                 continue
-
-        #             if side in {"1", "2"}:
-        #                 for color, _ in connections[side]:
-        #                     connection_points = connections[side][color]
-        #                     if connection_points is None:
-        #                         continue
-        #                     for point in connection_points:
-        #                         old = point["entity_id"] - 1
-        #                         point["entity_id"] = Association(self.entities[old])
-
-        #             elif side in {"Cu0", "Cu1"}:  # pragma: no branch
-        #                 connection_points = connections[side]
-        #                 if connection_points is None:
-        #                     continue  # pragma: no coverage
-        #                 for point in connection_points:
-        #                     old = point["entity_id"] - 1
-        #                     point["entity_id"] = Association(self.entities[old])
-
-        #     if hasattr(entity, "neighbours"):  # Power pole connections
-        #         neighbours = entity.neighbours
-        #         for i, neighbour in enumerate(neighbours):
-        #             neighbours[i] = Association(self.entities[neighbour - 1])
-
-        # # Change all locomotive numbers to use Associations
-        # for schedule in self._schedules:
-        #     for i, locomotive in enumerate(schedule.locomotives):
-        #         schedule.locomotives[i] = Association(self.entities[locomotive - 1])
-
-        # TODO: wires
-
-    # @reissue_warnings
-    # def setup(self, **kwargs) -> None:  # TODO: kwargs
-    #     """
-    #     Sets up a Group using a blueprint JSON dict. Currently only reads the
-    #     ``"entities"`` and ``"schedules"`` keys and loads them into
-    #     :py:attr:`Group.entities` and :py:attr:`Group.schedules`.
-
-    #     TODO: update
-    #     """
-    #     if "entities" in kwargs:
-    #         self._entities = EntityList(self, kwargs.pop("entities"))
-    #     else:
-    #         self._entities = EntityList(self)
-
-    #     if "schedules" in kwargs:
-    #         self._schedules = ScheduleList(kwargs.pop("schedules"))
-    #     else:
-    #         self._schedules = ScheduleList()
-
-    #     if "wires" in kwargs:
-    #         self._wires = kwargs.pop("wires")
 
     def __attrs_post_init__(self):
         # 1.0 code
@@ -340,26 +208,6 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
 
     # =========================================================================
 
-    # # TODO: should only be defined once
-    # validate_assignment: ValidationMode = attrs.field(
-    #     default=ValidationMode.STRICT,
-    #     converter=ValidationMode,
-    #     validator=instance_of(ValidationMode),
-    #     repr=False,
-    #     eq=False,
-    #     kw_only=True,
-    #     metadata={"omit": True},
-    # )
-    # """
-    # Toggleable flag that indicates whether assignments to this object should
-    # be validated, and how. Can be set in the constructor of the entity or
-    # changed at any point during runtime. Note that this is on a per-entity
-    # basis, so multiple instances of otherwise identical entities can have
-    # different validation configurations.
-    # """
-
-    # =========================================================================
-
     name: str = attrs.field(default="group", validator=instance_of(str), kw_only=True)
     """
     The name of the Group. Defaults to ``"group"``. Can be specified to any
@@ -378,34 +226,6 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
 
     :exception TypeError: If set to anything other than a ``str``.
     """
-
-    # @property
-    # def name(self) -> str:
-    #     """
-    #     The name of the Group. Defaults to ``"group"``. Can be specified to any
-    #     string to aid in organization. For example:
-
-    #     .. code-block:: python
-
-    #         blueprint.entities.append(Group("A"))
-    #         blueprint.entities.append(Group("B", name="different_name"))
-
-    #         diff = blueprint.find_entities_filtered(name="different_name")
-    #         assert diff[0] is blueprint.entities["B"]
-
-    #     :getter: Gets the name of the Group.
-    #     :setter: Sets the name of the Group.
-
-    #     :exception TypeError: If set to anything other than a ``str``.
-    #     """
-    #     return self._name
-
-    # @name.setter
-    # def name(self, value: str):
-    #     if isinstance(value, str):
-    #         self._name = value
-    #     else:
-    #         raise TypeError("'name' must be a str")
 
     # =========================================================================
 
@@ -431,34 +251,6 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
 
     :exception TypeError: If set to anything other than a ``str``.
     """
-
-    # @property
-    # def type(self) -> str:
-    #     """
-    #     The type of the Group. Defaults to ``"group"``. Can be specified to any
-    #     string to aid in organization. For example:
-
-    #     .. code-block:: python
-
-    #         blueprint.entities.append(Group("A"))
-    #         blueprint.entities.append(Group("B", type="different_type"))
-
-    #         diff = blueprint.find_entities_filtered(type="different_type")
-    #         assert diff[0] is blueprint.entities["B"]
-
-    #     :getter: Gets the type of the Group.
-    #     :setter: Sets the type of the Group.
-
-    #     :exception TypeError: If set to anything other than a ``str``.
-    #     """
-    #     return self._type
-
-    # @type.setter
-    # def type(self, value: str):
-    #     if isinstance(value, str):
-    #         self._type = value
-    #     else:
-    #         raise TypeError("'type' must be a str")
 
     # =========================================================================
 
@@ -486,43 +278,6 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
         inside a EntityCollection, :ref:`which is forbidden
         <handbook.blueprints.forbidden_entity_attributes>`.
     """
-
-    # @property
-    # def position(self) -> Vector:
-    #     """
-    #     The position of the Group. Acts as the origin of all the entities
-    #     contained within, and offsets them on export.
-
-    #     ``position`` can be specified as a ``dict`` with ``"x"`` and ``"y"``
-    #     keys, or more succinctly as a sequence of floats, usually a ``list`` or
-    #     ``tuple``.
-
-    #     :getter: Gets the position of the Group.
-    #     :setter: Sets the position of the Group.
-
-    #     :exception IndexError: If the set value does not match the above
-    #         specification.
-    #     :exception DraftsmanError: If the Group's position is modified when
-    #         inside a EntityCollection, :ref:`which is forbidden
-    #         <handbook.blueprints.forbidden_entity_attributes>`.
-    #     """
-    #     return self._position
-
-    # @position.setter
-    # def position(self, value: Union[Vector, PrimitiveVector]):
-    #     if self.parent:
-    #         raise DraftsmanError(
-    #             "Cannot change position of Group while it's inside a Collection"
-    #         )
-
-    #     self._position = Vector.from_other(value, float)
-
-    #     # if "x" in value and "y" in value:
-    #     #     self._position = {"x": float(value["x"]), "y": float(value["y"])}
-    #     # elif isinstance(value, (list, tuple)):
-    #     #     self._position = {"x": float(value[0]), "y": float(value[1])}
-    #     # else:
-    #     #     raise TypeError("Incorrectly formatted position ({})".format(value))
 
     # =========================================================================
 
@@ -556,15 +311,6 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
         # have each sub-entity handle their own collisions
         return CollisionSet([])
 
-    # @collision_set.setter
-    # def collision_set(self, value: CollisionSet) -> None:
-    #     # TODO: error checking
-    #     if value is None:
-    #         self._collision_set = CollisionSet([])
-    #     else:
-    #         self._collision_set = value
-    # self._collision_set = value
-
     # =========================================================================
 
     # TODO: delete this
@@ -585,29 +331,6 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
     :exception TypeError: If set to anything other than a `set` or None.
     """
 
-    # @property
-    # def collision_mask(self) -> set[str]:
-    #     """
-    #     The set of all collision layers that this Entity collides with,
-    #     specified as strings. Defaults to an empty ``set``. Not exported.
-
-    #     :getter: Gets the collision mask of the Group.
-    #     :setter: Sets the collision mask of the Group, or sets it to an empty
-    #         set if ``None`` was input.
-
-    #     :exception TypeError: If set to anything other than a `set` or None.
-    #     """
-    #     return self._collision_mask
-
-    # @collision_mask.setter
-    # def collision_mask(self, value: Optional[set[str]]):
-    #     if value is None:
-    #         self._collision_mask = set()
-    #     elif isinstance(value, set):
-    #         self._collision_mask = value
-    #     else:
-    #         raise TypeError("'collision_mask' must be a set or None")
-
     # =========================================================================
 
     @property
@@ -617,118 +340,16 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
                 return True
         return False
 
-    # =========================================================================
-
-    # def _set_entities(self, _: attrs.Attribute, value: Any):
-    #     if value is None:
-    #         self.entities.clear()
-    #     elif isinstance(value, EntityList):
-    #         self.entities = EntityList(self, value._root)
-    #     else:
-    #         self.entities = EntityList(self, value)
-
-    #     return self.entities
-
-    # # TODO: move into EntityCollection
-    # entities: EntityList = attrs.field(
-    #     on_setattr=_set_entities,
-    # )
-
-    # @entities.default
-    # def _(self):
-    #     return EntityList(self)
-
-    # @property
-    # def entities(self) -> EntityList:
-    #     """
-    #     The list of the Group's entities. Internally the list is a custom
-    #     class named :py:class:`draftsman.classes.EntityList`, which has all the
-    #     normal properties of a regular list, as well as some extra features.
-    #     For more information on ``EntityList``, check out this writeup
-    #     :ref:`here <handbook.blueprints.blueprint_differences>`.
-    #     """
-    #     return self._entities
-
-    # @entities.setter
-    # @reissue_warnings
-    # def entities(self, value: Union[list[EntityLike], EntityList]):
-    #     if value is None:
-    #         self._entities.clear()
-    #     elif isinstance(value, list):
-    #         self._entities = EntityList(self, value)
-    #     elif isinstance(value, EntityList):
-    #         # Just don't ask
-    #         self._entities = copy.deepcopy(value, memo={"new_parent": self})
-    #     else:
-    #         raise TypeError("'entities' must be an EntityList, list, or None")
 
     # =========================================================================
 
-    # # TODO: move into EntityCollection
-    # @property
-    # def schedules(self) -> ScheduleList:
-    #     """
-    #     A list of the Group's train schedules.
-
-    #     .. seealso::
-
-    #         `<https://wiki.factorio.com/Blueprint_string_format#Schedule_object>`_
-
-    #     :getter: Gets the schedules of the Blueprint.
-    #     :setter: Sets the schedules of the Blueprint. Defaults to ``[]`` if set
-    #         to ``None``.
-
-    #     :exception DataFormatError: If set to anything other than a ``list`` of
-    #         :py:data:`.SCHEDULE`.
-    #     """
-    #     return self._schedules
-
-    # @schedules.setter
-    # def schedules(self, value: Union[list, ScheduleList]):
-    #     if value is None:
-    #         self._schedules = ScheduleList()
-    #     elif isinstance(value, ScheduleList):
-    #         self._schedules = value  # TODO: what about reference copying?
-    #     else:
-    #         self._schedules = ScheduleList(value)
-
-    # =========================================================================
-
-    # # TODO: move into EntityCollection
-    # wires: list[list[Association, int, Association, int]] = attrs.field(
-    #     factory=list,
-    #     converter=lambda v: [] if v is None else v,
-    #     validator=instance_of(list) # TODO: validators
-    # )
-    # """
-    # A list of the wire connections in this collection.
-
-    # Wires are specified as a list of 4 integers; the first pair of numbers
-    # represents the first entity, and the second pair represents the second
-    # entity. The first number of each pair represents the ``entity_number``
-    # of the corresponding entity in the list, and the second number indicates
-    # what type of connection it is.
-
-    # TODO: more detail
-
-    # :getter: Gets the wires of the Blueprint.
-    # :setter: Sets the wires of the Blueprint. Defaults to an empty list if
-    #     set to ``None``.
-    # """
-
-    # # @property
-    # # def wires(self) -> list[list[int]]:
-    # #     """
-    # #     TODO
-    # #     """
-    # #     return self._wires
-
-    # # @wires.setter
-    # # def wires(self, value: list[list[int]]) -> None:
-    # #     if value is None:
-    # #         self._wires = []
-    # #     else:
-    # #         self._wires = value
+    children: list["Group"] = attrs.field(
+        factory=[],
+        validator=instance_of(list)
+    )
+    """
+    Children of this entity-like.
+    """
 
     # =========================================================================
 
@@ -744,9 +365,6 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
         return flatten_entities(self.entities)
 
     def get_world_bounding_box(self) -> Optional[AABB]:
-        """
-        TODO
-        """
         area = None
         for entity in self.entities:
             area = extend_aabb(area, entity.get_world_bounding_box())
@@ -754,9 +372,6 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
         return area
 
     def get_dimensions(self) -> tuple[int, int]:
-        """
-        TODO
-        """
         return aabb_to_dimensions(self.get_world_bounding_box())
 
     def mergable_with(self, other: "Group") -> bool:
@@ -789,12 +404,9 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
 
         return output
 
-    def __str__(self) -> str:  # pragma: no coverage
-        # TODO: better formatting
-        return "<Group>" + str(self.entities._root)
-
-    def __repr__(self) -> str:  # pragma: no coverage
-        return "<Group>{}".format(self.entities._root)
+    # def __str__(self) -> str:  # pragma: no coverage
+    #     # TODO: better formatting
+    #     return "<Group>" + str(self)
 
     def __deepcopy__(self, memo: Optional[dict[int, Any]] = None):
         cls = self.__class__
@@ -911,7 +523,6 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
 
 
 draftsman_converters.add_hook_fns(
-    # {"$id": "draftsman:group"},
     Group,
     lambda fields: {
         ("blueprint", "entities"): fields.entities.name,

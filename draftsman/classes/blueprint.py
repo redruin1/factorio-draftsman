@@ -397,6 +397,10 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     # =========================================================================
 
+    children: list[EntityCollection]
+
+    # =========================================================================
+
     snapping_grid_size: Optional[Vector] = attrs.field(
         default=None,
         converter=try_convert(Vector.from_other),
@@ -579,16 +583,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         #     "position-relative-to-grid"
         # ] == {"x": 0, "y": 0}:
         #     del result["blueprint"]["position-relative-to-grid"]
-
-        # Label color can never be given with a value of null; it can only either
-        # be specified with a valid color or omitted entirely (in which case is
-        # given a special default)
-        # Hence, we manually detect `None` and delete the key if so:
-        if (
-            "label_color" in result["blueprint"]
-            and result["blueprint"]["label_color"] is None
-        ):
-            del result["blueprint"]["label_color"]
 
         if len(result["blueprint"]["entities"]) == 0:
             del result["blueprint"]["entities"]
