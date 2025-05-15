@@ -5,41 +5,50 @@ from draftsman.prototypes.artillery_turret import (
     ArtilleryTurret,
     artillery_turrets,
 )
-from draftsman.signatures import AttrsSimpleCondition, AttrsItemRequest, AttrsItemSpecification, AttrsInventoryLocation
+from draftsman.signatures import (
+    AttrsSimpleCondition,
+    AttrsItemRequest,
+    AttrsItemSpecification,
+    AttrsInventoryLocation,
+)
 from draftsman.warning import UnknownEntityWarning
 
 import pytest
 
 
-valid_artillery_turret = ArtilleryTurret(
-    "artillery-turret",
-    id="test",
-    quality="uncommon",
-    tile_position=(1, 1),
-    direction=Direction.EAST,
-    circuit_enabled=True,
-    circuit_condition=AttrsSimpleCondition(
-        first_signal="signal-A", comparator="<", second_signal="signal-B"
-    ),
-    connect_to_logistic_network=True,
-    logistic_condition=AttrsSimpleCondition(
-        first_signal="signal-A", comparator="<", second_signal="signal-B"
-    ),
-    read_ammo=False,
-    item_requests=[
-        AttrsItemRequest(
-            id="artillery-shell",
-            items=AttrsItemSpecification(
-                in_inventory=[
-                    AttrsInventoryLocation(
-                        inventory=Inventory.artillery_turret_ammo, stack=0, count=1
-                    )
-                ]
-            ),
-        )
-    ],
-    tags={"blah": "blah"}
-)
+@pytest.fixture
+def valid_artillery_turret():
+    if len(artillery_turrets) == 0:
+        return None
+    return ArtilleryTurret(
+        "artillery-turret",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        circuit_enabled=True,
+        circuit_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        connect_to_logistic_network=True,
+        logistic_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        read_ammo=False,
+        item_requests=[
+            AttrsItemRequest(
+                id="artillery-shell",
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.artillery_turret_ammo, stack=0, count=1
+                        )
+                    ]
+                ),
+            )
+        ],
+        tags={"blah": "blah"},
+    )
 
 
 def test_constructor():
@@ -62,8 +71,12 @@ def test_json_schema():
             },
             "direction": {"enum": list(range(8)), "default": 0},
             "items": {
-                "type": "array",
-                "items": {"$ref": "urn:factorio:item-request"},
+                "type": "object",
+                "description": "A dictionary of item requests, where each key is "
+                "the name of an item and the value is the count of that item to "
+                "request. Items always go to the default inventory of that "
+                "object (if possible) in the order in which Factorio traverses "
+                "them.",
             },
             "tags": {"type": "object"},
         },
@@ -85,6 +98,10 @@ def test_json_schema():
             "items": {
                 "type": "array",
                 "items": {"$ref": "urn:factorio:item-request"},
+                "description": "A list of item requests objects, which contain "
+                "the item name, it's quality, the amount to request, as well as "
+                "exactly what inventories to request to and where inside those "
+                "inventories.",
             },
             "control_behavior": {
                 "type": "object",

@@ -18,21 +18,25 @@ from collections.abc import Hashable
 import pytest
 
 
-valid_arithmetic_combinator = ArithmeticCombinator(
-    "arithmetic-combinator",
-    id="test",
-    quality="uncommon",
-    tile_position=(1, 1),
-    direction=Direction.EAST,
-    player_description="test",
-    first_operand="signal-A",
-    first_operand_wires={"red"},
-    operation="XOR",
-    second_operand="signal-B",
-    second_operand_wires={"green"},
-    output_signal="signal-C",
-    tags={"blah": "blah"}
-)
+@pytest.fixture
+def valid_arithmetic_combinator():
+    if len(arithmetic_combinators) == 0:
+        return None
+    return ArithmeticCombinator(
+        "arithmetic-combinator",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        player_description="test",
+        first_operand="signal-A",
+        first_operand_wires={"red"},
+        operation="XOR",
+        second_operand="signal-B",
+        second_operand_wires={"green"},
+        output_signal="signal-C",
+        tags={"blah": "blah"},
+    )
 
 
 class TestArithmeticCombinator:
@@ -176,7 +180,7 @@ class TestArithmeticCombinator:
             "$id": "urn:factorio:entity:arithmetic-combinator",
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "type": "object",
-            "definitions": {
+            "$defs": {
                 "circuit-connection-point": {
                     "type": "object",
                     "properties": {
@@ -201,47 +205,50 @@ class TestArithmeticCombinator:
                 },
                 "direction": {"enum": list(range(8)), "default": 0},
                 "connections": {
-                    "1": {
-                        "type": "object",
-                        "properties": {
-                            "red": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/circuit-connection-point"
+                    "type": "object",
+                    "properties": {
+                        "1": {
+                            "type": "object",
+                            "properties": {
+                                "red": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
                                 },
-                            },
-                            "green": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/circuit-connection-point"
-                                },
-                            },
-                        },
-                    },
-                    "2": {
-                        "type": "object",
-                        "properties": {
-                            "red": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/circuit-connection-point"
-                                },
-                            },
-                            "green": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/circuit-connection-point"
+                                "green": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
                                 },
                             },
                         },
-                    },
-                    "Cu0": {
-                        "type": "array",
-                        "items": {"$ref": "#/definitions/wire-connection-point"},
-                    },
-                    "Cu1": {
-                        "type": "array",
-                        "items": {"$ref": "#/definitions/wire-connection-point"},
+                        "2": {
+                            "type": "object",
+                            "properties": {
+                                "red": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
+                                },
+                                "green": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
+                                },
+                            },
+                        },
+                        "Cu0": {
+                            "type": "array",
+                            "items": {"$ref": "#/$defs/wire-connection-point"},
+                        },
+                        "Cu1": {
+                            "type": "array",
+                            "items": {"$ref": "#/$defs/wire-connection-point"},
+                        },
                     },
                 },
                 "control_behavior": {
@@ -251,15 +258,12 @@ class TestArithmeticCombinator:
                             "type": "object",
                             "properties": {
                                 "first_constant": {
-                                    "oneOf": [
-                                        {"$ref": "urn:int32"},
-                                        {"type": "null"}
-                                    ]
+                                    "oneOf": [{"$ref": "urn:int32"}, {"type": "null"}]
                                 },
                                 "first_signal": {
                                     "oneOf": [
                                         {"$ref": "urn:factorio:signal-id"},
-                                        {"type": "null"}
+                                        {"type": "null"},
                                     ]
                                 },
                                 "operation": {
@@ -279,22 +283,19 @@ class TestArithmeticCombinator:
                                     "default": "*",
                                 },
                                 "second_constant": {
-                                    "oneOf": [
-                                        {"$ref": "urn:int32"},
-                                        {"type": "null"}
-                                    ], 
-                                    "default": 0
+                                    "oneOf": [{"$ref": "urn:int32"}, {"type": "null"}],
+                                    "default": 0,
                                 },
                                 "second_signal": {
                                     "oneOf": [
                                         {"$ref": "urn:factorio:signal-id"},
-                                        {"type": "null"}
+                                        {"type": "null"},
                                     ]
                                 },
                                 "output_signal": {
                                     "oneOf": [
                                         {"$ref": "urn:factorio:signal-id"},
-                                        {"type": "null"}
+                                        {"type": "null"},
                                     ]
                                 },
                             },
@@ -325,15 +326,12 @@ class TestArithmeticCombinator:
                             "type": "object",
                             "properties": {
                                 "first_constant": {
-                                    "oneOf": [
-                                        {"$ref": "urn:int32"},
-                                        {"type": "null"}
-                                    ]
+                                    "oneOf": [{"$ref": "urn:int32"}, {"type": "null"}]
                                 },
                                 "first_signal": {
                                     "oneOf": [
                                         {"$ref": "urn:factorio:signal-id"},
-                                        {"type": "null"}
+                                        {"type": "null"},
                                     ]
                                 },
                                 "first_signal_networks": {
@@ -360,16 +358,13 @@ class TestArithmeticCombinator:
                                     "default": "*",
                                 },
                                 "second_constant": {
-                                    "oneOf": [
-                                        {"$ref": "urn:int32"},
-                                        {"type": "null"}
-                                    ], 
-                                    "default": 0
+                                    "oneOf": [{"$ref": "urn:int32"}, {"type": "null"}],
+                                    "default": 0,
                                 },
                                 "second_signal": {
                                     "oneOf": [
                                         {"$ref": "urn:factorio:signal-id"},
-                                        {"type": "null"}
+                                        {"type": "null"},
                                     ]
                                 },
                                 "second_signal_networks": {
@@ -382,7 +377,7 @@ class TestArithmeticCombinator:
                                 "output_signal": {
                                     "oneOf": [
                                         {"$ref": "urn:factorio:signal-id"},
-                                        {"type": "null"}
+                                        {"type": "null"},
                                     ]
                                 },
                             },

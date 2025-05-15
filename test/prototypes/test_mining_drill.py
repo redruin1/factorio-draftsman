@@ -1,12 +1,18 @@
 # test_mining_drill.py
 
-from draftsman.constants import MiningDrillReadMode, ValidationMode, Inventory
+from draftsman.constants import (
+    Direction,
+    MiningDrillReadMode,
+    ValidationMode,
+    Inventory,
+)
 from draftsman.entity import MiningDrill, mining_drills, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
     AttrsItemRequest,
     AttrsItemSpecification,
     AttrsInventoryLocation,
+    AttrsSimpleCondition,
 )
 from draftsman.warning import (
     ModuleCapacityWarning,
@@ -18,6 +24,43 @@ from draftsman.warning import (
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_mining_drill():
+    if len(mining_drills) == 0:
+        return None
+    return MiningDrill(
+        "electric-mining-drill",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        circuit_enabled=True,
+        circuit_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        connect_to_logistic_network=True,
+        logistic_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        read_resources=False,
+        read_mode=MiningDrillReadMode.TOTAL_PATCH,
+        item_requests=[
+            AttrsItemRequest(
+                id="speed-module-3",
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.mining_drill_modules,
+                            stack=1,
+                        )
+                    ]
+                ),
+            )
+        ],
+        tags={"blah": "blah"},
+    )
 
 
 class TestMiningDrill:

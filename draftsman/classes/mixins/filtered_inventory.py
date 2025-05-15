@@ -11,6 +11,7 @@ from draftsman.signatures import (
     int64,
     uint16,
     ensure_bar_less_than_inventory_size,
+    # FilteredInventory, # TODO: merge
 )
 from draftsman.validators import and_, instance_of
 
@@ -146,7 +147,7 @@ FilteredInventoryMixin.add_schema(
                         "type": "array",
                         "items": {"$ref": "urn:factorio:item-filter"},
                     },
-                    "bar": {"oneOf": [{"type": "urn:uint16"}, {"type": "null"}]},
+                    "bar": {"oneOf": [{"$ref": "urn:uint16"}, {"type": "null"}]},
                 },
             }
         }

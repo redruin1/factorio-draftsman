@@ -10,8 +10,8 @@ import attrs
 @attrs.define
 class CargoBay(Entity):
     """
-    An entity which can be added to a :py:class:`.CargoLandingPad` or a 
-    :py:class:`.SpacePlatformHub` in order to expand its inventory size and the 
+    An entity which can be added to a :py:class:`.CargoLandingPad` or a
+    :py:class:`.SpacePlatformHub` in order to expand its inventory size and the
     amount of cargo pods it can send/recieve at once.
     """
 

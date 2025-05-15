@@ -9,6 +9,22 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_rocket_silo():
+    if len(rocket_silos) == 0:
+        return None
+    return RocketSilo(
+        "rocket-silo",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        auto_launch=True,
+        read_items_mode=SiloReadMode.READ_ORBITAL_REQUESTS,
+        transitional_request_index=12,
+        tags={"blah": "blah"},
+    )
+
+
 class TestRocketSilo:
     def test_constructor_init(self):
         silo = RocketSilo(

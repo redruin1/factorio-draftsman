@@ -21,7 +21,7 @@ class CircuitReadContentsMixin(Exportable):  # (ControlBehaviorMixin)
         | :py:class:`~draftsman.classes.mixins.circuit_read_resource.CircuitReadResourceMixin`
     """
 
-    read_contents: bool = attrs.field(default=True, validator=instance_of(bool))
+    read_contents: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not this Entity is set to read it's contents to a circuit
     network.
@@ -53,15 +53,51 @@ CircuitReadContentsMixin.add_schema(
             "control_behavior": {
                 "type": "object",
                 "properties": {
-                    "circuit_read_hand_contents": {"type": "boolean"},
-                    "circuit_contents_read_mode": {"enum": [0, 1, 2]},
+                    "circuit_read_hand_contents": {
+                        "type": "boolean",
+                        "default": "false",
+                    },
+                    "circuit_contents_read_mode": {
+                        "enum": [
+                            BeltReadMode.PULSE,
+                            BeltReadMode.HOLD,
+                        ],
+                        "default": BeltReadMode.PULSE,
+                    },
                 },
             }
         }
-    }
+    },
+    version=(1, 0),
 )
 
-# TODO: versioning
+# TODO: only permit belt read mode to PULSE and HOLD on Factorio 1.0
+
+CircuitReadContentsMixin.add_schema(
+    {
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "circuit_read_hand_contents": {
+                        "type": "boolean",
+                        "default": "false",
+                    },
+                    "circuit_contents_read_mode": {
+                        "enum": [
+                            BeltReadMode.PULSE,
+                            BeltReadMode.HOLD,
+                            BeltReadMode.HOLD_ALL_BELTS,
+                        ],
+                        "default": BeltReadMode.PULSE,
+                    },
+                },
+            }
+        }
+    },
+    version=(1, 0),
+)
+
 draftsman_converters.add_hook_fns(
     CircuitReadContentsMixin,
     lambda fields: {

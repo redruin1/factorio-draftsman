@@ -1,18 +1,36 @@
 # test_wall.py
 
+from draftsman.constants import ValidationMode as vm
 from draftsman.entity import Wall, Container, walls
 from draftsman.error import DataFormatError, IncompleteSignalError
-from draftsman.signatures import AttrsSignalID
+from draftsman.signatures import AttrsSignalID, AttrsSimpleCondition
 from draftsman.warning import (
     MalformedSignalWarning,
     UnknownEntityWarning,
     UnknownKeywordWarning,
     UnknownSignalWarning,
 )
-from draftsman.constants import ValidationMode as vm
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_wall():
+    if len(walls) == 0:
+        return None
+    return Wall(
+        "stone-wall",
+        id="test",
+        quality="uncommon",
+        circuit_enabled=False,
+        circuit_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        read_gate=True,
+        output_signal="signal-C",
+        tags={"blah": "blah"},
+    )
 
 
 class TestWall:
@@ -363,19 +381,19 @@ class TestWall:
         d_1_0["connections"] = {}
         assert wall.to_dict(version=(1, 0), exclude_defaults=False) == d_1_0
 
-    def test_set_enable_disable(self):
+    def test_set_circuit_enabled(self):
         # ========================
         # No assignment validation
         # ========================
         wall = Wall("stone-wall", validate_assignment="none")
 
         # bool
-        wall.enable_disable = True
-        assert wall.enable_disable == True
+        wall.circuit_enabled = True
+        assert wall.circuit_enabled == True
 
         # Incorrect type
-        wall.enable_disable = "incorrect"
-        assert wall.enable_disable == "incorrect"
+        wall.circuit_enabled = "incorrect"
+        assert wall.circuit_enabled == "incorrect"
 
         # ===================
         # Miniumum validation
@@ -383,12 +401,12 @@ class TestWall:
         wall.validate_assignment = "minimum"
 
         # bool
-        wall.enable_disable = True
-        assert wall.enable_disable == True
+        wall.circuit_enabled = True
+        assert wall.circuit_enabled == True
 
         # Incorrect type
         with pytest.raises(DataFormatError):
-            wall.enable_disable = "incorrect"
+            wall.circuit_enabled = "incorrect"
 
         # =================
         # Strict validation
@@ -396,12 +414,12 @@ class TestWall:
         wall.validate_assignment = "strict"
 
         # bool
-        wall.enable_disable = True
-        assert wall.enable_disable == True
+        wall.circuit_enabled = True
+        assert wall.circuit_enabled == True
 
         # Incorrect type
         with pytest.raises(DataFormatError):
-            wall.enable_disable = "incorrect"
+            wall.circuit_enabled = "incorrect"
 
         # ===================
         # Pedantic validation
@@ -409,12 +427,12 @@ class TestWall:
         wall.validate_assignment = "pedantic"
 
         # bool
-        wall.enable_disable = True
-        assert wall.enable_disable == True
+        wall.circuit_enabled = True
+        assert wall.circuit_enabled == True
 
         # Incorrect type
         with pytest.raises(DataFormatError):
-            wall.enable_disable = "incorrect"
+            wall.circuit_enabled = "incorrect"
 
     def test_set_read_gate(self):
         # ========================
@@ -651,11 +669,11 @@ class TestWall:
 
         assert wall1.tags == {"some": "stuff"}
 
-        wall3 = Wall("stone-wall", enable_disable=True, output_signal="signal-A")
+        wall3 = Wall("stone-wall", circuit_enabled=True, output_signal="signal-A")
         wall1.merge(wall3)
 
         assert wall1.tags == {}  # Overwritten by blank
-        assert wall1.enable_disable == True
+        assert wall1.circuit_enabled == True
         assert wall1.output_signal == AttrsSignalID(name="signal-A", type="virtual")
 
     def test_eq(self):

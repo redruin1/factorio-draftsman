@@ -11,6 +11,19 @@ import sys
 import pytest
 
 
+@pytest.fixture
+def valid_electric_pole():
+    if len(electric_poles) == 0:
+        return None
+    return ElectricPole(
+        "substation",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        tags={"blah": "blah"},
+    )
+
+
 class TestElectricPole:
     def test_constructor_init(self):
         electric_pole = ElectricPole("substation", position=(1, 1))
@@ -46,6 +59,101 @@ class TestElectricPole:
         assert electric_pole.to_dict(version=(2, 0)) == {
             "name": "small-electric-pole",
             "position": {"x": 0.5, "y": 0.5},
+        }
+
+    def test_json_schema(self):
+        assert ElectricPole.json_schema(version=(1, 0)) == {
+            "$id": "urn:factorio:entity:electric-pole",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "$defs": {
+                "circuit-connection-point": {
+                    "type": "object",
+                    "properties": {
+                        "entity_id": {"$ref": "urn:uint64"},
+                        "circuit_id": {"enum": [1, 2]},
+                    },
+                    "required": ["entity_id"],
+                },
+                "wire-connection-point": {
+                    "properties": {
+                        "entity_id": {"$ref": "urn:uint64"},
+                        "wire_id": {"enum": [0, 1]},
+                    },
+                    "required": ["entity_id"],
+                },
+            },
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {"$ref": "urn:factorio:position"},
+                "neighbours": {
+                    "type": "array",
+                    "items": {"$ref": "urn:uint64"},
+                },
+                "connections": {
+                    "type": "object",
+                    "properties": {
+                        "1": {
+                            "type": "object",
+                            "properties": {
+                                "red": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
+                                },
+                                "green": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
+                                },
+                            },
+                        },
+                        "2": {
+                            "type": "object",
+                            "properties": {
+                                "red": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
+                                },
+                                "green": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
+                                },
+                            },
+                        },
+                        "Cu0": {
+                            "type": "array",
+                            "items": {"$ref": "#/$defs/wire-connection-point"},
+                        },
+                        "Cu1": {
+                            "type": "array",
+                            "items": {"$ref": "#/$defs/wire-connection-point"},
+                        },
+                    },
+                },
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"],
+        }
+        assert ElectricPole.json_schema(version=(2, 0)) == {
+            "$id": "urn:factorio:entity:electric-pole",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {"$ref": "urn:factorio:position"},
+                "quality": {"$ref": "urn:factorio:quality-name"},
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"],
         }
 
     def test_mergable_with(self):

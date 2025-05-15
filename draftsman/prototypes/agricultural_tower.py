@@ -3,6 +3,7 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     CircuitConditionMixin,
+    CircuitEnableMixin,
     LogisticConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
@@ -20,6 +21,7 @@ import attrs
 class AgriculturalTower(  # TODO: this can probably request items
     LogisticConditionMixin,
     CircuitConditionMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     EnergySourceMixin,

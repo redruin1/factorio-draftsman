@@ -2,10 +2,11 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import uint32
+from draftsman.signatures import FilteredInventory, uint32
 from draftsman.validators import instance_of
 
 import attrs
+from typing import Optional
 
 
 @attrs.define(slots=False)
@@ -14,20 +15,26 @@ class VehicleMixin(Exportable):
     A number of common properties that all vehicles have.
     """
 
-    trunk_inventory = attrs.field(
+    trunk_inventory: Optional[FilteredInventory] = attrs.field(
         default=None,
+        converter=FilteredInventory.converter,
+        validator=instance_of(Optional[FilteredInventory]),
     )
     """
-    TODO
+    Inventory object which encodes slot filters for the main inventory of the
+    vehicle.
     """
 
     # =========================================================================
 
-    ammo_inventory = attrs.field(
+    ammo_inventory: Optional[FilteredInventory] = attrs.field(
         default=None,
+        converter=FilteredInventory.converter,
+        validator=instance_of(Optional[FilteredInventory]),
     )
     """
-    TODO
+    Inventory object which encodes slot filters for the ammunition slots of the
+    vehicle.
     """
 
     # =========================================================================
@@ -52,8 +59,8 @@ class VehicleMixin(Exportable):
 VehicleMixin.add_schema(
     {
         "properties": {
-            "trunk_inventory": {"type": "null"},
-            "ammo_inventory": {"type": "null"},
+            "trunk_inventory": {"$ref": "urn:factorio:filtered-inventory"},
+            "ammo_inventory": {"$ref": "urn:factorio:filtered-inventory"},
             "driver_is_main_gunner": {"type": "boolean", "default": "false"},
             "selected_gun_index": {"$ref": "urn:uint32", "default": 1},
         }

@@ -3,11 +3,36 @@
 from draftsman.constants import Direction, ValidationMode
 from draftsman.entity import OffshorePump, offshore_pumps, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import AttrsSimpleCondition, AttrsSignalID
+from draftsman.signatures import (
+    AttrsSimpleCondition,
+    AttrsSignalID,
+    AttrsSimpleCondition,
+)
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_offshore_pump():
+    if len(offshore_pumps) == 0:
+        return None
+    return OffshorePump(
+        "offshore-pump",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        circuit_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        connect_to_logistic_network=True,
+        logistic_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        tags={"blah": "blah"},
+    )
 
 
 class TestOffshorePump:

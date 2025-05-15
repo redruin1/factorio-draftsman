@@ -87,8 +87,12 @@ class ModulesMixin:
         quality: QualityName = "normal",
     ):
         """
-        Loads ``count`` modules sequentially into the entity starting at slot
-        ``position``.
+        Loads module ``module_name`` into the slot specified by ``slots``, or
+        multiple slots if ``slots`` is instead an iterable of ints.
+
+        :param module_name: The name of the module to request to this entity.
+        :param slots: The slots to request this module to.
+        :param quality: The quality of the module to request.
         """
         if isinstance(slots, int):
             slots = (slots,)

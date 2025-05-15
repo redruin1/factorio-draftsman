@@ -87,7 +87,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         else:
             version = mods.versions["base"]
 
-        # print(version)
         version_info = draftsman_converters.get_version(version)
         converter = version_info.get_converter()
         # import inspect
@@ -443,7 +442,9 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     def __str__(self) -> str:  # pragma: no coverage
         return "<{}>{}".format(
             type(self).__name__,
-            json.dumps(self.to_dict()[self.root_item], indent=2),
+            json.dumps(
+                self.to_dict(version=self.version_tuple())[self.root_item], indent=2
+            ),
         )
 
     def __repr__(self) -> str:  # pragma: no coverage

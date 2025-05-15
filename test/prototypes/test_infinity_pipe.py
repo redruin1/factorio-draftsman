@@ -13,6 +13,23 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_infinity_pipe():
+    if len(infinity_pipes) == 0:
+        return None
+    return InfinityPipe(
+        "infinity-pipe",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        fluid_name="steam",
+        percentage=0.5,
+        mode="at-most",
+        temperature=500,
+        tags={"blah": "blah"},
+    )
+
+
 class TestInfinityPipe:
     def test_constructor_init(self):
         pipe = InfinityPipe(

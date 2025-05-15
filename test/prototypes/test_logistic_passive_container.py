@@ -14,7 +14,21 @@ from collections.abc import Hashable
 import pytest
 
 
-class TestLogisticPassiveContainer:
+@pytest.fixture
+def valid_passive_container():
+    if len(logistic_passive_containers) == 0:
+        return None
+    return LogisticPassiveContainer(
+        "passive-provider-chest",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        read_contents=False,
+        tags={"blah": "blah"},
+    )
+
+
+class TestPassiveContainer:
     def test_constructor_init(self):
         passive_chest = LogisticPassiveContainer(
             "passive-provider-chest",

@@ -1,5 +1,6 @@
 # test_logistic_buffer_container.py
 
+from draftsman.constants import LogisticModeOfOperation
 from draftsman.entity import (
     LogisticBufferContainer,
     logistic_buffer_containers,
@@ -16,7 +17,29 @@ from collections.abc import Hashable
 import pytest
 
 
-class TestLogisticBufferContainer:
+@pytest.fixture
+def valid_buffer_container():
+    if len(logistic_buffer_containers) == 0:
+        return None
+    return LogisticBufferContainer(
+        "buffer-chest",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        mode_of_operation=LogisticModeOfOperation.SET_REQUESTS,
+        trash_not_requested=True,
+        sections=[
+            ManualSection(
+                index=1, filters=[SignalFilter(index=1, name="iron-ore", count=50)]
+            )
+        ],
+        request_from_buffers=False,
+        bar=10,
+        tags={"blah": "blah"},
+    )
+
+
+class TestBufferContainer:
     def test_constructor_init(self):
         buffer_chest = LogisticBufferContainer(
             "buffer-chest",

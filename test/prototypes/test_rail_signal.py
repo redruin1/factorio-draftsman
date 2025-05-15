@@ -1,9 +1,9 @@
 # test_rail_signal.py
 
-from draftsman.constants import ValidationMode
+from draftsman.constants import Direction, ValidationMode
 from draftsman.entity import RailSignal, rail_signals, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
-from draftsman.signatures import AttrsSignalID
+from draftsman.signatures import AttrsSignalID, AttrsSimpleCondition
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -12,6 +12,28 @@ from draftsman.warning import (
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_rail_signal():
+    if len(rail_signals) == 0:
+        return None
+    return RailSignal(
+        "rail-signal",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        red_output_signal="signal-A",
+        yellow_output_signal="signal-B",
+        green_output_signal="signal-C",
+        enable_disable=True,
+        circuit_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        read_signal=False,
+        tags={"blah": "blah"},
+    )
 
 
 class TestRailSignal:

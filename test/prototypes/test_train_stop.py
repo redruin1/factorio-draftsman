@@ -15,6 +15,13 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_train_stop():
+    if len(train_stops) == 0:
+        return None
+    return TrainStop("train-stop")  # TODO: complete
+
+
 class TestTrainStop:
     def test_constructor_init(self):
         train_stop = TrainStop(

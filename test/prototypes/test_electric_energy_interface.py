@@ -12,6 +12,22 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_electric_energy_interface():
+    if len(electric_energy_interfaces) == 0:
+        return None
+    return ElectricEnergyInterface(
+        "electric-energy-interface",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        buffer_size=1000,
+        power_production=1000,
+        power_usage=1000,
+        tags={"blah": "blah"},
+    )
+
+
 class TestElectricEnergyInterface:
     def test_constructor_init(self):
         interface = ElectricEnergyInterface(
@@ -35,6 +51,39 @@ class TestElectricEnergyInterface:
             ElectricEnergyInterface(
                 "this is not an electric energy interface"
             ).validate().reissue_all()
+
+    def test_json_schema(self):
+        assert ElectricEnergyInterface.json_schema(version=(1, 0)) == {
+            "$id": "urn:factorio:entity:electric-energy-interface",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {"$ref": "urn:factorio:position"},
+                "buffer_size": {"type": "number"},
+                "power_production": {"type": "number"},
+                "power_usage": {"type": "number"},
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"],
+        }
+        assert ElectricEnergyInterface.json_schema(version=(2, 0)) == {
+            "$id": "urn:factorio:entity:electric-energy-interface",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {"$ref": "urn:factorio:position"},
+                "quality": {"$ref": "urn:factorio:quality-name"},
+                "buffer_size": {"type": "number"},
+                "power_production": {"type": "number"},
+                "power_usage": {"type": "number"},
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"],
+        }
 
     def test_set_buffer_size(self):
         interface = ElectricEnergyInterface("electric-energy-interface")

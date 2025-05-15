@@ -16,39 +16,6 @@ class UndergroundPipe(DirectionalMixin, Entity):
     A pipe that transports fluids underneath other entities.
     """
 
-    # class Format(DirectionalMixin.Format, Entity.Format):
-    #     model_config = ConfigDict(title="UndergroundPipe")
-
-    # def __init__(
-    #     self,
-    #     name: Optional[str] = get_first(underground_pipes),
-    #     position: Union[Vector, PrimitiveVector] = None,
-    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-    #     direction: Direction = Direction.NORTH,
-    #     tags: dict[str, Any] = {},
-    #     validate_assignment: Union[
-    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-    #     ] = ValidationMode.STRICT,
-    #     **kwargs
-    # ):
-    #     """
-    #     Construct a new underground pipe.
-    #     TODO
-    #     """
-    #     super().__init__(
-    #         name,
-    #         underground_pipes,
-    #         position=position,
-    #         tile_position=tile_position,
-    #         direction=direction,
-    #         tags=tags,
-    #         **kwargs
-    #     )
-
-    #     self.validate_assignment = validate_assignment
-
-    # =========================================================================
-
     @property
     def similar_entities(self) -> list[str]:
         return underground_pipes
@@ -56,3 +23,6 @@ class UndergroundPipe(DirectionalMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+UndergroundPipe.add_schema({"$id": "urn:factorio:entity:pipe-to-ground"})

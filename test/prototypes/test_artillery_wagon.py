@@ -3,46 +3,52 @@
 from draftsman.constants import Inventory, Orientation
 from draftsman.entity import ArtilleryWagon, artillery_wagons, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import AttrsItemRequest, AttrsItemSpecification, AttrsInventoryLocation, EquipmentComponent
+from draftsman.signatures import (
+    AttrsItemRequest,
+    AttrsItemSpecification,
+    AttrsInventoryLocation,
+    EquipmentComponent,
+)
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
 
-valid_artillery_wagon = ArtilleryWagon(
-    "artillery-wagon",
-    id="test",
-    quality="uncommon",
-    tile_position=(1, 1),
-    orientation=Orientation.EAST,
-    item_requests=[
-        AttrsItemRequest(
-            id="artillery-shell",
-            items=AttrsItemSpecification(
-                in_inventory=[
-                    AttrsInventoryLocation(
-                        inventory=Inventory.artillery_wagon_ammo, stack=0, count=1
-                    )
-                ]
+@pytest.fixture
+def valid_artillery_wagon():
+    if len(artillery_wagons) == 0:
+        return None
+    return ArtilleryWagon(
+        "artillery-wagon",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        orientation=Orientation.EAST,
+        item_requests=[
+            AttrsItemRequest(
+                id="artillery-shell",
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.artillery_wagon_ammo, stack=0, count=1
+                        )
+                    ]
+                ),
             ),
-        ),
-        AttrsItemRequest(
-            id="energy-shield-equipment",
-            items=AttrsItemSpecification(
-                grid_count=1
+            AttrsItemRequest(
+                id="energy-shield-equipment",
+                items=AttrsItemSpecification(grid_count=1),
             ),
-        )
-    ],
-    equipment=[
-        EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
-    ],
-    enable_logistics_while_moving=False,
-    auto_target=False,
-    tags={"blah": "blah"},
-    validate_assignment="none", # Ignore the fact that this item has no equipment grid
-)
+        ],
+        equipment=[
+            EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+        ],
+        enable_logistics_while_moving=False,
+        auto_target=False,
+        tags={"blah": "blah"},
+        validate_assignment="none",  # Ignore the fact that this item has no equipment grid
+    )
 
 
 class TestArtilleryWagon:
@@ -84,8 +90,12 @@ class TestArtilleryWagon:
                 "artillery_auto_targeting": {"type": "boolean", "default": "true"},
                 "orientation": {"type": "number"},
                 "items": {
-                    "type": "array",
-                    "items": {"$ref": "urn:factorio:item-request"},
+                    "type": "object",
+                    "description": "A dictionary of item requests, where each key is "
+                    "the name of an item and the value is the count of that item to "
+                    "request. Items always go to the default inventory of that "
+                    "object (if possible) in the order in which Factorio traverses "
+                    "them.",
                 },
                 "tags": {"type": "object"},
             },
@@ -107,6 +117,10 @@ class TestArtilleryWagon:
                 "items": {
                     "type": "array",
                     "items": {"$ref": "urn:factorio:item-request"},
+                    "description": "A list of item requests objects, which contain "
+                    "the item name, it's quality, the amount to request, as well as "
+                    "exactly what inventories to request to and where inside those "
+                    "inventories.",
                 },
                 "enable_logistics_while_moving": {"type": "boolean", "default": "true"},
                 "grid": {

@@ -124,7 +124,6 @@ FiltersMixin.add_schema(
 
 
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:item_filters_mixin"},
     FiltersMixin,
     lambda fields: {
         "use_filters": fields.use_filters.name,

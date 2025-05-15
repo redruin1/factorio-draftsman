@@ -707,14 +707,25 @@ def make_exportable_structure_factory_func(
                     try_pop_location(input_dict, dict_loc)
                     continue
 
-                attr = getattr(class_attrs, attr_name)
-                attr_name = attr.alias if attr.alias != attr.name else attr.name
+                if isinstance(attr_name, tuple):
+                    attr = attr_name[0]
+                    custom_handler = attr_name[1]
+                    attr_name = attr.alias if attr.alias != attr.name else attr.name
+                else:
+                    attr = getattr(class_attrs, attr_name)
+                    custom_handler = None
+                    attr_name = attr.alias if attr.alias != attr.name else attr.name
 
                 value = try_pop_location(input_dict, dict_loc)
                 # print(value)
                 if value is None:
                     continue
-                handler = find_structure_handler(attr, attr.type, converter)
+
+                handler = (
+                    custom_handler
+                    if custom_handler
+                    else find_structure_handler(attr, attr.type, converter)
+                )
                 # import inspect
                 # print(inspect.getsource(handler))
                 try:
@@ -752,7 +763,7 @@ def make_exportable_structure_factory_func(
                 res["extra_keys"] = input_dict
 
             # print(location_dict)
-            print(res)
+            # print(res)
             # return res
             return cls(**res, validate_assignment=ValidationMode.NONE)
 
@@ -770,7 +781,12 @@ def make_exportable_unstructure_factory_func(
         # print(cls.__name__)
         # print("unstructure_dict", unstructure_dict)
         parent_hook = make_unstructure_function_from_schema(
-            cls, converter, unstructure_dict, exclude_none, exclude_defaults
+            cls,
+            converter,
+            unstructure_dict,
+            exclude_none,
+            exclude_defaults,
+            version=version_tuple,
         )
         # excluded_keys = version_data.get_excluded_keys(cls)
 

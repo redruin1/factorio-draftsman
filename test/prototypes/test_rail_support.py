@@ -9,6 +9,19 @@ from draftsman.warning import UnknownEntityWarning
 import pytest
 
 
+@pytest.fixture
+def valid_rail_support():
+    if len(rail_supports) == 0:
+        return None
+    return RailSupport(
+        "rail-support",
+        id="test",
+        quality="uncommon",
+        tile_position=(2, 2),
+        tags={"blah": "blah"},
+    )
+
+
 def test_constructor():
     support = RailSupport("rail-support")
 

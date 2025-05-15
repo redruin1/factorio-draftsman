@@ -14,6 +14,26 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_roboport():
+    if len(roboports) == 0:
+        return None
+    return Roboport(
+        "roboport",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        read_logistics=False,
+        read_robot_stats=True,
+        available_logistic_signal="signal-A",
+        total_logistic_signal="signal-B",
+        available_construction_signal="signal-C",
+        total_construction_signal="signal-D",
+        # TODO: 2.0 features
+        tags={"blah": "blah"},
+    )
+
+
 class TestRoboport:
     def test_constructor_init(self):
         roboport = Roboport("roboport", tile_position=[1, 1], read_logistics=False)

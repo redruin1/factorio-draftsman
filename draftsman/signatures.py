@@ -609,7 +609,8 @@ draftsman_converters.add_hook_fns(
 
 
 @attrs.define(hash=True)
-class AttrsColor:
+class AttrsColor(Exportable):
+    # TODO: better validators
     r: float = attrs.field(validator=[attrs.validators.ge(0), attrs.validators.le(255)])
     g: float = attrs.field(validator=[attrs.validators.ge(0), attrs.validators.le(255)])
     b: float = attrs.field(validator=[attrs.validators.ge(0), attrs.validators.le(255)])
@@ -630,6 +631,31 @@ class AttrsColor:
             return cls(**value)
         else:
             return value
+
+
+AttrsColor.add_schema(
+    {
+        "$id": "urn:factorio:color",
+        "type": "object",
+        "properties": {
+            "r": {"type": "number"},
+            "g": {"type": "number"},
+            "b": {"type": "number"},
+            "a": {"oneOf": [{"type": "number"}, {"type": "null"}]},
+        },
+        "required": ["r", "g", "b"],
+    }
+)
+
+draftsman_converters.add_hook_fns(
+    AttrsColor,
+    lambda fields: {
+        "r": fields.r.name,
+        "g": fields.g.name,
+        "b": fields.b.name,
+        "a": fields.a.name,
+    },
+)
 
 
 def normalize_comparator(value):
@@ -655,6 +681,7 @@ class AttrsSimpleCondition(Exportable):
         default=None,
         converter=AttrsSignalID.converter,
         validator=instance_of(Optional[AttrsSignalID]),
+        metadata={"never_null": True},
     )
     comparator: Comparator = attrs.field(
         default="<",
@@ -666,6 +693,7 @@ class AttrsSimpleCondition(Exportable):
         default=None,
         converter=AttrsSignalID.converter,
         validator=instance_of(Optional[AttrsSignalID]),
+        metadata={"never_null": True},
     )
 
     @classmethod
@@ -722,7 +750,7 @@ class AttrsNetworkSpecification(Exportable):
 
 AttrsNetworkSpecification.add_schema(
     {
-        "$id": "factorio:network_specification",
+        "$id": "urn:factorio:network-specification",
         "type": "object",
         "properties": {"red": {"type": "boolean"}, "green": {"type": "boolean"}},
     },
@@ -860,11 +888,11 @@ def ensure_bar_less_than_inventory_size(
     _: attrs.Attribute,
     value: Optional[uint16],
 ):
-    if self.inventory_size and value >= self.inventory_size:
-        msg = (
-            "Bar index ({}) exceeds the container's inventory size ({})".format(
-                value, self.inventory_size
-            ),
+    if self.inventory_size is None or value is None:
+        return
+    if value >= self.inventory_size:
+        msg = "Bar index ({}) exceeds the container's inventory size ({})".format(
+            value, self.inventory_size
         )
         warnings.warn(BarWarning(msg))
 
@@ -1006,7 +1034,7 @@ class SignalFilter(Exportable):
     max_count: Optional[int32] = attrs.field(
         default=None,
         validator=instance_of(Optional[int32]),
-        metadata={"never_null": True}
+        metadata={"never_null": True},
     )
     """
     The maximum amount of the signal to request of the signal to emit. Only used
@@ -1083,23 +1111,28 @@ SignalFilter.add_schema(
         "properties": {
             "index": {"$ref": "urn:int64"},
             "name": {"type": "string"},
-            "type": {
-                "enum": [
-                    "item",
-                    "fluid",
-                    "virtual",
-                ]
-            },
             "count": {"$ref": "urn:int32"},
         },
     },
     version=(1, 0),
 )
 
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    SignalFilter,
+    lambda fields: {
+        "index": fields.index.name,
+        "name": fields.name.name,
+        "count": fields.count.name,
+        None: fields.type.name,
+        None: fields.quality.name,
+        None: fields.comparator.name,
+        None: fields.max_count.name,
+    },
+)
+
 SignalFilter.add_schema(
     {
         "$id": "urn:factorio:signal-filter",
-        "type": "object",
         "type": "object",
         "properties": {
             "index": {"$ref": "urn:int64"},
@@ -1131,7 +1164,7 @@ class _ExportSignalFilter:
     type: str = "item"
 
 
-draftsman_converters.add_hook_fns(
+draftsman_converters.get_version((2, 0)).add_hook_fns(
     SignalFilter,
     lambda fields: {
         "index": fields.index.name,
@@ -1290,9 +1323,7 @@ class ManualSection(Exportable):
 
         if mode >= ValidationMode.MINIMUM:
             if not (1 <= value <= 100):
-                msg = "Index ({}) must be in range [1, 100]; cannot have more than 100 signal sections at one time".format(
-                    value
-                )
+                msg = "Index ({}) must be in range [1, 100]".format(value)
                 raise IndexError(msg)
 
     index: LuaDouble = attrs.field(
@@ -1329,9 +1360,9 @@ class ManualSection(Exportable):
     """
 
     group: str = attrs.field(
-        default="", 
+        default="",
         converter=lambda v: "" if v is None else v,
-        validator=instance_of(str)
+        validator=instance_of(str),
     )
     """
     Name of this section group. Once named, this group will become registered 
@@ -1844,7 +1875,7 @@ class AttrsInfinityFilter(Exportable):
 
 AttrsInfinityFilter.add_schema(
     {
-        "$id": "urn:factorio:infinity_filter",
+        "$id": "urn:factorio:infinity-filter",
         "type": "object",
         "properties": {
             "index": {"$ref": "urn:uint16"},
@@ -2095,5 +2126,139 @@ draftsman_converters.add_hook_fns(  # pragma: no branch
         "stock": fields.stock.name,
         "front": fields.front.name,
         "back": fields.back.name,
+    },
+)
+
+
+@attrs.define
+class FilteredInventory(Exportable):
+    @property
+    def inventory_size(self) -> Optional[uint16]:
+        """
+        The number of inventory slots that this Entity has. Equivalent to the
+        ``"inventory_size"`` key in Factorio's ``data.raw``. Returns ``None`` if
+        this entity's name is not recognized by Draftsman. Not exported; read
+        only.
+        """
+        return entities.raw.get(self.name, {"inventory_size": None})["inventory_size"]
+
+    # =========================================================================
+
+    def _inventory_filters_converter(value):
+        if isinstance(value, list):
+            for i, elem in enumerate(value):
+                if isinstance(elem, str):
+                    value[i] = AttrsItemFilter(index=i, name=elem)
+                else:
+                    value[i] = AttrsItemFilter.converter(elem)
+        return value
+
+    inventory_filters: list[AttrsItemFilter] = attrs.field(
+        factory=list,
+        converter=_inventory_filters_converter,
+        validator=instance_of(list[AttrsItemFilter]),
+    )
+    """
+    The list of filters applied to this entity's inventory slots.
+    """
+
+    # =========================================================================
+
+    bar: Optional[uint16] = attrs.field(
+        default=None,
+        validator=and_(
+            instance_of(Optional[uint16]), ensure_bar_less_than_inventory_size
+        ),
+    )
+    """
+    The limiting bar of the inventory. Used to prevent a the final-most
+    slots in the inventory from accepting items.
+
+    Raises :py:class:`~draftsman.warning.IndexWarning` if the set value
+    exceeds the Entity's ``inventory_size`` attribute.
+
+    :getter: Gets the bar location of the inventory, or ``None`` if not set.
+    :setter: Sets the bar location of the inventory. Removes the entry from
+        the ``inventory`` object.
+
+    :exception TypeError: If set to anything other than an ``int`` or
+        ``None``.
+    :exception IndexError: If the set value lies outside of the range
+        ``[0, 65536)``.
+    """
+
+    # =========================================================================
+
+    def set_inventory_filter(
+        self,
+        index: int64,
+        item: Optional[ItemName],
+        quality: QualityName = "normal",
+        comparator: Comparator = "=",
+    ):
+        """
+        Sets the item filter at a particular index. If ``item`` is set to
+        ``None``, the item filter at that location is removed.
+
+        :param index: The index of the filter to set.
+        :param item: The string name of the item to filter.
+
+        :exception TypeError: If ``index`` is not an ``int`` or if ``item`` is
+            neither a ``str`` nor ``None``.
+        :exception InvalidItemError: If ``item`` is not a valid item name.
+        :exception IndexError: If ``index`` lies outside the range
+            ``[0, inventory_size)``.
+        """
+        if item is not None:
+            new_entry = AttrsItemFilter(
+                index=index, name=item, quality=quality, comparator=comparator
+            )
+
+        # new_filters = (
+        #     self.inventory.filters if self.inventory.filters is not None else []
+        # )
+
+        # Check to see if filters already contains an entry with the same index
+        found_index = None
+        for i, filter in enumerate(self.inventory_filters):
+            if filter.index == index + 1:  # Index already exists in the list
+                if item is None:
+                    # Delete the entry
+                    del self.inventory_filters[i]
+                else:
+                    # Modify the existing value inplace
+                    self.inventory_filters[i].name = item
+                    self.inventory_filters[i].quality = quality
+                    self.inventory_filters[i].comparator = comparator
+                found_index = i
+                break
+
+        if found_index is None:
+            # If no entry with the same index was found
+            self.inventory_filters.append(new_entry)
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, dict):
+            return cls(**value)
+        return value
+
+
+FilteredInventory.add_schema(
+    {
+        "$id": "urn:factorio:filtered-inventory",
+        "properties": {
+            "filters": {"type": "array", "items": {"$ref": "urn:factorio:item-filter"}},
+            "bar": {"$ref": "urn:uint16"},
+        },
+    }
+)
+
+
+draftsman_converters.add_hook_fns(
+    FilteredInventory,
+    lambda fields: {
+        "filters": fields.inventory_filters.name,
+        "bar": fields.bar.name,
     },
 )

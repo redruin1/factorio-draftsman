@@ -37,8 +37,5 @@ class CargoLandingPad(
 CargoLandingPad.add_schema(None, version=(1, 0))
 
 CargoLandingPad.add_schema(
-    {
-        "$id": "urn:factorio:entity:cargo-landing-pad"
-    },
-    version=(2, 0)
+    {"$id": "urn:factorio:entity:cargo-landing-pad"}, version=(2, 0)
 )

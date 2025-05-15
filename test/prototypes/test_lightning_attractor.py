@@ -11,6 +11,19 @@ import pytest
 from typing import Hashable
 
 
+@pytest.fixture
+def valid_lightning_attractor():
+    if len(lightning_attractors) == 0:
+        return None
+    return LightningAttractor(
+        "lightning-rod",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        tags={"blah": "blah"},
+    )
+
+
 def test_constructor():
     attractor = LightningAttractor("lightning-rod")
 

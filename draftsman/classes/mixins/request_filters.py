@@ -24,6 +24,10 @@ class RequestFiltersMixin(Exportable):
     """
     Whether or not to mark items in the inventory not currently requested for 
     removal.
+
+    .. NOTE::
+
+        Only has an effect on versions of Factorio >= 2.0.
     """
 
     # =========================================================================
@@ -33,7 +37,7 @@ class RequestFiltersMixin(Exportable):
         validator=instance_of(bool),
     )
     """
-    Whether or not this chest should request items from buffer chests in its 
+    Whether or not this entity should request items from buffer chests in its 
     logistic network.
     """
 
@@ -46,6 +50,10 @@ class RequestFiltersMixin(Exportable):
     """
     Master toggle for all logistics requests on this entity. Superceeds any 
     logistic request toggles on any contained logistic sections.
+
+    .. NOTE::
+
+        Only has an effect on versions of Factorio >= 2.0.
     """
 
     # =========================================================================
@@ -111,6 +119,83 @@ class RequestFiltersMixin(Exportable):
 
 
 # TODO: versioning
+
+RequestFiltersMixin.add_schema(
+    {
+        "properties": {
+            "request_filters": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "index": {"$ref": "urn:uint32"},
+                        "name": {"type": "string"},
+                        "count": {"$ref": "urn:uint32"},
+                    },
+                },
+            },
+            "request_from_buffers": {"type": "boolean", "default": "false"},
+        }
+    },
+    version=(1, 0),
+)
+
+
+@attrs.define
+class _ExportedRequestFiltersMixin:
+    sections: list = attrs.field(factory=list)
+
+
+_export_fields = attrs.fields(_ExportedRequestFiltersMixin)
+
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    RequestFiltersMixin,
+    lambda fields: {
+        None: fields.trash_not_requested.name,
+        "request_from_buffers": fields.request_from_buffers.name,
+        None: fields.requests_enabled.name,
+        "request_filters": (
+            _export_fields.sections,
+            lambda d, _: [{"index": 1, "filters": d}],
+        ),
+    },
+    lambda fields, converter: {
+        None: fields.trash_not_requested.name,
+        "request_from_buffers": fields.request_from_buffers.name,
+        None: fields.requests_enabled.name,
+        "request_filters": (
+            _export_fields.sections,
+            lambda inst: converter.unstructure(inst.sections[0].filters)
+            if len(inst.sections) > 0
+            else [],  # TODO: catch error somewhere
+        ),
+    },
+)
+
+# _parent_hook = (
+#     draftsman_converters.get_version((2, 0))
+#     .get_converter()
+#     .get_structure_hook(LogisticBufferContainer)
+# )
+
+
+# def make_structure_hook(cls, converter: cattrs.Converter):
+#     def structure_hook(d: dict, type: type):
+#         if "request_filters" in d:
+#             # Populate with a single section
+#             filters = d["request_filters"]
+#             d["request_filters"] = {"sections": [{"index": 1, "filters": filters}]}
+#         # TODO: what about request_from_buffers?
+#         return _parent_hook(d, type)
+
+#     return structure_hook
+
+
+# draftsman_converters.get_version((1, 0)).register_structure_hook_factory(
+#     lambda cls: issubclass(cls, LogisticBufferContainer), make_structure_hook
+# )
+
+# TODO: unstructure hook
 
 RequestFiltersMixin.add_schema(
     {

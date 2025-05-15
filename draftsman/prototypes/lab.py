@@ -2,19 +2,12 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import ModulesMixin, ItemRequestMixin, EnergySourceMixin
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode
-from draftsman.signatures import uint32
-from draftsman.utils import get_first, reissue_warnings
-from draftsman.warning import ItemLimitationWarning
 
 from draftsman.data.entities import labs
-from draftsman.data import entities, modules
+from draftsman.data import entities
 
 import attrs
-from pydantic import ConfigDict
-from typing import Any, Literal, Optional, Union
-import warnings
+from typing import Any, Optional
 
 
 @attrs.define
@@ -41,18 +34,11 @@ class Lab(ModulesMixin, ItemRequestMixin, EnergySourceMixin, Entity):
     # =========================================================================
 
     # TODO: in a perfect world
-    # item_requests = attrs.fields(ItemRequestMixin).item_requests.to_field()
+    # item_requests = attrs.fields(ItemRequestMixin).item_requests.reuse()
 
     # @item_requests.validator()
-    # def ensure_name_recognized(self, attr, value, mode=None):
-    #     ...
-
-    # =========================================================================
-
-    # @reissue_warnings
-    # def set_item_request(self, item: str, count: Optional[uint32]):  # TODO: ItemID
-    #     super().set_item_request(item, count)
-
+    # @conditional(ValidationMode.STRICT)
+    # def ensure_name_recognized(self, attr, value):
     #     # TODO: check the lab's limitations to see if the module is allowed
     #     # ('allowed_effects')
     #     # This is all for regular labs, but not necessarily modded ones.
@@ -63,12 +49,9 @@ class Lab(ModulesMixin, ItemRequestMixin, EnergySourceMixin, Entity):
     #             stacklevel=2,
     #         )
 
-    #     # TODO: check the amount of the science pack passed in; if its greater
-    #     # than 1 stack issue an ItemCapacityWarning
-    #     # Note that this asserts that each lab can only contain 1 stack of each
-    #     # science pack it consumes, which might change in a future Factorio
-    #     # version.
-
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+Lab.add_schema({"$id": "urn:factorio:entity:lab"})

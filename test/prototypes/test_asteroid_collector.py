@@ -12,22 +12,26 @@ from collections.abc import Hashable
 import pytest
 
 
-valid_asteroid_collector = AsteroidCollector(
-    "asteroid-collector",
-    id="test",
-    quality="uncommon",
-    tile_position=(1, 1),
-    direction=Direction.EAST,
-    circuit_enabled=True,
-    circuit_condition=AttrsSimpleCondition(
-        first_signal="signal-A", comparator="<", second_signal="signal-B"
-    ),
-    chunk_filter=["oxide-asteroid-chunk"],
-    circuit_set_filters=True,
-    read_contents=True,
-    read_hands=False,
-    tags={"blah": "blah"}
-)
+@pytest.fixture
+def valid_asteroid_collector():
+    if len(asteroid_collectors) == 0:
+        return None
+    return AsteroidCollector(
+        "asteroid-collector",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        circuit_enabled=True,
+        circuit_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        chunk_filter=["oxide-asteroid-chunk"],
+        circuit_set_filters=True,
+        read_contents=True,
+        read_hands=False,
+        tags={"blah": "blah"},
+    )
 
 
 class TestAsteroidCollector:
@@ -76,9 +80,9 @@ class TestAsteroidCollector:
                         "circuit_condition": {"$ref": "urn:factorio:simple-condition"},
                         "circuit_read_contents": {"type": "boolean", "default": False},
                         "include_hands": {"type": "boolean", "default": True},
-                        "circuit_set_filters": {"type": "boolean", "default": "false"}
+                        "circuit_set_filters": {"type": "boolean", "default": "false"},
                     },
-                    "description": "Entity-specific structure which holds keys related to configuring how this entity acts."
+                    "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
                 },
                 "tags": {"type": "object"},
             },

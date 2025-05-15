@@ -63,9 +63,7 @@ class StackSizeMixin(Exportable):
 StackSizeMixin.add_schema(
     {
         "properties": {
-            "override_stack_size": {
-                "enum": ["true", "false", "null"],
-            },
+            "override_stack_size": {"oneOf": [{"$ref": "urn:uint8"}, {"type": "null"}]},
             "control_behavior": {
                 "type": "object",
                 "properties": {

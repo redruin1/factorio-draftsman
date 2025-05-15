@@ -13,6 +13,21 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_heat_interface():
+    if len(heat_interfaces) == 0:
+        return None
+    return HeatInterface(
+        "heat-interface",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        temperature=100,
+        mode="at-most",
+        tags={"blah": "blah"},
+    )
+
+
 class TestHeatInterface:
     def test_constructor_init(self):
         interface = HeatInterface(temperature=10, mode="at-most")

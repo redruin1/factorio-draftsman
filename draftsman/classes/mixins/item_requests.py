@@ -171,12 +171,86 @@ class ItemRequestMixin(Exportable):
 ItemRequestMixin.add_schema(
     {
         "properties": {
-            "items": {"type": "array", "items": {"$ref": "urn:factorio:item-request"}}
+            "items": {
+                "type": "object",
+                "description": "A dictionary of item requests, where each key is "
+                "the name of an item and the value is the count of that item to "
+                "request. Items always go to the default inventory of that "
+                "object (if possible) in the order in which Factorio traverses "
+                "them.",
+            },
         }
-    }
+    },
+    version=(1, 0),
 )
 
-draftsman_converters.add_hook_fns(
+
+@attrs.define
+class _ExportItemRequest1_0:
+    item_requests: dict = attrs.field(factory=dict)
+
+
+_export_fields = attrs.fields(_ExportItemRequest1_0)
+
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    ItemRequestMixin,
+    lambda fields: {
+        "items": (
+            _export_fields.item_requests,
+            lambda d, _: [
+                {
+                    "id": {"name": k, "quality": "normal"},
+                    "items": {
+                        "in_inventory": [
+                            # TODO: this is actually very hard to do properly
+                            # Modules for example should be split up between
+                            # multiple stacks, but fuel requests for locos
+                            # shouldn't; how to discern?
+                            {
+                                # "Default" inventory; works for most cases
+                                "inventory": 1,
+                                "stack": 0,
+                                "count": v,
+                            }
+                        ]
+                    },
+                }
+                for k, v in d.items()
+            ],
+        )
+    },
+    lambda fields, converter: {
+        "items": (
+            _export_fields.item_requests,
+            lambda inst: {
+                item_request.id.name: sum(
+                    loc.count for loc in item_request.items.in_inventory
+                )
+                for item_request in inst.item_requests
+                # Skip non-normal item requests since they are unresolvable pre 2.0
+                if item_request.id.quality == "normal"
+            },
+        )
+    },
+)
+
+ItemRequestMixin.add_schema(
+    {
+        "properties": {
+            "items": {
+                "type": "array",
+                "items": {"$ref": "urn:factorio:item-request"},
+                "description": "A list of item requests objects, which contain "
+                "the item name, it's quality, the amount to request, as well as "
+                "exactly what inventories to request to and where inside those "
+                "inventories.",
+            }
+        }
+    },
+    version=(2, 0),
+)
+
+draftsman_converters.get_version((2, 0)).add_hook_fns(
     ItemRequestMixin,
     lambda fields: {"items": fields.item_requests.name},
 )

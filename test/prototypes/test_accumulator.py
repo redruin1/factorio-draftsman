@@ -11,14 +11,18 @@ from collections.abc import Hashable
 import pytest
 
 
-valid_accumulator = Accumulator(
-    "accumulator",
-    id="test",
-    quality="uncommon",
-    tile_position=(1, 1),
-    output_signal="signal-B",
-    tags={"blah": "blah"},
-)
+@pytest.fixture
+def valid_accumulator():
+    if len(accumulators) == 0:
+        return None
+    return Accumulator(
+        "accumulator",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        output_signal="signal-B",
+        tags={"blah": "blah"},
+    )
 
 
 class TestAccumulator:
@@ -55,7 +59,7 @@ class TestAccumulator:
             "$id": "urn:factorio:entity:accumulator",
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "type": "object",
-            "definitions": {
+            "$defs": {
                 "circuit-connection-point": {
                     "type": "object",
                     "properties": {
@@ -77,47 +81,50 @@ class TestAccumulator:
                 "name": {"type": "string"},
                 "position": {"$ref": "urn:factorio:position"},
                 "connections": {
-                    "1": {
-                        "type": "object",
-                        "properties": {
-                            "red": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/circuit-connection-point"
+                    "type": "object",
+                    "properties": {
+                        "1": {
+                            "type": "object",
+                            "properties": {
+                                "red": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
                                 },
-                            },
-                            "green": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/circuit-connection-point"
-                                },
-                            },
-                        },
-                    },
-                    "2": {
-                        "type": "object",
-                        "properties": {
-                            "red": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/circuit-connection-point"
-                                },
-                            },
-                            "green": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/circuit-connection-point"
+                                "green": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
                                 },
                             },
                         },
-                    },
-                    "Cu0": {
-                        "type": "array",
-                        "items": {"$ref": "#/definitions/wire-connection-point"},
-                    },
-                    "Cu1": {
-                        "type": "array",
-                        "items": {"$ref": "#/definitions/wire-connection-point"},
+                        "2": {
+                            "type": "object",
+                            "properties": {
+                                "red": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
+                                },
+                                "green": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
+                                },
+                            },
+                        },
+                        "Cu0": {
+                            "type": "array",
+                            "items": {"$ref": "#/$defs/wire-connection-point"},
+                        },
+                        "Cu1": {
+                            "type": "array",
+                            "items": {"$ref": "#/$defs/wire-connection-point"},
+                        },
                     },
                 },
                 "control_behavior": {
@@ -127,7 +134,8 @@ class TestAccumulator:
                             "anyOf": [
                                 {"$ref": "urn:factorio:signal-id"},
                                 {"type": "null"},
-                            ]
+                            ],
+                            "default": {"name": "signal-A", "type": "virtual"},
                         }
                     },
                     "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
@@ -152,7 +160,8 @@ class TestAccumulator:
                             "anyOf": [
                                 {"$ref": "urn:factorio:signal-id"},
                                 {"type": "null"},
-                            ]
+                            ],
+                            "default": {"name": "signal-A", "type": "virtual"},
                         }
                     },
                     "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",

@@ -11,7 +11,7 @@ from draftsman.error import (
     DataFormatError,
     IncompleteSignalError,
 )
-from draftsman.signatures import AttrsSignalID
+from draftsman.signatures import AttrsSignalID, AttrsSimpleCondition
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -23,6 +23,33 @@ from draftsman.warning import (
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_programmable_speaker():
+    if len(programmable_speakers) == 0:
+        return None
+    return ProgrammableSpeaker(
+        "programmable-speaker",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        volume=1.0,
+        circuit_enabled=True,
+        circuit_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        global_playback=True,
+        allow_polyphony=True,
+        show_alert=True,
+        show_alert_on_map=False,
+        alert_icon="signal-check",
+        alert_message="some string",
+        signal_value_is_pitch=False,
+        instrument_id=1,
+        note_id=1,
+        tags={"blah": "blah"},
+    )
 
 
 class TestProgrammableSpeakerTesting:
@@ -280,7 +307,7 @@ class TestProgrammableSpeakerTesting:
         assert speaker.alert_message == "some string"
 
         speaker.alert_message = None
-        assert speaker.alert_message == None
+        assert speaker.alert_message == ""
 
         with pytest.raises(DataFormatError):
             speaker.alert_message = False

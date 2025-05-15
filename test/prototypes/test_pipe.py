@@ -7,6 +7,19 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_pipe():
+    if len(pipes) == 0:
+        return None
+    return Pipe(
+        "pipe",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        tags={"blah": "blah"},
+    )
+
+
 class TestPipe:
     def test_constructor_init(self):
         pipe = Pipe()

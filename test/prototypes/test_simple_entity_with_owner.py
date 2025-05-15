@@ -7,6 +7,21 @@ from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 import pytest
 
 
+@pytest.fixture
+def valid_simple_entity_with_owner():
+    if len(simple_entities_with_owner) == 0:
+        return None
+    return SimpleEntityWithOwner(
+        "simple-entity-with-owner",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        variation=13,
+        tags={"blah": "blah"},
+    )
+
+
 class TestSimpleEntityWithOwner:
     def test_constructor_init(self):
         entity = SimpleEntityWithOwner(variation=13)

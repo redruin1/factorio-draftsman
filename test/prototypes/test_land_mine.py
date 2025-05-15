@@ -7,6 +7,19 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_land_mine():
+    if len(land_mines) == 0:
+        return None
+    return LandMine(
+        "land-mine",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        tags={"blah": "blah"},
+    )
+
+
 class TestLandMine:
     def test_contstructor_init(self):
         land_mine = LandMine()

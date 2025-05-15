@@ -21,7 +21,29 @@ from collections.abc import Hashable
 import pytest
 
 
-class TestLogisticRequestContainer:
+@pytest.fixture
+def valid_request_container():
+    if len(logistic_request_containers) == 0:
+        return None
+    return LogisticRequestContainer(
+        "requester-chest",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        mode_of_operation=LogisticModeOfOperation.SET_REQUESTS,
+        trash_not_requested=True,
+        sections=[
+            ManualSection(
+                index=1, filters=[SignalFilter(index=1, name="iron-ore", count=50)]
+            )
+        ],
+        request_from_buffers=False,
+        bar=10,
+        tags={"blah": "blah"},
+    )
+
+
+class TestRequestContainer:
     def test_constructor_init(self):
         request_chest = LogisticRequestContainer(
             "requester-chest",
@@ -420,7 +442,7 @@ class TestLogisticRequestContainer:
         chest = LogisticRequestContainer.from_dict(old_dict, version=(1, 0))
         assert chest.to_dict(version=(1, 0)) == old_dict
 
-        old_dict_with_filters = {  # TODO: actually validate this
+        old_dict_with_filters = {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
             "request_filters": [
@@ -447,5 +469,4 @@ class TestLogisticRequestContainer:
                 ],
             )
         ]
-
-        # TODO: unstructure hook
+        assert chest.to_dict(version=(1, 0)) == old_dict_with_filters

@@ -8,7 +8,7 @@ from draftsman.constants import (
 )
 from draftsman.entity import Inserter, inserters, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
-from draftsman.signatures import AttrsSignalID
+from draftsman.signatures import AttrsSignalID, AttrsSimpleCondition, AttrsItemFilter
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -17,6 +17,41 @@ from draftsman.warning import (
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_inserter():
+    if len(inserters) == 0:
+        return None
+    return Inserter(
+        "inserter",
+        id="test",
+        quality="uncommon",
+        direction=Direction.EAST,
+        tile_position=(1, 1),
+        mode_of_operation=InserterModeOfOperation.NONE,  # Old, legacy 1.0 parameter
+        circuit_enabled=True,
+        circuit_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        connect_to_logistic_network=True,
+        logistic_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        read_hand_contents=True,
+        read_mode=InserterReadMode.PULSE,
+        override_stack_size=1,
+        circuit_set_stack_size=True,
+        stack_size_control_signal="signal-A",
+        use_filters=True,
+        filters=[AttrsItemFilter(index=0, name="iron-ore")],
+        circuit_set_filters=True,
+        pickup_position=(1, 1),
+        drop_position=(1, 0),
+        filter_mode="blacklist",
+        spoil_priority="spoiled-first",
+        tags={"blah": "blah"},
+    )
 
 
 class TestInserter:

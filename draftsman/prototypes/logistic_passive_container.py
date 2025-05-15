@@ -9,25 +9,21 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     InventoryMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode
-from draftsman.data.entities import of_type
-from draftsman.signatures import uint16
-from draftsman.utils import get_first
+from draftsman.constants import LogisticModeOfOperation
+from draftsman.serialization import draftsman_converters
+from draftsman.validators import instance_of
 
 from draftsman.data.entities import logistic_passive_containers
 
 import attrs
-from typing import Any, Literal, Optional, Union
-from pydantic import ConfigDict
 
 
 @attrs.define
 class LogisticPassiveContainer(
     InventoryMixin,
     ItemRequestMixin,
-    LogisticModeOfOperationMixin,
-    CircuitConditionMixin,
+    # LogisticModeOfOperationMixin,
+    # CircuitConditionMixin, # TODO: does this have a condition on 2.0?
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     Entity,
@@ -37,53 +33,6 @@ class LogisticPassiveContainer(
     when needed by the network.
     """
 
-    # class Format(
-    #     InventoryMixin.Format,
-    #     ItemRequestMixin.Format,
-    #     LogisticModeOfOperationMixin.Format,
-    #     CircuitConditionMixin.Format,
-    #     ControlBehaviorMixin.Format,
-    #     CircuitConnectableMixin.Format,
-    #     Entity.Format,
-    # ):
-    #     class ControlBehavior(
-    #         LogisticModeOfOperationMixin.ControlFormat,
-    #         CircuitConditionMixin.ControlFormat,
-    #     ):
-    #         pass
-
-    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
-
-    #     model_config = ConfigDict(title="LogisticPassiveContainer")
-
-    # def __init__(
-    #     self,
-    #     name: Optional[str] = get_first(logistic_passive_containers),
-    #     position: Union[Vector, PrimitiveVector] = None,
-    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-    #     bar: uint16 = None,
-    #     items: Optional[list[ItemRequest]] = [],
-    #     control_behavior: Optional[Format.ControlBehavior] = {},
-    #     tags: dict[str, Any] = {},
-    #     validate_assignment: Union[
-    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-    #     ] = ValidationMode.STRICT,
-    #     **kwargs
-    # ):
-    #     super().__init__(
-    #         name,
-    #         logistic_passive_containers,
-    #         position=position,
-    #         tile_position=tile_position,
-    #         bar=bar,
-    #         items=items,
-    #         control_behavior=control_behavior,
-    #         tags=tags,
-    #         **kwargs
-    #     )
-
-    #     self.validate_assignment = validate_assignment
-
     # =========================================================================
 
     @property
@@ -92,4 +41,91 @@ class LogisticPassiveContainer(
 
     # =========================================================================
 
+    read_contents: bool = attrs.field(default=True, validator=instance_of(bool))
+    """
+    Whether or not to broadcast the contents of this logi chest to any connected 
+    circuit network.
+
+    .. NOTE::
+
+        Only has an effect on versions of Factorio >= 2.0. On prior versions,
+        this value is hardcoded to always read the contents to the circuit 
+        network if connected by wire.
+    """
+
+    # =========================================================================
+
     __hash__ = Entity.__hash__
+
+
+LogisticPassiveContainer.add_schema(
+    {"$id": "urn:factorio:entity:logistics-passive-container"},
+    version=(1, 0),
+    mro=(
+        InventoryMixin,
+        ItemRequestMixin,
+        LogisticModeOfOperationMixin,
+        ControlBehaviorMixin,
+        CircuitConnectableMixin,
+        Entity,
+    ),
+)
+
+
+@attrs.define
+class _ExportLogisticActiveContainer:
+    circuit_mode_of_operation: LogisticModeOfOperation = attrs.field(
+        default=LogisticModeOfOperation.SEND_CONTENTS
+    )
+
+
+_export_fields = attrs.fields(_ExportLogisticActiveContainer)
+
+# TODO: still not a fan of defining hooks like this
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    LogisticPassiveContainer,
+    lambda fields: {
+        ("control_behavior", "circuit_mode_of_operation"): (
+            fields.read_contents,
+            lambda _: True,  # Always return True
+        )
+    },
+    lambda fields, converter: {
+        ("control_behavior", "circuit_mode_of_operation"): (
+            _export_fields.circuit_mode_of_operation,
+            lambda _: LogisticModeOfOperation.SEND_CONTENTS,  # Always return SEND_CONTENTS
+        )
+    },
+)
+
+LogisticPassiveContainer.add_schema(
+    {"$id": "urn:factorio:entity:logistics-passive-container"},
+    version=(2, 0),
+    mro=(
+        InventoryMixin,
+        ItemRequestMixin,
+        LogisticModeOfOperationMixin,
+        # CircuitConditionMixin, # TODO: does this have a condition on 2.0?
+        ControlBehaviorMixin,
+        CircuitConnectableMixin,
+        Entity,
+    ),
+)
+
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    LogisticPassiveContainer,
+    lambda fields: {
+        ("control_behavior", "circuit_mode_of_operation"): (
+            fields.read_contents,
+            lambda v: v == LogisticModeOfOperation.SEND_CONTENTS,
+        )
+    },
+    lambda fields, converter: {
+        ("control_behavior", "circuit_mode_of_operation"): (
+            _export_fields.circuit_mode_of_operation,
+            lambda inst: LogisticModeOfOperation.SEND_CONTENTS
+            if inst.read_contents
+            else LogisticModeOfOperation.NONE,
+        )
+    },
+)

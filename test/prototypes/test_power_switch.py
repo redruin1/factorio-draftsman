@@ -4,10 +4,32 @@ from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.group import Group
 from draftsman.entity import PowerSwitch, power_switches, Container
 from draftsman.error import InvalidEntityError, DataFormatError
+from draftsman.signatures import AttrsSimpleCondition
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_power_switch():
+    if len(power_switches) == 0:
+        return None
+    return PowerSwitch(
+        "power-switch",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        circuit_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        connect_to_logistic_network=True,
+        logistic_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        switch_state=True,
+        tags={"blah": "blah"},
+    )
 
 
 class TestPowerSwitch:

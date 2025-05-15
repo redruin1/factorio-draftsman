@@ -14,6 +14,20 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_straight_rail():
+    if len(straight_rails) == 0:
+        return None
+    return StraightRail(
+        "straight-rail",
+        id="test",
+        quality="uncommon",
+        tile_position=(2, 2),
+        direction=Direction.EAST,
+        tags={"blah": "blah"},
+    )
+
+
 class TestStraightRail:
     def test_constructor_init(self):
         straight_rail = StraightRail(

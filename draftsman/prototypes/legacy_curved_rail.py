@@ -7,15 +7,12 @@ from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DoubleGridAlignedMixin, DirectionalMixin
 from draftsman.classes.mixins.directional import _rotated_collision_sets
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode, EIGHT_WAY_DIRECTIONS
+from draftsman.constants import Direction, EIGHT_WAY_DIRECTIONS
 from draftsman.utils import AABB, Rectangle, fix_incorrect_pre_init
 
 from draftsman.data.entities import legacy_curved_rails
 
 import attrs
-from pydantic import ConfigDict
-from typing import Any, Literal, Optional, Union
 
 # Manually specified collision sets
 _left_turn = CollisionSet(
@@ -40,53 +37,8 @@ _rotated_collision_sets["legacy-curved-rail"] = {
 @attrs.define
 class LegacyCurvedRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     """
-    An old, 1.0 curved rail entity.
+    An old, Factorio 1.0 curved rail entity.
     """
-
-    # class Format(
-    #     DoubleGridAlignedMixin.Format, EightWayDirectionalMixin.Format, Entity.Format
-    # ):
-    #     model_config = ConfigDict(title="LegacyCurvedRail")
-
-    # def __init__(
-    #     self,
-    #     name: Optional[str] = get_first(legacy_curved_rails),
-    #     position: Union[Vector, PrimitiveVector] = None,
-    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-    #     direction: Direction = Direction.NORTH,
-    #     tags: dict[str, Any] = {},
-    #     validate_assignment: Union[
-    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-    #     ] = ValidationMode.STRICT,
-    #     **kwargs
-    # ):
-    #     """
-    #     TODO
-    #     """
-
-    #     # This is kinda hacky, but necessary due to Factorio issuing dummy
-    #     # values for collision boxes. We have to do this before initialization
-    #     # of the rest of the class because certain things like tile position are
-    #     # dependent on this information and can be set during initialization
-    #     # (if we pass in keyword arguments).
-
-    #     # We set a (private) flag to ignore the dummy collision box that
-    #     # Factorio provides
-    #     self._overwritten_collision_set = True
-
-    #     super().__init__(
-    #         name,
-    #         legacy_curved_rails,
-    #         position=position,
-    #         tile_position=tile_position,
-    #         direction=direction,
-    #         tags=tags,
-    #         **kwargs
-    #     )
-
-    #     self.validate_assignment = validate_assignment
-
-    # =========================================================================
 
     @property
     def similar_entities(self) -> list[str]:
@@ -101,3 +53,10 @@ class LegacyCurvedRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+LegacyCurvedRail.add_schema(
+    {
+        "$id": "urn:factorio:entity:legacy-curved-rail",
+    }
+)

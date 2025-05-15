@@ -67,7 +67,8 @@ Accumulator.add_schema(
                 "type": "object",
                 "properties": {
                     "output_signal": {
-                        "anyOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
+                        "anyOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}],
+                        "default": {"name": "signal-A", "type": "virtual"},
                     }
                 },
             }

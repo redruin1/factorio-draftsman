@@ -1,5 +1,6 @@
 # test_selector_combinator.py
 
+from draftsman.constants import Direction
 from draftsman.prototypes.selector_combinator import (
     SelectorCombinator,
     selector_combinators,
@@ -8,6 +9,32 @@ from draftsman.signatures import AttrsSignalID, QualityFilter
 from draftsman.warning import UnknownEntityWarning
 
 import pytest
+
+
+@pytest.fixture
+def valid_selector_combinator():
+    if len(selector_combinators) == 0:
+        return None
+    return SelectorCombinator(
+        "selector-combinator",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        player_description="test",
+        operation="random",
+        select_max=False,
+        index_constant=100,
+        index_signal="signal-A",
+        count_signal="signal-B",
+        random_update_interval=100,
+        quality_filter=QualityFilter(quality="legendary"),
+        select_quality_from_signal=True,
+        quality_source_static="uncommon",
+        quality_source_signal="signal-C",
+        quality_destination_signal="signal-D",
+        tags={"blah": "blah"},
+    )
 
 
 def test_constructor():

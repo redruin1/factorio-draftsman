@@ -7,6 +7,21 @@ from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 import pytest
 
 
+@pytest.fixture
+def valid_simple_entity_with_force():
+    if len(simple_entities_with_force) == 0:
+        return None
+    return SimpleEntityWithForce(
+        "simple-entity-with-force",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        variation=13,
+        tags={"blah": "blah"},
+    )
+
+
 class TestSimpleEntityWithForce:
     def test_contstructor_init(self):
         entity = SimpleEntityWithForce(variation=13)

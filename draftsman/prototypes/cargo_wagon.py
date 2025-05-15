@@ -7,15 +7,10 @@ from draftsman.classes.mixins import (
     FilteredInventoryMixin,
     OrientationMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Orientation, ValidationMode
-from draftsman.utils import get_first
 
 from draftsman.data.entities import cargo_wagons
 
 import attrs
-from pydantic import ConfigDict
-from typing import Any, Literal, Optional, Union
 
 
 @attrs.define
@@ -39,3 +34,14 @@ class CargoWagon(
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+CargoWagon.add_schema(
+    {
+        "$id": "urn:factorio:entity:cargo-wagon",
+    },
+    version=(1, 0),
+    mro=(ItemRequestMixin, FilteredInventoryMixin, OrientationMixin, Entity),
+)
+
+CargoWagon.add_schema({"$id": "urn:factorio:entity:cargo-wagon"}, version=(2, 0))

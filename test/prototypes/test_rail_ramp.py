@@ -1,5 +1,6 @@
 # test_rail_ramp.py
 
+from draftsman.constants import Direction
 from draftsman.prototypes.rail_ramp import (
     RailRamp,
     rail_ramps,
@@ -7,6 +8,20 @@ from draftsman.prototypes.rail_ramp import (
 from draftsman.warning import UnknownEntityWarning
 
 import pytest
+
+
+@pytest.fixture
+def valid_rail_ramp():
+    if len(rail_ramps) == 0:
+        return None
+    return RailRamp(
+        "rail-ramp",
+        id="test",
+        quality="uncommon",
+        tile_position=(2, 2),
+        direction=Direction.EAST,
+        tags={"blah": "blah"},
+    )
 
 
 def test_constructor():

@@ -10,21 +10,25 @@ from draftsman.warning import UnknownEntityWarning
 import pytest
 
 
-valid_agricultural_tower = AgriculturalTower(
-    "agricultural-tower",
-    id="test",
-    quality="uncommon",
-    tile_position=(1, 1),
-    circuit_condition=AttrsSimpleCondition(
-        first_signal="signal-A", comparator="<", second_signal="signal-B"
-    ),
-    connect_to_logistic_network=True,
-    logistic_condition=AttrsSimpleCondition(
-        first_signal="signal-A", comparator="<", second_signal="signal-B"
-    ),
-    read_contents=True,
-    tags={"blah": "blah"}
-)
+@pytest.fixture
+def valid_agricultural_tower():
+    if len(agricultural_towers) == 0:
+        return None
+    return AgriculturalTower(
+        "agricultural-tower",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        circuit_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        connect_to_logistic_network=True,
+        logistic_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        read_contents=True,
+        tags={"blah": "blah"},
+    )
 
 
 def test_constructor():
@@ -61,6 +65,7 @@ def test_json_schema():
             "control_behavior": {
                 "type": "object",
                 "properties": {
+                    "circuit_enabled": {"type": "boolean", "default": "false"},
                     "circuit_condition": {"$ref": "urn:factorio:simple-condition"},
                     "connect_to_logistic_network": {
                         "type": "boolean",

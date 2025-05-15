@@ -9,6 +9,21 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_underground_belt():
+    if len(underground_belts) == 0:
+        return None
+    return UndergroundBelt(
+        "underground-belt",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        io_type="output",
+        tags={"blah": "blah"},
+    )
+
+
 class TestUndergroundBelt:
     def test_constructor_init(self):
         # Valid

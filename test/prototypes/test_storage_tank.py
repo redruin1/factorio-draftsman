@@ -2,11 +2,25 @@
 
 from draftsman.constants import Direction
 from draftsman.entity import StorageTank, storage_tanks, Container
-from draftsman.error import InvalidEntityError, DataFormatError
+from draftsman.error import DataFormatError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_storage_tank():
+    if len(storage_tanks) == 0:
+        return None
+    return StorageTank(
+        "storage-tank",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        tags={"blah": "blah"},
+    )
 
 
 class TestStorageTank:

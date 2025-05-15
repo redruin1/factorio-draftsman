@@ -40,3 +40,6 @@ class TransportBelt(
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+TransportBelt.add_schema({"$id": "urn:factorio:entity:transport-belt"})

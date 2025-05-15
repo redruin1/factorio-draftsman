@@ -9,6 +9,7 @@ from draftsman.classes.mixins.circuit_read_resource import CircuitReadResourceMi
 from draftsman.classes.mixins.circuit_set_filters import CircuitSetFiltersMixin
 from draftsman.classes.mixins.color import ColorMixin
 from draftsman.classes.mixins.control_behavior import ControlBehaviorMixin
+from draftsman.classes.mixins.crafting_machine import CraftingMachineMixin
 from draftsman.classes.mixins.directional import DirectionalMixin
 from draftsman.classes.mixins.double_grid_aligned import DoubleGridAlignedMixin
 from draftsman.classes.mixins.energy_source import EnergySourceMixin
@@ -23,7 +24,6 @@ from draftsman.classes.mixins.item_requests import ItemRequestMixin
 from draftsman.classes.mixins.logistic_condition import LogisticConditionMixin
 from draftsman.classes.mixins.mode_of_operation import InserterModeOfOperationMixin
 from draftsman.classes.mixins.mode_of_operation import LogisticModeOfOperationMixin
-# from draftsman.classes.mixins.mode_of_operation import CargoHubModeOfOperationMixin
 from draftsman.classes.mixins.modules import ModulesMixin
 from draftsman.classes.mixins.orientation import OrientationMixin
 from draftsman.classes.mixins.player_description import PlayerDescriptionMixin

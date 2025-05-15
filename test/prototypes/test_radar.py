@@ -7,6 +7,19 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_radar():
+    if len(radars) == 0:
+        return None
+    return Radar(
+        "radar",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        tags={"blah": "blah"},
+    )
+
+
 class TestRadar:
     def test_contstructor_init(self):
         radar = Radar()

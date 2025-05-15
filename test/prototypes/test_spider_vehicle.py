@@ -9,11 +9,49 @@ from draftsman.signatures import (
     AttrsItemRequest,
     AttrsItemID,
     AttrsItemSpecification,
+    ManualSection,
+    SignalFilter,
 )
 from draftsman.warning import UnknownEntityWarning
 
 import pytest
 import copy
+
+
+@pytest.fixture
+def valid_spider_vehicle():
+    if len(spider_vehicles) == 0:
+        return None
+    return SpiderVehicle(
+        "spidertron",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        item_requests=[
+            AttrsItemRequest(
+                id="energy-shield-equipment",
+                items=AttrsItemSpecification(grid_count=1),
+            )
+        ],
+        equipment=[
+            EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+        ],
+        trash_not_requested=True,
+        request_from_buffers=False,
+        requests_enabled=False,
+        sections=[
+            ManualSection(
+                index=1, filters=[SignalFilter(index=1, name="iron-plate", count=50)]
+            )
+        ],
+        enable_logistics_while_moving=False,
+        driver_is_main_gunner=True,
+        selected_gun_index=2,
+        color=(0.5, 0.5, 0.5),
+        auto_target_without_gunner=False,
+        auto_target_with_gunner=True,
+        tags={"blah": "blah"},
+    )
 
 
 def test_constructor():

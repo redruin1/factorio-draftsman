@@ -51,7 +51,7 @@ def conditional(severity):
 
             if warning_list is None:
                 for w in ws:
-                    warnings.warn(w.message)
+                    warnings.warn(w.message, stacklevel=6)  # TODO: correct stacklevel
             else:
                 warning_list.extend([w.message for w in ws])
 
@@ -79,7 +79,7 @@ def conditional(severity):
 
             if warning_list is None:
                 for w in ws:
-                    warnings.warn(w.message)
+                    warnings.warn(w.message, stacklevel=6)  # TODO: correct stacklevel
             else:
                 warning_list.extend([w.message for w in ws])
 

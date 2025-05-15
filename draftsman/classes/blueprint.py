@@ -714,81 +714,7 @@ Blueprint.add_schema(
     version=(1, 0),
 )
 
-Blueprint.add_schema(
-    {
-        "$id": "urn:factorio:blueprint",
-        "type": "object",
-        "description": "Blueprint string format for Factorio 2.X.",
-        "properties": {
-            "blueprint": {
-                "type": "object",
-                "properties": {
-                    "item": {"const": "blueprint"},
-                    "label": {"type": "string"},
-                    "label_color": {"$ref": "urn:factorio:color"},
-                    "description": {"type": "string"},
-                    "icons": {
-                        "type": "array",
-                        "items": {"$ref": "urn:factorio:icon"},
-                        "maxItems": 4,
-                    },
-                    "version": {"$ref": "urn:uint64"},
-                    "snap-to-grid": {"$ref": "urn:factorio:position"},
-                    "absolute-snapping": {"type": "boolean", "default": "true"},
-                    "position-relative-to-grid": {"$ref": "urn:factorio:position"},
-                    "entities": {
-                        "type": "array",
-                        "items": {
-                            "oneOf": [
-                                {"$ref": "urn:factorio:entity"}
-                                # TODO
-                            ]
-                        },
-                    },
-                    "tiles": {"type": "array", "items": {"$ref": "urn:factorio:tile"}},
-                    "wires": {
-                        "type": "array",
-                        "items": {
-                            "type": "array",
-                            "prefixItems": [
-                                {
-                                    "$ref": "urn:uint64",
-                                    "description": "'entity_number' of the first entity being connected.",
-                                },
-                                {
-                                    "enum": [1, 2, 3, 4, 5, 6],
-                                    "description": "What kind of connection the wire has to entity1. See 'wire_connection_types' in Factorio defines.",
-                                },
-                                {
-                                    "$ref": "urn:uint64",
-                                    "description": "'entity_number' of the second entity being connected.",
-                                },
-                                {
-                                    "enum": [1, 2, 3, 4, 5, 6],
-                                    "description": "What kind of connection the wire has to entity1. See 'wire_connection_types' in Factorio defines.",
-                                },
-                            ],
-                            "items": False,
-                        },
-                    },
-                    "schedules": {
-                        "type": "array",
-                        "items": {"$ref": "urn:factorio:schedule"},
-                    },
-                    "stock_connections": {
-                        "type": "array",
-                        "items": {"$ref": "urn:factorio:stock-connection"},
-                    },
-                },
-            },
-        },
-    },
-    version=(2, 0),
-)
-
-# TODO: this should be version 2.0
-draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:blueprint"},
+draftsman_converters.get_version((1, 0)).add_hook_fns(
     Blueprint,
     lambda fields: {
         ("blueprint", "item"): fields.item.name,
@@ -805,18 +731,16 @@ draftsman_converters.add_hook_fns(
         ): fields.position_relative_to_grid.name,
         ("blueprint", "entities"): fields.entities.name,
         ("blueprint", "tiles"): fields.tiles.name,
-        ("blueprint", "wires"): fields.wires.name,
+        None: fields.wires.name,
         ("blueprint", "schedules"): fields.schedules.name,
-        ("blueprint", "stock_connections"): fields.stock_connections.name,
+        None: fields.stock_connections.name,
     },
 )
 
 
 def structure_blueprint_1_0_factory(t: type):
     default_blueprint_hook = (
-        draftsman_converters.get_version((1, 0))
-        .converters[(False, False)]
-        .get_structure_hook(t)
+        draftsman_converters.get_version((1, 0)).get_converter().get_structure_hook(t)
     )
 
     def structure_blueprint_1_0(d: dict, _: type) -> Blueprint:
@@ -861,8 +785,8 @@ def structure_blueprint_1_0_factory(t: type):
         if "entities" in blueprint_dict:
             for entity in blueprint_dict["entities"]:
                 # Convert entities to their modern equivalents
-                if entity["name"] in legacy_entity_conversions:  # pragma: no coverage
-                    entity["name"] = legacy_entity_conversions[entity["name"]]
+                # if entity["name"] in legacy_entity_conversions:  # pragma: no coverage
+                #     entity["name"] = legacy_entity_conversions[entity["name"]]
 
                 # Swap from old 8-direction to modern 16-direction
                 if "direction" in entity:  # pragma: no coverage
@@ -961,4 +885,99 @@ def structure_blueprint_1_0_factory(t: type):
 
 draftsman_converters.get_version((1, 0)).register_structure_hook(
     Blueprint, structure_blueprint_1_0_factory(Blueprint)
+)
+
+Blueprint.add_schema(
+    {
+        "$id": "urn:factorio:blueprint",
+        "type": "object",
+        "description": "Blueprint string format for Factorio 2.X.",
+        "properties": {
+            "blueprint": {
+                "type": "object",
+                "properties": {
+                    "item": {"const": "blueprint"},
+                    "label": {"type": "string"},
+                    "label_color": {"$ref": "urn:factorio:color"},
+                    "description": {"type": "string"},
+                    "icons": {
+                        "type": "array",
+                        "items": {"$ref": "urn:factorio:icon"},
+                        "maxItems": 4,
+                    },
+                    "version": {"$ref": "urn:uint64"},
+                    "snap-to-grid": {"$ref": "urn:factorio:position"},
+                    "absolute-snapping": {"type": "boolean", "default": "true"},
+                    "position-relative-to-grid": {"$ref": "urn:factorio:position"},
+                    "entities": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {"$ref": "urn:factorio:entity"}
+                                # TODO
+                            ]
+                        },
+                    },
+                    "tiles": {"type": "array", "items": {"$ref": "urn:factorio:tile"}},
+                    "wires": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "prefixItems": [
+                                {
+                                    "$ref": "urn:uint64",
+                                    "description": "'entity_number' of the first entity being connected.",
+                                },
+                                {
+                                    "enum": [1, 2, 3, 4, 5, 6],
+                                    "description": "What kind of connection the wire has to entity1. See 'wire_connection_types' in Factorio defines.",
+                                },
+                                {
+                                    "$ref": "urn:uint64",
+                                    "description": "'entity_number' of the second entity being connected.",
+                                },
+                                {
+                                    "enum": [1, 2, 3, 4, 5, 6],
+                                    "description": "What kind of connection the wire has to entity1. See 'wire_connection_types' in Factorio defines.",
+                                },
+                            ],
+                            "items": False,
+                        },
+                    },
+                    "schedules": {
+                        "type": "array",
+                        "items": {"$ref": "urn:factorio:schedule"},
+                    },
+                    "stock_connections": {
+                        "type": "array",
+                        "items": {"$ref": "urn:factorio:stock-connection"},
+                    },
+                },
+            },
+        },
+    },
+    version=(2, 0),
+)
+
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    Blueprint,
+    lambda fields: {
+        ("blueprint", "item"): fields.item.name,
+        ("blueprint", "label"): fields.label.name,
+        ("blueprint", "label_color"): fields.label_color.name,
+        ("blueprint", "description"): fields.description.name,
+        ("blueprint", "icons"): fields.icons.name,
+        ("blueprint", "version"): fields.version.name,
+        ("blueprint", "snap-to-grid"): fields.snapping_grid_size.name,
+        ("blueprint", "absolute-snapping"): fields.absolute_snapping.name,
+        (
+            "blueprint",
+            "position-relative-to-grid",
+        ): fields.position_relative_to_grid.name,
+        ("blueprint", "entities"): fields.entities.name,
+        ("blueprint", "tiles"): fields.tiles.name,
+        ("blueprint", "wires"): fields.wires.name,
+        ("blueprint", "schedules"): fields.schedules.name,
+        ("blueprint", "stock_connections"): fields.stock_connections.name,
+    },
 )

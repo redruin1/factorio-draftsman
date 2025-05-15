@@ -17,9 +17,22 @@ def test_player_port_entities():
     assert player_port.similar_entities is player_ports
 
 
+@pytest.fixture
+def valid_player_port():
+    if len(player_ports) == 0:
+        return None
+    return PlayerPort(
+        "player-port",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        tags={"blah": "blah"},
+    )
+
+
 @pytest.mark.skipif(len(player_ports) == 0, reason="No player ports to test")
 class TestPlayerPort:
-    def test_contstructor_init(self):
+    def test_constructor_init(self):
         port = PlayerPort()
 
         with pytest.warns(UnknownKeywordWarning):

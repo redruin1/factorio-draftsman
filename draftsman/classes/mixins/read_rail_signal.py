@@ -27,6 +27,7 @@ class ReadRailSignalMixin(Exportable):
         factory=lambda: AttrsSignalID(name="signal-red", type="virtual"),
         converter=AttrsSignalID.converter,
         validator=instance_of(Optional[AttrsSignalID]),
+        metadata={"never_null": True},
     )
     """
     The red output signal. Sent with a unit value when the rail signal's state 
@@ -39,6 +40,7 @@ class ReadRailSignalMixin(Exportable):
         factory=lambda: AttrsSignalID(name="signal-yellow", type="virtual"),
         converter=AttrsSignalID.converter,
         validator=instance_of(Optional[AttrsSignalID]),
+        metadata={"never_null": True},
     )
     """
     The yellow output signal. Sent with a unit value when the rail signal's 
@@ -51,6 +53,7 @@ class ReadRailSignalMixin(Exportable):
         factory=lambda: AttrsSignalID(name="signal-green", type="virtual"),
         converter=AttrsSignalID.converter,
         validator=instance_of(Optional[AttrsSignalID]),
+        metadata={"never_null": True},
     )
     """
     The green output signal. Sent with a unit value when the rail signal's state
@@ -59,8 +62,8 @@ class ReadRailSignalMixin(Exportable):
 
     # =========================================================================
 
-    def merge(self, other: "Entity"):
-        super(ReadRailSignalMixin, self).merge(other)
+    def merge(self, other: "ReadRailSignalMixin"):
+        super().merge(other)
 
         self.red_output_signal = other.red_output_signal
         self.yellow_output_signal = other.yellow_output_signal

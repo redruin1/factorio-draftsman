@@ -12,6 +12,23 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_infinity_container():
+    if len(infinity_containers) == 0:
+        return None
+    return InfinityContainer(
+        "infinity-chest",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        # item_requests=[],
+        bar=10,
+        filters=[AttrsInfinityFilter(index=0, name="iron-ore", count=50)],
+        remove_unfiltered_items=True,
+        tags={"blah": "blah"},
+    )
+
+
 class TestInfinityContainer:
     def test_constructor_init(self):
         container = InfinityContainer(

@@ -2,7 +2,7 @@
 
 from draftsman.constants import Direction
 from draftsman.entity import Splitter, splitters, Container
-from draftsman.error import DataFormatError, InvalidItemError
+from draftsman.error import DataFormatError
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -11,6 +11,23 @@ from draftsman.warning import (
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_splitter():
+    if len(splitters) == 0:
+        return None
+    return Splitter(
+        "splitter",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        input_priority="left",
+        output_priority="right",
+        filter="small-lamp",
+        tags={"blah": "blah"},
+    )
 
 
 class TestSplitter:

@@ -9,13 +9,17 @@ from draftsman.warning import UnknownEntityWarning
 import pytest
 
 
-valid_cargo_bay = CargoBay(
-    "cargo-bay",
-    id="test",
-    quality="uncommon",
-    tile_position=(1, 1),
-    tags={"blah": "blah"},
-)
+@pytest.fixture
+def valid_cargo_bay():
+    if len(cargo_bays) == 0:
+        return None
+    return CargoBay(
+        "cargo-bay",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        tags={"blah": "blah"},
+    )
 
 
 def test_constructor():
@@ -42,6 +46,7 @@ def test_json_schema():
         },
         "required": ["entity_number", "name", "position"],
     }
+
 
 def test_flags():
     for bay_name in cargo_bays:

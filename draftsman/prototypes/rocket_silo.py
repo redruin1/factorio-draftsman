@@ -11,7 +11,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.constants import SiloReadMode
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import uint32
+from draftsman.signatures import RecipeName, uint32
 from draftsman.validators import instance_of, try_convert
 
 from draftsman.data.entities import rocket_silos
@@ -31,81 +31,9 @@ class RocketSilo(
     Entity,
 ):
     """
-    An entity that produces rockets, usually used in research.
+    An entity that launches rockets, usually to move items between surfaces or
+    space platforms.
     """
-
-    # class Format(
-    #     ModulesMixin.Format,
-    #     ItemRequestMixin.Format,
-    #     ControlBehaviorMixin.Format,
-    #     CircuitConnectableMixin.Format,
-    #     RecipeMixin.Format,
-    #     Entity.Format,
-    # ):
-    #     # auto_launch: Optional[bool] = Field(
-    #     #     False,
-    #     #     description="""
-    #     #     Whether or not this silo is configured to automatically launch
-    #     #     itself when cargo is present inside of it.
-    #     #     """,
-    #     # )
-
-    #     class ControlBehavior(DraftsmanBaseModel):
-    #         read_items_mode: Optional[SiloReadMode] = SiloReadMode.READ_CONTENTS
-
-    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
-
-    #     transitional_request_index: Optional[uint32] = Field(  # TODO: size, wtf is this
-    #         0, description="""TODO"""
-    #     )
-
-    #     model_config = ConfigDict(title="RocketSilo")
-
-    # def __init__(
-    #     self,
-    #     name: Optional[str] = get_first(rocket_silos),
-    #     position: Union[Vector, PrimitiveVector] = None,
-    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-    #     recipe: Optional[str] = "rocket-part",
-    #     recipe_quality: Optional[
-    #         Literal["normal", "uncommon", "rare", "epic", "legendary"]
-    #     ] = "normal",
-    #     # auto_launch: bool = False,
-    #     transitional_request_index: Optional[uint32] = 0,
-    #     items: Optional[list[ItemRequest]] = [],
-    #     control_behavior: Optional[Format.ControlBehavior] = {},
-    #     tags: dict[str, Any] = {},
-    #     validate_assignment: Union[
-    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-    #     ] = ValidationMode.STRICT,
-    #     **kwargs
-    # ):
-    #     """
-    #     TODO
-    #     """
-
-    #     self._root: __class__.Format
-    #     self.control_behavior: __class__.Format.ControlBehavior
-
-    #     super().__init__(
-    #         name,
-    #         rocket_silos,
-    #         position=position,
-    #         tile_position=tile_position,
-    #         recipe=recipe,
-    #         recipe_quality=recipe_quality,
-    #         items=items,
-    #         control_behavior=control_behavior,
-    #         tags=tags,
-    #         **kwargs
-    #     )
-
-    #     # self.auto_launch = auto_launch
-    #     self.transitional_request_index = transitional_request_index
-
-    #     self.validate_assignment = validate_assignment
-
-    # =========================================================================
 
     @property
     def similar_entities(self) -> list[str]:
@@ -115,10 +43,9 @@ class RocketSilo(
 
     # TODO: we should just "evolve" the attribute instead of redefining it
     # See https://github.com/python-attrs/attrs/issues/637
-    # recipe: Optional[RecipeName] = attrs.field(
-    #     default="rocket-part",
-    #     validator=instance_of(Optional[RecipeName])
-    # )
+    recipe: Optional[RecipeName] = attrs.field(
+        default="rocket-part", validator=instance_of(Optional[RecipeName])
+    )
 
     # =========================================================================
 
@@ -127,63 +54,28 @@ class RocketSilo(
     )
     """
     Whether or not to automatically launch the rocket when it's cargo is
-    full. Deprecated in Factorio 2.0.
+    full.
+
+    .. NOTE::
+
+        Only has an effect on versions of Factorio < 2.0.
     """
-
-    # @property
-    # def auto_launch(self) -> Optional[bool]:
-    #     """
-    #     Whether or not to automatically launch the rocket when it's cargo is
-    #     full. Deprecated in Factorio 2.0.
-
-    #     :getter: Gets whether or not to automatically launch.
-    #     :setter: Sets whether or not to automatically launch.
-
-    #     :exception TypeError: If set to anything other than a ``bool`` or ``None``.
-    #     """
-    #     return self._root.auto_launch
-
-    # @auto_launch.setter
-    # def auto_launch(self, value: Optional[bool]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self, type(self).Format, self._root, "auto_launch", value
-    #         )
-    #         self._root.auto_launch = result
-    #     else:
-    #         self._root.auto_launch = value
 
     # =========================================================================
 
     read_items_mode: SiloReadMode = attrs.field(
-        default=SiloReadMode.NONE,
+        default=SiloReadMode.READ_CONTENTS,
         converter=try_convert(SiloReadMode),
         validator=instance_of(SiloReadMode),
     )
     """
-    TODO
+    In which manner this entity should behave when connected to a circuit 
+    network.
+
+    .. NOTE::
+
+        Only has an effect on versions of Factorio >= 2.0.
     """
-
-    # @property
-    # def read_items_mode(self) -> Optional[SiloReadMode]:
-    #     """
-    #     TODO
-    #     """
-    #     return self.control_behavior.read_items_mode
-
-    # @read_items_mode.setter
-    # def read_items_mode(self, value: Optional[SiloReadMode]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "read_items_mode",
-    #             value,
-    #         )
-    #         self.control_behavior.read_items_mode = result
-    #     else:
-    #         self.control_behavior.read_items_mode = value
 
     # =========================================================================
 
@@ -191,25 +83,13 @@ class RocketSilo(
         default=0, validator=instance_of(uint32)
     )
     """
-    TODO
+    An internal ID used for keeping track of which logistic requests this silo
+    should send to space platforms above.
+
+    .. NOTE::
+
+        Only has an effect on versions of Factorio >= 2.0.
     """
-
-    # @property
-    # def transitional_request_index(self) -> Optional[uint32]:
-    #     """
-    #     TODO
-    #     """
-    #     return self._root.transitional_request_index
-
-    # @transitional_request_index.setter
-    # def transitional_request_index(self, value: Optional[uint32]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self, type(self).Format, self._root, "transitional_request_index", value
-    #         )
-    #         self._root.transitional_request_index = result
-    #     else:
-    #         self._root.transitional_request_index = value
 
     # =========================================================================
 
@@ -224,16 +104,17 @@ class RocketSilo(
 
     __hash__ = Entity.__hash__
 
-    # def __eq__(self, other: "RocketSilo") -> bool:
-    #     return (
-    #         super().__eq__(other)
-    #         # and self.auto_launch == other.auto_launch
-    #         and self.transitional_request_index == other.transitional_request_index
-    #     )
 
+RocketSilo.add_schema(
+    {
+        "$id": "urn:factorio:entity:rocket-silo",
+        "properties": {"auto_launch": {"type": "boolean", "default": "false"}},
+    },
+    version=(1, 0),
+    mro=(ItemRequestMixin, RecipeMixin, Entity),
+)
 
 draftsman_converters.get_version((1, 0)).add_hook_fns(  # pragma: no branch
-    # {"$id": "factorio:rocket_silo_v1.0"},
     RocketSilo,
     lambda fields: {
         "auto_launch": fields.auto_launch.name,
@@ -242,8 +123,30 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(  # pragma: no branch
     },
 )
 
+RocketSilo.add_schema(
+    {
+        "$id": "urn:factorio:entity:rocket-silo",
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "read_items_mode": {
+                        "enum": [
+                            SiloReadMode.NONE,
+                            SiloReadMode.READ_CONTENTS,
+                            SiloReadMode.READ_ORBITAL_REQUESTS,
+                        ],
+                        "default": SiloReadMode.READ_CONTENTS,
+                    }
+                },
+            },
+            "transitional_request_index": {"$ref": "urn:uint32"},
+        },
+    },
+    version=(2, 0),
+)
+
 draftsman_converters.get_version((2, 0)).add_hook_fns(
-    # {"$id": "factorio:rocket_silo_v2.0"},
     RocketSilo,
     lambda fields: {
         None: fields.auto_launch.name,

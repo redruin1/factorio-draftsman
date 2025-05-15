@@ -1,9 +1,15 @@
 # test_logistic_active_container.py
 
+from draftsman.constants import LogisticModeOfOperation, Inventory
 from draftsman.entity import (
     LogisticActiveContainer,
     logistic_active_containers,
     Container,
+)
+from draftsman.signatures import (
+    AttrsItemRequest,
+    AttrsItemSpecification,
+    AttrsInventoryLocation,
 )
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
@@ -14,7 +20,21 @@ from collections.abc import Hashable
 import pytest
 
 
-class TestContainer:
+@pytest.fixture
+def valid_active_container():
+    if len(logistic_active_containers) == 0:
+        return None
+    return LogisticActiveContainer(
+        "active-provider-chest",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        read_contents=False,
+        tags={"blah": "blah"},
+    )
+
+
+class TestActiveContainer:
     def test_constructor_init(self):
         active_chest = LogisticActiveContainer(
             "active-provider-chest",  # "logistic-chest-active-provider",
@@ -60,6 +80,144 @@ class TestContainer:
             LogisticActiveContainer(
                 "active-provider-chest", bar="not even trying"
             ).validate().reissue_all()
+
+    def test_from_dict(self):
+        # (For now we'll ignore the fact that "active-provider-chest" should be
+        # renamed to "logistic-chest-active-provider" on 1.0)
+
+        # TODO: test importing this string into 2.0 and see if Factorio is smart
+        # and actually sends the modules to the correct spots
+        """0eNp9UMtqwzAQ/Jc5SwE/2jj6lVKKrSzpgrQykhxqjP49knvpqbeZZeexe2BxG62RJcMcYBskwXwcSPyQ2bVZ3leCAWfyUJDZNzanRH5xLA/tZ/vNQnpAUWC50w9MVz4VSDJnpl+/k+xfsvmFYl3430lhDamKg7QG1VAPw+VNYYcZK6hBkSyfvciRzTEIW2052o1zVbeyqUnXGO6bzfys4dpX7Jq9GUsreJ5k/nxA4Ukxnan91I3XW3+dpun91vWlvAAUYWNo"""
+
+        # Test old 1.0 items format gets properly modernized
+        old_dict = {
+            "name": "active-provider-chest",
+            "position": {"x": 0.5, "y": 0.5},
+            "items": {"iron-ore": 50},
+        }
+        container = LogisticActiveContainer.from_dict(old_dict, version=(1, 0))
+        assert container.name == "active-provider-chest"
+        assert container.position.x == container.position.y == 0.5
+        assert container.item_requests == [
+            AttrsItemRequest(
+                **{
+                    "id": {"name": "iron-ore", "quality": "normal"},
+                    "items": {
+                        "in_inventory": [
+                            {
+                                "inventory": 1,
+                                "stack": 0,
+                                "count": 50,
+                            }
+                        ]
+                    },
+                }
+            )
+        ]
+
+    def test_to_dict(self):
+        container = LogisticActiveContainer("active-provider-chest")
+
+        container.set_item_request(
+            "iron-ore", 50, quality="normal", inventory=Inventory.chest
+        )
+
+        # (For now we'll ignore the fact that "active-provider-chest" should be
+        # renamed to "logistic-chest-active-provider" on 1.0)
+
+        # On 1.0, read_contents has no effect whatsoever
+        assert container.read_contents is True
+        assert container.to_dict(
+            version=(1, 0), exclude_defaults=False, exclude_none=False
+        ) == {
+            "name": "active-provider-chest",
+            "position": {"x": 0.5, "y": 0.5},
+            # "bar": None, # Factorio doesn't like this null
+            "items": {
+                "iron-ore": 50,
+            },
+            "connections": {},
+            "control_behavior": {
+                "circuit_mode_of_operation": LogisticModeOfOperation.SEND_CONTENTS
+            },
+            "tags": {},
+        }
+        container.read_contents = False
+        assert container.read_contents is False
+        assert container.to_dict(
+            version=(1, 0), exclude_defaults=False, exclude_none=False
+        ) == {
+            "name": "active-provider-chest",
+            "position": {"x": 0.5, "y": 0.5},
+            # "bar": None,
+            "items": {
+                "iron-ore": 50,
+            },
+            "connections": {},
+            "control_behavior": {
+                "circuit_mode_of_operation": LogisticModeOfOperation.SEND_CONTENTS
+            },
+            "tags": {},
+        }
+
+        # On 2.0, read_contents has an effect, but it is translated into
+        # LogisticModeOfOperation enum
+        container.read_contents = True
+        assert container.to_dict(
+            version=(2, 0), exclude_defaults=False, exclude_none=False
+        ) == {
+            "name": "active-provider-chest",
+            "position": {"x": 0.5, "y": 0.5},
+            "quality": "normal",
+            # "bar": None,
+            "items": [
+                {
+                    "id": {"name": "iron-ore", "quality": "normal"},
+                    "items": {
+                        "in_inventory": [
+                            {
+                                "inventory": Inventory.chest,
+                                "stack": 0,
+                                "count": 50,
+                            }
+                        ],
+                        "grid_count": 0,
+                    },
+                }
+            ],
+            "control_behavior": {
+                "circuit_mode_of_operation": LogisticModeOfOperation.SEND_CONTENTS
+            },
+            "tags": {},
+        }
+        container.read_contents = False
+        assert container.to_dict(
+            version=(2, 0), exclude_defaults=False, exclude_none=False
+        ) == {
+            "name": "active-provider-chest",
+            "position": {"x": 0.5, "y": 0.5},
+            "quality": "normal",
+            # "bar": None,
+            "items": [
+                {
+                    "id": {"name": "iron-ore", "quality": "normal"},
+                    "items": {
+                        "in_inventory": [
+                            {
+                                "inventory": Inventory.chest,
+                                "stack": 0,
+                                "count": 50,
+                            }
+                        ],
+                        "grid_count": 0,
+                    },
+                }
+            ],
+            "control_behavior": {
+                "circuit_mode_of_operation": LogisticModeOfOperation.NONE
+            },
+            "tags": {},
+        }
 
     def test_power_and_circuit_flags(self):
         for container_name in logistic_active_containers:

@@ -15,8 +15,6 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of, one_of
@@ -24,8 +22,7 @@ from draftsman.validators import instance_of, one_of
 from draftsman.data.entities import inserters
 
 import attrs
-from pydantic import ConfigDict, Field
-from typing import Any, Literal, Optional, Union
+from typing import Literal, Optional
 
 
 @fix_incorrect_pre_init
@@ -49,110 +46,6 @@ class Inserter(
     An entity with a swinging arm that can move items between machines.
     """
 
-    # class Format(
-    #     FiltersMixin.Format,
-    #     StackSizeMixin.Format,
-    #     CircuitReadHandMixin.Format,
-    #     InserterModeOfOperationMixin.Format,
-    #     CircuitConditionMixin.Format,
-    #     LogisticConditionMixin.Format,
-    #     CircuitEnableMixin.Format,
-    #     ControlBehaviorMixin.Format,
-    #     CircuitConnectableMixin.Format,
-    #     DirectionalMixin.Format,
-    #     Entity.Format,
-    # ):
-    #     class ControlBehavior(
-    #         StackSizeMixin.ControlFormat,
-    #         CircuitReadHandMixin.ControlFormat,
-    #         InserterModeOfOperationMixin.ControlFormat,
-    #         CircuitConditionMixin.ControlFormat,
-    #         LogisticConditionMixin.ControlFormat,
-    #         CircuitEnableMixin.ControlFormat,
-    #         DraftsmanBaseModel,
-    #     ):
-    #         circuit_set_filters: Optional[bool] = Field(
-    #             False,
-    #             description="""
-    #             Whether or not inputs from the circuit network should determine
-    #             item filters.
-    #             """,
-    #         )
-
-    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
-
-    #     pickup_position: Optional[list[float]] = Field(
-    #         None,
-    #         description="""
-    #         The pickup position to use. Not configurable in vanilla, but
-    #         settable via script or mods.
-    #         """,
-    #     )
-    #     drop_position: Optional[list[float]] = Field(
-    #         None,
-    #         description="""
-    #         The drop position to use. Not configurable in vanilla, but settable
-    #         via script or mods.
-    #         """,
-    #     )
-    #     filter_mode: Optional[Literal["whitelist", "blacklist"]] = Field(
-    #         "whitelist",
-    #         description="""
-    #         Whether or not to treat the item filters associated with this
-    #         inserter as a list of items to allow or a list of items to disallow.
-    #         """,
-    #     )
-    #     spoil_priority: Optional[Literal["spoiled-first", "fresh-first"]] = Field(
-    #         None,
-    #         description="""
-    #         Whether to prefer grabbing the most spoiled or most fresh items from
-    #         an inventory.
-    #         """,
-    #     )
-
-    #     model_config = ConfigDict(title="Inserter")
-
-    # def __init__(
-    #     self,
-    #     name: Optional[str] = get_first(inserters),
-    #     position: Union[Vector, PrimitiveVector] = None,
-    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-    #     direction: Direction = Direction.NORTH,
-    #     pickup_position: Optional[list[float]] = None,
-    #     drop_position: Optional[list[float]] = None,
-    #     filter_mode: Literal["whitelist", "blacklist"] = "whitelist",
-    #     spoil_priority: Literal["spoiled-first", "fresh-first", None] = None,
-    #     override_stack_size: uint8 = None,
-    #     control_behavior: Format.ControlBehavior = {},
-    #     tags: dict[str, Any] = {},
-    #     validate_assignment: Union[
-    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-    #     ] = ValidationMode.STRICT,
-    #     **kwargs
-    # ):
-    #     super().__init__(
-    #         name,
-    #         inserters,
-    #         position=position,
-    #         tile_position=tile_position,
-    #         direction=direction,
-    #         override_stack_size=override_stack_size,
-    #         control_behavior=control_behavior,
-    #         tags=tags,
-    #         **kwargs
-    #     )
-
-    #     self.pickup_position = pickup_position  # TODO: defaults
-    #     self.drop_position = drop_position  # TODO: defaults
-
-    #     self.filter_mode = filter_mode
-
-    #     self.spoil_priority = spoil_priority
-
-    #     self.validate_assignment = validate_assignment
-
-    # =========================================================================
-
     @property
     def similar_entities(self) -> list[str]:
         return inserters
@@ -164,33 +57,19 @@ class Inserter(
         # TODO: validators
     )
     """
-    The pickup position of the inserter.
+    The configured pickup position of the inserter. This is *not* the position/
+    tile in world space that this inserter would grab an item from; it is 
+    instead a position "offset" used for when inserters have custom pickup/
+    dropoff locations (think adjustable inserter mods).
 
-    TODO
+    TODO: what do the values mean?
+
+    .. NOTE::
+
+        Only inserters with the ``"allow_custom_vectors"`` key set to ``True`` 
+        in their :py:attr:`.prototype` definition will actually allow setting
+        these values to have an effect in game.
     """
-
-    # @property
-    # def pickup_position(self) -> Optional[list[float]]:
-    #     """
-    #     The pickup position of the inserter.
-
-    #     TODO
-    #     """
-    #     return self._root.pickup_position
-
-    # @pickup_position.setter
-    # def pickup_position(self, value: Optional[list[float]]) -> None:
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format,
-    #             self._root,
-    #             "pickup_position",
-    #             value,
-    #         )
-    #         self._root.pickup_position = result
-    #     else:
-    #         self._root.pickup_position = value
 
     # =========================================================================
 
@@ -199,33 +78,19 @@ class Inserter(
         # TODO: validators
     )
     """
-    The drop position of the inserter.
+    The configured drop position of the inserter. This is *not* the position/
+    tile in world space that this inserter would move an item to; it is instead 
+    a position "offset" used for when inserters have custom pickup/dropoff 
+    locations (think adjustable inserter mods).
 
-    TODO
+    TODO: what do the values mean?
+
+    .. NOTE::
+
+        Only inserters with the ``"allow_custom_vectors"`` key set to ``True`` 
+        in their :py:attr:`.prototype` definition will actually allow setting
+        these values to have an effect in game.
     """
-
-    # @property
-    # def drop_position(self) -> Optional[list[float]]:
-    #     """
-    #     The drop position of the inserter.
-
-    #     TODO
-    #     """
-    #     return self._root.drop_position
-
-    # @drop_position.setter
-    # def drop_position(self, value: Optional[list[float]]) -> None:
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format,
-    #             self._root,
-    #             "drop_position",
-    #             value,
-    #         )
-    #         self._root.drop_position = result
-    #     else:
-    #         self._root.drop_position = value
 
     # =========================================================================
 
@@ -233,36 +98,12 @@ class Inserter(
         default="whitelist", validator=one_of("whitelist", "blacklist")
     )
     """
-    The mode that the given filter should operate under. 
+    The mode that the given filter should operate under, if the inserter is 
+    configured to operate with filters.
 
     :exception DataFormatError: If set to a value that is neither ``"whitelist"``
         nor ``"blacklist"``.
     """
-
-    # @property
-    # def filter_mode(self) -> Literal["whitelist", "blacklist", None]:
-    #     """
-    #     The mode that the filter is set to. Can be either ``"whitelist"`` or
-    #     ``"blacklist"``.
-
-    #     :getter: Gets the filter mode.
-    #     :setter: Sets the filter mode.
-
-    #     :exception ValueError: If set to a ``str`` that is neither ``"whitelist"``
-    #         nor ``"blacklist"``.
-    #     :exception TypeError: If set to anything other than a ``str`` or ``None``.
-    #     """
-    #     return self._root.filter_mode
-
-    # @filter_mode.setter
-    # def filter_mode(self, value: Literal["whitelist", "blacklist", None]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self, type(self).Format, self._root, "filter_mode", value
-    #         )
-    #         self._root.filter_mode = result
-    #     else:
-    #         self._root.filter_mode = value
 
     # =========================================================================
 
@@ -278,64 +119,6 @@ class Inserter(
     :raises DataFormatError: When set to a value other than ``"spoiled-first"``,
         ``"fresh-first"``, or ``None``.
     """
-
-    # @property
-    # def spoil_priority(self) -> Literal["spoiled-first", "fresh-first", None]:
-    #     """
-    #     Whether or not this inserter should prefer most fresh or most spoiled
-    #     items when grabbing from an inventory.
-
-    #     TODO
-    #     """
-    #     return self._root.spoil_priority
-
-    # @spoil_priority.setter
-    # def spoil_priority(
-    #     self, value: Literal["spoiled-first", "fresh-first", None]
-    # ) -> None:
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self, type(self).Format, self._root, "spoil_priority", value
-    #         )
-    #         self._root.spoil_priority = result
-    #     else:
-    #         self._root.spoil_priority = value
-
-    # =========================================================================
-
-    # circuit_set_filters: bool = attrs.field(default=False, validator=instance_of(bool))
-    # """
-    # Whether or not the inserter should have its filters determined via
-    # signals on connected circuit networks.
-
-    # :raises DataFormatError: If set to anything other than a ``bool``.
-    # """
-
-    # @property
-    # def circuit_set_filters(self) -> Optional[bool]:
-    #     """
-    #     Whether or not the inserter should have its filters determined via
-    #     signals on connected circuit networks.
-
-    #     TODO
-    #     """
-    #     return self.control_behavior.circuit_set_filters
-
-    # @circuit_set_filters.setter
-    # def circuit_set_filters(
-    #     self, value: Literal["spoiled-first", "fresh-first", None]
-    # ) -> None:
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "circuit_set_filters",
-    #             value,
-    #         )
-    #         self.control_behavior.circuit_set_filters = result
-    #     else:
-    #         self.control_behavior.circuit_set_filters = value
 
     # =========================================================================
 
@@ -353,10 +136,36 @@ class Inserter(
     __hash__ = Entity.__hash__
 
 
+Inserter.add_schema(
+    {
+        "$id": "urn:factorio:entity:inserter",
+        "$defs": {
+            "hand-position": {
+                "type": "array",
+                "items": {"type": "number"},
+                "maxItems": 2,
+            }
+        },
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "circuit_set_filters": {"type": "boolean", "default": "false"}
+                },
+            },
+            "pickup_position": {
+                "oneOf": [{"$ref": "#/$defs/hand-position"}, {"type": "null"}]
+            },
+            "drop_position": {
+                "oneOf": [{"$ref": "#/$defs/hand-position"}, {"type": "null"}]
+            },
+            "filter_mode": {"enum": ["whitelist", "blacklist"], "default": "whitelist"},
+        },
+    },
+    version=(1, 0),
+)
+
 draftsman_converters.get_version((1, 0)).add_hook_fns(  # pragma: no branch
-    # {
-    #     "$id": "factorio:inserter",
-    # },
     Inserter,
     lambda fields: {
         ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
@@ -367,11 +176,40 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(  # pragma: no branch
     },
 )
 
+Inserter.add_schema(
+    {
+        "$id": "urn:factorio:entity:inserter",
+        "$defs": {
+            "hand-position": {
+                "type": "array",
+                "items": {"type": "number"},
+                "maxItems": 2,
+            }
+        },
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "circuit_set_filters": {"type": "boolean", "default": "false"}
+                },
+            },
+            "pickup_position": {
+                "oneOf": [{"$ref": "#/$defs/hand-position"}, {"type": "null"}]
+            },
+            "drop_position": {
+                "oneOf": [{"$ref": "#/$defs/hand-position"}, {"type": "null"}]
+            },
+            "filter_mode": {"enum": ["whitelist", "blacklist"], "default": "whitelist"},
+            "spoil_priority": {
+                "enum": ["spoiled-first", "fresh-first", None],
+                "default": None,
+            },
+        },
+    },
+    version=(2, 0),
+)
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
-    # {
-    #     "$id": "factorio:inserter",
-    # },
     Inserter,
     lambda fields: {
         ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,

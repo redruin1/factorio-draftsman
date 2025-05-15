@@ -14,30 +14,28 @@ from collections.abc import Hashable
 import pytest
 
 
-valid_burner_generator = BurnerGenerator(
-    "burner-generator",
-    id="test",
-    quality="uncommon",
-    tile_position=(1, 1),
-    direction=Direction.EAST,
-    item_requests=[
-        {
-            "id": {
-                "name": "coal"
-            },
-            "items": {
-                "in_inventory": [
-                    {
-                        "inventory": Inventory.fuel,
-                        "stack": 0,
-                        "count": 50
-                    }
-                ]
+@pytest.fixture
+def valid_burner_generator():
+    if len(burner_generators) == 0:
+        return None
+    return BurnerGenerator(
+        "burner-generator",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        item_requests=[
+            {
+                "id": {"name": "coal"},
+                "items": {
+                    "in_inventory": [
+                        {"inventory": Inventory.fuel, "stack": 0, "count": 50}
+                    ]
+                },
             }
-        }
-    ],
-    tags={"blah": "blah"}
-)
+        ],
+        tags={"blah": "blah"},
+    )
 
 
 class TestBurnerGenerator:
@@ -58,12 +56,16 @@ class TestBurnerGenerator:
                 "position": {"$ref": "urn:factorio:position"},
                 "direction": {"enum": list(range(8)), "default": 0},
                 "items": {
-                    "type": "array",
-                    "items": {"$ref": "urn:factorio:item-request"}
+                    "type": "object",
+                    "description": "A dictionary of item requests, where each key is "
+                    "the name of an item and the value is the count of that item to "
+                    "request. Items always go to the default inventory of that "
+                    "object (if possible) in the order in which Factorio traverses "
+                    "them.",
                 },
-                "tags": {"type": "object"}
+                "tags": {"type": "object"},
             },
-            "required": ["entity_number", "name", "position"]
+            "required": ["entity_number", "name", "position"],
         }
         assert BurnerGenerator.json_schema(version=(2, 0)) == {
             "$id": "urn:factorio:entity:burner-generator",
@@ -77,11 +79,15 @@ class TestBurnerGenerator:
                 "quality": {"$ref": "urn:factorio:quality-name"},
                 "items": {
                     "type": "array",
-                    "items": {"$ref": "urn:factorio:item-request"}
+                    "items": {"$ref": "urn:factorio:item-request"},
+                    "description": "A list of item requests objects, which contain "
+                    "the item name, it's quality, the amount to request, as well as "
+                    "exactly what inventories to request to and where inside those "
+                    "inventories.",
                 },
-                "tags": {"type": "object"}
+                "tags": {"type": "object"},
             },
-            "required": ["entity_number", "name", "position"]
+            "required": ["entity_number", "name", "position"],
         }
 
     # def test_set_items(self): # TODO: reimplement

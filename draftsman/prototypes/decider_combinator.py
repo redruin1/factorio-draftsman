@@ -15,7 +15,6 @@ from draftsman.signatures import (
 )
 from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
-from draftsman.warning import DraftsmanWarning, PureVirtualDisallowedWarning
 
 from draftsman.data.entities import decider_combinators
 from draftsman.signatures import (
@@ -210,30 +209,10 @@ class DeciderCombinator(
             return self._output_condition("<=", other)
 
     @attrs.define
-    class Output(Exportable):  # TODO: Exportable
-        # class Format(DraftsmanBaseModel):
-        #     signal: AttrsSignalID = Field(..., description="""The signal type to output.""")
-        #     copy_count_from_input: Optional[bool] = Field(
-        #         True,
-        #         description="""
-        #         Broadcasts the given input value to the output if true, or a unit
-        #         value if false.
-        #         """,
-        #     )
-        #     networks: Optional[NetworkSpecification] = Field(
-        #         NetworkSpecification(red=True, green=True),
-        #         description="""What wires this output should be broadcast to.""",
-        #     )
-        #     constant: Optional[int32] = Field(
-        #         1,
-        #         description="""
-        #         What value the constant output should be if "copy_count_from_input"
-        #         is false. Always specified as 1 in game, but can be overwritten
-        #         externally and will be respected.
-        #         """,
-        #     )
-
-        #     model_config = ConfigDict(title="DeciderOutput")
+    class Output(Exportable):
+        """
+        An output object specifically for DeciderCombinators.
+        """
 
         signal: Optional[AttrsSignalID] = attrs.field(
             default=None,
@@ -268,256 +247,11 @@ class DeciderCombinator(
         number.
         """
 
-        # def __init__(
-        #     self, signal, copy_count_from_input=True, constant=1, networks={"red", "green"}
-        # ):
-        #     self._root: DeciderOutput.Format
-        #     self._root = self.__class__.Format.model_validate(
-        #         {
-        #             "signal": signal,
-        #             "copy_count_from_input": copy_count_from_input,
-        #             "constant": constant,
-        #             "networks": networks,
-        #         },
-        #         strict=False,
-        #         context={"construction": True, "mode": ValidationMode.NONE},
-        #     )
-
-        # @property
-        # def signal(self):
-        #     return self._root.signal
-
-        # @property
-        # def copy_count_from_input(self):
-        #     return self._root.copy_count_from_input
-
-        # @property
-        # def constant(self):
-        #     return self._root.constant
-
-        # @property
-        # def networks(self):
-        #     return self._root.networks
-
         @classmethod
         def converter(cls, value):
             if isinstance(value, dict):
                 return cls(**value)
             return value
-
-    # @attrs.define
-    # class Input:
-    #     pass
-
-    # @attrs.define
-    # class Condition:
-    #     pass
-
-    # 1.0 format
-    # class Format(
-    #     PlayerDescriptionMixin.Format,
-    #     ControlBehaviorMixin.Format,
-    #     CircuitConnectableMixin.Format,
-    #     DirectionalMixin.Format,
-    #     Entity.Format,
-    # ):
-    #     class ControlBehavior(DraftsmanBaseModel):
-    #         class DeciderConditions(Condition):
-    #             output_signal: Optional[SignalID] = Field(
-    #                 None,
-    #                 description="""
-    #                 The output signal to output if the condition is met. The
-    #                 value of the output signal is determined by the
-    #                 'copy_count_from_input' key.
-    #                 """,
-    #             )
-    #             copy_count_from_input: Optional[bool] = Field(
-    #                 True,
-    #                 description="""
-    #                 Whether or not to copy the value of the selected output
-    #                 signal from the input circuit network, or to output the
-    #                 selected 'output_signal' with a value of 1.
-    #                 """,
-    #             )
-
-    #             @model_validator(mode="after")
-    #             def ensure_proper_signal_configuration(self, info: ValidationInfo):
-    #                 """
-    #                 The first signal and output signals can be pure virtual
-    #                 signals, but only in a certain configuration as determined
-    #                 by `_signal_blacklist`. If the input signal is not a pure
-    #                 virtual signal, then the output signal cannot be
-    #                 `"signal-anything"` or `"signal-each"`.
-    #                 """
-    #                 if not info.context or self.output_signal is None:
-    #                     return self
-    #                 if info.context["mode"] <= ValidationMode.MINIMUM:
-    #                     return self
-
-    #                 warning_list: list = info.context["warning_list"]
-
-    #                 if self.first_signal is None:
-    #                     first_signal_name = None
-    #                 else:
-    #                     first_signal_name = self.first_signal.name
-
-    #                 current_blacklist = _signal_blacklist.get(
-    #                     first_signal_name, {"signal-anything", "signal-each"}
-    #                 )
-    #                 if self.output_signal.name in current_blacklist:
-    #                     warning_list.append(
-    #                         PureVirtualDisallowedWarning(
-    #                             "'{}' cannot be an output_signal when '{}' is the first operand; 'output_signal' will be removed when imported".format(
-    #                                 self.output_signal.name, first_signal_name
-    #                             ),
-    #                         )
-    #                     )
-
-    #                 return self
-
-    #             @model_validator(mode="after")
-    #             def ensure_second_signal_is_not_pure_virtual(
-    #                 self, info: ValidationInfo
-    #             ):
-    #                 if not info.context or self.second_signal is None:
-    #                     return self
-    #                 if info.context["mode"] <= ValidationMode.MINIMUM:
-    #                     return self
-
-    #                 warning_list: list = info.context["warning_list"]
-
-    #                 if self.second_signal.name in signals.pure_virtual:
-    #                     warning_list.append(
-    #                         PureVirtualDisallowedWarning(
-    #                             "'second_signal' cannot be set to pure virtual signal '{}'; will be removed when imported".format(
-    #                                 self.second_signal.name
-    #                             )
-    #                         )
-    #                     )
-
-    #                 return self
-
-    #         decider_conditions: Optional[DeciderConditions] = DeciderConditions()
-
-    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
-
-    #     model_config = ConfigDict(title="DeciderCombinator")
-
-    # class Format(
-    #     PlayerDescriptionMixin.Format,
-    #     ControlBehaviorMixin.Format,
-    #     CircuitConnectableMixin.Format,
-    #     DirectionalMixin.Format,
-    #     Entity.Format,
-    # ):
-    #     class ControlBehavior(DraftsmanBaseModel):
-    #         class DeciderConditions(DraftsmanBaseModel):
-    #             # class Output(DraftsmanBaseModel):
-    #             #     signal: SignalID
-    #             #     copy_count_from_input: bool = Field(
-    #             #         True,
-    #             #         description="""
-    #             #         Whether or not to copy the value of the selected output
-    #             #         signal from the input circuit network, or to output the
-    #             #         selected 'output_signal' with a value of 1.
-    #             #         """,
-    #             #     )
-    #             #     networks: Optional[NetworkSpecification] = Field(
-    #             #         NetworkSpecification(red=True, green=True),
-    #             #         description="""
-    #             #         What wires to pull values from if 'copy_count_from_input'
-    #             #         is true.""",
-    #             #     )
-
-    #             conditions: list = Field(
-    #                 [],
-    #                 description="""
-    #                 A list of Condition objects specifying when (and what) this
-    #                 decider combinator should output.""",
-    #             )
-    #             outputs: list = Field(
-    #                 [],
-    #                 description="""
-    #                 A list of Output objects specifying what signals should be
-    #                 passed to the output wire when the conditions evaluate to
-    #                 true.
-    #                 """,
-    #             )
-
-    #             # @model_validator(mode="after")
-    #             # def ensure_proper_signal_configuration(self, info: ValidationInfo):
-    #             #     """
-    #             #     The first signal and output signals can be pure virtual
-    #             #     signals, but only in a certain configuration as determined
-    #             #     by `_signal_blacklist`. If the input signal is not a pure
-    #             #     virtual signal, then the output signal cannot be
-    #             #     `"signal-anything"` or `"signal-each"`.
-    #             #     """
-    #             #     if not info.context or self.output_signal is None:
-    #             #         return self
-    #             #     if info.context["mode"] <= ValidationMode.MINIMUM:
-    #             #         return self
-
-    #             #     warning_list: list = info.context["warning_list"]
-
-    #             #     if self.first_signal is None:
-    #             #         first_signal_name = None
-    #             #     else:
-    #             #         first_signal_name = self.first_signal.name
-
-    #             #     current_blacklist = _signal_blacklist.get(
-    #             #         first_signal_name, {"signal-anything", "signal-each"}
-    #             #     )
-    #             #     if self.output_signal.name in current_blacklist:
-    #             #         warning_list.append(
-    #             #             PureVirtualDisallowedWarning(
-    #             #                 "'{}' cannot be an output_signal when '{}' is the first operand; 'output_signal' will be removed when imported".format(
-    #             #                     self.output_signal.name, first_signal_name
-    #             #                 ),
-    #             #             )
-    #             #         )
-
-    #             #     return self
-
-    #         decider_conditions: Optional[DeciderConditions] = DeciderConditions()
-
-    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
-
-    #     model_config = ConfigDict(title="DeciderCombinator")
-
-    # def __init__(
-    #     self,
-    #     name: Optional[str] = get_first(decider_combinators),
-    #     position: Union[Vector, PrimitiveVector, None] = None,
-    #     tile_position: Union[Vector, PrimitiveVector, None] = (0, 0),
-    #     direction: Optional[Direction] = Direction.NORTH,
-    #     player_description: Optional[str] = None,
-    #     control_behavior: Optional[Format.ControlBehavior] = None,
-    #     tags: dict[str, Any] = {},
-    #     validate_assignment: Union[
-    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-    #     ] = ValidationMode.STRICT,
-    #     **kwargs
-    # ):
-    #     """
-    #     TODO
-    #     """
-
-    #     self.control_behavior: __class__.Format.ControlBehavior
-
-    #     super().__init__(
-    #         name,
-    #         decider_combinators,
-    #         position=position,
-    #         tile_position=tile_position,
-    #         direction=direction,
-    #         player_description=player_description,
-    #         control_behavior={} if control_behavior is None else control_behavior,
-    #         tags=tags,
-    #         **kwargs
-    #     )
-
-    #     self.validate_assignment = validate_assignment
 
     # =========================================================================
 
@@ -547,24 +281,6 @@ class DeciderCombinator(
         validator=instance_of(list[Condition]),
     )
 
-    # @property
-    # def conditions(self) -> list[Condition]:
-    #     return self.control_behavior.decider_conditions.conditions
-
-    # @conditions.setter
-    # def conditions(self, value: list[Condition]) -> None:
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior.DeciderConditions,
-    #             self.control_behavior.decider_conditions,
-    #             "conditions",
-    #             value,
-    #         )
-    #         self.control_behavior.decider_conditions.conditions = result
-    #     else:
-    #         self.control_behavior.decider_conditions.conditions = value
-
     # =========================================================================
 
     def _outputs_converter(value):
@@ -580,254 +296,9 @@ class DeciderCombinator(
         converter=_outputs_converter,
         validator=instance_of(list[Output]),
     )
-
-    # @property
-    # def outputs(self) -> list[DeciderOutput]:
-    #     return self.control_behavior.decider_conditions.outputs
-
-    # @outputs.setter
-    # def outputs(self, value: Optional[list[DeciderOutput]]) -> None:
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior.DeciderConditions,
-    #             self.control_behavior.decider_conditions,
-    #             "outputs",
-    #             value,
-    #         )
-    #         self.control_behavior.decider_conditions.outputs = result
-    #     else:
-    #         self.control_behavior.decider_conditions.outputs = value
-
-    # @property
-    # def first_operand(self) -> Union[SignalID, None]:
-    #     """
-    #     The first operand of the ``DeciderCombinator``. Must be a signal or ``None``;
-    #     cannot be a constant. Has a number of restrictions on which of the
-    #     "special" signals can be in this position in relation to
-    #     :py:attr:`.output_signal`:
-
-    #     .. list-table::
-    #         :header-rows: 1
-
-    #         * - ``first_operand`` value
-    #           - Valid ``output_signal`` value(s)
-    #         * - All Normal Signals
-    #           - | All Normal Signals,
-    #             | ``"signal-everything"``
-    #         * - ``"signal-everything"``
-    #           - | All Normal Signals,
-    #             | ``"signal-everything"``
-    #         * - ``"signal-anything"``
-    #           - | All Normal Signals,
-    #             | ``"signal-everything"``,
-    #             | ``"signal-anything"``
-    #         * - ``"signal-each"``
-    #           - | All Normal Signals,
-    #             | ``"signal-each"``
-
-    #     If ``first_operand`` is set to something that makes ``output_signal``
-    #     fall outside of these accepted values, then ``output_signal`` is reset
-    #     to ``None``.
-
-    #     :getter: Gets the first operand of the operation, or ``None`` if not set.
-    #     :setter: Sets the first operand of the operation. Removes the key if set
-    #         to ``None``.
-
-    #     :exception TypeError: If set to anything other than a ``SIGNAL_ID`` or
-    #         ``None``.
-    #     """
-    #     return self.control_behavior.decider_conditions.first_signal
-
-    # @first_operand.setter
-    # def first_operand(self, value: Union[str, SignalID, None]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior.DeciderConditions,
-    #             self.control_behavior.decider_conditions,
-    #             "first_signal",
-    #             value,
-    #         )
-    #         self.control_behavior.decider_conditions.first_signal = result
-    #     else:
-    #         self.control_behavior.decider_conditions.first_signal = value
-
-    # =========================================================================
-
-    # @property
-    # def operation(self) -> Literal[">", "<", "=", "≥", "≤", "≠", None]:
-    #     """
-    #     The operation of the ``DeciderCombinator`` Can be specified as the
-    #     single unicode character which is used by Factorio, or you can use the
-    #     Python formatted 2-character equivalents::
-
-    #         # One of:
-    #         [">", "<", "=",  "≥",  "≤",  "≠"]
-    #         # Or, alternatively:
-    #         [">", "<", "==", ">=", "<=", "!="]
-
-    #     or ``None``. If specified in the second format, they are converted to
-    #     and stored as the first format.
-
-    #     :getter: Gets the current operation, or ``None`` if not set.
-    #     :setter: Sets the current operation. Removes the key if set to ``None``.
-
-    #     :exception TypeError: If set to anything other than one of the values
-    #         specified above.
-    #     """
-    #     return self.control_behavior.decider_conditions.comparator
-
-    # @operation.setter
-    # def operation(
-    #     self, value: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!=", None]
-    # ):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior.DeciderConditions,
-    #             self.control_behavior.decider_conditions,
-    #             "comparator",
-    #             value,
-    #         )
-    #         self.control_behavior.decider_conditions.comparator = result
-    #     else:
-    #         self.control_behavior.decider_conditions.comparator = value
-
-    # =========================================================================
-
-    # @property
-    # def second_operand(self) -> Union[SignalID, int32, None]:
-    #     """
-    #     The second operand of the ``DeciderCombinator``. Cannot be one of the
-    #     :py:data:`.pure_virtual` signals, which is forbidden for this operand in
-    #     combinators of this type.
-
-    #     :getter: Gets the second operand of the operation, or ``None`` if not
-    #         set.
-    #     :setter: Sets the second operand of the operation. Removes the key if
-    #         set to ``None``.
-
-    #     :exception TypeError: If set to anything other than a ``SIGNAL_ID``, an
-    #         ``int``, or ``None``.
-    #     :exception DraftsmanError: If set to a pure virtual signal, which is
-    #         forbidden.
-    #     """
-    #     decider_conditions = self.control_behavior.decider_conditions
-    #     if not decider_conditions:
-    #         return None
-
-    #     if decider_conditions.second_signal is not None:
-    #         return decider_conditions.second_signal
-    #     elif decider_conditions.constant is not None:
-    #         return decider_conditions.constant
-    #     else:
-    #         return None
-
-    # @second_operand.setter
-    # def second_operand(
-    #     self, value: Union[str, SignalID, int32, None]
-    # ):  # TODO: SignalName(?)
-    #     # if self.validate_assignment:
-    #     #     value = attempt_and_reissue(
-    #     #         self,
-    #     #         type(self).Format.ControlBehavior.DeciderConditions,
-    #     #         self.control_behavior.decider_conditions,
-    #     #         "second_operand",
-    #     #         value
-    #     #     )
-    #     #     self.control_behavior.decider_conditions.second_operand = result
-    #     # else:
-    #     #     self.control_behavior.decider_conditions.second_operand = value
-
-    #     if value is None:  # Default
-    #         self.control_behavior.decider_conditions.second_signal = None
-    #         self.control_behavior.decider_conditions.constant = None
-    #     elif isinstance(value, (int, float)):  # Constant
-    #         if self.validate_assignment:
-    #             value = attempt_and_reissue(
-    #                 self,
-    #                 type(self).Format.ControlBehavior.DeciderConditions,
-    #                 self.control_behavior.decider_conditions,
-    #                 "constant",
-    #                 value,
-    #             )
-    #         self.control_behavior.decider_conditions.constant = value
-    #         self.control_behavior.decider_conditions.second_signal = None
-    #     else:  # Signal or other
-    #         if self.validate_assignment:
-    #             value = attempt_and_reissue(
-    #                 self,
-    #                 type(self).Format.ControlBehavior.DeciderConditions,
-    #                 self.control_behavior.decider_conditions,
-    #                 "second_signal",
-    #                 value,
-    #             )
-    #         self.control_behavior.decider_conditions.second_signal = value
-    #         self.control_behavior.decider_conditions.constant = None
-
-    # =========================================================================
-
-    # @property
-    # def output_signal(self) -> Optional[SignalID]:
-    #     """
-    #     The output signal of the ``ArithmeticCombinator``.
-
-    #     :getter: Gets the output signal, or ``None`` if not set.
-    #     :setter: Sets the output signal. Removes the key if set to ``None``.
-
-    #     :exception TypeError: If set to anything other than a ``SIGNAL_ID`` or
-    #         ``None``.
-    #     :exception DraftsmanError: If set to a value which conflicts with
-    #         :py:attr:`.first_operand`; see that attribute for more information.
-    #     """
-    #     return self.control_behavior.decider_conditions.output_signal
-
-    # @output_signal.setter
-    # def output_signal(self, value: Union[str, SignalID]):  # TODO: SignalName?
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior.DeciderConditions,
-    #             self.control_behavior.decider_conditions,
-    #             "output_signal",
-    #             value,
-    #         )
-    #         self.control_behavior.decider_conditions.output_signal = result
-    #     else:
-    #         self.control_behavior.decider_conditions.output_signal = value
-
-    # =========================================================================
-
-    # @property
-    # def copy_count_from_input(self) -> Optional[bool]:
-    #     """
-    #     Whether or not the input value of a signal is transposed to the output
-    #     signal. If this is false, the output signal is output with a value of 1
-    #     if the condition is met. A default of ``None`` means ``True``.
-
-    #     :getter: Gets whether or not to copy the value, or ``None`` is not set.
-    #     :setter: Sets whether or not to copy the value. Removes the key if set
-    #         to ``None``.
-
-    #     :exception TypeError: If set to anything other than a ``bool`` or
-    #         ``None``.
-    #     """
-    #     return self.control_behavior.decider_conditions.copy_count_from_input
-
-    # @copy_count_from_input.setter
-    # def copy_count_from_input(self, value: Optional[bool]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior.DeciderConditions,
-    #             self.control_behavior.decider_conditions,
-    #             "copy_count_from_input",
-    #             value,
-    #         )
-    #         self.control_behavior.decider_conditions.copy_count_from_input = result
-    #     else:
-    #         self.control_behavior.decider_conditions.copy_count_from_input = value
+    """
+    TODO
+    """
 
     # =========================================================================
 
@@ -895,27 +366,24 @@ class DeciderCombinator(
     __hash__ = Entity.__hash__
 
 
-# TODO: write something like this
-# draftsman_converters.get_version((1, 0)).add_schema(
-#     {
-#         "$id": "factorio:entity:decider_combinator"
-#     },
-#     DeciderCombinator,
-#     lambda fields: {
-#         # Problem: cannot specify subkeys on the right side
-#         # Ideally we would write:
-#         ("control_behavior", "decider_conditions", "first_signal"): (fields.conditions.name, 0, "first_signal"),
-#         ("control_behavior", "decider_conditions", "comparator"): (fields.conditions.name, 0, "comparator"),
-#         ("control_behavior", "decider_conditions", "second_signal"): (fields.conditions.name, 0, "second_signal"),
-#         ("control_behavior", "decider_conditions", "output_signal"): (fields.outputs.name, 0, "signal"),
-#     }
-# )
-# Or, we write a pre hook that converts the old format into the new format, but that doesn't work both ways
+DeciderCombinator.Condition.add_schema(
+    {
+        "$id": "urn:factorio:entity:decider-combinator:condition",
+        "type": "object",
+        "properties": {
+            "first_signal": {"$ref": "urn:factorio:signal-id"},
+            "first_signal_networks": {"$ref": "urn:factorio:network-specification"},
+            "comparator": {"$ref": "urn:factorio:comparator"},
+            "constant": {"oneOf": [{"$ref": "urn:int32"}, {"type": "null"}]},
+            "second_signal": {"$ref": "urn:factorio:signal-id"},
+            "second_signal_networks": {"$ref": "urn:factorio:network-specification"},
+            "compare_type": {"enum": ["or", "and"], "default": "or"},
+        },
+    }
+)
+
 
 draftsman_converters.add_hook_fns(
-    # {
-    #     "$id": "factorio:entity:decider_combinator:condition"
-    # },
     DeciderCombinator.Condition,
     lambda fields: {
         "first_signal": fields.first_signal.name,
@@ -928,11 +396,20 @@ draftsman_converters.add_hook_fns(
     },
 )
 
+DeciderCombinator.Output.add_schema(
+    {
+        "$id": "urn:factorio:entity:decider-combinator:output",
+        "type": "object",
+        "properties": {
+            "signal": {"$ref": "urn:factorio:signal-id"},
+            "copy_count_from_input": {"type": "boolean", "defaut": "true"},
+            "networks": {"$ref": "urn:factorio:network-specification"},
+            "constant": {"$ref": "urn:int32", "default": 1},
+        },
+    }
+)
 
 draftsman_converters.add_hook_fns(
-    # {
-    #     "$id": "factorio:entity:decider_combinator:output"
-    # },
     DeciderCombinator.Output,
     lambda fields: {
         "signal": fields.signal.name,
@@ -942,11 +419,80 @@ draftsman_converters.add_hook_fns(
     },
 )
 
+DeciderCombinator.add_schema(
+    {
+        "$id": "urn:factorio:entity:decider-combinator",
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "decider_conditions": {
+                        "type": "object",
+                        "properties": {
+                            "first_signal": {"$ref": "urn:factorio:signal-id"},
+                            "comparator": {"$ref": "urn:factorio:comparator"},
+                            "constant": {"$ref": "urn:int32", "default": 0},
+                            "second_signal": {"$ref": "urn:factorio:signal-id"},
+                            "output_signal": {"$ref": "urn:factorio:signal-id"},
+                            "copy_count_from_input": {
+                                "type": "boolean",
+                                "default": "true",
+                            },
+                        },
+                    }
+                },
+            }
+        },
+    },
+    version=(1, 0),
+)
+
+# TODO: write something like this
+# draftsman_converters.get_version((1, 0)).add_schema(
+#     DeciderCombinator,
+#     lambda fields: {
+#         # Problem: cannot specify subkeys on the right side
+#         # Ideally we would write:
+#         ("control_behavior", "decider_conditions", "first_signal"): (fields.conditions.name, 0, "first_signal"),
+#         ("control_behavior", "decider_conditions", "comparator"): (fields.conditions.name, 0, "comparator"),
+#         ("control_behavior", "decider_conditions", "second_signal"): (fields.conditions.name, 0, "second_signal"),
+#         ("control_behavior", "decider_conditions", "output_signal"): (fields.outputs.name, 0, "signal"),
+#     }
+# )
+# Or, we write a pre hook that converts the old format into the new format, but that doesn't work both ways
+
+DeciderCombinator.add_schema(
+    {
+        "$id": "urn:factorio:entity:decider-combinator",
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "decider_conditions": {
+                        "type": "object",
+                        "properties": {
+                            "conditions": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "urn:factorio:entity:decider-combinator:condition"
+                                },
+                            },
+                            "outputs": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "urn:factorio:entity:decider-combinator:output"
+                                },
+                            },
+                        },
+                    }
+                },
+            }
+        },
+    },
+    version=(2, 0),
+)
 
 draftsman_converters.add_hook_fns(
-    # {
-    #     "$id": "factorio:entity:decider_combinator"
-    # },
     DeciderCombinator,
     lambda fields: {
         (

@@ -522,6 +522,7 @@ def make_unstructure_function_from_schema(
     schema: dict,
     exclude_none: bool,
     exclude_defaults: bool,
+    version: tuple,
 ):
     """
     Generates an unstructure function based on an input-output mapping dictionary.
@@ -713,7 +714,9 @@ def make_unstructure_function_from_schema(
     script = "\n".join(total_lines)
     # print(cls.__name__)
     # print(script)
-    fname = generate_unique_filename(cls, "unstructure", lines=total_lines)
+    fname = generate_unique_filename(
+        cls, "unstructure {}".format(version), lines=total_lines
+    )
 
     eval(compile(script, fname, "exec"), globs)
 

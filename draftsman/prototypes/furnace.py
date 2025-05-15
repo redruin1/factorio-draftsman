@@ -5,21 +5,22 @@ from draftsman.classes.mixins import (
     InputIngredientsMixin,
     ModulesMixin,
     ItemRequestMixin,
+    CraftingMachineMixin,
     EnergySourceMixin,
+    LogisticConditionMixin,
+    CircuitConditionMixin,
+    CircuitEnableMixin,
+    CircuitConnectableMixin,
+    ControlBehaviorMixin,
     DirectionalMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import uint32
 from draftsman.utils import fix_incorrect_pre_init
-from draftsman.warning import ItemCapacityWarning, ItemLimitationWarning
 
 from draftsman.data.entities import furnaces
-from draftsman.data import entities, items, modules, recipes
+from draftsman.data import entities, recipes
 
 import attrs
-from pydantic import ConfigDict, ValidationInfo, field_validator
-from typing import Any, Literal, Optional, Union
+from typing import Optional
 
 
 # _valid_input_ingredients: dict[str, set[str]] = {}
@@ -31,7 +32,13 @@ class Furnace(
     InputIngredientsMixin,
     ModulesMixin,
     ItemRequestMixin,
+    CraftingMachineMixin,
     EnergySourceMixin,
+    LogisticConditionMixin,
+    CircuitConditionMixin,
+    CircuitEnableMixin,
+    CircuitConnectableMixin,
+    ControlBehaviorMixin,
     DirectionalMixin,
     Entity,
 ):
@@ -85,23 +92,15 @@ class Furnace(
 
     # =========================================================================
 
-    # @reissue_warnings
-    # def set_item_request(self, item: str, count: int) -> None:
-
-    #     # TODO: handle fuel input items
-    #     # TODO: limit item fuel requests to obey "fuel_inventory_size"
-
-    #     # self._handle_module_slots(item, count)
-
-    #     super().set_item_request(item, count)
-
-    #     if item not in modules.raw and item not in self.allowed_input_ingredients:
-    #         warnings.warn(
-    #             "Cannot request items that this Furnace doesn't use ({})".format(item),
-    #             ItemLimitationWarning,
-    #             stacklevel=2,
-    #         )
-
-    # =========================================================================
-
     __hash__ = Entity.__hash__
+
+
+Furnace.add_schema(
+    {
+        "$id": "urn:factorio:entity:furnace",
+    },
+    version=(1, 0),
+    mro=(ItemRequestMixin, DirectionalMixin, Entity),
+)
+
+Furnace.add_schema({"$id": "urn:factorio:entity:furnace"}, version=(2, 0))

@@ -1,11 +1,34 @@
 # test_pump.py
 
+from draftsman.constants import Direction
 from draftsman.entity import Pump, pumps, Container
 from draftsman.error import InvalidEntityError, DataFormatError
+from draftsman.signatures import AttrsSimpleCondition
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_pump():
+    if len(pumps) == 0:
+        return None
+    return Pump(
+        "pump",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        circuit_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        connect_to_logistic_network=True,
+        logistic_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        tags={"blah": "blah"},
+    )
 
 
 class TestPump:

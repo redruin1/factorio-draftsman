@@ -1008,7 +1008,13 @@ class TestBlueprint:
             def validate(self, mode):
                 return ValidationResult([], [])
 
-            def to_dict(self, version=None, exclude_none=True, exclude_defaults=True, entity_number=None):  # pragma: no coverage
+            def to_dict(
+                self,
+                version=None,
+                exclude_none=True,
+                exclude_defaults=True,
+                entity_number=None,
+            ):  # pragma: no coverage
                 return "incorrect"
 
         test = TestClass()

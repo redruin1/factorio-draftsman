@@ -1,5 +1,6 @@
 # test_half_diagonal_rail.py
 
+from draftsman.constants import Direction
 from draftsman.prototypes.half_diagonal_rail import (
     HalfDiagonalRail,
     half_diagonal_rails,
@@ -7,6 +8,20 @@ from draftsman.prototypes.half_diagonal_rail import (
 from draftsman.warning import UnknownEntityWarning
 
 import pytest
+
+
+@pytest.fixture
+def valid_half_diagonal_rail():
+    if len(half_diagonal_rails) == 0:
+        return None
+    return HalfDiagonalRail(
+        "half-diagonal-rail",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        tags={"blah": "blah"},
+    )
 
 
 def test_constructor():

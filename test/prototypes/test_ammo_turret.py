@@ -15,42 +15,47 @@ from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 from collections.abc import Hashable
 import pytest
 
-valid_ammo_turret = AmmoTurret(
-    "gun-turret",
-    id="test",
-    quality="uncommon",
-    tile_position=(1, 1),
-    direction=Direction.EAST,
-    circuit_enabled=True,
-    circuit_condition=AttrsSimpleCondition(
-        first_signal="signal-A", comparator="<", second_signal="signal-B"
-    ),
-    connect_to_logistic_network=True,
-    logistic_condition=AttrsSimpleCondition(
-        first_signal="signal-A", comparator="<", second_signal="signal-B"
-    ),
-    priority_list=["medium-biter"],
-    ignore_unprioritized=True,
-    set_priority_list=True,
-    set_ignore_unprioritized=True,
-    ignore_unlisted_targets_condition=AttrsSimpleCondition(
-        first_signal="signal-A", comparator="<", second_signal="signal-B"
-    ),
-    read_ammo=False,
-    item_requests=[
-        AttrsItemRequest(
-            id="firearm-magazine",
-            items=AttrsItemSpecification(
-                in_inventory=[
-                    AttrsInventoryLocation(
-                        inventory=Inventory.turret_ammo, stack=0, count=200
-                    )
-                ]
-            ),
-        )
-    ],
-    tags={"blah": "blah"}
-)
+
+@pytest.fixture
+def valid_ammo_turret():
+    if len(ammo_turrets) == 0:
+        return None
+    return AmmoTurret(
+        "gun-turret",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        circuit_enabled=True,
+        circuit_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        connect_to_logistic_network=True,
+        logistic_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        priority_list=["medium-biter"],
+        ignore_unprioritized=True,
+        set_priority_list=True,
+        set_ignore_unprioritized=True,
+        ignore_unlisted_targets_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        read_ammo=False,
+        item_requests=[
+            AttrsItemRequest(
+                id="firearm-magazine",
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.turret_ammo, stack=0, count=200
+                        )
+                    ]
+                ),
+            )
+        ],
+        tags={"blah": "blah"},
+    )
 
 
 class TestAmmoTurret:
@@ -79,8 +84,12 @@ class TestAmmoTurret:
                 },
                 "direction": {"enum": list(range(8)), "default": 0},
                 "items": {
-                    "type": "array",
-                    "items": {"$ref": "urn:factorio:item-request"},
+                    "type": "object",
+                    "description": "A dictionary of item requests, where each key is "
+                    "the name of an item and the value is the count of that item to "
+                    "request. Items always go to the default inventory of that "
+                    "object (if possible) in the order in which Factorio traverses "
+                    "them.",
                 },
                 "tags": {"type": "object"},
             },
@@ -101,6 +110,10 @@ class TestAmmoTurret:
                 "items": {
                     "type": "array",
                     "items": {"$ref": "urn:factorio:item-request"},
+                    "description": "A list of item requests objects, which contain "
+                    "the item name, it's quality, the amount to request, as well as "
+                    "exactly what inventories to request to and where inside those "
+                    "inventories.",
                 },
                 "priority_list": {
                     "type": "array",

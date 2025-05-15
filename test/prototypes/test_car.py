@@ -5,32 +5,40 @@ from draftsman.prototypes.car import (
     Car,
     cars,
 )
-from draftsman.signatures import AttrsItemRequest, AttrsItemSpecification, AttrsInventoryLocation, EquipmentComponent
+from draftsman.signatures import (
+    AttrsItemRequest,
+    AttrsItemSpecification,
+    AttrsInventoryLocation,
+    EquipmentComponent,
+)
 from draftsman.warning import UnknownEntityWarning
 
 import pytest
 
-valid_car = Car(
-    "tank",
-    id="test",
-    quality="uncommon",
-    tile_position=(1, 1),
-    orientation=Orientation.EAST,
-    item_requests=[
-        AttrsItemRequest(
-            id="energy-shield-equipment",
-            items=AttrsItemSpecification(
-                grid_count=1
-            ),
-        )
-    ],
-    equipment=[
-        EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
-    ],
-    enable_logistics_while_moving=False,
-    driver_is_main_gunner=True,
-    selected_gun_index=2,
-)
+
+@pytest.fixture
+def valid_car():
+    if len(cars) == 0:
+        return None
+    return Car(
+        "tank",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        orientation=Orientation.EAST,
+        item_requests=[
+            AttrsItemRequest(
+                id="energy-shield-equipment",
+                items=AttrsItemSpecification(grid_count=1),
+            )
+        ],
+        equipment=[
+            EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+        ],
+        enable_logistics_while_moving=False,
+        driver_is_main_gunner=True,
+        selected_gun_index=2,
+    )
 
 
 def test_constructor():
@@ -57,20 +65,25 @@ def test_json_schema():
             "items": {
                 "type": "array",
                 "items": {"$ref": "urn:factorio:item-request"},
+                "description": "A list of item requests objects, which contain "
+                "the item name, it's quality, the amount to request, as well as "
+                "exactly what inventories to request to and where inside those "
+                "inventories.",
             },
             "enable_logistics_while_moving": {"type": "boolean", "default": "true"},
             "grid": {
                 "type": "array",
                 "items": {"$ref": "urn:factorio:equipment-component"},
             },
-            "trunk_inventory": {"type": "null"},
-            "ammo_inventory": {"type": "null"},
+            "trunk_inventory": {"$ref": "urn:factorio:filtered-inventory"},
+            "ammo_inventory": {"$ref": "urn:factorio:filtered-inventory"},
             "driver_is_main_gunner": {"type": "boolean", "default": "false"},
             "selected_gun_index": {"$ref": "urn:uint32", "default": 1},
             "tags": {"type": "object"},
         },
         "required": ["entity_number", "name", "position"],
     }
+
 
 def test_flags():
     for car_name in cars:

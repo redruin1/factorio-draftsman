@@ -1,12 +1,55 @@
 # test_locomotive.py
 
+from draftsman.constants import Orientation, Inventory
 from draftsman.entity import Locomotive, locomotives, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import AttrsColor
+from draftsman.signatures import (
+    AttrsColor,
+    AttrsItemRequest,
+    AttrsItemSpecification,
+    AttrsInventoryLocation,
+    EquipmentComponent,
+)
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_locomotive():
+    if len(locomotives) == 0:
+        return None
+    return Locomotive(
+        "cargo-wagon",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        orientation=Orientation.EAST,
+        color=(0.5, 0.5, 0.5),
+        item_requests=[
+            AttrsItemRequest(
+                id="coal",
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.fuel, stack=0, count=50
+                        )
+                    ]
+                ),
+            ),
+            AttrsItemRequest(
+                id="energy-shield-equipment",
+                items=AttrsItemSpecification(grid_count=1),
+            ),
+        ],
+        equipment=[
+            EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+        ],
+        enable_logistics_while_moving=False,
+        tags={"blah": "blah"},
+        validate_assignment="none",
+    )
 
 
 class TestLocomotive:

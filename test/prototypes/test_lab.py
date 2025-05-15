@@ -1,7 +1,13 @@
 # test_lab.py
 
+from draftsman.constants import Inventory
 from draftsman.entity import Lab, labs, Container
 from draftsman.error import DataFormatError
+from draftsman.signatures import (
+    AttrsItemRequest,
+    AttrsItemSpecification,
+    AttrsInventoryLocation,
+)
 from draftsman.warning import (
     ModuleCapacityWarning,
     ItemLimitationWarning,
@@ -12,6 +18,32 @@ from draftsman.warning import (
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_lab():
+    if len(labs) == 0:
+        return None
+    return Lab(
+        "lab",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        item_requests=[
+            AttrsItemRequest(
+                id="productivity-module-3",
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.lab_modules,
+                            stack=0,
+                        )
+                    ]
+                ),
+            )
+        ],
+        tags={"blah": "blah"},
+    )
 
 
 class TestLab:

@@ -7,7 +7,7 @@ import draftsman.data.entities as data
 from draftsman.entity import *
 from draftsman.error import *
 from draftsman.warning import *
-from draftsman.utils import AABB
+from draftsman.utils import AABB, version_tuple_to_string
 from draftsman import __factorio_version_info__
 from draftsman.serialization import draftsman_converters
 
@@ -30,29 +30,176 @@ from test.prototypes.test_burner_generator import valid_burner_generator
 from test.prototypes.test_car import valid_car
 from test.prototypes.test_cargo_bay import valid_cargo_bay
 from test.prototypes.test_cargo_landing_pad import valid_cargo_landing_pad
-
-
-# TODO: make a fixture function which automatically generates one of each available
-# valid entity
-@pytest.mark.parametrize(
-    "entity",
-    [
-        valid_accumulator,
-        valid_agricultural_tower,
-        valid_ammo_turret,
-        valid_arithmetic_combinator,
-        valid_artillery_turret,
-        valid_artillery_wagon,
-        valid_assembling_machine,
-        valid_asteroid_collector,
-        valid_beacon,
-        valid_boiler,
-        valid_burner_generator,
-        valid_car,
-        valid_cargo_bay,
-        valid_cargo_landing_pad,
-    ],
+from test.prototypes.test_cargo_wagon import valid_cargo_wagon
+from test.prototypes.test_constant_combinator import valid_constant_combinator
+from test.prototypes.test_container import valid_container
+from test.prototypes.test_curved_rail_a import valid_curved_rail_a
+from test.prototypes.test_curved_rail_b import valid_curved_rail_b
+from test.prototypes.test_decider_combinator import valid_decider_combinator
+from test.prototypes.test_display_panel import valid_display_panel
+from test.prototypes.test_electric_energy_interface import (
+    valid_electric_energy_interface,
 )
+from test.prototypes.test_electric_pole import valid_electric_pole
+from test.prototypes.test_electric_turret import valid_electric_turret
+from test.prototypes.test_elevated_curved_rail_a import valid_elevated_curved_rail_a
+from test.prototypes.test_elevated_curved_rail_b import valid_elevated_curved_rail_b
+from test.prototypes.test_elevated_half_diagonal_rail import (
+    valid_elevated_half_diagonal_rail,
+)
+from test.prototypes.test_elevated_straight_rail import valid_elevated_straight_rail
+from test.prototypes.test_fluid_turret import valid_fluid_turret
+from test.prototypes.test_fluid_wagon import valid_fluid_wagon
+from test.prototypes.test_furnace import valid_furnace
+from test.prototypes.test_fusion_generator import valid_fusion_generator
+from test.prototypes.test_fusion_reactor import valid_fusion_reactor
+from test.prototypes.test_gate import valid_gate
+from test.prototypes.test_generator import valid_generator
+from test.prototypes.test_half_diagonal_rail import valid_half_diagonal_rail
+
+# schema tests stop here
+from test.prototypes.test_heat_interface import valid_heat_interface
+from test.prototypes.test_heat_pipe import valid_heat_pipe
+from test.prototypes.test_infinity_container import valid_infinity_container
+from test.prototypes.test_infinity_pipe import valid_infinity_pipe
+from test.prototypes.test_inserter import valid_inserter
+from test.prototypes.test_lab import valid_lab
+from test.prototypes.test_lamp import valid_lamp
+from test.prototypes.test_land_mine import valid_land_mine
+from test.prototypes.test_legacy_curved_rail import valid_legacy_curved_rail
+from test.prototypes.test_legacy_straight_rail import valid_legacy_straight_rail
+from test.prototypes.test_lightning_attractor import valid_lightning_attractor
+from test.prototypes.test_linked_belt import valid_linked_belt
+from test.prototypes.test_linked_container import valid_linked_container
+from test.prototypes.test_loader import valid_loader
+from test.prototypes.test_locomotive import valid_locomotive
+from test.prototypes.test_logistic_active_container import valid_active_container
+from test.prototypes.test_logistic_buffer_container import valid_buffer_container
+from test.prototypes.test_logistic_passive_container import valid_passive_container
+from test.prototypes.test_logistic_request_container import valid_request_container
+from test.prototypes.test_logistic_storage_container import valid_storage_container
+from test.prototypes.test_mining_drill import valid_mining_drill
+from test.prototypes.test_offshore_pump import valid_offshore_pump
+from test.prototypes.test_pipe import valid_pipe
+from test.prototypes.test_player_port import valid_player_port
+from test.prototypes.test_power_switch import valid_power_switch
+from test.prototypes.test_programmable_speaker import valid_programmable_speaker
+from test.prototypes.test_pump import valid_pump
+from test.prototypes.test_radar import valid_radar
+from test.prototypes.test_rail_chain_signal import valid_rail_chain_signal
+from test.prototypes.test_rail_ramp import valid_rail_ramp
+from test.prototypes.test_rail_signal import valid_rail_signal
+from test.prototypes.test_rail_support import valid_rail_support
+from test.prototypes.test_reactor import valid_reactor
+from test.prototypes.test_roboport import valid_roboport
+from test.prototypes.test_rocket_silo import valid_rocket_silo
+from test.prototypes.test_selector_combinator import valid_selector_combinator
+from test.prototypes.test_simple_entity_with_force import valid_simple_entity_with_force
+from test.prototypes.test_simple_entity_with_owner import valid_simple_entity_with_owner
+from test.prototypes.test_solar_panel import valid_solar_panel
+from test.prototypes.test_space_platform_hub import valid_space_platform_hub
+from test.prototypes.test_spider_vehicle import valid_spider_vehicle
+from test.prototypes.test_splitter import valid_splitter
+from test.prototypes.test_storage_tank import valid_storage_tank
+from test.prototypes.test_straight_rail import valid_straight_rail
+from test.prototypes.test_thruster import valid_thruster
+from test.prototypes.test_train_stop import valid_train_stop
+from test.prototypes.test_transport_belt import valid_transport_belt
+from test.prototypes.test_underground_belt import valid_underground_belt
+from test.prototypes.test_underground_pipe import valid_underground_pipe
+from test.prototypes.test_wall import valid_wall
+
+entity_fixtures = [
+    "valid_accumulator",
+    "valid_agricultural_tower",
+    "valid_ammo_turret",
+    "valid_arithmetic_combinator",
+    "valid_artillery_turret",
+    "valid_artillery_wagon",
+    "valid_assembling_machine",
+    "valid_asteroid_collector",
+    "valid_beacon",
+    "valid_boiler",
+    "valid_burner_generator",
+    "valid_car",
+    "valid_cargo_bay",
+    "valid_cargo_landing_pad",
+    "valid_cargo_wagon",
+    "valid_constant_combinator",
+    "valid_container",
+    "valid_curved_rail_a",
+    "valid_curved_rail_b",
+    "valid_decider_combinator",
+    "valid_display_panel",
+    "valid_electric_energy_interface",
+    "valid_electric_pole",
+    "valid_electric_turret",
+    "valid_elevated_curved_rail_a",
+    "valid_elevated_curved_rail_b",
+    "valid_elevated_half_diagonal_rail",
+    "valid_elevated_straight_rail",
+    "valid_fluid_turret",
+    "valid_fluid_wagon",
+    "valid_furnace",
+    "valid_fusion_generator",
+    "valid_fusion_reactor",
+    "valid_gate",
+    "valid_generator",
+    "valid_half_diagonal_rail",
+    "valid_heat_interface",
+    "valid_heat_pipe",
+    "valid_infinity_container",
+    "valid_infinity_pipe",
+    "valid_inserter",
+    "valid_lab",
+    "valid_lamp",
+    "valid_land_mine",
+    "valid_legacy_curved_rail",
+    "valid_legacy_straight_rail",
+    "valid_lightning_attractor",
+    "valid_linked_belt",
+    "valid_linked_container",
+    "valid_loader",
+    "valid_locomotive",
+    "valid_active_container",
+    "valid_buffer_container",
+    "valid_passive_container",
+    "valid_request_container",
+    "valid_storage_container",
+    "valid_mining_drill",
+    "valid_offshore_pump",
+    "valid_pipe",
+    "valid_player_port",
+    "valid_power_switch",
+    "valid_programmable_speaker",
+    "valid_pump",
+    "valid_radar",
+    "valid_rail_chain_signal",
+    "valid_rail_ramp",
+    "valid_rail_signal",
+    "valid_rail_support",
+    "valid_reactor",
+    "valid_roboport",
+    "valid_rocket_silo",
+    "valid_selector_combinator",
+    "valid_simple_entity_with_force",
+    "valid_simple_entity_with_owner",
+    "valid_solar_panel",
+    "valid_space_platform_hub",
+    "valid_spider_vehicle",
+    "valid_splitter",
+    "valid_storage_tank",
+    "valid_straight_rail",
+    "valid_thruster",
+    "valid_train_stop",
+    "valid_transport_belt",
+    "valid_underground_belt",
+    "valid_underground_pipe",
+    "valid_wall",
+]
+
+
+@pytest.mark.parametrize("entity", entity_fixtures)
 class TestAllEntities:
     @pytest.mark.parametrize(
         "version,resources",
@@ -68,19 +215,30 @@ class TestAllEntities:
             )
             for ver in [(1, 0), (2, 0)]
         ],
+        ids=[version_tuple_to_string(t) for t in [(1, 0), (2, 0)]],
     )
     def test_output_matches_json_schema(
         self,
         entity: Entity,
         version: tuple[int, ...],
         resources: dict[str, referencing.Resource],
+        request: pytest.FixtureRequest,
     ):
         """
         The result from `to_dict()` should pass validation from the entity's JSON
         schema. If not, there's either an error with `to_dict()`, the JSON schema,
         or both.
         """
+        # Grab the fixture of the entity
+        entity_name = entity
+        entity = request.getfixturevalue(entity_name)
+        if entity is None:
+            pytest.skip(
+                reason="No '{}' to test under current environment".format(entity_name)
+            )
+
         entity_schema = entity.json_schema(version=version)
+        # If this entity was not present for this particular version, skip test
         if entity_schema is None:
             return
 
@@ -98,7 +256,7 @@ class TestAllEntities:
                     exclude_none=exclude_none,
                     exclude_defaults=exclude_defaults,
                     version=version,
-                    entity_number=1
+                    entity_number=1,
                 )
             )
             validator.validate(

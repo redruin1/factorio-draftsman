@@ -1,6 +1,6 @@
 # test_furnace.py
 
-from draftsman.constants import Inventory
+from draftsman.constants import Direction, Inventory
 from draftsman.entity import Furnace, furnaces, Container
 from draftsman.error import DataFormatError
 from draftsman.warning import (
@@ -25,6 +25,35 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_furnace():
+    if len(furnaces) == 0:
+        return None
+    return Furnace(
+        "electric-furnace",
+        id="test",
+        quality="uncommon",
+        direction=Direction.EAST,
+        tile_position=(1, 1),
+        item_requests=[
+            AttrsItemRequest(
+                id=AttrsItemID(name="speed-module-3"),
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.furnace_modules, stack=0, count=1
+                        ),
+                        AttrsInventoryLocation(
+                            inventory=Inventory.furnace_modules, stack=1, count=1
+                        ),
+                    ]
+                ),
+            )
+        ],
+        tags={"blah": "blah"},
+    )
+
+
 class TestFurnace:
     def test_constructor_init(self):
         furnace = Furnace("stone-furnace")
@@ -34,6 +63,80 @@ class TestFurnace:
             Furnace("not a furnace").validate().reissue_all()
 
         # Errors
+
+    def test_json_schema(self):
+        assert Furnace.json_schema(version=(1, 0)) == {
+            "$id": "urn:factorio:entity:furnace",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {"$ref": "urn:factorio:position"},
+                "direction": {"enum": list(range(8)), "default": 0},
+                "items": {
+                    "type": "object",
+                    "description": "A dictionary of item requests, where each key is "
+                    "the name of an item and the value is the count of that item to "
+                    "request. Items always go to the default inventory of that object "
+                    "(if possible) in the order in which Factorio traverses them.",
+                },
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"],
+        }
+        assert Furnace.json_schema(version=(2, 0)) == {
+            "$id": "urn:factorio:entity:furnace",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {"$ref": "urn:factorio:position"},
+                "quality": {"$ref": "urn:factorio:quality-name"},
+                "direction": {"enum": list(range(16)), "default": 0},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:item-request"},
+                    "description": "A list of item requests objects, which contain "
+                    "the item name, it's quality, the amount to request, as well as "
+                    "exactly what inventories to request to and where inside those "
+                    "inventories.",
+                },
+                "control_behavior": {
+                    "type": "object",
+                    "properties": {
+                        "circuit_enabled": {"type": "boolean", "default": "false"},
+                        "circuit_condition": {"$ref": "urn:factorio:simple-condition"},
+                        "connect_to_logistic_network": {
+                            "type": "boolean",
+                            "default": "false",
+                        },
+                        "logistic_condition": {"$ref": "urn:factorio:simple-condition"},
+                        "set_recipe": {"type": "boolean", "default": "false"},
+                        "read_contents": {"type": "boolean", "default": "false"},
+                        "include_in_crafting": {"type": "boolean", "default": "true"},
+                        "read_recipe_finished": {"type": "boolean", "default": "false"},
+                        "recipe_finished_signal": {
+                            "anyOf": [
+                                {"$ref": "urn:factorio:signal-id"},
+                                {"type": "null"},
+                            ]
+                        },
+                        "read_working": {"type": "boolean", "default": "false"},
+                        "working_signal": {
+                            "anyOf": [
+                                {"$ref": "urn:factorio:signal-id"},
+                                {"type": "null"},
+                            ]
+                        },
+                    },
+                    "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
+                },
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"],
+        }
 
     def test_allowed_effects(self):
         furnace = Furnace("stone-furnace")

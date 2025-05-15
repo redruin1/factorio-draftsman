@@ -9,6 +9,19 @@ from draftsman.warning import UnknownEntityWarning
 import pytest
 
 
+@pytest.fixture
+def valid_thruster():
+    if len(thrusters) == 0:
+        return None
+    return Thruster(
+        "thruster",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        tags={"blah": "blah"},
+    )
+
+
 def test_constructor():
     thruster = Thruster("thruster")
 

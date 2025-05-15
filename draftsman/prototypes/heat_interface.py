@@ -99,6 +99,20 @@ class HeatInterface(Entity):
     __hash__ = Entity.__hash__
 
 
+HeatInterface.add_schema(
+    {
+        "$id": "urn:factorio:entity:heat-interface",
+        "properties": {
+            "temperature": {"type": "number"},
+            "mode": {
+                "enum": ["at-least", "at-most", "exactly", "add", "remove"],
+                "default": "at-least",
+            },
+        },
+    }
+)
+
+
 draftsman_converters.add_hook_fns(
     # {"$id": "factorio:heat_interface"},
     HeatInterface,

@@ -269,6 +269,14 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
 
 EquipmentGridMixin.add_schema({}, version=(1, 0))
 
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    EquipmentGridMixin,
+    lambda fields: {
+        None: fields.enable_logistics_while_moving.name,
+        None: fields.equipment.name,
+    },
+)
+
 EquipmentGridMixin.add_schema(
     {
         "properties": {
@@ -282,8 +290,7 @@ EquipmentGridMixin.add_schema(
     version=(2, 0),
 )
 
-draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:equipment_grid_mixin"},
+draftsman_converters.get_version((2, 0)).add_hook_fns(
     EquipmentGridMixin,
     lambda fields: {
         "enable_logistics_while_moving": fields.enable_logistics_while_moving.name,

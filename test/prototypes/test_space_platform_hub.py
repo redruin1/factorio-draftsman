@@ -9,6 +9,26 @@ from draftsman.warning import UnknownEntityWarning
 import pytest
 
 
+@pytest.fixture
+def valid_space_platform_hub():
+    if len(space_platform_hubs):
+        return None
+    return SpacePlatformHub(
+        "space-platform-hub",
+        trash_not_requested=True,
+        request_from_buffers=False,
+        read_contents=False,
+        send_to_platform=False,
+        read_moving_from=True,
+        read_moving_to=True,
+        read_speed=True,
+        speed_signal="signal-A",
+        read_damage_taken=True,
+        damage_taken_signal="signal-B",
+        request_missing_construction_materials=False,
+    )
+
+
 def test_constructor():
     hub = SpacePlatformHub(
         "space-platform-hub",

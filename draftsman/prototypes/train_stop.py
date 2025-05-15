@@ -191,59 +191,27 @@ class TrainStop(
 
     # =========================================================================
 
-    station: Optional[str] = attrs.field(
-        default=None, validator=instance_of(Optional[str])
+    station: str = attrs.field(
+        default="",
+        converter=lambda v: "" if v is None else v,
+        validator=instance_of(str),
     )
     """
     The name of this station.
     """
 
-    # @property
-    # def station(self) -> Optional[str]:
-    #     """
-    #     The name of this station.
-    #     TODO more
-    #     """
-    #     return self._root.station
-
-    # @station.setter
-    # def station(self, value: Optional[str]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self, type(self).Format, self._root, "station", value
-    #         )
-    #         self._root.station = result
-    #     else:
-    #         self._root.station = value
-
     # =========================================================================
 
     manual_trains_limit: Optional[uint32] = attrs.field(
-        default=None, validator=instance_of(Optional[uint32])
+        default=None,
+        validator=instance_of(Optional[uint32]),
+        metadata={"never_null": True},
     )
     """
     A limit to the amount of trains that can use this stop. If set to ``None``, 
     this stop has no limit on the number of trains that can path to it. 
     Overridden by the circuit signal set train limit (if present).
     """
-
-    # @property
-    # def manual_trains_limit(self) -> Optional[uint32]:
-    #     """
-    #     A limit to the amount of trains that can use this stop. Overridden by
-    #     the circuit signal set train limit (if present).
-    #     """
-    #     return self._root.manual_trains_limit
-
-    # @manual_trains_limit.setter
-    # def manual_trains_limit(self, value: Optional[uint32]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self, type(self).Format, self._root, "manual_trains_limit", value
-    #         )
-    #         self._root.manual_trains_limit = result
-    #     else:
-    #         self._root.manual_trains_limit = value
 
     # =========================================================================
 
@@ -253,28 +221,6 @@ class TrainStop(
     the train to determine it's schedule.
     """
 
-    # @property
-    # def send_to_train(self) -> Optional[bool]:
-    #     """
-    #     Whether or not to send the contents of any connected circuit network to
-    #     the train to determine it's schedule.
-    #     """
-    #     return self.control_behavior.send_to_train
-
-    # @send_to_train.setter
-    # def send_to_train(self, value: Optional[bool]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "send_to_train",
-    #             value,
-    #         )
-    #         self.control_behavior.send_to_train = result
-    #     else:
-    #         self.control_behavior.send_to_train = value
-
     # =========================================================================
 
     read_from_train: bool = attrs.field(default=False, validator=instance_of(bool))
@@ -282,28 +228,6 @@ class TrainStop(
     Whether or not to broadcast the train's contents to connected circuit 
     networks when stopped at this train stop.
     """
-
-    # @property
-    # def read_from_train(self) -> Optional[bool]:
-    #     """
-    #     Whether or not to read the train's contents when stopped at this train
-    #     stop.
-    #     """
-    #     return self.control_behavior.read_from_train
-
-    # @read_from_train.setter
-    # def read_from_train(self, value: Optional[bool]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "read_from_train",
-    #             value,
-    #         )
-    #         self.control_behavior.read_from_train = result
-    #     else:
-    #         self.control_behavior.read_from_train = value
 
     # =========================================================================
 
@@ -313,61 +237,18 @@ class TrainStop(
     currently stopped at the station.
     """
 
-    # @property
-    # def read_stopped_train(self) -> Optional[bool]:
-    #     """
-    #     Whether or not to read a unique number associated with the train
-    #     currently stopped at the station.
-    #     """
-    #     return self.control_behavior.read_stopped_train
-
-    # @read_stopped_train.setter
-    # def read_stopped_train(self, value: Optional[bool]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "read_stopped_train",
-    #             value,
-    #         )
-    #         self.control_behavior.read_stopped_train = result
-    #     else:
-    #         self.control_behavior.read_stopped_train = value
-
     # =========================================================================
 
     train_stopped_signal: Optional[AttrsSignalID] = attrs.field(
         factory=lambda: AttrsSignalID(name="signal-T", type="virtual"),
         converter=AttrsSignalID.converter,
         validator=instance_of(Optional[AttrsSignalID]),
+        metadata={"never_null": True},
     )
     """
     What signal to output the unique train ID if a train is currently
     stopped at a station.
     """
-
-    # @property
-    # def train_stopped_signal(self) -> Optional[SignalID]:
-    #     """
-    #     What signal to output the unique train ID if a train is currently
-    #     stopped at a station.
-    #     """
-    #     return self.control_behavior.train_stopped_signal
-
-    # @train_stopped_signal.setter
-    # def train_stopped_signal(self, value: Union[str, SignalID, None]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "train_stopped_signal",
-    #             value,
-    #         )
-    #         self.control_behavior.train_stopped_signal = result
-    #     else:
-    #         self.control_behavior.train_stopped_signal = value
 
     # =========================================================================
 
@@ -377,59 +258,17 @@ class TrainStop(
     can use this stop.
     """
 
-    # @property
-    # def signal_limits_trains(self) -> Optional[bool]:
-    #     """
-    #     Whether or not an external signal should limit the number of trains that
-    #     can use this stop.
-    #     """
-    #     return self.control_behavior.set_trains_limit
-
-    # @signal_limits_trains.setter
-    # def signal_limits_trains(self, value: Optional[bool]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "set_trains_limit",
-    #             value,
-    #         )
-    #         self.control_behavior.set_trains_limit = result
-    #     else:
-    #         self.control_behavior.set_trains_limit = value
-
     # =========================================================================
 
     trains_limit_signal: Optional[AttrsSignalID] = attrs.field(
         factory=lambda: AttrsSignalID(name="signal-L", type="virtual"),
         converter=AttrsSignalID.converter,
         validator=instance_of(Optional[AttrsSignalID]),
+        metadata={"never_null": True},
     )
     """
     What signal to read to limit the number of trains that can use this stop.
     """
-
-    # @property
-    # def trains_limit_signal(self) -> Optional[SignalID]:
-    #     """
-    #     What signal to read to limit the number of trains that can use this stop.
-    #     """
-    #     return self.control_behavior.trains_limit_signal
-
-    # @trains_limit_signal.setter
-    # def trains_limit_signal(self, value: Union[str, SignalID, None]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "trains_limit_signal",
-    #             value,
-    #         )
-    #         self.control_behavior.trains_limit_signal = result
-    #     else:
-    #         self.control_behavior.trains_limit_signal = value
 
     # =========================================================================
 
@@ -438,60 +277,18 @@ class TrainStop(
     Whether or not to read the number of trains that currently use this stop.
     """
 
-    # @property
-    # def read_trains_count(self) -> Optional[bool]:
-    #     """
-    #     Whether or not to read the number of trains that currently use this stop.
-    #     """
-    #     return self.control_behavior.read_trains_count
-
-    # @read_trains_count.setter
-    # def read_trains_count(self, value: Optional[bool]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "read_trains_count",
-    #             value,
-    #         )
-    #         self.control_behavior.read_trains_count = result
-    #     else:
-    #         self.control_behavior.read_trains_count = value
-
     # =========================================================================
 
     trains_count_signal: Optional[AttrsSignalID] = attrs.field(
         factory=lambda: AttrsSignalID(name="signal-C", type="virtual"),
         converter=AttrsSignalID.converter,
         validator=instance_of(Optional[AttrsSignalID]),
+        metadata={"never_null": True},
     )
     """
     What signal to use to output the current number of trains that use this
     stop.
     """
-
-    # @property
-    # def trains_count_signal(self) -> Optional[SignalID]:
-    #     """
-    #     What signal to use to output the current number of trains that use this
-    #     stop.
-    #     """
-    #     return self.control_behavior.trains_count_signal
-
-    # @trains_count_signal.setter
-    # def trains_count_signal(self, value: Union[str, SignalID, None]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior,
-    #             self.control_behavior,
-    #             "trains_count_signal",
-    #             value,
-    #         )
-    #         self.control_behavior.trains_count_signal = result
-    #     else:
-    #         self.control_behavior.trains_count_signal = value
 
     # =========================================================================
 
@@ -514,9 +311,30 @@ class TrainStop(
     __hash__ = Entity.__hash__
 
 
-# TODO: versioning
+TrainStop.add_schema(
+    {
+        "$id": "urn:factorio:entity:train-stop",
+        "properties": {
+            "station": {"type": "string"},
+            "manual_trains_limit": {"$ref": "uint32"},
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "send_to_train": {"type": "boolean", "default": "true"},
+                    "read_from_train": {"type": "boolean", "default": "false"},
+                    "read_stopped_train": {"type": "boolean", "default": "false"},
+                    "train_stopped_signal": {"$ref": "urn:factorio:signal-id"},
+                    "set_trains_limit": {"type": "boolean", "default": "false"},
+                    "trains_limit_signal": {"$ref": "urn:factorio:signal-id"},
+                    "read_trains_count": {"type": "boolean", "default": "false"},
+                    "trains_count_signal": {"$ref": "urn:factorio:signal-id"},
+                },
+            },
+        },
+    }
+)
+
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:train_stop"},
     TrainStop,
     lambda fields: {
         "station": fields.station.name,

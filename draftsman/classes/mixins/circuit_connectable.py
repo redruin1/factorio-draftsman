@@ -4,6 +4,7 @@ from draftsman.classes.exportable import Exportable
 from draftsman.classes.association import Association
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
+from draftsman.validators import instance_of
 
 import attrs
 
@@ -38,7 +39,12 @@ class CircuitConnectableMixin(Exportable):
 
     # =========================================================================
 
-    _connections: dict = attrs.field(factory=dict, repr=False, alias="connections")
+    _connections: dict = attrs.field(
+        factory=dict,
+        repr=False,
+        alias="connections",
+        validator=instance_of(dict),  # TODO: better validator?
+    )
 
     @property
     def connections(self) -> dict:
@@ -83,7 +89,7 @@ class CircuitConnectableMixin(Exportable):
 
 CircuitConnectableMixin.add_schema(
     {
-        "definitions": {
+        "$defs": {
             "circuit-connection-point": {
                 "type": "object",
                 "properties": {
@@ -102,39 +108,42 @@ CircuitConnectableMixin.add_schema(
         },
         "properties": {
             "connections": {
-                "1": {
-                    "type": "object",
-                    "properties": {
-                        "red": {
-                            "type": "array",
-                            "items": {"$ref": "#/definitions/circuit-connection-point"},
-                        },
-                        "green": {
-                            "type": "array",
-                            "items": {"$ref": "#/definitions/circuit-connection-point"},
-                        },
-                    },
-                },
-                "2": {
-                    "type": "object",
-                    "properties": {
-                        "red": {
-                            "type": "array",
-                            "items": {"$ref": "#/definitions/circuit-connection-point"},
-                        },
-                        "green": {
-                            "type": "array",
-                            "items": {"$ref": "#/definitions/circuit-connection-point"},
+                "type": "object",
+                "properties": {
+                    "1": {
+                        "type": "object",
+                        "properties": {
+                            "red": {
+                                "type": "array",
+                                "items": {"$ref": "#/$defs/circuit-connection-point"},
+                            },
+                            "green": {
+                                "type": "array",
+                                "items": {"$ref": "#/$defs/circuit-connection-point"},
+                            },
                         },
                     },
-                },
-                "Cu0": {
-                    "type": "array",
-                    "items": {"$ref": "#/definitions/wire-connection-point"},
-                },
-                "Cu1": {
-                    "type": "array",
-                    "items": {"$ref": "#/definitions/wire-connection-point"},
+                    "2": {
+                        "type": "object",
+                        "properties": {
+                            "red": {
+                                "type": "array",
+                                "items": {"$ref": "#/$defs/circuit-connection-point"},
+                            },
+                            "green": {
+                                "type": "array",
+                                "items": {"$ref": "#/$defs/circuit-connection-point"},
+                            },
+                        },
+                    },
+                    "Cu0": {
+                        "type": "array",
+                        "items": {"$ref": "#/$defs/wire-connection-point"},
+                    },
+                    "Cu1": {
+                        "type": "array",
+                        "items": {"$ref": "#/$defs/wire-connection-point"},
+                    },
                 },
             }
         },

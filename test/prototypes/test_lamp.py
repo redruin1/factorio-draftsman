@@ -1,11 +1,29 @@
 # test_lamp.py
 
+from draftsman.constants import LampColorMode
 from draftsman.entity import Lamp, lamps, Container
 from draftsman.error import DataFormatError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_lamp():
+    if len(lamps) == 0:
+        return None
+    return Lamp(
+        "small-lamp",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        color=(0.5, 0.5, 0.5),
+        always_on=True,
+        use_colors=True,
+        color_mode=LampColorMode.PACKED_RGB,
+        tags={"blah": "blah"},
+    )
 
 
 class TestLamp:

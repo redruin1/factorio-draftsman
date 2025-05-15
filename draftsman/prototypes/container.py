@@ -6,8 +6,6 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     InventoryMixin,
 )
-from draftsman.constants import Inventory
-from draftsman.utils import calculate_occupied_slots
 
 from draftsman.data.entities import containers
 
@@ -27,3 +25,10 @@ class Container(InventoryMixin, ItemRequestMixin, CircuitConnectableMixin, Entit
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+Container.add_schema(
+    {
+        "$id": "urn:factorio:entity:container",
+    }
+)

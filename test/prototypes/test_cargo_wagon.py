@@ -1,9 +1,15 @@
 # test_cargo_wagon.py
 
-from draftsman.constants import Orientation, ValidationMode
+from draftsman.constants import Inventory, Orientation, ValidationMode
 from draftsman.entity import CargoWagon, cargo_wagons, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import AttrsItemFilter
+from draftsman.signatures import (
+    AttrsItemFilter,
+    AttrsItemRequest,
+    AttrsItemSpecification,
+    AttrsInventoryLocation,
+    EquipmentComponent,
+)
 from draftsman.warning import (
     BarWarning,
     EquipmentGridWarning,
@@ -13,7 +19,42 @@ from draftsman.warning import (
 
 from collections.abc import Hashable
 import pytest
-import warnings
+
+
+@pytest.fixture
+def valid_cargo_wagon():
+    if len(cargo_wagons) == 0:
+        return None
+    return CargoWagon(
+        "cargo-wagon",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        orientation=Orientation.EAST,
+        inventory_filters=[AttrsItemFilter(index=0, name="iron-ore")],
+        bar=10,
+        item_requests=[
+            AttrsItemRequest(
+                id="iron-ore",
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.cargo_wagon, stack=0, count=50
+                        )
+                    ]
+                ),
+            ),
+            AttrsItemRequest(
+                id="energy-shield-equipment",
+                items=AttrsItemSpecification(grid_count=1),
+            ),
+        ],
+        equipment=[
+            EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+        ],
+        tags={"blah": "blah"},
+        validate_assignment="none",
+    )
 
 
 class TestCargoWagon:
@@ -84,6 +125,80 @@ class TestCargoWagon:
         # Errors
         with pytest.raises(DataFormatError):
             CargoWagon("cargo-wagon", orientation="wrong").validate().reissue_all()
+
+    def test_json_schema(self):
+        assert CargoWagon.json_schema(version=(1, 0)) == {
+            "$id": "urn:factorio:entity:cargo-wagon",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {
+                    "$ref": "urn:factorio:position",
+                },
+                "orientation": {"type": "number"},
+                "inventory": {
+                    "type": "object",
+                    "properties": {
+                        "bar": {"oneOf": [{"$ref": "urn:uint16"}, {"type": "null"}]},
+                        "filters": {
+                            "type": "array",
+                            "items": {"$ref": "urn:factorio:item-filter"},
+                        },
+                    },
+                },
+                "items": {
+                    "type": "object",
+                    "description": "A dictionary of item requests, where each key is "
+                    "the name of an item and the value is the count of that item to "
+                    "request. Items always go to the default inventory of that "
+                    "object (if possible) in the order in which Factorio traverses "
+                    "them.",
+                },
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"],
+        }
+        assert CargoWagon.json_schema(version=(2, 0)) == {
+            "$id": "urn:factorio:entity:cargo-wagon",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {
+                    "$ref": "urn:factorio:position",
+                },
+                "quality": {"$ref": "urn:factorio:quality-name"},
+                "inventory": {
+                    "type": "object",
+                    "properties": {
+                        "bar": {"oneOf": [{"$ref": "urn:uint16"}, {"type": "null"}]},
+                        "filters": {
+                            "type": "array",
+                            "items": {"$ref": "urn:factorio:item-filter"},
+                        },
+                    },
+                },
+                "enable_logistics_while_moving": {"type": "boolean", "default": "true"},
+                "grid": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:equipment-component"},
+                },
+                "orientation": {"type": "number"},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "urn:factorio:item-request"},
+                    "description": "A list of item requests objects, which contain "
+                    "the item name, it's quality, the amount to request, as well as "
+                    "exactly what inventories to request to and where inside those "
+                    "inventories.",
+                },
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"],
+        }
 
     def test_equipment_grid(self):
         wagon = CargoWagon("cargo-wagon")

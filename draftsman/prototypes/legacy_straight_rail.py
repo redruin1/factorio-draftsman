@@ -4,15 +4,12 @@ from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DoubleGridAlignedMixin, DirectionalMixin
 from draftsman.classes.mixins.directional import _rotated_collision_sets
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode, EIGHT_WAY_DIRECTIONS
+from draftsman.constants import Direction, EIGHT_WAY_DIRECTIONS
 from draftsman.utils import AABB, Rectangle, fix_incorrect_pre_init
 
 from draftsman.data.entities import legacy_straight_rails
 
 import attrs
-from pydantic import ConfigDict
-from typing import Any, Literal, Optional, Union
 
 
 # Manually specified collision sets
@@ -37,55 +34,8 @@ _rotated_collision_sets["legacy-straight-rail"] = {
 @attrs.define
 class LegacyStraightRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     """
-    An old, 1.0 straight rail entity.
+    An old, Factorio 1.0 straight rail entity.
     """
-
-    # class Format(
-    #     DoubleGridAlignedMixin.Format, EightWayDirectionalMixin.Format, Entity.Format
-    # ):
-    #     model_config = ConfigDict(title="LegacyStraightRail")
-
-    # def __init__(
-    #     self,
-    #     name: Optional[str] = get_first(legacy_straight_rails),
-    #     position: Union[Vector, PrimitiveVector] = None,
-    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-    #     direction: Direction = Direction.NORTH,
-    #     tags: dict[str, Any] = {},
-    #     validate_assignment: Union[
-    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-    #     ] = ValidationMode.STRICT,
-    #     **kwargs
-    # ):
-    #     """
-    #     TODO
-    #     """
-
-    #     # This is kinda hacky, but necessary due to Factorio issuing dummy
-    #     # values for collision boxes. We have to do this before initialization
-    #     # of the rest of the class because certain things like tile position are
-    #     # dependent on this information and can be set during initialization
-    #     # (if we pass in arguments in **kwargs).
-
-    #     # We set a (private) flag to ignore the dummy collision box that
-    #     # Factorio provides
-    #     self._overwritten_collision_set = True
-
-    #     # We then provide a list of all the custom rotations
-    #     self._collision_set = _vertical_collision
-    #     self._collision_set_rotation = _collision_set_rotation
-
-    #     super().__init__(
-    #         name,
-    #         legacy_straight_rails,
-    #         position=position,
-    #         tile_position=tile_position,
-    #         direction=direction,
-    #         tags=tags,
-    #         **kwargs
-    #     )
-
-    #     self.validate_assignment = validate_assignment
 
     # =========================================================================
 
@@ -102,3 +52,6 @@ class LegacyStraightRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+LegacyStraightRail.add_schema({"$id": "urn:factorio:entity:legacy-straight-rail"})

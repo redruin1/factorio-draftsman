@@ -106,6 +106,7 @@ class InventoryMixin(Exportable):
             instance_of(Optional[uint16]),
             ensure_bar_less_than_inventory_size,
         ),
+        metadata={"never_null": True},
     )
     """
     The limiting bar of the inventory. Used to prevent the final-most

@@ -1,11 +1,29 @@
 # test_loader.py
 
+from draftsman.constants import Direction
 from draftsman.entity import Loader, loaders, Container
 from draftsman.signatures import AttrsItemFilter
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_loader():
+    if len(loaders) == 0:
+        return None
+    return Loader(
+        "loader",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        io_type="output",
+        use_filters=True,
+        filters=[AttrsItemFilter(index=1, name="iron-ore")],
+        tags={"blah": "blah"},
+    )
 
 
 class TestLoader:

@@ -1,5 +1,6 @@
 # test_rail_chain_signal.py
 
+from draftsman.constants import Direction
 from draftsman.entity import RailChainSignal, rail_chain_signals, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
 from draftsman.signatures import AttrsSignalID
@@ -7,6 +8,24 @@ from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_rail_chain_signal():
+    if len(rail_chain_signals) == 0:
+        return None
+    return RailChainSignal(
+        "rail-chain-signal",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        red_output_signal="signal-A",
+        yellow_output_signal="signal-B",
+        green_output_signal="signal-C",
+        blue_output_signal="signal-D",
+        tags={"blah": "blah"},
+    )
 
 
 class TestRailChainSignal:

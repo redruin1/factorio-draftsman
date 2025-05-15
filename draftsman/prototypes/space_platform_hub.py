@@ -116,10 +116,39 @@ class SpacePlatformHub(
     __hash__ = Entity.__hash__
 
 
+SpacePlatformHub.add_schema(None, version=(1, 0))
+
+SpacePlatformHub.add_schema(
+    {
+        "$id": "urn:factorio:entity:space-platform-hub",
+        "properties": {
+            "request_missing_construction_materials": {
+                "type": "boolean",
+                "default": "true",
+            },
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "read_contents": {"type": "boolean", "default": "true"},
+                    "send_to_platform": {"type": "boolean", "default": "true"},
+                    "read_moving_from": {"type": "boolean", "default": "false"},
+                    "read_moving_to": {"type": "boolean", "default": "false"},
+                    "read_speed": {"type": "boolean", "default": "false"},
+                    "speed_signal": {
+                        "anyOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
+                    },  # TODO: nullable?
+                    "read_damage_taken": {"type": "boolean", "default": "false"},
+                    "damage_taken_signal": {
+                        "anyOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
+                    },  # TODO: nullable?
+                },
+            },
+        },
+    },
+    version=(2, 0),
+)
+
 draftsman_converters.add_hook_fns(
-    # {
-    #     "$id": "factorio:space_platform_hub"
-    # },
     SpacePlatformHub,
     lambda fields: {
         ("control_behavior", "read_contents"): fields.read_contents.name,

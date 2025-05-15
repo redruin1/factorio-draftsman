@@ -51,31 +51,8 @@ class LogisticRequestContainer(
     __hash__ = Entity.__hash__
 
 
-_parent_hook = (
-    draftsman_converters.get_version((2, 0))
-    .get_converter()
-    .get_structure_hook(LogisticRequestContainer)
+LogisticRequestContainer.add_schema(
+    {
+        "$id": "urn:factorio:entity:logistic-request-container",
+    },
 )
-
-
-def make_structure_hook(cls, converter: cattrs.Converter):
-    # parent_hook = converter.get_structure_hook(LogisticRequestContainer)
-
-    def structure_hook(d: dict, type: type):
-        # print(d)
-        if "request_filters" in d:
-            # Populate with a single section
-            filters = d["request_filters"]
-            d["request_filters"] = {"sections": [{"index": 1, "filters": filters}]}
-        # TODO: what about request_from_buffers?
-        # print(d)
-        return _parent_hook(d, type)
-
-    return structure_hook
-
-
-draftsman_converters.get_version((1, 0)).register_structure_hook_factory(
-    lambda cls: issubclass(cls, LogisticRequestContainer), make_structure_hook
-)
-
-# TODO: unstructure hook

@@ -7,6 +7,19 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_solar_panel():
+    if len(solar_panels) == 0:
+        return None
+    return SolarPanel(
+        "solar-panel",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        tags={"blah": "blah"},
+    )
+
+
 class TestSolarPanel:
     def test_constructor_init(self):
         solar_panel = SolarPanel("solar-panel")

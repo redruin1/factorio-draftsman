@@ -3,10 +3,35 @@
 from draftsman.constants import Direction, BeltReadMode, ValidationMode
 from draftsman.entity import TransportBelt, transport_belts, Container
 from draftsman.error import InvalidEntityError, DataFormatError
+from draftsman.signatures import AttrsSimpleCondition
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_transport_belt():
+    if len(transport_belts) == 0:
+        return None
+    return TransportBelt(
+        "transport-belt",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        circuit_enabled=True,
+        circuit_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        connect_to_logistic_network=True,
+        logistic_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        read_contents=True,
+        read_mode=BeltReadMode.HOLD,
+        tags={"blah": "blah"},
+    )
 
 
 class TestTransportBelt:
@@ -32,7 +57,7 @@ class TestTransportBelt:
                         "comparator": ">=",
                         "constant": 0,
                     },
-                    "circuit_read_hand_contents": False,
+                    "circuit_read_hand_contents": True,
                     "circuit_contents_read_mode": BeltReadMode.HOLD,
                 },
             }
@@ -58,7 +83,7 @@ class TestTransportBelt:
                     "comparator": "≥",
                     # "constant": 0, # Default
                 },
-                "circuit_read_hand_contents": False,
+                "circuit_read_hand_contents": True,
                 "circuit_contents_read_mode": BeltReadMode.HOLD,
             },
         }
@@ -134,23 +159,23 @@ class TestTransportBelt:
 
     def test_set_read_contents(self):
         belt = TransportBelt("transport-belt")
+        assert belt.read_contents == False
+        assert belt.to_dict() == {
+            "name": "transport-belt",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+        belt.read_contents = True
         assert belt.read_contents == True
         assert belt.to_dict() == {
             "name": "transport-belt",
             "position": {"x": 0.5, "y": 0.5},
-        }
-
-        belt.read_contents = False
-        assert belt.read_contents == False
-        assert belt.to_dict() == {
-            "name": "transport-belt",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_read_hand_contents": False},
+            "control_behavior": {"circuit_read_hand_contents": True},
         }
 
         with pytest.raises(DataFormatError):
             belt.read_contents = "incorrect"
-        assert belt.read_contents == False
+        assert belt.read_contents == True
 
         belt.validate_assignment = "none"
         assert belt.validate_assignment == ValidationMode.NONE
@@ -239,7 +264,7 @@ class TestTransportBelt:
                         "comparator": "≥",
                         "constant": 0,
                     },
-                    "circuit_read_hand_contents": False,
+                    "circuit_read_hand_contents": True,
                     "circuit_contents_read_mode": BeltReadMode.HOLD,
                 },
                 "tags": {"some": "stuff"},
@@ -267,7 +292,7 @@ class TestTransportBelt:
                 "comparator": "≥",
                 # "constant": 0, # Default
             },
-            "circuit_read_hand_contents": False,
+            "circuit_read_hand_contents": True,
             "circuit_contents_read_mode": BeltReadMode.HOLD,
         }
         assert belt1.tags == {"some": "stuff"}

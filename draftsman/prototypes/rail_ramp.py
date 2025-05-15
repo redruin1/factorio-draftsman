@@ -21,3 +21,8 @@ class RailRamp(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+RailRamp.add_schema(None, version=(1, 0))
+
+RailRamp.add_schema({"$id": "urn:factorio:entity:rail-ramp"}, version=(2, 0))

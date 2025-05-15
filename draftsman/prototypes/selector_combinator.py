@@ -47,113 +47,8 @@ class SelectorCombinator(
     Entity,
 ):
     """
-    An entity which has a number of useful miscellaneous combinator functions.
+    An entity which has a number of miscellaneous circuit functions.
     """
-
-    # class Format(
-    #     PlayerDescriptionMixin.Format,
-    #     ControlBehaviorMixin.Format,
-    #     CircuitConnectableMixin.Format,
-    #     DirectionalMixin.Format,
-    #     Entity.Format,
-    # ):
-    #     class ControlBehavior(DraftsmanBaseModel):
-    #         operation: Literal[
-    #             "select",
-    #             "count",
-    #             "random",
-    #             "stack-size",
-    #             "rocket-capacity",
-    #             "quality-filter",
-    #             "quality-transfer",
-    #         ] = Field(
-    #             "select", description="""The master mode of the selector combinator."""
-    #         )
-
-    #         # Mode: "select"
-    #         select_max: Optional[bool] = Field(
-    #             True,
-    #             description="""Whether or not to sort max to min when "mode" is "select".""",
-    #         )
-    #         index_constant: Optional[
-    #             uint32
-    #         ] = Field(  # TODO: which of these superceeds the other?
-    #             0,
-    #             description="""The constant input index to return when "mode" is "select".""",
-    #         )
-    #         index_signal: Optional[SignalID] = Field(
-    #             None,
-    #             description="""An input signal to use as an index, if specified.""",
-    #         )
-
-    #         # Mode: "count"
-    #         count_signal: Optional[SignalID] = Field(
-    #             None,
-    #             description="""The signal with which to count the values of all inputs into.""",
-    #         )
-
-    #         # Mode: "random"
-    #         random_update_interval: Optional[uint32] = Field(
-    #             0,
-    #             description="""How many game ticks to wait before selecting a new random signal from the input.""",
-    #         )
-
-    #         # Mode: "quality-filter"
-    #         quality_filter: Optional[QualityFilter] = Field(
-    #             None,
-    #             description="""Specification of what quality signals to pass through.""",
-    #         )
-
-    #         # Mode: "quality-transfer"
-    #         select_quality_from_signal: Optional[bool] = Field(
-    #             False,
-    #             description="""Whether or not to select quality from a single signal or from each input signal.""",
-    #         )
-    #         quality_source_static: Optional[
-    #             Literal["normal", "uncommon", "rare", "epic", "legendary"]
-    #         ] = Field("normal", description="""TODO""")
-    #         quality_source_signal: Optional[SignalID] = Field(
-    #             None, description="""TODO"""
-    #         )
-    #         quality_destination_signal: Optional[SignalID] = Field(
-    #             None, description="""TODO"""
-    #         )
-
-    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
-
-    #     model_config = ConfigDict(title="SelectorCombinator")
-
-    # def __init__(
-    #     self,
-    #     name: Optional[str] = get_first(selector_combinators),
-    #     position: Union[Vector, PrimitiveVector] = None,
-    #     tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-    #     direction: Optional[Direction] = Direction.NORTH,
-    #     player_description: Optional[str] = None,
-    #     control_behavior: Optional[Format.ControlBehavior] = {},
-    #     tags: dict[str, Any] = {},
-    #     validate_assignment: Union[
-    #         ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-    #     ] = ValidationMode.STRICT,
-    #     **kwargs
-    # ):
-    #     """
-    #     TODO
-    #     """
-
-    #     super().__init__(
-    #         name,
-    #         similar_entities=selector_combinators,
-    #         position=position,
-    #         tile_position=tile_position,
-    #         direction=direction,
-    #         player_description=player_description,
-    #         control_behavior=control_behavior,
-    #         tags=tags,
-    #         **kwargs
-    #     )
-
-    #     self.validate_assignment = validate_assignment
 
     @property
     def similar_entities(self) -> list[str]:
@@ -416,10 +311,57 @@ class SelectorCombinator(
     __hash__ = Entity.__hash__
 
 
+SelectorCombinator.add_schema(None, version=(1, 0))
+
+SelectorCombinator.add_schema(
+    {
+        "$id": "urn:factorio:entity:selector-combinator",
+        "properties": {
+            "control_behavior": {
+                "type": "object",
+                "properties": {
+                    "operation": {
+                        "enum": [
+                            "select",
+                            "count",
+                            "random",
+                            "stack-size",
+                            "rocket-capacity",
+                            "quality-filter",
+                            "quality-transfer",
+                        ],
+                        "default": "select",
+                    },
+                    "select_max": {"type": "boolean", "default": "true"},
+                    "index_constant": {"$ref": "urn:int32", "default": 0},
+                    "index_signal": {
+                        "oneOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
+                    },  # TODO: nullable?
+                    "count_inputs_signal": {
+                        "oneOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
+                    },  # TODO: nullable?,
+                    "random_update_interval": {"$ref": "urn:uint32", "default": 0},
+                    "select_quality_from_signal": {
+                        "type": "boolean",
+                        "default": "false",
+                    },
+                    "quality_source_static": {
+                        "$ref": "urn:factorio:quality-name",
+                        "default": "normal",
+                    },
+                    "quality_source_signal": {
+                        "oneOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
+                    },  # TODO: nullable?,
+                    "quality_destination_signal": {
+                        "oneOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
+                    },  # TODO: nullable?,
+                },
+            }
+        },
+    }
+)
+
 draftsman_converters.add_hook_fns(
-    # {
-    #     "$id": "factorio:entity:selector_combinator"
-    # },
     SelectorCombinator,
     lambda fields: {
         ("control_behavior", "operation"): fields.operation.name,

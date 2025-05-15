@@ -8,7 +8,12 @@ from draftsman.error import (
     InvalidItemError,
     DataFormatError,
 )
-from draftsman.signatures import AttrsItemRequest, AttrsSimpleCondition, AttrsInventoryLocation, AttrsItemSpecification
+from draftsman.signatures import (
+    AttrsItemRequest,
+    AttrsSimpleCondition,
+    AttrsInventoryLocation,
+    AttrsItemSpecification,
+)
 from draftsman.warning import (
     ModuleCapacityWarning,
     ModuleLimitationWarning,
@@ -25,37 +30,42 @@ import warnings
 from collections.abc import Hashable
 import pytest
 
-valid_assembling_machine = AssemblingMachine(
-    "assembling-machine-1",
-    id="test",
-    quality="uncommon",
-    tile_position=(1, 1),
-    direction=Direction.EAST,
-    recipe="iron-gear-wheel",
-    recipe_quality="uncommon",
-    circuit_enabled=True,
-    circuit_condition=AttrsSimpleCondition(
-        first_signal="signal-A", comparator="<", second_signal="signal-B"
-    ),
-    connect_to_logistic_network=True,
-    logistic_condition=AttrsSimpleCondition(
-        first_signal="signal-A", comparator="<", second_signal="signal-B"
-    ),
-    item_requests=[
-        AttrsItemRequest(
-            id={"name": "iron-plate", "quality": "uncommon"},
-            items={"in_inventory": [{"inventory": 2, "stack": 0, "count": 20}]},
-        )
-    ],
-    circuit_set_recipe=True,
-    read_contents=True,
-    include_in_crafting=False,
-    read_recipe_finished=True,
-    recipe_finished_signal="signal-C",
-    read_working=True,
-    working_signal="signal-D",
-    tags={"blah": "blah"}
-)
+
+@pytest.fixture
+def valid_assembling_machine():
+    if len(assembling_machines) == 0:
+        return None
+    return AssemblingMachine(
+        "assembling-machine-1",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        recipe="iron-gear-wheel",
+        recipe_quality="uncommon",
+        circuit_enabled=True,
+        circuit_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        connect_to_logistic_network=True,
+        logistic_condition=AttrsSimpleCondition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        item_requests=[
+            AttrsItemRequest(
+                id={"name": "iron-plate", "quality": "uncommon"},
+                items={"in_inventory": [{"inventory": 2, "stack": 0, "count": 20}]},
+            )
+        ],
+        circuit_set_recipe=True,
+        read_contents=True,
+        include_in_crafting=False,
+        read_recipe_finished=True,
+        recipe_finished_signal="signal-C",
+        read_working=True,
+        working_signal="signal-D",
+        tags={"blah": "blah"},
+    )
 
 
 class TestAssemblingMachine:
@@ -112,8 +122,12 @@ class TestAssemblingMachine:
                 "recipe": {"type": "string"},
                 "direction": {"enum": list(range(8)), "default": 0},
                 "items": {
-                    "type": "array",
-                    "items": {"$ref": "urn:factorio:item-request"},
+                    "type": "object",
+                    "description": "A dictionary of item requests, where each key is "
+                    "the name of an item and the value is the count of that item to "
+                    "request. Items always go to the default inventory of that "
+                    "object (if possible) in the order in which Factorio traverses "
+                    "them.",
                 },
                 "tags": {"type": "object"},
             },
@@ -130,17 +144,16 @@ class TestAssemblingMachine:
                     "$ref": "urn:factorio:position",
                 },
                 "quality": {"$ref": "urn:factorio:quality-name"},
-                "recipe": {
-                    "oneOf": [
-                        {"type": "string"},
-                        {"type": "null"}
-                    ]
-                },
+                "recipe": {"oneOf": [{"type": "string"}, {"type": "null"}]},
                 "recipe_quality": {"$ref": "urn:factorio:quality-name"},
                 "direction": {"enum": list(range(16)), "default": 0},
                 "items": {
                     "type": "array",
                     "items": {"$ref": "urn:factorio:item-request"},
+                    "description": "A list of item requests objects, which contain "
+                    "the item name, it's quality, the amount to request, as well as "
+                    "exactly what inventories to request to and where inside those "
+                    "inventories.",
                 },
                 "control_behavior": {
                     "type": "object",

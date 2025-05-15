@@ -15,28 +15,23 @@ from collections.abc import Hashable
 import pytest
 
 
-valid_beacon = Beacon(
-    "beacon",
-    id="test",
-    quality="uncommon",
-    tile_position=(1, 1),
-    item_requests=[
-        {
-            "id": {
-                "name": "speed-module"
-            },
-            "items": {
-                "in_inventory": [
-                    {
-                        "inventory": 1,
-                        "stack": 0
-                    }
-                ]
+@pytest.fixture
+def valid_beacon():
+    if len(beacons) == 0:
+        return None
+    return Beacon(
+        "beacon",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        item_requests=[
+            {
+                "id": {"name": "speed-module"},
+                "items": {"in_inventory": [{"inventory": 1, "stack": 0}]},
             }
-        }
-    ],
-    tags={"blah": "blah"},
-)
+        ],
+        tags={"blah": "blah"},
+    )
 
 
 class TestBeacon:
@@ -56,12 +51,16 @@ class TestBeacon:
                 "name": {"type": "string"},
                 "position": {"$ref": "urn:factorio:position"},
                 "items": {
-                    "type": "array",
-                    "items": {"$ref": "urn:factorio:item-request"}
+                    "type": "object",
+                    "description": "A dictionary of item requests, where each key is "
+                    "the name of an item and the value is the count of that item to "
+                    "request. Items always go to the default inventory of that "
+                    "object (if possible) in the order in which Factorio traverses "
+                    "them.",
                 },
-                "tags": {"type": "object"}
+                "tags": {"type": "object"},
             },
-            "required": ["entity_number", "name", "position"]
+            "required": ["entity_number", "name", "position"],
         }
         assert Beacon.json_schema(version=(2, 0)) == {
             "$id": "urn:factorio:entity:beacon",
@@ -74,11 +73,15 @@ class TestBeacon:
                 "quality": {"$ref": "urn:factorio:quality-name"},
                 "items": {
                     "type": "array",
-                    "items": {"$ref": "urn:factorio:item-request"}
+                    "items": {"$ref": "urn:factorio:item-request"},
+                    "description": "A list of item requests objects, which contain "
+                    "the item name, it's quality, the amount to request, as well as "
+                    "exactly what inventories to request to and where inside those "
+                    "inventories.",
                 },
-                "tags": {"type": "object"}
+                "tags": {"type": "object"},
             },
-            "required": ["entity_number", "name", "position"]
+            "required": ["entity_number", "name", "position"],
         }
 
     # def test_set_item_request(self):

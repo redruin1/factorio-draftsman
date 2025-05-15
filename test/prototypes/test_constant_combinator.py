@@ -3,7 +3,7 @@
 from draftsman.constants import Direction, ValidationMode
 from draftsman.entity import ConstantCombinator, constant_combinators, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import SignalFilter
+from draftsman.signatures import SignalFilter, ManualSection
 from draftsman.warning import (
     PureVirtualDisallowedWarning,
     UnknownEntityWarning,
@@ -12,6 +12,27 @@ from draftsman.warning import (
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_constant_combinator():
+    if len(constant_combinators) == 0:
+        return None
+    return ConstantCombinator(
+        "constant-combinator",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        enabled=False,
+        sections=[
+            ManualSection(
+                index=1, filters=[SignalFilter(index=1, name="signal-A", count=1000)]
+            )
+        ],
+        player_description="test",
+        tags={"blah": "blah"},
+    )
 
 
 class TestConstantCombinator:
@@ -77,6 +98,138 @@ class TestConstantCombinator:
         # Errors
         with pytest.raises(DataFormatError):
             ConstantCombinator(sections="incorrect").validate().reissue_all()
+
+    def test_json_schema(self):
+        assert ConstantCombinator.json_schema(version=(1, 0)) == {
+            "$id": "urn:factorio:entity:constant-combinator",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$defs": {
+                "circuit-connection-point": {
+                    "type": "object",
+                    "properties": {
+                        "entity_id": {"$ref": "urn:uint64"},
+                        "circuit_id": {"enum": [1, 2]},
+                    },
+                    "required": ["entity_id"],
+                },
+                "wire-connection-point": {
+                    "properties": {
+                        "entity_id": {"$ref": "urn:uint64"},
+                        "wire_id": {"enum": [0, 1]},
+                    },
+                    "required": ["entity_id"],
+                },
+            },
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {
+                    "$ref": "urn:factorio:position",
+                },
+                "direction": {"enum": list(range(8)), "default": 0},
+                "connections": {
+                    "type": "object",
+                    "properties": {
+                        "1": {
+                            "type": "object",
+                            "properties": {
+                                "red": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
+                                },
+                                "green": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
+                                },
+                            },
+                        },
+                        "2": {
+                            "type": "object",
+                            "properties": {
+                                "red": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
+                                },
+                                "green": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/$defs/circuit-connection-point"
+                                    },
+                                },
+                            },
+                        },
+                        "Cu0": {
+                            "type": "array",
+                            "items": {"$ref": "#/$defs/wire-connection-point"},
+                        },
+                        "Cu1": {
+                            "type": "array",
+                            "items": {"$ref": "#/$defs/wire-connection-point"},
+                        },
+                    },
+                },
+                "control_behavior": {
+                    "type": "object",
+                    "properties": {
+                        "is_on": {"type": "boolean", "default": "true"},
+                        "filters": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "index": {"$ref": "urn:uint32"},
+                                    "signal": {"$ref": "urn:factorio:signal-id"},
+                                    "count": {"$ref": "urn:int32"},
+                                },
+                            },
+                        },
+                    },
+                    "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
+                },
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"],
+        }
+        assert ConstantCombinator.json_schema(version=(2, 0)) == {
+            "$id": "urn:factorio:entity:constant-combinator",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "entity_number": {"$ref": "urn:uint64"},
+                "name": {"type": "string"},
+                "position": {
+                    "$ref": "urn:factorio:position",
+                },
+                "quality": {"$ref": "urn:factorio:quality-name"},
+                "direction": {"enum": list(range(16)), "default": 0},
+                "control_behavior": {
+                    "type": "object",
+                    "properties": {
+                        "is_on": {"type": "boolean", "default": "true"},
+                        "sections": {
+                            "type": "object",
+                            "properties": {
+                                "sections": {
+                                    "type": "array",
+                                    "items": {"$ref": "urn:factorio:manual-section"},
+                                }
+                            },
+                        },
+                    },
+                    "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
+                },
+                "player_description": {"type": "string"},
+                "tags": {"type": "object"},
+            },
+            "required": ["entity_number", "name", "position"],
+        }
 
     def test_power_and_circuit_flags(self):
         for name in constant_combinators:
@@ -163,98 +316,6 @@ class TestConstantCombinator:
         with pytest.raises(DataFormatError):
             section.filters = "incorrect thingy"
 
-    # def test_set_signals(self):
-    #     combinator = ConstantCombinator()
-    #     # Test user format
-    #     combinator.signals = [("signal-A", 100), ("signal-Z", 200), ("iron-ore", 1000)]
-    #     assert combinator.signals == [
-    #         SignalFilter(
-    #             **{
-    #                 "index": 1,
-    #                 "signal": {"name": "signal-A", "type": "virtual"},
-    #                 "count": 100,
-    #             }
-    #         ),
-    #         SignalFilter(
-    #             **{
-    #                 "index": 2,
-    #                 "signal": {"name": "signal-Z", "type": "virtual"},
-    #                 "count": 200,
-    #             }
-    #         ),
-    #         SignalFilter(
-    #             **{
-    #                 "index": 3,
-    #                 "signal": {"name": "iron-ore", "type": "item"},
-    #                 "count": 1000,
-    #             }
-    #         ),
-    #     ]
-
-    #     # Test internal format
-    #     combinator.signals = [
-    #         {
-    #             "index": 1,
-    #             "signal": {"name": "signal-A", "type": "virtual"},
-    #             "count": 100,
-    #         },
-    #         {"index": 2, "signal": "signal-Z", "count": 200},
-    #         {
-    #             "index": 3,
-    #             "signal": {"name": "iron-ore", "type": "item"},
-    #             "count": 1000,
-    #         },
-    #     ]
-    #     assert combinator.signals == [
-    #         SignalFilter(
-    #             **{
-    #                 "index": 1,
-    #                 "signal": {"name": "signal-A", "type": "virtual"},
-    #                 "count": 100,
-    #             }
-    #         ),
-    #         SignalFilter(
-    #             **{
-    #                 "index": 2,
-    #                 "signal": {"name": "signal-Z", "type": "virtual"},
-    #                 "count": 200,
-    #             }
-    #         ),
-    #         SignalFilter(
-    #             **{
-    #                 "index": 3,
-    #                 "signal": {"name": "iron-ore", "type": "item"},
-    #                 "count": 1000,
-    #             }
-    #         ),
-    #     ]
-
-    #     # Test clear signals
-    #     combinator.signals = None
-    #     assert combinator.signals == None
-
-    #     # Test setting to pure virtual raises Warnings
-    #     with pytest.warns(PureVirtualDisallowedWarning):
-    #         combinator.signals = [("signal-everything", 1)]
-    #     with pytest.warns(PureVirtualDisallowedWarning):
-    #         combinator.signals = [("signal-anything", 1)]
-    #     with pytest.warns(PureVirtualDisallowedWarning):
-    #         combinator.signals = [("signal-each", 1)]
-
-    #     with pytest.raises(DataFormatError):
-    #         combinator.signals = {"something", "wrong"}
-
-    #     combinator.validate_assignment = "none"
-    #     assert combinator.validate_assignment == ValidationMode.NONE
-
-    #     combinator.signals = {"something", "wrong"}
-    #     assert combinator.signals == {"something", "wrong"}
-    #     assert combinator.to_dict() == {
-    #         "name": "constant-combinator",
-    #         "position": {"x": 0.5, "y": 0.5},
-    #         "control_behavior": {"filters": {"something", "wrong"}},
-    #     }
-
     def test_get_signal(self):
         combinator = ConstantCombinator()
 
@@ -288,125 +349,6 @@ class TestConstantCombinator:
 
         signal = section.get_signal(50)
         assert signal == None
-
-    # def test_is_on(self):
-    #     combinator = ConstantCombinator()
-    #     assert combinator.is_on == True
-
-    #     combinator.is_on = False
-    #     assert combinator.is_on == False
-
-    #     combinator.is_on = True
-    #     assert combinator.is_on == True
-
-    #     combinator.is_on = None
-    #     assert combinator.is_on == None
-
-    #     with pytest.raises(DataFormatError):
-    #         combinator.is_on = "wrong"
-
-    #     # Test fix for issue #77
-    #     test_json = {
-    #         "entity_number": 1,
-    #         "name": "constant-combinator",
-    #         "position": {"x": 155.5, "y": -108.5},
-    #         "direction": Direction.WEST,
-    #         "control_behavior": {
-    #             "filters": [
-    #                 {
-    #                     "signal": {"type": "item", "name": "stone"},
-    #                     "count": 1,
-    #                     "index": 1,
-    #                 }
-    #             ],
-    #             "is_on": False,
-    #         },
-    #     }
-    #     combinator = ConstantCombinator(**test_json)
-    #     assert combinator.position.x == 155.5
-    #     assert combinator.position.y == -108.5
-    #     assert combinator.direction == Direction.WEST
-    #     assert combinator.is_on == False
-
-    #     combinator = ConstantCombinator("constant-combinator")
-
-    #     combinator.validate_assignment = "none"
-    #     assert combinator.validate_assignment == ValidationMode.NONE
-
-    #     combinator.is_on = "incorrect"
-    #     assert combinator.is_on == "incorrect"
-    #     assert combinator.to_dict() == {
-    #         "name": "constant-combinator",
-    #         "position": {"x": 0.5, "y": 0.5},
-    #         "control_behavior": {"is_on": "incorrect"},
-    #     }
-
-    # def test_mergable_with(self):
-    #     comb1 = ConstantCombinator("constant-combinator")
-    #     comb2 = ConstantCombinator(
-    #         "constant-combinator",
-    #         control_behavior={
-    #             "filters": [
-    #                 {
-    #                     "index": 1,
-    #                     "signal": {"name": "signal-A", "type": "virtual"},
-    #                     "count": 100,
-    #                 }
-    #             ]
-    #         },
-    #     )
-
-    #     assert comb1.mergable_with(comb2)
-    #     assert comb2.mergable_with(comb1)
-
-    #     comb2.tile_position = (1, 1)
-    #     assert not comb1.mergable_with(comb2)
-
-    # def test_merge(self):
-    #     comb1 = ConstantCombinator("constant-combinator")
-    #     comb2 = ConstantCombinator(
-    #         "constant-combinator",
-    #         control_behavior={
-    #             "sections": {
-    #                 "sections": [
-    #                     {
-    #                         "index": 1,
-    #                         "filters": [
-    #                             {
-    #                                 "index": 1,
-    #                                 "name": "signal-A",
-    #                                 "type": "virtual",
-    #                                 "count": 100,
-    #                             }
-    #                         ]
-    #                     }
-    #                 ]
-    #             }
-    #         },
-    #     )
-
-    #     comb1.merge(comb2)
-    #     del comb2
-
-    #     assert comb1.control_behavior == ConstantCombinator.Format.ControlBehavior(
-    #         **{
-    #             "sections": {
-    #                 "sections": [
-    #                     {
-    #                         "index": 1,
-    #                         "filters": [
-    #                             {
-    #                                 "index": 1,
-    #                                 "name": "signal-A",
-    #                                 "type": "virtual",
-    #                                 "count": 100,
-    #                             }
-    #                         ]
-    #                     }
-    #                 ]
-    #             }
-    #         }
-    #     )
 
     def test_issue_158(self):
         cc = ConstantCombinator(

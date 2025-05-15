@@ -3,7 +3,11 @@
 from draftsman.constants import Inventory
 from draftsman.entity import Reactor, reactors, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import AttrsItemRequest
+from draftsman.signatures import (
+    AttrsItemRequest,
+    AttrsItemSpecification,
+    AttrsInventoryLocation,
+)
 from draftsman.warning import (
     FuelLimitationWarning,
     FuelCapacityWarning,
@@ -14,6 +18,36 @@ from draftsman.warning import (
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_reactor():
+    if len(reactors) == 0:
+        return None
+    return Reactor(
+        "nuclear-reactor",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        item_requests=[
+            AttrsItemRequest(
+                id="uranium-fuel-cell",
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.fuel,
+                            stack=1,
+                            count=50,
+                        )
+                    ]
+                ),
+            )
+        ],
+        read_burner_fuel=True,
+        read_temperature=True,
+        temperature_signal="signal-A",
+        tags={"blah": "blah"},
+    )
 
 
 class TestReactor:
