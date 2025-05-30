@@ -41,6 +41,7 @@ class TestElectricEnergyInterface:
             "name": "electric-energy-interface",
             "quality": "normal",
             "position": {"x": 1.0, "y": 1.0},
+            "mirror": False,
             "buffer_size": 10000000000.0,
             "power_production": 8333333333.0,
             "power_usage": 0.0,
@@ -51,39 +52,6 @@ class TestElectricEnergyInterface:
             ElectricEnergyInterface(
                 "this is not an electric energy interface"
             ).validate().reissue_all()
-
-    def test_json_schema(self):
-        assert ElectricEnergyInterface.json_schema(version=(1, 0)) == {
-            "$id": "urn:factorio:entity:electric-energy-interface",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {"$ref": "urn:factorio:position"},
-                "buffer_size": {"type": "number"},
-                "power_production": {"type": "number"},
-                "power_usage": {"type": "number"},
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
-        assert ElectricEnergyInterface.json_schema(version=(2, 0)) == {
-            "$id": "urn:factorio:entity:electric-energy-interface",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {"$ref": "urn:factorio:position"},
-                "quality": {"$ref": "urn:factorio:quality-name"},
-                "buffer_size": {"type": "number"},
-                "power_production": {"type": "number"},
-                "power_usage": {"type": "number"},
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
 
     def test_set_buffer_size(self):
         interface = ElectricEnergyInterface("electric-energy-interface")

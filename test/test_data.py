@@ -30,12 +30,6 @@ class TestEntitiesData:
             "name": "new-entity-1",
             "type": "container",
             "collision_box": [[-0.4, -0.4], [0.4, 0.4]],
-            "collision_mask": {
-                "player-layer",
-                "item-layer",
-                "water-tile",
-                "object-layer",
-            },
             "flags": set(),
         }
         assert "new-entity-1" in entities.containers
@@ -47,14 +41,14 @@ class TestEntitiesData:
             name="new-entity-2",
             type="storage-tank",
             collision_box=[[-0.4, -0.4], [0.4, 0.4]],
-            collision_mask={"player-layer"},
+            collision_mask={"layers": {"player-layer"}},
             hidden=True,
         )
         assert entities.raw["new-entity-2"] == {
             "name": "new-entity-2",
             "type": "storage-tank",
             "collision_box": [[-0.4, -0.4], [0.4, 0.4]],
-            "collision_mask": {"player-layer"},
+            "collision_mask": {"layers": {"player-layer"}},
             "flags": {"hidden"},
         }
         assert "new-entity-2" in entities.storage_tanks

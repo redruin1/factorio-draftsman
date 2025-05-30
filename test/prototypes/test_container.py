@@ -83,119 +83,6 @@ class TestContainer:
         with pytest.raises(DataFormatError):
             Container("wooden-chest", bar="not even trying").validate().reissue_all()
 
-    def test_json_schema(self):
-        assert Container.json_schema(version=(1, 0)) == {
-            "$id": "urn:factorio:entity:container",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "$defs": {
-                "circuit-connection-point": {
-                    "type": "object",
-                    "properties": {
-                        "entity_id": {"$ref": "urn:uint64"},
-                        "circuit_id": {"enum": [1, 2]},
-                    },
-                    "required": ["entity_id"],
-                },
-                "wire-connection-point": {
-                    "properties": {
-                        "entity_id": {"$ref": "urn:uint64"},
-                        "wire_id": {"enum": [0, 1]},
-                    },
-                    "required": ["entity_id"],
-                },
-            },
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {
-                    "$ref": "urn:factorio:position",
-                },
-                "bar": {"oneOf": [{"$ref": "urn:uint16"}, {"type": "null"}]},
-                "connections": {
-                    "type": "object",
-                    "properties": {
-                        "1": {
-                            "type": "object",
-                            "properties": {
-                                "red": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/$defs/circuit-connection-point"
-                                    },
-                                },
-                                "green": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/$defs/circuit-connection-point"
-                                    },
-                                },
-                            },
-                        },
-                        "2": {
-                            "type": "object",
-                            "properties": {
-                                "red": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/$defs/circuit-connection-point"
-                                    },
-                                },
-                                "green": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/$defs/circuit-connection-point"
-                                    },
-                                },
-                            },
-                        },
-                        "Cu0": {
-                            "type": "array",
-                            "items": {"$ref": "#/$defs/wire-connection-point"},
-                        },
-                        "Cu1": {
-                            "type": "array",
-                            "items": {"$ref": "#/$defs/wire-connection-point"},
-                        },
-                    },
-                },
-                "items": {
-                    "type": "object",
-                    "description": "A dictionary of item requests, where each key is "
-                    "the name of an item and the value is the count of that item to "
-                    "request. Items always go to the default inventory of that "
-                    "object (if possible) in the order in which Factorio traverses "
-                    "them.",
-                },
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
-        assert Container.json_schema(version=(2, 0)) == {
-            "$id": "urn:factorio:entity:container",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {
-                    "$ref": "urn:factorio:position",
-                },
-                "quality": {"$ref": "urn:factorio:quality-name"},
-                "bar": {"oneOf": [{"$ref": "urn:uint16"}, {"type": "null"}]},
-                "items": {
-                    "type": "array",
-                    "items": {"$ref": "urn:factorio:item-request"},
-                    "description": "A list of item requests objects, which contain "
-                    "the item name, it's quality, the amount to request, as well as "
-                    "exactly what inventories to request to and where inside those "
-                    "inventories.",
-                },
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
-
     def test_power_and_circuit_flags(self):
         for container_name in containers:
             container = Container(container_name)
@@ -234,7 +121,17 @@ class TestContainer:
         container.bar = 2
         assert container.bar == 2
 
-    def test_set_item_request(self):  # TODO: reimplement
+        # Make sure an unknown entity issues error if out of range...
+        with pytest.warns(UnknownEntityWarning):
+            container = Container("unknown-container")
+        with pytest.raises(DataFormatError):
+            container.bar = -1
+
+        # But no warning since inventory size is unknown
+        assert container.inventory_size is None
+        container.bar = 100 # Nothing
+
+    def test_set_item_request(self):
         container = Container("wooden-chest")
 
         container.set_item_request("iron-plate", 50, inventory=Inventory.chest, slot=0)

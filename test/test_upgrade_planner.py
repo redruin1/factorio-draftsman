@@ -4,7 +4,7 @@ from draftsman import __factorio_version_info__
 from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.classes.exportable import ValidationResult
 from draftsman.constants import ValidationMode
-from draftsman.data import entities
+from draftsman.data import entities, items
 from draftsman.error import (
     IncorrectBlueprintTypeError,
     MalformedBlueprintStringError,
@@ -199,9 +199,9 @@ class TestUpgradePlanner:
 
         # TODO: errors
 
-    # def test_mapper_count(self):
-    #     upgrade_planner = UpgradePlanner()
-    #     assert upgrade_planner.mapper_count == 24
+    def test_mapper_count(self):
+        upgrade_planner = UpgradePlanner()
+        assert upgrade_planner.mapper_count == 1000
 
     def test_mappers(self):
         upgrade_planner = UpgradePlanner()
@@ -532,14 +532,15 @@ class TestUpgradePlanner:
         upgrade_planner = UpgradePlanner()
         entities.raw["dummy-entity-3"] = {
             "name": "dummy-entity-3",
-            "minable": {"results": [{"name": "rocket-part", "amount": 1}]},
+            "minable": {"results": [{"name": "hidden-item", "amount": 1}]},
         }
+        items.raw["hidden-item"] = {"flags": {"hidden"}}
         upgrade_planner.set_mapping("dummy-entity-3", "fast-transport-belt", 0)
         goal = ValidationResult(
             error_list=[],
             warning_list=[
                 UpgradeProhibitedWarning(
-                    "Cannot upgrade 'dummy-entity-3' to 'fast-transport-belt'; collision boxes differ"
+                    "Returned item 'hidden-item' when upgrading 'dummy-entity-3' is hidden"
                 )
             ],
         )

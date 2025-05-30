@@ -11,13 +11,14 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsAsteroidChunkID
+from draftsman.signatures import AttrsAsteroidChunkID, uint16
 from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import asteroid_collectors
 
 import attrs
+from typing import Optional
 
 
 @fix_incorrect_pre_init
@@ -42,11 +43,16 @@ class AsteroidCollector(
 
     # =========================================================================
 
-    result_inventory = attrs.field(  # TODO: what is this?
+    # result_inventory = attrs.field(  # Inventory object, might contain filters later
+    #     default=None,
+    # )
+
+    bar: Optional[uint16] = attrs.field(
         default=None,
+        validator=instance_of(Optional[uint16])
     )
     """
-    TODO
+    The limiting bar of this Asteroid collector.
     """
 
     # =========================================================================
@@ -102,7 +108,7 @@ class AsteroidCollector(
     def merge(self, other: "AsteroidCollector"):
         super().merge(other)
 
-        self.result_inventory = other.result_inventory
+        self.bar = other.bar
         self.chunk_filter = other.chunk_filter
         self.read_contents = other.read_contents
         self.read_hands = other.read_hands
@@ -118,7 +124,12 @@ AsteroidCollector.add_schema(
     {
         "$id": "urn:factorio:entity:asteroid-collector",
         "properties": {
-            "result_inventory": {"type": "null"},
+            "result_inventory": {
+                "type": "object",
+                "properties": {
+                    "bar": {"$ref": "urn:uint16"}
+                }
+            },
             "chunk-filter": {
                 "type": "array",
                 "items": {"$ref": "urn:factorio:asteroid-chunk-id"},
@@ -139,7 +150,7 @@ draftsman_converters.add_hook_fns(
     # {"$id": "factorio:asteroid_collector"},
     AsteroidCollector,
     lambda fields: {
-        "result_inventory": fields.result_inventory.name,
+        ("result_inventory", "bar"): fields.bar.name,
         "chunk-filter": fields.chunk_filter.name,
         ("control_behavior", "circuit_read_contents"): fields.read_contents.name,
         ("control_behavior", "include_hands"): fields.read_hands.name,

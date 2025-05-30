@@ -26,7 +26,7 @@ def valid_cargo_landing_pad():
         requests_enabled=False,  # TODO: this exists, but cannot be controlled via GUI...
         sections=[
             ManualSection(
-                index=1, filters=[SignalFilter(index=0, name="iron-ore", count=100)]
+                index=1, filters=[SignalFilter(index=1, name="iron-ore", count=100)]
             )
         ],
         tags={"blah": "blah"},
@@ -47,43 +47,6 @@ def test_constructor():
 
     with pytest.warns(UnknownEntityWarning):
         CargoLandingPad("unknown landing pad")
-
-
-def test_json_schema():
-    assert CargoLandingPad.json_schema(version=(1, 0)) is None
-    assert CargoLandingPad.json_schema(version=(2, 0)) == {
-        "$id": "urn:factorio:entity:cargo-landing-pad",
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object",
-        "properties": {
-            "entity_number": {"$ref": "urn:uint64"},
-            "name": {"type": "string"},
-            "position": {"$ref": "urn:factorio:position"},
-            "quality": {"$ref": "urn:factorio:quality-name"},
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_mode_of_operation": {"enum": [0, 1, 2], "default": 0},
-                },
-                "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
-            },
-            "request_filters": {
-                "type": "object",
-                "properties": {
-                    "trash_not_requested": {"type": "boolean", "default": "false"},
-                    "request_from_buffers": {"type": "boolean", "default": "true"},
-                    "enabled": {"type": "boolean", "default": "true"},
-                    "sections": {
-                        "type": "array",
-                        "items": {"$ref": "urn:factorio:manual-section"},
-                        "maxItems": 100,
-                    },
-                },
-            },
-            "tags": {"type": "object"},
-        },
-        "required": ["entity_number", "name", "position"],
-    }
 
 
 def test_flags():

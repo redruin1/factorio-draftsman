@@ -92,6 +92,7 @@ def test_constructor():
         "enable_logistics_while_moving": True,
         "grid": [],
         "items": [],
+        "mirror": False,
         "request_filters": {
             "enabled": True,
             "request_from_buffers": True,
@@ -116,8 +117,8 @@ def test_flags():
 
 def test_equipment_grid():
     """
-    Using the equipment grid helper functions should bookkeep `equipment` as
-    well as `item_requests`.
+    Test the read-only equipment grid attribute matches the expected values and
+    parameters (as well as correctly adjusting to quality level).
     """
     spidertron = SpiderVehicle("spidertron")
     assert spidertron.equipment_grid is not None
@@ -126,6 +127,22 @@ def test_equipment_grid():
     assert spidertron.equipment_grid.width == 10
     assert spidertron.equipment_grid.height == 6
     assert spidertron.equipment_grid.locked is False
+
+    # Test equipment grid quality
+    spidertron.quality = "legendary"
+    assert spidertron.equipment_grid is not None
+    assert spidertron.equipment_grid.id == "spidertron-equipment-grid"
+    assert spidertron.equipment_grid.equipment_categories == ["armor"]
+    assert spidertron.equipment_grid.width == 15
+    assert spidertron.equipment_grid.height == 11
+    assert spidertron.equipment_grid.locked is False
+
+def test_equipment():
+    """
+    Using the equipment grid helper functions should bookkeep `equipment` as
+    well as `item_requests`.
+    """
+    spidertron = SpiderVehicle("spidertron")
 
     with pytest.raises(DataFormatError):
         spidertron.equipment = "incorrect"
@@ -199,7 +216,7 @@ def test_equipment_grid():
         ],
     }
 
-    # Test removal all
+    # Test remove all
     spider_copy = copy.deepcopy(spidertron)
     spider_copy.remove_equipment()
     assert spider_copy.equipment == []

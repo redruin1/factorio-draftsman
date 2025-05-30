@@ -343,13 +343,13 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
 
     # =========================================================================
 
-    children: list["Group"] = attrs.field(
-        factory=[],
-        validator=instance_of(list)
-    )
-    """
-    Children of this entity-like.
-    """
+    # children: list["Group"] = attrs.field(
+    #     factory=[],
+    #     validator=instance_of(list)
+    # )
+    # """
+    # Children of this entity-like.
+    # """
 
     # =========================================================================
 

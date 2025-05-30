@@ -1,6 +1,6 @@
 # circuit_condition.py
 
-from draftsman.classes.exportable import Exportable
+from draftsman.classes.mixins.control_behavior import ControlBehaviorMixin
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import AttrsSimpleCondition, AttrsSignalID, int32
 from draftsman.validators import instance_of
@@ -10,7 +10,7 @@ from typing import Literal, Union
 
 
 @attrs.define(slots=False)
-class CircuitConditionMixin(Exportable):  # (ControlBehaviorMixin)
+class CircuitConditionMixin(ControlBehaviorMixin):
     """
     (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
     Allows the Entity to have an circuit enable condition, such as when the

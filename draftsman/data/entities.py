@@ -8,6 +8,8 @@ from draftsman import data
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.utils import PrimitiveAABB, AABB
 
+from typing import Optional
+
 
 try:
     with pkg_resources.open_binary(data, "entities.pkl") as inp:
@@ -130,89 +132,27 @@ except FileNotFoundError:  # pragma: no coverage
     collision_sets: dict[str, CollisionSet] = {}
 
 
-def get_default_collision_mask(entity_type):
-    """
-    Determine the default collision mask based on the string entity type.
+# TODO: should these be here?
+ALL_EFFECTS = {"speed", "productivity", "consumption", "pollution", "quality"}
+ALL_EFFECTS_EXCEPT_QUALITY = {"speed", "productivity", "consumption", "pollution", "quality"}
+NO_EFFECTS = set()
 
-    :param entity_type: A string containing what type of entity we're getting
-        a collision mask for. (e.g. ``"container"``, ``"gate"``, ``"heat-pipe"``,
-        etc.)
 
-    :returns: A ``set()`` containing the default collision layers for that
-        object.
+def get_allowed_effects(entity_name: str, default: set[str]) -> Optional[set[str]]:
     """
-    # TODO: make this dict based
-    if entity_type == "gate":
-        return {
-            "item-layer",
-            "object-layer",
-            "player-layer",
-            "water-tile",
-            "train-layer",
-        }
-    elif entity_type == "heat-pipe":
-        return {"object-layer", "floor-layer", "water-tile"}
-    elif entity_type == "land-mine":
-        return {"object-layer", "water-tile"}
-    elif entity_type == "linked-belt":
-        return {
-            "object-layer",
-            "item-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    elif entity_type == "loader":
-        return {
-            "object-layer",
-            "item-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    elif entity_type == "straight-rail" or entity_type == "curved-rail":
-        return {
-            "item-layer",
-            "object-layer",
-            "rail-layer",
-            "floor-layer",
-            "water-tile",
-        }
-    elif entity_type == "rail-signal" or entity_type == "rail-chain-signal":
-        return {"floor-layer", "rail-layer", "item-layer"}
-    elif (
-        entity_type == "locomotive"
-        or entity_type == "cargo-wagon"
-        or entity_type == "fluid-wagon"
-        or entity_type == "artillery-wagon"
-    ):
-        return {"train-layer"}
-    elif entity_type == "splitter":
-        return {
-            "object-layer",
-            "item-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    elif entity_type == "transport-belt":
-        return {
-            "object-layer",
-            "floor-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    elif entity_type == "underground-belt":
-        return {
-            "object-layer",
-            "item-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    else:  # true default
-        return {
-            "item-layer",
-            "object-layer",
-            "player-layer",
-            "water-tile",
-        }
+    Returns a set of all the effects that this entity can support, either coming
+    from modules or beacons. Returns ``default`` if this entity is recognized
+    under the current environment, but has no defined key. Returns ``None`` if 
+    the entity is unrecognized by the current environment.
+    """
+    # If name not known, return None
+    entity = raw.get(entity_name, None)
+    if entity is None:
+        return None
+    # If name known, but no key, then return default list
+    result = entity.get("allowed_effects", default)
+    # Normalize single string effect to a 1-length set
+    return {result} if isinstance(result, str) else set(result)
 
 
 def add_entity(
@@ -311,9 +251,10 @@ def add_entity(
     }
 
     if collision_mask is not None:
-        raw[name]["collision_mask"] = set(collision_mask)
-    else:
-        raw[name]["collision_mask"] = get_default_collision_mask(type)
+        raw[name]["collision_mask"] = collision_mask
+        raw[name]["collision_mask"]["layers"] = set(collision_mask["layers"])
+    # else:
+    #     raw[name]["collision_mask"] = get_default_collision_mask(type)
 
     if hidden:
         raw[name]["flags"].add("hidden")

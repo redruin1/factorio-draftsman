@@ -46,7 +46,7 @@ def main():
 
     parser = argparse.ArgumentParser(
         prog="draftsman",
-        description="A command-line utility for reporting and manipulating Draftsman's source data.",
+        description="A command-line utility for reporting and manipulating Draftsman's environment.",
     )
     # General arguments used by all subcommands
     parser.add_argument(
@@ -163,6 +163,10 @@ def main():
     update_command = subparsers.add_parser(
         "update",
         help="Updates Draftsman's environment by emulating Factorio's data lifecycle.",
+        description="Runs the Factorio data lifecycle using the data pointed to "
+        "by `game_path`. All information that Draftsman needs will be extracted "
+        "into pickle files located in the `/draftsman/data` folder in the "
+        "installation directory."
     )
     update_command.add_argument(
         "-l",

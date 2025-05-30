@@ -1,8 +1,5 @@
 # serialization.py
 
-from draftsman.error import DataFormatError
-from draftsman.validators import and_, instance_of, or_
-
 import attrs
 import cattrs
 from cattrs.gen._shared import find_structure_handler
@@ -11,8 +8,9 @@ from cattrs.fns import identity
 from cattrs.gen._lc import generate_unique_filename
 
 import functools
-from enum import Enum
-from typing import Annotated, Any, Callable, Optional, Union, get_args, get_origin
+from typing import Any, Callable, Optional, TypeVar
+
+T = TypeVar('T')
 
 MASTER_CONVERTER = cattrs.Converter(omit_if_default=False)
 MASTER_CONVERTER_OMIT_NONE = cattrs.Converter(omit_if_default=False)
@@ -330,7 +328,7 @@ class DraftsmanConverters:
 
     def add_schema(
         self,
-        schema: dict,
+        schema: dict[str, Any],
         cls: Optional[type] = None,
     ):
         # Normalize references and IDs to always use versions at end
@@ -340,8 +338,8 @@ class DraftsmanConverters:
     def add_hook_fns(
         self,
         cls: type,
-        structure_func: Callable,
-        unstructure_func: Optional[Callable] = None,
+        structure_func: Callable[[tuple[attrs.Attribute, ...]], dict[str | tuple[str, ...], str]],
+        unstructure_func: Optional[Callable[..., dict[str, str]]] = None,
     ):
         for version in self.versions.values():
             version.add_hook_fns(cls, structure_func, unstructure_func)

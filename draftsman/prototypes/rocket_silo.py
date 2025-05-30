@@ -9,15 +9,15 @@ from draftsman.classes.mixins import (
     RecipeMixin,
     EnergySourceMixin,
 )
-from draftsman.constants import SiloReadMode
+from draftsman.constants import Inventory, SiloReadMode
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import RecipeName, uint32
+from draftsman.signatures import ModuleName, QualityName, RecipeName, uint32
 from draftsman.validators import instance_of, try_convert
 
 from draftsman.data.entities import rocket_silos
 
 import attrs
-from typing import Optional
+from typing import Iterable, Optional
 
 
 @attrs.define
@@ -79,6 +79,21 @@ class RocketSilo(
 
     # =========================================================================
 
+    use_transitional_requests: bool = attrs.field(
+        default=False,
+        validator=instance_of(bool)
+    )
+    """
+    Whether or not this rocket silo should automatically attempt to fulfill the
+    requests of space platforms stationed above it.
+
+    .. NOTE::
+
+        Only has an effect on versions of Factorio >= 2.0.
+    """
+
+    # =========================================================================
+
     transitional_request_index: uint32 = attrs.field(
         default=0, validator=instance_of(uint32)
     )
@@ -90,6 +105,18 @@ class RocketSilo(
 
         Only has an effect on versions of Factorio >= 2.0.
     """
+
+    # =========================================================================
+
+    def request_modules(
+        self,
+        module_name: ModuleName,
+        slots: int | Iterable[int],
+        quality: QualityName = "normal",
+    ):
+        return super().request_modules(
+            Inventory.rocket_silo_modules, module_name, slots, quality
+        )
 
     # =========================================================================
 
@@ -119,6 +146,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(  # pragma: no branch
     lambda fields: {
         "auto_launch": fields.auto_launch.name,
         None: fields.read_items_mode.name,
+        None: fields.use_transitional_requests.name,
         None: fields.transitional_request_index.name,
     },
 )
@@ -151,6 +179,7 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
     lambda fields: {
         None: fields.auto_launch.name,
         ("control_behavior", "read_items_mode"): fields.read_items_mode.name,
+        "use_transitional_requests": fields.use_transitional_requests.name,
         "transitional_request_index": fields.transitional_request_index.name,
     },
 )

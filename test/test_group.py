@@ -828,8 +828,8 @@ class TestGroup:
         group.add_circuit_connection("red", 0, 1)
         group.entities.append("power-switch", tile_position=(1, 1))
         group.add_power_connection(2, 3, side_2="input")
-        group.entities.append("locomotive", id="loco", tile_position=(0, 0))
-        group.entities.append("cargo-wagon", id="wagon", tile_position=(7, 0))
+        group.entities.append("locomotive", id="loco", orientation=0.75, tile_position=(0, 4))
+        group.entities.append("cargo-wagon", id="wagon", orientation=0.75, tile_position=(7, 4))
         group.stock_connections = [
             StockConnection(stock=Association(group.entities["loco"])),
             StockConnection(

@@ -32,35 +32,6 @@ class TestGenerator:
 
         # Errors
 
-    def test_json_schema(self):
-        assert Generator.json_schema(version=(1, 0)) == {
-            "$id": "urn:factorio:entity:generator",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {"$ref": "urn:factorio:position"},
-                "direction": {"enum": list(range(8)), "default": 0},
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
-        assert Generator.json_schema(version=(2, 0)) == {
-            "$id": "urn:factorio:entity:generator",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {"$ref": "urn:factorio:position"},
-                "quality": {"$ref": "urn:factorio:quality-name"},
-                "direction": {"enum": list(range(16)), "default": 0},
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
-
     def test_mergable_with(self):
         gen1 = Generator("steam-engine")
         gen2 = Generator("steam-engine", tags={"some": "stuff"})

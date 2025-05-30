@@ -16,7 +16,7 @@ from draftsman.signatures import (
 )
 from draftsman.warning import EquipmentGridWarning
 
-from draftsman.data import equipment as equipment_data
+from draftsman.data import equipment as equipment_data, qualities
 
 import attrs
 from typing import Optional
@@ -26,6 +26,7 @@ import warnings
 @attrs.frozen
 class EquipmentGrid:
     id: str = attrs.field()  # TODO: equipment_grid_name
+    quality: QualityName = attrs.field()
 
     @property
     def equipment_categories(self) -> list[str]:  # TODO: EquipmentCategoryName
@@ -39,16 +40,16 @@ class EquipmentGrid:
         """
         The width of the equipment grid in tiles.
         """
-        # TODO: modulate based on quality
-        return equipment_data.grids[self.id]["width"]
+        buff = qualities.raw[self.quality]["level"]
+        return equipment_data.grids[self.id]["width"] + buff
 
     @property
     def height(self) -> uint32:
         """
         The height of the equipment grid in tiles.
         """
-        # TODO: modulate based on quality
-        return equipment_data.grids[self.id]["height"]
+        buff = qualities.raw[self.quality]["level"]
+        return equipment_data.grids[self.id]["height"] + buff
 
     @property
     def locked(self) -> bool:
@@ -58,8 +59,12 @@ class EquipmentGrid:
         return equipment_data.grids[self.id].get("locked", False)
 
 
-# Only store one equipment grid per ID and reuse across every entity
-_equipment_grids = {grid: EquipmentGrid(grid) for grid in equipment_data.grids}
+# Only store one equipment grid per ID/quality and reuse across every entity
+_equipment_grids = {
+    (grid, quality): EquipmentGrid(grid, quality) 
+    for quality in qualities.raw 
+    for grid in equipment_data.grids
+}
 
 
 @attrs.define(slots=False)
@@ -79,7 +84,7 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
         grid_id = self.prototype.get("equipment_grid", None)
         if grid_id is None:
             return None
-        return _equipment_grids.get(grid_id, None)
+        return _equipment_grids.get((grid_id, self.quality), None)
 
     # =========================================================================
 

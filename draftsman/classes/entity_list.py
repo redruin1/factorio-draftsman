@@ -27,7 +27,6 @@ from pydantic import (
     ValidationError,
     model_validator,
 )
-from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
 from typing import Any, Callable, Iterator, Literal, Optional, Union
 

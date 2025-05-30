@@ -29,25 +29,6 @@ def test_constructor():
         CargoBay("unknown cargo bay")
 
 
-def test_json_schema():
-    assert CargoBay.json_schema(version=(1, 0)) is None
-    assert CargoBay.json_schema(version=(2, 0)) == {
-        "$id": "urn:factorio:entity:cargo-bay",
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object",
-        "properties": {
-            "entity_number": {"$ref": "urn:uint64"},
-            "name": {"type": "string"},
-            "position": {
-                "$ref": "urn:factorio:position",
-            },
-            "quality": {"$ref": "urn:factorio:quality-name"},
-            "tags": {"type": "object"},
-        },
-        "required": ["entity_number", "name", "position"],
-    }
-
-
 def test_flags():
     for bay_name in cargo_bays:
         bay = CargoBay(bay_name)

@@ -36,38 +36,6 @@ def test_constructor():
         DisplayPanel("unknown display panel")
 
 
-def test_json_schema():
-    assert DisplayPanel.json_schema(version=(1, 0)) is None
-    assert DisplayPanel.json_schema(version=(2, 0)) == {
-        "$id": "urn:factorio:entity:display-panel",
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object",
-        "properties": {
-            "entity_number": {"$ref": "urn:uint64"},
-            "name": {"type": "string"},
-            "position": {"$ref": "urn:factorio:position"},
-            "quality": {"$ref": "urn:factorio:quality-name"},
-            "direction": {"enum": list(range(16)), "default": 0},
-            "text": {"type": "string"},
-            "icon": {"oneOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]},
-            "always_show": {"type": "boolean", "default": "false"},
-            "show_in_chart": {"type": "boolean", "default": "false"},
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "parameters": {
-                        "type": "array",
-                        "items": {"$ref": "urn:factorio:entity:display-panel:message"},
-                    }
-                },
-                "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
-            },
-            "tags": {"type": "object"},
-        },
-        "required": ["entity_number", "name", "position"],
-    }
-
-
 def test_flags():
     for panel_name in display_panels:
         panel = DisplayPanel(panel_name)

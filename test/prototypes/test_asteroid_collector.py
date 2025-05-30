@@ -26,6 +26,7 @@ def valid_asteroid_collector():
         circuit_condition=AttrsSimpleCondition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
+        bar=10,
         chunk_filter=["oxide-asteroid-chunk"],
         circuit_set_filters=True,
         read_contents=True,
@@ -53,41 +54,6 @@ class TestAsteroidCollector:
 
         with pytest.raises(DataFormatError):
             AsteroidCollector(chunk_filter="wrong").validate().reissue_all()
-
-    def test_json_schema(self):
-        assert AsteroidCollector.json_schema(version=(1, 0)) is None
-        assert AsteroidCollector.json_schema(version=(2, 0)) == {
-            "$id": "urn:factorio:entity:asteroid-collector",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {
-                    "$ref": "urn:factorio:position",
-                },
-                "quality": {"$ref": "urn:factorio:quality-name"},
-                "direction": {"enum": list(range(16)), "default": 0},
-                "result_inventory": {"type": "null"},
-                "chunk-filter": {
-                    "type": "array",
-                    "items": {"$ref": "urn:factorio:asteroid-chunk-id"},
-                },
-                "control_behavior": {
-                    "type": "object",
-                    "properties": {
-                        "circuit_enabled": {"type": "boolean", "default": "false"},
-                        "circuit_condition": {"$ref": "urn:factorio:simple-condition"},
-                        "circuit_read_contents": {"type": "boolean", "default": False},
-                        "include_hands": {"type": "boolean", "default": True},
-                        "circuit_set_filters": {"type": "boolean", "default": "false"},
-                    },
-                    "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
-                },
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
 
     def test_power_and_circuit_flags(self):
         for collector_name in asteroid_collectors:

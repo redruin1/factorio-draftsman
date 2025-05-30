@@ -11,7 +11,7 @@ import pytest
 
 @pytest.fixture
 def valid_space_platform_hub():
-    if len(space_platform_hubs):
+    if len(space_platform_hubs) == 0:
         return None
     return SpacePlatformHub(
         "space-platform-hub",

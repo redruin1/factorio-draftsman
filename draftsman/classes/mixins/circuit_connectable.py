@@ -2,7 +2,7 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.classes.association import Association
-from draftsman.data import entities
+from draftsman.data import entities, qualities
 from draftsman.serialization import draftsman_converters
 from draftsman.validators import instance_of
 
@@ -32,10 +32,11 @@ class CircuitConnectableMixin(Exportable):
         Returns ``None`` if the entity's name is not recognized under the
         current environment. Not exported; read only.
         """
-        # TODO: modify this based on quality
-        return entities.raw.get(self.name, {"circuit_wire_max_distance": None}).get(
-            "circuit_wire_max_distance", 0
-        )
+        wire_max_dist = entities.raw.get(self.name, {}).get("circuit_wire_max_distance", None)
+        if wire_max_dist is None:
+            return None
+        multiplier = 2 * qualities.raw.get(self.quality, {"level": 0})["level"]
+        return wire_max_dist + wire_max_dist * multiplier
 
     # =========================================================================
 

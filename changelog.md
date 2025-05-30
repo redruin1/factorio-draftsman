@@ -1,5 +1,28 @@
 # Changelog
 
+## 3.0.0
+* Updated `factorio-data` to version `2.0.49` (latest)
+* Updated `compatibility/defines.lua` to `2.0.49` (latest)
+* Switched from `pydantic` to `attrs`; 
+    * A much better fit for Draftsman's scope, much more flexible, and much less boilerplate to maintain
+    * Clearer distinction between loading steps:
+        * Constructors are for initializing Draftsman objects
+        * `from_dict()` and `from_string()` methods are for importing from raw JSON
+        * `to_dict()` and `to_string()` methods are for exporting to raw JSON
+        * Hooks are defined outside of the class scope which convers the raw JSON format to the internal Python object form
+        * This now means that the Python objects are not strictly tied to the JSON format, which means they can deviate for ease of use/performance reasons
+* Draftsman entities can now handle importing/exporting between Factorio 1.0 and Factorio 2.0 blueprint string formats
+    * Simply specify `version=(1, 0)` or `version=(2, 0)` in any of `to/from_dict()` or `to/from_string()` methods
+    * While serialization/deserialization is correctly implemented, *migration* from an old to new string is not (fully) implemented, and so some parts will still have to be done manually
+        * For example, Draftsman will not convert `"filter-inserter"` into `"fast-inserter"` for you
+* Added tests to validate the exported formats of all objects match the above JSON schemas, on both game versions
+
+## 2.0.3
+* Updated `factorio-data` to version `2.0.48` (latest)
+* Fixed #164 (Decider combinator example doesn't work)
+* Merged vjanell's pull request:
+    * Fix reversed operators in DeciderCombinator `__ge__` and `__le__` methods
+
 ## 2.0.2
 * Updated `factorio-data` to version `2.0.45` (latest)
 * Fixed #158 (Key "comparator" not found when exporting/importing Constant Combinator)

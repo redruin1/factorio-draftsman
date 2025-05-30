@@ -61,100 +61,17 @@ class TestElectricPole:
             "position": {"x": 0.5, "y": 0.5},
         }
 
-    def test_json_schema(self):
-        assert ElectricPole.json_schema(version=(1, 0)) == {
-            "$id": "urn:factorio:entity:electric-pole",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "$defs": {
-                "circuit-connection-point": {
-                    "type": "object",
-                    "properties": {
-                        "entity_id": {"$ref": "urn:uint64"},
-                        "circuit_id": {"enum": [1, 2]},
-                    },
-                    "required": ["entity_id"],
-                },
-                "wire-connection-point": {
-                    "properties": {
-                        "entity_id": {"$ref": "urn:uint64"},
-                        "wire_id": {"enum": [0, 1]},
-                    },
-                    "required": ["entity_id"],
-                },
-            },
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {"$ref": "urn:factorio:position"},
-                "neighbours": {
-                    "type": "array",
-                    "items": {"$ref": "urn:uint64"},
-                },
-                "connections": {
-                    "type": "object",
-                    "properties": {
-                        "1": {
-                            "type": "object",
-                            "properties": {
-                                "red": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/$defs/circuit-connection-point"
-                                    },
-                                },
-                                "green": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/$defs/circuit-connection-point"
-                                    },
-                                },
-                            },
-                        },
-                        "2": {
-                            "type": "object",
-                            "properties": {
-                                "red": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/$defs/circuit-connection-point"
-                                    },
-                                },
-                                "green": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/$defs/circuit-connection-point"
-                                    },
-                                },
-                            },
-                        },
-                        "Cu0": {
-                            "type": "array",
-                            "items": {"$ref": "#/$defs/wire-connection-point"},
-                        },
-                        "Cu1": {
-                            "type": "array",
-                            "items": {"$ref": "#/$defs/wire-connection-point"},
-                        },
-                    },
-                },
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
-        assert ElectricPole.json_schema(version=(2, 0)) == {
-            "$id": "urn:factorio:entity:electric-pole",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {"$ref": "urn:factorio:position"},
-                "quality": {"$ref": "urn:factorio:quality-name"},
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
+    def test_circuit_wire_max_distance(self):
+        """
+        Ensure that circuit wire connection range is correct and that it updates
+        with pole quality.
+        """
+        pole = ElectricPole("small-electric-pole")
+        assert pole.circuit_wire_max_distance == 7.5
+
+        pole.quality = "legendary"
+        assert pole.circuit_wire_max_distance == 17.5
+
 
     def test_mergable_with(self):
         group = Group()

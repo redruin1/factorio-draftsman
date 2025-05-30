@@ -14,16 +14,15 @@ from draftsman.classes.mixins import (
     ControlBehaviorMixin,
     DirectionalMixin,
 )
+from draftsman.constants import Inventory
+from draftsman.signatures import ModuleName, QualityName
 from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import furnaces
 from draftsman.data import entities, recipes
 
 import attrs
-from typing import Optional
-
-
-# _valid_input_ingredients: dict[str, set[str]] = {}
+from typing import Iterable, Optional
 
 
 @fix_incorrect_pre_init
@@ -53,19 +52,6 @@ class Furnace(
     # =========================================================================
 
     @property
-    def allowed_effects(self) -> Optional[set[str]]:
-        # If name not known, return None
-        entity = entities.raw.get(self.name, None)
-        if entity is None:
-            return None
-        # If name known, but no key, then return empty list
-        result = entity.get("allowed_effects", [])
-        # Normalize single string effect to a 1-length list
-        return {result} if isinstance(result, str) else set(result)
-
-    # =========================================================================
-
-    @property
     def allowed_input_ingredients(self) -> set[str]:  # TODO: cache
         """
         A set of strings, each one an ingredient that can be used as a input for
@@ -85,9 +71,19 @@ class Furnace(
         return set(
             item
             for recipe_name in total_recipes
-            for item in recipes.get_recipe_ingredients(
-                recipe_name, "normal"
-            )  # TODO: how to handle qualities?
+            for item in recipes.get_recipe_ingredients(recipe_name) 
+        )
+
+    # =========================================================================
+
+    def request_modules(
+        self,
+        module_name: ModuleName,
+        slots: int | Iterable[int],
+        quality: QualityName = "normal",
+    ):
+        return super().request_modules(
+            Inventory.furnace_modules, module_name, slots, quality
         )
 
     # =========================================================================

@@ -169,6 +169,7 @@ class TestActiveContainer:
             "name": "active-provider-chest",
             "position": {"x": 0.5, "y": 0.5},
             "quality": "normal",
+            "mirror": False,
             # "bar": None,
             "items": [
                 {
@@ -197,6 +198,7 @@ class TestActiveContainer:
             "name": "active-provider-chest",
             "position": {"x": 0.5, "y": 0.5},
             "quality": "normal",
+            "mirror": False,
             # "bar": None,
             "items": [
                 {

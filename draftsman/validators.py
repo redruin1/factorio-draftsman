@@ -181,7 +181,7 @@ class _InstanceOfValidator:
         if mode:
             if not isinstance(value, self.cls):
                 name = self.cls if isinstance(self.cls, tuple) else self.cls.__name__
-                msg = "{} is not an instance of '{}'".format(repr(value), name)
+                msg = "'{}' must be an instance of {}".format(attr.name, name)
                 raise DataFormatError(msg)
             if self.extra_validator:
                 self.extra_validator(inst, attr, value, **kwargs)

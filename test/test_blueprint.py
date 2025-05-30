@@ -2922,8 +2922,8 @@ class TestBlueprint:
 
         assert blueprint1 != entity
 
-    # def test_json_schema(self): # TODO
-    #     Blueprint.json_schema()
+    # def test_JSON_schema(self): # TODO
+    #     Blueprint.JSON_schema()
 
     def test_unreasonable_size(self):
         blueprint = Blueprint()

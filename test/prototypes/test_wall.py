@@ -342,6 +342,7 @@ class TestWall:
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
             "quality": "normal",
+            "mirror": False,
             "control_behavior": {
                 "circuit_open_gate": True,
                 "circuit_condition": {

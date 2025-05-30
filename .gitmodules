@@ -1,3 +1,6 @@
 [submodule "factorio-data"]
 	path = draftsman/factorio-data
 	url = https://github.com/wube/factorio-data
+[submodule "factorio-blueprint-schemas"]
+	path = factorio-blueprint-schemas
+	url = https://github.com/redruin1/factorio-blueprint-schemas

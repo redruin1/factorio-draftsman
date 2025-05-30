@@ -76,62 +76,6 @@ class TestArtilleryWagon:
                 "artillery-wagon", orientation="wrong"
             ).validate().reissue_all()
 
-    def test_json_schema(self):
-        assert ArtilleryWagon.json_schema(version=(1, 0)) == {
-            "$id": "urn:factorio:entity:artillery-wagon",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {
-                    "$ref": "urn:factorio:position",
-                },
-                "artillery_auto_targeting": {"type": "boolean", "default": "true"},
-                "orientation": {"type": "number"},
-                "items": {
-                    "type": "object",
-                    "description": "A dictionary of item requests, where each key is "
-                    "the name of an item and the value is the count of that item to "
-                    "request. Items always go to the default inventory of that "
-                    "object (if possible) in the order in which Factorio traverses "
-                    "them.",
-                },
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
-        assert ArtilleryWagon.json_schema(version=(2, 0)) == {
-            "$id": "urn:factorio:entity:artillery-wagon",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {
-                    "$ref": "urn:factorio:position",
-                },
-                "quality": {"$ref": "urn:factorio:quality-name"},
-                "artillery_auto_targeting": {"type": "boolean", "default": "true"},
-                "orientation": {"type": "number"},
-                "items": {
-                    "type": "array",
-                    "items": {"$ref": "urn:factorio:item-request"},
-                    "description": "A list of item requests objects, which contain "
-                    "the item name, it's quality, the amount to request, as well as "
-                    "exactly what inventories to request to and where inside those "
-                    "inventories.",
-                },
-                "enable_logistics_while_moving": {"type": "boolean", "default": "true"},
-                "grid": {
-                    "type": "array",
-                    "items": {"$ref": "urn:factorio:equipment-component"},
-                },
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
-
     def test_mergable_with(self):
         wagon1 = ArtilleryWagon("artillery-wagon")
         wagon2 = ArtilleryWagon("artillery-wagon")

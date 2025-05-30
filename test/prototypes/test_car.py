@@ -48,43 +48,6 @@ def test_constructor():
         Car("this is not a car")
 
 
-def test_json_schema():
-    assert Car.json_schema(version=(1, 0)) is None
-    assert Car.json_schema(version=(2, 0)) == {
-        "$id": "urn:factorio:entity:car",
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object",
-        "properties": {
-            "entity_number": {"$ref": "urn:uint64"},
-            "name": {"type": "string"},
-            "position": {
-                "$ref": "urn:factorio:position",
-            },
-            "quality": {"$ref": "urn:factorio:quality-name"},
-            "orientation": {"type": "number"},
-            "items": {
-                "type": "array",
-                "items": {"$ref": "urn:factorio:item-request"},
-                "description": "A list of item requests objects, which contain "
-                "the item name, it's quality, the amount to request, as well as "
-                "exactly what inventories to request to and where inside those "
-                "inventories.",
-            },
-            "enable_logistics_while_moving": {"type": "boolean", "default": "true"},
-            "grid": {
-                "type": "array",
-                "items": {"$ref": "urn:factorio:equipment-component"},
-            },
-            "trunk_inventory": {"$ref": "urn:factorio:filtered-inventory"},
-            "ammo_inventory": {"$ref": "urn:factorio:filtered-inventory"},
-            "driver_is_main_gunner": {"type": "boolean", "default": "false"},
-            "selected_gun_index": {"$ref": "urn:uint32", "default": 1},
-            "tags": {"type": "object"},
-        },
-        "required": ["entity_number", "name", "position"],
-    }
-
-
 def test_flags():
     for car_name in cars:
         car = Car(car_name)

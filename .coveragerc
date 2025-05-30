@@ -1,4 +1,5 @@
 # python coverage configuration file
+
 [run]
 omit = 
     test/**
@@ -7,3 +8,9 @@ omit =
     draftsman/environment/*
 branch = True
 command_line = -m pytest test -Werror -vv
+
+[report]
+skip_covered = True
+
+[html]
+skip_covered = True

@@ -179,7 +179,10 @@ def check_valid_upgrade_pair(
         ]
 
     # Collision masks must match (assuming None is valid)
-    if from_entity.get("collision_mask", None) != to_entity.get("collision_mask", None):
+    print(from_entity)
+    print(from_entity["collision_mask"])
+    print(to_entity["collision_mask"])
+    if from_entity["collision_mask"]["layers"] != to_entity["collision_mask"]["layers"]:
         return [
             UpgradeProhibitedWarning(
                 "Cannot upgrade '{}' to '{}'; collision masks differ".format(

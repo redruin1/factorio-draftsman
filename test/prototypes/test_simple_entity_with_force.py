@@ -43,6 +43,7 @@ class TestSimpleEntityWithForce:
             "quality": "normal",  # Default
             "position": {"x": 0.5, "y": 0.5},
             "direction": Direction.NORTH,  # Default
+            "mirror": False, # Default
             "variation": 1,  # Default
             "tags": {},  # Default
         }

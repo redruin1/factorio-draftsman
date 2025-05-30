@@ -31,24 +31,6 @@ def test_constructor():
         FusionReactor("unknown fusion reactor")
 
 
-def test_json_schema():
-    assert FusionReactor.json_schema(version=(1, 0)) is None
-    assert FusionReactor.json_schema(version=(2, 0)) == {
-        "$id": "urn:factorio:entity:fusion-reactor",
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object",
-        "properties": {
-            "entity_number": {"$ref": "urn:uint64"},
-            "name": {"type": "string"},
-            "position": {"$ref": "urn:factorio:position"},
-            "quality": {"$ref": "urn:factorio:quality-name"},
-            "direction": {"enum": list(range(16)), "default": 0},
-            "tags": {"type": "object"},
-        },
-        "required": ["entity_number", "name", "position"],
-    }
-
-
 def test_flags():
     for reactor_name in fusion_reactors:
         reactor = FusionReactor(reactor_name)

@@ -2,8 +2,7 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import CircuitConnectableMixin, PowerConnectableMixin
-from draftsman.data import entities
-from draftsman.utils import get_first
+from draftsman.data import entities, qualities
 
 from draftsman.data.entities import electric_poles
 
@@ -25,9 +24,11 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
     @property
     def circuit_wire_max_distance(self) -> float:
         # Electric poles use a custom key (for some reason)
-        return entities.raw.get(self.name, {"maximum_wire_distance": None}).get(
-            "maximum_wire_distance", 0
-        )
+        wire_max_dist = entities.raw.get(self.name, {}).get("maximum_wire_distance", None)
+        if wire_max_dist is None:
+            return None
+        buff = 2 * qualities.raw.get(self.quality, {"level": 0})["level"]
+        return wire_max_dist + buff
 
     # =========================================================================
 

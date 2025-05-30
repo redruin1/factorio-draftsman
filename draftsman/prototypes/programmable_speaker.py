@@ -29,6 +29,8 @@ from typing import Optional
 import warnings
 
 
+# TODO: patch for 2.0!
+
 @attrs.define
 class ProgrammableSpeaker(
     CircuitConditionMixin,

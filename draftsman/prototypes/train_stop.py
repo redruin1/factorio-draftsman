@@ -22,6 +22,8 @@ import attrs
 from typing import Optional
 
 
+# TODO: priority
+
 @fix_incorrect_pre_init
 @attrs.define
 class TrainStop(

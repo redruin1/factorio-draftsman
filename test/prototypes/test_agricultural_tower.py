@@ -49,34 +49,3 @@ def test_flags():
         assert tower.dual_power_connectable == False
         assert tower.circuit_connectable == True
         assert tower.dual_circuit_connectable == False
-
-
-def test_json_schema():
-    assert AgriculturalTower.json_schema(version=(1, 0)) == None
-    assert AgriculturalTower.json_schema(version=(2, 0)) == {
-        "$id": "urn:factorio:entity:agricultural-tower",
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object",
-        "properties": {
-            "entity_number": {"$ref": "urn:uint64"},
-            "name": {"type": "string"},
-            "position": {"$ref": "urn:factorio:position"},
-            "quality": {"$ref": "urn:factorio:quality-name"},
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_enabled": {"type": "boolean", "default": "false"},
-                    "circuit_condition": {"$ref": "urn:factorio:simple-condition"},
-                    "connect_to_logistic_network": {
-                        "type": "boolean",
-                        "default": "false",
-                    },
-                    "logistic_condition": {"$ref": "urn:factorio:simple-condition"},
-                    "read_contents": {"type": "boolean", "default": "false"},
-                },
-                "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
-            },
-            "tags": {"type": "object"},
-        },
-        "required": ["entity_number", "name", "position"],
-    }

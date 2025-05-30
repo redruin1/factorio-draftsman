@@ -49,14 +49,14 @@ Prior to that most functionality *should* still work, but your mileage may vary.
 Contents
 --------
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    quickstart.rst
-   handbook/index.rst
+   crash_course/index.rst
    reference/index.rst
 
-Indices and tables
-==================
+Indices and Tables
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

@@ -81,7 +81,7 @@ SpiderVehicle.add_schema(
         "properties": {
             "automatic_targeting_parameters": {
                 "type": "object",
-                "parameters": {
+                "properties": {
                     "auto_target_without_gunner": {
                         "type": "boolean",
                         "default": "true",

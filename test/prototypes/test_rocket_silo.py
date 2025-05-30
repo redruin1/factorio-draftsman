@@ -1,8 +1,9 @@
 # test_rocket_silo.py
 
-from draftsman.constants import SiloReadMode
+from draftsman.constants import Inventory, SiloReadMode
 from draftsman.entity import RocketSilo, rocket_silos, Container
 from draftsman.error import DataFormatError
+from draftsman.signatures import AttrsItemRequest, AttrsItemID, AttrsItemSpecification, AttrsInventoryLocation
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -54,6 +55,29 @@ class TestRocketSilo:
             assert silo.dual_power_connectable == False
             assert silo.circuit_connectable == True
             assert silo.dual_circuit_connectable == False
+
+    def test_request_modules(self):
+        silo = RocketSilo("rocket-silo")
+        silo.request_modules("productivity-module-3", (0, 1), "legendary")
+        assert silo.item_requests == [
+            AttrsItemRequest(
+                id=AttrsItemID(name="productivity-module-3", quality="legendary"),
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.rocket_silo_modules,
+                            stack=0,
+                        ),
+                        AttrsInventoryLocation(
+                            inventory=Inventory.rocket_silo_modules,
+                            stack=1,
+                        ),
+                    ]
+                )
+            )
+        ]
+
+        # TODO: warn if too many modules
 
     def test_mergable_with(self):
         silo1 = RocketSilo("rocket-silo")

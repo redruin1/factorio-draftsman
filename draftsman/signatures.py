@@ -160,8 +160,9 @@ FluidName = Annotated[str, known_name("fluid", fluids.raw, UnknownFluidWarning)]
 TileName = Annotated[str, known_name("tile", tiles.raw, UnknownTileWarning)]
 RecipeName = Annotated[str, known_name("recipe", recipes.raw, UnknownRecipeWarning)]
 ModuleName = Annotated[str, known_name("module", modules.raw, UnknownModuleWarning)]
+# TODO: make quality dynamic based on current environment?
 QualityName = Literal[
-    "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
+    "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown"
 ]
 draftsman_converters.add_schema(
     {
@@ -1005,22 +1006,15 @@ class SignalFilter(Exportable):
             return signals.get_signal_types(self.name)[0]
         except InvalidSignalError:
             return "item"
-
-    # signal: Optional[SignalID] = Field( # 1.0
-    #     None,
-    #     description="""
-    #     Signal to broadcast. If this value is omitted the occupied slot will
-    #     behave as if no signal exists within it. Cannot be a pure virtual
-    #     (logic) signal like "signal-each", "signal-any", or
-    #     "signal-everything"; if such signals are set they will be removed
-    #     on import.
-    #     """,
-    # )
-    # TODO: make quality dynamic based on current environment?
-    quality: QualityName = attrs.field(default="any", validator=one_of(QualityName))
+        
+    quality: Literal[None, QualityName] = attrs.field(
+        default=None, 
+        validator=one_of(Literal[None, QualityName]),
+        metadata={"never_null": True}
+    )
     """
-    Quality flag of the signal. Defaults to special "any" quality signal, rather
-    than "normal" quality.
+    Quality flag of the signal. Defaults to special "any" quality signal if not
+    specified.
     """
     comparator: Comparator = attrs.field(
         default="=",
@@ -1622,7 +1616,11 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class QualityFilter(Exportable):
-    quality: QualityName = attrs.field(default="any", validator=one_of(QualityName))
+    quality: Literal[None, QualityName] = attrs.field(
+        default=None, 
+        validator=one_of(Literal[None, QualityName]),
+        metadata={"never_null": True}
+    )
     """
     The signal quality to compare against.
     """

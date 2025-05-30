@@ -61,52 +61,6 @@ class TestFluidWagon:
         with pytest.raises(DataFormatError):
             FluidWagon("fluid-wagon", orientation="wrong").validate().reissue_all()
 
-    def test_json_schema(self):
-        assert FluidWagon.json_schema(version=(1, 0)) == {
-            "$id": "urn:factorio:entity:fluid-wagon",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {
-                    "$ref": "urn:factorio:position",
-                },
-                "orientation": {"type": "number"},
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
-        assert FluidWagon.json_schema(version=(2, 0)) == {
-            "$id": "urn:factorio:entity:fluid-wagon",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {
-                    "$ref": "urn:factorio:position",
-                },
-                "quality": {"$ref": "urn:factorio:quality-name"},
-                "enable_logistics_while_moving": {"type": "boolean", "default": "true"},
-                "grid": {
-                    "type": "array",
-                    "items": {"$ref": "urn:factorio:equipment-component"},
-                },
-                "orientation": {"type": "number"},
-                "items": {
-                    "type": "array",
-                    "items": {"$ref": "urn:factorio:item-request"},
-                    "description": "A list of item requests objects, which contain "
-                    "the item name, it's quality, the amount to request, as well as "
-                    "exactly what inventories to request to and where inside those "
-                    "inventories.",
-                },
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
-
     def test_mergable_with(self):
         wagon1 = FluidWagon("fluid-wagon")
         wagon2 = FluidWagon("fluid-wagon", tags={"some": "stuff"})

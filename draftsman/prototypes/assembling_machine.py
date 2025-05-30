@@ -56,19 +56,6 @@ class AssemblingMachine(
 
     # =========================================================================
 
-    @property
-    def allowed_effects(self) -> Optional[set[str]]:
-        # If name not known, return None
-        entity = entities.raw.get(self.name, None)
-        if entity is None:
-            return None
-        # If name known, but no key, then return empty list
-        result = entity.get("allowed_effects", [])
-        # Normalize single string effect to a 1-length list
-        return {result} if isinstance(result, str) else set(result)
-
-    # =========================================================================
-
     # TODO: reimplement, but do so more specifically; i.e. allowed_inputs
     # @property  # TODO abstractproperty
     # def allowed_items(self) -> Optional[set[str]]:

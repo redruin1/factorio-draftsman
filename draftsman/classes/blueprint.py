@@ -397,7 +397,7 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
 
     # =========================================================================
 
-    children: list[EntityCollection]
+    # children: list[EntityCollection]
 
     # =========================================================================
 
@@ -782,11 +782,15 @@ def structure_blueprint_1_0_factory(t: type):
                 # if entity["name"] in legacy_entity_conversions:  # pragma: no coverage
                 #     entity["name"] = legacy_entity_conversions[entity["name"]]
 
+                # print("entity", entity)
+
                 # Swap from old 8-direction to modern 16-direction
-                if "direction" in entity:  # pragma: no coverage
-                    entity["direction"] = LegacyDirection(
-                        entity["direction"]
-                    ).to_modern()
+                # if "direction" in entity:  # pragma: no coverage
+                #     print(entity["direction"])
+                #     entity["direction"] = LegacyDirection(
+                #         entity["direction"]
+                #     ).to_modern()
+                #     print(entity["direction"])
 
                 # Move connections
                 if "connections" in entity:

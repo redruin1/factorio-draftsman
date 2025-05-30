@@ -2,12 +2,14 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import ModulesMixin, ItemRequestMixin, EnergySourceMixin
+from draftsman.constants import Inventory
+from draftsman.signatures import ModuleName, QualityName
 
 from draftsman.data.entities import labs
 from draftsman.data import entities
 
 import attrs
-from typing import Any, Optional
+from typing import Iterable, Optional
 
 
 @attrs.define
@@ -48,6 +50,24 @@ class Lab(ModulesMixin, ItemRequestMixin, EnergySourceMixin, Entity):
     #             ItemLimitationWarning,
     #             stacklevel=2,
     #         )
+
+    # =========================================================================
+
+    @property
+    def allowed_effects(self) -> Optional[set[str]]:
+        return entities.get_allowed_effects(self.name, default=entities.ALL_EFFECTS_EXCEPT_QUALITY)
+
+    # =========================================================================
+
+    def request_modules(
+        self,
+        module_name: ModuleName,
+        slots: int | Iterable[int],
+        quality: QualityName = "normal",
+    ):
+        return super().request_modules(
+            Inventory.lab_modules, module_name, slots, quality
+        )
 
     # =========================================================================
 

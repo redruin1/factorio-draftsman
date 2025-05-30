@@ -91,6 +91,14 @@ class Entity(EntityLike, Exportable):
     Entity base-class. Used for all entity types that are specified in Factorio.
     Categorizes entities into "types" based on their class, each of which is
     implemented in :py:mod:`draftsman.prototypes`.
+
+    Instances of this class are created whenever Draftsman cannot determine the
+    type of some given entity, usually due to environment or version mismatch.
+    In this case, known attributes like :py:attr:`.name` and :py:attr:`.position`
+    will be correctly interpreted and validated, while all other keys will be
+    stored under :py:attr:`.extra_keys`. This allows the user to manually 
+    deduce and convert instances of this base type to subtypes, if there is 
+    sufficient context to do so.
     """
 
     def __attrs_pre_init__(self):
@@ -487,6 +495,17 @@ class Entity(EntityLike, Exportable):
 
     # =========================================================================
 
+    mirror: bool = attrs.field(
+        default=False,
+        validator=instance_of(bool)
+    )
+    """
+    Whether or not this blueprint is mirrored horizontally or vertically, 
+    specifically in regards to it's fluid inputs/outputs.
+    """
+
+    # =========================================================================
+
     @property
     def flippable(self) -> bool:
         """
@@ -652,6 +671,7 @@ Entity.add_schema(
             "position": {
                 "$ref": "urn:factorio:position",
             },
+            "mirror": {"type": "boolean", "default": False},
             "quality": {"$ref": "urn:factorio:quality-name"},
             "tags": {"type": "object"},
         },
@@ -692,6 +712,7 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         "name": fields.name.name,
         "position": fields.position.name,
         "quality": fields.quality.name,
+        "mirror": fields.mirror.name,
         "tags": fields.tags.name,
         "entity_number": fields._entity_number.name,
     },
@@ -699,6 +720,7 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         "name": fields.name.name,
         "position": _export_fields.global_position,
         "quality": fields.quality.name,
+        "mirror": fields.mirror.name,
         "tags": fields.tags.name,
     },
 )

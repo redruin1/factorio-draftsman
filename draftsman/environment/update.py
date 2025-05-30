@@ -7,7 +7,7 @@
 
 from draftsman import __file__ as draftsman_root_file
 from draftsman.classes.collision_set import CollisionSet
-from draftsman.data.entities import get_default_collision_mask, add_entity
+from draftsman.data.entities import add_entity
 from draftsman.environment.mod_list import (
     Dependency,
     Mod,
@@ -25,14 +25,13 @@ from draftsman.error import (
 from draftsman.utils import AABB, version_string_to_tuple, version_tuple_to_string
 
 import git
-import git.exc
 import lupa.lua52 as lupa
 
 from collections import OrderedDict
 import json
 import os
 import pickle
-from typing import Union
+from typing import Optional, Union
 
 
 def get_order(objects_to_sort, sort_objects, sort_subgroups, sort_groups):
@@ -366,7 +365,6 @@ def run_data_stage(
 
 
 def run_data_lifecycle(
-    draftsman_path: str,
     game_path: str,
     mods_path: str,
     show_logs: bool = False,
@@ -379,10 +377,26 @@ def run_data_lifecycle(
     a Lua instance which contains all of the relevant data to that particular
     load cycle.
 
+    :param game_path: The path pointing to Factorio's data, where "official"
+        mods like `base` and `core` live.
+    :param mods_path: The path pointing to the user mods folder. Also the
+        location where ``mod-settings.dat`` and ``mod-list.json`` files are
+        searched for and parsed from.
+    :param no_mods: Whether or not to actually use any of the mods at ``mods_path``.
+        Does not omit any "official" mods found at ``game_path``. Useful to
+        quickly toggle modded/unmodded configurations without having to
+        respecify any paths.
+    :param verbose: Pretty-prints additional status messages and information to
+        stdout.
+    :param show_logs: If enabled, any `log()` messages created on the Lua side
+        of things will be printed to stdout. This will happen regardless of the
+        value of ``verbose``.
+
     :returns: A :py:class:`lupa.LuaRuntime` object containing all relevant Lua
         tables with corresponding data, such as `data.raw`, `mods`, etc. that
         can be parsed.
     """
+    draftsman_path = os.path.dirname(os.path.abspath(draftsman_root_file))
 
     if verbose:
         print("Discovering mods...\n")
@@ -808,6 +822,9 @@ def extract_entities(
 
     data = lua.globals().data
 
+    # Default collision masks are defined by the game
+    default_collision_masks = convert_table_to_dict(data.raw["utility-constants"]["default"]["default_collision_masks"])
+
     entities = {}
     unordered_entities_raw = {}
     is_flippable = {}
@@ -893,9 +910,12 @@ def extract_entities(
 
         collision_mask = entity.get("collision_mask", None)
         if not collision_mask:
-            entity["collision_mask"] = get_default_collision_mask(entity["type"])
-        else:
-            entity["collision_mask"] = set(collision_mask)
+            default_collision_mask = default_collision_masks.get(
+                entity["type"]
+            )
+            entity["collision_mask"] = default_collision_mask
+
+        entity["collision_mask"]["layers"] = set(entity["collision_mask"]["layers"])
 
         # Check if an entity is flippable or not
         is_flippable[entity_name] = is_entity_flippable(entity)
@@ -1259,6 +1279,25 @@ def extract_planets(
 # =============================================================================
 
 
+def extract_qualities(
+    lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool = False,
+):
+    
+    data = lua.globals().data
+
+    raw_qualities = convert_table_to_dict(data.raw["quality"])
+
+    with open(os.path.join(draftsman_path, "data", "qualities.pkl"), "wb") as out:
+        data = [raw_qualities]
+        pickle.dump(data, out, 4)
+
+    if verbose:
+        print("Extracted qualities...")
+
+
+# =============================================================================
+
+
 def extract_recipes(
     lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool = False
 ) -> None:
@@ -1589,7 +1628,7 @@ def extract_tiles(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = Fal
 
     tile_list = []
     for tile in tiles:
-        tiles[tile]["collision_mask"] = set(tiles[tile]["collision_mask"])
+        tiles[tile]["collision_mask"]["layers"] = set(tiles[tile]["collision_mask"]["layers"])
         tile_order = tiles[tile].get("order", None)
         tile_list.append((tile_order is None, tile_order, tile))
 
@@ -1642,14 +1681,15 @@ def extract_data(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = Fals
     extract_items(lua, draftsman_path, items, verbose)
     extract_modules(lua, draftsman_path, items, verbose)
     extract_planets(lua, draftsman_path, verbose)
+    extract_qualities(lua, draftsman_path, items, verbose)
     extract_recipes(lua, draftsman_path, items, verbose)
     extract_signals(lua, draftsman_path, items, verbose)
     extract_tiles(lua, draftsman_path, verbose)
 
 
 def update_draftsman_data(
-    game_path: str,
-    mods_path: str,
+    game_path: Optional[str] = None,
+    mods_path: Optional[str] = None,
     no_mods: bool = False,
     verbose: bool = False,
     show_logs: bool = False,
@@ -1665,10 +1705,12 @@ def update_draftsman_data(
     :py:meth:`.run_data_lifecycle`.
 
     :param game_path: The path pointing to Factorio's data, where "official"
-        mods like `base` and `core` live.
+        mods like `base` and `core` live. If omitted, defaults to the 
+        `factorio-data` folder provided in the Draftsman installation location.
     :param mods_path: The path pointing to the user mods folder. Also the
         location where ``mod-settings.dat`` and ``mod-list.json`` files are
-        searched for and parsed from.
+        searched for and parsed from. If omitted, defaults to the `factorio-mods`
+        folder provided in the Draftsman installation location.
     :param no_mods: Whether or not to actually use any of the mods at ``mods_path``.
         Does not omit any "official" mods found at ``game_path``. Useful to
         quickly toggle modded/unmodded configurations without having to
@@ -1681,8 +1723,12 @@ def update_draftsman_data(
     """
     draftsman_path = os.path.dirname(os.path.abspath(draftsman_root_file))
 
+    if game_path is None:
+        game_path = os.path.join(draftsman_path, "factorio-data")
+    if game_path is None:
+        mods_path = os.path.join(draftsman_path, "factorio-mods")
+
     lua_instance = run_data_lifecycle(
-        draftsman_path=draftsman_path,
         game_path=game_path,
         mods_path=mods_path,
         show_logs=show_logs,

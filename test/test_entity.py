@@ -11,10 +11,13 @@ from draftsman.utils import AABB, version_tuple_to_string
 from draftsman import __factorio_version_info__
 from draftsman.serialization import draftsman_converters
 
-import itertools
 import pytest
-import referencing
+from referencing import Registry, Resource
 from jsonschema import Draft202012Validator
+
+import itertools
+import json
+import os
 
 from test.prototypes.test_accumulator import valid_accumulator
 from test.prototypes.test_agricultural_tower import valid_agricultural_tower
@@ -199,29 +202,31 @@ entity_fixtures = [
 ]
 
 
+def grab_json_file(*path) -> dict:
+    with open(os.path.join(*path), "r") as json_file:
+        return json.load(json_file)
+
+def retrieve_from_path(uri: str) -> Resource:
+    print(uri)
+    return Resource.from_contents(grab_json_file("factorio-blueprint-schemas", "schemas", uri))
+registry = Registry(retrieve=retrieve_from_path)
+
+versions_to_test = (
+    (1, 0, 0), 
+    (2, 0, 0)
+)
+
 @pytest.mark.parametrize("entity", entity_fixtures)
 class TestAllEntities:
     @pytest.mark.parametrize(
-        "version,resources",
-        [
-            (
-                ver,
-                {
-                    loc: referencing.Resource.from_contents(value)
-                    for loc, value in draftsman_converters.get_version(
-                        ver
-                    ).schemas.items()
-                },
-            )
-            for ver in [(1, 0), (2, 0)]
-        ],
-        ids=[version_tuple_to_string(t) for t in [(1, 0), (2, 0)]],
+        "version",
+        versions_to_test,
+        ids=[version_tuple_to_string(t) for t in versions_to_test]
     )
-    def test_output_matches_json_schema(
+    def test_output_matches_JSON_schema(
         self,
         entity: Entity,
         version: tuple[int, ...],
-        resources: dict[str, referencing.Resource],
         request: pytest.FixtureRequest,
     ):
         """
@@ -237,20 +242,23 @@ class TestAllEntities:
                 reason="No '{}' to test under current environment".format(entity_name)
             )
 
-        entity_schema = entity.json_schema(version=version)
-        # If this entity was not present for this particular version, skip test
-        if entity_schema is None:
-            return
+        try:
+            entity_schema = grab_json_file("factorio-blueprint-schemas", "schemas", version_tuple_to_string(version), "entity", entity.type + ".json")
+        except FileNotFoundError:
+            pytest.skip(
+                reason="No schema for '{}' on version {}".format(entity_name, version)
+            )
 
         Draft202012Validator.check_schema(entity_schema)
         validator = Draft202012Validator(
             schema=entity_schema,
-            registry=referencing.Registry().with_resources(resources.items()),
+            registry=registry
         )
         # Test every `exclude_...` configuration
         for exclude_none, exclude_defaults in itertools.product(
             (True, False), (True, False)
         ):
+            # Entity populated with defaults
             validator.validate(
                 type(entity)().to_dict(
                     exclude_none=exclude_none,
@@ -259,6 +267,7 @@ class TestAllEntities:
                     entity_number=1,
                 )
             )
+            # Entity populated with non-defaults
             validator.validate(
                 entity.to_dict(
                     exclude_none=exclude_none,

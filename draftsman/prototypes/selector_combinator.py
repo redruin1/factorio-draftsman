@@ -151,7 +151,7 @@ class SelectorCombinator(
     Selection" mode, and uses "Select from signal" when this value is ``True``.
     """
 
-    quality_source_static: QualityName = attrs.field(  # TODO: should not include "any"
+    quality_source_static: QualityName = attrs.field(
         default="normal", validator=one_of(QualityName)
     )
     """
@@ -171,9 +171,10 @@ class SelectorCombinator(
     :py:attr:`.select_quality_from_signal` is ``True``. 
     """
 
+    # TODO: SignalID, but no quality!
     quality_destination_signal: Optional[
         AttrsSignalID
-    ] = attrs.field(  # TODO: SignalID, but no quality!
+    ] = attrs.field(
         default=None,
         converter=AttrsSignalID.converter,
         validator=instance_of(
@@ -244,7 +245,7 @@ class SelectorCombinator(
         self.operation = "rocket-capacity"
 
     def set_mode_quality_filter(
-        self, quality: QualityName = "any", comparator: Comparator = "="
+        self, quality: Optional[QualityName] = None, comparator: Comparator = "="
     ):
         """
         Sets the selector combintor to "Quality Filter" mode, along with
@@ -261,7 +262,7 @@ class SelectorCombinator(
     def set_mode_quality_transfer(
         self,
         select_quality_from_signal: bool = False,
-        source_static: QualityName = "normal",  # TODO: QualityName no "any"
+        source_static: QualityName = "normal",
         source_signal: Optional[AttrsSignalID] = None,  # TODO: SignalID no quality
         destination_signal: Optional[AttrsSignalID] = None,  # TODO: SignalID no quality
     ):
@@ -341,6 +342,7 @@ SelectorCombinator.add_schema(
                         "oneOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
                     },  # TODO: nullable?,
                     "random_update_interval": {"$ref": "urn:uint32", "default": 0},
+                    "quality_filter": {},
                     "select_quality_from_signal": {
                         "type": "boolean",
                         "default": "false",

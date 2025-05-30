@@ -535,7 +535,7 @@ class Exportable:
         # )
 
     @classmethod
-    def add_schema(cls, schema, version: tuple[int, ...] = None, mro=None):
+    def add_schema(cls, schema: Optional[dict[str, Any]], version: Optional[tuple[int, ...]] = None, mro: Optional[tuple[type, ...]]=None):
         # Special case where we want to explicitly state that this object has
         # no schema for this particular version
         if schema is None:
@@ -574,7 +574,7 @@ class Exportable:
             draftsman_converters.get_version(version).add_schema(res, cls)
 
     @classmethod
-    def json_schema(
+    def JSON_schema(
         cls,
         version: tuple[
             int, ...

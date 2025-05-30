@@ -14,7 +14,7 @@ from draftsman.constants import LampColorMode
 from draftsman.serialization import (
     draftsman_converters,
 )
-from draftsman.signatures import AttrsColor
+from draftsman.signatures import AttrsColor, AttrsSignalID
 from draftsman.validators import instance_of, try_convert
 
 from draftsman.data import mods
@@ -61,8 +61,56 @@ class Lamp(
         validator=instance_of(LampColorMode),
     )
     """
-    In what way to interpret signals given to the lamp if `use_colors` is 
+    In what way to interpret signals given to the lamp if ``use_colors`` is 
     ``True``.
+    """
+
+    # =========================================================================
+
+    red_signal: Optional[AttrsSignalID] = attrs.field(
+        factory=lambda: AttrsSignalID(name="signal-red", type="virtual"),
+        converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID])
+    )
+    """
+    The signal to pull the red color component from, if :py:attr:`color_mode` is
+    ``1``.
+    """
+
+    # =========================================================================
+
+    green_signal: Optional[AttrsSignalID] = attrs.field(
+        factory=lambda: AttrsSignalID(name="signal-green", type="virtual"),
+        converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID])
+    )
+    """
+    The signal to pull the green color component from, if :py:attr:`color_mode` 
+    is ``1``.
+    """
+
+    # =========================================================================
+
+    blue_signal: Optional[AttrsSignalID] = attrs.field(
+        factory=lambda: AttrsSignalID(name="signal-blue", type="virtual"),
+        converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID])
+    )
+    """
+    The signal to pull the blue color component from, if :py:attr:`color_mode` 
+    is ``1``.
+    """
+
+    # =========================================================================
+
+    rgb_signal: Optional[AttrsSignalID] = attrs.field(
+        factory=lambda: AttrsSignalID(name="signal-white", type="virtual"),
+        converter=AttrsSignalID.converter,
+        validator=instance_of(Optional[AttrsSignalID])
+    )
+    """
+    The signal to pull the entire encoded color from, if :py:attr:`color_mode` 
+    is ``2``.
     """
 
     # =========================================================================
@@ -136,6 +184,10 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
     lambda fields: {
         ("control_behavior", "use_colors"): fields.use_colors.name,
         None: fields.color_mode.name,
+        None: fields.red_signal.name,
+        None: fields.green_signal.name,
+        None: fields.blue_signal.name,
+        None: fields.rgb_signal.name,
         None: fields.always_on.name,
         "color": fields.color.name,
     },
@@ -180,6 +232,10 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
     lambda fields: {
         ("control_behavior", "use_colors"): fields.use_colors.name,
         ("control_behavior", "color_mode"): fields.color_mode.name,
+        ("control_behavior", "red_signal"): fields.red_signal.name,
+        ("control_behavior", "green_signal"): fields.green_signal.name,
+        ("control_behavior", "blue_signal"): fields.blue_signal.name,
+        ("control_behavior", "rgb_signal"): fields.rgb_signal.name,
         "always_on": fields.always_on.name,
         "color": fields.color.name,
     },

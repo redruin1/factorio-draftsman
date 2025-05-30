@@ -1,7 +1,7 @@
 # inventory.py
 
 from draftsman.classes.exportable import Exportable
-from draftsman.data import entities, mods
+from draftsman.data import entities, mods, qualities
 from draftsman.constants import Inventory, ValidationMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
@@ -9,7 +9,7 @@ from draftsman.signatures import (
     uint16,
 )
 from draftsman.utils import calculate_occupied_slots
-from draftsman.validators import and_, conditional, instance_of
+from draftsman.validators import and_, conditional, instance_of, try_convert
 from draftsman.warning import BarWarning
 
 import attrs
@@ -67,25 +67,23 @@ class InventoryMixin(Exportable):
     # =========================================================================
 
     @property
-    def inventory_size(self) -> uint16:
+    def inventory_size(self) -> Optional[uint16]:
         """
-        The number of inventory slots that this Entity has. Equivalent to the
-        ``"inventory_size"`` key in Factorio's ``data.raw``. Returns ``None`` if
-        this entity's name is not recognized by Draftsman. Not exported; read
-        only.
+        The number of inventory slots that this entity has. 
+        If :py:attr:`quality_affects_inventory_size` is ``True`` for this entity, 
+        then the returned value is scaled by the :py:attr:`quality` of the 
+        entity. If the current quality of this entity is unrecognized by the 
+        current environment, then the base, un-scaled inventory size is 
+        returned.
+
+        If this entity is unrecognized by the current environment, this 
+        attribute returns ``None``.
         """
         inventory_size = entities.raw.get(self.name, {}).get("inventory_size", None)
         if inventory_size is None or not self.quality_affects_inventory_size:
             return inventory_size
-        else:
-            mutlipliers = {  # TODO: grab this dynamically
-                "normal": 1.0,
-                "uncommon": 1.3,
-                "rare": 1.6,
-                "epic": 1.9,
-                "legendary": 2.5,
-            }
-            return math.floor(inventory_size * mutlipliers[self.quality])
+        multiplier = 0.3 * qualities.raw.get(self.quality, {"level": 0})["level"]
+        return math.floor(inventory_size + inventory_size * multiplier)
 
     # =========================================================================
 
@@ -102,6 +100,7 @@ class InventoryMixin(Exportable):
 
     bar: Optional[uint16] = attrs.field(
         default=None,
+        converter=try_convert(int),
         validator=and_(
             instance_of(Optional[uint16]),
             ensure_bar_less_than_inventory_size,

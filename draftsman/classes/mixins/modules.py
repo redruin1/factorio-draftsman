@@ -49,21 +49,11 @@ class ModulesMixin:
     @property
     def allowed_effects(self) -> Optional[set[str]]:
         """
-        A list of all effect modifiers that this entity supports via modules.
-        Returns ``None`` if this entity's name is not recognized by Draftsman.
-        Not exported; read only.
+        A set of all effect modifiers that this entity supports via modules and
+        beacons. Returns ``None`` if this entity's name is not recognized by 
+        Draftsman. Not exported; read only.
         """
-        # If name not known, return None
-        entity = entities.raw.get(self.name, None)
-        if entity is None:
-            return None
-        # If name known, but no key, then return default list
-        result = entity.get(
-            "allowed_effects",
-            ["speed", "productivity", "consumption", "pollution", "quality"],
-        )
-        # Normalize single string effect to a 1-length set
-        return {result} if isinstance(result, str) else set(result)
+        return entities.get_allowed_effects(self.name, default=entities.NO_EFFECTS)
 
     # =========================================================================
 

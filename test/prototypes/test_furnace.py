@@ -64,80 +64,6 @@ class TestFurnace:
 
         # Errors
 
-    def test_json_schema(self):
-        assert Furnace.json_schema(version=(1, 0)) == {
-            "$id": "urn:factorio:entity:furnace",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {"$ref": "urn:factorio:position"},
-                "direction": {"enum": list(range(8)), "default": 0},
-                "items": {
-                    "type": "object",
-                    "description": "A dictionary of item requests, where each key is "
-                    "the name of an item and the value is the count of that item to "
-                    "request. Items always go to the default inventory of that object "
-                    "(if possible) in the order in which Factorio traverses them.",
-                },
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
-        assert Furnace.json_schema(version=(2, 0)) == {
-            "$id": "urn:factorio:entity:furnace",
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "properties": {
-                "entity_number": {"$ref": "urn:uint64"},
-                "name": {"type": "string"},
-                "position": {"$ref": "urn:factorio:position"},
-                "quality": {"$ref": "urn:factorio:quality-name"},
-                "direction": {"enum": list(range(16)), "default": 0},
-                "items": {
-                    "type": "array",
-                    "items": {"$ref": "urn:factorio:item-request"},
-                    "description": "A list of item requests objects, which contain "
-                    "the item name, it's quality, the amount to request, as well as "
-                    "exactly what inventories to request to and where inside those "
-                    "inventories.",
-                },
-                "control_behavior": {
-                    "type": "object",
-                    "properties": {
-                        "circuit_enabled": {"type": "boolean", "default": "false"},
-                        "circuit_condition": {"$ref": "urn:factorio:simple-condition"},
-                        "connect_to_logistic_network": {
-                            "type": "boolean",
-                            "default": "false",
-                        },
-                        "logistic_condition": {"$ref": "urn:factorio:simple-condition"},
-                        "set_recipe": {"type": "boolean", "default": "false"},
-                        "read_contents": {"type": "boolean", "default": "false"},
-                        "include_in_crafting": {"type": "boolean", "default": "true"},
-                        "read_recipe_finished": {"type": "boolean", "default": "false"},
-                        "recipe_finished_signal": {
-                            "anyOf": [
-                                {"$ref": "urn:factorio:signal-id"},
-                                {"type": "null"},
-                            ]
-                        },
-                        "read_working": {"type": "boolean", "default": "false"},
-                        "working_signal": {
-                            "anyOf": [
-                                {"$ref": "urn:factorio:signal-id"},
-                                {"type": "null"},
-                            ]
-                        },
-                    },
-                    "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
-                },
-                "tags": {"type": "object"},
-            },
-            "required": ["entity_number", "name", "position"],
-        }
-
     def test_allowed_effects(self):
         furnace = Furnace("stone-furnace")
         assert furnace.allowed_effects == {"consumption", "speed", "pollution"}
@@ -249,6 +175,27 @@ class TestFurnace:
         # Test setting to None resets to empty list
         furnace.item_requests = None
         assert furnace.item_requests == []
+
+    def test_request_modules(self):
+        furnace = Furnace("electric-furnace")
+        furnace.request_modules("productivity-module-3", (0, 1), "legendary")
+        assert furnace.item_requests == [
+            AttrsItemRequest(
+                id=AttrsItemID(name="productivity-module-3", quality="legendary"),
+                items=AttrsItemSpecification(
+                    in_inventory=[
+                        AttrsInventoryLocation(
+                            inventory=Inventory.furnace_modules,
+                            stack=0,
+                        ),
+                        AttrsInventoryLocation(
+                            inventory=Inventory.furnace_modules,
+                            stack=1,
+                        ),
+                    ]
+                )
+            )
+        ]
 
     def test_mergable_with(self):
         furnace1 = Furnace("stone-furnace")
