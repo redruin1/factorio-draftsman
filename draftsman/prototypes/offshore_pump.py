@@ -39,5 +39,3 @@ class OffshorePump(
 
     __hash__ = Entity.__hash__
 
-
-OffshorePump.add_schema({"$id": "urn:factorio:entity:offshore-pump"})

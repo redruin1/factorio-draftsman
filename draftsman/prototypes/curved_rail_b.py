@@ -29,12 +29,3 @@ class CurvedRailB(DoubleGridAlignedMixin, DirectionalMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-
-CurvedRailB.add_schema(None, version=(1, 0))
-
-CurvedRailB.add_schema(
-    {
-        "$id": "urn:factorio:entity:curved-rail-b",
-    },
-    version=(2, 0),
-)

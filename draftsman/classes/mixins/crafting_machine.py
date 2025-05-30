@@ -82,34 +82,8 @@ class CraftingMachineMixin(Exportable):
     """
 
 
-CraftingMachineMixin.add_schema(None, version=(1, 0))
-
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     CraftingMachineMixin, lambda fields: {}
-)
-
-CraftingMachineMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "set_recipe": {"type": "boolean", "default": "false"},
-                    "read_contents": {"type": "boolean", "default": "false"},
-                    "include_in_crafting": {"type": "boolean", "default": "true"},
-                    "read_recipe_finished": {"type": "boolean", "default": "false"},
-                    "recipe_finished_signal": {
-                        "anyOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
-                    },
-                    "read_working": {"type": "boolean", "default": "false"},
-                    "working_signal": {
-                        "anyOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
-                    },
-                },
-            }
-        },
-    },
-    version=(2, 0),
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(

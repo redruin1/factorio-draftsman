@@ -118,34 +118,6 @@ class AsteroidCollector(
     __hash__ = Entity.__hash__
 
 
-AsteroidCollector.add_schema(None, version=(1, 0))
-
-AsteroidCollector.add_schema(
-    {
-        "$id": "urn:factorio:entity:asteroid-collector",
-        "properties": {
-            "result_inventory": {
-                "type": "object",
-                "properties": {
-                    "bar": {"$ref": "urn:uint16"}
-                }
-            },
-            "chunk-filter": {
-                "type": "array",
-                "items": {"$ref": "urn:factorio:asteroid-chunk-id"},
-            },
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_read_contents": {"type": "boolean", "default": False},
-                    "include_hands": {"type": "boolean", "default": True},
-                },
-            },
-        },
-    },
-    version=(2, 0),
-)
-
 draftsman_converters.add_hook_fns(
     # {"$id": "factorio:asteroid_collector"},
     AsteroidCollector,

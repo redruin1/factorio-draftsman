@@ -366,23 +366,6 @@ class DeciderCombinator(
     __hash__ = Entity.__hash__
 
 
-DeciderCombinator.Condition.add_schema(
-    {
-        "$id": "urn:factorio:entity:decider-combinator:condition",
-        "type": "object",
-        "properties": {
-            "first_signal": {"$ref": "urn:factorio:signal-id"},
-            "first_signal_networks": {"$ref": "urn:factorio:network-specification"},
-            "comparator": {"$ref": "urn:factorio:comparator"},
-            "constant": {"oneOf": [{"$ref": "urn:int32"}, {"type": "null"}]},
-            "second_signal": {"$ref": "urn:factorio:signal-id"},
-            "second_signal_networks": {"$ref": "urn:factorio:network-specification"},
-            "compare_type": {"enum": ["or", "and"], "default": "or"},
-        },
-    }
-)
-
-
 draftsman_converters.add_hook_fns(
     DeciderCombinator.Condition,
     lambda fields: {
@@ -396,19 +379,6 @@ draftsman_converters.add_hook_fns(
     },
 )
 
-DeciderCombinator.Output.add_schema(
-    {
-        "$id": "urn:factorio:entity:decider-combinator:output",
-        "type": "object",
-        "properties": {
-            "signal": {"$ref": "urn:factorio:signal-id"},
-            "copy_count_from_input": {"type": "boolean", "defaut": "true"},
-            "networks": {"$ref": "urn:factorio:network-specification"},
-            "constant": {"$ref": "urn:int32", "default": 1},
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     DeciderCombinator.Output,
     lambda fields: {
@@ -417,34 +387,6 @@ draftsman_converters.add_hook_fns(
         "networks": fields.networks.name,
         "constant": fields.constant.name,
     },
-)
-
-DeciderCombinator.add_schema(
-    {
-        "$id": "urn:factorio:entity:decider-combinator",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "decider_conditions": {
-                        "type": "object",
-                        "properties": {
-                            "first_signal": {"$ref": "urn:factorio:signal-id"},
-                            "comparator": {"$ref": "urn:factorio:comparator"},
-                            "constant": {"$ref": "urn:int32", "default": 0},
-                            "second_signal": {"$ref": "urn:factorio:signal-id"},
-                            "output_signal": {"$ref": "urn:factorio:signal-id"},
-                            "copy_count_from_input": {
-                                "type": "boolean",
-                                "default": "true",
-                            },
-                        },
-                    }
-                },
-            }
-        },
-    },
-    version=(1, 0),
 )
 
 # TODO: write something like this
@@ -460,37 +402,6 @@ DeciderCombinator.add_schema(
 #     }
 # )
 # Or, we write a pre hook that converts the old format into the new format, but that doesn't work both ways
-
-DeciderCombinator.add_schema(
-    {
-        "$id": "urn:factorio:entity:decider-combinator",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "decider_conditions": {
-                        "type": "object",
-                        "properties": {
-                            "conditions": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "urn:factorio:entity:decider-combinator:condition"
-                                },
-                            },
-                            "outputs": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "urn:factorio:entity:decider-combinator:output"
-                                },
-                            },
-                        },
-                    }
-                },
-            }
-        },
-    },
-    version=(2, 0),
-)
 
 draftsman_converters.add_hook_fns(
     DeciderCombinator,

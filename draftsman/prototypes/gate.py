@@ -24,5 +24,3 @@ class Gate(DirectionalMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-
-Gate.add_schema({"$id": "urn:factorio:entity:gate"})

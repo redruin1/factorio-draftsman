@@ -21,8 +21,3 @@ class Radar(CircuitConnectableMixin, EnergySourceMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
-
-
-Radar.add_schema({"$id": "urn:factorio:entity:radar"}, version=(1, 0), mro=(Entity,))
-
-Radar.add_schema({"$id": "urn:factorio:entity:radar"}, version=(2, 0))

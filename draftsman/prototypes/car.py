@@ -34,8 +34,3 @@ class Car(
     # =========================================================================
 
     __hash__ = Entity.__hash__
-
-
-Car.add_schema(None, version=(1, 0))
-
-Car.add_schema({"$id": "urn:factorio:entity:car"}, version=(2, 0))

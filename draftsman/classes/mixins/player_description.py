@@ -28,15 +28,9 @@ class PlayerDescriptionMixin(Exportable):
     """
 
 
-PlayerDescriptionMixin.add_schema({}, version=(1, 0))
-
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     PlayerDescriptionMixin,
     lambda fields: {None: fields.player_description.name},
-)
-
-PlayerDescriptionMixin.add_schema(
-    {"properties": {"player_description": {"type": "string"}}}, version=(2, 0)
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(

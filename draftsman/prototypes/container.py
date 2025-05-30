@@ -26,9 +26,3 @@ class Container(InventoryMixin, ItemRequestMixin, CircuitConnectableMixin, Entit
 
     __hash__ = Entity.__hash__
 
-
-Container.add_schema(
-    {
-        "$id": "urn:factorio:entity:container",
-    }
-)

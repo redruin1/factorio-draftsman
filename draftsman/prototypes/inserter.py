@@ -136,35 +136,6 @@ class Inserter(
     __hash__ = Entity.__hash__
 
 
-Inserter.add_schema(
-    {
-        "$id": "urn:factorio:entity:inserter",
-        "$defs": {
-            "hand-position": {
-                "type": "array",
-                "items": {"type": "number"},
-                "maxItems": 2,
-            }
-        },
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_set_filters": {"type": "boolean", "default": "false"}
-                },
-            },
-            "pickup_position": {
-                "oneOf": [{"$ref": "#/$defs/hand-position"}, {"type": "null"}]
-            },
-            "drop_position": {
-                "oneOf": [{"$ref": "#/$defs/hand-position"}, {"type": "null"}]
-            },
-            "filter_mode": {"enum": ["whitelist", "blacklist"], "default": "whitelist"},
-        },
-    },
-    version=(1, 0),
-)
-
 draftsman_converters.get_version((1, 0)).add_hook_fns(  # pragma: no branch
     Inserter,
     lambda fields: {
@@ -174,39 +145,6 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(  # pragma: no branch
         "filter_mode": fields.filter_mode.name,
         None: fields.spoil_priority.name,
     },
-)
-
-Inserter.add_schema(
-    {
-        "$id": "urn:factorio:entity:inserter",
-        "$defs": {
-            "hand-position": {
-                "type": "array",
-                "items": {"type": "number"},
-                "maxItems": 2,
-            }
-        },
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_set_filters": {"type": "boolean", "default": "false"}
-                },
-            },
-            "pickup_position": {
-                "oneOf": [{"$ref": "#/$defs/hand-position"}, {"type": "null"}]
-            },
-            "drop_position": {
-                "oneOf": [{"$ref": "#/$defs/hand-position"}, {"type": "null"}]
-            },
-            "filter_mode": {"enum": ["whitelist", "blacklist"], "default": "whitelist"},
-            "spoil_priority": {
-                "enum": ["spoiled-first", "fresh-first", None],
-                "default": None,
-            },
-        },
-    },
-    version=(2, 0),
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(

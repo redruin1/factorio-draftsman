@@ -132,15 +132,6 @@ class RocketSilo(
     __hash__ = Entity.__hash__
 
 
-RocketSilo.add_schema(
-    {
-        "$id": "urn:factorio:entity:rocket-silo",
-        "properties": {"auto_launch": {"type": "boolean", "default": "false"}},
-    },
-    version=(1, 0),
-    mro=(ItemRequestMixin, RecipeMixin, Entity),
-)
-
 draftsman_converters.get_version((1, 0)).add_hook_fns(  # pragma: no branch
     RocketSilo,
     lambda fields: {
@@ -149,29 +140,6 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(  # pragma: no branch
         None: fields.use_transitional_requests.name,
         None: fields.transitional_request_index.name,
     },
-)
-
-RocketSilo.add_schema(
-    {
-        "$id": "urn:factorio:entity:rocket-silo",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "read_items_mode": {
-                        "enum": [
-                            SiloReadMode.NONE,
-                            SiloReadMode.READ_CONTENTS,
-                            SiloReadMode.READ_ORBITAL_REQUESTS,
-                        ],
-                        "default": SiloReadMode.READ_CONTENTS,
-                    }
-                },
-            },
-            "transitional_request_index": {"$ref": "urn:uint32"},
-        },
-    },
-    version=(2, 0),
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(

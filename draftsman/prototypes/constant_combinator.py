@@ -148,58 +148,7 @@ class ConstantCombinator(
 
     __hash__ = Entity.__hash__
 
-
-ConstantCombinator.add_schema(
-    {
-        "$id": "urn:factorio:entity:constant-combinator",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "is_on": {"type": "boolean", "default": "true"},
-                    "filters": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "signal": {"$ref": "urn:factorio:signal-id"},
-                                "count": {"$ref": "urn:int32"},
-                                "index": {"$ref": "urn:uint32"},
-                            },
-                        },
-                    },
-                },
-            }
-        },
-    },
-    version=(1, 0),
-)
-
 # TODO: 1.0 hook functions
-
-ConstantCombinator.add_schema(
-    {
-        "$id": "urn:factorio:entity:constant-combinator",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "is_on": {"type": "boolean", "default": "true"},
-                    "sections": {
-                        "type": "object",
-                        "properties": {
-                            "sections": {
-                                "type": "array",
-                                "items": {"$ref": "urn:factorio:manual-section"},
-                            }
-                        },
-                    },
-                },
-            }
-        },
-    },
-    version=(2, 0),
-)
 
 draftsman_converters.add_hook_fns(
     ConstantCombinator,

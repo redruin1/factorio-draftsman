@@ -46,57 +46,7 @@ class CircuitReadContentsMixin(Exportable):  # (ControlBehaviorMixin)
         self.read_contents = other.read_contents
         self.read_mode = other.read_mode
 
-
-CircuitReadContentsMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_read_hand_contents": {
-                        "type": "boolean",
-                        "default": "false",
-                    },
-                    "circuit_contents_read_mode": {
-                        "enum": [
-                            BeltReadMode.PULSE,
-                            BeltReadMode.HOLD,
-                        ],
-                        "default": BeltReadMode.PULSE,
-                    },
-                },
-            }
-        }
-    },
-    version=(1, 0),
-)
-
 # TODO: only permit belt read mode to PULSE and HOLD on Factorio 1.0
-
-CircuitReadContentsMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_read_hand_contents": {
-                        "type": "boolean",
-                        "default": "false",
-                    },
-                    "circuit_contents_read_mode": {
-                        "enum": [
-                            BeltReadMode.PULSE,
-                            BeltReadMode.HOLD,
-                            BeltReadMode.HOLD_ALL_BELTS,
-                        ],
-                        "default": BeltReadMode.PULSE,
-                    },
-                },
-            }
-        }
-    },
-    version=(1, 0),
-)
 
 draftsman_converters.add_hook_fns(
     CircuitReadContentsMixin,

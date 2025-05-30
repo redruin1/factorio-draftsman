@@ -140,17 +140,6 @@ class ElectricEnergyInterface(EnergySourceMixin, Entity):
     __hash__ = Entity.__hash__
 
 
-ElectricEnergyInterface.add_schema(
-    {
-        "$id": "urn:factorio:entity:electric-energy-interface",
-        "properties": {
-            "buffer_size": {"type": "number"},
-            "power_production": {"type": "number"},
-            "power_usage": {"type": "number"},
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     ElectricEnergyInterface,
     lambda fields: {

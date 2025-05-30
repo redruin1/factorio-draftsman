@@ -87,23 +87,6 @@ class LogisticConditionMixin(Exportable):  # (ControlBehaviorMixin)
 
 # TODO: versioning
 
-LogisticConditionMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "connect_to_logistic_network": {
-                        "type": "boolean",
-                        "default": "false",
-                    },
-                    "logistic_condition": {"$ref": "urn:factorio:simple-condition"},
-                },
-            }
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     LogisticConditionMixin,
     lambda fields: {

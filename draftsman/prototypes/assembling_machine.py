@@ -86,17 +86,3 @@ class AssemblingMachine(
     # =========================================================================
 
     __hash__ = Entity.__hash__
-
-
-AssemblingMachine.add_schema(
-    {"$id": "urn:factorio:entity:assembling-machine"},
-    version=(1, 0),
-    mro=(ItemRequestMixin, RecipeMixin, DirectionalMixin, Entity),
-)
-
-AssemblingMachine.add_schema(
-    {
-        "$id": "urn:factorio:entity:assembling-machine",
-    },
-    version=(2, 0),
-)

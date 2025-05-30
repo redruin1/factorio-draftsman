@@ -272,27 +272,12 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
         ]
 
 
-EquipmentGridMixin.add_schema({}, version=(1, 0))
-
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     EquipmentGridMixin,
     lambda fields: {
         None: fields.enable_logistics_while_moving.name,
         None: fields.equipment.name,
     },
-)
-
-EquipmentGridMixin.add_schema(
-    {
-        "properties": {
-            "enable_logistics_while_moving": {"type": "boolean", "default": "true"},
-            "grid": {
-                "type": "array",
-                "items": {"$ref": "urn:factorio:equipment-component"},
-            },
-        }
-    },
-    version=(2, 0),
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(

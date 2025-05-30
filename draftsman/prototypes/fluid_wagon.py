@@ -28,11 +28,3 @@ class FluidWagon(EquipmentGridMixin, ItemRequestMixin, OrientationMixin, Entity)
 
     __hash__ = Entity.__hash__
 
-
-FluidWagon.add_schema(
-    {"$id": "urn:factorio:entity:fluid-wagon"},
-    version=(1, 0),
-    mro=(OrientationMixin, Entity),
-)
-
-FluidWagon.add_schema({"$id": "urn:factorio:entity:fluid-wagon"}, version=(2, 0))

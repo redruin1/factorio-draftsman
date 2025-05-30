@@ -161,26 +161,6 @@ class InfinityPipe(Entity):
     __hash__ = Entity.__hash__
 
 
-InfinityPipe.add_schema(
-    {
-        "$id": "urn:factorio:entity:infinity_pipe",
-        "properties": {
-            "infinity_settings": {
-                "type": "object",
-                "properties": {
-                    "name": {"oneOf": [{"type": "string"}, {"type": "null"}]},
-                    "percentage": {"type": "number"},
-                    "mode": {
-                        "enum": ["at-least", "at-most", "exactly", "add", "remove"],
-                        "default": "at-least",
-                    },
-                    "temperature": {"$ref": "urn:int64"},
-                },
-            }
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     # {"$id": "factorio:infinity_pipe"},
     InfinityPipe,

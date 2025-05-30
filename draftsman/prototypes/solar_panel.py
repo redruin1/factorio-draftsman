@@ -22,5 +22,3 @@ class SolarPanel(EnergySourceMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-
-SolarPanel.add_schema({"$id": "urn:factorio:entity:solar-panel"})

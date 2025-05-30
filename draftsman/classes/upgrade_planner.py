@@ -453,44 +453,6 @@ class UpgradePlanner(Blueprintable):
         raise ValueError("Unable to find mapper with index '{}'".format(index))
 
 
-UpgradePlanner.add_schema(
-    {
-        "$id": "urn:factorio:upgrade-planner",
-        "type": "object",
-        "description": "Upgrade planner string format.",
-        "properties": {
-            "upgrade_planner": {
-                "type": "object",
-                "properties": {
-                    "item": {"const": "deconstruction-planner"},
-                    "label": {"type": "string"},
-                    "label_color": {"$ref": "urn:factorio:color"},
-                    "settings": {
-                        "type": "object",
-                        "properties": {
-                            "description": {"type": "string"},
-                            "icons": {
-                                "type": "array",
-                                "items": {"$ref": "urn:factorio:icon"},
-                                "maxItems": 4,
-                            },
-                            "mappers": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "urn:factorio:upgrade-planner:mapper"
-                                },
-                                "maxItems": 1000,  # TODO: this is 30 on Factorio 1.0
-                            },
-                        },
-                    },
-                    "version": {"$ref": "urn:uint64"},
-                },
-            }
-        },
-    }
-)
-
-
 draftsman_converters.add_hook_fns(
     UpgradePlanner,
     lambda fields: {

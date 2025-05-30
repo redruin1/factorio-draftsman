@@ -86,21 +86,6 @@ class RailSignal(
     __hash__ = Entity.__hash__
 
 
-RailSignal.add_schema(
-    {
-        "$id": "urn:factorio:entity:rail-signal",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_close_signal": {"type": "boolean", "default": "false"},
-                    "circuit_read_signal": {"type": "boolean", "default": "true"},
-                },
-            }
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     RailSignal,
     lambda fields: {

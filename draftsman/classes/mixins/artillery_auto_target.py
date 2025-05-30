@@ -21,11 +21,6 @@ class ArtilleryAutoTargetMixin(Exportable):
     """
 
 
-ArtilleryAutoTargetMixin.add_schema(
-    {"properties": {"artillery_auto_targeting": {"type": "boolean", "default": "true"}}}
-)
-
-
 draftsman_converters.add_hook_fns(
     ArtilleryAutoTargetMixin,
     lambda fields: {"artillery_auto_targeting": fields.auto_target.name},

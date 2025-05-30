@@ -28,5 +28,3 @@ class BurnerGenerator(ItemRequestMixin, EnergySourceMixin, DirectionalMixin, Ent
 
     __hash__ = Entity.__hash__
 
-
-BurnerGenerator.add_schema({"$id": "urn:factorio:entity:burner-generator"})

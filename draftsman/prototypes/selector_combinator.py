@@ -312,57 +312,6 @@ class SelectorCombinator(
     __hash__ = Entity.__hash__
 
 
-SelectorCombinator.add_schema(None, version=(1, 0))
-
-SelectorCombinator.add_schema(
-    {
-        "$id": "urn:factorio:entity:selector-combinator",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "operation": {
-                        "enum": [
-                            "select",
-                            "count",
-                            "random",
-                            "stack-size",
-                            "rocket-capacity",
-                            "quality-filter",
-                            "quality-transfer",
-                        ],
-                        "default": "select",
-                    },
-                    "select_max": {"type": "boolean", "default": "true"},
-                    "index_constant": {"$ref": "urn:int32", "default": 0},
-                    "index_signal": {
-                        "oneOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
-                    },  # TODO: nullable?
-                    "count_inputs_signal": {
-                        "oneOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
-                    },  # TODO: nullable?,
-                    "random_update_interval": {"$ref": "urn:uint32", "default": 0},
-                    "quality_filter": {},
-                    "select_quality_from_signal": {
-                        "type": "boolean",
-                        "default": "false",
-                    },
-                    "quality_source_static": {
-                        "$ref": "urn:factorio:quality-name",
-                        "default": "normal",
-                    },
-                    "quality_source_signal": {
-                        "oneOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
-                    },  # TODO: nullable?,
-                    "quality_destination_signal": {
-                        "oneOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
-                    },  # TODO: nullable?,
-                },
-            }
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     SelectorCombinator,
     lambda fields: {

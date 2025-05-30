@@ -34,14 +34,3 @@ class CargoWagon(
     # =========================================================================
 
     __hash__ = Entity.__hash__
-
-
-CargoWagon.add_schema(
-    {
-        "$id": "urn:factorio:entity:cargo-wagon",
-    },
-    version=(1, 0),
-    mro=(ItemRequestMixin, FilteredInventoryMixin, OrientationMixin, Entity),
-)
-
-CargoWagon.add_schema({"$id": "urn:factorio:entity:cargo-wagon"}, version=(2, 0))

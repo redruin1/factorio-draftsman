@@ -73,27 +73,6 @@ class SpiderVehicle(
     __hash__ = Entity.__hash__
 
 
-SpiderVehicle.add_schema(None, version=(1, 0))
-
-SpiderVehicle.add_schema(
-    {
-        "$id": "urn:factorio:entity:spider-vehicle",
-        "properties": {
-            "automatic_targeting_parameters": {
-                "type": "object",
-                "properties": {
-                    "auto_target_without_gunner": {
-                        "type": "boolean",
-                        "default": "true",
-                    },
-                    "auto_target_with_gunner": {"type": "boolean", "default": "false"},
-                },
-            }
-        },
-    }
-)
-
-
 draftsman_converters.add_hook_fns(
     SpiderVehicle,
     lambda fields: {

@@ -60,23 +60,6 @@ class StackSizeMixin(Exportable):
         self.stack_size_control_signal = other.stack_size_control_signal
 
 
-StackSizeMixin.add_schema(
-    {
-        "properties": {
-            "override_stack_size": {"oneOf": [{"$ref": "urn:uint8"}, {"type": "null"}]},
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_set_stack_size": {"type": "boolean", "default": "false"},
-                    "stack_control_input_signal": {
-                        "oneOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
-                    },
-                },
-            },
-        }
-    },
-)
-
 draftsman_converters.add_hook_fns(
     StackSizeMixin,
     lambda fields: {

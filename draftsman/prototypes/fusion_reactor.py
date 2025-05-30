@@ -22,7 +22,3 @@ class FusionReactor(EnergySourceMixin, DirectionalMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-
-FusionReactor.add_schema(None, version=(1, 0))
-
-FusionReactor.add_schema({"$id": "urn:factorio:entity:fusion-reactor"}, version=(2, 0))

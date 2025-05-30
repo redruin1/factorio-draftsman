@@ -68,14 +68,3 @@ class ControlBehaviorMixin(Exportable):
 
         setattr(self, condition_name, condition)
 
-
-ControlBehaviorMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "description": "Entity-specific structure which holds keys related to configuring how this entity acts.",
-            }
-        }
-    }
-)

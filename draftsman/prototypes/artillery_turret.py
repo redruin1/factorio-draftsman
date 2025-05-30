@@ -44,13 +44,3 @@ class ArtilleryTurret(
 
     __hash__ = Entity.__hash__
 
-
-ArtilleryTurret.add_schema(
-    {"$id": "urn:factorio:entity:artillery-turret"},
-    version=(1, 0),
-    mro=(ItemRequestMixin, DirectionalMixin, Entity),
-)
-
-ArtilleryTurret.add_schema(
-    {"$id": "urn:factorio:entity:artillery-turret"}, version=(2, 0)
-)

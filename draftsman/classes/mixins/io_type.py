@@ -34,9 +34,6 @@ class IOTypeMixin(Exportable):
         self.io_type = other.io_type
 
 
-IOTypeMixin.add_schema({"properties": {"type": {"enum": ["input", "output", "null"]}}})
-
-
 draftsman_converters.add_hook_fns(
     # {"$id": "factorio:io_type_mixin"},
     IOTypeMixin,

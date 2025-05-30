@@ -46,13 +46,3 @@ class FluidTurret(
 
     __hash__ = Entity.__hash__
 
-
-FluidTurret.add_schema(
-    {
-        "$id": "urn:factorio:entity:fluid-turret",
-    },
-    version=(1, 0),
-    mro=(ItemRequestMixin, DirectionalMixin, Entity),
-)
-
-FluidTurret.add_schema({"$id": "urn:factorio:entity:fluid-turret"}, version=(2, 0))

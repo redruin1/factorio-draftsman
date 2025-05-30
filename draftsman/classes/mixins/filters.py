@@ -113,16 +113,6 @@ class FiltersMixin(Exportable):
         self.filters = other.filters
 
 
-FiltersMixin.add_schema(
-    {
-        "properties": {
-            "use_filters": {"type": "boolean", "default": False},
-            "filters": {"type": "array", "items": {"$ref": "urn:factorio:item-filter"}},
-        }
-    }
-)
-
-
 draftsman_converters.add_hook_fns(
     FiltersMixin,
     lambda fields: {

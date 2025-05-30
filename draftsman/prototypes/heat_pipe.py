@@ -21,5 +21,3 @@ class HeatPipe(Entity):
 
     __hash__ = Entity.__hash__
 
-
-HeatPipe.add_schema({"$id": "urn:factorio:entity:heat-pipe"})

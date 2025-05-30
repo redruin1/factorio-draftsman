@@ -21,10 +21,6 @@ class VariationMixin(Exportable):
     """
 
 
-VariationMixin.add_schema(
-    {"properties": {"variation": {"$ref": "urn:uint16", "default": 1}}}
-)
-
 draftsman_converters.add_hook_fns(
     VariationMixin,
     lambda fields: {"variation": fields.variation.name},

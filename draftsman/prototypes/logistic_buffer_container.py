@@ -40,9 +40,3 @@ class LogisticBufferContainer(
 
     __hash__ = Entity.__hash__
 
-
-LogisticBufferContainer.add_schema(
-    {
-        "$id": "urn:factorio:entity:logistic-buffer-container",
-    },
-)

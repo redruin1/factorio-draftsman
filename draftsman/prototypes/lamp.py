@@ -158,27 +158,6 @@ class Lamp(
     __hash__ = Entity.__hash__
 
 
-Lamp.add_schema(
-    {
-        "$id": "urn:factorio:entity:lamp",
-        "properties": {
-            "control_behavior": {
-                "properties": {
-                    "use_colors": {
-                        "type": "boolean",
-                        "default": "true",
-                    },
-                }
-            },
-            "color": {
-                "$ref": "urn:factorio:color",
-                "default": {"r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0},
-            },
-        },
-    },
-    version=(1, 0),
-)
-
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     Lamp,
     lambda fields: {
@@ -191,40 +170,6 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         None: fields.always_on.name,
         "color": fields.color.name,
     },
-)
-
-Lamp.add_schema(
-    {
-        "$id": "urn:factorio:entity:lamp",
-        "properties": {
-            "control_behavior": {
-                "properties": {
-                    "use_colors": {
-                        "type": "boolean",
-                        "default": "true",
-                    },
-                    "color_mode": {
-                        "type": "integer",
-                        "enum": [
-                            LampColorMode.COLOR_MAPPING,
-                            LampColorMode.COMPONENTS,
-                            LampColorMode.PACKED_RGB,
-                        ],
-                        "default": LampColorMode.COLOR_MAPPING,
-                    },
-                }
-            },
-            "always_on": {
-                "type": "boolean",
-                "default": "false",
-            },
-            "color": {
-                "$ref": "urn:factorio:color",
-                "default": {"r": 1.0, "g": 1.0, "b": 191 / 255, "a": 1.0},
-            },
-        },
-    },
-    version=(2, 0),
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(

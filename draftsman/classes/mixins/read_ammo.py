@@ -22,21 +22,6 @@ class ReadAmmoMixin(Exportable):
     """
 
 
-ReadAmmoMixin.add_schema({}, version=(1, 0))
-
-ReadAmmoMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {"read_ammo": {"type": "boolean", "default": "true"}},
-            }
-        }
-    },
-    version=(2, 0),
-)
-
-
 draftsman_converters.add_hook_fns(
     ReadAmmoMixin,
     lambda fields: {("control_behavior", "read_ammo"): fields.read_ammo.name},

@@ -29,9 +29,3 @@ class ElevatedCurvedRailA(DoubleGridAlignedMixin, DirectionalMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-
-ElevatedCurvedRailA.add_schema(None, version=(1, 0))
-
-ElevatedCurvedRailA.add_schema(
-    {"$id": "urn:factorio:entity:elevated-curved-rail-a"}, version=(2, 0)
-)

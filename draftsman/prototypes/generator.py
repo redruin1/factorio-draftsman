@@ -25,4 +25,3 @@ class Generator(EnergySourceMixin, DirectionalMixin, Entity):
     __hash__ = Entity.__hash__
 
 
-Generator.add_schema({"$id": "urn:factorio:entity:generator"})

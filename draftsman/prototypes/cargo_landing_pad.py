@@ -33,9 +33,3 @@ class CargoLandingPad(
 
     __hash__ = Entity.__hash__
 
-
-CargoLandingPad.add_schema(None, version=(1, 0))
-
-CargoLandingPad.add_schema(
-    {"$id": "urn:factorio:entity:cargo-landing-pad"}, version=(2, 0)
-)

@@ -60,20 +60,6 @@ class LogisticStorageContainer(
     __hash__ = Entity.__hash__
 
 
-LogisticStorageContainer.add_schema(
-    {"$id": "urn:factorio:entity:logistics-storage-container"},
-    version=(1, 0),
-    mro=(
-        InventoryMixin,
-        ItemRequestMixin,
-        LogisticModeOfOperationMixin,
-        ControlBehaviorMixin,
-        CircuitConnectableMixin,
-        Entity,
-    ),
-)
-
-
 @attrs.define
 class _ExportLogisticActiveContainer:
     circuit_mode_of_operation: LogisticModeOfOperation = attrs.field(
@@ -98,20 +84,6 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             lambda _: LogisticModeOfOperation.SEND_CONTENTS,  # Always return SEND_CONTENTS
         )
     },
-)
-
-LogisticStorageContainer.add_schema(
-    {"$id": "urn:factorio:entity:logistics-storage-container"},
-    version=(2, 0),
-    mro=(
-        InventoryMixin,
-        ItemRequestMixin,
-        LogisticModeOfOperationMixin,
-        # CircuitConditionMixin, # TODO: does this have a condition on 2.0?
-        ControlBehaviorMixin,
-        CircuitConnectableMixin,
-        Entity,
-    ),
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(

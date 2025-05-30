@@ -69,34 +69,7 @@ class Reactor(
 
     __hash__ = Entity.__hash__
 
-
-Reactor.add_schema(
-    {"$id": "urn:factorio:entity:reactor"},
-    version=(1, 0),
-    mro=(ItemRequestMixin, ControlBehaviorMixin, Entity),
-)
-
 # TODO: might need to add hooks for 1.0 with a custom MRO
-
-Reactor.add_schema(
-    {
-        "$id": "urn:factorio:entity:reactor",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "read_burner_fuel": {"type": "boolean", "default": "false"},
-                    "read_temperature": {"type": "boolean", "default": "false"},
-                    "temperature_signal": {
-                        "oneOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}],
-                        "default": {"name": "signal-T", "type": "virtual"},
-                    },
-                },
-            }
-        },
-    },
-    version=(2, 0),
-)
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
     Reactor,

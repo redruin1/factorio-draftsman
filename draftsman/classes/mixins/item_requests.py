@@ -168,23 +168,6 @@ class ItemRequestMixin(Exportable):
 
 # TODO: versioning
 
-ItemRequestMixin.add_schema(
-    {
-        "properties": {
-            "items": {
-                "type": "object",
-                "description": "A dictionary of item requests, where each key is "
-                "the name of an item and the value is the count of that item to "
-                "request. Items always go to the default inventory of that "
-                "object (if possible) in the order in which Factorio traverses "
-                "them.",
-            },
-        }
-    },
-    version=(1, 0),
-)
-
-
 @attrs.define
 class _ExportItemRequest1_0:
     item_requests: dict = attrs.field(factory=dict)
@@ -232,22 +215,6 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             },
         )
     },
-)
-
-ItemRequestMixin.add_schema(
-    {
-        "properties": {
-            "items": {
-                "type": "array",
-                "items": {"$ref": "urn:factorio:item-request"},
-                "description": "A list of item requests objects, which contain "
-                "the item name, it's quality, the amount to request, as well as "
-                "exactly what inventories to request to and where inside those "
-                "inventories.",
-            }
-        }
-    },
-    version=(2, 0),
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(

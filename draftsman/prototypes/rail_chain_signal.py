@@ -83,24 +83,6 @@ class RailChainSignal(
     __hash__ = Entity.__hash__
 
 
-RailChainSignal.add_schema(
-    {
-        "$id": "urn:factorio:entity:rail-chain-signal",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "blue_output_signal": {
-                        "$ref": "urn:factorio:signal-id",
-                        "default": {"name": "signal-blue", "type": "virtual"},
-                    }
-                },
-            }
-        },
-    }
-)
-
-
 draftsman_converters.add_hook_fns(
     RailChainSignal,
     lambda fields: {

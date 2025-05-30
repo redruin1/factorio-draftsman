@@ -30,5 +30,3 @@ class LinkedBelt(DirectionalMixin, Entity):  # TODO: finish
 
     __hash__ = Entity.__hash__
 
-
-LinkedBelt.add_schema({"$id": "urn:factorio:entity:linked-belt"})

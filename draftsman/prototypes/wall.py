@@ -28,20 +28,6 @@ class Wall(
     A static barrier that acts as protection for structures.
     """
 
-    # @schema(version=(1, 0))
-    # def json_schema(self) -> dict:
-    #     return {
-    #         "$id": "factorio:wall"
-    #     }
-
-    # @schema(version=(2, 0))
-    # def json_schema(self) -> dict:
-    #     return {
-    #         "$id": "factorio:wall"
-    #     }
-
-    # =========================================================================
-
     @property
     def similar_entities(self) -> list[str]:
         return walls
@@ -85,23 +71,6 @@ class Wall(
     __hash__ = Entity.__hash__
 
 
-Wall.add_schema(
-    {
-        "$id": "urn:factorio:entity:wall",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_open_gate": {"type": "boolean", "default": "true"},
-                    "circuit_read_sensor": {"type": "boolean", "default": "false"},
-                    "output_signal": {"$ref": "urn:factorio:signal-id"},
-                },
-            }
-        },
-    },
-    version=(1, 0),
-)
-
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     Wall,
     lambda fields: {
@@ -109,23 +78,6 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ("control_behavior", "circuit_read_sensor"): fields.read_gate.name,
         ("control_behavior", "output_signal"): fields.output_signal.name,
     },
-)
-
-Wall.add_schema(
-    {
-        "$id": "urn:factorio:entity:wall",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_open_gate": {"type": "boolean", "default": "true"},
-                    "circuit_read_gate": {"type": "boolean", "default": "false"},
-                    "output_signal": {"$ref": "urn:factorio:signal-id"},
-                },
-            }
-        },
-    },
-    version=(2, 0),
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(

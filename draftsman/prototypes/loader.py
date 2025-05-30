@@ -30,5 +30,3 @@ class Loader(FiltersMixin, IOTypeMixin, EnergySourceMixin, DirectionalMixin, Ent
 
     __hash__ = Entity.__hash__
 
-
-Loader.add_schema({"$id": "urn:factorio:entity:loader"})

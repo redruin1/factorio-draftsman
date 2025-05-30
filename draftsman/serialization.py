@@ -238,18 +238,6 @@ class ConverterVersion:
     def get_converter(self, exclude_none: bool = False, exclude_defaults: bool = False):
         return self.converters[(exclude_none, exclude_defaults)]
 
-    def add_schema(
-        self,
-        schema: dict,
-        cls: Optional[type] = None,
-    ):
-        if "$schema" not in schema:
-            schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
-        if "$id" in schema:
-            self.schemas[schema["$id"]] = schema
-        if cls:
-            self.cls_schemas[cls] = schema
-
     def add_hook_fns(
         self,
         cls: type,
@@ -325,15 +313,6 @@ class DraftsmanConverters:
     def register_unstructure_hook_factory(self, *args, **kwargs):
         for version in self.versions.values():
             version.register_unstructure_hook_factory(*args, **kwargs)
-
-    def add_schema(
-        self,
-        schema: dict[str, Any],
-        cls: Optional[type] = None,
-    ):
-        # Normalize references and IDs to always use versions at end
-        for version in self.versions.values():
-            version.add_schema(schema, cls)
 
     def add_hook_fns(
         self,

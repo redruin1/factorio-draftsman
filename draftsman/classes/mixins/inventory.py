@@ -138,10 +138,6 @@ class InventoryMixin(Exportable):
         self.bar = other.bar
 
 
-InventoryMixin.add_schema(
-    {"properties": {"bar": {"oneOf": [{"$ref": "urn:uint16"}, {"type": "null"}]}}}
-)
-
 draftsman_converters.add_hook_fns(
     InventoryMixin,
     lambda fields: {"bar": fields.bar.name},

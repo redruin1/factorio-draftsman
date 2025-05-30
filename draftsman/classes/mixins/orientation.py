@@ -85,17 +85,6 @@ class OrientationMixin(Exportable):
         return base_mergable and self.orientation == other.orientation
 
 
-OrientationMixin.add_schema(
-    {
-        "properties": {
-            "orientation": {
-                "type": "number"
-            }  # TODO: should probably description describing min/max values
-        }
-    }
-)
-
-
 draftsman_converters.add_hook_fns(
     OrientationMixin,
     lambda fields: {fields.orientation.name: "orientation"},

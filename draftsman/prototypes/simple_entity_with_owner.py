@@ -33,13 +33,6 @@ class SimpleEntityWithOwner(VariationMixin, DirectionalMixin, Entity):
     """
 
 
-SimpleEntityWithOwner.add_schema(
-    {
-        "$id": "urn:factorio:entity:simple-entity-with-force",
-        "properties": {"variation": {"$ref": "urn:uint16", "default": 1}},
-    }
-)
-
 draftsman_converters.add_hook_fns(
     SimpleEntityWithOwner, lambda fields: {"variation": fields.variation.name}
 )

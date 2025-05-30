@@ -52,6 +52,3 @@ class LegacyStraightRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
-
-
-LegacyStraightRail.add_schema({"$id": "urn:factorio:entity:legacy-straight-rail"})

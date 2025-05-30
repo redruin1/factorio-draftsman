@@ -351,40 +351,6 @@ class ProgrammableSpeaker(
     __hash__ = Entity.__hash__
 
 
-ProgrammableSpeaker.add_schema(
-    {
-        "$id": "urn:factorio:entity:programmable-speaker",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "signal_value_is_pitch": {"type": "boolean", "default": "false"},
-                    "instrument_id": {"type": "integer"},
-                    "note_id": {"type": "integer"},
-                },
-            },
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "playback_volume": {"type": "number", "min": 0.0, "max": 1.0},
-                    "playback_globally": {"type": "boolean", "default": "false"},
-                    "allow_polyphony": {"type": "boolean", "default": "false"},
-                },
-            },
-            "alert_parameters": {
-                "type": "object",
-                "properties": {
-                    "show_alert": {"type": "boolean", "default": "false"},
-                    "show_on_map": {"type": "boolean", "default": "false"},
-                    "icon_signal_id": {"$ref": "urn:factorio:signal-id"},
-                    "alert_message": {"type": "string"},
-                },
-            },
-        },
-    }
-)
-
-
 draftsman_converters.add_hook_fns(
     ProgrammableSpeaker,
     lambda fields: {

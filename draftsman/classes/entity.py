@@ -68,23 +68,6 @@ class _TileVector(Vector):
         self.entity().position._data[1] = value + self.entity().tile_height / 2
 
 
-# def strip_entity_number(cls):
-#     """
-#     Removes "entity_number" from the input signature so that attrs doesn't
-#     complain. Editing entity number is better done by moving the location of the
-#     entity within the parent "entities" list, as this just makes more intuitive
-#     sense (and makes life much simpler).
-#     """
-#     original_init = cls.__init__
-
-#     @wraps(original_init)
-#     def new_init(*args, **kwargs):
-#         kwargs.pop("entity_number", None)
-#         original_init(*args, **kwargs)
-
-#     cls.__init__ = new_init
-
-
 @attrs.define
 class Entity(EntityLike, Exportable):
     """
@@ -157,6 +140,47 @@ class Entity(EntityLike, Exportable):
         Not exported; read only.
         """
         return entities.raw.get(self.name, {})
+
+    # =========================================================================
+
+    # TODO: which of these do I want? Need to investigate what happens when you
+    # give the game a blueprint with two entities with the same entity_number...
+    _entity_number: Optional[uint64] = attrs.field(
+        default=None,
+        repr=False,
+        eq=False,
+        validator=instance_of(Optional[uint64]),
+        metadata={"omit": False},
+    )
+
+    @property
+    def entity_number(self) -> Optional[uint64]:
+        # TODO: an entity number is used for associations, dummy
+        # Fix this docstring
+        # TODO: also, I'm not convinced this should exist in Entity even for
+        # posterity/completeness-sake; it's a mechanism for holding relationship
+        # information which is entirely superceeded by Associations, and keeping
+        # it here will likely confuse more people than help them
+        """
+        A numeric value associated with this entity, 1-indexed. In practice this is
+        the index of the dictionary in the blueprint's 'entities' list, but this is
+        not strictly enforced, and its even possible for multiple entities to share
+        the same ``entity_number`` in the same blueprint without consequence.
+
+        An :py:class:`.Entity` created outside of a blueprint has no way to
+        determine it's own ``entity_number``, so it defaults to ``None``. Entities
+        added to blueprints also default to ``None``, as since entity lists
+        are frequently modified it makes the most sense to only generate these
+        values when exporting. This value is only populated when importing from an
+        existing blueprint string, but the value is not kept "accurate" if the
+        parent entity list in which it resides changes.
+
+        This attribute is provided for posterity in case this value is somehow
+        useful, but since its value is non-authorative, it gets overwritten when
+        exporting to follow the above "entity number == index in entities list"
+        axiom.
+        """
+        return self._entity_number
 
     # =========================================================================
 
@@ -551,47 +575,6 @@ class Entity(EntityLike, Exportable):
 
     # =========================================================================
 
-    # TODO: which of these do I want? Need to investigate what happens when you
-    # give the game a blueprint with two entities with the same entity_number...
-    _entity_number: Optional[uint64] = attrs.field(
-        default=None,
-        repr=False,
-        eq=False,
-        validator=instance_of(Optional[uint64]),
-        metadata={"omit": False},
-    )
-
-    @property
-    def entity_number(self) -> Optional[uint64]:
-        # TODO: an entity number is used for associations, dummy
-        # Fix this docstring
-        # TODO: also, I'm not convinced this should exist in Entity even for
-        # posterity/completeness-sake; it's a mechanism for holding relationship
-        # information which is entirely superceeded by Associations, and keeping
-        # it here will likely confuse more people than help them
-        """
-        A numeric value associated with this entity, 1-indexed. In practice this is
-        the index of the dictionary in the blueprint's 'entities' list, but this is
-        not strictly enforced, and its even possible for multiple entities to share
-        the same ``entity_number`` in the same blueprint without consequence.
-
-        An :py:class:`.Entity` created outside of a blueprint has no way to
-        determine it's own ``entity_number``, so it defaults to ``None``. Entities
-        added to blueprints also default to ``None``, as since entity lists
-        are frequently modified it makes the most sense to only generate these
-        values when exporting. This value is only populated when importing from an
-        existing blueprint string, but the value is not kept "accurate" if the
-        parent entity list in which it resides changes.
-
-        This attribute is provided for posterity in case this value is somehow
-        useful, but since its value is non-authorative, it gets overwritten when
-        exporting to follow the above "entity number == index in entities list"
-        axiom.
-        """
-        return self._entity_number
-
-    # =========================================================================
-
     def is_placable_on(self, surface_name: str) -> bool:
         """
         Check to see if this entity is placable on a particular planet/surface.
@@ -625,18 +608,12 @@ class Entity(EntityLike, Exportable):
 
     def merge(self, other: "Entity"):
         # Tags (overwrite self with other)
-        # (Make sure to make a copy in case the original data gets deleted)
-        self.tags = copy.deepcopy(other.tags)
+        self.tags = other.tags
 
     def __hash__(self) -> int:
         return id(self) >> 4  # Apparently this is the default?
 
     def __str__(self) -> str:  # pragma: no coverage
-        # return "<{0}{1}>{2}".format(
-        #     type(self).__name__,
-        #     " '{}'".format(self.id) if self.id is not None else "",
-        #     str(self.to_dict()),
-        # )
         # Association debug printing:
         return "<{0}{1} at 0x{2:016X}>{3}".format(
             type(self).__name__,
@@ -644,41 +621,6 @@ class Entity(EntityLike, Exportable):
             id(self),
             str(self.to_dict()),
         )
-
-
-Entity.add_schema(
-    {
-        "type": "object",
-        "properties": {
-            "entity_number": {"$ref": "urn:uint64"},
-            "name": {"type": "string"},
-            "position": {
-                "$ref": "urn:factorio:position",
-            },
-            "tags": {"type": "object"},
-        },
-        "required": ["entity_number", "name", "position"],
-    },
-    version=(1, 0),
-)
-
-Entity.add_schema(
-    {
-        "type": "object",
-        "properties": {
-            "entity_number": {"$ref": "urn:uint64"},
-            "name": {"type": "string"},
-            "position": {
-                "$ref": "urn:factorio:position",
-            },
-            "mirror": {"type": "boolean", "default": False},
-            "quality": {"$ref": "urn:factorio:quality-name"},
-            "tags": {"type": "object"},
-        },
-        "required": ["entity_number", "name", "position"],
-    },
-    version=(2, 0),
-)
 
 
 @attrs.define

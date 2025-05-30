@@ -117,20 +117,7 @@ class DisplayPanel(
     __hash__ = Entity.__hash__
 
 
-DisplayPanel.Message.add_schema(
-    {
-        "$id": "urn:factorio:entity:display-panel:message",
-        "type": "object",
-        "properties": {
-            "icon": {"$ref": "urn:factorio:signal-id"},
-            "text": {"type": "string"},
-            "condition": {"$ref": "urn:factorio:simple-condition"},
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:display_panel:message"},
     DisplayPanel.Message,
     lambda fields: {
         "text": fields.text.name,
@@ -139,32 +126,7 @@ draftsman_converters.add_hook_fns(
     },
 )
 
-DisplayPanel.add_schema(None, version=(1, 0))
-
-DisplayPanel.add_schema(
-    {
-        "$id": "urn:factorio:entity:display-panel",
-        "properties": {
-            "text": {"type": "string"},
-            "icon": {"oneOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]},
-            "always_show": {"type": "boolean", "default": "false"},
-            "show_in_chart": {"type": "boolean", "default": "false"},
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "parameters": {
-                        "type": "array",
-                        "items": {"$ref": "urn:factorio:entity:display-panel:message"},
-                    }
-                },
-            },
-        },
-    },
-    version=(2, 0),
-)
-
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:display_panel"},
     DisplayPanel,
     lambda fields: {
         "text": fields.text.name,

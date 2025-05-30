@@ -135,38 +135,6 @@ class Roboport(
 
 # TODO: versioning
 
-Roboport.add_schema(
-    {
-        "$id": "urn:factorio:entity:roboport",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "read_logistics": {"type": "boolean", "default": "true"},
-                    "read_robot_stats": {"type": "boolean", "default": "false"},
-                    "available_logistic_output_signal": {
-                        "$ref": "urn:factorio:signal-id",
-                        "default": {"name": "signal-X", "type": "virtual"},
-                    },
-                    "total_logistic_output_signal": {
-                        "$ref": "urn:factorio:signal-id",
-                        "default": {"name": "signal-Y", "type": "virtual"},
-                    },
-                    "available_construction_output_signal": {
-                        "$ref": "urn:factorio:signal-id",
-                        "default": {"name": "signal-Z", "type": "virtual"},
-                    },
-                    "total_construction_output_signal": {
-                        "$ref": "urn:factorio:signal-id",
-                        "default": {"name": "signal-T", "type": "virtual"},
-                    },
-                },
-            }
-        },
-    },
-    # version=(1, 0)
-)
-
 draftsman_converters.add_hook_fns(  # version 1.0
     Roboport,
     lambda fields: {

@@ -137,23 +137,6 @@ class FilteredInventoryMixin(Exportable):
         self.bar = other.bar
 
 
-FilteredInventoryMixin.add_schema(
-    {
-        "properties": {
-            "inventory": {
-                "type": "object",
-                "properties": {
-                    "filters": {
-                        "type": "array",
-                        "items": {"$ref": "urn:factorio:item-filter"},
-                    },
-                    "bar": {"oneOf": [{"$ref": "urn:uint16"}, {"type": "null"}]},
-                },
-            }
-        }
-    }
-)
-
 draftsman_converters.add_hook_fns(
     FilteredInventoryMixin,
     lambda fields: {

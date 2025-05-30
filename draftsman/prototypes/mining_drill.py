@@ -69,5 +69,3 @@ class MiningDrill(
 
     __hash__ = Entity.__hash__
 
-
-MiningDrill.add_schema({"$id": "urn:factorio:entity:mining-drill"})

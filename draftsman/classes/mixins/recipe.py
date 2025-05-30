@@ -149,15 +149,6 @@ class RecipeMixin(Exportable):
         super().merge(other)
 
 
-RecipeMixin.add_schema(
-    {
-        "properties": {
-            "recipe": {"type": "string"},
-        }
-    },
-    version=(1, 0),
-)
-
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     RecipeMixin,
     lambda fields: {
@@ -168,16 +159,6 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         "recipe": fields.recipe.name,
         "recipe_quality": None,
     },
-)
-
-RecipeMixin.add_schema(
-    {
-        "properties": {
-            "recipe": {"oneOf": [{"type": "string"}, {"type": "null"}]},
-            "recipe_quality": {"$ref": "urn:factorio:quality-name"},
-        }
-    },
-    version=(2, 0),
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(

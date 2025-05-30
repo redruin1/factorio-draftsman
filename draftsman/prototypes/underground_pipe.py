@@ -24,5 +24,3 @@ class UndergroundPipe(DirectionalMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-
-UndergroundPipe.add_schema({"$id": "urn:factorio:entity:pipe-to-ground"})

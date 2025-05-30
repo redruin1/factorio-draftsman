@@ -24,5 +24,3 @@ class UndergroundBelt(IOTypeMixin, DirectionalMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-
-UndergroundBelt.add_schema({"$id": "urn:factorio:entity:underground-belt"})

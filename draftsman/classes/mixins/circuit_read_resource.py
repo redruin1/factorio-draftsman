@@ -46,25 +46,7 @@ class CircuitReadResourceMixin(Exportable):
     """
 
 
-CircuitReadResourceMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_read_resources": {"type": "boolean", "default": "true"},
-                    "circuit_resource_read_mode": {
-                        "enum": [0, 1],
-                        "default": 0,
-                    },
-                },
-            }
-        }
-    }
-)
-
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:circuit_read_resources_mixin"},
     CircuitReadResourceMixin,
     lambda fields: {
         ("control_behavior", "circuit_read_resources"): fields.read_resources.name,

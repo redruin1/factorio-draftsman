@@ -61,69 +61,11 @@ int64 = Annotated[int, and_(ge(-(2**63)), lt(2**63))]
 # Maximum size of Lua double before you lose integer precision
 LuaDouble = Annotated[int, and_(ge(-(2**53)), lt(2**53))]
 
-draftsman_converters.add_schema(
-    {
-        "$id": "urn:int32",
-        "type": "integer",
-        "min": -(2**31),
-        "exclusiveMax": 2**31,
-    }
-)
-draftsman_converters.add_schema(
-    {
-        "$id": "urn:int64",
-        "type": "integer",
-        "min": -(2**63),
-        "exclusiveMax": 2**63,
-    }
-)
-draftsman_converters.add_schema(
-    {
-        "$id": "urn:lua-double",
-        "type": "integer",
-        "min": -(2**53),
-        "exclusiveMax": 2**53,
-    }
-)
-
 uint8 = Annotated[int, and_(ge(0), lt(2**8))]
 uint16 = Annotated[int, and_(ge(0), lt(2**16))]
 uint32 = Annotated[int, and_(ge(0), lt(2**32))]
 # TODO: description about floating point issues
 uint64 = Annotated[int, and_(ge(0), lt(2**64))]
-
-draftsman_converters.add_schema(
-    {
-        "$id": "urn:uint8",
-        "type": "integer",
-        "min": 0,
-        "exclusiveMax": 2**8,
-    }
-)
-draftsman_converters.add_schema(
-    {
-        "$id": "urn:uint16",
-        "type": "integer",
-        "min": 0,
-        "exclusiveMax": 2**16,
-    }
-)
-draftsman_converters.add_schema(
-    {
-        "$id": "urn:uint32",
-        "type": "integer",
-        "min": 0,
-        "exclusiveMax": 2**32,
-    }
-)
-draftsman_converters.add_schema(
-    {
-        "$id": "urn:uint64",
-        "type": "integer",
-        "min": 0,
-        "exclusiveMax": 2**64,
-    }
-)
 
 
 def known_name(type: str, structure: dict, issued_warning: Warning):
@@ -164,20 +106,6 @@ ModuleName = Annotated[str, known_name("module", modules.raw, UnknownModuleWarni
 QualityName = Literal[
     "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown"
 ]
-draftsman_converters.add_schema(
-    {
-        "$id": "urn:factorio:quality-name",
-        "enum": [
-            "normal",
-            "uncommon",
-            "rare",
-            "epic",
-            "legendary",
-            "quality-unknown",
-            "any",
-        ],
-    }
-)
 SignalType = Literal[
     "virtual",
     "item",
@@ -188,7 +116,6 @@ SignalType = Literal[
     "asteroid-chunk",
     "quality",
 ]
-
 ArithmeticOperation = Literal[
     "*", "/", "+", "-", "%", "^", "<<", ">>", "AND", "OR", "XOR"
 ]
@@ -217,17 +144,6 @@ class AttrsMapperID(Exportable):
             return cls(**value)
         else:
             return value
-
-
-AttrsMapperID.add_schema(
-    {
-        "$id": "urn:factorio:upgrade-planner:mapper-id",
-        "properties": {
-            "name": {"type": "string"},
-            "type": {"enum": ["entity", "item"]},
-        },
-    }
-)
 
 draftsman_converters.add_hook_fns(
     AttrsMapperID,
@@ -267,17 +183,6 @@ class AttrsMapper(Exportable):
 
 
 # TODO: versioning
-
-AttrsMapper.add_schema(
-    {
-        "$id": "urn:factorio:upgrade-planner:mapper",
-        "properties": {
-            "index": {"$ref": "urn:uint64"},
-            "from": {"$ref": "urn:factorio:upgrade-planner:mapper-id"},
-            "to": {"$ref": "urn:factorio:upgrade-planner:mapper-id"},
-        },
-    }
-)
 
 
 draftsman_converters.add_hook_fns(
@@ -380,59 +285,6 @@ class AttrsSignalID(Exportable):
                     warnings.warn(MalformedSignalWarning(msg))
 
 
-AttrsSignalID.add_schema(
-    {
-        "$id": "urn:factorio:signal-id",
-        "type": "object",
-        "properties": {
-            "name": {"type": "string"},
-            "type": {
-                "enum": [
-                    "item",
-                    "fluid",
-                    "virtual",
-                ]
-            },
-        },
-    },
-    version=(1, 0),
-)
-
-AttrsSignalID.add_schema(
-    {
-        "$id": "urn:factorio:signal-id",
-        "type": "object",
-        "properties": {
-            "name": {"type": "string"},
-            "type": {
-                "enum": [
-                    "item",
-                    "fluid",
-                    "virtual",
-                    "recipe",
-                    "entity",
-                    "space-location",
-                    "asteroid-chunk",
-                    "quality",
-                ]
-            },
-            "quality": {
-                "enum": [
-                    "normal",
-                    "uncommon",
-                    "rare",
-                    "epic",
-                    "legendary",
-                    "quality-unknown",
-                    "any",
-                ]
-            },
-        },
-    },
-    version=(2, 0),
-)
-
-
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     AttrsSignalID,
     lambda fields: {
@@ -483,14 +335,6 @@ class TargetID(Exportable):
         return value
 
 
-TargetID.add_schema(
-    {
-        "$id": "urn:factorio:target-id",
-        "type": "object",
-        "properties": {"index": {"$ref": "urn:uint32"}, "name": {"type": "string"}},
-    }
-)
-
 draftsman_converters.add_hook_fns(
     TargetID, lambda fields: {"index": fields.index.name, "name": fields.name.name}
 )
@@ -507,15 +351,6 @@ class AttrsAsteroidChunkID(Exportable):
             return cls(**value)
         else:
             return value
-
-
-AttrsAsteroidChunkID.add_schema(
-    {
-        "$id": "urn:factorio:asteroid-chunk-id",
-        "type": "object",
-        "properties": {"index": {"$ref": "urn:uint32"}, "name": {"type": "string"}},
-    }
-)
 
 
 draftsman_converters.add_hook_fns(
@@ -545,18 +380,6 @@ class AttrsIcon(Exportable):
         if isinstance(value, dict):
             return cls(**value)
         return value
-
-
-AttrsIcon.add_schema(
-    {
-        "$id": "urn:factorio:icon",
-        "type": "object",
-        "properties": {
-            "index": {"$ref": "urn:uint8"},
-            "signal": {"$ref": "urn:factorio:signal-id"},
-        },
-    }
-)
 
 
 draftsman_converters.add_hook_fns(
@@ -634,20 +457,6 @@ class AttrsColor(Exportable):
             return value
 
 
-AttrsColor.add_schema(
-    {
-        "$id": "urn:factorio:color",
-        "type": "object",
-        "properties": {
-            "r": {"type": "number"},
-            "g": {"type": "number"},
-            "b": {"type": "number"},
-            "a": {"oneOf": [{"type": "number"}, {"type": "null"}]},
-        },
-        "required": ["r", "g", "b"],
-    }
-)
-
 draftsman_converters.add_hook_fns(
     AttrsColor,
     lambda fields: {
@@ -671,9 +480,6 @@ Comparator = Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="]
 # draftsman_converters.register_unstructure_hook(
 #     Comparator, lambda inst: normalize_comparator(inst)
 # )
-draftsman_converters.add_schema(
-    {"$id": "urn:factorio:comparator", "enum": [">", "<", "=", "≥", "≤", "≠"]}
-)
 
 
 @attrs.define
@@ -705,24 +511,6 @@ class AttrsSimpleCondition(Exportable):
             return value
 
 
-AttrsSimpleCondition.add_schema(
-    {
-        "$id": "urn:factorio:simple-condition",
-        "type": "object",
-        "properties": {
-            "first_signal": {
-                "anyOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
-            },
-            "comparator": {"$ref": "urn:factorio:comparator"},
-            "constant": {"$ref": "urn:int32"},
-            "second_signal": {
-                "anyOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}]
-            },
-        },
-    },
-)
-
-
 draftsman_converters.add_hook_fns(
     AttrsSimpleCondition,
     lambda fields: {
@@ -747,15 +535,6 @@ class AttrsNetworkSpecification(Exportable):
             return cls(**value)
         else:
             return value
-
-
-AttrsNetworkSpecification.add_schema(
-    {
-        "$id": "urn:factorio:network-specification",
-        "type": "object",
-        "properties": {"red": {"type": "boolean"}, "green": {"type": "boolean"}},
-    },
-)
 
 
 draftsman_converters.add_hook_fns(
@@ -846,30 +625,6 @@ class AttrsItemFilter(Exportable):
             return cls(**value)
         else:
             return value
-
-
-AttrsItemFilter.add_schema(
-    {
-        "$id": "urn:factorio:item-filter",
-        "type": "object",
-        "properties": {
-            "index": {"$ref": "urn:int64"},
-            "name": {"type": "string"},
-            "quality": {
-                "enum": [
-                    "normal",
-                    "uncommon",
-                    "rare",
-                    "epic",
-                    "legendary",
-                    "quality-unknown",
-                    "any",
-                ]
-            },
-            "comparator": {"$ref": "urn:factorio:comparator"},
-        },
-    }
-)
 
 
 draftsman_converters.add_hook_fns(
@@ -1098,19 +853,6 @@ class SignalFilter(Exportable):
             return value
 
 
-SignalFilter.add_schema(
-    {
-        "$id": "urn:factorio:signal-filter",
-        "type": "object",
-        "properties": {
-            "index": {"$ref": "urn:int64"},
-            "name": {"type": "string"},
-            "count": {"$ref": "urn:int32"},
-        },
-    },
-    version=(1, 0),
-)
-
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     SignalFilter,
     lambda fields: {
@@ -1122,34 +864,6 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         None: fields.comparator.name,
         None: fields.max_count.name,
     },
-)
-
-SignalFilter.add_schema(
-    {
-        "$id": "urn:factorio:signal-filter",
-        "type": "object",
-        "properties": {
-            "index": {"$ref": "urn:int64"},
-            "name": {"type": "string"},
-            "type": {
-                "enum": [
-                    "item",
-                    "fluid",
-                    "virtual",
-                    "recipe",
-                    "entity",
-                    "space-location",
-                    "asteroid-chunk",
-                    "quality",
-                ]
-            },
-            "count": {"$ref": "urn:int32"},
-            "quality": {"$ref": "urn:factorio:quality-name"},
-            "comparator": {"$ref": "urn:factorio:comparator"},
-            "max_count": {"$ref": "urn:int32"},
-        },
-    },
-    version=(2, 0),
 )
 
 
@@ -1458,28 +1172,6 @@ class ManualSection(Exportable):
             return value
 
 
-ManualSection.add_schema(
-    {
-        "$id": "urn:factorio:manual-section",
-        "type": "object",
-        "properties": {
-            "index": {
-                "$ref": "urn:lua-double",
-                "min": 1,
-                "max": 100,
-            },
-            "filters": {
-                "type": "array",
-                "items": {"$ref": "urn:factorio:signal-filter"},
-                "maxItems": 1000,
-            },
-            "group": {"type": "string"},
-            "active": {"type": "boolean"},
-        },
-        "required": ["index"],
-    }
-)
-
 draftsman_converters.add_hook_fns(
     ManualSection,
     lambda fields: {
@@ -1634,17 +1326,6 @@ class QualityFilter(Exportable):
     """
 
 
-QualityFilter.add_schema(
-    {
-        "$id": "urn:factorio:quality-filter",
-        "type": "object",
-        "properties": {
-            "quality": {"$ref": "urn:factorio:quality-name"},
-            "comparator": {"$ref": "urn:factorio:comparator"},
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     QualityFilter,
     lambda fields: {
@@ -1679,18 +1360,6 @@ class AttrsInventoryLocation(Exportable):
         else:
             return value
 
-
-AttrsInventoryLocation.add_schema(
-    {
-        "$id": "urn:factorio:inventory-location",
-        "type": "object",
-        "properties": {
-            "inventory": {"$ref": "urn:uint32"},
-            "stack": {"$ref": "urn:uint32"},
-            "count": {"$ref": "urn:uint32"},
-        },
-    }
-)
 
 draftsman_converters.add_hook_fns(
     AttrsInventoryLocation,
@@ -1735,22 +1404,6 @@ class AttrsItemSpecification(Exportable):
             return value
 
 
-AttrsItemSpecification.add_schema(
-    {
-        "$id": "urn:factorio:item-specification",
-        "type": "object",
-        "properties": {
-            "in_inventory": {
-                "type": "array",
-                "items": {"$ref": "urn:factorio:inventory-location"},
-            },
-            "grid_count": {
-                "$ref": "urn:uint32",
-            },
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     AttrsItemSpecification,
     lambda fields: {
@@ -1773,17 +1426,6 @@ class AttrsItemID(Exportable):
             return cls(**value)
         return value
 
-
-AttrsItemID.add_schema(
-    {
-        "$id": "urn:factorio:item-id",
-        "type": "object",
-        "properties": {
-            "name": {"type": "string"},
-            "quality": {"$ref": "urn:factorio:quality-name"},
-        },
-    }
-)
 
 draftsman_converters.add_hook_fns(
     AttrsItemID,
@@ -1814,18 +1456,6 @@ class AttrsItemRequest(Exportable):
             return AttrsItemRequest(**value)
         else:
             return value
-
-
-AttrsItemRequest.add_schema(
-    {
-        "$id": "urn:factorio:item-request",
-        "type": "object",
-        "properties": {
-            "id": {"$ref": "urn:factorio:item-id"},
-            "items": {"$ref": "urn:factorio:item-specification"},
-        },
-    }
-)
 
 
 draftsman_converters.add_hook_fns(
@@ -1869,24 +1499,6 @@ class AttrsInfinityFilter(Exportable):
             return cls(**value)
         else:
             return value
-
-
-AttrsInfinityFilter.add_schema(
-    {
-        "$id": "urn:factorio:infinity-filter",
-        "type": "object",
-        "properties": {
-            "index": {"$ref": "urn:uint16"},
-            "name": {"type": "string"},
-            "count": {"$ref": "urn:uint32", "default": 0},
-            "mode": {
-                "enum": ["at-least", "at-most", "exactly"],
-                "default": "at-least",
-            },
-        },
-        "required": ["index", "name"],
-    }
-)
 
 
 draftsman_converters.add_hook_fns(
@@ -2026,17 +1638,6 @@ class EquipmentID(Exportable):
         return value
 
 
-EquipmentID.add_schema(
-    {
-        "$id": "urn:factorio:equipment-id",
-        "type": "object",
-        "properties": {
-            "name": {"type": "string"},
-            "quality": {"$ref": "urn:factorio:quality-name"},
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     EquipmentID,
     lambda fields: {
@@ -2071,19 +1672,6 @@ class EquipmentComponent(Exportable):
         return value
 
 
-EquipmentComponent.add_schema(
-    {
-        "$id": "urn:factorio:equipment-component",
-        "type": "object",
-        "properties": {
-            "equipment": {"$ref": "urn:factorio:equipment-id"},
-            "position": {"$ref": "urn:factorio:position"},
-        },
-        "required": ["equipment", "position"],
-    }
-)
-
-
 draftsman_converters.add_hook_fns(
     EquipmentComponent,
     lambda fields: {
@@ -2101,20 +1689,6 @@ class StockConnection(Exportable):
     )
     front: Optional[Association] = attrs.field(default=None)
     back: Optional[Association] = attrs.field(default=None)
-
-
-StockConnection.add_schema(
-    {
-        "$id": "urn:factorio:blueprint:stock-connection",
-        "type": "object",
-        "properties": {
-            "stock": {"$ref": "urn:uint64"},
-            "front": {"$ref": "urn:uint64"},
-            "back": {"$ref": "urn:uint64"},
-        },
-        "required": ["stock"],
-    }
-)
 
 
 # TODO: test
@@ -2240,17 +1814,6 @@ class FilteredInventory(Exportable):
         if isinstance(value, dict):
             return cls(**value)
         return value
-
-
-FilteredInventory.add_schema(
-    {
-        "$id": "urn:factorio:filtered-inventory",
-        "properties": {
-            "filters": {"type": "array", "items": {"$ref": "urn:factorio:item-filter"}},
-            "bar": {"$ref": "urn:uint16"},
-        },
-    }
-)
 
 
 draftsman_converters.add_hook_fns(

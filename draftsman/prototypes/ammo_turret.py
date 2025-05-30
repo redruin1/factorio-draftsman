@@ -48,13 +48,3 @@ class AmmoTurret(
 
     __hash__ = Entity.__hash__
 
-
-AmmoTurret.add_schema(
-    {
-        "$id": "urn:factorio:entity:ammo-turret",
-    },
-    version=(1, 0),
-    mro=(ItemRequestMixin, DirectionalMixin, Entity),
-)
-
-AmmoTurret.add_schema({"$id": "urn:factorio:entity:ammo-turret"}, version=(2, 0))

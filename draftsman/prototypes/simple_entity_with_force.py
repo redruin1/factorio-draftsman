@@ -31,13 +31,6 @@ class SimpleEntityWithForce(VariationMixin, DirectionalMixin, Entity):
     """
 
 
-SimpleEntityWithForce.add_schema(
-    {
-        "$id": "urn:factorio:entity:simple-entity-with-force",
-        "properties": {"variation": {"$ref": "urn:uint16", "default": 1}},
-    }
-)
-
 draftsman_converters.add_hook_fns(
     SimpleEntityWithForce, lambda fields: {"variation": fields.variation.name}
 )

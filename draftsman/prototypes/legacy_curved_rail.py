@@ -54,9 +54,3 @@ class LegacyCurvedRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-
-LegacyCurvedRail.add_schema(
-    {
-        "$id": "urn:factorio:entity:legacy-curved-rail",
-    }
-)

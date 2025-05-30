@@ -90,13 +90,3 @@ class Furnace(
 
     __hash__ = Entity.__hash__
 
-
-Furnace.add_schema(
-    {
-        "$id": "urn:factorio:entity:furnace",
-    },
-    version=(1, 0),
-    mro=(ItemRequestMixin, DirectionalMixin, Entity),
-)
-
-Furnace.add_schema({"$id": "urn:factorio:entity:furnace"}, version=(2, 0))

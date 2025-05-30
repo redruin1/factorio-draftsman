@@ -58,5 +58,3 @@ class Pump(
 
     __hash__ = Entity.__hash__
 
-
-Pump.add_schema({"$id": "urn:factorio:entity:pump"})

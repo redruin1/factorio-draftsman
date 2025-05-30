@@ -53,26 +53,7 @@ class CircuitReadHandMixin(Exportable):
 
 # TODO: versioning
 
-CircuitReadHandMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_read_hand_contents": {
-                        "type": "boolean",
-                        "default": "false",
-                    },
-                    "circuit_read_hand_mode": {"enum": [0, 1], "default": 0},
-                },
-            }
-        }
-    }
-)
-
-
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:circuit_read_hand_mixin"},
     CircuitReadHandMixin,
     lambda fields: {
         (

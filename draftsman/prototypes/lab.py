@@ -73,5 +73,3 @@ class Lab(ModulesMixin, ItemRequestMixin, EnergySourceMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-
-Lab.add_schema({"$id": "urn:factorio:entity:lab"})

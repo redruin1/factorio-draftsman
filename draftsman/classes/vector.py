@@ -196,20 +196,5 @@ class Vector:
         return "<Vector>({}, {})".format(self._data[0], self._data[1])
 
 
-draftsman_converters.add_schema(
-    {
-        "$id": "urn:factorio:position",
-        "properties": {
-            "x": {
-                "type": "number",
-            },
-            "y": {
-                "type": "number",
-            },
-        },
-        "required": ["x", "y"],
-    }
-)
-
 draftsman_converters.register_structure_hook(Vector, lambda d, _: Vector.from_other(d))
 draftsman_converters.register_unstructure_hook(Vector, lambda v: v.to_dict())

@@ -38,6 +38,3 @@ class ArtilleryWagon(
     # =========================================================================
 
     __hash__ = Entity.__hash__
-
-
-ArtilleryWagon.add_schema({"$id": "urn:factorio:entity:artillery-wagon"})

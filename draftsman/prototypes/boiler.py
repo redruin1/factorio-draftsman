@@ -31,5 +31,3 @@ class Boiler(ItemRequestMixin, EnergySourceMixin, DirectionalMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-
-Boiler.add_schema({"$id": "urn:factorio:entity:boiler"})

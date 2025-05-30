@@ -50,9 +50,3 @@ class LogisticRequestContainer(
 
     __hash__ = Entity.__hash__
 
-
-LogisticRequestContainer.add_schema(
-    {
-        "$id": "urn:factorio:entity:logistic-request-container",
-    },
-)

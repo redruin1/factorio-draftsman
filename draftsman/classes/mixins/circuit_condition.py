@@ -68,19 +68,6 @@ class CircuitConditionMixin(ControlBehaviorMixin):
         self.circuit_condition = other.circuit_condition
 
 
-CircuitConditionMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_condition": {"$ref": "urn:factorio:simple-condition"},
-                },
-            }
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     CircuitConditionMixin,
     lambda fields: {

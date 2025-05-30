@@ -455,9 +455,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
 
 # TODO: versioning
-Blueprintable.add_schema(
-    {"properties": {"index": {"oneOf": [{"$ref": "urn:uint16"}, {"type": "null"}]}}}
-)
 
 draftsman_converters.add_hook_fns(
     Blueprintable,

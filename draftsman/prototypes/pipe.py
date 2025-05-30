@@ -22,4 +22,3 @@ class Pipe(Entity):
     __hash__ = Entity.__hash__
 
 
-Pipe.add_schema({"$id": "urn:factorio:entity:pipe"})

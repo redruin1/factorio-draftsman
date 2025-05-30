@@ -79,17 +79,6 @@ class Splitter(DirectionalMixin, Entity):
     __hash__ = Entity.__hash__
 
 
-Splitter.add_schema(
-    {
-        "$id": "urn:factorio:entity:splitter",
-        "properties": {
-            "input_priority": {"enum": ["left", "none", "right"], "default": "none"},
-            "output_priority": {"enum": ["left", "none", "right"], "default": "none"},
-            "filter": {"type": "string"},  # Never null on 1.0
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     Splitter,
     lambda fields: {

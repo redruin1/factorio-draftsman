@@ -30,8 +30,3 @@ class ElevatedHalfDiagonalRail(DoubleGridAlignedMixin, DirectionalMixin, Entity)
     __hash__ = Entity.__hash__
 
 
-ElevatedHalfDiagonalRail.add_schema(None, version=(1, 0))
-
-ElevatedHalfDiagonalRail.add_schema(
-    {"$id": "urn:factorio:entity:elevated-half-diagonal-rail"}, version=(2, 0)
-)

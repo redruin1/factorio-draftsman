@@ -50,10 +50,3 @@ class ElevatedStraightRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
-
-
-ElevatedStraightRail.add_schema(None, version=(1, 0))
-
-ElevatedStraightRail.add_schema(
-    {"$id": "urn:factorio:entity:elevated-straight-rail"}, version=(2, 0)
-)

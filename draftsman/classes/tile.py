@@ -139,21 +139,7 @@ class Tile(SpatialLike, Exportable):
         return "<Tile>{}".format(self.to_dict())
 
 
-Tile.add_schema(
-    {
-        "$id": "urn:factorio:tile",
-        "type": "object",
-        "properties": {
-            "name": {"type": "string"},
-            "position": {"$ref": "urn:factorio:position"},
-        },
-        "required": ["name", "position"],
-    }
-)
-
-
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:tile"},
     Tile,
     lambda fields: {
         "name": fields.name.name,

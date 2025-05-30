@@ -23,7 +23,3 @@ class CargoBay(Entity):
 
     __hash__ = Entity.__hash__
 
-
-CargoBay.add_schema(None, version=(1, 0))
-
-CargoBay.add_schema({"$id": "urn:factorio:entity:cargo-bay"}, version=(2, 0))

@@ -40,20 +40,6 @@ class CircuitEnableMixin(Exportable):
         self.circuit_enabled = other.circuit_enabled
 
 
-CircuitEnableMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_enabled": {"type": "boolean", "default": "false"}
-                },
-            }
-        }
-    }
-)
-
-
 draftsman_converters.add_hook_fns(
     CircuitEnableMixin,
     lambda fields: {

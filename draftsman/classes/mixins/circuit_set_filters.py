@@ -22,20 +22,6 @@ class CircuitSetFiltersMixin(Exportable):
     """
 
 
-CircuitSetFiltersMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_set_filters": {"type": "boolean", "default": "false"}
-                },
-            }
-        }
-    }
-)
-
-
 draftsman_converters.add_hook_fns(
     # {"$id": "factorio:circuit_set_filters_mixin"},
     CircuitSetFiltersMixin,

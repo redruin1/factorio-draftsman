@@ -22,6 +22,3 @@ class LightningAttractor(EnergySourceMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
-
-
-LightningAttractor.add_schema({"$id": "urn:factorio:entity:lightning-attractor"})

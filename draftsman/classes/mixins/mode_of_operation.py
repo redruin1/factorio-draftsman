@@ -37,20 +37,6 @@ class InserterModeOfOperationMixin(Exportable):  # (ControlBehaviorMixin)
     """
 
 
-InserterModeOfOperationMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_mode_of_operation": {"enum": [0, 1, 2, 3, 4], "default": 0}
-                },
-            }
-        }
-    },
-    version=(1, 0),
-)
-
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     InserterModeOfOperationMixin,
     lambda fields: {
@@ -60,8 +46,6 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ): fields.mode_of_operation.name,
     },
 )
-
-InserterModeOfOperationMixin.add_schema({}, version=(2, 0))
 
 # draftsman_converters.get_version((2, 0)).add_hook_fns(
 #     InserterModeOfOperationMixin,
@@ -89,27 +73,6 @@ class LogisticModeOfOperationMixin(Exportable):  # (ControlBehaviorMixin)
     :exception DataFormatError: If set to a value that cannot be interpreted as 
         a valid ``LogisticModeOfOperation``.
     """
-
-
-LogisticModeOfOperationMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "circuit_mode_of_operation": {
-                        "enum": [
-                            LogisticModeOfOperation.SEND_CONTENTS,
-                            LogisticModeOfOperation.SET_REQUESTS,
-                            LogisticModeOfOperation.NONE,
-                        ],
-                        "default": LogisticModeOfOperation.SEND_CONTENTS,
-                    }
-                },
-            }
-        }
-    }
-)
 
 
 draftsman_converters.add_hook_fns(

@@ -80,13 +80,6 @@ class PowerSwitch(
     __hash__ = Entity.__hash__
 
 
-PowerSwitch.add_schema(
-    {
-        "$id": "urn:factorio:entity:power-switch",
-        "properties": {"switch_state": {"type": "boolean", "default": "false"}},
-    }
-)
-
 draftsman_converters.add_hook_fns(
     PowerSwitch,
     lambda fields: {"switch_state": fields.switch_state.name},

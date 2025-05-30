@@ -51,5 +51,3 @@ class StraightRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-
-StraightRail.add_schema({"$id": "urn:factorio:entity:straight-rail"})

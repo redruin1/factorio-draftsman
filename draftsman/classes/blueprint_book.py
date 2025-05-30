@@ -225,42 +225,6 @@ class BlueprintBook(Blueprintable):
 
 # TODO: versioning
 
-BlueprintBook.add_schema(
-    {
-        "$id": "rn:factorio:blueprint-book",
-        "type": "object",
-        "properties": {
-            "blueprint_book": {
-                "type": "object",
-                "properties": {
-                    "item": {"const": "blueprint-book"},
-                    "label": {"type": "string"},
-                    "label_color": {"$ref": "urn:factorio:color"},
-                    "description": {"type": "string"},
-                    "icons": {
-                        "type": "array",
-                        "items": {"$ref": "urn:factorio:icon"},
-                        "maxItems": 4,
-                    },
-                    "version": {"$ref": "uint64"},
-                    "active_index": {"$ref": "uint16", "default": 0},
-                    "blueprints": {
-                        "type": "array",
-                        "items": {
-                            "anyOf": [
-                                {"$ref": "urn:factorio:blueprint"},
-                                {"$ref": "urn:factorio:deconstruction-planner"},
-                                {"$ref": "urn:factorio:upgrade-planner"},
-                                {"$ref": "urn:factorio:blueprint-book"},
-                            ]
-                        },
-                    },
-                },
-            }
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     BlueprintBook,
     lambda fields: {

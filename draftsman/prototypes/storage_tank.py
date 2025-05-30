@@ -24,5 +24,3 @@ class StorageTank(CircuitConnectableMixin, DirectionalMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-
-StorageTank.add_schema({"$id": "urn:factorio:entity:storage-tank"})

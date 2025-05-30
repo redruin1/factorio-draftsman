@@ -41,5 +41,3 @@ class Beacon(ModulesMixin, ItemRequestMixin, EnergySourceMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-
-Beacon.add_schema({"$id": "urn:factorio:entity:beacon"})

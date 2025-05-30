@@ -56,18 +56,6 @@ class VehicleMixin(Exportable):
     """
 
 
-VehicleMixin.add_schema(
-    {
-        "properties": {
-            "trunk_inventory": {"$ref": "urn:factorio:filtered-inventory"},
-            "ammo_inventory": {"$ref": "urn:factorio:filtered-inventory"},
-            "driver_is_main_gunner": {"type": "boolean", "default": "false"},
-            "selected_gun_index": {"$ref": "urn:uint32", "default": 1},
-        }
-    }
-)
-
-
 draftsman_converters.add_hook_fns(
     VehicleMixin,
     lambda fields: {

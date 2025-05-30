@@ -29,9 +29,3 @@ class HalfDiagonalRail(DirectionalMixin, Entity):
 
     __hash__ = Entity.__hash__
 
-
-HalfDiagonalRail.add_schema(None, version=(1, 0))
-
-HalfDiagonalRail.add_schema(
-    {"$id": "urn:factorio:entity:half-diagonal-rail"}, version=(2, 0)
-)

@@ -50,5 +50,3 @@ class Locomotive(
 
     __hash__ = Entity.__hash__
 
-
-Locomotive.add_schema({"$id": "urn:factorio:entity:locomotive"})

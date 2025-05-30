@@ -48,25 +48,6 @@ class AgriculturalTower(  # TODO: this can probably request items
     __hash__ = Entity.__hash__
 
 
-AgriculturalTower.add_schema(None, version=(1, 0))
-
-AgriculturalTower.add_schema(
-    {
-        "$id": "urn:factorio:entity:agricultural-tower",
-        "type": "object",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "read_contents": {"type": "boolean", "default": "false"}
-                },
-            }
-        },
-    },
-    version=(2, 0),
-)
-
-
 draftsman_converters.add_hook_fns(
     AgriculturalTower,
     lambda fields: {("control_behavior", "read_contents"): fields.read_contents.name},

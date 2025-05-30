@@ -70,22 +70,6 @@ class ReadRailSignalMixin(Exportable):
         self.green_output_signal = other.green_output_signal
 
 
-ReadRailSignalMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "red_output_signal": {"$ref": "urn:factorio:signal-id"},
-                    "orange_output_signal": {"$ref": "urn:factorio:signal-id"},
-                    "green_output_signal": {"$ref": "urn:factorio:signal-id"},
-                },
-            }
-        }
-    },
-    version=(1, 0),
-)
-
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     ReadRailSignalMixin,
     lambda fields: {
@@ -93,22 +77,6 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ("control_behavior", "orange_output_signal"): fields.yellow_output_signal.name,
         ("control_behavior", "green_output_signal"): fields.green_output_signal.name,
     },
-)
-
-ReadRailSignalMixin.add_schema(
-    {
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "red_output_signal": {"$ref": "urn:factorio:signal-id"},
-                    "yellow_output_signal": {"$ref": "urn:factorio:signal-id"},
-                    "green_output_signal": {"$ref": "urn:factorio:signal-id"},
-                },
-            }
-        }
-    },
-    version=(2, 0),
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(

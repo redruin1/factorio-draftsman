@@ -313,29 +313,6 @@ class TrainStop(
     __hash__ = Entity.__hash__
 
 
-TrainStop.add_schema(
-    {
-        "$id": "urn:factorio:entity:train-stop",
-        "properties": {
-            "station": {"type": "string"},
-            "manual_trains_limit": {"$ref": "uint32"},
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "send_to_train": {"type": "boolean", "default": "true"},
-                    "read_from_train": {"type": "boolean", "default": "false"},
-                    "read_stopped_train": {"type": "boolean", "default": "false"},
-                    "train_stopped_signal": {"$ref": "urn:factorio:signal-id"},
-                    "set_trains_limit": {"type": "boolean", "default": "false"},
-                    "trains_limit_signal": {"$ref": "urn:factorio:signal-id"},
-                    "read_trains_count": {"type": "boolean", "default": "false"},
-                    "trains_count_signal": {"$ref": "urn:factorio:signal-id"},
-                },
-            },
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     TrainStop,
     lambda fields: {

@@ -122,25 +122,6 @@ class InfinityContainer(ItemRequestMixin, InventoryMixin, Entity):
     __hash__ = Entity.__hash__
 
 
-InfinityContainer.add_schema(
-    {
-        "$id": "urn:factorio:entity:infinity-container",
-        "properties": {
-            "infinity_settings": {
-                "type": "object",
-                "properties": {
-                    "remove_unfiltered_items": {"type": "boolean", "default": "false"},
-                    "filters": {
-                        "type": "array",
-                        "items": {"$ref": "urn:factorio:infinity-filter"},
-                        "maxItems": 1000,  # TODO: currently I'm assuming
-                    },
-                },
-            }
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     InfinityContainer,
     lambda fields: {

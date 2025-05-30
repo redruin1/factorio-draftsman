@@ -21,7 +21,3 @@ class PlayerPort(Entity):
 
     __hash__ = Entity.__hash__
 
-
-PlayerPort.add_schema({"$id": "urn:factorio:entity:player-port"}, version=(1, 0))
-
-PlayerPort.add_schema(None, version=(2, 0))

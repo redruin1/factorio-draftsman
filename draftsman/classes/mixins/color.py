@@ -43,8 +43,6 @@ class ColorMixin(Exportable):
         self.color = other.color
 
 
-ColorMixin.add_schema({"properties": {"color": {"$ref": "urn:factorio:color"}}})
-
 draftsman_converters.add_hook_fns(
     ColorMixin,
     lambda fields: {"color": fields.color.name},

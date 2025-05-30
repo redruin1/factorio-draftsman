@@ -82,20 +82,11 @@ class PowerConnectableMixin(Exportable):
         return self._neighbours
 
 
-PowerConnectableMixin.add_schema(
-    {
-        "properties": {"neighbours": {"type": "array", "items": {"$ref": "urn:uint64"}}}
-    },  # TODO: make this a ref to entity_number
-    version=(1, 0),
-)
-
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     PowerConnectableMixin,
     lambda fields: {"neighbours": fields._neighbours.name},
     lambda fields, converter: {"neighbours": fields._neighbours.name},
 )
-
-PowerConnectableMixin.add_schema({}, version=(2, 0))
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
     PowerConnectableMixin,

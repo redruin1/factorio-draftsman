@@ -58,24 +58,6 @@ class Accumulator(
     __hash__ = Entity.__hash__
 
 
-Accumulator.add_schema(
-    {
-        "$id": "urn:factorio:entity:accumulator",  # TODO: versionize IDs
-        "type": "object",
-        "properties": {
-            "control_behavior": {
-                "type": "object",
-                "properties": {
-                    "output_signal": {
-                        "anyOf": [{"$ref": "urn:factorio:signal-id"}, {"type": "null"}],
-                        "default": {"name": "signal-A", "type": "virtual"},
-                    }
-                },
-            }
-        },
-    }
-)
-
 draftsman_converters.add_hook_fns(
     Accumulator,
     lambda fields: {("control_behavior", "output_signal"): fields.output_signal.name},

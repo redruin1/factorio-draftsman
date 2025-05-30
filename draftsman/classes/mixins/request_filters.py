@@ -120,27 +120,6 @@ class RequestFiltersMixin(Exportable):
 
 # TODO: versioning
 
-RequestFiltersMixin.add_schema(
-    {
-        "properties": {
-            "request_filters": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "index": {"$ref": "urn:uint32"},
-                        "name": {"type": "string"},
-                        "count": {"$ref": "urn:uint32"},
-                    },
-                },
-            },
-            "request_from_buffers": {"type": "boolean", "default": "false"},
-        }
-    },
-    version=(1, 0),
-)
-
-
 @attrs.define
 class _ExportedRequestFiltersMixin:
     sections: list = attrs.field(factory=list)
@@ -196,27 +175,6 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
 # )
 
 # TODO: unstructure hook
-
-RequestFiltersMixin.add_schema(
-    {
-        "properties": {
-            "request_filters": {
-                "type": "object",
-                "properties": {
-                    "trash_not_requested": {"type": "boolean", "default": "false"},
-                    "request_from_buffers": {"type": "boolean", "default": "true"},
-                    "enabled": {"type": "boolean", "default": "true"},
-                    "sections": {
-                        "type": "array",
-                        "items": {"$ref": "urn:factorio:manual-section"},
-                        "maxItems": 100,
-                    },
-                },
-            }
-        }
-    },
-    version=(2, 0),
-)
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
     RequestFiltersMixin,

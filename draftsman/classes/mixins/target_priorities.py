@@ -111,24 +111,6 @@ class TargetPrioritiesMixin(Exportable):
 
 # TODO: versioning
 
-TargetPrioritiesMixin.add_schema(
-    {
-        "properties": {
-            "priority_list": {
-                "type": "array",
-                "items": {"$ref": "urn:factorio:target-id"},
-            },
-            "ignore_unprioritized": {"type": "boolean", "default": "false"},
-            "set_priority_list": {"type": "boolean", "default": "false"},
-            "set_ignore_unprioritized": {"type": "boolean", "default": "false"},
-            "ignore_unlisted_targets_condition": {
-                "$ref": "urn:factorio:simple-condition"
-            },
-        }
-    }
-)
-
-
 draftsman_converters.add_hook_fns(
     TargetPrioritiesMixin,
     lambda fields: {
