@@ -168,7 +168,7 @@ class TestRequestContainer:
         }
         for quality, size in qualities.items():
             chest = LogisticRequestContainer("requester-chest", quality=quality)
-            assert chest.inventory_size == size
+            assert chest.size == size
 
     def test_logistics_mode(self):
         container = LogisticRequestContainer("requester-chest")

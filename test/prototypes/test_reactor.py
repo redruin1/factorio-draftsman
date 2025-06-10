@@ -4,9 +4,9 @@ from draftsman.constants import Inventory
 from draftsman.entity import Reactor, reactors, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
-    AttrsItemRequest,
-    AttrsItemSpecification,
-    AttrsInventoryLocation,
+    BlueprintInsertPlan,
+    ItemInventoryPositions,
+    InventoryPosition,
 )
 from draftsman.warning import (
     FuelLimitationWarning,
@@ -30,11 +30,11 @@ def valid_reactor():
         quality="uncommon",
         tile_position=(1, 1),
         item_requests=[
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id="uranium-fuel-cell",
-                items=AttrsItemSpecification(
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.fuel,
                             stack=1,
                             count=50,
@@ -69,7 +69,7 @@ class TestReactor:
 
         reactor.set_item_request("uranium-fuel-cell", 50, inventory=Inventory.fuel)
         assert reactor.item_requests == [
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 **{
                     "id": "uranium-fuel-cell",
                     "items": {

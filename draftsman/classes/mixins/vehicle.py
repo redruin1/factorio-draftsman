@@ -2,11 +2,38 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import FilteredInventory, uint32
-from draftsman.validators import instance_of
+from draftsman.signatures import FilteredInventory, uint16, uint32
+from draftsman.validators import and_, instance_of
+
+from draftsman.data import entities, qualities
 
 import attrs
+import math
 from typing import Optional
+import weakref
+
+
+def _trunk_inventory_size(entity) -> Optional[uint16]:
+    """
+    Number of trunk inventory slots that this vehicle has. Returns ``None``
+    if this entity is not recognized by Draftsman.
+    """
+    inventory_size = entities.raw.get(entity.name, {"inventory_size": None})[
+        "inventory_size"
+    ]
+    if inventory_size is None:
+        return None
+    modifier = 0.3 * qualities.raw.get(entity.quality, {"level": 0})["level"]
+    return math.floor(inventory_size + inventory_size * modifier)
+
+
+def _ammo_inventory_size(entity) -> Optional[uint16]:
+    """
+    Number of ammo slots that this vehicle has. Returns ``None`` if this
+    entity is not recognized by Draftsman.
+    """
+    guns = entities.raw.get(entity.name, {"guns": None})["guns"]
+    return len(guns) if guns is not None else guns
 
 
 @attrs.define(slots=False)
@@ -16,26 +43,45 @@ class VehicleMixin(Exportable):
     """
 
     trunk_inventory: Optional[FilteredInventory] = attrs.field(
-        default=None,
+        # factory=FilteredInventory,
         converter=FilteredInventory.converter,
-        validator=instance_of(Optional[FilteredInventory]),
+        validator=and_(
+            instance_of(Optional[FilteredInventory]),
+            lambda self, _, value: value._set_parent(
+                self, self.ammo_inventory, _trunk_inventory_size
+            ),
+        ),
     )
     """
     Inventory object which encodes slot filters for the main inventory of the
     vehicle.
     """
 
+    @trunk_inventory.default
+    def _(self):
+        return FilteredInventory()._set_parent(self, None, _trunk_inventory_size)
+
     # =========================================================================
 
     ammo_inventory: Optional[FilteredInventory] = attrs.field(
-        default=None,
+        # factory=FilteredInventory,
         converter=FilteredInventory.converter,
-        validator=instance_of(Optional[FilteredInventory]),
+        validator=and_(
+            instance_of(Optional[FilteredInventory]),
+            lambda self, _, value: value._set_parent(
+                self, self.ammo_inventory, _ammo_inventory_size
+            ),
+        ),
     )
     """
     Inventory object which encodes slot filters for the ammunition slots of the
-    vehicle.
+    vehicle. Setting the :py:attr:`~.FilteredInventory.bar` of this inventory 
+    has no effect.
     """
+
+    @ammo_inventory.default
+    def _(self):
+        return FilteredInventory()._set_parent(self, None, _ammo_inventory_size)
 
     # =========================================================================
 

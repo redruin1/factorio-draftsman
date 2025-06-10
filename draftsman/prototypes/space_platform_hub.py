@@ -7,7 +7,7 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsSignalID
+from draftsman.signatures import SignalID
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import space_platform_hubs
@@ -71,10 +71,10 @@ class SpacePlatformHub(
 
     # =========================================================================
 
-    speed_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-V", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+    speed_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-V", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
     )
     """
     The signal to output the speed of the platform's current speed, if 
@@ -91,10 +91,10 @@ class SpacePlatformHub(
 
     # =========================================================================
 
-    damage_taken_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-D", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+    damage_taken_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-D", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
     )
     """
     The signal to output the total amount of damage taken, if configured to do

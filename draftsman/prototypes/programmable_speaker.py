@@ -11,7 +11,7 @@ from draftsman.classes.mixins import (
 from draftsman.constants import ValidationMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    AttrsSignalID,
+    SignalID,
     uint32,
 )
 from draftsman.validators import conditional, and_, instance_of
@@ -30,6 +30,7 @@ import warnings
 
 
 # TODO: patch for 2.0!
+
 
 @attrs.define
 class ProgrammableSpeaker(
@@ -131,10 +132,10 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
-    alert_icon: Optional[AttrsSignalID] = attrs.field(
+    alert_icon: Optional[SignalID] = attrs.field(
         default=None,
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
         metadata={"never_null": True},
     )
     """

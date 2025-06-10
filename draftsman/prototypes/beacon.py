@@ -7,7 +7,7 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
 )
 from draftsman.constants import Inventory
-from draftsman.signatures import ModuleName, QualityName
+from draftsman.signatures import ModuleID, QualityID
 
 from draftsman.data.entities import beacons
 
@@ -29,9 +29,9 @@ class Beacon(ModulesMixin, ItemRequestMixin, EnergySourceMixin, Entity):
 
     def request_modules(
         self,
-        module_name: ModuleName,
+        module_name: ModuleID,
         slots: int | Iterable[int],
-        quality: QualityName = "normal",
+        quality: QualityID = "normal",
     ):
         return super().request_modules(
             Inventory.beacon_modules, module_name, slots, quality
@@ -40,4 +40,3 @@ class Beacon(ModulesMixin, ItemRequestMixin, EnergySourceMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

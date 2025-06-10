@@ -12,8 +12,8 @@ from draftsman.constants import ValidationMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     ArithmeticOperation,
-    AttrsNetworkSpecification,
-    AttrsSignalID,
+    CircuitNetworkSelection,
+    SignalID,
     int32,
 )
 from draftsman.utils import reissue_warnings, fix_incorrect_pre_init
@@ -29,7 +29,7 @@ import warnings
 
 @conditional(ValidationMode.STRICT)
 def _ensure_valid_virtual_signal(self, attr, value):
-    if isinstance(value, AttrsSignalID) and value.name in {
+    if isinstance(value, SignalID) and value.name in {
         "signal-anything",
         "signal-everything",
     }:
@@ -51,12 +51,12 @@ def _ensure_proper_each_configuration(
     # TODO: write this better
     each_in_inputs = False
     if (
-        isinstance(self.first_operand, AttrsSignalID)
+        isinstance(self.first_operand, SignalID)
         and self.first_operand.name == "signal-each"
     ):
         each_in_inputs = True
     elif (
-        isinstance(self.second_operand, AttrsSignalID)
+        isinstance(self.second_operand, SignalID)
         and self.second_operand.name == "signal-each"
     ):
         each_in_inputs = True
@@ -93,11 +93,11 @@ class ArithmeticCombinator(
 
     # =========================================================================
 
-    first_operand: Union[AttrsSignalID, int32, None] = attrs.field(
+    first_operand: Union[SignalID, int32, None] = attrs.field(
         default=None,
-        converter=AttrsSignalID.converter,
+        converter=SignalID.converter,
         validator=and_(
-            instance_of(Union[AttrsSignalID, int32, None]), _ensure_valid_virtual_signal
+            instance_of(Union[SignalID, int32, None]), _ensure_valid_virtual_signal
         ),
     )
     """
@@ -124,10 +124,10 @@ class ArithmeticCombinator(
 
     # =========================================================================
 
-    first_operand_wires: AttrsNetworkSpecification = attrs.field(
-        factory=AttrsNetworkSpecification,
-        converter=AttrsNetworkSpecification.converter,
-        validator=instance_of(AttrsNetworkSpecification),
+    first_operand_wires: CircuitNetworkSelection = attrs.field(
+        factory=CircuitNetworkSelection,
+        converter=CircuitNetworkSelection.converter,
+        validator=instance_of(CircuitNetworkSelection),
     )
     """
     TODO
@@ -164,11 +164,11 @@ class ArithmeticCombinator(
 
     # =========================================================================
 
-    second_operand: Union[AttrsSignalID, int32, None] = attrs.field(
+    second_operand: Union[SignalID, int32, None] = attrs.field(
         default=0,
-        converter=AttrsSignalID.converter,
+        converter=SignalID.converter,
         validator=and_(
-            instance_of(Union[AttrsSignalID, int32, None]), _ensure_valid_virtual_signal
+            instance_of(Union[SignalID, int32, None]), _ensure_valid_virtual_signal
         ),
     )
     """
@@ -196,10 +196,10 @@ class ArithmeticCombinator(
 
     # =========================================================================
 
-    second_operand_wires: AttrsNetworkSpecification = attrs.field(
-        factory=AttrsNetworkSpecification,
-        converter=AttrsNetworkSpecification.converter,
-        validator=instance_of(AttrsNetworkSpecification),
+    second_operand_wires: CircuitNetworkSelection = attrs.field(
+        factory=CircuitNetworkSelection,
+        converter=CircuitNetworkSelection.converter,
+        validator=instance_of(CircuitNetworkSelection),
     )
     """
     TODO
@@ -207,11 +207,11 @@ class ArithmeticCombinator(
 
     # =========================================================================
 
-    output_signal: Optional[AttrsSignalID] = attrs.field(
+    output_signal: Optional[SignalID] = attrs.field(
         default=None,
-        converter=AttrsSignalID.converter,
+        converter=SignalID.converter,
         validator=and_(
-            instance_of(Optional[AttrsSignalID]),
+            instance_of(Optional[SignalID]),
             _ensure_valid_virtual_signal,
             _ensure_proper_each_configuration,
         ),
@@ -240,12 +240,12 @@ class ArithmeticCombinator(
     @reissue_warnings
     def set_arithmetic_conditions(
         self,
-        first_operand: Union[str, AttrsSignalID, int32, None] = None,
+        first_operand: Union[str, SignalID, int32, None] = None,
         first_operand_wires: set[Literal["red", "green"]] = {"red", "green"},
         operation: ArithmeticOperation = "*",
-        second_operand: Union[str, AttrsSignalID, int32, None] = 0,
+        second_operand: Union[str, SignalID, int32, None] = 0,
         second_operand_wires: set[Literal["red", "green"]] = {"red", "green"},
-        output_signal: Union[str, AttrsSignalID, None] = None,
+        output_signal: Union[str, SignalID, None] = None,
     ):
         """
         Sets the entire arithmetic condition of the ``ArithmeticCombinator`` all
@@ -289,9 +289,9 @@ class ArithmeticCombinator(
 
 @attrs.define
 class _ExportArithmeticConditions:
-    first_signal: Optional[AttrsSignalID] = None
+    first_signal: Optional[SignalID] = None
     first_constant: Optional[int32] = None
-    second_signal: Optional[AttrsSignalID] = None
+    second_signal: Optional[SignalID] = None
     second_constant: Optional[int32] = 0
 
 

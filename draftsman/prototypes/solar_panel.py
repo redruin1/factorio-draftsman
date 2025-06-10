@@ -21,4 +21,3 @@ class SolarPanel(EnergySourceMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

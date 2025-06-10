@@ -4,8 +4,8 @@ from draftsman.classes.exportable import Exportable
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    AttrsItemFilter,
-    ItemName,
+    ItemFilter,
+    ItemIDName,
     int64,
 )
 from draftsman.validators import instance_of
@@ -45,15 +45,15 @@ class FiltersMixin(Exportable):
     def _filters_converter(value):
         if isinstance(value, list):
             for i, elem in enumerate(value):
-                value[i] = AttrsItemFilter.converter(elem)
+                value[i] = ItemFilter.converter(elem)
             return value
         else:
             return value
 
-    filters: list[AttrsItemFilter] = attrs.field(
+    filters: list[ItemFilter] = attrs.field(
         factory=list,
         converter=_filters_converter,
-        validator=instance_of(list[AttrsItemFilter]),
+        validator=instance_of(list[ItemFilter]),
     )
     """
     The manually-set item filters that this inserter/loader will abide by. These
@@ -66,7 +66,7 @@ class FiltersMixin(Exportable):
     def set_item_filter(
         self,
         index: int64,
-        item: ItemName,
+        item: ItemIDName,
         quality: Literal[
             "normal", "uncommon", "rare", "epic", "legendary", "any"
         ] = "normal",
@@ -84,7 +84,7 @@ class FiltersMixin(Exportable):
         :exception InvalidItemError: If ``item`` is not a valid item name.
         """
         if item is not None:
-            new_entry = AttrsItemFilter(
+            new_entry = ItemFilter(
                 index=index, name=item, quality=quality, comparator=comparator
             )
 

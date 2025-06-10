@@ -2,7 +2,7 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsSimpleCondition, AttrsSignalID, TargetID, int32
+from draftsman.signatures import Comparator, Condition, SignalID, TargetID, int32
 from draftsman.validators import instance_of
 
 import attrs
@@ -65,10 +65,10 @@ class TargetPrioritiesMixin(Exportable):
 
     # =========================================================================
 
-    ignore_unlisted_targets_condition: AttrsSimpleCondition = attrs.field(
-        factory=AttrsSimpleCondition,
-        converter=AttrsSimpleCondition.converter,
-        validator=instance_of(AttrsSimpleCondition),
+    ignore_unlisted_targets_condition: Condition = attrs.field(
+        factory=Condition,
+        converter=Condition.converter,
+        validator=instance_of(Condition),
     )
     """
     The condition to use when determining whether or not to ignore unprioritized
@@ -79,12 +79,12 @@ class TargetPrioritiesMixin(Exportable):
 
     def set_ignore_unlisted_targets_condition(
         self,
-        a: Union[AttrsSignalID, None] = None,
-        cmp: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "<",
-        b: Union[AttrsSignalID, int32] = 0,
+        first_operand: Union[SignalID, None] = None,
+        comparator: Comparator = "<",
+        second_operand: Union[SignalID, int32] = 0,
     ):
         """
-        Sets the logistic condition of the Entity.
+        Sets the condition under which non-prioritized targets should be ignored.
 
         ``cmp`` can be specified as stored as the single unicode character which
         is used by Factorio, or you can use the Python formatted 2-character
@@ -106,7 +106,12 @@ class TargetPrioritiesMixin(Exportable):
             ``cmp`` is not a valid operation, or if ``b`` is neither a valid
             signal name nor a constant.
         """
-        self._set_condition("ignore_unlisted_targets_condition", a, cmp, b)
+        self._set_condition(
+            "ignore_unlisted_targets_condition",
+            first_operand,
+            comparator,
+            second_operand,
+        )
 
 
 # TODO: versioning

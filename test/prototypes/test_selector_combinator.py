@@ -5,8 +5,8 @@ from draftsman.prototypes.selector_combinator import (
     SelectorCombinator,
     selector_combinators,
 )
-from draftsman.signatures import AttrsSignalID, QualityFilter
-from draftsman.warning import UnknownEntityWarning
+from draftsman.signatures import SignalID, SignalIDBase, QualityFilter
+from draftsman.warning import PureVirtualDisallowedWarning, UnknownEntityWarning
 
 import pytest
 
@@ -74,7 +74,7 @@ def test_set_mode():
     selector.wipe_settings()
     selector.set_mode_count(count_signal="signal-C")
     assert selector.operation == "count"
-    assert selector.count_signal == AttrsSignalID(name="signal-C", type="virtual")
+    assert selector.count_signal == SignalID(name="signal-C", type="virtual")
     assert selector.to_dict() == {
         "name": "selector-combinator",
         "position": {"x": 0.5, "y": 1.0},
@@ -137,7 +137,7 @@ def test_set_mode():
     assert selector.select_quality_from_signal is False
     assert selector.quality_source_static == "legendary"
     assert selector.quality_source_signal is None
-    assert selector.quality_destination_signal == AttrsSignalID(
+    assert selector.quality_destination_signal == SignalIDBase(
         name="signal-each", type="virtual"
     )
     assert selector.to_dict() == {
@@ -149,3 +149,8 @@ def test_set_mode():
             "quality_destination_signal": {"name": "signal-each", "type": "virtual"},
         },
     }
+
+    with pytest.warns(PureVirtualDisallowedWarning):
+        selector.set_mode_quality_transfer(
+            destination_signal="signal-everything"
+        )

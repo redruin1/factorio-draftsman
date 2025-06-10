@@ -2,12 +2,13 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.signatures import (
-    AttrsSimpleCondition,
-    AttrsSignalID,
+    Comparator,
+    Condition,
+    SignalID,
     int32,
 )
 
-from typing import Literal, Union
+from typing import Union
 
 
 class ControlBehaviorMixin(Exportable):
@@ -39,9 +40,9 @@ class ControlBehaviorMixin(Exportable):
     def _set_condition(
         self,
         condition_name: str,
-        a: Union[AttrsSignalID, None],
-        cmp: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="],
-        b: Union[AttrsSignalID, int32],
+        first_operand: Union[SignalID, None],
+        comparator: Comparator,
+        second_operand: Union[SignalID, int32],
     ):
         """
         Single function for setting a condition. Used in `CircuitConditionMixin`
@@ -58,13 +59,12 @@ class ControlBehaviorMixin(Exportable):
             ``cmp`` is not a valid operation, or if ``b`` is neither a valid
             signal name nor a constant.
         """
-        condition = AttrsSimpleCondition(first_signal=a, comparator=cmp)
+        condition = Condition(first_signal=first_operand, comparator=comparator)
 
         # B (should never be None)
-        if isinstance(b, int):
-            condition.constant = b
+        if isinstance(second_operand, int):
+            condition.constant = second_operand
         else:
-            condition.second_signal = b
+            condition.second_signal = second_operand
 
         setattr(self, condition_name, condition)
-

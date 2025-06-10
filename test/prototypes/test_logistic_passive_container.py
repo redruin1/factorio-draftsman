@@ -95,7 +95,7 @@ class TestPassiveContainer:
         }
         for quality, size in qualities.items():
             chest = LogisticPassiveContainer("passive-provider-chest", quality=quality)
-            assert chest.inventory_size == size
+            assert chest.size == size
 
     def test_mergable_with(self):
         container1 = LogisticPassiveContainer("passive-provider-chest")

@@ -8,7 +8,7 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsSignalID
+from draftsman.signatures import SignalID
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import walls
@@ -50,10 +50,10 @@ class Wall(
 
     # =========================================================================
 
-    output_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-G", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+    output_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-G", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
         metadata={"never_null": True},
     )
 

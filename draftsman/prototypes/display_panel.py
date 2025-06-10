@@ -8,7 +8,7 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsSignalID, AttrsSimpleCondition
+from draftsman.signatures import SignalID, Condition
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import display_panels
@@ -27,10 +27,10 @@ class DisplayPanel(
 
     @attrs.define
     class Message(Exportable):
-        icon: Optional[AttrsSignalID] = attrs.field(
+        icon: Optional[SignalID] = attrs.field(
             default=None,
-            converter=AttrsSignalID.converter,
-            validator=instance_of(Optional[AttrsSignalID]),
+            converter=SignalID.converter,
+            validator=instance_of(Optional[SignalID]),
         )
         """
         The message's display icon.
@@ -39,10 +39,10 @@ class DisplayPanel(
         """
         The message's text label.
         """
-        condition: AttrsSimpleCondition = attrs.field(
-            factory=AttrsSimpleCondition,
-            converter=AttrsSimpleCondition.converter,
-            validator=instance_of(AttrsSimpleCondition),
+        condition: Condition = attrs.field(
+            factory=Condition,
+            converter=Condition.converter,
+            validator=instance_of(Condition),
         )
         """
         The condition that must be satisfied in order for this messsage to be
@@ -66,10 +66,10 @@ class DisplayPanel(
 
     # =========================================================================
 
-    icon: Optional[AttrsSignalID] = attrs.field(
+    icon: Optional[SignalID] = attrs.field(
         default=None,
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
     )
     """
     The (static) visual icon to display on the surface of the display panel. 

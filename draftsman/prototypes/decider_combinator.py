@@ -18,8 +18,8 @@ from draftsman.validators import instance_of
 
 from draftsman.data.entities import decider_combinators
 from draftsman.signatures import (
-    AttrsNetworkSpecification,
-    AttrsSignalID,
+    CircuitNetworkSelection,
+    SignalID,
     Comparator,
     int32,
     normalize_comparator,
@@ -60,19 +60,19 @@ class DeciderCombinator(
         A condition object specifically for DeciderCombinators.
         """
 
-        first_signal: Optional[AttrsSignalID] = attrs.field(
+        first_signal: Optional[SignalID] = attrs.field(
             default=None,
-            converter=AttrsSignalID.converter,
-            validator=instance_of(Optional[AttrsSignalID]),
+            converter=SignalID.converter,
+            validator=instance_of(Optional[SignalID]),
         )
         """
         The left-most signal of the condition.
         """
 
-        first_signal_networks: AttrsNetworkSpecification = attrs.field(
-            factory=AttrsNetworkSpecification,
-            converter=AttrsNetworkSpecification.converter,
-            validator=instance_of(AttrsNetworkSpecification),
+        first_signal_networks: CircuitNetworkSelection = attrs.field(
+            factory=CircuitNetworkSelection,
+            converter=CircuitNetworkSelection.converter,
+            validator=instance_of(CircuitNetworkSelection),
         )
         """
         The signal networks (red/green) to sample for the value of the left-most
@@ -96,19 +96,19 @@ class DeciderCombinator(
         condition.
         """
 
-        second_signal: Optional[AttrsSignalID] = attrs.field(
+        second_signal: Optional[SignalID] = attrs.field(
             default=None,
-            converter=AttrsSignalID.converter,
-            validator=instance_of(Optional[AttrsSignalID]),
+            converter=SignalID.converter,
+            validator=instance_of(Optional[SignalID]),
         )
         """
         The right-most signal of the condition.
         """
 
-        second_signal_networks: AttrsNetworkSpecification = attrs.field(
-            factory=AttrsNetworkSpecification,
-            converter=AttrsNetworkSpecification.converter,
-            validator=instance_of(AttrsNetworkSpecification),
+        second_signal_networks: CircuitNetworkSelection = attrs.field(
+            factory=CircuitNetworkSelection,
+            converter=CircuitNetworkSelection.converter,
+            validator=instance_of(CircuitNetworkSelection),
         )
         """
         The signal networks (red/green) to sample for the value of the right-most
@@ -214,10 +214,10 @@ class DeciderCombinator(
         An output object specifically for DeciderCombinators.
         """
 
-        signal: Optional[AttrsSignalID] = attrs.field(
+        signal: Optional[SignalID] = attrs.field(
             default=None,
-            converter=AttrsSignalID.converter,
-            validator=instance_of(Optional[AttrsSignalID]),
+            converter=SignalID.converter,
+            validator=instance_of(Optional[SignalID]),
         )
         """
         The output signal type.
@@ -231,10 +231,10 @@ class DeciderCombinator(
         to output them with constant values as specified by :py:attr:`.constant`.
         """
 
-        networks: AttrsNetworkSpecification = attrs.field(
-            factory=AttrsNetworkSpecification,
-            converter=AttrsNetworkSpecification.converter,
-            validator=instance_of(AttrsNetworkSpecification),
+        networks: CircuitNetworkSelection = attrs.field(
+            factory=CircuitNetworkSelection,
+            converter=CircuitNetworkSelection.converter,
+            validator=instance_of(CircuitNetworkSelection),
         )
         """
         Which wire networks to sample values from (red/green).

@@ -15,7 +15,7 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.constants import Inventory
-from draftsman.signatures import ModuleName, QualityName
+from draftsman.signatures import ModuleID, QualityID
 from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import furnaces
@@ -71,16 +71,16 @@ class Furnace(
         return set(
             item
             for recipe_name in total_recipes
-            for item in recipes.get_recipe_ingredients(recipe_name) 
+            for item in recipes.get_recipe_ingredients(recipe_name)
         )
 
     # =========================================================================
 
     def request_modules(
         self,
-        module_name: ModuleName,
+        module_name: ModuleID,
         slots: int | Iterable[int],
-        quality: QualityName = "normal",
+        quality: QualityID = "normal",
     ):
         return super().request_modules(
             Inventory.furnace_modules, module_name, slots, quality
@@ -89,4 +89,3 @@ class Furnace(
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

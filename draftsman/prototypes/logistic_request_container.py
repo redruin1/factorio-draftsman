@@ -5,6 +5,7 @@ from draftsman.classes.mixins import (
     ItemRequestMixin,
     LogisticModeOfOperationMixin,
     CircuitConditionMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
@@ -25,6 +26,7 @@ class LogisticRequestContainer(
     ItemRequestMixin,
     LogisticModeOfOperationMixin,
     CircuitConditionMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
@@ -49,4 +51,3 @@ class LogisticRequestContainer(
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

@@ -1,15 +1,10 @@
 # TODO
 
-### Finish implementing stub classes
-* `SelectorCombinator`
+### Make all entities directional / request items
+This seems to be the default behavior per [https://lua-api.factorio.com/latest/concepts/BlueprintEntity.html](https://lua-api.factorio.com/latest/concepts/BlueprintEntity.html)
 
 ### Remove classes:
-* `FilterInserter`
 * `LogisticsStorageContainer`, `LogisticsPassiveContainer`, ...
-* `Turret`
-
-### Add a more proper interface to accessing prototype parameters directly from Draftsman objects
-So have something like `Car.prototype["base_speed"]` instead of having to do something like `entities.raw["car"]["car"]["base_speed"]`
 
 ### Add `tiles` to Groups (somehow)
 We could simply add a `tiles` list to `Group`, but this has some unintended consequences. See issue #118 for more info.
@@ -58,9 +53,6 @@ Ideally, whether or not a entity or blueprint is considered valid can be retaine
 * Inline sorting
 * Support additional keyword arguments in line with the prototype documentation
 * Perhaps there might be a way to redesign `env.py` such that it can use the data functions, encouraging code reuse
-
----
-### Change all internal attribute accesses to use `["element"]` and `.get("element", None)` instead so that functionality should remain constant when importing dicts when `validate="none"`
 
 ---
 ### Add as many of the example programs to the test suite as possible

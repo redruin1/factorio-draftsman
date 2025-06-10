@@ -38,7 +38,7 @@ from draftsman.error import (
     InvalidEntityError,
     InvalidTileError,
 )
-from draftsman.signatures import AttrsColor, AttrsIcon
+from draftsman.signatures import Color, Icon
 from draftsman.utils import encode_version, AABB
 from draftsman.warning import (
     DraftsmanWarning,
@@ -204,7 +204,7 @@ class TestBlueprint:
         # Valid 3 args list
         # Test for floating point conversion error by using 0.1
         blueprint.label_color = (0.5, 0.1, 0.5)
-        assert blueprint.label_color == AttrsColor(**{"r": 0.5, "g": 0.1, "b": 0.5})
+        assert blueprint.label_color == Color(**{"r": 0.5, "g": 0.1, "b": 0.5})
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "label_color": {"r": 0.5, "g": 0.1, "b": 0.5},
@@ -245,7 +245,7 @@ class TestBlueprint:
         with pytest.raises(DataFormatError):
             blueprint.label_color = "wrong"
         with pytest.raises(ValueError):
-            blueprint.label_color = AttrsColor(0, 0, 0, 1)
+            blueprint.label_color = Color(0, 0, 0, 1)
             blueprint.label_color.a = 1000
 
     # =========================================================================
@@ -255,21 +255,21 @@ class TestBlueprint:
         # Single Icon
         blueprint.icons = ["signal-A"]
         assert blueprint.icons == [
-            AttrsIcon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
         ]
         assert blueprint.icons == [
-            AttrsIcon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
         ]
         # Multiple Icon
         blueprint.icons = ("signal-A", "signal-B", "signal-C")
         assert blueprint.icons == [
-            AttrsIcon(
+            Icon(
                 **{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
             ),
-            AttrsIcon(
+            Icon(
                 **{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}
             ),
-            AttrsIcon(
+            Icon(
                 **{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}
             ),
         ]
@@ -278,7 +278,7 @@ class TestBlueprint:
 
         blueprint.icons = [{"signal": "signal-A", "index": 2}]
         assert blueprint.icons == [
-            AttrsIcon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 2})
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 2})
         ]
 
         # Unrecognized dict
@@ -287,7 +287,7 @@ class TestBlueprint:
                 {"signal": {"name": "some-signal", "type": "item"}, "index": 1}
             ]
             assert blueprint.icons == [
-                AttrsIcon(
+                Icon(
                     **{"signal": {"name": "some-signal", "type": "item"}, "index": 1}
                 )
             ]
@@ -540,20 +540,23 @@ class TestBlueprint:
         # assert blueprint.tiles[-1].name == "landfill"
         # assert blueprint.tiles[-1].position.to_dict() == {"x": 1, "y": 1}
 
+        with pytest.warns(UnknownTileWarning):
+            test_tile = new_tile("undocumented-tile")
+
         # Warn unknown entity (list)
         blueprint.tiles.validate_assignment = "none"
-        blueprint.tiles = [new_tile("undocumented-tile")]  # No warning
+        blueprint.tiles = [test_tile]  # No warning
         with pytest.warns(UnknownTileWarning):
             blueprint.tiles.validate_assignment = "strict"
-            blueprint.tiles = [new_tile("undocumented-tile")]
+            blueprint.tiles = [test_tile]
             blueprint.tiles.validate().reissue_all()  # Warning
 
         # Warn unknown entity (individual)
         blueprint.tiles.validate_assignment = "minimum"
-        blueprint.tiles[-1] = new_tile("undocumented-tile")  # No warning
+        blueprint.tiles[-1] = test_tile  # No warning
         with pytest.warns(UnknownTileWarning):
             blueprint.tiles.validate_assignment = "strict"
-            blueprint.tiles[-1] = new_tile("undocumented-tile")
+            blueprint.tiles[-1] = test_tile
             # blueprint.validate().reissue_all() # Warning
 
         # Format error

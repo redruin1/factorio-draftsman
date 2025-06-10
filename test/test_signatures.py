@@ -1,6 +1,6 @@
 # test_signatures.py
 
-from draftsman.signatures import AttrsSignalID
+from draftsman.signatures import SignalID
 from draftsman.warning import UnknownSignalWarning
 
 import pytest
@@ -8,12 +8,12 @@ import pytest
 
 def test_signal_id():
     # Test correct default different signal types
-    id = AttrsSignalID(name="steam")
-    assert id == AttrsSignalID(name="steam", type="fluid")
-    id = AttrsSignalID(name="signal-A")
-    assert id == AttrsSignalID(name="signal-A", type="virtual")
+    id = SignalID(name="steam")
+    assert id == SignalID(name="steam", type="fluid")
+    id = SignalID(name="signal-A")
+    assert id == SignalID(name="signal-A", type="virtual")
 
     # Test defaulting type back to item when signal not recognized
     with pytest.warns(UnknownSignalWarning):
-        id = AttrsSignalID("unknown signal")
-        assert id == AttrsSignalID(name="unknown signal", type="item")
+        id = SignalID("unknown signal")
+        assert id == SignalID(name="unknown signal", type="item")

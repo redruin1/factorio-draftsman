@@ -29,4 +29,3 @@ class LinkedBelt(DirectionalMixin, Entity):  # TODO: finish
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

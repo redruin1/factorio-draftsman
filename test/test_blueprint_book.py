@@ -11,7 +11,7 @@ from draftsman.error import (
     DataFormatError,
     IncompleteSignalError,
 )
-from draftsman.signatures import AttrsColor, AttrsIcon
+from draftsman.signatures import Color, Icon
 from draftsman.utils import encode_version, string_to_JSON
 from draftsman.warning import DraftsmanWarning, IndexWarning, UnknownSignalWarning
 
@@ -254,7 +254,7 @@ class TestBlueprintBook:
         # Valid 3 args
         # Test for floating point conversion error by using 0.1
         blueprint_book.label_color = (0.5, 0.1, 0.5)
-        assert blueprint_book.label_color == AttrsColor(
+        assert blueprint_book.label_color == Color(
             **{"r": 0.5, "g": 0.1, "b": 0.5}
         )
         assert blueprint_book.to_dict() == {
@@ -299,18 +299,18 @@ class TestBlueprintBook:
         # Single Icon
         blueprint_book.set_icons("signal-A")
         assert blueprint_book.icons == [
-            AttrsIcon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
         ]
         # Multiple Icons
         blueprint_book.set_icons("signal-A", "signal-B", "signal-C")
         assert blueprint_book.icons == [
-            AttrsIcon(
+            Icon(
                 **{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
             ),
-            AttrsIcon(
+            Icon(
                 **{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}
             ),
-            AttrsIcon(
+            Icon(
                 **{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}
             ),
         ]
@@ -324,7 +324,7 @@ class TestBlueprintBook:
         with pytest.warns(UnknownSignalWarning):
             blueprint_book.set_icons({"name": "some-signal", "type": "virtual"})
             assert blueprint_book.icons == [
-                AttrsIcon(
+                Icon(
                     **{"signal": {"name": "some-signal", "type": "virtual"}, "index": 1}
                 )
             ]

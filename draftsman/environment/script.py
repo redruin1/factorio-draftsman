@@ -166,7 +166,7 @@ def main():
         description="Runs the Factorio data lifecycle using the data pointed to "
         "by `game_path`. All information that Draftsman needs will be extracted "
         "into pickle files located in the `/draftsman/data` folder in the "
-        "installation directory."
+        "installation directory.",
     )
     update_command.add_argument(
         "-l",

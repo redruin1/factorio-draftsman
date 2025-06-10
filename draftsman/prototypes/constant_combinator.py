@@ -148,6 +148,7 @@ class ConstantCombinator(
 
     __hash__ = Entity.__hash__
 
+
 # TODO: 1.0 hook functions
 
 draftsman_converters.add_hook_fns(

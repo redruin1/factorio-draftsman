@@ -53,4 +53,3 @@ class LegacyCurvedRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

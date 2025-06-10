@@ -59,8 +59,8 @@ from draftsman.signatures import (
     uint8,
     uint16,
     uint64,
-    EntityName,
-    TileName,
+    EntityID,
+    TileID,
 )
 from draftsman.utils import encode_version, reissue_warnings
 from draftsman.validators import instance_of, try_convert
@@ -86,7 +86,7 @@ class EntityFilter(Exportable):
     entities will be sorted by their Factorio order when imported instead
     of specific slots in the GUI, contrary to what index would seem to imply.
     """
-    name: EntityName = attrs.field(validator=instance_of(EntityName))
+    name: EntityID = attrs.field(validator=instance_of(EntityID))
     """
     The name of a valid deconstructable entity.
     """
@@ -117,7 +117,7 @@ class TileFilter(Exportable):
     entities will be sorted by their Factorio order when imported instead
     of specific slots in the GUI, contrary to what index would seem to imply.
     """
-    name: TileName = attrs.field(validator=instance_of(TileName))
+    name: TileID = attrs.field(validator=instance_of(TileID))
     """
     The name of a valid deconstructable tile.
     """
@@ -294,7 +294,7 @@ class DeconstructionPlanner(Blueprintable):
     # Utility functions
     # =========================================================================
 
-    def set_entity_filter(self, index: uint64, name: EntityName):
+    def set_entity_filter(self, index: uint64, name: EntityID):
         """
         Sets an entity filter in the list of entity filters. Appends the new one
         to the end of the list regardless of the ``index``. If ``index`` is
@@ -335,7 +335,7 @@ class DeconstructionPlanner(Blueprintable):
         for i, entity_name in enumerate(entity_names):
             self.set_entity_filter(i, entity_name)
 
-    def set_tile_filter(self, index: uint64, name: TileName):
+    def set_tile_filter(self, index: uint64, name: TileID):
         """
         Sets a tile filter in the list of tile filters. Appends the new one
         to the end of the list regardless of the ``index``. If ``index`` is

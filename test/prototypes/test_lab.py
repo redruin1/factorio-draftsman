@@ -4,16 +4,15 @@ from draftsman.constants import Inventory
 from draftsman.entity import Lab, labs, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
-    AttrsItemRequest,
-    AttrsItemSpecification,
-    AttrsInventoryLocation,
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
+    InventoryPosition,
 )
 from draftsman.warning import (
     ModuleCapacityWarning,
     ItemLimitationWarning,
     UnknownEntityWarning,
-    UnknownItemWarning,
-    UnknownKeywordWarning,
 )
 
 from collections.abc import Hashable
@@ -30,11 +29,11 @@ def valid_lab():
         quality="uncommon",
         tile_position=(1, 1),
         item_requests=[
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id="productivity-module-3",
-                items=AttrsItemSpecification(
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.lab_modules,
                             stack=0,
                         )
@@ -76,7 +75,32 @@ class TestLab:
             lab = Lab("unknown")
         assert lab.inputs is None
 
-    # def test_set_item_request(self): # TODO: reimplement
+    def test_allowed_effects(self):
+        lab = Lab("lab")
+        assert lab.allowed_effects == {"speed", "pollution", "productivity", "quality", "consumption"}
+
+    def test_request_modules(self):
+        lab = Lab("lab")
+        lab.request_modules("productivity-module-3", (0, 1), "legendary")
+        assert lab.item_requests == [
+            BlueprintInsertPlan(
+                id=ItemID(name="productivity-module-3", quality="legendary"),
+                items=ItemInventoryPositions(
+                    in_inventory=[
+                        InventoryPosition(
+                            inventory=Inventory.lab_modules,
+                            stack=0,
+                        ),
+                        InventoryPosition(
+                            inventory=Inventory.lab_modules,
+                            stack=1,
+                        )
+                    ]
+                )
+            )
+        ]
+
+    # def test_set_item_request(self):
     #     lab = Lab("lab")
 
     #     lab.set_item_request("productivity-module-3", 2)

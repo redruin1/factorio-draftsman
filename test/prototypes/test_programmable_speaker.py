@@ -11,7 +11,7 @@ from draftsman.error import (
     DataFormatError,
     IncompleteSignalError,
 )
-from draftsman.signatures import AttrsSignalID, AttrsSimpleCondition
+from draftsman.signatures import SignalID, Condition
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -36,7 +36,7 @@ def valid_programmable_speaker():
         tile_position=(1, 1),
         volume=1.0,
         circuit_enabled=True,
-        circuit_condition=AttrsSimpleCondition(
+        circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         global_playback=True,
@@ -284,17 +284,17 @@ class TestProgrammableSpeakerTesting:
     def test_set_alert_icon(self):
         speaker = ProgrammableSpeaker()
         speaker.alert_icon = "signal-check"
-        assert speaker.alert_icon == AttrsSignalID(name="signal-check", type="virtual")
+        assert speaker.alert_icon == SignalID(name="signal-check", type="virtual")
 
         speaker.alert_icon = {"name": "signal-check", "type": "virtual"}
-        assert speaker.alert_icon == AttrsSignalID(name="signal-check", type="virtual")
+        assert speaker.alert_icon == SignalID(name="signal-check", type="virtual")
 
         speaker.alert_icon = None
         assert speaker.alert_icon == None
 
         with pytest.warns(UnknownSignalWarning):
             speaker.alert_icon = {"name": "unknown", "type": "virtual"}
-            assert speaker.alert_icon == AttrsSignalID(name="unknown", type="virtual")
+            assert speaker.alert_icon == SignalID(name="unknown", type="virtual")
 
         with pytest.raises(DataFormatError):
             speaker.alert_icon = TypeError
@@ -566,7 +566,7 @@ class TestProgrammableSpeakerTesting:
         assert speaker1.allow_polyphony == True
         assert speaker1.show_alert == True
         assert speaker1.show_alert_on_map == False
-        assert speaker1.alert_icon == AttrsSignalID(name="signal-check", type="virtual")
+        assert speaker1.alert_icon == SignalID(name="signal-check", type="virtual")
         assert speaker1.alert_message == "some string"
         assert speaker1.signal_value_is_pitch == True
         assert speaker1.instrument_id == 1

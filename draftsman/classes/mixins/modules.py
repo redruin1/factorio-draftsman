@@ -1,12 +1,14 @@
 # modules.py
 
 from draftsman.data import entities, modules
+from .item_requests import ItemRequestMixin
 from draftsman.signatures import (
-    AttrsItemRequest,
-    AttrsItemSpecification,
-    AttrsInventoryLocation,
-    ModuleName,
-    QualityName,
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
+    InventoryPosition,
+    ModuleID,
+    QualityID,
     uint32,
 )
 from draftsman.warning import ModuleCapacityWarning, ModuleNotAllowedWarning
@@ -14,7 +16,7 @@ from draftsman.warning import ModuleCapacityWarning, ModuleNotAllowedWarning
 from typing import Iterable, Optional
 
 
-class ModulesMixin:
+class ModulesMixin(ItemRequestMixin):
     """
     (Implicitly inherits :py:class:`~.ItemRequestMixin`)
 
@@ -50,7 +52,7 @@ class ModulesMixin:
     def allowed_effects(self) -> Optional[set[str]]:
         """
         A set of all effect modifiers that this entity supports via modules and
-        beacons. Returns ``None`` if this entity's name is not recognized by 
+        beacons. Returns ``None`` if this entity's name is not recognized by
         Draftsman. Not exported; read only.
         """
         return entities.get_allowed_effects(self.name, default=entities.NO_EFFECTS)
@@ -72,13 +74,13 @@ class ModulesMixin:
     def request_modules(
         self,
         inventory_id: uint32,
-        module_name: ModuleName,
+        module_name: ModuleID,
         slots: int | Iterable[int],
-        quality: QualityName = "normal",
+        quality: QualityID = "normal",
     ):
         """
         Loads module ``module_name`` into the slot specified by ``slots``, or
-        multiple slots if ``slots`` is instead an iterable of ints.
+        multiple slots if ``slots`` is instead an iterable of integers.
 
         :param module_name: The name of the module to request to this entity.
         :param slots: The slots to request this module to.
@@ -90,7 +92,7 @@ class ModulesMixin:
         # Iterate over existing item requests
         existing_request = None
         for item_request in self.item_requests:
-            item_request: AttrsItemRequest
+            item_request: BlueprintInsertPlan
             # If we already request this module elsewhere, reuse this item
             # request object
             if (
@@ -117,17 +119,17 @@ class ModulesMixin:
         if existing_request:
             # TODO: does this trigger validation?
             existing_request.items.in_inventory += [
-                AttrsInventoryLocation(inventory=inventory_id, count=1, stack=slot)
+                InventoryPosition(inventory=inventory_id, count=1, stack=slot)
                 for slot in slots
             ]
         else:
             # TODO: does this trigger validation?
             self.item_requests.append(
-                AttrsItemRequest(
-                    id={"name": module_name, "quality": quality},
-                    items=AttrsItemSpecification(
+                BlueprintInsertPlan(
+                    id=ItemID(name=module_name, quality=quality),
+                    items=ItemInventoryPositions(
                         in_inventory=[
-                            AttrsInventoryLocation(
+                            InventoryPosition(
                                 inventory=inventory_id, count=1, stack=slot
                             )
                             for slot in slots

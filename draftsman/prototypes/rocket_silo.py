@@ -11,7 +11,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.constants import Inventory, SiloReadMode
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import ModuleName, QualityName, RecipeName, uint32
+from draftsman.signatures import ModuleID, QualityID, RecipeID, uint32
 from draftsman.validators import instance_of, try_convert
 
 from draftsman.data.entities import rocket_silos
@@ -43,8 +43,8 @@ class RocketSilo(
 
     # TODO: we should just "evolve" the attribute instead of redefining it
     # See https://github.com/python-attrs/attrs/issues/637
-    recipe: Optional[RecipeName] = attrs.field(
-        default="rocket-part", validator=instance_of(Optional[RecipeName])
+    recipe: Optional[RecipeID] = attrs.field(
+        default="rocket-part", validator=instance_of(Optional[RecipeID])
     )
 
     # =========================================================================
@@ -80,8 +80,7 @@ class RocketSilo(
     # =========================================================================
 
     use_transitional_requests: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
+        default=False, validator=instance_of(bool)
     )
     """
     Whether or not this rocket silo should automatically attempt to fulfill the
@@ -110,9 +109,9 @@ class RocketSilo(
 
     def request_modules(
         self,
-        module_name: ModuleName,
+        module_name: ModuleID,
         slots: int | Iterable[int],
-        quality: QualityName = "normal",
+        quality: QualityID = "normal",
     ):
         return super().request_modules(
             Inventory.rocket_silo_modules, module_name, slots, quality

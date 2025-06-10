@@ -25,7 +25,8 @@ if TYPE_CHECKING:  # pragma: no coverage
 def conditional(severity):
     """
     Only run the validator if `mode` is greater than a given severity.
-    If an `errors` list is provided, mutate that instead of raising.
+    If an ``error_list`` or ``warning_list`` is provided, mutate that instead of
+    raising/warning.
     """
 
     def decorator(meth):
@@ -35,7 +36,7 @@ def conditional(severity):
             error_list: Optional[list] = None,
             warning_list: Optional[list] = None,
         ):
-            """Validator wrapper for `@classvalidator`."""
+            """Validator wrapper for ``@classvalidator``."""
             mode = mode if mode is not None else self.validate_assignment
             if mode < severity:
                 return
@@ -67,7 +68,6 @@ def conditional(severity):
             mode = mode if mode is not None else self.validate_assignment
             if mode < severity:
                 return
-
             try:
                 with warnings.catch_warnings(record=True) as ws:
                     meth(self, attr, value)
@@ -94,7 +94,7 @@ def conditional(severity):
 
 def classvalidator(func):
     """
-    Decorator which marks the given function as a validator for the class.
+    Decorator which marks the given function as a validator for this class.
     """
     func.__attrs_class_validator__ = True
     return func
@@ -106,6 +106,7 @@ class _AndValidator:
 
     def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
         for validator in self._validators:
+            print(validator)
             validator(inst, attr, value, **kwargs)
 
 
@@ -177,7 +178,12 @@ class _InstanceOfValidator:
 
     def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
         mode = kwargs.get("mode", None)
-        mode = mode if mode is not None else inst.validate_assignment
+        if mode is None:
+            if hasattr(inst, "validate_assignment"):
+                mode = inst.validate_assignment
+            else:
+                return
+        # mode = mode if mode is not None else inst.validate_assignment
         if mode:
             if not isinstance(value, self.cls):
                 name = self.cls if isinstance(self.cls, tuple) else self.cls.__name__

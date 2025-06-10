@@ -112,7 +112,7 @@ class TestBufferContainer:
         }
         for quality, size in qualities.items():
             chest = LogisticBufferContainer("buffer-chest", quality=quality)
-            assert chest.inventory_size == size
+            assert chest.size == size
 
     def test_mergable_with(self):
         container1 = LogisticBufferContainer("buffer-chest")

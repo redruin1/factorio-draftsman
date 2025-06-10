@@ -6,10 +6,10 @@ from draftsman.error import (
     DataFormatError,
 )
 from draftsman.signatures import (
-    AttrsItemRequest,
-    AttrsItemID,
-    AttrsItemSpecification,
-    AttrsInventoryLocation,
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
+    InventoryPosition,
 )
 from draftsman.warning import (
     BarWarning,
@@ -33,11 +33,11 @@ def valid_container():
         quality="uncommon",
         tile_position=(1, 1),
         item_requests=[
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id="iron-ore",
-                items=AttrsItemSpecification(
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.chest, stack=0, count=50
                         )
                     ]
@@ -128,7 +128,7 @@ class TestContainer:
             container.bar = -1
 
         # But no warning since inventory size is unknown
-        assert container.inventory_size is None
+        assert container.size is None
         container.bar = 100 # Nothing
 
     def test_set_item_request(self):
@@ -137,49 +137,50 @@ class TestContainer:
         container.set_item_request("iron-plate", 50, inventory=Inventory.chest, slot=0)
         container.set_item_request("iron-plate", 50, inventory=Inventory.chest, slot=3)
         assert container.item_requests == [
-            AttrsItemRequest(
-                id=AttrsItemID(name="iron-plate"),
-                items=AttrsItemSpecification(
+            BlueprintInsertPlan(
+                id=ItemID(name="iron-plate"),
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.chest, stack=0, count=50
                         ),
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.chest, stack=3, count=50
                         ),
                     ]
                 ),
             )
         ]
-        assert container.inventory_slots_occupied == 2
+        assert container.slots_occupied == 2
 
+        # TODO: emit warning that two different items occupy the same slot
         container.set_item_request("iron-ore", 50, inventory=Inventory.chest, slot=0)
         assert container.item_requests == [
-            AttrsItemRequest(
-                id=AttrsItemID(name="iron-plate"),
-                items=AttrsItemSpecification(
+            BlueprintInsertPlan(
+                id=ItemID(name="iron-plate"),
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.chest, stack=0, count=50
                         ),
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.chest, stack=3, count=50
                         ),
                     ]
                 ),
             ),
-            AttrsItemRequest(
-                id=AttrsItemID(name="iron-ore"),
-                items=AttrsItemSpecification(
+            BlueprintInsertPlan(
+                id=ItemID(name="iron-ore"),
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.chest, stack=0, count=50
                         )
                     ]
                 ),
             ),
         ]
-        assert container.inventory_slots_occupied == 2
+        assert container.slots_occupied == 2
 
         # TODO: reimplement
         # with pytest.warns(ItemCapacityWarning):
@@ -210,7 +211,7 @@ class TestContainer:
         # assert container.items == {"unknown": 100}
 
         with pytest.raises(DataFormatError):
-            AttrsItemSpecification(in_inventory="incorrect")
+            ItemInventoryPositions(in_inventory="incorrect")
 
     def test_mergable_with(self):
         container1 = Container("wooden-chest")

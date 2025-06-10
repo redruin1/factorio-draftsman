@@ -9,17 +9,15 @@ from draftsman.constants import (
 from draftsman.entity import MiningDrill, mining_drills, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
-    AttrsItemRequest,
-    AttrsItemSpecification,
-    AttrsInventoryLocation,
-    AttrsSimpleCondition,
+    BlueprintInsertPlan,
+    ItemInventoryPositions,
+    InventoryPosition,
+    Condition,
 )
 from draftsman.warning import (
     ModuleCapacityWarning,
     ItemLimitationWarning,
     UnknownEntityWarning,
-    UnknownItemWarning,
-    UnknownKeywordWarning,
 )
 
 from collections.abc import Hashable
@@ -37,21 +35,21 @@ def valid_mining_drill():
         tile_position=(1, 1),
         direction=Direction.EAST,
         circuit_enabled=True,
-        circuit_condition=AttrsSimpleCondition(
+        circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         connect_to_logistic_network=True,
-        logistic_condition=AttrsSimpleCondition(
+        logistic_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         read_resources=False,
         read_mode=MiningDrillReadMode.TOTAL_PATCH,
         item_requests=[
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id="speed-module-3",
-                items=AttrsItemSpecification(
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.mining_drill_modules,
                             stack=1,
                         )
@@ -136,11 +134,11 @@ class TestMiningDrill:
 
         mining_drill.request_modules("speed-module-3", 0)
         assert mining_drill.item_requests == [
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id={"name": "speed-module-3"},
-                items=AttrsItemSpecification(
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.mining_drill_modules,
                             stack=0,
                             count=1,
@@ -152,21 +150,21 @@ class TestMiningDrill:
 
         mining_drill.request_modules("speed-module-3", (1, 2))
         assert mining_drill.item_requests == [
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id={"name": "speed-module-3"},
-                items=AttrsItemSpecification(
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.mining_drill_modules,
                             stack=0,
                             count=1,
                         ),
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.mining_drill_modules,
                             stack=1,
                             count=1,
                         ),
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.mining_drill_modules,
                             stack=2,
                             count=1,
@@ -178,21 +176,21 @@ class TestMiningDrill:
 
         mining_drill.request_modules("efficiency-module-3", range(3), "legendary")
         assert mining_drill.item_requests == [
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id={"name": "efficiency-module-3", "quality": "legendary"},
-                items=AttrsItemSpecification(
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.mining_drill_modules,
                             stack=0,
                             count=1,
                         ),
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.mining_drill_modules,
                             stack=1,
                             count=1,
                         ),
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.mining_drill_modules,
                             stack=2,
                             count=1,
@@ -290,7 +288,7 @@ class TestMiningDrill:
         del drill2
 
         assert drill1.item_requests == [
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 **{
                     "id": "productivity-module",
                     "items": {
@@ -298,7 +296,7 @@ class TestMiningDrill:
                     },
                 }
             ),
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 **{
                     "id": "productivity-module-2",
                     "items": {

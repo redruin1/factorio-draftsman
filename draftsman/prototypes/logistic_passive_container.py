@@ -5,6 +5,7 @@ from draftsman.classes.mixins import (
     ItemRequestMixin,
     LogisticModeOfOperationMixin,
     CircuitConditionMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     InventoryMixin,
@@ -23,7 +24,8 @@ class LogisticPassiveContainer(
     InventoryMixin,
     ItemRequestMixin,
     # LogisticModeOfOperationMixin,
-    # CircuitConditionMixin, # TODO: does this have a condition on 2.0?
+    CircuitConditionMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     Entity,

@@ -6,9 +6,8 @@ from draftsman.prototypes.car import (
     cars,
 )
 from draftsman.signatures import (
-    AttrsItemRequest,
-    AttrsItemSpecification,
-    AttrsInventoryLocation,
+    BlueprintInsertPlan,
+    ItemInventoryPositions,
     EquipmentComponent,
 )
 from draftsman.warning import UnknownEntityWarning
@@ -27,9 +26,9 @@ def valid_car():
         tile_position=(1, 1),
         orientation=Orientation.EAST,
         item_requests=[
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id="energy-shield-equipment",
-                items=AttrsItemSpecification(grid_count=1),
+                items=ItemInventoryPositions(grid_count=1),
             )
         ],
         equipment=[

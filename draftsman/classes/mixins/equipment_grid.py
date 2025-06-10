@@ -7,11 +7,11 @@ from draftsman.serialization import draftsman_converters
 from draftsman.signatures import EquipmentComponent
 from draftsman.validators import conditional, instance_of
 from draftsman.signatures import (
-    AttrsItemRequest,
-    AttrsItemID,
-    AttrsItemSpecification,
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
     EquipmentID,
-    QualityName,
+    QualityID,
     uint32,
 )
 from draftsman.warning import EquipmentGridWarning
@@ -25,8 +25,8 @@ import warnings
 
 @attrs.frozen
 class EquipmentGrid:
-    id: str = attrs.field()  # TODO: equipment_grid_name
-    quality: QualityName = attrs.field()
+    id: str = attrs.field()  # TODO: EquipmentGridID
+    quality: QualityID = attrs.field()
 
     @property
     def equipment_categories(self) -> list[str]:  # TODO: EquipmentCategoryName
@@ -61,8 +61,8 @@ class EquipmentGrid:
 
 # Only store one equipment grid per ID/quality and reuse across every entity
 _equipment_grids = {
-    (grid, quality): EquipmentGrid(grid, quality) 
-    for quality in qualities.raw 
+    (grid, quality): EquipmentGrid(grid, quality)
+    for quality in qualities.raw
     for grid in equipment_data.grids
 }
 
@@ -167,7 +167,7 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
     # =========================================================================
 
     def add_equipment(
-        self, name: str, position: Vector = (0, 0), quality: QualityName = "normal"
+        self, name: str, position: Vector = (0, 0), quality: QualityID = "normal"
     ) -> None:
         """
         Adds a piece of equipment with ``equipment_name`` at ``position``, where
@@ -197,7 +197,7 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
 
         # Check to see if we already request this item via item requests
         for item_request in self.item_requests:
-            item_request: AttrsItemRequest
+            item_request: BlueprintInsertPlan
             if item_request.id.name == name and item_request.id.quality == quality:
                 # Update existing grid_count
                 item_request.items.grid_count += 1
@@ -205,9 +205,9 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
 
         # No existing request found - add new one
         self.item_requests.append(
-            AttrsItemRequest(
-                id=AttrsItemID(name=name, quality=quality),
-                items=AttrsItemSpecification(grid_count=1),
+            BlueprintInsertPlan(
+                id=ItemID(name=name, quality=quality),
+                items=ItemInventoryPositions(grid_count=1),
             )
         )
 
@@ -215,7 +215,7 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
         self,
         name: Optional[str] = None,
         position: Optional[Vector] = None,
-        quality: Optional[QualityName] = None,
+        quality: Optional[QualityID] = None,
     ) -> None:
         """
         Removes all equipment matching the passed in arguments.
@@ -253,7 +253,7 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
         # Iterate over item requests of the removed equipment and decrement the
         # grid counts of each one
         for item_request in self.item_requests:
-            item_request: AttrsItemRequest
+            item_request: BlueprintInsertPlan
             key = (item_request.id.name, item_request.id.quality)
             if key in removed_equipment:
                 # Make sure to not underflow, just in case
@@ -268,7 +268,7 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
         self.item_requests = [
             request
             for request in self.item_requests
-            if request != AttrsItemRequest(id=request.id)
+            if request != BlueprintInsertPlan(id=request.id)
         ]
 
 

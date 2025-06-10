@@ -2,7 +2,7 @@
 
 from draftsman.constants import Direction
 from draftsman.entity import Loader, loaders, Container
-from draftsman.signatures import AttrsItemFilter
+from draftsman.signatures import ItemFilter
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -21,7 +21,7 @@ def valid_loader():
         direction=Direction.EAST,
         io_type="output",
         use_filters=True,
-        filters=[AttrsItemFilter(index=1, name="iron-ore")],
+        filters=[ItemFilter(index=1, name="iron-ore")],
         tags={"blah": "blah"},
     )
 
@@ -63,7 +63,7 @@ class TestLoader:
         loader1.merge(loader2)
         del loader2
 
-        assert loader1.filters == [AttrsItemFilter(**{"name": "coal", "index": 1})]
+        assert loader1.filters == [ItemFilter(**{"name": "coal", "index": 1})]
         assert loader1.io_type == "input"
         assert loader1.tags == {"some": "stuff"}
 

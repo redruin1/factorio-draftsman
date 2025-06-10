@@ -7,7 +7,6 @@ from draftsman.error import (
     DataFormatError,
     DraftsmanError,
 )
-from draftsman.signatures import AttrsSignalID
 from draftsman.warning import (
     PureVirtualDisallowedWarning,
     UnknownEntityWarning,

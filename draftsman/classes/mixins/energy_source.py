@@ -1,6 +1,5 @@
 # energy_source.py
 
-from draftsman.constants import ValidationMode
 from draftsman.signatures import uint16
 
 from draftsman.data import entities, items

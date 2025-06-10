@@ -2,7 +2,7 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsSignalID
+from draftsman.signatures import SignalID
 from draftsman.validators import instance_of
 
 import attrs
@@ -50,10 +50,10 @@ class CraftingMachineMixin(Exportable):
 
     # =========================================================================
 
-    recipe_finished_signal: Optional[AttrsSignalID] = attrs.field(
+    recipe_finished_signal: Optional[SignalID] = attrs.field(
         default=None,
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
     )
     """
     What signal to pulse when the crafting cycle completes. Only operates if 
@@ -71,10 +71,10 @@ class CraftingMachineMixin(Exportable):
 
     # =========================================================================
 
-    working_signal: Optional[AttrsSignalID] = attrs.field(
+    working_signal: Optional[SignalID] = attrs.field(
         default=None,
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
     )
     """
     What signal to continuously output when the machine is crafting. Only 

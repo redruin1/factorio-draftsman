@@ -4,10 +4,10 @@ from draftsman.constants import Orientation, Inventory
 from draftsman.entity import Locomotive, locomotives, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
-    AttrsColor,
-    AttrsItemRequest,
-    AttrsItemSpecification,
-    AttrsInventoryLocation,
+    Color,
+    BlueprintInsertPlan,
+    ItemInventoryPositions,
+    InventoryPosition,
     EquipmentComponent,
 )
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
@@ -28,19 +28,19 @@ def valid_locomotive():
         orientation=Orientation.EAST,
         color=(0.5, 0.5, 0.5),
         item_requests=[
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id="coal",
-                items=AttrsItemSpecification(
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.fuel, stack=0, count=50
                         )
                     ]
                 ),
             ),
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id="energy-shield-equipment",
-                items=AttrsItemSpecification(grid_count=1),
+                items=ItemInventoryPositions(grid_count=1),
             ),
         ],
         equipment=[
@@ -80,7 +80,7 @@ class TestLocomotive:
             Locomotive("locomotive", color="also wrong").validate().reissue_all()
 
     def test_color(self):
-        assert Locomotive("locomotive").color == AttrsColor(
+        assert Locomotive("locomotive").color == Color(
             234 / 255, 17 / 255, 0, 127 / 255
         )
 
@@ -103,7 +103,7 @@ class TestLocomotive:
         train1.merge(train2)
         del train2
 
-        assert train1.color == AttrsColor(r=100, g=100, b=100)
+        assert train1.color == Color(r=100, g=100, b=100)
         assert train1.tags == {"some": "stuff"}
 
         assert train1.to_dict() == {

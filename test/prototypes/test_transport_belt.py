@@ -3,7 +3,7 @@
 from draftsman.constants import Direction, BeltReadMode, ValidationMode
 from draftsman.entity import TransportBelt, transport_belts, Container
 from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.signatures import AttrsSimpleCondition
+from draftsman.signatures import Condition
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -21,11 +21,11 @@ def valid_transport_belt():
         tile_position=(1, 1),
         direction=Direction.EAST,
         circuit_enabled=True,
-        circuit_condition=AttrsSimpleCondition(
+        circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         connect_to_logistic_network=True,
-        logistic_condition=AttrsSimpleCondition(
+        logistic_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         read_contents=True,

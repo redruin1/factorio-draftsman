@@ -3,12 +3,12 @@
 from draftsman.error import DataFormatError
 from draftsman.prototypes.spider_vehicle import SpiderVehicle, spider_vehicles
 from draftsman.signatures import (
-    AttrsColor,
+    Color,
     EquipmentComponent,
     EquipmentID,
-    AttrsItemRequest,
-    AttrsItemID,
-    AttrsItemSpecification,
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
     ManualSection,
     SignalFilter,
 )
@@ -28,9 +28,9 @@ def valid_spider_vehicle():
         quality="uncommon",
         tile_position=(1, 1),
         item_requests=[
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id="energy-shield-equipment",
-                items=AttrsItemSpecification(grid_count=1),
+                items=ItemInventoryPositions(grid_count=1),
             )
         ],
         equipment=[
@@ -99,6 +99,8 @@ def test_constructor():
             "sections": [],
             "trash_not_requested": False,
         },
+        'ammo_inventory': {'filters': []},
+        'trunk_inventory': {'filters': []},
         "tags": {},
     }
 
@@ -114,6 +116,17 @@ def test_flags():
         assert vehicle.circuit_connectable == False
         assert vehicle.dual_circuit_connectable == False
 
+
+def test_inventory_sizes():
+    spidertron = SpiderVehicle("spidertron")
+    assert spidertron.ammo_inventory.size == 4
+    assert spidertron.trunk_inventory.size == 80
+    assert spidertron.prototype["trash_inventory_size"] == 20
+
+    spidertron.quality = "legendary"
+    assert spidertron.ammo_inventory.size == 4
+    assert spidertron.trunk_inventory.size == 200
+    assert spidertron.prototype["trash_inventory_size"] == 20
 
 def test_equipment_grid():
     """
@@ -166,13 +179,13 @@ def test_equipment():
         ),
     ]
     assert spidertron.item_requests == [
-        AttrsItemRequest(
-            id=AttrsItemID(name="energy-shield-equipment"),
-            items=AttrsItemSpecification(grid_count=2),
+        BlueprintInsertPlan(
+            id=ItemID(name="energy-shield-equipment"),
+            items=ItemInventoryPositions(grid_count=2),
         ),
-        AttrsItemRequest(
-            id=AttrsItemID(name="battery-equipment", quality="legendary"),
-            items=AttrsItemSpecification(grid_count=1),
+        BlueprintInsertPlan(
+            id=ItemID(name="battery-equipment", quality="legendary"),
+            items=ItemInventoryPositions(grid_count=1),
         ),
     ]
     assert spidertron.to_dict() == {
@@ -235,9 +248,9 @@ def test_equipment():
         ),
     ]
     assert spider_copy.item_requests == [
-        AttrsItemRequest(
-            id=AttrsItemID(name="battery-equipment", quality="legendary"),
-            items=AttrsItemSpecification(grid_count=1),
+        BlueprintInsertPlan(
+            id=ItemID(name="battery-equipment", quality="legendary"),
+            items=ItemInventoryPositions(grid_count=1),
         ),
     ]
 
@@ -261,14 +274,14 @@ def test_equipment():
 
 def test_color():
     vehicle = SpiderVehicle("spidertron")
-    assert vehicle.color == AttrsColor(r=255 / 255, g=127 / 255, b=0.0, a=127 / 255)
+    assert vehicle.color == Color(r=255 / 255, g=127 / 255, b=0.0, a=127 / 255)
     assert vehicle.to_dict() == {
         "name": "spidertron",
         "position": {"x": 1.0, "y": 1.0},
     }
 
     vehicle.color = (255, 0, 0)
-    assert vehicle.color == AttrsColor(255, 0, 0)
+    assert vehicle.color == Color(255, 0, 0)
     assert vehicle.to_dict() == {
         "name": "spidertron",
         "position": {"x": 1.0, "y": 1.0},

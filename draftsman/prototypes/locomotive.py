@@ -8,10 +8,7 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     OrientationMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Orientation, ValidationMode
-from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsColor
+from draftsman.signatures import Color
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import locomotives
@@ -40,13 +37,12 @@ class Locomotive(
     # =========================================================================
 
     # TODO: should be evolved
-    color: Optional[AttrsColor] = attrs.field(
-        default=AttrsColor(r=234 / 255, g=17 / 255, b=0, a=127 / 255),
-        converter=AttrsColor.converter,
-        validator=instance_of(Optional[AttrsColor]),
+    color: Optional[Color] = attrs.field(
+        default=Color(r=234 / 255, g=17 / 255, b=0, a=127 / 255),
+        converter=Color.converter,
+        validator=instance_of(Optional[Color]),
     )
 
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

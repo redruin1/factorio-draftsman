@@ -17,7 +17,7 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import ModuleName, QualityName
+from draftsman.signatures import ModuleID, QualityID
 from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import assembling_machines
@@ -75,9 +75,9 @@ class AssemblingMachine(
 
     def request_modules(
         self,
-        module_name: ModuleName,
+        module_name: ModuleID,
         slots: int | Iterable[int],
-        quality: QualityName = "normal",
+        quality: QualityID = "normal",
     ):
         return super().request_modules(
             Inventory.assembling_machine_modules, module_name, slots, quality

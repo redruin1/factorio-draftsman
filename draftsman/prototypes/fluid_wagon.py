@@ -27,4 +27,3 @@ class FluidWagon(EquipmentGridMixin, ItemRequestMixin, OrientationMixin, Entity)
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

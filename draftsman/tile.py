@@ -23,4 +23,4 @@ def new_tile(name: str, **kwargs):
 
     :returns: A new :py:class:`.Tile` instance.
     """
-    return Tile(name=name, **kwargs, validate_assignment=ValidationMode.NONE)
+    return Tile(name=name, **kwargs)

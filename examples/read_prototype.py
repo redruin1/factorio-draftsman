@@ -17,6 +17,7 @@ def main():
     # For commonly accessed information, Draftsman provides first-class
     # attributes that return proper defaults as defined by the Factorio
     # Prototype API:
+    print(inserter.collision_mask)
     print(inserter.circuit_wire_max_distance)
     print(inserter.filter_count)
     print(inserter.energy_source["type"])
@@ -25,6 +26,7 @@ def main():
     # These first class attributes will return `None` if the detected entity is
     # unrecognized in the current configuration:
     unknown_inserter = Inserter("unknown", validate_assignment="none")
+    print(unknown_inserter.collision_mask)
     print(unknown_inserter.circuit_wire_max_distance)
     print(unknown_inserter.filter_count)
     print(unknown_inserter.energy_source)

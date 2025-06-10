@@ -15,10 +15,10 @@ from draftsman.warning import (
     UnknownKeywordWarning,
 )
 from draftsman.signatures import (
-    AttrsItemRequest,
-    AttrsItemID,
-    AttrsItemSpecification,
-    AttrsInventoryLocation,
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
+    InventoryPosition,
 )
 
 from collections.abc import Hashable
@@ -36,14 +36,14 @@ def valid_furnace():
         direction=Direction.EAST,
         tile_position=(1, 1),
         item_requests=[
-            AttrsItemRequest(
-                id=AttrsItemID(name="speed-module-3"),
-                items=AttrsItemSpecification(
+            BlueprintInsertPlan(
+                id=ItemID(name="speed-module-3"),
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.furnace_modules, stack=0, count=1
                         ),
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.furnace_modules, stack=1, count=1
                         ),
                     ]
@@ -160,11 +160,11 @@ class TestFurnace:
             "coal", 50, inventory=Inventory.fuel, quality="legendary"
         )
         assert furnace.item_requests == [
-            AttrsItemRequest(
-                id=AttrsItemID(name="coal", quality="legendary"),
-                items=AttrsItemSpecification(
+            BlueprintInsertPlan(
+                id=ItemID(name="coal", quality="legendary"),
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.fuel, stack=0, count=50
                         )
                     ]
@@ -180,15 +180,15 @@ class TestFurnace:
         furnace = Furnace("electric-furnace")
         furnace.request_modules("productivity-module-3", (0, 1), "legendary")
         assert furnace.item_requests == [
-            AttrsItemRequest(
-                id=AttrsItemID(name="productivity-module-3", quality="legendary"),
-                items=AttrsItemSpecification(
+            BlueprintInsertPlan(
+                id=ItemID(name="productivity-module-3", quality="legendary"),
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.furnace_modules,
                             stack=0,
                         ),
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.furnace_modules,
                             stack=1,
                         ),

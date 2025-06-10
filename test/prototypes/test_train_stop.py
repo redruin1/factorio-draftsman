@@ -3,7 +3,7 @@
 from draftsman.constants import Direction, ValidationMode
 from draftsman.entity import TrainStop, train_stops, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
-from draftsman.signatures import AttrsColor, AttrsSignalID
+from draftsman.signatures import Color, SignalID
 from draftsman.warning import (
     GridAlignmentWarning,
     DirectionWarning,
@@ -130,7 +130,7 @@ class TestTrainStop:
             stop.validate().reissue_all()
 
     def test_color(self):
-        assert TrainStop("train-stop").color == AttrsColor(242 / 255, 0, 0, 127 / 255)
+        assert TrainStop("train-stop").color == Color(242 / 255, 0, 0, 127 / 255)
 
     def test_double_grid_position(self):
         train_stop = TrainStop("train-stop")
@@ -239,12 +239,12 @@ class TestTrainStop:
     def test_set_train_stopped_signal(self):
         train_stop = TrainStop()
         train_stop.train_stopped_signal = "signal-A"
-        assert train_stop.train_stopped_signal == AttrsSignalID(
+        assert train_stop.train_stopped_signal == SignalID(
             name="signal-A", type="virtual"
         )
 
         train_stop.train_stopped_signal = {"name": "signal-A", "type": "virtual"}
-        assert train_stop.train_stopped_signal == AttrsSignalID(
+        assert train_stop.train_stopped_signal == SignalID(
             name="signal-A", type="virtual"
         )
 
@@ -288,12 +288,12 @@ class TestTrainStop:
     def test_set_trains_limit_signal(self):
         train_stop = TrainStop()
         train_stop.trains_limit_signal = "signal-A"
-        assert train_stop.trains_limit_signal == AttrsSignalID(
+        assert train_stop.trains_limit_signal == SignalID(
             name="signal-A", type="virtual"
         )
 
         train_stop.trains_limit_signal = {"name": "signal-A", "type": "virtual"}
-        assert train_stop.trains_limit_signal == AttrsSignalID(
+        assert train_stop.trains_limit_signal == SignalID(
             name="signal-A", type="virtual"
         )
 
@@ -334,12 +334,12 @@ class TestTrainStop:
     def test_set_trains_count_signal(self):
         train_stop = TrainStop()
         train_stop.trains_count_signal = "signal-A"
-        assert train_stop.trains_count_signal == AttrsSignalID(
+        assert train_stop.trains_count_signal == SignalID(
             name="signal-A", type="virtual"
         )
 
         train_stop.trains_count_signal = {"name": "signal-A", "type": "virtual"}
-        assert train_stop.trains_count_signal == AttrsSignalID(
+        assert train_stop.trains_count_signal == SignalID(
             name="signal-A", type="virtual"
         )
 

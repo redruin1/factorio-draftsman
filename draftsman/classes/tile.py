@@ -17,7 +17,7 @@ from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.vector import Vector
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    TileName,
+    TileID,
 )
 from draftsman.utils import AABB
 from draftsman.validators import instance_of
@@ -25,7 +25,7 @@ from draftsman.validators import instance_of
 import draftsman.data.tiles as tiles
 
 import attrs
-from typing import Any, Literal, Optional, Union, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.collection import TileCollection
@@ -41,7 +41,7 @@ class Tile(SpatialLike, Exportable):
 
     # =========================================================================
 
-    # FIXME: I would like to annotate this, but cattrs cannot find the location of `EntityCollection`
+    # FIXME: I would like to annotate this, but cattrs cannot find the location of `TileCollection`
     _parent = attrs.field(
         default=None, init=False, repr=False, eq=False, metadata={"omit": True}
     )
@@ -52,8 +52,8 @@ class Tile(SpatialLike, Exportable):
 
     # =========================================================================
 
-    name: TileName = attrs.field(  # TODO: some annotation like "TileName"
-        validator=instance_of(TileName),
+    name: TileID = attrs.field(
+        validator=instance_of(TileID),
         metadata={"omit": False},
     )
     """

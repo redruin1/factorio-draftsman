@@ -5,9 +5,9 @@ from draftsman.constants import ValidationMode
 from draftsman.data import modules, recipes
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    QualityName,
-    RecipeName,
-    AttrsItemRequest,
+    QualityID,
+    RecipeID,
+    BlueprintInsertPlan,
 )
 from draftsman.validators import instance_of, is_none, one_of, or_, and_, conditional
 from draftsman.warning import (
@@ -51,9 +51,9 @@ class RecipeMixin(Exportable):
 
     # =========================================================================
 
-    recipe: Optional[RecipeName] = attrs.field(
+    recipe: Optional[RecipeID] = attrs.field(
         default=None,
-        validator=instance_of(Optional[RecipeName]),
+        validator=instance_of(Optional[RecipeID]),
         metadata={
             "never_null": True
             # If this value is ever None, always delete it from the output, even
@@ -84,7 +84,7 @@ class RecipeMixin(Exportable):
     def _ensure_allowed_recipe(
         self,
         _: attrs.Attribute,
-        value: Optional[RecipeName],
+        value: Optional[RecipeID],
     ):
         if value is None:  # Nothing to validate if empty
             return
@@ -104,7 +104,7 @@ class RecipeMixin(Exportable):
     def _(
         self,
         _: attrs.Attribute,
-        value: Optional[RecipeName],
+        value: Optional[RecipeID],
     ):
         """
         Ensure that the modules currently requested to this entity are permitted
@@ -118,7 +118,7 @@ class RecipeMixin(Exportable):
             return
 
         for item in self.item_requests:
-            item: AttrsItemRequest
+            item: BlueprintInsertPlan
             if item.id.name in modules.raw and item.id.name not in allowed_modules:
                 msg = "Module '{}' cannot be inserted into a machine with recipe '{}'".format(
                     item.id.name, value
@@ -127,8 +127,8 @@ class RecipeMixin(Exportable):
 
     # =========================================================================
 
-    recipe_quality: Optional[QualityName] = attrs.field(
-        default="normal", validator=or_(one_of(QualityName), is_none)
+    recipe_quality: Optional[QualityID] = attrs.field(
+        default="normal", validator=or_(one_of(QualityID), is_none)
     )
     """
     The quality of the recipe that this Entity is selected to make.

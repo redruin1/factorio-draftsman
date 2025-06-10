@@ -10,7 +10,7 @@ from cattrs.gen._lc import generate_unique_filename
 import functools
 from typing import Any, Callable, Optional, TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 MASTER_CONVERTER = cattrs.Converter(omit_if_default=False)
 MASTER_CONVERTER_OMIT_NONE = cattrs.Converter(omit_if_default=False)
@@ -317,7 +317,9 @@ class DraftsmanConverters:
     def add_hook_fns(
         self,
         cls: type,
-        structure_func: Callable[[tuple[attrs.Attribute, ...]], dict[str | tuple[str, ...], str]],
+        structure_func: Callable[
+            [tuple[attrs.Attribute, ...]], dict[str | tuple[str, ...], str]
+        ],
         unstructure_func: Optional[Callable[..., dict[str, str]]] = None,
     ):
         for version in self.versions.values():

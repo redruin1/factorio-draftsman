@@ -2,9 +2,9 @@
 
 from draftsman.prototypes.asteroid_collector import AsteroidCollector
 from draftsman.prototypes.container import Container
-from draftsman.constants import Direction
+from draftsman.constants import Direction, ValidationMode
 from draftsman.error import DataFormatError
-from draftsman.signatures import AttrsAsteroidChunkID, AttrsSimpleCondition
+from draftsman.signatures import AsteroidChunkID, Condition, FilteredInventory
 
 from draftsman.data.entities import asteroid_collectors
 
@@ -23,10 +23,12 @@ def valid_asteroid_collector():
         tile_position=(1, 1),
         direction=Direction.EAST,
         circuit_enabled=True,
-        circuit_condition=AttrsSimpleCondition(
+        circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
-        bar=10,
+        result_inventory=FilteredInventory(
+            bar=10,
+        ),
         chunk_filter=["oxide-asteroid-chunk"],
         circuit_set_filters=True,
         read_contents=True,
@@ -51,6 +53,9 @@ class TestAsteroidCollector:
                 {"index": 2, "name": "metallic-asteroid-chunk"},
             ],
         }
+        
+        # Assert no issues
+        collector.validate(mode=ValidationMode.PEDANTIC).reissue_all()
 
         with pytest.raises(DataFormatError):
             AsteroidCollector(chunk_filter="wrong").validate().reissue_all()
@@ -131,7 +136,7 @@ class TestAsteroidCollector:
 
         assert collector1.tags == {"some": "stuff"}
         assert collector1.chunk_filter == [
-            AttrsAsteroidChunkID(index=1, name="oxide-asteroid-chunk")
+            AsteroidChunkID(index=1, name="oxide-asteroid-chunk")
         ]
         assert collector1.read_contents == True
         assert collector1.read_hands == False

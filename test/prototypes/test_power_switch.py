@@ -4,7 +4,7 @@ from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.group import Group
 from draftsman.entity import PowerSwitch, power_switches, Container
 from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.signatures import AttrsSimpleCondition
+from draftsman.signatures import Condition
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -20,11 +20,11 @@ def valid_power_switch():
         id="test",
         quality="uncommon",
         tile_position=(1, 1),
-        circuit_condition=AttrsSimpleCondition(
+        circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         connect_to_logistic_network=True,
-        logistic_condition=AttrsSimpleCondition(
+        logistic_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         switch_state=True,

@@ -2,7 +2,7 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsSignalID, uint8
+from draftsman.signatures import SignalID, uint8
 from draftsman.validators import instance_of
 
 import attrs
@@ -41,10 +41,10 @@ class StackSizeMixin(Exportable):
 
     # =========================================================================
 
-    stack_size_control_signal: Optional[AttrsSignalID] = attrs.field(
+    stack_size_control_signal: Optional[SignalID] = attrs.field(
         default=None,
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
     )
     """
     Specify the stack size input signal for the inserter, if enabled.

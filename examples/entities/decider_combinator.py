@@ -18,7 +18,7 @@ def main():
     Input = DeciderCombinator.Input
     Output = DeciderCombinator.Output
 
-    # An Input is defined with a SignalID followed by a NetworkSpecification
+    # An Input is defined with a SignalID followed by a `CircuitNetworkSelection`
     # (which wire colors to read from). If no network specification is given,
     # an Input defaults to both red and green wire colors:
     assert Input("signal-A") == Input("signal-A", {"red", "green"})

@@ -6,10 +6,10 @@ from draftsman.prototypes.artillery_turret import (
     artillery_turrets,
 )
 from draftsman.signatures import (
-    AttrsSimpleCondition,
-    AttrsItemRequest,
-    AttrsItemSpecification,
-    AttrsInventoryLocation,
+    Condition,
+    BlueprintInsertPlan,
+    ItemInventoryPositions,
+    InventoryPosition,
 )
 from draftsman.warning import UnknownEntityWarning
 
@@ -27,20 +27,20 @@ def valid_artillery_turret():
         tile_position=(1, 1),
         direction=Direction.EAST,
         circuit_enabled=True,
-        circuit_condition=AttrsSimpleCondition(
+        circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         connect_to_logistic_network=True,
-        logistic_condition=AttrsSimpleCondition(
+        logistic_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         read_ammo=False,
         item_requests=[
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id="artillery-shell",
-                items=AttrsItemSpecification(
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.artillery_turret_ammo, stack=0, count=1
                         )
                     ]

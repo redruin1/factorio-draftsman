@@ -3,7 +3,7 @@
 from draftsman.constants import ValidationMode as vm
 from draftsman.entity import Wall, Container, walls
 from draftsman.error import DataFormatError, IncompleteSignalError
-from draftsman.signatures import AttrsSignalID, AttrsSimpleCondition
+from draftsman.signatures import SignalID, Condition
 from draftsman.warning import (
     MalformedSignalWarning,
     UnknownEntityWarning,
@@ -24,7 +24,7 @@ def valid_wall():
         id="test",
         quality="uncommon",
         circuit_enabled=False,
-        circuit_condition=AttrsSimpleCondition(
+        circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         read_gate=True,
@@ -500,29 +500,29 @@ class TestWall:
 
         # Known string
         wall.output_signal = "signal-A"
-        assert wall.output_signal == AttrsSignalID(name="signal-A", type="virtual")
+        assert wall.output_signal == SignalID(name="signal-A", type="virtual")
         assert wall.to_dict()["control_behavior"] == {
             "output_signal": {"name": "signal-A", "type": "virtual"}
         }
 
         # Known dict
         wall.output_signal = {"name": "signal-A", "type": "virtual"}
-        assert wall.output_signal == AttrsSignalID(name="signal-A", type="virtual")
+        assert wall.output_signal == SignalID(name="signal-A", type="virtual")
 
         # Known dict but malformed
         with pytest.warns(MalformedSignalWarning):
             wall.output_signal = {"name": "signal-A", "type": "fluid"}
-            assert wall.output_signal == AttrsSignalID(name="signal-A", type="fluid")
+            assert wall.output_signal == SignalID(name="signal-A", type="fluid")
 
         # Unknown string
         with pytest.raises(IncompleteSignalError):
             wall.output_signal = "unknown-signal"
-        # assert wall.output_signal == AttrsSignalID(name="signal-A", type="fluid")
+        # assert wall.output_signal == SignalID(name="signal-A", type="fluid")
 
         # Unknown dict
         with pytest.warns(UnknownSignalWarning):
             wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-            assert wall.output_signal == AttrsSignalID(
+            assert wall.output_signal == SignalID(
                 name="unknown-signal", type="virtual"
             )
 
@@ -541,16 +541,16 @@ class TestWall:
 
         # Known string
         wall.output_signal = "signal-A"
-        assert wall.output_signal == AttrsSignalID(name="signal-A", type="virtual")
+        assert wall.output_signal == SignalID(name="signal-A", type="virtual")
 
         # Known dict
         wall.output_signal = {"name": "signal-A", "type": "virtual"}
-        assert wall.output_signal == AttrsSignalID(name="signal-A", type="virtual")
+        assert wall.output_signal == SignalID(name="signal-A", type="virtual")
 
         # Known dict but malformed
         with pytest.warns(MalformedSignalWarning):
             wall.output_signal = {"name": "signal-A", "type": "fluid"}
-            assert wall.output_signal == AttrsSignalID(name="signal-A", type="fluid")
+            assert wall.output_signal == SignalID(name="signal-A", type="fluid")
 
         # Unknown string
         with pytest.raises(IncompleteSignalError):
@@ -559,7 +559,7 @@ class TestWall:
         # Unknown dict
         with pytest.warns(UnknownSignalWarning):
             wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-            assert wall.output_signal == AttrsSignalID(
+            assert wall.output_signal == SignalID(
                 name="unknown-signal", type="virtual"
             )
 
@@ -578,16 +578,16 @@ class TestWall:
 
         # Known string
         wall.output_signal = "signal-A"
-        assert wall.output_signal == AttrsSignalID(name="signal-A", type="virtual")
+        assert wall.output_signal == SignalID(name="signal-A", type="virtual")
 
         # Known dict
         wall.output_signal = {"name": "signal-A", "type": "virtual"}
-        assert wall.output_signal == AttrsSignalID(name="signal-A", type="virtual")
+        assert wall.output_signal == SignalID(name="signal-A", type="virtual")
 
         # Known dict but malformed
         with pytest.warns(MalformedSignalWarning):
             wall.output_signal = {"name": "signal-A", "type": "fluid"}
-            assert wall.output_signal == AttrsSignalID(name="signal-A", type="fluid")
+            assert wall.output_signal == SignalID(name="signal-A", type="fluid")
 
         # Unknown string
         with pytest.raises(IncompleteSignalError):
@@ -596,7 +596,7 @@ class TestWall:
         # Unknown dict
         with pytest.warns(UnknownSignalWarning):
             wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-            assert wall.output_signal == AttrsSignalID(
+            assert wall.output_signal == SignalID(
                 name="unknown-signal", type="virtual"
             )
 
@@ -615,16 +615,16 @@ class TestWall:
 
         # Known string
         wall.output_signal = "signal-A"
-        assert wall.output_signal == AttrsSignalID(name="signal-A", type="virtual")
+        assert wall.output_signal == SignalID(name="signal-A", type="virtual")
 
         # Known dict
         wall.output_signal = {"name": "signal-A", "type": "virtual"}
-        assert wall.output_signal == AttrsSignalID(name="signal-A", type="virtual")
+        assert wall.output_signal == SignalID(name="signal-A", type="virtual")
 
         # Known dict but malformed
         with pytest.warns(MalformedSignalWarning):
             wall.output_signal = {"name": "signal-A", "type": "fluid"}
-            assert wall.output_signal == AttrsSignalID(name="signal-A", type="fluid")
+            assert wall.output_signal == SignalID(name="signal-A", type="fluid")
 
         # Unknown string
         with pytest.raises(IncompleteSignalError):
@@ -633,7 +633,7 @@ class TestWall:
         # Unknown dict
         with pytest.warns(UnknownSignalWarning):
             wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-            assert wall.output_signal == AttrsSignalID(
+            assert wall.output_signal == SignalID(
                 name="unknown-signal", type="virtual"
             )
 
@@ -675,7 +675,7 @@ class TestWall:
 
         assert wall1.tags == {}  # Overwritten by blank
         assert wall1.circuit_enabled == True
-        assert wall1.output_signal == AttrsSignalID(name="signal-A", type="virtual")
+        assert wall1.output_signal == SignalID(name="signal-A", type="virtual")
 
     def test_eq(self):
         wall1 = Wall("stone-wall")

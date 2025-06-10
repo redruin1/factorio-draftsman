@@ -4,15 +4,13 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.serialization import draftsman_converters
-from draftsman.utils import get_first
-from draftsman.validators import and_, instance_of, one_of
+from draftsman.validators import conditional, instance_of, one_of, try_convert
 from draftsman.warning import TemperatureRangeWarning
 
 from draftsman.data.entities import heat_interfaces
 
 import attrs
-from pydantic import ConfigDict, Field, ValidationInfo, field_validator
-from typing import Any, Literal, Optional, Union
+from typing import Literal
 import warnings
 
 
@@ -28,28 +26,10 @@ class HeatInterface(Entity):
 
     # =========================================================================
 
-    def _validate_temperature_range(
-        self,
-        attr,
-        value,
-        mode: Optional[ValidationMode] = None,
-        warning_list: Optional[list] = None,
-    ):
-        mode = mode if mode is not None else self.validate_assignment
-
-        if mode >= ValidationMode.PEDANTIC:  # TODO: should this be pedantic?
-            if not 0.0 <= value <= 1000.0:
-                msg = "Temperature '{}' exceeds allowed range [0.0, 1000.0]; will be clamped to this range on import".format(
-                    value
-                )
-                if warning_list is None:
-                    warnings.warn(TemperatureRangeWarning(msg))
-                else:
-                    warning_list.append(TemperatureRangeWarning(msg))
-
     temperature: float = attrs.field(
         default=0.0,
-        validator=and_(instance_of((float, int)), _validate_temperature_range),
+        converter=try_convert(float),
+        validator=instance_of(float),
     )
     """
     The temperature of the interface in degrees.
@@ -63,6 +43,19 @@ class HeatInterface(Entity):
     :exception TypeError: If set to anything other than an ``int`` or
         ``None``.
     """
+
+    @temperature.validator
+    @conditional(ValidationMode.PEDANTIC)  # TODO: should this be pedantic?
+    def _validate_temperature_range(
+        self,
+        attr: attrs.Attribute,
+        value: float,
+    ):
+        if not 0.0 <= value <= 1000.0:
+            msg = "Temperature '{}' exceeds allowed range [0.0, 1000.0]; will be clamped to this range on import".format(
+                value
+            )
+            warnings.warn(TemperatureRangeWarning(msg))
 
     # =========================================================================
 
@@ -100,7 +93,6 @@ class HeatInterface(Entity):
 
 
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:heat_interface"},
     HeatInterface,
     lambda fields: {
         "temperature": fields.temperature.name,

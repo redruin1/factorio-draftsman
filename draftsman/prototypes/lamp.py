@@ -14,7 +14,7 @@ from draftsman.constants import LampColorMode
 from draftsman.serialization import (
     draftsman_converters,
 )
-from draftsman.signatures import AttrsColor, AttrsSignalID
+from draftsman.signatures import Color, SignalID
 from draftsman.validators import instance_of, try_convert
 
 from draftsman.data import mods
@@ -67,10 +67,10 @@ class Lamp(
 
     # =========================================================================
 
-    red_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-red", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+    red_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-red", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
     )
     """
     The signal to pull the red color component from, if :py:attr:`color_mode` is
@@ -79,10 +79,10 @@ class Lamp(
 
     # =========================================================================
 
-    green_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-green", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+    green_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-green", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
     )
     """
     The signal to pull the green color component from, if :py:attr:`color_mode` 
@@ -91,10 +91,10 @@ class Lamp(
 
     # =========================================================================
 
-    blue_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-blue", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+    blue_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-blue", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
     )
     """
     The signal to pull the blue color component from, if :py:attr:`color_mode` 
@@ -103,10 +103,10 @@ class Lamp(
 
     # =========================================================================
 
-    rgb_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-white", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID])
+    rgb_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-white", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
     )
     """
     The signal to pull the entire encoded color from, if :py:attr:`color_mode` 
@@ -124,24 +124,21 @@ class Lamp(
 
     # =========================================================================
 
-    color: AttrsColor = attrs.field(
-        converter=AttrsColor.converter,
-        validator=instance_of(AttrsColor),
+    color: Color = attrs.field(
+        converter=Color.converter,
+        validator=instance_of(Color),
     )
     """
     What (static) color should this lamp have. Setting the lamp's color via
     ``use_colors`` and ``color_mode`` overrides this value if either are present.
     """
-    # TODO: different defaults for different Factorio versions
-    # < 2.0: white
-    # >= 2.0: off-white
 
     @color.default
     def _(self):
         if mods.versions.get("base", (2, 0)) >= (2, 0):
-            return AttrsColor(r=1.0, g=1.0, b=191 / 255, a=1.0)
-        else:
-            return AttrsColor(r=1.0, g=1.0, b=1.0, a=1.0)
+            return Color(r=1.0, g=1.0, b=191 / 255, a=1.0)
+        else:  # pragma: no coverage
+            return Color(r=1.0, g=1.0, b=1.0, a=1.0)
 
     # =========================================================================
 

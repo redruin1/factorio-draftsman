@@ -16,15 +16,7 @@ from draftsman.constants import ValidationMode
 from draftsman.data import entities, items
 from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import (
-    AttrsColor,
-    AttrsMapper,
-    AttrsMapperID,
-    # normalize_icons,
-    uint8,
-    uint16,
-    uint64,
-)
+from draftsman.signatures import Mapper, MapperID, uint8
 from draftsman.utils import encode_version, reissue_warnings
 from draftsman.validators import and_, conditional, instance_of
 from draftsman.warning import (
@@ -42,7 +34,7 @@ import warnings
 
 
 def check_valid_upgrade_pair(
-    from_obj: AttrsMapperID | None, to_obj: AttrsMapperID | None
+    from_obj: MapperID | None, to_obj: MapperID | None
 ) -> list[Warning]:
     """
     Checks two :py:data:`MAPPING_ID` objects to see if it's possible for
@@ -251,17 +243,17 @@ class UpgradePlanner(Blueprintable):
             res = [None] * len(value)
             for i, elem in enumerate(value):
                 if isinstance(elem, Sequence) and not isinstance(elem, str):
-                    res[i] = AttrsMapper(index=i, from_=elem[0], to=elem[1])
+                    res[i] = Mapper(index=i, from_=elem[0], to=elem[1])
                 else:
-                    res[i] = AttrsMapper.converter(elem)
+                    res[i] = Mapper.converter(elem)
             return res
         else:
             return value
 
-    mappers: list[AttrsMapper] = attrs.field(
+    mappers: list[Mapper] = attrs.field(
         factory=list,
         converter=_convert_mappers,
-        validator=instance_of(list[AttrsMapper]),
+        validator=instance_of(list[Mapper]),
     )
     """
     The list of mappings of one entity or item type to the other entity or
@@ -278,7 +270,7 @@ class UpgradePlanner(Blueprintable):
 
     @mappers.validator
     @conditional(ValidationMode.STRICT)
-    def _mappers_validator(self, attr: attrs.Attribute, value: list[AttrsMapper]):
+    def _mappers_validator(self, attr: attrs.Attribute, value: list[Mapper]):
         """
         Ensure the given mappings are correct, and that there aren't any mappers
         that occupy the same indices.
@@ -343,8 +335,8 @@ class UpgradePlanner(Blueprintable):
     @reissue_warnings
     def set_mapping(
         self,
-        from_obj: Union[str, AttrsMapperID],
-        to_obj: Union[str, AttrsMapperID],
+        from_obj: Union[str, MapperID],
+        to_obj: Union[str, MapperID],
         index: int,
     ):
         """
@@ -365,7 +357,7 @@ class UpgradePlanner(Blueprintable):
             Can be set to ``None`` which will leave it blank.
         :param index: The location in the upgrade planner's mappers list.
         """
-        new_mapping = AttrsMapper(index=index, from_=from_obj, to=to_obj)
+        new_mapping = Mapper(index=index, from_=from_obj, to=to_obj)
 
         # Iterate over indexes to see where we should place the new mapping
         for i, current_mapping in enumerate(self.mappers):
@@ -380,8 +372,8 @@ class UpgradePlanner(Blueprintable):
 
     def remove_mapping(
         self,
-        from_obj: Union[str, AttrsMapperID],
-        to_obj: Union[str, AttrsMapperID],
+        from_obj: Union[str, MapperID],
+        to_obj: Union[str, MapperID],
         index: Optional[int] = None,
     ):
         """
@@ -408,8 +400,8 @@ class UpgradePlanner(Blueprintable):
         :param to_obj: The :py:data:`.MAPPING_ID` to convert entities/items to.
         :param index: The index of the mapping in the mapper to search.
         """
-        from_obj = AttrsMapperID.converter(from_obj)
-        to_obj = AttrsMapperID.converter(to_obj)
+        from_obj = MapperID.converter(from_obj)
+        to_obj = MapperID.converter(to_obj)
         index = int(index) if index is not None else None
 
         if index is None:
@@ -424,10 +416,10 @@ class UpgradePlanner(Blueprintable):
             )
         else:
             # mapper = {"from": from_obj, "to": to_obj, "index": index}
-            mapper = AttrsMapper(index=index, from_=from_obj, to=to_obj)
+            mapper = Mapper(index=index, from_=from_obj, to=to_obj)
             self.mappers.remove(mapper)
 
-    def pop_mapping(self, index: int) -> AttrsMapper:
+    def pop_mapping(self, index: int) -> Mapper:
         """
         Removes a mapping at a specific mapper index. Note that this is not the
         position of the mapper in the :py:attr:`.mappers` list; it is the value

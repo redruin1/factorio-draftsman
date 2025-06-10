@@ -11,7 +11,7 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsAsteroidChunkID, uint16
+from draftsman.signatures import AsteroidChunkID, FilteredInventory
 from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 
@@ -43,17 +43,24 @@ class AsteroidCollector(
 
     # =========================================================================
 
-    # result_inventory = attrs.field(  # Inventory object, might contain filters later
-    #     default=None,
-    # )
-
-    bar: Optional[uint16] = attrs.field(
-        default=None,
-        validator=instance_of(Optional[uint16])
+    result_inventory: Optional[FilteredInventory] = attrs.field(
+        factory=FilteredInventory,  # TODO: maybe just make a regular `Inventory` object?
+        converter=FilteredInventory.converter,
+        validator=instance_of(Optional[FilteredInventory]),
     )
     """
-    The limiting bar of this Asteroid collector.
+    Internal inventory of this asteroid collector. Attempting to set the 
+    :py:attr:`~.FilteredInventory.filters` of this object has no effect.
     """
+
+    # bar: Optional[uint16] = attrs.field(
+    #     default=None,
+    #     validator=and_(instance_of(Optional[uint16]), ensure_bar_less_than_inventory_size),
+    #     metadata={"never_null": True}
+    # )
+    # """
+    # The limiting bar of this Asteroid collector.
+    # """
 
     # =========================================================================
 
@@ -62,17 +69,17 @@ class AsteroidCollector(
             res = [None] * len(value)
             for i, elem in enumerate(value):
                 if isinstance(elem, str):
-                    res[i] = AttrsAsteroidChunkID(index=i + 1, name=elem)
+                    res[i] = AsteroidChunkID(index=i + 1, name=elem)
                 else:
-                    res[i] = AttrsAsteroidChunkID.converter(elem)
+                    res[i] = AsteroidChunkID.converter(elem)
             return res
         else:
             return value
 
-    chunk_filter: list[AttrsAsteroidChunkID] = attrs.field(
+    chunk_filter: list[AsteroidChunkID] = attrs.field(
         factory=list,
         converter=_chunk_filter_converter,
-        validator=instance_of(list[AttrsAsteroidChunkID]),
+        validator=instance_of(list[AsteroidChunkID]),
     )
     """
     The set of manually specified chunk filters for this asteroid collector.
@@ -108,7 +115,7 @@ class AsteroidCollector(
     def merge(self, other: "AsteroidCollector"):
         super().merge(other)
 
-        self.bar = other.bar
+        self.result_inventory = other.result_inventory
         self.chunk_filter = other.chunk_filter
         self.read_contents = other.read_contents
         self.read_hands = other.read_hands
@@ -119,10 +126,9 @@ class AsteroidCollector(
 
 
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:asteroid_collector"},
     AsteroidCollector,
     lambda fields: {
-        ("result_inventory", "bar"): fields.bar.name,
+        "result_inventory": fields.result_inventory.name,
         "chunk-filter": fields.chunk_filter.name,
         ("control_behavior", "circuit_read_contents"): fields.read_contents.name,
         ("control_behavior", "include_hands"): fields.read_hands.name,

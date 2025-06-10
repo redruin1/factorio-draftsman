@@ -8,7 +8,7 @@ from draftsman.constants import (
 )
 from draftsman.entity import Inserter, inserters, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
-from draftsman.signatures import AttrsSignalID, AttrsSimpleCondition, AttrsItemFilter
+from draftsman.signatures import SignalID, Condition, ItemFilter
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -31,11 +31,11 @@ def valid_inserter():
         tile_position=(1, 1),
         mode_of_operation=InserterModeOfOperation.NONE,  # Old, legacy 1.0 parameter
         circuit_enabled=True,
-        circuit_condition=AttrsSimpleCondition(
+        circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         connect_to_logistic_network=True,
-        logistic_condition=AttrsSimpleCondition(
+        logistic_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         read_hand_contents=True,
@@ -44,7 +44,7 @@ def valid_inserter():
         circuit_set_stack_size=True,
         stack_size_control_signal="signal-A",
         use_filters=True,
-        filters=[AttrsItemFilter(index=0, name="iron-ore")],
+        filters=[ItemFilter(index=0, name="iron-ore")],
         circuit_set_filters=True,
         pickup_position=(1, 1),
         drop_position=(1, 0),
@@ -363,7 +363,7 @@ class TestInserter:
 
         # Shorthand
         inserter.stack_size_control_signal = "signal-S"
-        assert inserter.stack_size_control_signal == AttrsSignalID(
+        assert inserter.stack_size_control_signal == SignalID(
             name="signal-S", type="virtual"
         )
         assert inserter.to_dict() == {
@@ -376,7 +376,7 @@ class TestInserter:
 
         # Longhand
         inserter.stack_size_control_signal = {"name": "signal-S", "type": "virtual"}
-        assert inserter.stack_size_control_signal == AttrsSignalID(
+        assert inserter.stack_size_control_signal == SignalID(
             name="signal-S", type="virtual"
         )
         assert inserter.to_dict() == {
@@ -390,14 +390,14 @@ class TestInserter:
         # Unrecognized shorthand
         with pytest.raises(IncompleteSignalError):
             inserter.stack_size_control_signal = "unknown"
-        assert inserter.stack_size_control_signal == AttrsSignalID(
+        assert inserter.stack_size_control_signal == SignalID(
             name="signal-S", type="virtual"
         )
 
         # Unrecognized longhand
         with pytest.warns(UnknownSignalWarning):
             inserter.stack_size_control_signal = {"name": "unknown", "type": "item"}
-            assert inserter.stack_size_control_signal == AttrsSignalID(
+            assert inserter.stack_size_control_signal == SignalID(
                 name="unknown", type="item"
             )
         assert inserter.to_dict() == {

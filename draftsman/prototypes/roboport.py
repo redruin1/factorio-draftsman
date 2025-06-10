@@ -10,7 +10,7 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsSignalID
+from draftsman.signatures import SignalID
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import roboports
@@ -54,10 +54,10 @@ class Roboport(
 
     # =========================================================================
 
-    available_logistic_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-X", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+    available_logistic_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-X", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
         metadata={"never_null": True},
     )
     """
@@ -70,10 +70,10 @@ class Roboport(
 
     # =========================================================================
 
-    total_logistic_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-Y", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+    total_logistic_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-Y", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
         metadata={"never_null": True},
     )
     """
@@ -86,10 +86,10 @@ class Roboport(
 
     # =========================================================================
 
-    available_construction_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-Z", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+    available_construction_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-Z", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
         metadata={"never_null": True},
     )
     """
@@ -102,10 +102,10 @@ class Roboport(
 
     # =========================================================================
 
-    total_construction_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-T", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+    total_construction_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-T", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
         metadata={"never_null": True},
     )
     """

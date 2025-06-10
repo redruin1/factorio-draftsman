@@ -3,7 +3,6 @@
 from draftsman.classes.exportable import Exportable
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import uint64
 
 import attrs
 

@@ -2,11 +2,11 @@
 
 from draftsman.classes.mixins.control_behavior import ControlBehaviorMixin
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsSimpleCondition, AttrsSignalID, int32
+from draftsman.signatures import Comparator, Condition, SignalID, int32
 from draftsman.validators import instance_of
 
 import attrs
-from typing import Literal, Union
+from typing import Union
 
 
 @attrs.define(slots=False)
@@ -17,12 +17,10 @@ class CircuitConditionMixin(ControlBehaviorMixin):
     value of some signal exceeds some constant.
     """
 
-    circuit_condition: AttrsSimpleCondition = attrs.field(
-        factory=lambda: AttrsSimpleCondition(
-            first_signal=None, comparator="<", constant=0
-        ),
-        converter=AttrsSimpleCondition.converter,
-        validator=instance_of(AttrsSimpleCondition),
+    circuit_condition: Condition = attrs.field(
+        factory=Condition,
+        converter=Condition.converter,
+        validator=instance_of(Condition),
     )
     """
     The circuit condition that must be passed in order for this entity
@@ -33,9 +31,9 @@ class CircuitConditionMixin(ControlBehaviorMixin):
 
     def set_circuit_condition(
         self,
-        first_operand: Union[AttrsSignalID, None] = None,
-        comparator: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "<",
-        second_operand: Union[AttrsSignalID, int32] = 0,
+        first_operand: Union[SignalID, None] = None,
+        comparator: Comparator = "<",
+        second_operand: Union[SignalID, int32] = 0,
     ):
         """
         Sets the circuit condition of the Entity.

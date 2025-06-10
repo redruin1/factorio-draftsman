@@ -14,7 +14,7 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.constants import Inventory
-from draftsman.signatures import ModuleName, QualityName
+from draftsman.signatures import ModuleID, QualityID
 from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data import entities
@@ -57,9 +57,9 @@ class MiningDrill(
 
     def request_modules(
         self,
-        module_name: ModuleName,
+        module_name: ModuleID,
         slots: int | Iterable[int],
-        quality: QualityName = "normal",
+        quality: QualityID = "normal",
     ):
         return super().request_modules(
             Inventory.mining_drill_modules, module_name, slots, quality
@@ -68,4 +68,3 @@ class MiningDrill(
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

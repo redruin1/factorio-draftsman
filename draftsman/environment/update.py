@@ -823,7 +823,9 @@ def extract_entities(
     data = lua.globals().data
 
     # Default collision masks are defined by the game
-    default_collision_masks = convert_table_to_dict(data.raw["utility-constants"]["default"]["default_collision_masks"])
+    default_collision_masks = convert_table_to_dict(
+        data.raw["utility-constants"]["default"]["default_collision_masks"]
+    )
 
     entities = {}
     unordered_entities_raw = {}
@@ -910,9 +912,7 @@ def extract_entities(
 
         collision_mask = entity.get("collision_mask", None)
         if not collision_mask:
-            default_collision_mask = default_collision_masks.get(
-                entity["type"]
-            )
+            default_collision_mask = default_collision_masks.get(entity["type"])
             entity["collision_mask"] = default_collision_mask
 
         entity["collision_mask"]["layers"] = set(entity["collision_mask"]["layers"])
@@ -1280,9 +1280,12 @@ def extract_planets(
 
 
 def extract_qualities(
-    lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool = False,
+    lua: lupa.LuaRuntime,
+    draftsman_path: str,
+    sort_tuple,
+    verbose: bool = False,
 ):
-    
+
     data = lua.globals().data
 
     raw_qualities = convert_table_to_dict(data.raw["quality"])
@@ -1628,7 +1631,9 @@ def extract_tiles(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = Fal
 
     tile_list = []
     for tile in tiles:
-        tiles[tile]["collision_mask"]["layers"] = set(tiles[tile]["collision_mask"]["layers"])
+        tiles[tile]["collision_mask"]["layers"] = set(
+            tiles[tile]["collision_mask"]["layers"]
+        )
         tile_order = tiles[tile].get("order", None)
         tile_list.append((tile_order is None, tile_order, tile))
 
@@ -1705,7 +1710,7 @@ def update_draftsman_data(
     :py:meth:`.run_data_lifecycle`.
 
     :param game_path: The path pointing to Factorio's data, where "official"
-        mods like `base` and `core` live. If omitted, defaults to the 
+        mods like `base` and `core` live. If omitted, defaults to the
         `factorio-data` folder provided in the Draftsman installation location.
     :param mods_path: The path pointing to the user mods folder. Also the
         location where ``mod-settings.dat`` and ``mod-list.json`` files are

@@ -4,7 +4,7 @@ from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.schedule import Schedule, WaitCondition, WaitConditions
 from draftsman.constants import WaitConditionType, WaitConditionCompareType
 from draftsman.error import DataFormatError
-from draftsman.signatures import AttrsSimpleCondition
+from draftsman.signatures import Condition
 
 import pytest
 import re
@@ -30,7 +30,7 @@ class TestWaitCondition:
         assert w.type == "circuit"
         assert w.compare_type == "or"
         assert w.ticks == None
-        assert w.condition == AttrsSimpleCondition()
+        assert w.condition == Condition()
 
         w = WaitCondition(
             "incorrect", compare_type="incorrect", validate_assignment="none"
@@ -47,11 +47,11 @@ class TestWaitCondition:
     def test_to_dict(self):
         w = WaitCondition(
             "circuit",
-            condition=AttrsSimpleCondition(
+            condition=Condition(
                 first_signal="signal-A", comparator="!=", second_signal="signal-B"
             ),
         )
-        assert isinstance(w.condition, AttrsSimpleCondition)
+        assert isinstance(w.condition, Condition)
         assert w.to_dict() == {
             "type": "circuit",
             # "compare_type": "or", # Default
@@ -64,7 +64,7 @@ class TestWaitCondition:
 
         w = WaitCondition(
             "circuit",
-            condition=AttrsSimpleCondition(
+            condition=Condition(
                 first_signal="signal-A", comparator="<", constant=100
             ),
         )
@@ -110,7 +110,7 @@ class TestWaitCondition:
             "comparator": ">",
             "constant": 1000,
         }
-        assert circuit_condition.condition == AttrsSimpleCondition(
+        assert circuit_condition.condition == Condition(
             **{"first_signal": "signal-A", "comparator": ">", "constant": 1000}
         )
 
@@ -122,7 +122,7 @@ class TestWaitCondition:
             "comparator": "==",
             "second_signal": "signal-B",
         }
-        assert full_cargo.condition == AttrsSimpleCondition(
+        assert full_cargo.condition == Condition(
             **{
                 "first_signal": "signal-A",
                 "comparator": "==",
@@ -151,7 +151,7 @@ class TestWaitCondition:
         # WaitCondition and WaitConditions
         signal_sent = WaitCondition(
             "circuit",
-            condition=AttrsSimpleCondition(
+            condition=Condition(
                 first_signal="signal-A", comparator="==", constant=100
             ),
         )
@@ -162,7 +162,7 @@ class TestWaitCondition:
             [
                 WaitCondition(
                     "circuit",
-                    condition=AttrsSimpleCondition(
+                    condition=Condition(
                         first_signal="signal-A", comparator="==", constant=100
                     ),
                 ),
@@ -191,7 +191,7 @@ class TestWaitCondition:
                 WaitCondition(
                     "circuit",
                     compare_type="and",
-                    condition=AttrsSimpleCondition(
+                    condition=Condition(
                         first_signal="signal-A", comparator="==", constant=100
                     ),
                 ),
@@ -225,7 +225,7 @@ class TestWaitCondition:
         # WaitCondition and WaitConditions
         signal_sent = WaitCondition(
             "circuit",
-            condition=AttrsSimpleCondition(
+            condition=Condition(
                 first_signal="signal-A", comparator="==", constant=100
             ),
         )
@@ -236,7 +236,7 @@ class TestWaitCondition:
             [
                 WaitCondition(
                     "circuit",
-                    condition=AttrsSimpleCondition(
+                    condition=Condition(
                         first_signal="signal-A", comparator="==", constant=100
                     ),
                 ),
@@ -262,7 +262,7 @@ class TestWaitCondition:
                 WaitCondition("inactivity"),
                 WaitCondition(
                     "circuit",
-                    condition=AttrsSimpleCondition(
+                    condition=Condition(
                         first_signal="signal-A", comparator="==", constant=100
                     ),
                 ),

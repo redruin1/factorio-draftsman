@@ -28,4 +28,3 @@ class ElevatedCurvedRailA(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

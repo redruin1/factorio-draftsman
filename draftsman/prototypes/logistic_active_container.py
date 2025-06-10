@@ -23,7 +23,7 @@ class LogisticActiveContainer(
     InventoryMixin,
     ItemRequestMixin,
     # LogisticModeOfOperationMixin,
-    # CircuitConditionMixin, # TODO: does this have a condition on 2.0?
+    CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     Entity,

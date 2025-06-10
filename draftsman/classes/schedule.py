@@ -14,7 +14,7 @@ from draftsman.error import DataFormatError
 from draftsman.prototypes.locomotive import Locomotive
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    AttrsSimpleCondition,
+    Condition,
     uint32,
 )
 from draftsman.validators import instance_of, one_of, try_convert
@@ -125,9 +125,9 @@ class WaitCondition(Exportable):
 
     # =========================================================================
 
-    condition: Optional[AttrsSimpleCondition] = attrs.field(
-        converter=AttrsSimpleCondition.converter,
-        validator=instance_of(Optional[AttrsSimpleCondition]),
+    condition: Optional[Condition] = attrs.field(
+        converter=Condition.converter,
+        validator=instance_of(Optional[Condition]),
     )
     """
     TODO
@@ -140,7 +140,7 @@ class WaitCondition(Exportable):
             WaitConditionType.FLUID_COUNT,
             WaitConditionType.CIRCUIT_CONDITION,
         }:
-            return AttrsSimpleCondition()
+            return Condition()
         else:
             return None
 

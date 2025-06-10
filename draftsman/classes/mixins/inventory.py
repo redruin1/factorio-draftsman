@@ -67,16 +67,16 @@ class InventoryMixin(Exportable):
     # =========================================================================
 
     @property
-    def inventory_size(self) -> Optional[uint16]:
+    def size(self) -> Optional[uint16]:
         """
-        The number of inventory slots that this entity has. 
-        If :py:attr:`quality_affects_inventory_size` is ``True`` for this entity, 
-        then the returned value is scaled by the :py:attr:`quality` of the 
-        entity. If the current quality of this entity is unrecognized by the 
-        current environment, then the base, un-scaled inventory size is 
+        The number of inventory slots that this entity has.
+        If :py:attr:`quality_affects_inventory_size` is ``True`` for this entity,
+        then the returned value is scaled by the :py:attr:`quality` of the
+        entity. If the current quality of this entity is unrecognized by the
+        current environment, then the base, un-scaled inventory size is
         returned.
 
-        If this entity is unrecognized by the current environment, this 
+        If this entity is unrecognized by the current environment, this
         attribute returns ``None``.
         """
         inventory_size = entities.raw.get(self.name, {}).get("inventory_size", None)
@@ -88,10 +88,10 @@ class InventoryMixin(Exportable):
     # =========================================================================
 
     @property
-    def inventory_slots_occupied(self) -> int:
+    def slots_occupied(self) -> int:
         """
         The number of inventory slots filled by the item requests for this
-        entity. Useful for quickly investigating the capacity of the chest after
+        entity. Useful for quickly determining the capacity of the chest after
         the item requests have been delivered. Not exported; read only.
         """
         return calculate_occupied_slots(self.item_requests, Inventory.chest)

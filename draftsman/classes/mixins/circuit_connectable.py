@@ -32,7 +32,9 @@ class CircuitConnectableMixin(Exportable):
         Returns ``None`` if the entity's name is not recognized under the
         current environment. Not exported; read only.
         """
-        wire_max_dist = entities.raw.get(self.name, {}).get("circuit_wire_max_distance", None)
+        wire_max_dist = entities.raw.get(self.name, {}).get(
+            "circuit_wire_max_distance", None
+        )
         if wire_max_dist is None:
             return None
         multiplier = 2 * qualities.raw.get(self.quality, {"level": 0})["level"]

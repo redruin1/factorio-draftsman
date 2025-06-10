@@ -3,7 +3,7 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import ModulesMixin, ItemRequestMixin, EnergySourceMixin
 from draftsman.constants import Inventory
-from draftsman.signatures import ModuleName, QualityName
+from draftsman.signatures import ModuleID, QualityID
 
 from draftsman.data.entities import labs
 from draftsman.data import entities
@@ -55,15 +55,17 @@ class Lab(ModulesMixin, ItemRequestMixin, EnergySourceMixin, Entity):
 
     @property
     def allowed_effects(self) -> Optional[set[str]]:
-        return entities.get_allowed_effects(self.name, default=entities.ALL_EFFECTS_EXCEPT_QUALITY)
+        return entities.get_allowed_effects(
+            self.name, default=entities.ALL_EFFECTS_EXCEPT_QUALITY
+        )
 
     # =========================================================================
 
     def request_modules(
         self,
-        module_name: ModuleName,
+        module_name: ModuleID,
         slots: int | Iterable[int],
-        quality: QualityName = "normal",
+        quality: QualityID = "normal",
     ):
         return super().request_modules(
             Inventory.lab_modules, module_name, slots, quality
@@ -72,4 +74,3 @@ class Lab(ModulesMixin, ItemRequestMixin, EnergySourceMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

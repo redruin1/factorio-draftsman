@@ -24,7 +24,9 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
     @property
     def circuit_wire_max_distance(self) -> float:
         # Electric poles use a custom key (for some reason)
-        wire_max_dist = entities.raw.get(self.name, {}).get("maximum_wire_distance", None)
+        wire_max_dist = entities.raw.get(self.name, {}).get(
+            "maximum_wire_distance", None
+        )
         if wire_max_dist is None:
             return None
         buff = 2 * qualities.raw.get(self.quality, {"level": 0})["level"]
@@ -33,4 +35,3 @@ class ElectricPole(CircuitConnectableMixin, PowerConnectableMixin, Entity):
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

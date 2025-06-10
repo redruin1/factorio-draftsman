@@ -2,7 +2,7 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsSimpleCondition, AttrsSignalID, int32
+from draftsman.signatures import Comparator, Condition, SignalID, int32
 from draftsman.validators import instance_of
 
 import attrs
@@ -25,12 +25,10 @@ class LogisticConditionMixin(Exportable):  # (ControlBehaviorMixin)
 
     # =========================================================================
 
-    logistic_condition: AttrsSimpleCondition = attrs.field(
-        factory=lambda: AttrsSimpleCondition(
-            first_signal=None, comparator="<", constant=0
-        ),
-        converter=AttrsSimpleCondition.converter,
-        validator=instance_of(AttrsSimpleCondition),
+    logistic_condition: Condition = attrs.field(
+        factory=lambda: Condition(first_signal=None, comparator="<", constant=0),
+        converter=Condition.converter,
+        validator=instance_of(Condition),
     )
     """
     The logistic condition that must be passed in order for this entity to 
@@ -41,9 +39,9 @@ class LogisticConditionMixin(Exportable):  # (ControlBehaviorMixin)
 
     def set_logistic_condition(
         self,
-        first_operand: Union[AttrsSignalID, None] = None,
-        comparator: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "<",
-        second_operand: Union[AttrsSignalID, int32] = 0,
+        first_operand: Union[SignalID, None] = None,
+        comparator: Comparator = "<",
+        second_operand: Union[SignalID, int32] = 0,
     ):
         """
         Sets the logistic condition of the Entity.
@@ -60,13 +58,14 @@ class LogisticConditionMixin(Exportable):  # (ControlBehaviorMixin)
         If specified in the second format, they are converted to and stored as
         the first format.
 
-        :param a: The string name of the first signal.
-        :param cmp: The operation to use, as specified above.
-        :param b: The string name of the second signal, or some 32-bit constant.
+        :param first_operand: The string name of the first signal.
+        :param comparator: The operation to use, as specified above.
+        :param second_operand: The string name of the second signal, or some
+            32-bit constant.
 
         :exception DataFormatError: If ``a`` is not a valid signal name, if
-            ``cmp`` is not a valid operation, or if ``b`` is neither a valid
-            signal name nor a constant.
+            ``comparator`` is not a valid operation, or if ``b`` is neither a
+            valid signal name nor a constant.
         """
         self._set_condition(
             "logistic_condition", first_operand, comparator, second_operand

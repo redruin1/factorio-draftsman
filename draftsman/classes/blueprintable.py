@@ -5,8 +5,8 @@ from draftsman.classes.exportable import (
 )
 from draftsman.error import IncorrectBlueprintTypeError
 from draftsman.signatures import (
-    AttrsColor,
-    AttrsIcon,
+    Color,
+    Icon,
     uint16,
     uint64,
 )
@@ -158,11 +158,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
     # =========================================================================
 
-    label_color: Optional[AttrsColor] = attrs.field(
+    label_color: Optional[Color] = attrs.field(
         default=None,
-        converter=AttrsColor.converter,
-        validator=instance_of(Optional[AttrsColor]),
-        metadata={"never_null": True}
+        converter=Color.converter,
+        validator=instance_of(Optional[Color]),
+        metadata={"never_null": True},
     )
     """
     The color of the Blueprint's label.
@@ -217,20 +217,20 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             res = [None] * len(value)
             for i, elem in enumerate(value):
                 if isinstance(elem, str):
-                    res[i] = AttrsIcon(
+                    res[i] = Icon(
                         index=i + 1,
                         signal=elem,
                     )
                 else:
-                    res[i] = AttrsIcon.converter(elem)
+                    res[i] = Icon.converter(elem)
             return res
         else:
             return value
 
-    icons: list[AttrsIcon] = attrs.field(
+    icons: list[Icon] = attrs.field(
         factory=list,
         converter=_icons_converter,
-        validator=instance_of(list[AttrsIcon]),  # TODO: validators
+        validator=instance_of(list[Icon]),  # TODO: validators
     )
     """
     The visible icons of the blueprintable, as shown in the icon in
@@ -269,7 +269,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         """
         new_icons = [None] * len(icon_names)
         for i, icon in enumerate(icon_names):
-            new_icons[i] = AttrsIcon(index=i + 1, signal=icon)
+            new_icons[i] = Icon(index=i + 1, signal=icon)
         self.icons = new_icons
 
     # =========================================================================

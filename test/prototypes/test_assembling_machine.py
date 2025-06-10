@@ -9,11 +9,11 @@ from draftsman.error import (
     DataFormatError,
 )
 from draftsman.signatures import (
-    AttrsItemRequest,
-    AttrsItemID,
-    AttrsSimpleCondition,
-    AttrsInventoryLocation,
-    AttrsItemSpecification,
+    Condition,
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
+    InventoryPosition,
 )
 from draftsman.warning import (
     ModuleCapacityWarning,
@@ -45,15 +45,15 @@ def valid_assembling_machine():
         recipe="iron-gear-wheel",
         recipe_quality="uncommon",
         circuit_enabled=True,
-        circuit_condition=AttrsSimpleCondition(
+        circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         connect_to_logistic_network=True,
-        logistic_condition=AttrsSimpleCondition(
+        logistic_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         item_requests=[
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id={"name": "iron-plate", "quality": "uncommon"},
                 items={"in_inventory": [{"inventory": 2, "stack": 0, "count": 20}]},
             )
@@ -209,7 +209,7 @@ class TestAssemblingMachine:
             "wood", 20, inventory=Inventory.assembling_machine_input
         )
         assert machine.ingredient_items == [
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id={"name": "wood"},
                 items={"in_inventory": [{"inventory": 2, "stack": 0, "count": 20}]},
             )
@@ -227,23 +227,23 @@ class TestAssemblingMachine:
         machine = AssemblingMachine("assembling-machine-3")
         machine.request_modules("productivity-module-3", (0, 1, 2, 3), "legendary")
         assert machine.item_requests == [
-            AttrsItemRequest(
-                id=AttrsItemID(name="productivity-module-3", quality="legendary"),
-                items=AttrsItemSpecification(
+            BlueprintInsertPlan(
+                id=ItemID(name="productivity-module-3", quality="legendary"),
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.assembling_machine_modules,
                             stack=0,
                         ),
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.assembling_machine_modules,
                             stack=1,
                         ),
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.assembling_machine_modules,
                             stack=2,
                         ),
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.assembling_machine_modules,
                             stack=3,
                         )

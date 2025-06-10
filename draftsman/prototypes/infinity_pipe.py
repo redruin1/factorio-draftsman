@@ -4,7 +4,7 @@ from draftsman.classes.entity import Entity
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import int64, FluidName
+from draftsman.signatures import int64, FluidID
 from draftsman.validators import and_, conditional, instance_of, ge, one_of
 
 from draftsman.data.entities import infinity_pipes
@@ -26,9 +26,9 @@ class InfinityPipe(Entity):
 
     # =========================================================================
 
-    fluid_name: Optional[FluidName] = attrs.field(
+    fluid_name: Optional[FluidID] = attrs.field(
         default=None,
-        validator=instance_of(Optional[FluidName]),
+        validator=instance_of(Optional[FluidID]),
     )
     """
     Sets the name of the infinite fluid.

@@ -6,8 +6,6 @@ from draftsman.serialization import draftsman_converters
 from draftsman.validators import instance_of
 
 import attrs
-from pydantic import BaseModel, Field
-from typing import Optional
 
 
 @attrs.define(slots=False)

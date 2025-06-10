@@ -4,7 +4,6 @@ Illustrates `EntityList`'s custom set operators.
 """
 
 from draftsman.blueprintable import Blueprint
-from draftsman.classes.entity_list import EntityList
 
 
 def main():

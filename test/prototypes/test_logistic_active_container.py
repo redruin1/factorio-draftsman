@@ -7,9 +7,7 @@ from draftsman.entity import (
     Container,
 )
 from draftsman.signatures import (
-    AttrsItemRequest,
-    AttrsItemSpecification,
-    AttrsInventoryLocation,
+    BlueprintInsertPlan
 )
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
@@ -99,7 +97,7 @@ class TestActiveContainer:
         assert container.name == "active-provider-chest"
         assert container.position.x == container.position.y == 0.5
         assert container.item_requests == [
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 **{
                     "id": {"name": "iron-ore", "quality": "normal"},
                     "items": {
@@ -138,6 +136,10 @@ class TestActiveContainer:
             },
             "connections": {},
             "control_behavior": {
+                "circuit_condition": {
+                    "comparator": "<",
+                    "constant": 0
+                },
                 "circuit_mode_of_operation": LogisticModeOfOperation.SEND_CONTENTS
             },
             "tags": {},
@@ -155,6 +157,10 @@ class TestActiveContainer:
             },
             "connections": {},
             "control_behavior": {
+                "circuit_condition": {
+                    "comparator": "<",
+                    "constant": 0
+                },
                 "circuit_mode_of_operation": LogisticModeOfOperation.SEND_CONTENTS
             },
             "tags": {},
@@ -187,6 +193,10 @@ class TestActiveContainer:
                 }
             ],
             "control_behavior": {
+                "circuit_condition": {
+                    "comparator": "<",
+                    "constant": 0
+                },
                 "circuit_mode_of_operation": LogisticModeOfOperation.SEND_CONTENTS
             },
             "tags": {},
@@ -216,6 +226,10 @@ class TestActiveContainer:
                 }
             ],
             "control_behavior": {
+                "circuit_condition": {
+                    "comparator": "<",
+                    "constant": 0
+                },
                 "circuit_mode_of_operation": LogisticModeOfOperation.NONE
             },
             "tags": {},
@@ -229,14 +243,14 @@ class TestActiveContainer:
             assert container.circuit_connectable == True
             assert container.dual_circuit_connectable == False
 
-    def test_inventory_size(self):
+    def test_size(self):
         chest = LogisticActiveContainer("active-provider-chest")
-        assert chest.inventory_size == 48
+        assert chest.size == 48
 
         assert (
             LogisticActiveContainer(
                 "unknown-chest", validate_assignment="none"
-            ).inventory_size
+            ).size
             == None
         )
 
@@ -253,7 +267,7 @@ class TestActiveContainer:
         }
         for quality, size in qualities.items():
             chest = LogisticActiveContainer("active-provider-chest", quality=quality)
-            assert chest.inventory_size == size
+            assert chest.size == size
 
     def test_mergable_with(self):
         container1 = LogisticActiveContainer("active-provider-chest")

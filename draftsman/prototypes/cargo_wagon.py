@@ -4,20 +4,40 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     EquipmentGridMixin,
     ItemRequestMixin,
-    FilteredInventoryMixin,
     OrientationMixin,
 )
+from draftsman.serialization import draftsman_converters
+from draftsman.signatures import FilteredInventory, uint16
+from draftsman.validators import and_, instance_of
 
 from draftsman.data.entities import cargo_wagons
+from draftsman.data import entities, qualities
 
 import attrs
+import math
+from typing import Optional
+
+
+def _cargo_wagon_inventory_size(entity: "CargoWagon") -> Optional[uint16]:
+    """
+    Gets the inventory size of this cargo wagon.
+    """
+    print("cargo wagon inventory size")
+    inventory_size = entities.raw.get(entity.name, {"inventory_size": None})[
+        "inventory_size"
+    ]
+    if inventory_size is None:
+        return None
+    if not entities.raw[entity.name].get("quality_affects_inventory_size", False):
+        return inventory_size
+    modifier = 0.3 * qualities.raw.get(entity.quality, {"level": 0})["level"]
+    return math.floor(inventory_size + inventory_size * modifier)
 
 
 @attrs.define
 class CargoWagon(
     EquipmentGridMixin,
     ItemRequestMixin,
-    FilteredInventoryMixin,
     OrientationMixin,
     Entity,
 ):
@@ -33,4 +53,39 @@ class CargoWagon(
 
     # =========================================================================
 
+    inventory: Optional[FilteredInventory] = attrs.field(
+        # factory=FilteredInventory,
+        converter=FilteredInventory.converter,
+        validator=and_(
+            instance_of(Optional[FilteredInventory]),
+            lambda self, _, value, **kwargs: value._set_parent(
+                self, self.inventory, _cargo_wagon_inventory_size
+            ),
+        ),
+    )
+    """
+    Inventory object of this cargo wagon. Holds metadata associated with this
+    wagons inventory, such as it's size, limiting bar position, and item filters
+    (if any).
+    """
+
+    @inventory.default
+    def _(self) -> FilteredInventory:
+        return FilteredInventory()._set_parent(self, None, _cargo_wagon_inventory_size)
+
+    # =========================================================================
+
+    def merge(self, other: "CargoWagon"):
+        super().merge(other)
+
+        self.inventory = other.inventory
+
     __hash__ = Entity.__hash__
+
+
+draftsman_converters.add_hook_fns(
+    CargoWagon,
+    lambda fields: {
+        "inventory": fields.inventory.name,
+    },
+)

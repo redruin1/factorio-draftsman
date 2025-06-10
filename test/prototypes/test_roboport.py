@@ -3,7 +3,7 @@
 from draftsman.constants import ValidationMode
 from draftsman.entity import Roboport, roboports, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
-from draftsman.signatures import AttrsSignalID
+from draftsman.signatures import SignalID
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -171,12 +171,12 @@ class TestRoboport:
     def test_set_available_logistics_signal(self):
         roboport = Roboport()
         roboport.available_logistic_signal = "signal-A"
-        assert roboport.available_logistic_signal == AttrsSignalID(
+        assert roboport.available_logistic_signal == SignalID(
             name="signal-A", type="virtual"
         )
 
         roboport.available_logistic_signal = {"name": "signal-A", "type": "virtual"}
-        assert roboport.available_logistic_signal == AttrsSignalID(
+        assert roboport.available_logistic_signal == SignalID(
             name="signal-A", type="virtual"
         )
 
@@ -185,7 +185,7 @@ class TestRoboport:
 
         with pytest.warns(UnknownSignalWarning):
             roboport.available_logistic_signal = {"name": "unknown", "type": "item"}
-            assert roboport.available_logistic_signal == AttrsSignalID(
+            assert roboport.available_logistic_signal == SignalID(
                 name="unknown", type="item"
             )
 
@@ -197,12 +197,12 @@ class TestRoboport:
     def test_set_total_logistics_signal(self):
         roboport = Roboport()
         roboport.total_logistic_signal = "signal-B"
-        assert roboport.total_logistic_signal == AttrsSignalID(
+        assert roboport.total_logistic_signal == SignalID(
             name="signal-B", type="virtual"
         )
 
         roboport.total_logistic_signal = {"name": "signal-B", "type": "virtual"}
-        assert roboport.total_logistic_signal == AttrsSignalID(
+        assert roboport.total_logistic_signal == SignalID(
             name="signal-B", type="virtual"
         )
 
@@ -211,7 +211,7 @@ class TestRoboport:
 
         with pytest.warns(UnknownSignalWarning):
             roboport.total_logistic_signal = {"name": "unknown", "type": "item"}
-            assert roboport.total_logistic_signal == AttrsSignalID(
+            assert roboport.total_logistic_signal == SignalID(
                 name="unknown", type="item"
             )
 
@@ -223,12 +223,12 @@ class TestRoboport:
     def test_set_available_construction_signal(self):
         roboport = Roboport()
         roboport.available_construction_signal = "signal-C"
-        assert roboport.available_construction_signal == AttrsSignalID(
+        assert roboport.available_construction_signal == SignalID(
             name="signal-C", type="virtual"
         )
 
         roboport.available_construction_signal = {"name": "signal-C", "type": "virtual"}
-        assert roboport.available_construction_signal == AttrsSignalID(
+        assert roboport.available_construction_signal == SignalID(
             name="signal-C", type="virtual"
         )
 
@@ -237,7 +237,7 @@ class TestRoboport:
 
         with pytest.warns(UnknownSignalWarning):
             roboport.available_construction_signal = {"name": "unknown", "type": "item"}
-            assert roboport.available_construction_signal == AttrsSignalID(
+            assert roboport.available_construction_signal == SignalID(
                 name="unknown", type="item"
             )
 
@@ -249,12 +249,12 @@ class TestRoboport:
     def test_set_total_construction_signal(self):
         roboport = Roboport()
         roboport.total_construction_signal = "signal-D"
-        assert roboport.total_construction_signal == AttrsSignalID(
+        assert roboport.total_construction_signal == SignalID(
             name="signal-D", type="virtual"
         )
 
         roboport.total_construction_signal = {"name": "signal-D", "type": "virtual"}
-        assert roboport.total_construction_signal == AttrsSignalID(
+        assert roboport.total_construction_signal == SignalID(
             name="signal-D", type="virtual"
         )
 
@@ -263,7 +263,7 @@ class TestRoboport:
 
         with pytest.warns(UnknownSignalWarning):
             roboport.total_construction_signal = {"name": "unknown", "type": "item"}
-            assert roboport.total_construction_signal == AttrsSignalID(
+            assert roboport.total_construction_signal == SignalID(
                 name="unknown", type="item"
             )
 
@@ -311,16 +311,16 @@ class TestRoboport:
 
         assert roboport1.read_logistics == True
         assert roboport1.read_robot_stats == True
-        assert roboport1.available_logistic_signal == AttrsSignalID(
+        assert roboport1.available_logistic_signal == SignalID(
             name="signal-A", type="virtual"
         )
-        assert roboport1.total_logistic_signal == AttrsSignalID(
+        assert roboport1.total_logistic_signal == SignalID(
             name="signal-B", type="virtual"
         )
-        assert roboport1.available_construction_signal == AttrsSignalID(
+        assert roboport1.available_construction_signal == SignalID(
             name="signal-C", type="virtual"
         )
-        assert roboport1.total_construction_signal == AttrsSignalID(
+        assert roboport1.total_construction_signal == SignalID(
             name="signal-D", type="virtual"
         )
         assert roboport1.tags == {"some": "stuff"}

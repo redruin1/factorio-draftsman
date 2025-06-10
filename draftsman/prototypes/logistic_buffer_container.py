@@ -5,6 +5,7 @@ from draftsman.classes.mixins import (
     ItemRequestMixin,
     LogisticModeOfOperationMixin,
     CircuitConditionMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
@@ -22,7 +23,8 @@ class LogisticBufferContainer(
     InventoryMixin,
     ItemRequestMixin,
     LogisticModeOfOperationMixin,
-    # CircuitConditionMixin, # TODO: is this present on 2.0?
+    CircuitConditionMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RequestFiltersMixin,
@@ -39,4 +41,3 @@ class LogisticBufferContainer(
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

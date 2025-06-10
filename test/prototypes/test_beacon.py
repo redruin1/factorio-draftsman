@@ -1,7 +1,14 @@
 # test_beacon.py
 
+from draftsman.constants import Inventory
 from draftsman.entity import Beacon, beacons, Container
 from draftsman.error import DataFormatError
+from draftsman.signatures import (
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
+    InventoryPosition
+)
 from draftsman.warning import (
     ModuleCapacityWarning,
     ModuleNotAllowedWarning,
@@ -40,6 +47,51 @@ class TestBeacon:
 
         with pytest.warns(UnknownEntityWarning):
             Beacon("this is not a beacon").validate().reissue_all()
+
+    def test_request_modules(self):
+        beacon = Beacon("beacon")
+        beacon.request_modules("speed-module-3", 0, "legendary")
+        assert beacon.item_requests == [
+            BlueprintInsertPlan(
+                id=ItemID(name="speed-module-3", quality="legendary"),
+                items=ItemInventoryPositions(
+                    in_inventory=[
+                        InventoryPosition(
+                            inventory=Inventory.beacon_modules,
+                            stack=0,
+                        ),
+                    ]
+                )
+            )
+        ]
+
+        # Cannot put prod modules in a (vanilla) beacon
+        with pytest.warns(ModuleNotAllowedWarning):
+            beacon.request_modules("productivity-module-3", 1, "legendary")
+        assert beacon.item_requests == [
+            BlueprintInsertPlan(
+                id=ItemID(name="speed-module-3", quality="legendary"),
+                items=ItemInventoryPositions(
+                    in_inventory=[
+                        InventoryPosition(
+                            inventory=Inventory.beacon_modules,
+                            stack=0,
+                        ),
+                    ]
+                )
+            ),
+            BlueprintInsertPlan(
+                id=ItemID(name="productivity-module-3", quality="legendary"),
+                items=ItemInventoryPositions(
+                    in_inventory=[
+                        InventoryPosition(
+                            inventory=Inventory.beacon_modules,
+                            stack=1,
+                        ),
+                    ]
+                )
+            )
+        ]
 
     # def test_set_item_request(self):
     #     beacon = Beacon()

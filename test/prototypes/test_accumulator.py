@@ -4,7 +4,7 @@ from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.entity import Accumulator, accumulators, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
-from draftsman.signatures import AttrsSignalID
+from draftsman.signatures import SignalID
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -58,7 +58,7 @@ class TestAccumulator:
         accumulator = Accumulator()
         # String case
         accumulator.output_signal = "signal-D"
-        assert accumulator.output_signal == AttrsSignalID(
+        assert accumulator.output_signal == SignalID(
             **{"name": "signal-D", "type": "virtual"}
         )
 
@@ -105,7 +105,7 @@ class TestAccumulator:
         assert accumulatorA.name == "accumulator"
         assert accumulatorA.tile_position == Vector(0, 0)
         assert accumulatorA.tile_position.to_dict() == {"x": 0, "y": 0}
-        assert accumulatorA.output_signal == AttrsSignalID(
+        assert accumulatorA.output_signal == SignalID(
             **{"name": "signal-A", "type": "virtual"}
         )
 

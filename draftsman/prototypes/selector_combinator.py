@@ -8,22 +8,27 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
+from draftsman.constants import ValidationMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    AttrsSignalID,
+    SignalID,
+    SignalIDBase,
     QualityFilter,
-    QualityName,
+    QualityID,
     Comparator,
     int32,
     uint32,
 )
 from draftsman.utils import fix_incorrect_pre_init
-from draftsman.validators import instance_of, one_of
+from draftsman.validators import conditional, instance_of, one_of
+from draftsman.warning import PureVirtualDisallowedWarning
 
+from draftsman.data import signals
 from draftsman.data.entities import selector_combinators
 
 import attrs
 from typing import Literal, Optional
+import warnings
 
 SelectorOperations = Literal[
     "select",
@@ -87,10 +92,10 @@ class SelectorCombinator(
     simultaneously.
     """
 
-    index_signal: Optional[AttrsSignalID] = attrs.field(
+    index_signal: Optional[SignalID] = attrs.field(
         default=None,
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
     )
     """
     Which input signal to pull the index value from in order to select from the
@@ -103,10 +108,10 @@ class SelectorCombinator(
     # Mode: "count"
     # =========================================================================
 
-    count_signal: Optional[AttrsSignalID] = attrs.field(
+    count_signal: Optional[SignalID] = attrs.field(
         default=None,
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
     )
     """
     What signal to output the sum total number of unique signals on the input to.
@@ -151,40 +156,50 @@ class SelectorCombinator(
     Selection" mode, and uses "Select from signal" when this value is ``True``.
     """
 
-    quality_source_static: QualityName = attrs.field(
-        default="normal", validator=one_of(QualityName)
+    quality_source_static: QualityID = attrs.field(
+        default="normal", validator=one_of(QualityID)
     )
     """
     The quality to use when :py:attr:`.select_quality_from_signal` is ``False``.
     The selector will consider all signals with this specific quality.
     """
 
-    quality_source_signal: Optional[
-        AttrsSignalID
-    ] = attrs.field(  # TODO: SignalID, but no quality!
+    quality_source_signal: Optional[SignalIDBase] = attrs.field(
         default=None,
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+        converter=SignalIDBase.converter,
+        validator=instance_of(Optional[SignalIDBase]),
     )
     """
     The input signal type to pull the quality from dynamically, if 
     :py:attr:`.select_quality_from_signal` is ``True``. 
     """
 
-    # TODO: SignalID, but no quality!
-    quality_destination_signal: Optional[
-        AttrsSignalID
-    ] = attrs.field(
+    quality_destination_signal: Optional[SignalIDBase] = attrs.field(
         default=None,
-        converter=AttrsSignalID.converter,
-        validator=instance_of(
-            Optional[AttrsSignalID]
-        ),  # TODO: validate it can only be each
+        converter=SignalIDBase.converter,
+        validator=instance_of(Optional[SignalIDBase]),
     )
     """
     The destination signal(s) to output with the read quality value. Can be any
     fixed signal, as well as the wildcard ``"signal-each"``.
     """
+
+    @quality_destination_signal.validator
+    @conditional(ValidationMode.STRICT)
+    def _quality_destination_signal_validator(
+        self, attr: attrs.Attribute, value: Optional[SignalIDBase]
+    ):
+        """
+        Ensure that (if a pure virtual signal is provided) only ``signal-each``
+        is a valid input.
+        """
+        if value is None:
+            return
+        if value.name in signals.pure_virtual and value.name != "signal-each":
+            msg = "Cannot set this signal to '{}'; only permitted pure virtual signal is 'signal-each'".format(
+                value.name
+            )
+            warnings.warn(PureVirtualDisallowedWarning(msg))
 
     # =========================================================================
 
@@ -192,7 +207,7 @@ class SelectorCombinator(
         self,
         select_max: bool = True,
         index_constant: int32 = 0,
-        index_signal: Optional[AttrsSignalID] = None,
+        index_signal: Optional[SignalID] = None,
     ):
         """
         Sets the selector combinator to "Select Inputs" mode, along with
@@ -210,7 +225,7 @@ class SelectorCombinator(
         self.index_constant = index_constant
         self.index_signal = index_signal
 
-    def set_mode_count(self, count_signal: Optional[AttrsSignalID] = None):
+    def set_mode_count(self, count_signal: Optional[SignalID] = None):
         """
         Sets the selector combinator to "Count Inputs" mode, along with
         associated parameters.
@@ -245,7 +260,7 @@ class SelectorCombinator(
         self.operation = "rocket-capacity"
 
     def set_mode_quality_filter(
-        self, quality: Optional[QualityName] = None, comparator: Comparator = "="
+        self, quality: Optional[QualityID] = None, comparator: Comparator = "="
     ):
         """
         Sets the selector combintor to "Quality Filter" mode, along with
@@ -262,9 +277,9 @@ class SelectorCombinator(
     def set_mode_quality_transfer(
         self,
         select_quality_from_signal: bool = False,
-        source_static: QualityName = "normal",
-        source_signal: Optional[AttrsSignalID] = None,  # TODO: SignalID no quality
-        destination_signal: Optional[AttrsSignalID] = None,  # TODO: SignalID no quality
+        source_static: QualityID = "normal",
+        source_signal: Optional[SignalIDBase] = None,
+        destination_signal: Optional[SignalIDBase] = None,
     ):
         """
         Sets the selector combintor to "Quality Transfer" mode, along with

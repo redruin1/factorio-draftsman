@@ -10,7 +10,6 @@ from draftsman.validators import instance_of, try_convert
 from draftsman.data import entities
 
 import attrs
-from pydantic import BaseModel, Field
 from typing import Optional
 
 

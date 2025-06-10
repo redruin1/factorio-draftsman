@@ -5,7 +5,7 @@ from draftsman.prototypes.electric_turret import (
     ElectricTurret,
     electric_turrets,
 )
-from draftsman.signatures import AttrsSimpleCondition
+from draftsman.signatures import Condition
 from draftsman.warning import UnknownEntityWarning
 
 import pytest
@@ -22,18 +22,18 @@ def valid_electric_turret():
         tile_position=(1, 1),
         direction=Direction.EAST,
         circuit_enabled=True,
-        circuit_condition=AttrsSimpleCondition(
+        circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         connect_to_logistic_network=True,
-        logistic_condition=AttrsSimpleCondition(
+        logistic_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         priority_list=["medium-biter"],
         ignore_unprioritized=True,
         set_priority_list=True,
         set_ignore_unprioritized=True,
-        ignore_unlisted_targets_condition=AttrsSimpleCondition(
+        ignore_unlisted_targets_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         read_ammo=False,

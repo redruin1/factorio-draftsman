@@ -10,7 +10,7 @@ import string
 from draftsman.blueprintable import Blueprint, BlueprintBook
 from draftsman.constants import Direction
 from draftsman.entity import ConstantCombinator, DisplayPanel
-from draftsman.signatures import AttrsSignalID, AttrsSimpleCondition
+from draftsman.signatures import Condition
 
 
 def main():
@@ -35,7 +35,7 @@ def main():
         DisplayPanel.Message(
             icon="signal-info",
             text="This is an info signal.",
-            condition=AttrsSimpleCondition(
+            condition=Condition(
                 first_signal="signal-A",
                 comparator="=",
                 constant=1,
@@ -44,7 +44,7 @@ def main():
         DisplayPanel.Message(
             icon="signal-yellow",
             text="This is a warning signal.",
-            condition=AttrsSimpleCondition(
+            condition=Condition(
                 first_signal="signal-A",
                 comparator="=",
                 constant=2,
@@ -53,7 +53,7 @@ def main():
         DisplayPanel.Message(
             icon="signal-alert",
             text="This is an alert signal.",
-            condition=AttrsSimpleCondition(
+            condition=Condition(
                 first_signal="signal-A",
                 comparator="=",
                 constant=3,
@@ -80,7 +80,7 @@ def main():
     input_signals = ["signal-" + str(i) for i in range(10)]
     # We also need to generate the mapping of `letter icon -> utf-8 value`
     display_icons = {
-        "signal-{}".format(letter): ord(letter)
+        "signal-" + letter: ord(letter)
         for letter in list(string.ascii_uppercase)
     }
 
@@ -91,7 +91,7 @@ def main():
         display_panel.messages = [
             DisplayPanel.Message(
                 icon=display_icon,
-                condition=AttrsSimpleCondition(
+                condition=Condition(
                     first_signal=input_signals[i],
                     comparator="=",
                     constant=code_point,

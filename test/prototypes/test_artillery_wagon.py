@@ -4,9 +4,9 @@ from draftsman.constants import Inventory, Orientation
 from draftsman.entity import ArtilleryWagon, artillery_wagons, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
-    AttrsItemRequest,
-    AttrsItemSpecification,
-    AttrsInventoryLocation,
+    BlueprintInsertPlan,
+    ItemInventoryPositions,
+    InventoryPosition,
     EquipmentComponent,
 )
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
@@ -26,19 +26,19 @@ def valid_artillery_wagon():
         tile_position=(1, 1),
         orientation=Orientation.EAST,
         item_requests=[
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id="artillery-shell",
-                items=AttrsItemSpecification(
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.artillery_wagon_ammo, stack=0, count=1
                         )
                     ]
                 ),
             ),
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id="energy-shield-equipment",
-                items=AttrsItemSpecification(grid_count=1),
+                items=ItemInventoryPositions(grid_count=1),
             ),
         ],
         equipment=[

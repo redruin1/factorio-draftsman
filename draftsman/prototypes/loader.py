@@ -29,4 +29,3 @@ class Loader(FiltersMixin, IOTypeMixin, EnergySourceMixin, DirectionalMixin, Ent
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

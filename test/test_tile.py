@@ -116,8 +116,9 @@ class TestTileFactory:
         assert isinstance(tile, Tile)
         assert tile.name == "landfill"
 
-        # Unknown tiles are accepted
-        tile = new_tile("unknown")
+        # Unknown tiles are accepted, but warned
+        with pytest.warns(UnknownTileWarning):
+            tile = new_tile("unknown")
         assert isinstance(tile, Tile)
 
         # Draftsman will only complain if you ask it to

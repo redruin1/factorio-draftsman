@@ -340,7 +340,6 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
                 return True
         return False
 
-
     # =========================================================================
 
     # children: list["Group"] = attrs.field(

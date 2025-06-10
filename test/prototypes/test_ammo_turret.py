@@ -4,11 +4,11 @@ from draftsman.constants import Direction, Inventory
 from draftsman.entity import AmmoTurret, ammo_turrets, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
-    AttrsSimpleCondition,
+    Condition,
     TargetID,
-    AttrsItemRequest,
-    AttrsItemSpecification,
-    AttrsInventoryLocation,
+    BlueprintInsertPlan,
+    ItemInventoryPositions,
+    InventoryPosition,
 )
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
@@ -27,27 +27,27 @@ def valid_ammo_turret():
         tile_position=(1, 1),
         direction=Direction.EAST,
         circuit_enabled=True,
-        circuit_condition=AttrsSimpleCondition(
+        circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         connect_to_logistic_network=True,
-        logistic_condition=AttrsSimpleCondition(
+        logistic_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         priority_list=["medium-biter"],
         ignore_unprioritized=True,
         set_priority_list=True,
         set_ignore_unprioritized=True,
-        ignore_unlisted_targets_condition=AttrsSimpleCondition(
+        ignore_unlisted_targets_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         read_ammo=False,
         item_requests=[
-            AttrsItemRequest(
+            BlueprintInsertPlan(
                 id="firearm-magazine",
-                items=AttrsItemSpecification(
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.turret_ammo, stack=0, count=200
                         )
                     ]
@@ -83,7 +83,7 @@ class TestAmmoTurret:
     def test_priority_condition(self):
         turret = AmmoTurret("gun-turret")
         turret.set_ignore_unlisted_targets_condition("signal-A", ">", "signal-B")
-        assert turret.ignore_unlisted_targets_condition == AttrsSimpleCondition(
+        assert turret.ignore_unlisted_targets_condition == Condition(
             first_signal="signal-A", comparator=">", second_signal="signal-B"
         )
 

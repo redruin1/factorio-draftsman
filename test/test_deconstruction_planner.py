@@ -8,7 +8,7 @@ from draftsman.classes.deconstruction_planner import (
 )
 from draftsman.constants import FilterMode, TileSelectionMode, ValidationMode
 from draftsman.error import DataFormatError
-from draftsman.signatures import AttrsIcon
+from draftsman.signatures import Icon
 from draftsman.utils import encode_version
 from draftsman.warning import DraftsmanWarning, UnknownEntityWarning, UnknownTileWarning
 
@@ -93,8 +93,8 @@ class TestDeconstructionPlannerTesting:
             {"index": 2, "signal": {"name": "signal-B", "type": "virtual"}},
         ]
         assert decon_planner.icons == [
-            AttrsIcon(signal="signal-A", index=1),
-            AttrsIcon(signal="signal-B", index=2),
+            Icon(signal="signal-A", index=1),
+            Icon(signal="signal-B", index=2),
         ]
 
     def test_set_entity_filter_mode(self):

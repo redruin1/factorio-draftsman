@@ -3,10 +3,10 @@
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    AttrsItemRequest,
-    AttrsItemID,
-    AttrsItemSpecification,
-    AttrsInventoryLocation,
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
+    InventoryPosition,
     uint32,
 )
 from draftsman.utils import reissue_warnings
@@ -43,15 +43,15 @@ class ItemRequestMixin(Exportable):
         elif isinstance(value, list):
             res = [None] * len(value)
             for i, elem in enumerate(value):
-                res[i] = AttrsItemRequest.converter(elem)
+                res[i] = BlueprintInsertPlan.converter(elem)
             return res
         else:
             return value
 
-    item_requests: list[AttrsItemRequest] = attrs.field(
+    item_requests: list[BlueprintInsertPlan] = attrs.field(
         factory=list,
         converter=_items_converter,
-        validator=instance_of(list[AttrsItemRequest]),
+        validator=instance_of(list[BlueprintInsertPlan]),
     )
     """
     A list of items to deliver to the entity. Not to be confused with logistics
@@ -121,11 +121,11 @@ class ItemRequestMixin(Exportable):
                 if slot is None:
                     slot = len(self.item_requests)
                 self.item_requests += [
-                    AttrsItemRequest(
-                        id=AttrsItemID(name=item, quality=quality),
-                        items=AttrsItemSpecification(
+                    BlueprintInsertPlan(
+                        id=ItemID(name=item, quality=quality),
+                        items=ItemInventoryPositions(
                             in_inventory=[
-                                AttrsInventoryLocation(
+                                InventoryPosition(
                                     inventory=inventory,
                                     stack=slot,
                                     count=count,
@@ -150,9 +150,7 @@ class ItemRequestMixin(Exportable):
                 if existing_slot is None:
                     # If not, make a new one
                     existing_spec.items.in_inventory.append(
-                        AttrsInventoryLocation(
-                            inventory=inventory, stack=slot, count=count
-                        )
+                        InventoryPosition(inventory=inventory, stack=slot, count=count)
                     )
                 else:
                     # If so, simply modify the count
@@ -167,6 +165,7 @@ class ItemRequestMixin(Exportable):
 
 
 # TODO: versioning
+
 
 @attrs.define
 class _ExportItemRequest1_0:

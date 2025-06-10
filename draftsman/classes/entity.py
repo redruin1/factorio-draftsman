@@ -13,8 +13,8 @@ from draftsman.data import entities
 from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    QualityName,
-    EntityName,
+    QualityID,
+    EntityID,
     get_suggestion,
     uint64,
 )
@@ -79,8 +79,8 @@ class Entity(EntityLike, Exportable):
     type of some given entity, usually due to environment or version mismatch.
     In this case, known attributes like :py:attr:`.name` and :py:attr:`.position`
     will be correctly interpreted and validated, while all other keys will be
-    stored under :py:attr:`.extra_keys`. This allows the user to manually 
-    deduce and convert instances of this base type to subtypes, if there is 
+    stored under :py:attr:`.extra_keys`. This allows the user to manually
+    deduce and convert instances of this base type to subtypes, if there is
     sufficient context to do so.
     """
 
@@ -91,7 +91,7 @@ class Entity(EntityLike, Exportable):
         self,
         name: str,
         id: str | None = None,
-        quality: QualityName = "normal",
+        quality: QualityID = "normal",
         position: _PosVector = attrs.NOTHING,
         tile_position: _TileVector = attrs.NOTHING,
         tags: dict[str, Any] | None = attrs.NOTHING,
@@ -143,51 +143,10 @@ class Entity(EntityLike, Exportable):
 
     # =========================================================================
 
-    # TODO: which of these do I want? Need to investigate what happens when you
-    # give the game a blueprint with two entities with the same entity_number...
-    _entity_number: Optional[uint64] = attrs.field(
-        default=None,
-        repr=False,
-        eq=False,
-        validator=instance_of(Optional[uint64]),
-        metadata={"omit": False},
-    )
-
-    @property
-    def entity_number(self) -> Optional[uint64]:
-        # TODO: an entity number is used for associations, dummy
-        # Fix this docstring
-        # TODO: also, I'm not convinced this should exist in Entity even for
-        # posterity/completeness-sake; it's a mechanism for holding relationship
-        # information which is entirely superceeded by Associations, and keeping
-        # it here will likely confuse more people than help them
-        """
-        A numeric value associated with this entity, 1-indexed. In practice this is
-        the index of the dictionary in the blueprint's 'entities' list, but this is
-        not strictly enforced, and its even possible for multiple entities to share
-        the same ``entity_number`` in the same blueprint without consequence.
-
-        An :py:class:`.Entity` created outside of a blueprint has no way to
-        determine it's own ``entity_number``, so it defaults to ``None``. Entities
-        added to blueprints also default to ``None``, as since entity lists
-        are frequently modified it makes the most sense to only generate these
-        values when exporting. This value is only populated when importing from an
-        existing blueprint string, but the value is not kept "accurate" if the
-        parent entity list in which it resides changes.
-
-        This attribute is provided for posterity in case this value is somehow
-        useful, but since its value is non-authorative, it gets overwritten when
-        exporting to follow the above "entity number == index in entities list"
-        axiom.
-        """
-        return self._entity_number
-
-    # =========================================================================
-
     # TODO: maybe it should be impossible to change the name of the entity after
     # it is created. This would prevent the complications that would arise from
     # such flexibility
-    name: EntityName = attrs.field(
+    name: EntityID = attrs.field(
         validator=instance_of(str),
         metadata={"omit": False},
     )
@@ -265,9 +224,9 @@ class Entity(EntityLike, Exportable):
 
     # =========================================================================
 
-    quality: QualityName = attrs.field(
+    quality: QualityID = attrs.field(
         default="normal",
-        validator=one_of(QualityName),
+        validator=one_of(QualityID),
     )
     """
     The quality of this entity. Can modify certain other attributes of the
@@ -519,14 +478,52 @@ class Entity(EntityLike, Exportable):
 
     # =========================================================================
 
-    mirror: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    mirror: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not this blueprint is mirrored horizontally or vertically, 
     specifically in regards to it's fluid inputs/outputs.
     """
+
+    # =========================================================================
+
+    # TODO: which of these do I want? Need to investigate what happens when you
+    # give the game a blueprint with two entities with the same entity_number...
+    _entity_number: Optional[uint64] = attrs.field(
+        default=None,
+        repr=False,
+        eq=False,
+        validator=instance_of(Optional[uint64]),
+        metadata={"omit": False},
+    )
+
+    @property
+    def entity_number(self) -> Optional[uint64]:
+        # TODO: an entity number is used for associations, dummy
+        # Fix this docstring
+        # TODO: also, I'm not convinced this should exist in Entity even for
+        # posterity/completeness-sake; it's a mechanism for holding relationship
+        # information which is entirely superceeded by Associations, and keeping
+        # it here will likely confuse more people than help them
+        """
+        A numeric value associated with this entity, 1-indexed. In practice this is
+        the index of the dictionary in the blueprint's 'entities' list, but this is
+        not strictly enforced, and its even possible for multiple entities to share
+        the same ``entity_number`` in the same blueprint without consequence.
+
+        An :py:class:`.Entity` created outside of a blueprint has no way to
+        determine it's own ``entity_number``, so it defaults to ``None``. Entities
+        added to blueprints also default to ``None``, as since entity lists
+        are frequently modified it makes the most sense to only generate these
+        values when exporting. This value is only populated when importing from an
+        existing blueprint string, but the value is not kept "accurate" if the
+        parent entity list in which it resides changes.
+
+        This attribute is provided for posterity in case this value is somehow
+        useful, but since its value is non-authorative, it gets overwritten when
+        exporting to follow the above "entity number == index in entities list"
+        axiom.
+        """
+        return self._entity_number
 
     # =========================================================================
 

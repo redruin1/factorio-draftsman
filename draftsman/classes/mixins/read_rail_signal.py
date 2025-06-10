@@ -2,12 +2,11 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsSignalID
+from draftsman.signatures import SignalID
 from draftsman.validators import instance_of
 
 import attrs
-from pydantic import BaseModel, Field
-from typing import Optional, Union
+from typing import Optional
 
 from typing import TYPE_CHECKING
 
@@ -23,10 +22,10 @@ class ReadRailSignalMixin(Exportable):
     Allows the Entity to set red, yellow, and green circuit output signals.
     """
 
-    red_output_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-red", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+    red_output_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-red", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
         metadata={"never_null": True},
     )
     """
@@ -36,10 +35,10 @@ class ReadRailSignalMixin(Exportable):
 
     # =========================================================================
 
-    yellow_output_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-yellow", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+    yellow_output_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-yellow", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
         metadata={"never_null": True},
     )
     """
@@ -49,10 +48,10 @@ class ReadRailSignalMixin(Exportable):
 
     # =========================================================================
 
-    green_output_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-green", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+    green_output_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-green", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
         metadata={"never_null": True},
     )
     """

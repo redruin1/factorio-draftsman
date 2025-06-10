@@ -2,7 +2,7 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsColor
+from draftsman.signatures import Color
 from draftsman.validators import instance_of
 
 import attrs
@@ -15,10 +15,10 @@ class ColorMixin(Exportable):
     Gives the entity an editable color.
     """
 
-    color: Optional[AttrsColor] = attrs.field(
-        default=AttrsColor(r=1.0, g=1.0, b=1.0, a=1.0),
-        converter=AttrsColor.converter,
-        validator=instance_of(Optional[AttrsColor]),
+    color: Optional[Color] = attrs.field(
+        default=Color(r=1.0, g=1.0, b=1.0, a=1.0),
+        converter=Color.converter,
+        validator=instance_of(Optional[Color]),
     )
     """
     The color of the Entity.

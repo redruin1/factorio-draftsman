@@ -7,7 +7,7 @@ from draftsman.serialization import (
     make_unstructure_function_from_schema,
 )
 from draftsman.utils import dict_merge
-from draftsman.validators import instance_of
+from draftsman.validators import conditional, instance_of
 from draftsman.warning import UnknownKeywordWarning
 
 from draftsman.data import mods
@@ -18,12 +18,10 @@ from cattrs.gen._shared import find_structure_handler
 
 from abc import ABCMeta, abstractmethod
 import copy
-from functools import wraps
-from pydantic import BaseModel, ValidationError
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, List, Optional
 from typing_extensions import Self
 import warnings
-import pprint  # TODO: think about
+import pprint
 
 
 # def convert_to_countingattr(attr):
@@ -378,17 +376,14 @@ class Exportable:
     """
 
     @extra_keys.validator
+    @conditional(ValidationMode.STRICT)
     def _warn_unrecognized_keys(
         self,
-        _,
+        _: attrs.Attribute,
         value: Optional[dict],
-        mode: Optional[ValidationMode] = None,
-        warning_list: Optional[list] = None,
     ):
         """Warns the user if the ``extra_keys`` dict is populated."""
-        mode = mode if mode is not None else self.validate_assignment
-
-        if mode >= ValidationMode.STRICT and value:  # is not empty:
+        if value:  # is not empty:
             msg = "'{}' object has no attribute(s) {}; allowed fields are {}".format(
                 type(self).__name__,
                 list(value.keys()),
@@ -398,10 +393,7 @@ class Exportable:
                     if not attr.name.startswith("_")
                 ],
             )
-            if warning_list is None:
-                warnings.warn(UnknownKeywordWarning(msg))
-            else:
-                warning_list.append(UnknownKeywordWarning(msg))
+            warnings.warn(UnknownKeywordWarning(msg))
 
     # =========================================================================
 
@@ -445,19 +437,20 @@ class Exportable:
         mode = ValidationMode(mode)
         res = ValidationResult([], [])
         for a in attrs.fields(self.__class__):
+            print("\t", a.name)
             v = a.validator
             if v is not None:
-                # with warnings.catch_warnings(record=True) as ws:
-                try:
-                    v(
-                        self,
-                        a,
-                        getattr(self, a.name),
-                        mode=mode,
-                        warning_list=res.warning_list,
-                    )
-                except Exception as e:
-                    res.error_list.append(e)
+                print("\t", v)
+                v(
+                    self,
+                    a,
+                    getattr(self, a.name),
+                    mode=mode,
+                    error_list=res.error_list,
+                    warning_list=res.warning_list,
+                )
+        print(res.error_list)
+        print(res.warning_list)
         return res
 
     @classmethod
@@ -477,9 +470,7 @@ class Exportable:
         #     inspect.getsource(draftsman_converters.get_version(version).get_converter().get_structure_hook(cls))
         # )
         if version is None:
-            version = (
-                __factorio_version_info__  # TODO: replace with `mods.versions["base"]`
-            )
+            version = mods.versions["base"]
 
         version_info = draftsman_converters.get_version(version)
         return version_info.get_converter().structure(

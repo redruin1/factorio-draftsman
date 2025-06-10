@@ -12,7 +12,7 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsColor, AttrsSignalID, uint32
+from draftsman.signatures import Color, SignalID, uint32
 from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 
@@ -23,6 +23,7 @@ from typing import Optional
 
 
 # TODO: priority
+
 
 @fix_incorrect_pre_init
 @attrs.define
@@ -185,10 +186,10 @@ class TrainStop(
     # =========================================================================
 
     # TODO: should be evolved
-    color: Optional[AttrsColor] = attrs.field(
-        default=AttrsColor(r=242 / 255, g=0, b=0, a=127 / 255),
-        converter=AttrsColor.converter,
-        validator=instance_of(Optional[AttrsColor]),
+    color: Optional[Color] = attrs.field(
+        default=Color(r=242 / 255, g=0, b=0, a=127 / 255),
+        converter=Color.converter,
+        validator=instance_of(Optional[Color]),
     )
 
     # =========================================================================
@@ -241,10 +242,10 @@ class TrainStop(
 
     # =========================================================================
 
-    train_stopped_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-T", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+    train_stopped_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-T", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
         metadata={"never_null": True},
     )
     """
@@ -262,10 +263,10 @@ class TrainStop(
 
     # =========================================================================
 
-    trains_limit_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-L", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+    trains_limit_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-L", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
         metadata={"never_null": True},
     )
     """
@@ -281,10 +282,10 @@ class TrainStop(
 
     # =========================================================================
 
-    trains_count_signal: Optional[AttrsSignalID] = attrs.field(
-        factory=lambda: AttrsSignalID(name="signal-C", type="virtual"),
-        converter=AttrsSignalID.converter,
-        validator=instance_of(Optional[AttrsSignalID]),
+    trains_count_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-C", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
         metadata={"never_null": True},
     )
     """

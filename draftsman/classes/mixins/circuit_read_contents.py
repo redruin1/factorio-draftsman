@@ -46,6 +46,7 @@ class CircuitReadContentsMixin(Exportable):  # (ControlBehaviorMixin)
         self.read_contents = other.read_contents
         self.read_mode = other.read_mode
 
+
 # TODO: only permit belt read mode to PULSE and HOLD on Factorio 1.0
 
 draftsman_converters.add_hook_fns(

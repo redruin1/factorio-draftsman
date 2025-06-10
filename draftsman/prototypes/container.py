@@ -25,4 +25,3 @@ class Container(InventoryMixin, ItemRequestMixin, CircuitConnectableMixin, Entit
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

@@ -5,7 +5,7 @@ from draftsman.classes.group import Group
 from draftsman.constants import Direction, ValidationMode
 from draftsman.entity import ArithmeticCombinator, arithmetic_combinators, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
-from draftsman.signatures import AttrsSignalID
+from draftsman.signatures import SignalID
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -196,7 +196,7 @@ class TestArithmeticCombinator:
         assert combinator.second_operand == 200
 
         combinator.first_operand = "signal-A"
-        assert combinator.first_operand == AttrsSignalID(
+        assert combinator.first_operand == SignalID(
             **{"name": "signal-A", "type": "virtual"}
         )
         assert combinator.second_operand == 200
@@ -222,16 +222,16 @@ class TestArithmeticCombinator:
         combinator.set_arithmetic_conditions()
         combinator.first_operand = "signal-each"
         combinator.output_signal = "signal-each"
-        assert combinator.first_operand == AttrsSignalID(
+        assert combinator.first_operand == SignalID(
             name="signal-each", type="virtual"
         )
-        assert combinator.output_signal == AttrsSignalID(
+        assert combinator.output_signal == SignalID(
             name="signal-each", type="virtual"
         )
 
         # Setting to the same signal should issue no warnings
         combinator.first_operand = "signal-each"
-        assert combinator.first_operand == AttrsSignalID(
+        assert combinator.first_operand == SignalID(
             name="signal-each", type="virtual"
         )
 
@@ -239,8 +239,8 @@ class TestArithmeticCombinator:
         # TODO: reimplement
         # with pytest.warns(SignalConfigurationWarning):
         #     combinator.first_operand = "signal-A"
-        # assert combinator.first_operand == AttrsSignalID(name="signal-A", type="virtual")
-        # assert combinator.output_signal == AttrsSignalID(name="signal-each", type="virtual")
+        # assert combinator.first_operand == SignalID(name="signal-A", type="virtual")
+        # assert combinator.output_signal == SignalID(name="signal-each", type="virtual")
 
     def test_set_operation(self):
         combinator = ArithmeticCombinator("arithmetic-combinator")
@@ -269,7 +269,7 @@ class TestArithmeticCombinator:
         assert combinator.first_operand == 200
 
         combinator.second_operand = "signal-A"
-        assert combinator.second_operand == AttrsSignalID(
+        assert combinator.second_operand == SignalID(
             **{"name": "signal-A", "type": "virtual"}
         )
 
@@ -294,16 +294,16 @@ class TestArithmeticCombinator:
         combinator.set_arithmetic_conditions()
         combinator.second_operand = "signal-each"
         combinator.output_signal = "signal-each"
-        assert combinator.second_operand == AttrsSignalID(
+        assert combinator.second_operand == SignalID(
             name="signal-each", type="virtual"
         )
-        assert combinator.output_signal == AttrsSignalID(
+        assert combinator.output_signal == SignalID(
             name="signal-each", type="virtual"
         )
 
         # Setting to the same signal should issue no warnings
         combinator.second_operand = "signal-each"
-        assert combinator.second_operand == AttrsSignalID(
+        assert combinator.second_operand == SignalID(
             name="signal-each", type="virtual"
         )
 
@@ -311,20 +311,20 @@ class TestArithmeticCombinator:
         # TODO: reimplement
         # with pytest.warns(SignalConfigurationWarning):
         #     combinator.second_operand = "signal-A"
-        # assert combinator.second_operand == AttrsSignalID(name="signal-A", type="virtual")
-        # assert combinator.output_signal == AttrsSignalID(name="signal-each", type="virtual")
+        # assert combinator.second_operand == SignalID(name="signal-A", type="virtual")
+        # assert combinator.output_signal == SignalID(name="signal-each", type="virtual")
 
     def test_set_output_signal(self):
         combinator = ArithmeticCombinator("arithmetic-combinator")
         assert combinator.output_signal == None
 
         combinator.output_signal = "signal-A"
-        assert combinator.output_signal == AttrsSignalID(
+        assert combinator.output_signal == SignalID(
             **{"name": "signal-A", "type": "virtual"}
         )
 
         combinator.output_signal = {"name": "signal-B", "type": "virtual"}
-        assert combinator.output_signal == AttrsSignalID(
+        assert combinator.output_signal == SignalID(
             **{"name": "signal-B", "type": "virtual"}
         )
 
@@ -344,11 +344,11 @@ class TestArithmeticCombinator:
 
         # No warnings
         combinator.output_signal = "signal-everything"
-        assert combinator.output_signal == AttrsSignalID(
+        assert combinator.output_signal == SignalID(
             name="signal-everything", type="virtual"
         )
         combinator.output_signal = "signal-each"
-        assert combinator.output_signal == AttrsSignalID(
+        assert combinator.output_signal == SignalID(
             name="signal-each", type="virtual"
         )
 

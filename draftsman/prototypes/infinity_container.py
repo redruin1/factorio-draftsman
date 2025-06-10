@@ -6,7 +6,7 @@ from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AttrsInfinityFilter, uint16, uint32
+from draftsman.signatures import InfinityInventoryFilter, uint16, uint32
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import infinity_containers
@@ -33,15 +33,15 @@ class InfinityContainer(ItemRequestMixin, InventoryMixin, Entity):
     def _filters_converter(value):
         if isinstance(value, list):
             for i, elem in enumerate(value):
-                value[i] = AttrsInfinityFilter.converter(elem)
+                value[i] = InfinityInventoryFilter.converter(elem)
             return value
         else:
             return value
 
-    filters: list[AttrsInfinityFilter] = attrs.field(
+    filters: list[InfinityInventoryFilter] = attrs.field(
         factory=list,
         converter=_filters_converter,
-        validator=instance_of(list[AttrsInfinityFilter]),
+        validator=instance_of(list[InfinityInventoryFilter]),
     )
     """
     The list of items to infinitely create or remove from this 
@@ -99,7 +99,7 @@ class InfinityContainer(ItemRequestMixin, InventoryMixin, Entity):
                     existing_index = i
                 break
 
-        new_filter = AttrsInfinityFilter(
+        new_filter = InfinityInventoryFilter(
             index=index + 1,
             name=item,
             count=count,

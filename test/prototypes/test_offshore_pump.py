@@ -4,9 +4,8 @@ from draftsman.constants import Direction, ValidationMode
 from draftsman.entity import OffshorePump, offshore_pumps, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
-    AttrsSimpleCondition,
-    AttrsSignalID,
-    AttrsSimpleCondition,
+    Condition,
+    SignalID,
 )
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
@@ -24,11 +23,11 @@ def valid_offshore_pump():
         quality="uncommon",
         tile_position=(1, 1),
         direction=Direction.EAST,
-        circuit_condition=AttrsSimpleCondition(
+        circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         connect_to_logistic_network=True,
-        logistic_condition=AttrsSimpleCondition(
+        logistic_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
         tags={"blah": "blah"},
@@ -64,10 +63,10 @@ class TestOffshorePump:
         pump = OffshorePump("offshore-pump")
 
         pump.set_circuit_condition("iron-ore", ">", 1000)
-        assert pump.circuit_condition == AttrsSimpleCondition(
+        assert pump.circuit_condition == Condition(
             first_signal="iron-ore", comparator=">", constant=1000
         )
-        assert pump.circuit_condition.first_signal == AttrsSignalID(
+        assert pump.circuit_condition.first_signal == SignalID(
             name="iron-ore", type="item"
         )
         assert pump.to_dict() == {
@@ -83,7 +82,7 @@ class TestOffshorePump:
         }
 
         pump.set_circuit_condition("iron-ore", ">=", "copper-ore")
-        assert pump.circuit_condition == AttrsSimpleCondition(
+        assert pump.circuit_condition == Condition(
             first_signal="iron-ore", comparator=">=", second_signal="copper-ore"
         )
         assert pump.to_dict() == {
@@ -136,7 +135,7 @@ class TestOffshorePump:
         pump = OffshorePump("offshore-pump")
 
         pump.set_logistic_condition("iron-ore", ">", 1000)
-        assert pump.logistic_condition == AttrsSimpleCondition(
+        assert pump.logistic_condition == Condition(
             first_signal="iron-ore", comparator=">", constant=1000
         )
 

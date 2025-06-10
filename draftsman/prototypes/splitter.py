@@ -3,7 +3,7 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import ItemName
+from draftsman.signatures import ItemIDName
 from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of, one_of
 
@@ -52,9 +52,9 @@ class Splitter(DirectionalMixin, Entity):
 
     # =========================================================================
 
-    filter: Optional[ItemName] = attrs.field(
+    filter: Optional[ItemIDName] = attrs.field(
         default=None,
-        validator=instance_of(Optional[ItemName]),
+        validator=instance_of(Optional[ItemIDName]),
         metadata={"never_null": True},
     )
     """

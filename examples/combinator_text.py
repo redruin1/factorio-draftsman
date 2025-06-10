@@ -21,7 +21,6 @@ even multiple letters could be stored in a single 32-bit number.
 from draftsman import __factorio_version_info__
 from draftsman.blueprintable import Blueprint
 from draftsman.entity import ConstantCombinator
-from draftsman.error import MissingModError
 from draftsman.data import mods
 
 import math

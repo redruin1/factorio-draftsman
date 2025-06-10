@@ -12,7 +12,7 @@ from draftsman.constants import (
     WaitConditionType,
     WaitConditionCompareType,
 )
-from draftsman.signatures import AttrsSimpleCondition
+from draftsman.signatures import Condition
 from draftsman.rail import Schedule, WaitConditions, WaitCondition
 
 
@@ -77,7 +77,7 @@ def main() -> None:
     # is made:
     signal_condition = WaitCondition(
         WaitConditionType.CIRCUIT_CONDITION,
-        condition=AttrsSimpleCondition(
+        condition=Condition(
             first_signal="signal-check", comparator=">", constant=0
         ),
     )

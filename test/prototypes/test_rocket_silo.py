@@ -3,7 +3,7 @@
 from draftsman.constants import Inventory, SiloReadMode
 from draftsman.entity import RocketSilo, rocket_silos, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import AttrsItemRequest, AttrsItemID, AttrsItemSpecification, AttrsInventoryLocation
+from draftsman.signatures import BlueprintInsertPlan, ItemID, ItemInventoryPositions, InventoryPosition
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -60,15 +60,15 @@ class TestRocketSilo:
         silo = RocketSilo("rocket-silo")
         silo.request_modules("productivity-module-3", (0, 1), "legendary")
         assert silo.item_requests == [
-            AttrsItemRequest(
-                id=AttrsItemID(name="productivity-module-3", quality="legendary"),
-                items=AttrsItemSpecification(
+            BlueprintInsertPlan(
+                id=ItemID(name="productivity-module-3", quality="legendary"),
+                items=ItemInventoryPositions(
                     in_inventory=[
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.rocket_silo_modules,
                             stack=0,
                         ),
-                        AttrsInventoryLocation(
+                        InventoryPosition(
                             inventory=Inventory.rocket_silo_modules,
                             stack=1,
                         ),

@@ -27,4 +27,3 @@ class BurnerGenerator(ItemRequestMixin, EnergySourceMixin, DirectionalMixin, Ent
     # =========================================================================
 
     __hash__ = Entity.__hash__
-

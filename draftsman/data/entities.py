@@ -134,7 +134,13 @@ except FileNotFoundError:  # pragma: no coverage
 
 # TODO: should these be here?
 ALL_EFFECTS = {"speed", "productivity", "consumption", "pollution", "quality"}
-ALL_EFFECTS_EXCEPT_QUALITY = {"speed", "productivity", "consumption", "pollution", "quality"}
+ALL_EFFECTS_EXCEPT_QUALITY = {
+    "speed",
+    "productivity",
+    "consumption",
+    "pollution",
+    "quality",
+}
 NO_EFFECTS = set()
 
 
@@ -142,7 +148,7 @@ def get_allowed_effects(entity_name: str, default: set[str]) -> Optional[set[str
     """
     Returns a set of all the effects that this entity can support, either coming
     from modules or beacons. Returns ``default`` if this entity is recognized
-    under the current environment, but has no defined key. Returns ``None`` if 
+    under the current environment, but has no defined key. Returns ``None`` if
     the entity is unrecognized by the current environment.
     """
     # If name not known, return None
