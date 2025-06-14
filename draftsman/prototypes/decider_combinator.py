@@ -11,20 +11,16 @@ from draftsman.classes.mixins import (
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    int32,
-)
-from draftsman.utils import fix_incorrect_pre_init
-from draftsman.validators import instance_of
-
-from draftsman.data.entities import decider_combinators
-from draftsman.signatures import (
     CircuitNetworkSelection,
     SignalID,
     Comparator,
     int32,
     normalize_comparator,
 )
+from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of, one_of, try_convert
+
+from draftsman.data.entities import decider_combinators
 
 import attrs
 import copy

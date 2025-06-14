@@ -16,7 +16,6 @@ import attrs
 import cattrs
 from cattrs.gen._shared import find_structure_handler
 
-from abc import ABCMeta, abstractmethod
 import copy
 from typing import Any, List, Optional
 from typing_extensions import Self
@@ -437,10 +436,8 @@ class Exportable:
         mode = ValidationMode(mode)
         res = ValidationResult([], [])
         for a in attrs.fields(self.__class__):
-            print("\t", a.name)
             v = a.validator
             if v is not None:
-                print("\t", v)
                 v(
                     self,
                     a,
@@ -449,8 +446,6 @@ class Exportable:
                     error_list=res.error_list,
                     warning_list=res.warning_list,
                 )
-        print(res.error_list)
-        print(res.warning_list)
         return res
 
     @classmethod
@@ -458,7 +453,7 @@ class Exportable:
         cls,
         d: dict,
         version: Optional[tuple[int, ...]] = None,
-        validation: ValidationMode = ValidationMode.NONE,
+        # validation: ValidationMode = ValidationMode.NONE, # TODO: decide
     ) -> Self:
         """
         TODO

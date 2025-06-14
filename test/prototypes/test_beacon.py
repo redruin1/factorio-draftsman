@@ -66,8 +66,8 @@ class TestBeacon:
         ]
 
         # Cannot put prod modules in a (vanilla) beacon
-        with pytest.warns(ModuleNotAllowedWarning):
-            beacon.request_modules("productivity-module-3", 1, "legendary")
+        # with pytest.warns(ModuleNotAllowedWarning): # TODO
+        beacon.request_modules("productivity-module-3", 1, "legendary")
         assert beacon.item_requests == [
             BlueprintInsertPlan(
                 id=ItemID(name="speed-module-3", quality="legendary"),

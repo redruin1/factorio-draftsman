@@ -1,6 +1,5 @@
 # entitylist.py
 
-from draftsman.classes.association import Association
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.exportable import Exportable, ValidationResult
 from draftsman.classes.spatial_hashmap import SpatialDataStructure, SpatialHashMap
@@ -14,23 +13,15 @@ from draftsman.error import (
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import reissue_warnings
-from draftsman.validators import classvalidator
-from draftsman.warning import HiddenEntityWarning
+from draftsman.validators import get_mode, classvalidator
 from draftsman import utils
 
 import cattrs
 from collections.abc import MutableSequence
 from copy import deepcopy
-from pydantic import (
-    GetCoreSchemaHandler,
-    GetJsonSchemaHandler,
-    ValidationError,
-    model_validator,
-)
-from pydantic_core import CoreSchema, core_schema
 from typing import Any, Callable, Iterator, Literal, Optional, Union
 
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.collection import EntityCollection
@@ -177,8 +168,12 @@ class EntityList(Exportable, MutableSequence):
         return self.insert(idx=len(self), name=name, copy=copy, merge=merge, **kwargs)
 
     @utils.reissue_warnings
-    def extend(self, entities, copy=True, merge=False):
-        # type: (List[Union[str, EntityLike]], bool, bool) -> None
+    def extend(
+        self, 
+        entities: list[Union[str, EntityLike]], 
+        copy: bool=True, 
+        merge: bool=False
+    ) -> None:
         """
         Extends this list with the list provided. Computationally the same
         as appending one element at a time.
@@ -301,7 +296,9 @@ class EntityList(Exportable, MutableSequence):
         # Of course, this feature is optional, so if you're going to validate
         # the final blueprintable at the end anyway you can disable this feature
         # and save some overhead
-        if self.validate_assignment:
+        # print(get_enabled())
+        # print(self.validate_assignment)
+        if get_mode() and self.validate_assignment:
             # Validate the object itself
             # entitylike.validate(mode=self.validate_assignment).reissue_all()
             # Check for issues regarding placing this entity in the parent object
@@ -714,14 +711,6 @@ class EntityList(Exportable, MutableSequence):
 
     def __repr__(self) -> str:  # pragma: no coverage
         return "<EntityList>{}".format(self._root)
-
-    @classmethod
-    def __get_pydantic_core_schema__(  # pragma: no coverage
-        cls, _source_type: Any, handler: GetCoreSchemaHandler
-    ) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(
-            cls, handler(list[dict])  # TODO: correct annotation
-        )  # pragma: no coverage
 
     # =========================================================================
     # Internal functions

@@ -128,6 +128,11 @@ def test_inventory_sizes():
     assert spidertron.trunk_inventory.size == 200
     assert spidertron.prototype["trash_inventory_size"] == 20
 
+    with pytest.warns(UnknownEntityWarning):
+        spidertron = SpiderVehicle("unknown-spider-vehicle")
+    assert spidertron.ammo_inventory.size is None
+    assert spidertron.trunk_inventory.size is None
+
 def test_equipment_grid():
     """
     Test the read-only equipment grid attribute matches the expected values and

@@ -673,8 +673,6 @@ def ensure_bar_less_than_inventory_size(
     _: attrs.Attribute,
     value: Optional[uint16],
 ):
-    print(self.size)
-    print(value)
     if self.size is None or value is None:
         return
     if value >= self.size:
@@ -1760,16 +1758,6 @@ class FilteredInventory(Exportable):
         only.
         """
         return self._size_func(self._parent())
-
-    # =========================================================================
-
-    @property
-    def validate_assignment(self) -> ValidationMode:
-        print("inventory_validate_assignment")
-        print(self._parent)
-        if self._parent is not None:
-            return self._parent().validate_assignment
-        return None
 
     # =========================================================================
 

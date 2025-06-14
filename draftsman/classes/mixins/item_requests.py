@@ -188,6 +188,8 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
                             # Modules for example should be split up between
                             # multiple stacks, but fuel requests for locos
                             # shouldn't; how to discern?
+                            # Should also check to see how Factorio itself
+                            # migrates it, if at all
                             {
                                 # "Default" inventory; works for most cases
                                 "inventory": 1,

@@ -125,8 +125,6 @@ class SpatialHashMap(SpatialDataStructure):
                 # never intersect
                 item_layers = item.collision_mask["layers"]
                 other_layers = overlapping_item.collision_mask["layers"]
-                print(item_layers)
-                print(other_layers)
                 if len(other_layers.intersection(item_layers)) == 0:
                     continue
 
@@ -153,7 +151,6 @@ class SpatialHashMap(SpatialDataStructure):
                     and isinstance(overlapping_item, (StraightRail, LegacyStraightRail))
                 ):
                     parallel = (item.direction - overlapping_item.direction) % 8 == 0
-                    print(parallel)
                     if not parallel:
                         continue
 
