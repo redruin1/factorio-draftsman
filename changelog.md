@@ -7,15 +7,35 @@
     * A much better fit for Draftsman's scope, much more flexible, and much less boilerplate to maintain
     * Clearer distinction between loading steps:
         * Constructors are for initializing Draftsman objects
-        * `from_dict()` and `from_string()` methods are for importing from raw JSON
-        * `to_dict()` and `to_string()` methods are for exporting to raw JSON
+        * `from_dict()` and `from_string()` methods are for importing from raw JSON/Blueprint String
+        * `to_dict()` and `to_string()` methods are for exporting to raw JSON/Blueprint String
         * Hooks are defined outside of the class scope which convers the raw JSON format to the internal Python object form
         * This now means that the Python objects are not strictly tied to the JSON format, which means they can deviate for ease of use/performance reasons
+        * Conversion functions are separate from validation, meaning shorthands can be resolved even with validation functions turned off
 * Draftsman entities can now handle importing/exporting between Factorio 1.0 and Factorio 2.0 blueprint string formats
     * Simply specify `version=(1, 0)` or `version=(2, 0)` in any of `to/from_dict()` or `to/from_string()` methods
     * While serialization/deserialization is correctly implemented, *migration* from an old to new string is not (fully) implemented, and so some parts will still have to be done manually
         * For example, Draftsman will not convert `"filter-inserter"` into `"fast-inserter"` for you
 * Added tests to validate the exported formats of all objects match the above JSON schemas, on both game versions
+* Added `draftsman.constants.Inventory` which is part of defines
+* Changed the constant `ValidationMode.NONE` to be the more explicit `ValidationMode.DISABLED`
+* Removed the `validate_assignment` attribute entirely
+    * Instead, validation is now on a global flag (until there is a good reason for it not to be); makes things much simpler
+    * Global flag can be acquired with `draftsman.validators.get_mode()` and set with `draftsman.validators.set_mode(...)`
+    * `set_mode()` can also be used as a context manager:
+        ```py
+        # Default validation level is `STRICT`
+        assert draftsman.validators.get_mode() is ValidationMode.STRICT
+
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            # No validators are run inside this block
+            assert draftsman.validators.get_mode() is ValidationMode.DISABLED
+
+        # Validation state returns to whatever it was set before
+        assert draftsman.validators.get_mode() is ValidationMode.STRICT
+        ```
+* Calling a objects `validate()` method is now guaranteed to also validate all of its children
+
 
 ## 2.0.3
 * Updated `factorio-data` to version `2.0.48` (latest)

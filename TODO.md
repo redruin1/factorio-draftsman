@@ -6,8 +6,15 @@ This seems to be the default behavior per [https://lua-api.factorio.com/latest/c
 ### Remove classes:
 * `LogisticsStorageContainer`, `LogisticsPassiveContainer`, ...
 
-### Add `tiles` to Groups (somehow)
-We could simply add a `tiles` list to `Group`, but this has some unintended consequences. See issue #118 for more info.
+### Add `children` attribute to Blueprints/Groups, and use that to store nested Groups
+This would make `entities` and `tiles` 1-dimensional lists again, and tree traversal would be more explicit
+```py
+blueprint = Blueprint()
+
+blueprint.children.append(Group(id="blah"))
+
+blueprint.children["blah"].entities.append("inserter", ...)
+```
 
 ---
 ### Calling validate on a blueprint should validate all of it's child entitylikes and tiles (or should it?)
@@ -16,31 +23,6 @@ We could simply add a `tiles` list to `Group`, but this has some unintended cons
 ### A better way to filter specific errors (some further API additions to `ValidationResult`, likely)
 
 ---
-### If `validate_assignment` on a blueprint is `True`, does that mean that an appended entity or tile should be validated? Should overlapping object warnings be issued?
-Answer: split blueprintable validation and entitylist/tilelist validation and have them all be separate
-It might be confusing at first, but this way every combination is possible.
-
----
-### Redo validation (again)
-Swapping to Pydantic was very illuminating in the benefits that it can provide:
-
-* Ergonomic class definitions to define schemas (very nice)
-* Being able to inject custom functions at any point of the validation process to massage inputs, discredit validation, and add new criteria (possibly on the fly!) This is probably going to be required by any further implementation going forward
-* All of these validation functions are localized to the classes that use them, and everything is in one place; only a single method has to be called for any member modification.
-* Validation backend is written in Rust for speed (tempting)
-
-However, it is still not quite entirely perfect:
-
-* RootModel syntax cannot be serialized if not in the correct model format (unacceptable, currently this is sidestepped but suboptimal)
-* RootModel syntax is unwieldly; everything is accessed via it's `root` attribute and any methods that you would want to use on `root` have to be reimplemented in the parent class
-* I HAVE to use RootModels if I want to be able to reliably validate these members (and ideally propagate their `is_valid` flags)
-* Per instance validate assignment is not permitted (even though totally functional), meaning I have to use the model's backend which might be subject to change
-* No in-built handling for warnings, which ideally would behave very similarly to errors as Pydantic currently implements them
-
-Based on my search, I can't think of a validation library that has all of these features at once, implying that I would have to roll my own. I'm not really looking forward to this, and especially not to *testing* it, so if there is one out there please message me.
-
----
-
 ### Validation caching
 Ideally, whether or not a entity or blueprint is considered valid can be retained as long as the entity does not change after validation. For example, if you validate a single entity, and then add that entity to a blueprint 1000 times, you only have to validate the attributes of the blueprint itself, since the entities are guaranteed to already be in a valid state. Ideally, each exportable object would have a `is_valid` attribute which would be set to false when an attribute is set, which can then be quickly checked in any parent
 `validate()` function.
@@ -75,12 +57,8 @@ See issue #117
 For most of the commonly-used things this is already the case, but would be nice if every Draftsman object had a nice, user-readable formatted output.
 
 ---
-### Write `dump_format` (and test_cases)
-Do this not only for all the blueprintable types, but also each entity. In addition, include this output at the header of each documentation file, so people finally have a concrete reference for the actual blueprint string format
+### Display blueprint JSON schemas for all blueprintable types in the documentation
 - Once that's done, maybe we can finally update the Factorio wiki to be up-to-date
-
----
-### Reinvestigate making an entity's `tile_position` based off of it's `position`
 
 ---
 ### Make draftsman's prototypes match Factorio's prototypes exactly (for consistency's sake)
@@ -104,7 +82,7 @@ The way inherited methods are specified in some prototypes are a little messy, s
 Reverse-engineer the game to figure out what exactly determines if the game will let you flip an entity. Less important for vanilla entities, moreso important for modded ones, as we have to figure it out dynamically
 
 ---
-### Update documentation guide to reflect 2.0 changes
+### Update documentation guide to reflect ~~2.0~~ 3.0 changes
 
 ---
 ### More doctests
@@ -116,11 +94,14 @@ Documentation is currently written in [reStructuredText](https://docutils.source
 
 ---
 ### Custom `data.raw` extraction and formatting?
-Currently all the data being extracted from the Factorio load process is all "hard-coded"; you have to manually edit `env.py` in order to change what it extracts. This is alright for the maintainers of Draftsman as we can simply edit it if we need more/less information from `data.raw`, but what if the user wants some data from Factorio that Draftsman doesn't bother extracting? In this case Draftsman would benefit from a generic editable interface where people can configure and modify exactly the information they want from the game for whatever their purposes are.
+In this case Draftsman would benefit from a generic editable interface where people can configure and modify exactly the information they want from the game for whatever their purposes are.
+
+Alternatively, since Draftsman depends on `data.raw` when available more and more, perhaps the best solution (if performant enough) would be to simply extract the entirety of `data.raw`
 
 ---
 ### Perhaps add options for blueprint canonicalization
 Ordering objects inside blueprints in regular ways for best compression, minimal git diff, etc.
+- could probably integrate FATUL ()
 
 ---
 ### Add more examples

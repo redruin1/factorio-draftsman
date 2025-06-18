@@ -257,14 +257,14 @@ class Exportable:
         version: Optional[tuple[int, ...]] = None,
     ) -> Self:
         """
-        TODO
+        Attempts to construct a new instance of this class from a Python 
+        dictionary in JSON format.
+
+        :param d: The dictionary to interpret.
+        :param version: The Factorio version that the input data is compliant
+            with. If omitted, Draftsman will default to the version of the 
+            current environment.
         """
-        # print("from dict")
-        # print(version)
-        # import inspect
-        # print(
-        #     inspect.getsource(draftsman_converters.get_version(version).get_converter().get_structure_hook(cls))
-        # )
         if version is None:
             version = mods.versions["base"]
 
@@ -272,12 +272,6 @@ class Exportable:
         return version_info.get_converter().structure(
             copy.deepcopy(d), cls
         )  # TODO: move deepcopy internal
-        # kwargs = version_info.get_converter().structure(copy.deepcopy(d), cls)
-        # res = cls(**kwargs, validate_assignment=ValidationMode.NONE)
-        # if validation:
-        #     res.validate(mode=validation).reissue_all()
-        # res.validate_assignment = validation
-        # return res
 
     def to_dict(
         self,
@@ -292,50 +286,9 @@ class Exportable:
             version = mods.versions["base"]
         version_info = draftsman_converters.get_version(version)
         converter = version_info.get_converter(exclude_none, exclude_defaults)
-        # print(converter)
-        # print(converter.omit_if_default)
-        # import inspect
-        # print(inspect.getsource(converter.get_unstructure_hook(type(self))))
-        # print(getattr(attrs.fields(type(self)), "always_on").default)
-        # defaults = {field.name: field.default for field in attrs.fields(type(self))}
-        # print(defaults)
-        # print(getattr(self, "color"))
-        # return {
-        #     k: v for k, v in converter.unstructure(self, type(self)).items()
-        #     if not ((v is None and exclude_none) or (getattr(self, k) == defaults[k] and exclude_defaults))
-        # }
         return converter.unstructure(self)
-        # return self._root.model_dump(
-        #     # Some attributes are reserved words ('type', 'from', etc.); this
-        #     # resolves that issue
-        #     by_alias=True,
-        #     # Trim if values are None
-        #     exclude_none=exclude_none,
-        #     # Trim if values are defaults
-        #     exclude_defaults=exclude_defaults,
-        #     # Ignore warnings because we might export a model where the keys are
-        #     # intentionally incorrect
-        #     # Plus there are things like Associations with which we want to
-        #     # preserve when returning this object so that a parent object can
-        #     # handle them
-        #     warnings=False,
-        # )
 
     # =========================================================================
-
-    # TODO
-    # def __setattr__(self, name, value):
-    #     super().__setattr__("_is_valid", False)
-    #     super().__setattr__(name, value)
-
-    # def __setitem__(self, key: str, value: Any):
-    #     self._root[key] = value
-
-    # def __getitem__(self, key: str) -> Any:
-    #     return self._root[key]
-
-    # def __contains__(self, item: str) -> bool:
-    #     return item in self._root
 
     def __deepcopy__(self, memo: Optional[dict[int, Any]] = {}):
         # Perform the normal deepcopy
@@ -344,20 +297,6 @@ class Exportable:
 
         # Make sure we don't copy ourselves multiple times unnecessarily
         memo[id(self)] = result
-
-        # for k, v in self.__dict__.items():
-        #     print("key:", k)
-        #     print("value:", v)
-        #     if k == "_parent":
-        #         object.__setattr__(result, "_parent", None)
-        #     else:
-        #         object.__setattr__(result, k, copy.deepcopy(v, memo))
-        # slots = chain.from_iterable(getattr(s, '__slots__', []) for s in self.__class__.__mro__)
-
-        # print(slots)
-        # for slot in slots:
-        #     print(slot)
-        #     setattr(result, slot, copy.deepcopy(getattr(self, slot), memo))
 
         for attr in attrs.fields(cls):
             # Making the copy of an entity directly "removes" its parent, as there
@@ -407,9 +346,6 @@ def make_exportable_structure_factory_func(
         def structure_hook(input_dict: dict, _: type):
             res = {}
             for dict_loc, attr_name in structure_dict.items():
-                # print(dict_loc, attr_name)
-                # if not hasattr(class_attrs, attr_name):
-                #     continue
                 if attr_name is None:
                     try_pop_location(input_dict, dict_loc)
                     continue
@@ -441,36 +377,9 @@ def make_exportable_structure_factory_func(
                     # raise e
                     raise DataFormatError(e)
 
-            # for attr in class_attrs:
-            #     # print("attr name:", attr.name, attr.alias)
-            #     attr_name = attr.alias if attr.alias != attr.name else attr.name
-            #     if attr_name not in structure_dict:
-            #         continue
-            #     loc = structure_dict[attr_name]
-
-            #     value = try_pop_location(input_dict, loc)
-            #     # print(value)
-            #     if value is None:
-            #         continue
-            #     handler = find_structure_handler(attr, attr.type, converter)
-            #     if handler is not None:
-            #         # import inspect
-            #         # print(inspect.getsource(handler))
-            #         try:
-            #             res[attr_name] = handler(value, attr.type)
-            #         except Exception as e:
-            #             # res[attr_name] = value
-            #             # raise e
-            #             raise DataFormatError(e)
-            #     else:
-            #         res[attr_name] = value
-
             if input_dict:
                 res["extra_keys"] = input_dict
 
-            # print(location_dict)
-            # print(res)
-            # return res
             return cls(**res)
 
         return structure_hook
